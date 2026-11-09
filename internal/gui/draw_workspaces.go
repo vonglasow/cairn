@@ -19,10 +19,10 @@ func drawPlace(k Kit, l Layout, w Window) {
 func drawSwitcher(k Kit, w Window) {
 	box := w.SwitcherBox()
 	Popover{}.Draw(k, box)
-	clipped := k.within(box)
+	in, clipped := k.inside("popover").within(box)
 	defer clipped.Pop()
 	m := w.measured()
-	field := Field{Lit: true}.Draw(k, w.SwitcherField())
+	field := Field{Lit: true}.Draw(in, w.SwitcherField())
 	line := Inside(field)
 	if asks := w.SwitcherAsks(); asks != "" {
 		said := asks + "  "
@@ -33,26 +33,26 @@ func drawSwitcher(k Kit, w Window) {
 	if w.SwitcherTyped().Reads() == "" && w.SwitcherAsks() == "" {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, SwitcherSays, reads)
 	} else {
-		writing(k, m, line, w.SwitcherTyped(), true, reads, 1, Follow)
+		writing(in, m, line, w.SwitcherTyped(), true, reads, 1, Follow)
 	}
 	heads := []string{WorkspacesHead, RecentHead}
 	for i, head := range w.SwitcherHeads() {
-		Head{Said: heads[i]}.Draw(k, Inside(head))
+		Head{Said: heads[i]}.Draw(in, Inside(head))
 	}
 	for _, one := range w.SwitcherLines() {
-		drawSwitcherLine(k, m, one)
+		drawSwitcherLine(in, m, one)
 	}
 	acts := SwitcherActs(w)
 	if len(acts) > 0 {
-		Rule{}.Draw(k, Box{X: box.X, Y: acts[0].At.Y - 1, W: box.W})
+		Rule{}.Draw(in, Box{X: box.X, Y: acts[0].At.Y - 1, W: box.W})
 	}
 	for _, act := range acts {
 		row := Row{Said: act.Said}
-		row.Draw(k, act.At)
+		row.Draw(in, act.At)
 		if act.Key != "" {
 			spelled := w.keyboard.Spelled(act.Key)
 			inside := Inside(act.At)
-			row.Chip(k, KeyChip{Key: spelled}, Box{X: inside.X + inside.W - KeyChipWide(spelled), Y: act.At.Y, H: act.At.H})
+			row.Chip(in, KeyChip{Key: spelled}, Box{X: inside.X + inside.W - KeyChipWide(spelled), Y: act.At.Y, H: act.At.H})
 		}
 	}
 }

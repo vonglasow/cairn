@@ -398,3 +398,16 @@ func TestADaysTotalStandsAtTheRightOfItsDateAndNeverOverIt(t *testing.T) {
 		}
 	}
 }
+
+func TestADaysTotalWithNoRoomBesideItsDateGoesUnderIt(t *testing.T) {
+	w := Window{work: newFake(), tab: Time, width: Narrowest, height: Shortest, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
+	day := WeekDayAt(w.Layout(), 0)
+	head := WeekHeadAt(day)
+	want := Box{X: head.X, Y: head.Y + lineHigh, W: head.W, H: lineHigh}
+	if got := WeekTotalAt(day, w.measured()); got != want {
+		t.Errorf("a narrow day writes its total in %+v, want %+v under its date", got, want)
+	}
+	if under := WeekRowAt(day, 0); want.Y+want.H > under.Y {
+		t.Errorf("the total under the date %+v runs into the first card at %+v", want, under)
+	}
+}

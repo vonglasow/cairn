@@ -390,7 +390,11 @@ func (w Window) offersAlong(panel Box) []Box {
 	for _, wide := range widths {
 		right += wide
 	}
-	laid := laidAlong(widths, func(i int) Box { return PanelOfferAt(panel, i) }, panel.X+panel.W-padding-right)
+	end := panel.X + panel.W - padding
+	if w.formUnder() && panel == w.formPanel() {
+		end = FormGrip(panel).X + inset
+	}
+	laid := laidAlong(widths, func(i int) Box { return PanelOfferAt(panel, i) }, end-right)
 	slices.Reverse(laid)
 	return laid
 }

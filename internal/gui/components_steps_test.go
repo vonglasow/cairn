@@ -28,6 +28,16 @@ func (w *world) componentsSteps(sc *godog.ScenarioContext) {
 	sc.Then(`^every key the command bar names sits on a chip$`, w.paletteKeysOnChips)
 	sc.Then(`^the slot of the column "([^"]*)" is rounded as a card is$`, w.emptyRounded)
 	sc.Then(`^the dot beside the label "([^"]*)" is as wide as the workspace's dot$`, w.labelDotAsWide)
+	sc.Then(`^the card "([^"]*)" on the time page writes its number whole, its facts clear of it$`, w.numberClearOfFacts)
+	sc.Then(`^the form's grip is clear of its buttons$`, func() error {
+		panel := w.w.formPanel()
+		for _, along := range w.w.offersAlong(panel) {
+			if cross(ButtonIn(along), FormGrip(panel)) {
+				return fmt.Errorf("the grip %+v lies over the button %+v", FormGrip(panel), ButtonIn(along))
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the switcher is drawn as a popover$`, func() error {
 		return w.drawnAsAPopover("the switcher", w.w.SwitcherBox())
 	})
@@ -308,4 +318,40 @@ func (w *world) drawnAsAPopover(what string, box Box) error {
 		}
 	}
 	return fmt.Errorf("%s is not drawn at %+v", what, box)
+}
+
+func (w *world) numberClearOfFacts(title string) error {
+	l := w.w.Layout()
+	for i := range 7 {
+		for j, one := range w.w.DayShown(i) {
+			if w.w.DayCard(one).Title == title {
+				return numberApart(partsDrawn(w.w), PartsOf(DayCardAt(WeekDayAt(l, i), j)).Panel)
+			}
+		}
+	}
+	return fmt.Errorf("no card titled %q is on the time page", title)
+}
+
+func numberApart(drawn []Drawing, card Box) error {
+	var number, facts []Drawing
+	in := false
+	for _, d := range drawn {
+		switch {
+		case strings.HasSuffix(d.Part, "card"):
+			in = d.At == card
+		case in && strings.HasSuffix(d.Part, "card/number"):
+			number = append(number, d)
+		case in && strings.HasSuffix(d.Part, "card/facts"):
+			facts = append(facts, d)
+		}
+	}
+	if len(number) != 1 || number[0].At.W < monoWide("#1", small) {
+		return fmt.Errorf("the card at %+v writes its number in %+v", card, number)
+	}
+	for _, f := range facts {
+		if cross(f.At, number[0].At) {
+			return fmt.Errorf("the card's facts %+v cover its number %+v", f.At, number[0].At)
+		}
+	}
+	return nil
 }

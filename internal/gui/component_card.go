@@ -57,8 +57,10 @@ func (c Card) Draw(k Kit, at Box) Box {
 
 	mono := k.skin.Type.Mono
 	laid := CardRowOf(c.Face, parts.Number, m, k.gtx.Now, c.Pages)
+	in.put("number", laid.NumberAt)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, parts.Number, laid.Number, small, mono, text.Start)
 	if laid.Facts != "" {
+		in.put("facts", laid.FactsAt)
 		ink := k.skin.Colour.Ink.Low
 		if laid.Late {
 			ink = k.skin.Colour.State.Late

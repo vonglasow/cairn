@@ -1601,6 +1601,13 @@ Feature: The desktop board
       And I drag the form from a place that holds no text 5000 to the right and 5000 down
       Then the form stands wholly inside the window
 
+    @gui-the-forms-grip-stays-clear-of-its-buttons
+    Scenario: the corner a form is resized by stays clear of its last button
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I double-click the card "Write the spec"
+      Then the form's grip is clear of its buttons
+
   Rule: The window opens on its board being built of stones
 
     @gui-the-window-opens-on-a-cairn
@@ -1835,6 +1842,27 @@ Feature: The desktop board
       When I open the window
       And I click the tab "TIME"
       Then the week shows the days "Mon 28/09, Tue 29/09, Wed 30/09, Thu 01/10, Fri 02/10"
+
+    @gui-a-narrow-week-card-keeps-its-number-and-facts-apart
+    Scenario: in the narrowest window a card of the week gives its facts up before they cover its number
+      Given a window of 720 by 560
+      And I added a task titled "Write the spec" with the estimate "8h"
+      And I edited task 1 with the deadline "2026-10-05"
+      And I spent "3h" on task 1 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      Then the card "Write the spec" on the time page writes its number whole, its facts clear of it
+
+    @gui-a-narrow-day-writes-its-total-under-its-date
+    Scenario: in the narrowest window a day of the week writes its total under its date, where it has room
+      Given a window of 720 by 560
+      And I added a task titled "Write the spec"
+      And I spent "1h30m" on task 1 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      Then the day "2026-09-29" writes its total whole, clear of its date
 
     @gui-the-weeks-are-walked
     Scenario: the arrows walk the weeks, and t comes back to this one

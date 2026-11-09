@@ -1362,9 +1362,30 @@ func TestTheFormIsResizedByItsCornerAndKeepsTheSize(t *testing.T) {
 }
 
 func TestTheFormDrawsItsGrip(t *testing.T) {
-	w := holding(newFake(), card(1, "A", "todo"))
+	w := aFixturesBoard(t)
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
 	if painted(drawn(t, w), FormGrip(w.formPanel()), Dark().Colour.Ink.Faint) == 0 {
 		t.Error("the corner that resizes the form is not drawn")
+	}
+}
+
+func TestAFormsButtonsEndBeforeItsGripAndAnotherPanelsAtItsPadding(t *testing.T) {
+	rightmost := func(along []Box) int {
+		end := 0
+		for _, one := range along {
+			end = max(end, ButtonIn(one).X+ButtonIn(one).W)
+		}
+		return end
+	}
+	w := holding(newFake(), card(1, "A", "todo"))
+	form := w.clicked(middleOf(w, 1, 0)).Key("enter")
+	panel := form.formPanel()
+	if end := rightmost(form.offersAlong(panel)); end != FormGrip(panel).X {
+		t.Errorf("the form's buttons end at %d, not where its grip begins at %d", end, FormGrip(panel).X)
+	}
+	help := w.Key("?")
+	box := help.HelpBox()
+	if end := rightmost(help.offersAlong(box)); end != box.X+box.W-padding-inset {
+		t.Errorf("the help's buttons end at %d, not at its padding %d", end, box.X+box.W-padding-inset)
 	}
 }

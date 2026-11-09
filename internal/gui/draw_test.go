@@ -191,8 +191,7 @@ func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
 }
 
 func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	skin := Dark()
 	for _, c := range []struct {
 		what   string
@@ -203,8 +202,8 @@ func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 		{"an open task", OnForm, false},
 		{"a form", OnForm, false},
 	} {
-		v := w
-		v.chosen, v.screen = 1, c.screen
+		v := w.clicked(middleOf(w, 1, 0))
+		v.screen = c.screen
 		if c.screen == OnForm {
 			v = v.Edit()
 		}
@@ -234,8 +233,7 @@ func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
 }
 
 func TestTheFormIsDrawnOverTheBoard(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	shot := drawn(t, w)
@@ -330,8 +328,7 @@ func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
 }
 
 func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	l := w.Layout()
 	open := Dark().Colour.Surface.Control
 
@@ -499,8 +496,7 @@ func TestTheObjectivesTabIsDrawnAsAGrid(t *testing.T) {
 }
 
 func TestTheBarDrawsWhatItOffers(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	w = w.clicked(middleOf(w, 1, 0))
 
 	shot := drawn(t, w)
@@ -596,8 +592,7 @@ func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 }
 
 func TestNothingInHandDrawsNothingInMidAir(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	l := w.Layout()
 	between := Box{X: l.Column[0].X + l.Column[0].W, Y: l.Column[0].Y, W: gap, H: l.Column[0].H}
 	if got := painted(drawn(t, w), between, Dark().Colour.Surface.Ghost); got != 0 {
@@ -663,8 +658,7 @@ func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
 }
 
 func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	w = w.clicked(middleOf(w, 1, 0))
 
 	box := Over(w.width, w.height)
@@ -677,8 +671,7 @@ func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
 }
 
 func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
@@ -726,8 +719,7 @@ func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 }
 
 func TestTheOpenTabStandsOnAPill(t *testing.T) {
-	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	l := w.Layout()
 	shot := drawn(t, w)
 
@@ -1237,10 +1229,7 @@ func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 }
 
 func TestEveryCardHasAnEdge(t *testing.T) {
-	f := newFake()
-	w := holding(f,
-		card(1, "Write the spec", "todo"),
-		card(2, "Ship it", "todo"))
+	w := aFixturesBoard(t)
 	shot := drawn(t, w.clicked(middleOf(w, 1, 0)))
 
 	for at, what := range map[int]string{0: "the chosen card", 1: "a card nobody chose"} {
@@ -1469,7 +1458,7 @@ func TestTheSkinTellsItsStatesApart(t *testing.T) {
 }
 
 func TestAPanelIsRaisedRoundedAndHasNoEdge(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"}).Key("?")
+	w := aFixturesBoard(t).Key("?")
 	box := w.HelpBox()
 	shot := drawn(t, w)
 	if painted(shot, Box{X: box.X, Y: box.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
@@ -1491,8 +1480,8 @@ func TestThePanelsOffersAreButtonsRightAlignedTheirVerbLast(t *testing.T) {
 			t.Errorf("the first offer %q is not the rightmost", w.Offers()[0])
 		}
 	}
-	if right := panel.X + panel.W - padding; last.X+last.W != right {
-		t.Errorf("the offers end at %d, the panel's room at %d", last.X+last.W, right)
+	if right := FormGrip(panel).X + inset; last.X+last.W != right {
+		t.Errorf("the offers end at %d, short of the form's grip at %d", last.X+last.W, right)
 	}
 	shot := drawn(t, w)
 	verb := ButtonIn(along[0])
@@ -1518,7 +1507,7 @@ func TestAnAnswerThatDestroysIsRed(t *testing.T) {
 }
 
 func TestTheCommandBarIsARoundedPanelWithItsHintsAtTheRight(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := aFixturesBoard(t)
 	bar := w.Layout().Bar
 	shot := drawn(t, w)
 	if painted(shot, Box{X: bar.X, Y: bar.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
@@ -1535,9 +1524,7 @@ func TestTheCommandBarIsARoundedPanelWithItsHintsAtTheRight(t *testing.T) {
 }
 
 func TestTheCardInHandIsRaised(t *testing.T) {
-	w := holding(newFake(),
-		engine.Card{Number: 1, Title: "First", State: "todo"},
-		engine.Card{Number: 2, Title: "Second", State: "backlog"})
+	w := aFixturesBoard(t)
 	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(middleOf(w, 1, 0))
 	shot := drawn(t, w)
 	ghost, _ := w.Ghost()
@@ -1646,7 +1633,7 @@ func inkGaps(shot *image.RGBA, chip Box) (int, int) {
 }
 
 func TestAKeyIsCentredOnItsChipWhateverItsGlyphs(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"}).OnSystem("darwin")
+	w := aFixturesBoard(t).OnSystem("darwin")
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("e")
 	shot := drawn(t, w)
 	for i, offer := range w.Offers() {

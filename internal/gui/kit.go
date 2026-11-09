@@ -2,6 +2,7 @@ package gui
 
 import (
 	"image"
+	"strings"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -19,6 +20,7 @@ type Kit struct {
 	drawn *Drawn
 	in    string
 	ruler Measure
+	shown *Box
 }
 
 // NewKit is a kit drawing on the board in that skin, recording into drawn.
@@ -48,7 +50,13 @@ func (k Kit) measured() Measure {
 	return k.ruler
 }
 
-func (k Kit) within(at Box) clip.Stack { return clip.Rect(rect(at)).Push(k.gtx.Ops) }
+func (k Kit) within(at Box) (Kit, clip.Stack) {
+	if k.shown != nil {
+		at = common(*k.shown, at)
+	}
+	k.shown = &at
+	return k, clip.Rect(rect(at)).Push(k.gtx.Ops)
+}
 
 func (k Kit) faded(by float32) paint.OpacityStack { return paint.PushOpacity(k.gtx.Ops, by) }
 
@@ -57,16 +65,21 @@ func (k Kit) shifted(down int) op.TransformStack {
 }
 
 func (k Kit) put(part string, at Box) Box {
-	k.drawn.Put(k.in+part, at, k.layer)
+	seen := at
+	if k.shown != nil {
+		seen = common(*k.shown, at)
+	}
+	k.drawn.Put(k.in+part, seen, k.layer)
 	return at
 }
 
 // Layer is one of the planes the window is drawn in, each over the one before.
 type Layer int
 
-// The layers, from the board up.
+// The layers, from the window's own back up.
 const (
-	LayerBoard Layer = iota
+	LayerBack Layer = iota - 1
+	LayerBoard
 	LayerBar
 	LayerDrag
 	LayerPanel
@@ -90,3 +103,46 @@ func (d *Drawn) Put(part string, at Box, on Layer) {
 
 // All is every part recorded, in the order it was drawn.
 func (d *Drawn) All() []Drawing { return d.all }
+
+// Overlaps is every pair of parts on one layer, under one parent, whose boxes cross. A part's parent is the last part drawn before it under the name it is inside, and is never compared with it; a part drawn over the whole of its parent — a ring, a dashed line — is its frame, and is compared with nothing.
+func (d *Drawn) Overlaps() [][2]Drawing {
+	parents := make([]int, len(d.all))
+	for i, one := range d.all {
+		parents[i] = -1
+		for j := i - 1; j >= 0; j-- {
+			if d.all[j].Part == parentOf(one.Part) {
+				parents[i] = j
+				break
+			}
+		}
+	}
+	framing := func(i int) bool { return parents[i] >= 0 && d.all[parents[i]].At == d.all[i].At }
+	var crossed [][2]Drawing
+	for i, a := range d.all {
+		for j := i + 1; j < len(d.all); j++ {
+			b := d.all[j]
+			if a.Layer == b.Layer && parents[i] == parents[j] && parentOf(a.Part) == parentOf(b.Part) && !framing(i) && !framing(j) && cross(a.At, b.At) {
+				crossed = append(crossed, [2]Drawing{a, b})
+			}
+		}
+	}
+	return crossed
+}
+
+func parentOf(part string) string {
+	at := strings.LastIndex(part, "/")
+	if at < 0 {
+		return ""
+	}
+	return part[:at]
+}
+
+func cross(a, b Box) bool {
+	seen := common(a, b)
+	return seen.W > 0 && seen.H > 0
+}
+
+func common(a, b Box) Box {
+	x, y := max(a.X, b.X), max(a.Y, b.Y)
+	return Box{X: x, Y: y, W: max(0, min(a.X+a.W, b.X+b.W)-x), H: max(0, min(a.Y+a.H, b.Y+b.H)-y)}
+}

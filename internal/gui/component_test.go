@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -499,7 +500,7 @@ func TestAKeyOnAPickedRowStandsOutFromTheRow(t *testing.T) {
 	shot := drawn(t, w)
 	row := MenuRowAt(w.MenuBox(), w.MenuOn())
 	for _, d := range partsDrawn(w) {
-		if d.Part != "row/key" || d.At.Y < row.Y || d.At.Y+d.At.H > row.Y+row.H {
+		if !strings.HasSuffix(d.Part, "row/key") || d.At.Y < row.Y || d.At.Y+d.At.H > row.Y+row.H {
 			continue
 		}
 		chip := pixel(shot, d.At.X+d.At.W/2, d.At.Y+1)
@@ -509,4 +510,16 @@ func TestAKeyOnAPickedRowStandsOutFromTheRow(t *testing.T) {
 		return
 	}
 	t.Fatal("the picked row draws no key")
+}
+
+func TestACardRecordsWhereItWritesItsNumberAndItsFacts(t *testing.T) {
+	face := engine.Card{Number: 10, Title: "Write the scenario", State: "todo", Estimate: "2d"}
+	_, drawn, p := cardDrawn(t, Card{Face: face})
+	laid := CardRowOf(face, p.Number, Measured(Theme()), time.Time{}, engine.Pages{})
+	number := Box{X: p.Number.X, Y: p.Number.Y, W: monoWide(laid.Number, small), H: p.Number.H}
+	for _, want := range []Drawing{{Part: "card/number", At: number}, {Part: "card/facts", At: laid.FactsAt}} {
+		if !slices.Contains(drawn, want) {
+			t.Errorf("the card recorded no %s at %+v: %v", want.Part, want.At, drawn)
+		}
+	}
 }

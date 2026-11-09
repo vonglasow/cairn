@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -43,6 +44,11 @@ func onTheFixtures(t *testing.T) engine.Work {
 	return held
 }
 
+func aFixturesBoard(t *testing.T) Window {
+	t.Helper()
+	return New(onTheFixtures(t), 1200, 800).At(time.Now()).Look()
+}
+
 func textDrawn(w Window) []saidAt {
 	var noted []saidAt
 	was := noteSaid
@@ -71,6 +77,18 @@ func textDrawn(w Window) []saidAt {
 	return noted
 }
 
+var pinnedSizes = []image.Point{{Narrowest, Shortest}, {1200, 800}}
+
+func (w Window) choosingFirstList() Window {
+	for at, f := range w.form.Fields() {
+		if chosenFromAList(f) {
+			w.form = w.form.onto(at)
+			return w.choosingList()
+		}
+	}
+	return w
+}
+
 func everyScreen(w Window) []struct {
 	name string
 	w    Window
@@ -87,18 +105,33 @@ func everyScreen(w Window) []struct {
 		{"the objectives", w.onPage(Objectives)},
 		{"the time", w.onPage(Time)},
 		{"the labels", w.listingLabels()},
-		{"the backups", w.listingBackups()},
+		{"the backups", w.backingUp().listingBackups()},
 		{"the filters", w.filteringBoard()},
 		{"the configuration", w.openingConfiguration()},
 		{"the command bar", w.openingPalette()},
+		{"a card's menu", card.Key("m")},
+		{"a card's labels", card.Key("l")},
+		{"a card's calendar", card.Key("t")},
+		{"a list chosen from", card.Edit().choosingFirstList()},
+		{"a question", card.Key("shift+x")},
+		{"the switcher", w.openingSwitcher()},
+		{"a chosen objective", w.onPage(Objectives).Key("right")},
+		{"an objective's form", w.onPage(Objectives).Key("right").Edit()},
+		{"a task's trace", card.Edit().togglingTrace()},
+		{"the week", w.onPage(Time)},
+		{"the week before", w.onPage(Time).Key("left")},
+		{"a day", w.onPage(Time).ranged("Day")},
+		{"the month", w.onPage(Time).ranged("Month")},
+		{"the months", func() Window { m := w.onPage(Time).ranged("Month"); m.grid = viewMonths; return m }()},
+		{"the years", func() Window { m := w.onPage(Time).ranged("Month"); m.grid = viewYears; return m }()},
 	}
 }
 
 func TestTheFixturesDrawEveryTextWhereItFits(t *testing.T) {
 	work := onTheFixtures(t)
-	for _, size := range []image.Point{{Narrowest, Shortest}, {1200, 800}} {
+	for _, size := range pinnedSizes {
 		var wrong []string
-		for _, s := range everyScreen(New(work, size.X, size.Y).Look()) {
+		for _, s := range everyScreen(New(work, size.X, size.Y).At(time.Now()).Look()) {
 			drawn := textDrawn(s.w)
 			for _, one := range drawn {
 				if one.box.W <= 0 || one.box.H <= 0 {

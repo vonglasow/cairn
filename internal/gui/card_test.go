@@ -297,3 +297,32 @@ func TestALabelsNameStandsInTheMiddleOfItsPill(t *testing.T) {
 		t.Errorf("release stands %d under its pill's top and %d over its foot", above, under)
 	}
 }
+
+func TestTheFactsGiveTheirLastPiecesUpBeforeTheyCoverTheNumber(t *testing.T) {
+	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
+	c := engine.Card{Number: 10, Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
+	m := holding(newFake()).measured()
+	whole, _ := Facts(c, now, engine.Pages{})
+	number := monoWide("#10", small) + 2*pillGap
+	for _, c2 := range []struct {
+		room  int
+		facts string
+		late  bool
+	}{
+		{number + mixedWide(m, whole, small), whole, true},
+		{number + mixedWide(m, "2d  9h/2h", small), "2d  9h/2h", true},
+		{number + mixedWide(m, "2d", small), "2d", false},
+		{number + mixedWide(m, "2d", small) - 1, "", false},
+	} {
+		row := CardRowOf(c, Box{W: c2.room, H: lineHigh}, m, now, engine.Pages{})
+		if row.Facts != c2.facts || row.Late != c2.late {
+			t.Errorf("in %d the facts say %q late %v, want %q %v", c2.room, row.Facts, row.Late, c2.facts, c2.late)
+		}
+		if row.Facts != "" && row.FactsAt.X < row.NumberAt.X+row.NumberAt.W {
+			t.Errorf("in %d the facts at %+v cover the number at %+v", c2.room, row.FactsAt, row.NumberAt)
+		}
+		if strings.Contains(row.Facts, ServesMark) != (row.ServesAt != Box{}) {
+			t.Errorf("in %d the facts %q mark what they serve at %+v", c2.room, row.Facts, row.ServesAt)
+		}
+	}
+}

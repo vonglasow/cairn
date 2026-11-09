@@ -105,6 +105,7 @@ const (
 // CardRow is how a card's row is laid out: the number it starts with, each label's pill, the pill counting the labels left out, and its facts at the right end.
 type CardRow struct {
 	Number   string
+	NumberAt Box
 	Shown    []string
 	Pills    []Box
 	More     Box
@@ -121,12 +122,18 @@ func CardRowOf(c engine.Card, row Box, m Measure, now time.Time, pages engine.Pa
 	if c.Described() {
 		out.Number += " " + Marks().Described
 	}
-	x := row.X + monoWide(out.Number, small) + 2*pillGap
+	out.NumberAt = Box{X: row.X, Y: row.Y, W: monoWide(out.Number, small), H: row.H}
+	x := row.X + out.NumberAt.W + 2*pillGap
 	end := row.X + row.W
-	out.Facts, out.Late = Facts(c, now, pages)
+	pieces := factsOf(c, now, pages)
+	out.Facts, out.Late = joined(pieces)
+	for out.Facts != "" && mixedWide(m, out.Facts, small) > end-x {
+		pieces = pieces[:len(pieces)-1]
+		out.Facts, out.Late = joined(pieces)
+	}
 	if out.Facts != "" {
 		out.FactsAt = FactsAt(row, mixedWide(m, out.Facts, small))
-		if serves := Serves(c); serves != "" {
+		if serves := Serves(c); serves != "" && strings.HasSuffix(out.Facts, serves) {
 			wide := mixedWide(m, serves, small)
 			out.ServesAt = Box{X: out.FactsAt.X + out.FactsAt.W - wide, Y: row.Y, W: wide, H: row.H}
 		}
@@ -281,22 +288,38 @@ func Standing(g engine.Goal) string {
 
 // Facts is the right-hand end of a card's label row: when it is wanted, what it has cost against what it was reckoned to cost while the time is shown, and what it serves.
 func Facts(c engine.Card, now time.Time, pages engine.Pages) (said string, warn bool) {
+	return joined(factsOf(c, now, pages))
+}
+
+type fact struct {
+	said string
+	warn bool
+}
+
+func factsOf(c engine.Card, now time.Time, pages engine.Pages) []fact {
 	if c.Freed {
-		return FreedMark, true
+		return []fact{{FreedMark, true}}
 	}
-	var pieces []string
-	due, late := Due(c, now)
-	if due != "" {
-		pieces = append(pieces, due)
+	var pieces []fact
+	if due, late := Due(c, now); due != "" {
+		pieces = append(pieces, fact{due, late})
 	}
-	spent, over := pages.Cost(c)
-	if spent != "" {
-		pieces = append(pieces, spent)
+	if spent, over := pages.Cost(c); spent != "" {
+		pieces = append(pieces, fact{spent, over})
 	}
 	if serves := Serves(c); serves != "" {
-		pieces = append(pieces, serves)
+		pieces = append(pieces, fact{serves, false})
 	}
-	return strings.Join(pieces, "  "), late || over
+	return pieces
+}
+
+func joined(pieces []fact) (said string, warn bool) {
+	var words []string
+	for _, piece := range pieces {
+		words = append(words, piece.said)
+		warn = warn || piece.warn
+	}
+	return strings.Join(words, "  "), warn
 }
 
 // StandingPill is where an objective's card draws its standing: the first pill of its row, where a task's first label stands.

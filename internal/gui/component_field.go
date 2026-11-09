@@ -26,7 +26,7 @@ func paintHeld(k Kit, box Box, said Written, size int) {
 }
 
 func writing(k Kit, m Measure, b Box, said Written, carets bool, size, rows, scrolled int) {
-	clipped := k.within(b)
+	_, clipped := k.within(b)
 	defer clipped.Pop()
 
 	at := said.At

@@ -1079,6 +1079,18 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the day "([^"]*)" writes its total whole, clear of its date$`, func(day string) error {
+		i, err := weekday(day)
+		if err != nil {
+			return err
+		}
+		box := WeekDayAt(w.w.Layout(), i)
+		total, date := WeekTotalAt(box, w.w.measured()), TodayPill(WeekHeadAt(box), w.w.measured())
+		if said := w.w.DayHeld(i).Says(); total.W < monoWide(said, small) || cross(total, date) || total.X+total.W > box.X+box.W {
+			return fmt.Errorf("%s writes %q in %+v, its date at %+v, the day %+v", day, said, total, date, box)
+		}
+		return nil
+	})
 	sc.Then(`^the day "([^"]*)" has more to show than it has room for$`, func(day string) error {
 		i, err := weekday(day)
 		if err != nil {
