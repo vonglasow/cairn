@@ -895,14 +895,15 @@ func drawCalendarMark(gtx layout.Context, mark Box, ink color.NRGBA) {
 	fill(gtx, Box{X: mark.X, Y: mark.Y + 1, W: mark.W, H: 3}, ink)
 }
 
-func drawCairn(gtx layout.Context, mark Box, ink color.NRGBA) {
-	scale := float32(mark.W) / 14
-	for _, stone := range [][4]float32{{7, 11.4, 5.6, 2.1}, {7.3, 7.3, 4, 1.8}, {6.8, 3.6, 2.5, 1.5}} {
-		x, y := float32(mark.X)+stone[0]*scale, float32(mark.Y)+stone[1]*scale
-		rx, ry := stone[2]*scale, stone[3]*scale
-		oval := clip.Ellipse{Min: image.Pt(int(x-rx), int(y-ry)), Max: image.Pt(int(x+rx+0.5), int(y+ry+0.5))}
-		paint.FillShape(gtx.Ops, ink, oval.Op(gtx.Ops))
-	}
+func drawFocusMark(gtx layout.Context, mark Box, ink color.NRGBA) {
+	glow := GlowOf(mark)
+	disc(gtx, glow.X, glow.Y, glow.Halo, HaloOf(ink))
+	disc(gtx, glow.X, glow.Y, glow.Dot, ink)
+}
+
+func disc(gtx layout.Context, x, y, r float32, ink color.NRGBA) {
+	round := clip.Ellipse{Min: image.Pt(int(x-r+0.5), int(y-r+0.5)), Max: image.Pt(int(x+r+0.5), int(y+r+0.5))}
+	paint.FillShape(gtx.Ops, ink, round.Op(gtx.Ops))
 }
 
 func drawCard(gtx layout.Context, th *material.Theme, skin Skin, w Window, box Box, c engine.Card, chosen, hovered bool) {
@@ -931,7 +932,7 @@ func drawCard(gtx layout.Context, th *material.Theme, skin Skin, w Window, box B
 		sayStyled(gtx, th, skin.Writing(c), Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
 	}
 	if mark, ok := FocusMark(c, parts.Title); ok {
-		drawCairn(gtx, mark, skin.Chosen)
+		drawFocusMark(gtx, mark, skin.Chosen)
 	}
 
 	mono := font.Font{Typeface: MonoFace}

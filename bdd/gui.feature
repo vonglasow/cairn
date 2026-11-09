@@ -3835,6 +3835,13 @@ Feature: The desktop board
       When I open the window
       Then the card "Write the spec" says it is being worked on
 
+    @gui-the-card-in-focus-carries-a-glowing-dot
+    Scenario: the card in focus carries a glowing dot at the right of its first line
+      Given I added a task titled "Write the spec"
+      And I put task 1 in focus
+      When I open the window
+      Then the card "Write the spec" carries a glowing dot at the right of its first line
+
   Rule: A key does what the bar offers, where the bar offers it
 
     @gui-the-command-bar-names-what-is-chosen

@@ -897,14 +897,18 @@ walks the fields, as it does in the terminal.
 The columns stand a gap clear of that band. Against it, the tabs read as the
 board's first row.
 
-**A card in focus carries a cairn at the right of its first line.** The terminal board's eleven
+**The card in focus carries a glowing dot at the right of its first line.** The terminal board's eleven
 marks were left out of this window on purpose; this one earns its place
 because it cannot be worked out by looking: a card gives no sign that somebody
-— or some agent session — is on it. A small cairn of three stones, in the
-accent, stands at the right end of the title's first line, where the eye
-finds it in the same place on every card; the first line makes room for it
-and the second keeps the card's whole width (`FocusMark`, `TitleRoom`). It
-followed the last word of the title, and so moved from card to card. The card
+— or some agent session — is on it. A glowing dot in the accent — a dot of
+3.4 in a halo of 6 of the same ink at three tenths, drawn in fourteen and
+scaled to its box (`GlowOf`, `HaloOf`) — stands at the right end of the
+title's first line, where the eye finds it in the same place on every card;
+the first line makes room for it and the second keeps the card's whole width
+(`FocusMark`, `TitleRoom`, `@gui-the-card-in-focus-carries-a-glowing-dot`).
+It was a small cairn of three stones; the dot replaced it, chosen among nine
+proposals, in the same box, so nothing around it moved. It followed the last word of the title, and so
+moved from card to card. The card
 stands on the tint: the eye after its number was a pictogram nobody read as being
 worked on, and was too small to find from across the board. `f` focuses or
 unfocuses the chosen task, under the same key the terminal board uses.

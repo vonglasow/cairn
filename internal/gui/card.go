@@ -6,6 +6,7 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"image/color"
 	"strconv"
 	"strings"
 	"time"
@@ -170,7 +171,7 @@ const (
 	markSpace = 5
 )
 
-// FocusMark is where the cairn of a card in focus stands: at the right end of its title's first line.
+// FocusMark is where the glowing dot of a card in focus stands: at the right end of its title's first line.
 func FocusMark(c engine.Card, title Box) (Box, bool) {
 	if !c.InFocus {
 		return Box{}, false
@@ -178,7 +179,22 @@ func FocusMark(c engine.Card, title Box) (Box, bool) {
 	return Box{X: title.X + title.W - markSide, Y: title.Y + (lineHigh-markSide)/2, W: markSide, H: markSide}, true
 }
 
-// TitleRoom is how wide a card's title may run on its first line and on its second: the first less the cairn's room when the card is in focus.
+// Glow is the mark of a card in focus: a dot, centred, in a faint halo of the same ink.
+type Glow struct{ X, Y, Dot, Halo float32 }
+
+// GlowOf is the glow drawn in a mark's box: drawn in fourteen, a dot of 3.4 in a halo of 6, scaled to the box.
+func GlowOf(mark Box) Glow {
+	scale := float32(mark.W) / 14
+	return Glow{X: float32(mark.X) + 7*scale, Y: float32(mark.Y) + 7*scale, Dot: 3.4 * scale, Halo: 6 * scale}
+}
+
+// HaloOf is the ink of a glow's halo: its dot's, at three tenths of its opacity.
+func HaloOf(ink color.NRGBA) color.NRGBA {
+	ink.A = uint8(int(ink.A) * 3 / 10)
+	return ink
+}
+
+// TitleRoom is how wide a card's title may run on its first line and on its second: the first less the glowing dot's room when the card is in focus.
 func TitleRoom(c engine.Card, title Box) (int, int) {
 	if c.InFocus {
 		return title.W - markSide - markSpace, title.W

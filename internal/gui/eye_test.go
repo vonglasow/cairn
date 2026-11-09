@@ -2,24 +2,25 @@ package gui
 
 import (
 	"cairn/internal/engine"
+	"image/color"
 	"testing"
 )
 
-func TestACardInFocusStandsItsCairnAtTheRightOfItsFirstLine(t *testing.T) {
+func TestACardInFocusStandsItsGlowAtTheRightOfItsFirstLine(t *testing.T) {
 	title := Box{X: 100, Y: 200, W: 240, H: 2 * lineHigh}
 	mark, ok := FocusMark(engine.Card{InFocus: true}, title)
 	if !ok {
-		t.Fatal("a card in focus has no cairn")
+		t.Fatal("a card in focus has no glowing dot")
 	}
 	if mark.X+mark.W != title.X+title.W || mark.Y < title.Y || mark.Y+mark.H > title.Y+lineHigh || mark.W != markSide {
-		t.Errorf("the cairn is at %+v, not at the right of the first line of %+v", mark, title)
+		t.Errorf("the glowing dot is at %+v, not at the right of the first line of %+v", mark, title)
 	}
 	if _, ok := FocusMark(engine.Card{}, title); ok {
-		t.Error("a card nobody is on has a cairn")
+		t.Error("a card nobody is on has a glowing dot")
 	}
 }
 
-func TestOnlyTheFirstLineOfATitleInFocusMakesRoomForTheCairn(t *testing.T) {
+func TestOnlyTheFirstLineOfATitleInFocusMakesRoomForTheGlow(t *testing.T) {
 	title := Box{W: 120, H: 2 * lineHigh}
 	first, rest := TitleRoom(engine.Card{InFocus: true}, title)
 	if first != 120-markSide-markSpace || rest != 120 {
@@ -34,17 +35,17 @@ func TestOnlyTheFirstLineOfATitleInFocusMakesRoomForTheCairn(t *testing.T) {
 	}
 }
 
-func TestTheCairnIsDrawn(t *testing.T) {
+func TestTheGlowingDotIsDrawn(t *testing.T) {
 	on := engine.Card{Number: 1, Title: "Write the spec", State: "todo", InFocus: true}
 	off := engine.Card{Number: 2, Title: "Ship it", State: "todo"}
 	w := holding(newFake(), on, off)
 	shot := drawn(t, w)
 	l := w.Layout()
 	if got := painted(shot, PartsOf(l.CardAt(1, 0, 0)).Title, Dark().Chosen); got == 0 {
-		t.Error("the card in focus draws no cairn")
+		t.Error("the card in focus draws no glowing dot")
 	}
 	if got := painted(shot, PartsOf(l.CardAt(1, 1, 0)).Title, Dark().Chosen); got != 0 {
-		t.Errorf("the card nobody is on draws %d pixels of a cairn", got)
+		t.Errorf("the card nobody is on draws %d pixels of a glowing dot", got)
 	}
 }
 
@@ -106,5 +107,23 @@ func TestOnlyACardWithStepsDrawsItsBar(t *testing.T) {
 	}
 	if got := painted(shot, PartsOf(l.CardAt(1, 1, 0)).Steps, Dark().Pill); got != 0 {
 		t.Errorf("a card with no step draws %d pixels of a track", got)
+	}
+}
+
+func TestTheMarkOfACardInFocusIsADotInAFaintHaloOfItsOwnInk(t *testing.T) {
+	got := GlowOf(Box{X: 10, Y: 20, W: 14, H: 14})
+	if got != (Glow{X: 17, Y: 27, Dot: 3.4, Halo: 6}) {
+		t.Errorf("the glow in a box of 14 is %+v", got)
+	}
+	small := GlowOf(Box{X: 0, Y: 0, W: markSide, H: markSide})
+	if small.X-small.Halo < 0 || small.X+small.Halo > markSide || small.Y-small.Halo < 0 || small.Y+small.Halo > markSide {
+		t.Errorf("the halo %+v spills out of its box of %d", small, markSide)
+	}
+	if small.Dot >= small.Halo {
+		t.Errorf("the dot %+v is no smaller than its halo", small)
+	}
+	ink := color.NRGBA{R: 10, G: 20, B: 30, A: 200}
+	if halo := HaloOf(ink); halo != (color.NRGBA{R: 10, G: 20, B: 30, A: 60}) {
+		t.Errorf("the halo of %+v is %+v, not the same ink at 30%%", ink, halo)
 	}
 }

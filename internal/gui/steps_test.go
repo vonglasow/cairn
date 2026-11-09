@@ -2318,6 +2318,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^what is chosen has moved on one$`, w.chosenMovedOnOne)
 	sc.Then(`^what is chosen has moved down one row$`, w.chosenMovedDownARow)
 	sc.Then(`^the card "([^"]*)" says it is being worked on$`, w.cardSaysInFocus)
+	sc.Then(`^the card "([^"]*)" carries a glowing dot at the right of its first line$`, w.cardCarriesAGlow)
 	sc.Then(`^the card "([^"]*)" says "([^"]*)"$`, w.cardSays)
 	sc.Then(`^the card "([^"]*)" says nothing of "([^"]*)"$`, func(title, said string) error {
 		if err := w.cardSays(title, said); err == nil {
@@ -3536,7 +3537,27 @@ func (w *world) cardSaysInFocus(title string) error {
 		return fmt.Errorf("%q does not say it is being worked on", title)
 	}
 	if _, mark := FocusMark(c, Box{W: 200, H: 2 * lineHigh}); !mark {
-		return fmt.Errorf("the card for %q draws no cairn, and says nothing about being worked on", title)
+		return fmt.Errorf("the card for %q draws no glowing dot, and says nothing about being worked on", title)
+	}
+	return nil
+}
+
+func (w *world) cardCarriesAGlow(title string) error {
+	c, err := w.cardOf(title)
+	if err != nil {
+		return err
+	}
+	line := Box{X: 0, Y: 0, W: 200, H: 2 * lineHigh}
+	mark, ok := FocusMark(c, line)
+	if !ok {
+		return fmt.Errorf("the card for %q carries no mark at all", title)
+	}
+	glow := GlowOf(mark)
+	if glow.Dot <= 0 || glow.Halo <= glow.Dot {
+		return fmt.Errorf("the card for %q carries %+v, not a dot in a halo", title, glow)
+	}
+	if glow.X+glow.Halo > float32(line.W) || glow.X < float32(line.W-markSide) || glow.Y+glow.Halo > float32(lineHigh) {
+		return fmt.Errorf("the glow of %q is at %+v, not at the right of its first line", title, glow)
 	}
 	return nil
 }
