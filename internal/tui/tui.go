@@ -59,6 +59,7 @@ const (
 type Looked struct {
 	Snapshot engine.Snapshot
 	Err      error
+	Warned   []string
 }
 
 // Heard is the history of the task that is open, read when it opens and again whenever the board is read again — never while it is being drawn.
@@ -96,7 +97,8 @@ type Board struct {
 	task int
 	goal int
 
-	inside int
+	inside  int
+	segment int
 
 	typed    string
 	query    string
@@ -147,6 +149,11 @@ type Board struct {
 	spaceIn  string
 	newSpace string
 	keeping  engine.RecentFolder
+
+	warned    []string
+	deleting  *engine.Deleting
+	deleteRow int
+	refusing  string
 
 	err   error
 	noted *debug.Log
@@ -246,7 +253,7 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return b, tea.Batch(b.wonder(aged), tick())
 	case tea.KeyPressMsg:
 		key := keyName(m)
-		b.err, b.opened = nil, ""
+		b.err, b.opened, b.warned = nil, "", nil
 		if b.asking {
 			return b.pressed(key)
 		}
@@ -315,6 +322,7 @@ func (b Board) took(l Looked) Board {
 	stood := b.at(b.here())
 	b.snap = l.Snapshot
 	b.err = nil
+	b.warned = l.Warned
 	if b.form.asked != nil {
 		b = b.freshened()
 	}
@@ -345,15 +353,30 @@ func (b Board) standingAt(place int) int {
 }
 
 func (b Board) cards() []engine.Card {
+	found := b.unopened()
+	if b.inside == 0 {
+		return found
+	}
+	reach := b.snap.Reach(b.inside)
+	if segments := b.segments(); b.segment < len(segments) {
+		reach = segments[b.segment].Reach
+	}
+	return engine.Serving(found, reach...)
+}
+
+func (b Board) unopened() []engine.Card {
 	cards := b.snap.Cards
 	if kept, err := b.filters.Kept(cards); err == nil {
 		cards = kept
 	}
-	found := engine.Found(cards, b.query, b.archived)
-	if b.inside == 0 {
-		return found
+	return engine.Found(cards, b.query, b.archived)
+}
+
+func (b Board) references() []engine.Card {
+	if b.inside == 0 && !b.filters.NarrowsBy("objective") {
+		return nil
 	}
-	return engine.Serving(found, b.inside)
+	return engine.Blocking(b.cards(), engine.OnTheBoard(b.snap.Cards, b.archived))
 }
 
 func (b Board) here() []engine.Card {

@@ -8,6 +8,8 @@ import (
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/objective"
+
+	"charm.land/lipgloss/v2"
 )
 
 // StandingGlyph answers the mark an objective's state is drawn with.
@@ -51,16 +53,41 @@ func (b Board) goalFacts(g engine.Goal, width int) string {
 		told = append(told, day)
 		dressed = append(dressed, b.skin.Faint.Render(day))
 	}
-	for _, label := range g.Labels {
-		tag := b.glyphs.Label + " " + label
-		told = append(told, tag)
-		dressed = append(dressed, b.skin.Says.Render(tag))
+	if waits := b.waitsOn(g, false); waits != "" {
+		told = append(told, waits)
+		dressed = append(dressed, b.skin.Band.Render(waits))
 	}
 	rest := dress(Join("  ", width-room-2, told...), told, dressed)
 	if rest == "" {
 		return b.progress(g.Done, g.Total, room)
 	}
 	return b.progress(g.Done, g.Total, room) + "  " + rest
+}
+
+func (b Board) waitsOn(g engine.Goal, numbered bool) string {
+	var names []string
+	for _, n := range g.WaitsOn {
+		on, _ := b.snap.Goal(n)
+		if numbered {
+			names = append(names, "#"+strconv.Itoa(n)+" "+on.Title)
+			continue
+		}
+		names = append(names, on.Title)
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	return "waits on " + strings.Join(names, ", ")
+}
+
+func (b Board) typeLabels(g engine.Goal) (string, string) {
+	var told, dressed []string
+	for _, label := range g.Labels {
+		tag := b.glyphs.Label + " " + label
+		told = append(told, tag)
+		dressed = append(dressed, b.skin.Says.Render(tag))
+	}
+	return strings.Join(told, "  "), strings.Join(dressed, "  ")
 }
 
 // Bar draws how far along an objective is.
@@ -77,29 +104,24 @@ func Bar(done, total, width int) string {
 
 const barWidth = 28
 
-func (b Board) goalRows(g engine.Goal, width int) []string {
-	var rows []string
-	mark := goalMarks(g, b.glyphs)
-	if glyph := StandingGlyph(g.State, b.glyphs); glyph != "" {
-		mark = strings.Replace(mark, glyph,
-			b.skin.palette.Standing(g.State).Style().Render(glyph), 1)
-	}
-	rows = append(rows, Spread(b.skin.Faint.Render(strconv.Itoa(g.Number)), mark, width))
-	for _, line := range Wrap(g.Title, width, titleLines) {
-		rows = append(rows, b.skin.Bright.Render(line))
-	}
-	return append(rows, b.goalFacts(g, width))
-}
+const rowIndent = 3
 
-func goalMarks(g engine.Goal, gl Glyphs) string {
-	var found []string
-	if g.Described() {
-		found = append(found, gl.Described)
+func (b Board) goalRows(g engine.Goal, width int) []string {
+	mark := b.skin.palette.Standing(g.State).Style().Render(pad(StandingGlyph(g.State, b.glyphs), 1))
+	told, dressed := b.typeLabels(g)
+	if lipgloss.Width(told) > width/3 {
+		told, dressed = "", ""
 	}
-	if glyph := StandingGlyph(g.State, gl); glyph != "" {
-		found = append(found, glyph)
+	room := max(1, width-rowIndent-len(strconv.Itoa(g.Number))-2-lipgloss.Width(told)-2)
+	title := b.skin.Bright.Render(Clip(g.Title, room))
+	if g.Number == b.goal && b.tab == Objectives {
+		title = b.skin.Title.Render(Clip(g.Title, room))
 	}
-	return strings.Join(found, " ")
+	head := mark + "  " + b.skin.Faint.Render(strconv.Itoa(g.Number)) + "  " + title
+	return []string{
+		Spread(head, dressed, width),
+		strings.Repeat(" ", rowIndent) + b.goalFacts(g, width-rowIndent),
+	}
 }
 
 // Written is a day as a person reads it, or nothing when there is none.

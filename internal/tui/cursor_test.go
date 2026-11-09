@@ -210,17 +210,21 @@ func TestWalkingAnEmptyObjectivesList(t *testing.T) {
 }
 
 func TestTheObjectivesListScrollsToTheCursor(t *testing.T) {
-	b := hit(standing(manyGoals()), "tab")
+	f := newFake()
+	for i := 1; i <= 30; i++ {
+		f.goals = append(f.goals, engine.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active"})
+	}
+	b := hit(standing(f), "tab")
 	if b.goalAt != 0 {
 		t.Fatalf("the list opened scrolled to %d", b.goalAt)
 	}
-	for range 8 {
+	for range 28 {
 		b = hit(b, "j")
 	}
 	if b.goalAt == 0 {
 		t.Fatal("the list never scrolled, so the last objective is off screen")
 	}
-	for range 8 {
+	for range 28 {
 		b = hit(b, "k")
 	}
 	if b.goalAt != 0 {

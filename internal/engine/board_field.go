@@ -61,6 +61,8 @@ var typedLike = map[string]string{
 	"objective title":    "Ship cairn 1.0",
 	"objective label":    "product",
 	"objective deadline": "2026-12-25",
+	"objective parent":   "4",
+	"objective waits-on": "3 5",
 	"objective estimate": "40h",
 }
 
@@ -81,9 +83,18 @@ func GoalFields(g Goal) []Field {
 		{Name: "standing", Arg: "state", Value: g.State, Choices: Standings},
 		{Name: "priority", Arg: "priority", Value: g.Priority, Choices: Priorities()},
 		{Name: "labels", Arg: "label", Value: strings.Join(g.Labels, " ")},
+		{Name: "parent", Arg: "parent", Value: parentWritten(g.Parent)},
+		{Name: "waits on", Arg: "waits-on", Value: Numbers(g.WaitsOn)},
 		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(g.Deadline)},
 		{Name: "estimate", Arg: "estimate", Value: g.Estimate},
 	})
+}
+
+func parentWritten(n int) string {
+	if n == 0 {
+		return ""
+	}
+	return strconv.Itoa(n)
 }
 
 // States is the closed set a column is picked from, read off the domain rather than listed again here.

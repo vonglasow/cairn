@@ -16,15 +16,15 @@
  │                                                  >                                             │
  │   priority                                                                                     │
  │   high                                           objectives                                    │
- │                                                  >                                             │
- │   labels                                                                                       │
- │   > spec                                         steps · 2 lines                               │
- │                                                    1 #2 [ ] Get the client's nod               │
- │   blockers                                         2 #1 [x] Draft the columns                  │
- │   >                                                                                            │
  │                                                                                                │
- │   links                                            save     cancel                             │
- │   >                                                                                            │
+ │   labels                                         >                                             │
+ │   > spec                                                                                       │
+ │                                                  steps · 2 lines                               │
+ │   blockers                                         1 #2 [ ] Get the client's nod               │
+ │   >                                                2 #1 [x] Draft the columns                  │
+ │                                                                                                │
+ │   links                                                                                        │
+ │   >                                                save     cancel                             │
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 

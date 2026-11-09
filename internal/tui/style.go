@@ -93,6 +93,16 @@ func (l Skin) Card(width int, priority string, focused, chosen bool) lipgloss.St
 	return style
 }
 
+// Reference is the frame of a card kept in sight only as what is in the way: dashed, and never the one chosen.
+func (l Skin) Reference(width int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Border(lipgloss.Border{Top: "┄", Bottom: "┄", Left: "┆", Right: "┆",
+			TopLeft: "┌", TopRight: "┐", BottomLeft: "└", BottomRight: "┘"}).
+		BorderForeground(l.palette.Line.Border()).
+		Width(width).
+		Padding(0, 1)
+}
+
 // Ink is how one thing is drawn: in one of the terminal's own accents, or in its own foreground, faint or not.
 type Ink struct {
 	Colour color.Color
@@ -151,6 +161,12 @@ var Default = Palette{
 	Line:     quiet,
 	Accent:   Ink{Colour: lipgloss.Blue},
 	Stalled:  Ink{Colour: lipgloss.Yellow},
+}
+
+// Faded is the palette a reference is drawn with: every ink quiet, since it stands for a task kept in sight, not one of those counted.
+var Faded = Palette{
+	Low: quiet, Normal: quiet, High: quiet, Critical: quiet, Blocked: quiet, Watching: quiet, Paused: quiet,
+	Reached: quiet, Late: quiet, Faint: quiet, Bright: quiet, Line: quiet, Accent: quiet, Stalled: quiet,
 }
 
 // LabelsInTheTerminal are the fourteen label colours, each as the nearest of the terminal's own accents.

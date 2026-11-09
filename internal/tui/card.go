@@ -68,6 +68,11 @@ func facts(c engine.Card, g Glyphs, s Skin, now time.Time, width int) string {
 		told = append(told, tag)
 		dressed = append(dressed, s.Says.Render(tag))
 	}
+	for _, name := range c.Serves {
+		mark := g.Serves + " " + name
+		told = append(told, mark)
+		dressed = append(dressed, s.Says.Render(mark))
+	}
 	return withMore(told, dressed, s, width)
 }
 

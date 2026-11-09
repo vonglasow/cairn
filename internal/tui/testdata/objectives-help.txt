@@ -6,17 +6,18 @@
  │ NORMAL — the cursor on an objective         │ │ PRIORITY — the left edge of a card          │
  │   hjkl ←↓↑→   change objective              │ │   ▌ low                                     │
  │   gg / G      first / last                  │ │   ▌ normal                                  │
- │   ⏎           open it                       │ │   ▌ high                                    │
- │   a           a new objective               │ │   ▌ critical                                │
- │   e           the form                      │ │                                             │
- │   D           delete                        │ │ STALLED — the top right of a card           │
- │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │
- │   ⇥           next tab                      │ │   ◉  watching  handed over, needs a look    │
- │   :           command                       │ │   ‖  paused    waiting on your decision     │
- │   ?           help                          │ │                                             │
- ╰─────────────────────────────────────────────╯ │ OBJECTIVES                                  │
-                                                 │   ▶  active    being worked towards         │
-                                                 │   ‖  on-hold   not for now                  │
+ │   ⏎           open it — [ ] walk its sub-   │ │   ▌ high                                    │
+ │ objectives there                            │ │   ▌ critical                                │
+ │   t           its tasks, on the tasks board │ │                                             │
+ │   a           a new objective               │ │ STALLED — the top right of a card           │
+ │   e           the form                      │ │   ⊘  blocked   waiting on somebody else     │
+ │   D           delete — it asks what goes    │ │   ◉  watching  handed over, needs a look    │
+ │ with it                                     │ │   ‖  paused    waiting on your decision     │
+ │   /           search                        │ │                                             │
+ │   ⇥           next tab                      │ │ OBJECTIVES — a tree, sub-objectives under   │
+ │   :           command                       │ │ ├─ └─                                       │
+ │   ?           help                          │ │   ▶  active    being worked towards         │
+ ╰─────────────────────────────────────────────╯ │   ‖  on-hold   not for now                  │
                                                  │   ✓  reached   done with                    │
                                                  │   ✕  dropped   given up                     │
                                                  │                                             │
@@ -25,14 +26,13 @@
                                                  │   ▪            steps done / total           │
                                                  │   ⚑            a label                      │
                                                  │   ↳            what is in the way           │
+                                                 │   ◇            the objective it serves      │
+                                                 │   ┆ ┆         in the way, from outside: not │
+                                                 │ counted                                     │
                                                  │   2d          a deadline close by           │
                                                  │   −3d         one that has passed           │
                                                  │   ╔═╗         the task in focus             │
                                                  ╰─────────────────────────────────────────────╯
-
-
-
-
 
 
 

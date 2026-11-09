@@ -225,8 +225,8 @@ sub-objectives too, and `--itself` keeps to the parent alone
 (`@objective-sub-task-list-reaches-the-sub-objectives`); an agent passes
 `itself` to `task_list`. A parent's tasks are its subtree's, as its numbers
 count them; a listing that said fewer would disagree with the count. The
-boards' filter still reaches the objective named alone, until the boards are
-built for two levels.
+boards' objective filter reaches the same subtree, and offers a parent's
+"itself" beside it; see [tui.md](tui.md#objectives).
 
 **Reached is proposed, never put.** A parent is proposed as reached when every
 sub-objective is: the act that reached the last one says so —
@@ -328,13 +328,14 @@ detached, deleted — is traced on the task, as any change to it is.
 
 ### Decided, not built yet
 
-**On screen.** The window's Objectives tab becomes a tree on the left — each
-level-one objective with its sub-objectives indented under it — and the chosen
-objective on the right, its numbers over the union; the terminal's tab, rows in
-a tree rather than cards. A grid cannot show what sits under what. A card names
-the objective it is directly attached to, by name — `◇ Firmware` — whether a
-level-one objective or a sub-objective; hovering gives the whole path, which is
-too long for a card. "Show its tasks" narrows the board to an objective and its
-sub-objectives with the filter that exists. The mockup is the reference: every
-screen is checked against it at the end of #226. Until then the boards count
-over the union like the command line, and draw the objectives flat.
+**On screen, in the window.** The window's Objectives tab becomes a tree on the
+left — each level-one objective with its sub-objectives indented under it — and
+the chosen objective on the right, its numbers over the union. A grid cannot
+show what sits under what. Hovering a card's `◇ Firmware` gives the whole path,
+which is too long for a card. The mockup is the reference: every screen is
+checked against it at the end of #226. Until then the window draws the
+objectives flat.
+
+The terminal's board is built: rows in a tree, the sub-objectives as chips on
+an objective's board, `◇ Firmware` on a card, "show its tasks", and the
+deletion asked row by row — see [tui.md](tui.md#objectives).

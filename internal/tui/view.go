@@ -37,6 +37,9 @@ func (b Board) Draw() string {
 	case OnWorkspaces:
 		return b.drawSwitcher()
 	}
+	if b.deleting != nil {
+		return b.drawDeleting()
+	}
 	return b.drawBoard()
 }
 
@@ -108,6 +111,7 @@ func (b Board) modeName() string {
 
 func (b Board) tasksBoard(l Layout) []string {
 	all, band := engine.Deal(b.cards(), b.archived)
+	far, farBand := engine.Deal(b.references(), b.archived)
 	top := l.Top
 	var out []string
 	if b.inside != 0 {
@@ -120,14 +124,14 @@ func (b Board) tasksBoard(l Layout) []string {
 		columns = append(columns, strings.Join([]string{
 			b.header(column.Name, len(column.Cards), l.Column, under),
 			b.rule(l.Column, under),
-			b.stack(column.Cards, l, top, b.offsets[i]),
+			b.stack(column.Cards, far[i].Cards, l, top, b.offsets[i]),
 		}, "\n"))
 	}
 	out = append(out, lipgloss.NewStyle().PaddingLeft(margin).Render(b.apart(columns)))
-	return append(out, b.bandRows(band, l)...)
+	return append(out, b.bandRows(band, farBand, l)...)
 }
 
-func (b Board) bandRows(band []engine.Card, l Layout) []string {
+func (b Board) bandRows(band, far []engine.Card, l Layout) []string {
 	offset := margin + l.Column + 1
 	under := strings.Repeat(" ", offset)
 	held := b.inBand && b.mode == Normal
@@ -138,7 +142,7 @@ func (b Board) bandRows(band []engine.Card, l Layout) []string {
 	return []string{
 		under + head,
 		under + b.rule(l.Band, held),
-		lipgloss.NewStyle().PaddingLeft(offset).Render(b.across(band, l)),
+		lipgloss.NewStyle().PaddingLeft(offset).Render(b.across(band, far, l)),
 	}
 }
 
@@ -156,35 +160,61 @@ func (b Board) rule(width int, under bool) string {
 	return b.skin.Rule.Render(strings.Repeat("─", width))
 }
 
-func (b Board) across(cards []engine.Card, l Layout) string {
-	return through(b.laidOut(cards, l), l.Band, l.Rows, b.bandAt)
+func (b Board) across(cards, far []engine.Card, l Layout) string {
+	return through(b.laidOut(cards, far, l), l.Band, l.Rows, b.bandAt)
 }
 
-func (b Board) laidOut(cards []engine.Card, l Layout) string {
+func (b Board) laidOut(cards, far []engine.Card, l Layout) string {
 	wide := engine.Columns - 1
+	drawn := make([]string, 0, len(cards)+len(far))
+	for _, c := range cards {
+		drawn = append(drawn, b.card(c, l))
+	}
+	for _, c := range far {
+		drawn = append(drawn, b.reference(c, l))
+	}
 	var rows []string
-	for at := 0; at < len(cards); at += wide {
-		end := min(at+wide, len(cards))
-		drawn := make([]string, 0, wide)
-		for _, c := range cards[at:end] {
-			drawn = append(drawn, b.card(c, l))
-		}
-		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, spaced(drawn)...))
+	for at := 0; at < len(drawn); at += wide {
+		end := min(at+wide, len(drawn))
+		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, spaced(drawn[at:end])...))
 	}
 	return strings.Join(rows, "\n")
 }
 
-func (b Board) stack(cards []engine.Card, l Layout, rows, at int) string {
-	drawn := make([]string, 0, len(cards))
+func (b Board) stack(cards, far []engine.Card, l Layout, rows, at int) string {
+	drawn := make([]string, 0, len(cards)+len(far))
 	for _, c := range cards {
 		drawn = append(drawn, b.card(c, l))
+	}
+	for _, c := range far {
+		drawn = append(drawn, b.reference(c, l))
 	}
 	return through(strings.Join(drawn, "\n"), l.Column, rows, at)
 }
 
 func (b Board) card(c engine.Card, l Layout) string {
 	return b.skin.Card(l.Column, c.Priority, c.InFocus, b.chosen(c)).
-		Render(strings.Join(Rows(c, b.glyphs, b.skin, b.now(), l.Interior), "\n"))
+		Render(strings.Join(Rows(b.servingNamed(c), b.glyphs, b.skin, b.now(), l.Interior), "\n"))
+}
+
+func (b Board) reference(c engine.Card, l Layout) string {
+	rows := Rows(b.servingNamed(c), b.glyphs, SkinOf(Faded), b.now(), l.Interior)
+	return b.skin.Reference(l.Column).Render(strings.Join(rows, "\n"))
+}
+
+func (b Board) servingNamed(c engine.Card) engine.Card {
+	opened, found := b.snap.Goal(b.inside)
+	if b.inside == 0 || !found {
+		return c
+	}
+	var kept []string
+	for _, name := range c.Serves {
+		if name != opened.Title {
+			kept = append(kept, name)
+		}
+	}
+	c.Serves = kept
+	return c
 }
 
 func through(content string, width, height, at int) string {
@@ -213,36 +243,70 @@ func spaced(parts []string) []string {
 }
 
 func (b Board) insideBand() string {
-	for _, g := range b.snap.Goals {
-		if g.Number != b.inside {
+	g, found := b.snap.Goal(b.inside)
+	if !found {
+		return ""
+	}
+	mark := b.skin.palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs) + " " + g.State)
+	right := mark + " "
+	if waits := b.waitsOn(g, true); waits != "" {
+		right = b.skin.Band.Render(waits) + "   " + right
+	}
+	head := Spread(" "+b.skin.Title.Render(strconv.Itoa(g.Number)+"   "+g.Title), right, b.width)
+	line := " " + b.progress(g.Done, g.Total, barWidth) + "  " + b.skin.Faint.Render(g.Counted())
+	if chips := b.chips(); chips != "" {
+		line += "   " + chips
+	}
+	return head + "\n" + Clip(line, b.width)
+}
+
+func (b Board) chips() string {
+	segments := b.segments()
+	said := make([]string, 0, len(segments))
+	for i, seg := range segments {
+		chip := seg.Name + " " + strconv.Itoa(seg.Count)
+		if i == b.segment {
+			said = append(said, b.skin.Picked.Render("‹ "+chip+" ›"))
 			continue
 		}
-		mark := b.skin.palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs))
-		head := Spread(" "+b.skin.Title.Render(strconv.Itoa(g.Number)+"   "+g.Title), mark+" ", b.width)
-		return head + "\n " + b.progress(g.Done, g.Total, barWidth) + "  " + b.skin.Faint.Render(g.Counted())
+		said = append(said, b.skin.Says.Render(chip))
 	}
-	return ""
+	return strings.Join(said, "  ")
 }
 
 func (b Board) objectivesList(l Layout) []string {
-	goals := b.goals()
-	width := b.width - margin - margin - frame
-	drawn := make([]string, 0, len(goals))
-	for _, g := range goals {
-		drawn = append(drawn, b.goalCard(g, width))
+	branches := engine.Branches(b.goals())
+	width := b.width - margin - margin
+	drawn := make([]string, 0, len(branches))
+	for _, br := range branches {
+		drawn = append(drawn, b.goalCard(br, width))
 	}
 	rows := l.Top + l.Rows + 2
 	return []string{
-		" " + Spread(b.skin.Head.Render("OBJECTIVES"), b.skin.Count.Render(strconv.Itoa(len(goals))), b.width-2),
+		" " + Spread(b.skin.Head.Render("OBJECTIVES"), b.skin.Count.Render(strconv.Itoa(len(branches))), b.width-2),
 		" " + b.rule(b.width-2, false),
 		lipgloss.NewStyle().PaddingLeft(margin).Render(
-			through(strings.Join(drawn, "\n"), width+frame, rows, b.goalAt)),
+			through(strings.Join(drawn, "\n"), width, rows, b.goalAt)),
 	}
 }
 
-func (b Board) goalCard(g engine.Goal, width int) string {
-	return b.skin.Card(width+frame, g.Priority, false, g.Number == b.goal).
-		Render(strings.Join(b.goalRows(g, width), "\n"))
+const gutter = 2
+
+func (b Board) goalCard(br engine.Branch, width int) string {
+	edge := b.skin.Faint.Render("  ")
+	if br.Goal.Number == b.goal {
+		edge = b.skin.Title.Render("┃ ")
+	}
+	first, second := "", ""
+	if br.Under {
+		first, second = "├─ ", "│  "
+		if br.Last {
+			first, second = "└─ ", "   "
+		}
+	}
+	indent := lipgloss.Width(first)
+	rows := b.goalRows(br.Goal, width-gutter-indent)
+	return edge + b.skin.Rule.Render(first) + rows[0] + "\n" + edge + b.skin.Rule.Render(second) + rows[1]
 }
 
 func (b Board) foot() string {
@@ -251,6 +315,9 @@ func (b Board) foot() string {
 	}
 	if b.asking {
 		return b.question()
+	}
+	if b.deleting != nil {
+		return b.deletingFoot()
 	}
 	if b.screen == OnWorkspaces {
 		return b.switcherBar()
@@ -278,7 +345,7 @@ func (b Board) offer(key, does string) string {
 func (b Board) offers() []string {
 	if b.tab == Objectives {
 		return []string{
-			b.offer("hjkl ←↓↑→", "objectives"), b.offer("⏎", "open"), b.offer("a", "new"),
+			b.offer("hjkl ←↓↑→", "objectives"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
 			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("/", "search"),
 			b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"), b.roaming(),
 		}
@@ -294,6 +361,9 @@ func (b Board) offers() []string {
 		b.offer("hjkl ←↓↑→", "columns"), b.offer("i", "insert"),
 	}
 	if b.inside != 0 {
+		if len(b.segments()) > 0 {
+			out = append(out, b.offer("[ ]", "sub-objective"))
+		}
 		out = append(out, b.offer("a", "new here"), b.offer("/", "search"),
 			b.offer("?", "help"), b.offer("esc", "objectives"))
 		return out
@@ -364,6 +434,9 @@ func (b Board) kindPopup() string {
 }
 
 func (b Board) titleLine() string {
+	if len(b.warned) > 0 {
+		return " " + b.skin.Band.Render(Clip(strings.Join(b.warned, " · "), b.width-margin-margin))
+	}
 	if b.opened != "" {
 		return " " + b.skin.Faint.Render(Clip(b.opened, b.width-margin-margin))
 	}

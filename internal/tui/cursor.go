@@ -185,7 +185,7 @@ func (b Board) outOfBand() Board {
 func (b Board) follow() Board {
 	l := LayoutFor(b.width, b.height)
 	if b.tab == Objectives {
-		b.goalAt = Scrolled(b.goalAt, b.goalPlace(), l.Top+l.Rows+2)
+		b.goalAt = ScrolledBy(b.goalAt, b.goalPlace(), l.Top+l.Rows+2, goalHeight)
 		return b
 	}
 	here := b.here()
@@ -211,6 +211,8 @@ func (b Board) readOn(way string) Board {
 	}
 	return b
 }
+
+const goalHeight = 2
 
 func (b Board) goalPlace() int {
 	for i, g := range b.goals() {

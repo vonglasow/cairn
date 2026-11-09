@@ -59,6 +59,9 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	if b.asking && b.aboutStore() {
 		return b.answeringStore(key)
 	}
+	if b.deleting != nil {
+		return b.choosingFates(key)
+	}
 	if key == "?" {
 		return b.help(), nil
 	}
@@ -282,9 +285,16 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		}
 	case "D", "shift+d":
 		if b.tab == Objectives && b.goal != 0 {
-			b.asking = true
-			return b, nil
+			return b.deletingGoal(), nil
 		}
+	case "t":
+		if b.tab == Objectives {
+			return b.showingItsTasks(), nil
+		}
+	case "[":
+		return b.walkingSegments(-1), nil
+	case "]":
+		return b.walkingSegments(1), nil
 	}
 	return b, nil
 }
@@ -331,6 +341,10 @@ func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
 		return b, b.puttingAway()
 	case "shift+a":
 		return b.showingArchived(), nil
+	case "[":
+		return b.walkingSegments(-1), nil
+	case "]":
+		return b.walkingSegments(1), nil
 	}
 	return b, nil
 }

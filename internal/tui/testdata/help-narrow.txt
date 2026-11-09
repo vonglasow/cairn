@@ -19,12 +19,12 @@
  │ which, ↑↓ its value, ⌫ clears │ │   ‖  paused    waiting on     │
  │ all                           │ │ your decision                 │
  │   ⇥           next tab —      │ │                               │
- │ tasks, objectives, the time   │ │ OBJECTIVES                    │
- │ spent                         │ │   ▶  active    being worked   │
- │   :           command — what  │ │ towards                       │
- │ it answers is said until esc  │ │   ‖  on-hold   not for now    │
- │   b           a new backup of │ │   ✓  reached   done with      │
- │ the store                     │ │   ✕  dropped   given up       │
- │   ⇧B          the backups     │ │                               │
+ │ tasks, objectives, the time   │ │ OBJECTIVES — a tree, sub-     │
+ │ spent                         │ │ objectives under ├─ └─        │
+ │   :           command — what  │ │   ▶  active    being worked   │
+ │ it answers is said until esc  │ │ towards                       │
+ │   b           a new backup of │ │   ‖  on-hold   not for now    │
+ │ the store                     │ │   ✓  reached   done with      │
+ │   ⇧B          the backups     │ │   ✕  dropped   given up       │
 
  ↓↑ read on   esc close

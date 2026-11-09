@@ -17,7 +17,7 @@ and the store can change underneath it. That is dealt with at the end.
 The whole file in eight lines, for whoever has a change to make and not an
 afternoon to spend:
 
-- **Three tabs**, tasks, objectives and the time spent; four columns and a band of three stopped
+- **Three tabs**, tasks, objectives as a tree of two-line rows, and the time spent; four columns and a band of three stopped
   states under the last three, and the backlog full height.
 - **Modes**: normal stands on a column, insert holds a task, edit is the form.
   The bar shows only what works where it is.
@@ -209,7 +209,7 @@ Always six: a border, four lines of content, a border.
 |---|---|
 | 1 | the number on the left, the marks on the right |
 | 2–3 | the title, cut at a word, `…` if it overruns |
-| 4 | the facts, in this order: deadline, steps, labels — cut when the line is full, with `+n` saying how many were left out |
+| 4 | the facts, in this order: deadline, steps, labels, the objectives it serves by name (`◇ Firmware`) — cut when the line is full, with `+n` saying how many were left out |
 
 The height is a budget, not a maximum. A title longer than two lines is cut.
 
@@ -381,6 +381,7 @@ edge out of line.
 | a description exists | `nf-oct-note` | `≡` | |
 | steps done / total | `nf-oct-checklist` | `▪` | |
 | a label | `nf-oct-tag` | `⚑` | |
+| the objective a task serves | `◇` | `◇` | |
 | what is in the way | `nf-oct-blocked` | `↳` | |
 | archived | `nf-oct-archive` | `▭` | |
 
@@ -432,7 +433,9 @@ from that mode's bar, and pressing it there does nothing.
 | `⇧A` | ✓ | ✓ | | show what was archived, or hide it again |
 | `⇧X` | ✓ | | | archive every task in the column — it asks first |
 | `e` | | ✓ | ✓ | the form |
-| `D` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out. It was `d`, one slip from losing a task; the window deletes with `⌘⌫`, which a terminal is not sent, so here it is the shifted letter |
+| `D` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out. It was `d`, one slip from losing a task; the window deletes with `⌘⌫`, which a terminal is not sent, so here it is the shifted letter. An objective holding sub-objectives or tasks asks what goes with it — [below](#deleting-an-objective) |
+| `t` | | | ✓ | its tasks, on the tasks board |
+| `[` `]` | ✓ | ✓ | | on an objective's board, narrow to one sub-objective, the objective itself, or all of it |
 | `m` then a letter | | ✓ | | move the task to the column that letter begins — `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused — as the window's `m` does |
 | `p` then a letter | | ✓ | | its priority — `l` low, `n` normal, `h` high, `c` critical |
 | `f` | | ✓ | | focus or unfocus — an objective has none |
@@ -829,68 +832,137 @@ for the arguments no key can carry, not a second way of doing what a key does.
 ## Objectives
 
 ```
- tasks  ‹ OBJECTIVES ›                                                    ── NORMAL ──
+ tasks  ‹ OBJECTIVES ›  time                                              ── NORMAL ──
 
- OBJECTIVES                                                                             9
- ───────────────────────────────────────────────────────────────────────────────────────
- ┃───────────────────────────────────────────────────────────────────┐
- ┃ 3                                                       ≡    ▶    │
- ┃ Ship the desktop board                                            │
- ┃                                                                   │
- ┃ ████████████████░░░░░░░░░░░░  7/12   45d   ⚑ product              │
- ┃───────────────────────────────────────────────────────────────────┘
+ OBJECTIVES                                                                         9
+ ──────────────────────────────────────────────────────────────────────────────────────
+ ┃ ▶  4  Home automation                                                       ⚑ area
+ ┃    ███████████████░░░░░░░░░░░░░  5/15  14h50m  01/03/2027
+   ├─ ▶  5  Enclosure                                                       ⚑ project
+   │     ██████████████░░░░░░░░░░░░░░  3/6  8h25m
+   └─ ‖  7  Features                                                        ⚑ project
+         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0/3  waits on Firmware
+   ▶  1  Tidy the workshop
+      ███████████░░░░░░░░░░░░░░░░░  2/5  1h50m
 ```
 
-An objective carries eight fields and one thing a task does not: **an
-advancement**, counted from the columns of the tasks that serve it. That is why
-the bar is the headline — it is the only information an objective has that
-nothing else does. Beside the count, faint, the card says the time spent on the
-tasks serving it, archived ones included, as `objective show` does
+**An objective is two lines, in a tree** (`@tui-objective-sub-objectives-sit-under-their-parent`).
+Six-line cards held three objectives to a screen, and a tree of a dozen needs
+density more than room: the first line says its standing, its number, its
+title and its type labels at the far right; the second its bar, its count, the
+time spent, its deadline and, in the yellow of what is stalled, what it waits
+on (`@tui-objective-a-row-says-what-it-waits-on`). A sub-objective sits under
+its parent behind `├─` or `└─`, and the one under the cursor carries `┃` down
+its left on both lines.
+
+The bar, the count and the time are the **union of the subtree**, read from
+the engine as `objective list` reads them: a task serving two sub-objectives
+counts once in their parent (`@tui-objective-a-parent-counts-each-task-once`).
+Beside the count, faint, the time spent on the tasks serving it, archived ones
+included, as `objective show` does
 (`@tui-an-objective-card-says-the-time-spent`).
 
-Same card, same six lines, same rules. The state is a glyph on the card rather
-than a section heading, so there are no sections at all: the order comes from the
-state, active first, and an objective that is reached simply ends up at the
-bottom.
+The order comes from the state, active first, and each sub-objective follows its
+parent; one whose parent is left out by a search stands at level one. `j` and
+`k` walk the rows in that order, and the list scrolls two lines at a time.
 
 It is not a kanban. An objective does not circulate — nobody pushes one from
-`active` to `reached` in the morning, it gets there when its tasks are done. And
-there are ten of them, not two hundred, so four narrow columns would spend the
-width on a notion that does not need it.
+`active` to `reached` in the morning, it gets there when its tasks are done.
 
 **`i` or `⏎` opens the objective**, and what opens is the board, filtered to the
-tasks that serve it, with the objective's card flattened into a band on top.
-`esc` comes back out.
+tasks that serve it or any of its sub-objectives, with the objective flattened
+into a band on top. `esc` comes back out.
 
 ```
- tasks  ‹ OBJECTIVES ›  ▸ 3                                               ── NORMAL ──
+ tasks  ‹ OBJECTIVES ›  ▸ 4                                               ── NORMAL ──
 
- ┃ 3   Ship the desktop board                       ≡   ▶   45d   3w   ⚑ product
- ┃ ████████████████░░░░░░░░░░░░  7/12
+ 4   Home automation                         waits on #2 Garden   ▶ active
+ ███████████████░░░░░░░░░░░░░  5/15   ‹ all 15 ›  Enclosure 6  Firmware 5  itself 2
 
  BACKLOG                2 TODO                   3 CURRENT                1 DONE                   7
- ──────────────────────── ──────────────────────── ──────────────────────── ────────────────────────
  ...
 
- hjkl ←↓↑→ columns   i insert   a new here   / search   esc back   ? help
+ hjkl ←↓↑→ columns   i insert   [ ] sub-objective   a new here   / search   esc objectives
 ```
 
-Same columns, same band, same keys, same `⇧hjkl`. Nothing new to learn. Two
-things it gives that a read-only list would not: `a` here creates a task that
-already serves this objective — the one place where creating a task answers a
-question, "what is missing to finish this" — and the whole thing is the board you
-already know with less in it.
+**The band carries the sub-objectives as chips**, each counted over what the
+board holds, and `[` and `]` walk them: all of it, each sub-objective, then the
+objective itself, round again
+(`@tui-objective-the-band-carries-the-sub-objectives`,
+`@tui-objective-brackets-walk-the-sub-objectives`). It is the terminal's
+version of the window's segmented bar, and the counts come from the engine's
+`Segments`. What the objective waits on is said on the band
+(`@tui-objective-its-board-says-what-it-waits-on`).
 
-**Steps do not appear.** A step is no card; it counts through its task, the
-way [objectives.md](objectives.md) says. So the filtered board shows the tasks
-that serve the objective, and `7/12` counts those.
+**A card names what it serves**, `◇ Firmware`, on its facts line
+(`@tui-objective-a-card-names-what-it-serves`) — the objective it is attached to
+directly, whether of level one or a sub-objective. Inside an objective's board
+that objective goes without saying.
 
-An objective's state changes through the form, not by pushing it anywhere. With
-no sections there is nowhere to push it to, and `⇧hjkl` therefore does nothing
-on the objectives list — so it is not on the bar there. `j` and `k` walk the
-list, and it scrolls to whichever the cursor is on; `h` and `l` do nothing,
-because the list is one column and a key that pointed sideways and moved
-something would be a key that looked broken.
+**A task outside that stands in the way of one inside is kept in sight**, in its
+column, as a reference: a dashed frame, `┆`, every ink faint, never counted
+in a column's header and never reached by the cursor
+(`@tui-objective-a-blocker-outside-is-a-reference`). What stops a task is half
+of what it says, and narrowing the board used to hide it.
+
+**`t` shows its tasks on the tasks board** (`@tui-objective-t-shows-its-tasks`):
+the objective filter `⇧F` already had, put on the objective, and widened by the
+engine to its sub-objectives. For a parent the filter offers both
+`#4 Home automation, with its sub-objectives` and `#4 Home automation, itself`,
+which leaves its sub-objectives out
+(`@tui-objective-itself-leaves-its-sub-objectives-out`). The window's filter
+reads the same values.
+
+**The objective's form says where it sits.** `parent` takes a number, or
+nothing to stand at level one, and says beneath it which are offered — those of
+level one, itself left out (`@tui-objective-the-form-puts-it-under-a-parent`);
+`waits on` takes numbers (`@tui-objective-the-form-says-what-it-waits-on`); and
+`labels` says which labels are meant for objectives
+(`@tui-objective-the-form-offers-labels-for-objectives`). A terminal field takes
+what is typed, so a list is said under it rather than picked in it.
+
+**A task's `objectives` field draws the trees it touches**: each objective of
+the tree ticked or not, and a parent left unticked said to be counted through
+the sub-objectives ticked below it
+(`@tui-objective-the-task-form-draws-the-tree`). A task put on a parent and on
+one of its sub-objectives is refused by the engine, and the refusal is said at
+the foot of the form, which stays open
+(`@tui-objective-the-task-form-refuses-a-double-count`).
+
+**Work started early is said.** When a task goes current — focus, a push, a
+move — and an objective it counts in waits on one not reached, the engine's
+warning is said above the bar until the next key
+(`@tui-objective-work-started-early-is-warned-about`). It never refuses.
+
+An objective's state changes through the form, not by pushing it anywhere, and
+`⇧hjkl` therefore does nothing on the objectives list — so it is not on the bar
+there. `h` and `l` do nothing either, because the list is one column.
+
+### Deleting an objective
+
+```
+ ┌─ DELETE #4 HOME AUTOMATION ──────────────────────────────────────────┐
+ │                                                                      │
+ │ › sub-objective #5 Enclosure      ‹ keep it, on its own ›            │
+ │   sub-objective #6 Firmware       delete it                          │
+ │   tasks #44 #47                   choose                             │
+ │                                                                      │
+ └──────────────────────────────────────────────────────────────────────┘
+ what goes with objective 4?   jk choose   hl change   ⏎ delete   esc keep it
+```
+
+`D` on an objective that holds sub-objectives, or that tasks serve, opens a
+box over the board: a row for each sub-objective — kept, standing on its own,
+or deleted — and a row for the tasks touched, detached or deleted, which
+appears once some are: those on the objective itself, and those of a
+sub-objective deleted with it. **Every row opens on `choose`**, and `⏎` deletes
+only once each is chosen; before, the foot says `choose for each first`
+(`@tui-objective-deleting-a-parent-asks-what-goes-with-it`). `esc` keeps it
+(`@tui-objective-a-delete-asked-about-is-kept-on-escape`). Which work goes with
+an objective is never decided for the person; the engine refuses a deletion
+that leaves something undecided, and the box only asks it the way the command
+line's `--keep`, `--delete` and `--tasks` do. An objective holding nothing is
+asked about at the foot, as a task is.
 
 ## Another workspace, in place of this one
 
@@ -1112,8 +1184,6 @@ would otherwise lose the whole form.
 
 - **`mcp serve`** — nobody starts a stdio server from a board. It stays a
   command-line command, and it is the only operation with no place here.
-- **What a card shows of its objectives.** It was left off: an objective is a
-  link to elsewhere and there is a tab for it.
 - **The window's scheme in the terminal, `[board] colours = "theme"`.** It
   would paint the window's tokens in true colour, for whoever wants one look
   in both; it is not built. The sixteen colours stay the default either way,

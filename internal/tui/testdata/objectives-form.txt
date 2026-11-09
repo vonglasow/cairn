@@ -3,19 +3,23 @@
  ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
  │ 1   Ship the desktop board                                                        active  high │
  │                                                                                                │
- │ ┃ title                                          labels                                        │
- │ ┃ > Ship the desktop board                       > product                                     │
- │                                                                                                │
- │   description · 1 line                           deadline                                      │
- │     1 something written                          > 2026-10-16                                  │
- │                                                                                                │
- │                                                  estimate                                      │
+ │ ┃ title                                          parent                                        │
+ │ ┃ > Ship the desktop board                       offered: 2 Cut the onboarding time in half ·  │
+ │                                                  none                                          │
+ │   description · 1 line                           >                                             │
+ │     1 something written                                                                        │
+ │                                                  waits on                                      │
  │                                                  >                                             │
- │   standing                                                                                     │
- │   active                                           save     cancel                             │
  │                                                                                                │
- │   priority                                                                                     │
- │   high                                                                                         │
+ │   standing                                       deadline                                      │
+ │   active                                         > 2026-10-16                                  │
+ │                                                                                                │
+ │   priority                                       estimate                                      │
+ │   high                                           >                                             │
+ │                                                                                                │
+ │   labels                                           save     cancel                             │
+ │   for objectives: none yet                                                                     │
+ │   > product                                                                                    │
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 

@@ -592,6 +592,223 @@ Feature: The board
       Then the board carries 1 task
       And the board says "Ship the desktop board"
 
+  Rule: Objectives are a tree, and an objective's board walks its sub-objectives
+
+    @tui-objective-sub-objectives-sit-under-their-parent
+    Scenario: the objectives tab draws each sub-objective under its parent
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the board
+      And I press "tab"
+      Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
+      And the board says "└─"
+
+    @tui-objective-a-parent-counts-each-task-once
+    Scenario: a parent counts the tasks of its sub-objectives, each once
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Pin map" serving objectives 2 and 3
+      And I added a task titled "OTA updates" with the state "done" serving objective 3
+      When I open the board
+      And I press "tab"
+      Then the card for objective 1 says "1/2"
+
+    @tui-objective-a-row-says-what-it-waits-on
+    Scenario: an objective's row says what it waits on
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And objective 2 waits on objective 1
+      When I open the board
+      And I press "tab"
+      Then the card for objective 2 says "waits on Firmware"
+
+    @tui-objective-the-band-carries-the-sub-objectives
+    Scenario: an objective's board carries its sub-objectives on its band, each counted
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "OTA updates" serving objective 3
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the board
+      And I press "tab", "enter"
+      Then the board carries 3 tasks
+      And the board says "all 3"
+      And the board says "Enclosure 1"
+      And the board says "itself 1"
+
+    @tui-objective-brackets-walk-the-sub-objectives
+    Scenario: ] and [ narrow an objective's board to one sub-objective, or to the objective itself
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "OTA updates" serving objective 3
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the board
+      And I press "tab", "enter", "]"
+      Then the board carries 1 task
+      And "BACKLOG" carries "Vent slots"
+      When I press "]", "]"
+      Then the board carries 1 task
+      And "BACKLOG" carries "Buy the relay"
+      When I press "]"
+      Then the board carries 3 tasks
+      When I press "["
+      Then the board carries 1 task
+      And "BACKLOG" carries "Buy the relay"
+
+    @tui-objective-a-card-names-what-it-serves
+    Scenario: a card names the objective it serves
+      Given I added an objective titled "Firmware"
+      And I added a task titled "OTA updates" serving objective 1
+      When I open the board
+      Then the card for task 1 says "◇ Firmware"
+
+    @tui-objective-t-shows-its-tasks
+    Scenario: t shows on the tasks board the tasks of an objective and of its sub-objectives
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "Buy a lamp"
+      When I open the board
+      And I press "tab", "t"
+      Then the tab is "TASKS"
+      And the board carries 1 task
+      And the board says "filtered by objective #1 Home automation, with its sub-objectives"
+
+    @tui-objective-itself-leaves-its-sub-objectives-out
+    Scenario: the objective filter narrows to a parent itself, leaving its sub-objectives out
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the board
+      And I press "shift+f", "l", "l", "l", "j", "j", "esc"
+      Then the board carries 1 task
+      And the board says "filtered by objective #1 Home automation, itself"
+      And "BACKLOG" carries "Buy the relay"
+
+    @tui-objective-a-blocker-outside-is-a-reference
+    Scenario: a task outside an objective that blocks one inside it is shown, and not counted
+      Given I added an objective titled "Firmware"
+      And I added a task titled "Order the relay"
+      And I added a task titled "Wire the relay" serving objective 1
+      And I edited task 2 with the blocker "1"
+      When I open the board
+      And I press "tab", "enter"
+      Then the board carries 1 task
+      And the board says "Order the relay"
+
+  Rule: An objective's form says where it sits, and a task's what it counts in
+
+    @tui-objective-the-form-puts-it-under-a-parent
+    Scenario: the objective's form offers the objectives of level one as its parent
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware"
+      And I added an objective titled "Enclosure" under objective 1
+      When I open the board
+      And I press "tab", "shift+g", "e"
+      Then the board says "1 Home automation"
+      And the board does not say "3 Enclosure"
+      When I set the field "parent" to "1"
+      And I save the form
+      Then objective 2 sits under objective 1
+
+    @tui-objective-the-form-offers-labels-for-objectives
+    Scenario: the objective's form offers only the labels meant for objectives
+      Given I made the label "area" for objectives
+      And I made the label "backend" for tasks
+      And I added an objective titled "Home automation"
+      When I open the board
+      And I press "tab", "e"
+      Then the board says "area"
+      And the board does not say "backend"
+
+    @tui-objective-the-form-says-what-it-waits-on
+    Scenario: what an objective waits on is written in its form
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      When I open the board
+      And I press "tab", "j", "e"
+      And I set the field "waits on" to "1"
+      And I save the form
+      Then objective 2 now waits on objective 1
+
+    @tui-objective-its-board-says-what-it-waits-on
+    Scenario: an objective's board says what it waits on
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And objective 2 waits on objective 1
+      When I open the board
+      And I press "tab", "j", "enter"
+      Then the board says "waits on #1 Firmware"
+
+    @tui-objective-the-task-form-draws-the-tree
+    Scenario: a task's form draws the objectives as a tree, a parent counted through what is ticked below it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Pin map" serving objectives 2 and 3
+      When I open the board
+      And I press "i", "e"
+      Then the board says "counted through 2 below"
+
+    @tui-objective-the-task-form-refuses-a-double-count
+    Scenario: a task put on a parent and on one of its sub-objectives is refused at the foot of the form
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Pin map" serving objective 2
+      When I open the board
+      And I press "i", "e"
+      And I set the field "objectives" to "1 2"
+      And I save the form
+      Then the board says "is already counted in #1 Home automation through #2 Enclosure"
+      And the mode is "EDIT"
+
+  Rule: Deleting an objective asks what goes with it, and decides nothing
+
+    @tui-objective-deleting-a-parent-asks-what-goes-with-it
+    Scenario: deleting an objective holding sub-objectives and tasks asks about each
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "OTA updates" serving objective 3
+      When I open the board
+      And I press "tab", "shift+d"
+      Then the board says "what goes with objective 1?"
+      When I press "enter"
+      Then the board says "choose for each first"
+      And objective 1 is still there
+      When I press "l", "j", "l", "l", "j", "l", "enter"
+      Then objective 1 is gone
+      And objective 2 stands on its own
+      And objective 3 is gone
+      And task 1 serves nothing
+
+    @tui-objective-a-delete-asked-about-is-kept-on-escape
+    Scenario: escape keeps an objective whose deletion was asked about
+      Given I added an objective titled "Home automation"
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the board
+      And I press "tab", "shift+d", "l", "esc"
+      Then objective 1 is still there
+      And task 1 serves objective 1
+
+  Rule: Work started early is warned about
+
+    @tui-objective-work-started-early-is-warned-about
+    Scenario: putting a task in focus says when its objective waits on one not reached
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And objective 2 waits on objective 1
+      And I added a task titled "OTA updates" serving objective 2
+      When I open the board
+      And I press "i", "f"
+      Then the board says "#2 Features waits on #1 Firmware, not reached"
+
   Rule: Nothing is written until it is saved
 
     @tui-escape-closes-the-form

@@ -21,6 +21,7 @@ type Filter struct {
 	At     int
 	Many   bool
 	Ticked []string
+	Reach  map[string][]int
 }
 
 // Taken is every value the filter is on: none on Any, the one it is on, or every value ticked on a filter that takes several.
@@ -69,10 +70,21 @@ func BoardFilters(s Snapshot, today time.Time) Filters {
 	}
 	slices.Sort(labels)
 	var goals, named []string
-	for _, g := range s.Goals {
-		goals = append(goals, strconv.Itoa(g.Number))
-		named = append(named, strings.TrimSpace("#"+strconv.Itoa(g.Number)+" "+g.Title))
+	reach := map[string][]int{}
+	for _, b := range Branches(s.Goals) {
+		g := b.Goal
+		value, name := strconv.Itoa(g.Number), strings.TrimSpace("#"+strconv.Itoa(g.Number)+" "+g.Title)
+		reach[value] = s.Reach(g.Number)
+		if len(g.Children) == 0 {
+			goals, named = append(goals, value), append(named, name)
+			continue
+		}
+		reach[value+" itself"] = []int{g.Number}
+		goals = append(goals, value, value+" itself")
+		named = append(named, name+", with its sub-objectives", name+", itself")
 	}
+	objectives := offered("objective", "objective", goals, named)
+	objectives.Reach = reach
 	var days []string
 	for _, in := range dueIn {
 		days = append(days, domain.FormatDay(today.AddDate(0, 0, in)))
@@ -81,7 +93,7 @@ func BoardFilters(s Snapshot, today time.Time) Filters {
 		offered("column", "state", States(), nil),
 		offered("priority", "priority", Priorities(), nil),
 		several(offered("label", "label", labels, nil)),
-		offered("objective", "objective", goals, named),
+		objectives,
 		offered("due by", "due-before", days, nil),
 	}
 }
@@ -96,6 +108,24 @@ func offered(name, arg string, values, shown []string) Filter {
 		shown = values
 	}
 	return Filter{Name: name, Arg: arg, Values: append([]string{Any}, values...), Shown: append([]string{Any}, shown...)}
+}
+
+// On is the filters with the one standing for an argument put on a value it offers.
+func (fs Filters) On(arg, value string) Filters {
+	out := slices.Clone(fs)
+	for i := range out {
+		if at := slices.Index(out[i].Values, value); out[i].Arg == arg && at >= 0 {
+			out[i].At, out[i].Ticked = at, nil
+		}
+	}
+	return out
+}
+
+func (f Filter) reaching(value string) []int {
+	if reached, found := f.Reach[value]; found {
+		return reached
+	}
+	return NumbersIn(value)
 }
 
 // Walked is the filters with one of them moved on, or back, through its values, coming round to Any again past the last.
@@ -166,6 +196,16 @@ func (fs Filters) Narrows() bool {
 	return false
 }
 
+// NarrowsBy says whether the filter standing for an argument is on something other than Any.
+func (fs Filters) NarrowsBy(arg string) bool {
+	for _, f := range fs {
+		if f.Arg == arg && len(f.Taken()) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // Said is what the filters narrow by, the way a board writes it beside its search: each one on something, named and what it is on.
 func (fs Filters) Said() string {
 	var said []string
@@ -225,7 +265,7 @@ func (fs Filters) keepsGoal(g Goal) bool {
 					return false
 				}
 			case "objective":
-				if strconv.Itoa(g.Number) != value {
+				if !slices.Contains(f.reaching(value), g.Number) {
 					return false
 				}
 			}
@@ -237,12 +277,19 @@ func (fs Filters) keepsGoal(g Goal) bool {
 // Kept is the cards the filters keep, narrowed by the same rule task list narrows by.
 func (fs Filters) Kept(cards []Card) ([]Card, error) {
 	in := Input{Given: map[string]string{}, Listed: map[string][]string{}}
+	var serving [][]int
 	for _, f := range fs {
 		taken := f.Taken()
 		if len(taken) == 0 {
 			continue
 		}
-		if f.Arg == "label" || f.Arg == "objective" {
+		if f.Arg == "objective" {
+			for _, value := range taken {
+				serving = append(serving, f.reaching(value))
+			}
+			continue
+		}
+		if f.Arg == "label" {
 			in.Listed[f.Arg] = taken
 			continue
 		}
@@ -256,6 +303,9 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 	for _, c := range cards {
 		judged := &cardJudged{card: c, kept: true}
 		kept.Tell(judged)
+		for _, reached := range serving {
+			judged.Serving(reached)
+		}
 		if judged.kept {
 			out = append(out, c)
 		}

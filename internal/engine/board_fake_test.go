@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"time"
 
 	"cairn/internal/domain"
 	"cairn/internal/objective"
@@ -50,7 +51,13 @@ func (f *fake) Ask(op Operation, in Input) (Answer, error) {
 		return Answer{Tasks: f.tasks, InFocus: &f.focus, NothingBlocks: f.freed,
 			Contexts: contexts, Along: f.along}, nil
 	case "objective list":
-		return Answer{Objectives: f.goals, Along: f.goalsAlong}, nil
+		spent := map[int]time.Duration{}
+		for _, t := range f.tasks {
+			for _, n := range t.Carried().Objectives {
+				spent[n] += t.Carried().Spent
+			}
+		}
+		return Answer{Objectives: f.goals, Along: f.goalsAlong, Spent: spent}, nil
 	}
 	return Answer{}, nil
 }

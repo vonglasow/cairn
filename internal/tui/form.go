@@ -58,7 +58,7 @@ func (f Form) typed() []engine.Field {
 	return out
 }
 
-func asking(fields []engine.Field, width, height int, skin Skin) Form {
+func asking(fields []engine.Field, width, height int, skin Skin, about describer) Form {
 	held := make(map[string]*string, len(fields))
 	keep := new(bool)
 	*keep = true
@@ -67,7 +67,7 @@ func asking(fields []engine.Field, width, height int, skin Skin) Form {
 	for i, field := range fields {
 		value := field.Value
 		held[field.Name] = &value
-		one := oneField(field, held[field.Name])
+		one := oneField(field, held[field.Name], about)
 		if i < half {
 			left = append(left, one)
 			continue
@@ -112,7 +112,7 @@ func walkedByArrows() *huh.KeyMap {
 	return keys
 }
 
-func oneField(field engine.Field, into *string) huh.Field {
+func oneField(field engine.Field, into *string, about describer) huh.Field {
 	if len(field.Choices) > 0 {
 		return huh.NewSelect[string]().
 			Key(field.Name).
@@ -127,7 +127,13 @@ func oneField(field engine.Field, into *string) huh.Field {
 			TitleFunc(func() string { return LongTitle(field.Name, *into) }, into).
 			Lines(3).ShowLineNumbers(true).Value(into)
 	}
-	return huh.NewInput().Key(field.Name).Title(field.Name).Value(into)
+	input := huh.NewInput().Key(field.Name).Title(field.Name).Value(into)
+	if about != nil {
+		if said := about(field, into); said != nil {
+			input = input.Description(said()).DescriptionFunc(said, into)
+		}
+	}
+	return input
 }
 
 func themeOf(skin Skin) *huh.Styles {
@@ -155,7 +161,7 @@ func (b Board) formHeight() int { return max(1, b.height-fixed) }
 
 func (b Board) addForm() (Board, tea.Cmd) {
 	if b.tab == Objectives {
-		b.form = asking(engine.NewGoalFields(), b.formWidth(), b.formHeight(), b.skin)
+		b.form = asking(engine.NewGoalFields(), b.formWidth(), b.formHeight(), b.skin, b.about(true, 0))
 		b.form.Adding, b.form.ForObjective = true, true
 		b.screen = OnForm
 		return b.started()
@@ -164,14 +170,14 @@ func (b Board) addForm() (Board, tea.Cmd) {
 	if b.inBand {
 		state = engine.Stalled[0]
 	}
-	b.form = asking(engine.NewTaskFields(state), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(engine.NewTaskFields(state), b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
 }
 
 func (b Board) linkedForm() (Board, tea.Cmd) {
-	b.form = asking(engine.LinkedTaskFields(b.task), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(engine.LinkedTaskFields(b.task), b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
@@ -183,7 +189,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 			if g.Number != b.goal {
 				continue
 			}
-			b.form = asking(engine.GoalFields(g), b.formWidth(), b.formHeight(), b.skin)
+			b.form = asking(engine.GoalFields(g), b.formWidth(), b.formHeight(), b.skin, b.about(true, g.Number))
 			b.form.Number, b.form.ForObjective = g.Number, true
 			b.screen = OnForm
 			return b.started()
@@ -194,7 +200,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	if !ok {
 		return b, nil
 	}
-	b.form = asking(engine.EditFields(held), b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(engine.EditFields(held), b.formWidth(), b.formHeight(), b.skin, b.about(false, held.Number))
 	b.form.Number = held.Number
 	b.screen = OnForm
 	return b.started()
@@ -248,10 +254,14 @@ func (b Board) drawForm() string {
 	body := b.panel(b.formHead(),
 		through(drawn, b.formWidth(), rows, 0),
 		b.width-margin-margin)
+	refused := ""
+	if b.err != nil {
+		refused = " " + b.skin.Wrong.Render(Clip(b.err.Error(), b.width-margin-margin))
+	}
 	return strings.Join([]string{
 		b.tabs(), "",
 		lipgloss.NewStyle().PaddingLeft(margin).Render(body),
-		"", b.bar(b.offer("⇥", "field"), b.offer("←→", "change"),
+		refused, b.bar(b.offer("⇥", "field"), b.offer("←→", "change"),
 			b.offer("⏎", "next · a line"), b.offer("^S", "save"),
 			b.offer("?", "help"), b.offer("esc", "cancel")),
 	}, "\n")
@@ -305,7 +315,7 @@ func (b Board) freshened() Board {
 	}
 	focused := b.form.asked.GetFocusedField().GetKey()
 	number, forObjective := b.form.Number, b.form.ForObjective
-	b.form = asking(fresh, b.formWidth(), b.formHeight(), b.skin)
+	b.form = asking(fresh, b.formWidth(), b.formHeight(), b.skin, b.about(forObjective, number))
 	b.form.Number, b.form.ForObjective = number, forObjective
 	b, _ = b.started()
 	for _, field := range b.freshOpened() {

@@ -55,7 +55,10 @@ func TooSmall(width, height int) bool {
 }
 
 // Scrolled says how far down a run of cards has to be pushed for the one at `at` to be wholly on screen, given where it is pushed to now.
-func Scrolled(offset, at, rows int) int {
-	top := at * CardHeight
-	return min(top, max(offset, top+CardHeight-rows))
+func Scrolled(offset, at, rows int) int { return ScrolledBy(offset, at, rows, CardHeight) }
+
+// ScrolledBy is the same for a run of things each as tall as said.
+func ScrolledBy(offset, at, rows, tall int) int {
+	top := at * tall
+	return min(top, max(offset, top+tall-rows))
 }

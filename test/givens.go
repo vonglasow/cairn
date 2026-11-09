@@ -121,6 +121,30 @@ func (g Givens) IAddedAnObjectiveTitled(title string) error {
 	return err
 }
 
+// IAddedAnObjectiveUnder adds a sub-objective under an objective of level one.
+func (g Givens) IAddedAnObjectiveUnder(title string, parent int) error {
+	_, err := g.ask(engine.ObjectiveNew, map[string]string{"title": title, "parent": strconv.Itoa(parent)}, nil)
+	return err
+}
+
+// IAddedATaskServingObjectives adds a task towards two objectives at once.
+func (g Givens) IAddedATaskServingObjectives(title string, first, second int) error {
+	return g.addTask(title, nil, strconv.Itoa(first), strconv.Itoa(second))
+}
+
+// ObjectiveWaitsOn has an objective wait on another.
+func (g Givens) ObjectiveWaitsOn(number, on int) error {
+	_, err := g.ask(engine.ObjectiveEdit, map[string]string{"number": strconv.Itoa(number)},
+		map[string][]string{"waits-on": {strconv.Itoa(on)}})
+	return err
+}
+
+// IMadeTheLabelFor makes a label meant for tasks only, or for objectives only.
+func (g Givens) IMadeTheLabelFor(label, scope string) error {
+	_, err := g.ask(engine.LabelNew, map[string]string{"label": label, "scope": scope}, nil)
+	return err
+}
+
 // IArchivedTask takes a task off the board.
 func (g Givens) IArchivedTask(number int) error {
 	_, err := g.ask(engine.TaskArchive, map[string]string{"number": strconv.Itoa(number)}, nil)
@@ -303,6 +327,10 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^I added an objective titled "([^"]*)"$`, g.IAddedAnObjectiveTitled)
 	sc.Step(`^I spent "([^"]*)" on task (\d+) on "([^"]*)"$`, g.ISpentOnTask)
+	sc.Step(`^I added an objective titled "([^"]*)" under objective (\d+)$`, g.IAddedAnObjectiveUnder)
+	sc.Step(`^I added a task titled "([^"]*)" serving objectives (\d+) and (\d+)$`, g.IAddedATaskServingObjectives)
+	sc.Step(`^objective (\d+) waits on objective (\d+)$`, g.ObjectiveWaitsOn)
+	sc.Step(`^I made the label "([^"]*)" for (tasks|objectives)$`, g.IMadeTheLabelFor)
 	sc.Step(`^I archived task (\d+)$`, g.IArchivedTask)
 	sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, g.IEditedTaskWithTheBlocker)
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, g.IEditedTaskWithTheState)

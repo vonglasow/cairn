@@ -3,6 +3,7 @@ package tui
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -135,7 +136,40 @@ func (b Board) firstGoal() int {
 }
 
 func (b Board) goals() []engine.Goal {
-	return engine.FoundGoals(b.snap.Goals, b.query)
+	branches := engine.Branches(engine.FoundGoals(b.snap.Goals, b.query))
+	out := make([]engine.Goal, 0, len(branches))
+	for _, br := range branches {
+		out = append(out, br.Goal)
+	}
+	return out
+}
+
+func (b Board) segments() []engine.Segment {
+	if b.inside == 0 {
+		return nil
+	}
+	return b.snap.Segments(b.inside, b.unopened())
+}
+
+func (b Board) walkingSegments(by int) Board {
+	segments := b.segments()
+	if len(segments) == 0 {
+		return b
+	}
+	b.segment = ((b.segment+by)%len(segments) + len(segments)) % len(segments)
+	b.mode, b.task, b.inBand = Normal, 0, false
+	b.offsets = [engine.Columns]int{}
+	return b
+}
+
+func (b Board) showingItsTasks() Board {
+	if b.goal == 0 {
+		return b
+	}
+	b.filters = engine.BoardFilters(b.snap, engine.DayOf(b.clock())).Keeping(b.filters).On("objective", strconv.Itoa(b.goal))
+	b = b.onTab(Tasks)
+	b.column, b.inBand, b.inside = 0, false, 0
+	return b
 }
 
 func (b Board) openObjective() Board {
@@ -143,6 +177,7 @@ func (b Board) openObjective() Board {
 		return b
 	}
 	b.inside = b.goal
+	b.segment = 0
 	b.tab = Tasks
 	b.mode = Normal
 	b.column = 0
@@ -152,7 +187,7 @@ func (b Board) openObjective() Board {
 
 func (b Board) leaveObjective() Board {
 	b.goal = b.inside
-	b.inside = 0
+	b.inside, b.segment = 0, 0
 	b.tab = Objectives
 	b.mode = Normal
 	b.task = 0
@@ -195,14 +230,15 @@ func (b Board) run(line string) (tea.Model, tea.Cmd) {
 
 func (b Board) carry(op engine.Operation, in engine.Input) tea.Cmd {
 	return func() tea.Msg {
-		if _, err := b.work.Ask(op, in); err != nil {
+		answer, err := b.work.Ask(op, in)
+		if err != nil {
 			if agreeing, asks := engine.AgreeingTo(op, in, err); asks {
 				return agreeing
 			}
 			return Looked{Err: err}
 		}
 		found, err := engine.Look(b.work)
-		return Looked{Snapshot: found, Err: err}
+		return Looked{Snapshot: found, Err: err, Warned: answer.Warnings}
 	}
 }
 

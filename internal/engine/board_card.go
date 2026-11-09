@@ -42,11 +42,11 @@ func startOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
-// Serving is the work under one objective, in the order the listing gave it.
-func Serving(cards []Card, objective int) []Card {
+// Serving is the work under any of the objectives named, in the order the listing gave it.
+func Serving(cards []Card, objectives ...int) []Card {
 	var under []Card
 	for _, c := range cards {
-		if slices.Contains(c.Objectives, objective) {
+		if slices.ContainsFunc(c.Objectives, func(o int) bool { return slices.Contains(objectives, o) }) {
 			under = append(under, c)
 		}
 	}

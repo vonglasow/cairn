@@ -1,6 +1,6 @@
   TASKS   objectives   time   ▸ 1                                                           INSERT
 
- 1   Objective 1                                                                                  ▶
+ 1   Objective 1                                                                           ▶ active
  ███░░░░░░░░░░░░░░░░░░░░░░░░░  1/9
 
  BACKLOG                0│TODO                  12│CURRENT                0│DONE                   0

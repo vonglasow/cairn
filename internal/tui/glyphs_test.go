@@ -33,6 +33,7 @@ func TestTheTwoSetsSayTheSameThings(t *testing.T) {
 		"steps":      {nerd.Steps, plain.Steps},
 		"label":      {nerd.Label, plain.Label},
 		"in the way": {nerd.InTheWay, plain.InTheWay},
+		"serves":     {nerd.Serves, plain.Serves},
 	} {
 		if pair[0] == "" || pair[1] == "" {
 			t.Fatalf("%s is missing from one of the two sets", name)

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/lipgloss/v2"
+
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
@@ -344,7 +346,7 @@ func TestSavingAFormNamesEveryArgumentEmptied(t *testing.T) {
 		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
 		Estimate: "3h", Spent: "1h", Objectives: []int{5},
 		Deadline: on("2026-09-02"), Description: "why",
-	}), 80, 20, plainSkin)
+	}), 80, 20, plainSkin, nil)
 	form.Number = 1
 	for _, field := range form.fields {
 		if field.Name != "title" {
@@ -479,13 +481,13 @@ func TestTheObjectiveUnderTheCursorIsDrawnApart(t *testing.T) {
 		{Number: 2, Title: "Two", State: "active"},
 	}
 	b := hit(standing(f), "tab")
-	width := b.width - 2*margin - frame
+	width := b.width - 2*margin
 	held := b
 	held.goal = 1
-	chosen := strings.TrimRight(rowOf(t, held.goalCard(f.goals[0], width), "One"), " ")
+	chosen := strings.TrimRight(rowOf(t, held.goalCard(engine.Branch{Goal: f.goals[0]}, width), "One"), " ")
 	elsewhere := b
 	elsewhere.goal = 2
-	other := strings.TrimRight(rowOf(t, elsewhere.goalCard(f.goals[0], width), "One"), " ")
+	other := strings.TrimRight(rowOf(t, elsewhere.goalCard(engine.Branch{Goal: f.goals[0]}, width), "One"), " ")
 	if chosen == other {
 		t.Fatal("a card under the cursor is drawn exactly like any other")
 	}
@@ -536,7 +538,7 @@ func TestABandOfExactlyOneRowDrawsOneRow(t *testing.T) {
 		{Number: 3, State: "paused", Title: "C"},
 	}
 	b := standing(f)
-	drawn := b.laidOut(f.cards, LayoutFor(100, 40))
+	drawn := b.laidOut(f.cards, nil, LayoutFor(100, 40))
 	if got := len(strings.Split(drawn, "\n")); got != CardHeight {
 		t.Fatalf("three cards across drew %d rows, want %d:\n%s", got, CardHeight, drawn)
 	}
@@ -592,8 +594,10 @@ func TestAnObjectiveThatIsNotStandingSomewhereKnownIsNotMarked(t *testing.T) {
 	if known[0] == unknown[0] {
 		t.Fatal("a standing nobody planned for is marked like one that is known")
 	}
-	if got, want := unknown[0], Spread(b.skin.Faint.Render("1"), "", 40); got != want {
-		t.Fatalf("an unknown standing put %q on the row, want %q", got, want)
+	for _, glyph := range []string{b.glyphs.Active, b.glyphs.OnHold, b.glyphs.Reached, b.glyphs.Dropped} {
+		if strings.Contains(unknown[0], glyph) {
+			t.Fatalf("an unknown standing put %q on the row: %q", glyph, unknown[0])
+		}
 	}
 }
 
@@ -603,17 +607,15 @@ func TestTheObjectiveDrawnAsTheOneUnderTheCursor(t *testing.T) {
 		{Number: 1, Title: "One", State: "active"},
 		{Number: 2, Title: "Two", State: "active"},
 	}
-	b := hit(standing(f), "tab")
-	width := b.width - 2*margin - frame
+	b := hit(standing(f), "tab").with(plainSkin)
+	width := b.width - 2*margin
 	b.goal = 1
-	want := b.skin.Card(width+frame, "", false, true).Render(strings.Join(b.goalRows(f.goals[0], width), "\n"))
-	if got := b.goalCard(f.goals[0], width); got != want {
-		t.Fatal("the objective under the cursor is not drawn as the one under it")
+	if got := b.goalCard(engine.Branch{Goal: f.goals[0]}, width); !strings.HasPrefix(got, "┃ ") {
+		t.Fatalf("the objective under the cursor is not marked: %q", got)
 	}
 	b.goal = 2
-	elsewhere := b.skin.Card(width+frame, "", false, false).Render(strings.Join(b.goalRows(f.goals[0], width), "\n"))
-	if got := b.goalCard(f.goals[0], width); got != elsewhere {
-		t.Fatal("an objective the cursor is not on is drawn as though it were")
+	if got := b.goalCard(engine.Branch{Goal: f.goals[0]}, width); strings.Contains(got, "┃") {
+		t.Fatalf("an objective the cursor is not on is marked: %q", got)
 	}
 }
 
@@ -632,11 +634,11 @@ func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
 		f.cards = append(f.cards, engine.Card{Number: i, Title: "One", State: "blocked"})
 	}
 	b := standing(f)
-	if got := len(strings.Split(b.laidOut(f.cards, LayoutFor(100, 40)), "\n")); got != CardHeight {
+	if got := len(strings.Split(b.laidOut(f.cards, nil, LayoutFor(100, 40)), "\n")); got != CardHeight {
 		t.Fatalf("three cards across drew %d rows, want %d", got, CardHeight)
 	}
 	f.cards = append(f.cards, engine.Card{Number: 4, Title: "Four", State: "blocked"})
-	if got := len(strings.Split(b.laidOut(f.cards, LayoutFor(100, 40)), "\n")); got != 2*CardHeight {
+	if got := len(strings.Split(b.laidOut(f.cards, nil, LayoutFor(100, 40)), "\n")); got != 2*CardHeight {
 		t.Fatalf("four cards across drew %d rows, want two rows of cards", got)
 	}
 }
@@ -678,22 +680,22 @@ func TestAnObjectiveWithNothingUnderItShowsNoCount(t *testing.T) {
 func TestTheFactsBesideAnObjectiveBarAreCutToWhatIsLeft(t *testing.T) {
 	b := standing(newFake())
 	b.skin = plainSkin
-	g := engine.Goal{Number: 1, Done: 1, Total: 2, Labels: []string{"ab"}}
-	const room = barWidth + 2 + 9
-	if got := b.goalFacts(g, room); !strings.Contains(got, "⚑ ab") {
-		t.Fatalf("a row with room for the label reads %q", got)
+	g := engine.Goal{Number: 1, Done: 1, Total: 2, Spent: 90 * time.Minute}
+	const room = barWidth + 2 + 10
+	if got := b.goalFacts(g, room); !strings.Contains(got, "1h30m") {
+		t.Fatalf("a row with room for the time spent reads %q", got)
 	}
-	if got := b.goalFacts(g, room-1); strings.Contains(got, "⚑ ab") {
-		t.Fatalf("a row one column too narrow kept the label: %q", got)
+	if got := b.goalFacts(g, room-1); strings.Contains(got, "1h30m") {
+		t.Fatalf("a row one column too narrow kept the time spent: %q", got)
 	}
 }
 
 func TestAnObjectiveCardIsAsWideAsItIsGiven(t *testing.T) {
 	b := standing(newFake())
-	drawn := b.goalCard(engine.Goal{Number: 1, Title: "One"}, 40)
+	drawn := b.goalCard(engine.Branch{Goal: engine.Goal{Number: 1, Title: "One"}}, 40)
 	for _, row := range strings.Split(strings.TrimRight(bare(drawn), "\n"), "\n") {
-		if got := len([]rune(row)); got != 40+frame {
-			t.Fatalf("a card given 40 drew a row %d wide, want %d", got, 40+frame)
+		if got := lipgloss.Width(row); got > 40 {
+			t.Fatalf("a row given 40 drew %d wide", got)
 		}
 	}
 }

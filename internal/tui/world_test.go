@@ -170,6 +170,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.givens().Register(sc)
 	w.registerWorkspaces(sc)
 	w.registerColours(sc)
+	w.registerTree(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 
 	sc.When(`^I open the board$`, func() error {

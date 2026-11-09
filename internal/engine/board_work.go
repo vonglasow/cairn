@@ -33,6 +33,7 @@ type Card struct {
 	Spent       string
 	Overrun     bool
 	Objectives  []int
+	Serves      []string
 	Description string
 	Steps       []Part
 	SubDone     int
@@ -61,6 +62,9 @@ type Goal struct {
 	Steps       domain.Tally
 	Spent       time.Duration
 	Said        []string
+	Parent      int
+	Children    []int
+	WaitsOn     []int
 }
 
 // Described says whether anything is written about the objective.
@@ -72,6 +76,7 @@ type Snapshot struct {
 	Goals   []Goal
 	Focus   []int
 	Colours map[string]string
+	Scopes  map[string]string
 	Version int64
 }
 
@@ -99,10 +104,11 @@ func Look(w Work) (Snapshot, error) {
 	if listed.InFocus != nil {
 		held = *listed.InFocus
 	}
-	found := Snapshot{Focus: held, Version: version, Colours: map[string]string{}}
+	found := Snapshot{Focus: held, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
 	if labels.Labels != nil {
 		for _, one := range *labels.Labels {
 			found.Colours[one.Label] = one.Colour
+			found.Scopes[one.Label] = one.Scope
 		}
 	}
 	for _, t := range listed.Tasks {
@@ -112,20 +118,19 @@ func Look(w Work) (Snapshot, error) {
 		}
 		found.Cards = append(found.Cards, card)
 	}
-	spent := map[int]time.Duration{}
-	for _, t := range listed.Tasks {
-		c := t.Carried()
-		for _, n := range c.Objectives {
-			spent[n] += c.Spent
-		}
-	}
 	for _, o := range goals.Objectives {
 		goal, err := goalOf(o, goals.Along)
 		if err != nil {
 			return Snapshot{}, err
 		}
-		goal.Spent = spent[goal.Number]
+		goal.Spent = goals.Spent[goal.Number]
+		goal.Children = goals.Tree[goal.Number]
 		found.Goals = append(found.Goals, goal)
+	}
+	for i, c := range found.Cards {
+		for _, g := range found.Served(c) {
+			found.Cards[i].Serves = append(found.Cards[i].Serves, g.Title)
+		}
 	}
 	return found, nil
 }
@@ -207,5 +212,7 @@ func goalOf(o objective.Objective, along map[int]domain.Progress) (Goal, error) 
 		Total:       sofar.Total(),
 		Steps:       sofar.Steps,
 		Said:        objective.Said(o),
+		Parent:      o.Carried().Parent,
+		WaitsOn:     o.Carried().WaitsOn,
 	}, nil
 }

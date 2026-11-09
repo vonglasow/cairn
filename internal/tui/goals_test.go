@@ -45,36 +45,36 @@ func TestBar(t *testing.T) {
 func TestGoalRows(t *testing.T) {
 	g := engine.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Description: "something written", State: "active", Labels: []string{"product"}}
 	rows := standing(newFake()).with(plainSkin).goalRows(g, 60)
-	if len(rows) != 4 {
-		t.Fatalf("an objective's card has %d rows, want 4", len(rows))
+	if len(rows) != 2 {
+		t.Fatalf("an objective's row is %d lines, want 2", len(rows))
 	}
-	if !strings.HasPrefix(rows[0], "3") {
-		t.Fatalf("the number is not first: %q", rows[0])
+	if !strings.Contains(rows[0], "3  Ship the desktop board") || !strings.Contains(rows[0], "⚑ product") {
+		t.Fatalf("the first line does not say its number, title and type: %q", rows[0])
 	}
-	if !strings.Contains(rows[3], "7/12") {
-		t.Fatalf("the count is missing from the last row: %q", rows[3])
+	if !strings.Contains(rows[1], "7/12") {
+		t.Fatalf("the count is missing from the second line: %q", rows[1])
 	}
-	if !strings.Contains(rows[3], "█") {
-		t.Fatalf("the bar is missing from the last row: %q", rows[3])
+	if !strings.Contains(rows[1], "█") {
+		t.Fatalf("the bar is missing from the second line: %q", rows[1])
 	}
 }
 
 func TestGoalWithNothingUnderItSaysNoCount(t *testing.T) {
 	rows := standing(newFake()).with(plainSkin).goalRows(engine.Goal{Number: 1, Title: "Nothing yet"}, 60)
-	if strings.Contains(rows[3], "0/0") {
-		t.Fatalf("an objective nothing serves claimed a count: %q", rows[3])
+	if strings.Contains(rows[1], "0/0") {
+		t.Fatalf("an objective nothing serves claimed a count: %q", rows[1])
 	}
 }
 
-func TestGoalIsAlwaysSixRows(t *testing.T) {
-	drawn := standing(newFake()).goalCard(engine.Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}, 60)
-	if got := len(strings.Split(drawn, "\n")); got != CardHeight {
-		t.Fatalf("an objective drew %d rows, want %d:\n%s", got, CardHeight, drawn)
+func TestGoalIsAlwaysTwoRows(t *testing.T) {
+	drawn := standing(newFake()).goalCard(engine.Branch{Goal: engine.Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}}, 60)
+	if got := len(strings.Split(drawn, "\n")); got != goalHeight {
+		t.Fatalf("an objective drew %d rows, want %d:\n%s", got, goalHeight, drawn)
 	}
 }
 
 func TestTheGoalUnderTheCursorIsDrawnApart(t *testing.T) {
-	g := engine.Goal{Number: 1, Title: "One"}
+	g := engine.Branch{Goal: engine.Goal{Number: 1, Title: "One"}}
 	b := standing(newFake())
 	b.goal = 1
 	elsewhere := standing(newFake())
