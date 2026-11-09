@@ -429,3 +429,18 @@ func TestAFilterPillIsDrawnByItsKind(t *testing.T) {
 		}
 	}
 }
+
+func TestAScrollbarWithNothingToScrollIsNotDrawn(t *testing.T) {
+	s := Dark()
+	track := Box{X: 10, Y: 10, W: 10, H: 100}
+	shot, drawn := drawnAlone(t, 40, 130, func(k Kit) {
+		fill(k.gtx, Box{W: 40, H: 130}, s.Colour.Surface.Raised)
+		Scrollbar{Lines: 3, Rows: 5}.Draw(k, track)
+	})
+	if pixel(shot, track.X+5, track.Y+track.H/2) != s.Colour.Surface.Raised {
+		t.Error("a scrollbar with nothing to scroll drew a track or a thumb")
+	}
+	if len(drawn) != 0 {
+		t.Errorf("a scrollbar with nothing to scroll recorded %+v", drawn)
+	}
+}

@@ -842,7 +842,7 @@ func TestARowSaysWhatItIsKnownBy(t *testing.T) {
 	}
 	w = w.choosingList()
 	got := []string{w.RowSays(w.Choosing()[0]), w.RowSays(w.Choosing()[1])}
-	if want := []string{"   backlog", TickedMark + "  todo"}; got[0] != want[0] || got[1] != want[1] {
+	if want := []string{"backlog", "todo"}; got[0] != want[0] || got[1] != want[1] {
 		t.Errorf("the column list says %q, want %q", got, want)
 	}
 }
@@ -1387,5 +1387,50 @@ func TestAFormsButtonsEndBeforeItsGripAndAnotherPanelsAtItsPadding(t *testing.T)
 	box := help.HelpBox()
 	if end := rightmost(help.offersAlong(box)); end != box.X+box.W-padding-inset {
 		t.Errorf("the help's buttons end at %d, not at its padding %d", end, box.X+box.W-padding-inset)
+	}
+}
+
+func TestEveryChoosingListShowsABoxWhereItWroteAGlyph(t *testing.T) {
+	f := newFake()
+	w := holding(f, card(1, "Write the spec", "todo"))
+	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
+	for i, field := range w.Form().Fields() {
+		if field.Name == "column" {
+			w.form = w.form.onto(i)
+		}
+	}
+	w = w.choosingList()
+	for _, one := range w.Choosing() {
+		if strings.Contains(w.RowSays(one), TickedMark) {
+			t.Errorf("the row %q writes the glyph a box now shows", w.RowSays(one))
+		}
+	}
+	rows, checks := 0, 0
+	for _, d := range partsDrawn(w) {
+		switch {
+		case strings.HasSuffix(d.Part, "/row/check"):
+			checks++
+		case strings.HasSuffix(d.Part, "/row"):
+			rows++
+		}
+	}
+	if rows == 0 || checks != rows {
+		t.Errorf("the column list drew %d rows and %d boxes", rows, checks)
+	}
+}
+
+func TestTheProgressBesideAnObjectiveIsAsHighAsItsTrack(t *testing.T) {
+	w := New(onTheFixtures(t), 1200, 800).At(time.Now()).Look().onPage(Objectives).Key("right").Edit()
+	found := false
+	for _, d := range partsDrawn(w) {
+		if strings.HasSuffix(d.Part, "info/progress") {
+			found = true
+			if d.At.H != Dark().Size.Track {
+				t.Errorf("the progress beside the objective is %d high, its track %d", d.At.H, Dark().Size.Track)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("no progress drawn beside the objective")
 	}
 }

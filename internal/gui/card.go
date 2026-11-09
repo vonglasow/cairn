@@ -15,20 +15,23 @@ const perGlyph = 8
 
 const perSmallGlyph = 7
 
-// TitleLines is a title laid out on the two lines a card gives it, first wide for the first and room for the second as wide measures them: whole when it fits, broken between words, and cut with an ellipsis at the end of the second line when it is longer still.
+// TitleLines is a title laid out on the two lines a card gives it, first wide for the first and room for the second as wide measures them: whole when it fits, broken between words only — a word the first line has no room for moves to the second, a word wider than any line is cut with an ellipsis — and cut with an ellipsis at the end of the second line when it is longer still.
 func TitleLines(title string, first, room int, wide func(string) int) []string {
 	if first <= 0 || wide(title) <= first {
 		return []string{title}
 	}
-	line, rest := firstLine(title, first, wide)
+	words := strings.Fields(title)
+	if len(words) > 0 && wide(words[0]) > max(first, room) {
+		return []string{cutToFit(words[0], first, wide)}
+	}
+	line, rest := firstLine(words, first, wide)
 	if wide(rest) <= room {
 		return []string{line, rest}
 	}
 	return []string{line, cutToFit(rest, room, wide)}
 }
 
-func firstLine(title string, room int, wide func(string) int) (string, string) {
-	words := strings.Fields(title)
+func firstLine(words []string, room int, wide func(string) int) (string, string) {
 	line := ""
 	for i, word := range words {
 		next := word
@@ -36,23 +39,11 @@ func firstLine(title string, room int, wide func(string) int) (string, string) {
 			next = line + " " + word
 		}
 		if wide(next) > room {
-			if line == "" {
-				kept := runesFitting([]rune(word), room, wide)
-				return string(kept), strings.Join(append([]string{string([]rune(word)[len(kept):])}, words[i+1:]...), " ")
-			}
 			return line, strings.Join(words[i:], " ")
 		}
 		line = next
 	}
 	return line, ""
-}
-
-func runesFitting(runes []rune, room int, wide func(string) int) []rune {
-	n := len(runes)
-	for n > 1 && wide(string(runes[:n])) > room {
-		n--
-	}
-	return runes[:n]
 }
 
 func cutToFit(said string, room int, wide func(string) int) string {

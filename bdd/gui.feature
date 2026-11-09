@@ -1854,6 +1854,22 @@ Feature: The desktop board
       And I click the tab "TIME"
       Then the card "Write the spec" on the time page writes its number whole, its facts clear of it
 
+    @gui-a-title-never-breaks-inside-a-word
+    Scenario: in the narrowest window a card of the week breaks its title between words, and fills its day
+      Given a window of 720 by 560
+      And I added a task titled "Write the spec"
+      And I added a task titled "Estimate the migration"
+      And I put task 1 in focus
+      And I put task 2 in focus
+      And I spent "3h" on task 1 on "2026-09-29"
+      And I spent "1h" on task 2 on "2026-09-29"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      Then the card "Write the spec" on the time page breaks its title only between words
+      And the card "Estimate the migration" on the time page breaks its title only between words
+      And the card "Write the spec" on the time page is as wide as its day
+
     @gui-a-narrow-day-writes-its-total-under-its-date
     Scenario: in the narrowest window a day of the week writes its total under its date, where it has room
       Given a window of 720 by 560

@@ -854,12 +854,9 @@ type Choice struct {
 	Carried int
 }
 
-// RowSays is what a row of the open list reads: whether it is taken, then what it is known by.
+// RowSays is what a row of the open list reads after its box: what it is known by.
 func (w Window) RowSays(one Choice) string {
-	said := "   "
-	if w.Ticked(one.Number) {
-		said = TickedMark + "  "
-	}
+	said := ""
 	if len(w.closedSet()) == 0 && w.choosingFor != "label" {
 		said += "#" + Numbered(engine.Card{Number: one.Number}) + "  "
 	}
@@ -902,7 +899,7 @@ func (w Window) RowStripe(one Choice, line Box) (Box, bool) {
 	}
 	said := w.RowSays(one)
 	before := strings.TrimSuffix(said, priorityRoom+one.Title)
-	return Box{X: line.X + ends(w.measured(), before, reads) + inset, Y: line.Y + (line.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, true
+	return Box{X: line.X + tickRoom + ends(w.measured(), before, reads) + inset, Y: line.Y + (line.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, true
 }
 
 const stripeHigh = 12

@@ -33,10 +33,17 @@ func TestATitleTooLongForTwoLinesIsCutAndSaysSo(t *testing.T) {
 	}
 }
 
-func TestAWordLongerThanTheLineIsBroken(t *testing.T) {
-	got := TitleLines(strings.Repeat("a", 40), 80, 80, eightEach)
-	if len(got) != 2 || eightEach(got[0]) > 80 || !strings.HasSuffix(got[1], "…") {
-		t.Fatalf("a word longer than two lines was laid out %q", got)
+func TestAWordLongerThanTheLineIsCutAndSaysSo(t *testing.T) {
+	got := TitleLines(strings.Repeat("a", 40)+" more", 80, 80, eightEach)
+	if len(got) != 1 || eightEach(got[0]) > 80 || !strings.HasSuffix(got[0], "…") {
+		t.Fatalf("a word longer than the line was laid out %q", got)
+	}
+}
+
+func TestAWordThatDoesNotFitTheFirstLineMovesToTheNext(t *testing.T) {
+	got := TitleLines("Write the spec", 32, 80, eightEach)
+	if len(got) != 2 || got[0] != "" || got[1] != "Write the…" {
+		t.Fatalf("a first word too wide for the first line was laid out %q", got)
 	}
 }
 

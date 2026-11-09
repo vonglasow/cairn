@@ -491,10 +491,14 @@ func WeekRowAt(day Box, j int) Box {
 	return Box{X: day.X + padding, Y: day.Y + 2*lineHigh + padding + j*weekRow, W: day.W - 2*padding, H: weekRow}
 }
 
-// DayCardAt is where the j-th task of a day is drawn as the card the board draws it as.
-func DayCardAt(day Box, j int) Box {
+// DayCardAt is where the j-th of all the tasks of a day is drawn as the card the board draws it as: across the day as a card is across its column, short of the bar when the day scrolls.
+func DayCardAt(day Box, j, all int) Box {
 	row := WeekRowAt(day, j)
-	return Box{X: row.X, Y: row.Y, W: row.W, H: CardHeight}
+	wide := day.W
+	if track, more := DayTrack(day, all); more {
+		wide = track.X - day.X
+	}
+	return Box{X: day.X, Y: row.Y, W: wide, H: CardHeight}
 }
 
 // DaySpentAt is where a task of a day says how long it took that day: under its card, before its bar.
@@ -563,7 +567,7 @@ func (w Window) timeCardAt(p Point) int {
 	}
 	for i := range w.WeekDays() {
 		for j, one := range w.DayShown(i) {
-			if DayCardAt(WeekDayAt(l, i), j).In(p) {
+			if DayCardAt(WeekDayAt(l, i), j, len(w.DayHeld(i).Tasks)).In(p) {
 				return one.Number
 			}
 		}

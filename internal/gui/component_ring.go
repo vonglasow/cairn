@@ -107,8 +107,11 @@ func (p WorkspacePill) Draw(k Kit, at Box) Box {
 // Scrollbar is the track beside what scrolls and the thumb showing which of its lines are in sight.
 type Scrollbar struct{ Lines, Rows, At int }
 
-// Draw draws the track along at and the thumb on it.
+// Draw draws the track along at and the thumb on it, and nothing when every line is in sight.
 func (s Scrollbar) Draw(k Kit, at Box) Box {
+	if s.Lines <= s.Rows {
+		return at
+	}
 	k.put("scrollbar", at)
 	fill(k.gtx, at, k.skin.Colour.Surface.Back)
 	fill(k.gtx, Thumb(at, s.Lines, s.Rows, s.At), k.skin.Colour.Line.Edge)

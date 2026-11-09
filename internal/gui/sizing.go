@@ -55,7 +55,7 @@ func (w Window) choosingWide() int {
 	m := w.measured()
 	text := ends(m, w.EmptyListSays(), reads)
 	for _, one := range w.listed() {
-		text = max(text, ends(m, w.RowSays(one), reads))
+		text = max(text, tickRoom+ends(m, w.RowSays(one), reads))
 	}
 	rows := text + 4*padding + barWide + between
 	return max(listLeast, rows, w.headWide(), w.offersWide())

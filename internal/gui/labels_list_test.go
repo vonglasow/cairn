@@ -30,9 +30,6 @@ func TestLabels_aRowSayingWhyTakesNothing(t *testing.T) {
 	if w.Ticked(1) {
 		t.Error("enter on the row saying why ticked a label")
 	}
-	if said := w.RowSays(w.Choosing()[0]); said[:1] != " " {
-		t.Errorf("the row saying why reads %q once enter was pressed on it, as if taken", said)
-	}
 	if len(w.labelsOffered) != 1 {
 		t.Errorf("enter on the row saying why created %v", w.labelsOffered)
 	}

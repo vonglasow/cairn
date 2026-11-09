@@ -267,12 +267,16 @@ func TestWhatTheTimePageIsDrawnOn(t *testing.T) {
 
 func TestADayOfTheWeekLaysItsTasksOutAsCards(t *testing.T) {
 	day := Box{X: 10, Y: 20, W: 150, H: 600}
-	first, second := DayCardAt(day, 0), DayCardAt(day, 1)
-	if first.H != CardHeight || first.W != day.W-2*padding || second.Y != first.Y+weekRow {
+	first, second := DayCardAt(day, 0, 2), DayCardAt(day, 1, 2)
+	if first.H != CardHeight || first.X != day.X || first.W != day.W || second.Y != first.Y+weekRow {
 		t.Errorf("the cards of a day are %+v then %+v", first, second)
 	}
 	if bar := WeekBar(WeekRowAt(day, 0), 30, 60); bar.Y < first.Y+first.H-gap {
 		t.Errorf("the bar %+v is drawn over the card %+v", bar, first)
+	}
+	track, _ := DayTrack(day, 100)
+	if crowded := DayCardAt(day, 0, 100); crowded.X+crowded.W > track.X {
+		t.Errorf("the card %+v of a day that scrolls runs under its bar %+v", crowded, track)
 	}
 }
 

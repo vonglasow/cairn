@@ -29,6 +29,8 @@ func (w *world) componentsSteps(sc *godog.ScenarioContext) {
 	sc.Then(`^the slot of the column "([^"]*)" is rounded as a card is$`, w.emptyRounded)
 	sc.Then(`^the dot beside the label "([^"]*)" is as wide as the workspace's dot$`, w.labelDotAsWide)
 	sc.Then(`^the card "([^"]*)" on the time page writes its number whole, its facts clear of it$`, w.numberClearOfFacts)
+	sc.Then(`^the card "([^"]*)" on the time page breaks its title only between words$`, w.titleInWholeWords)
+	sc.Then(`^the card "([^"]*)" on the time page is as wide as its day$`, w.cardAsWideAsItsDay)
 	sc.Then(`^the form's grip is clear of its buttons$`, func() error {
 		panel := w.w.formPanel()
 		for _, along := range w.w.offersAlong(panel) {
@@ -325,7 +327,7 @@ func (w *world) numberClearOfFacts(title string) error {
 	for i := range 7 {
 		for j, one := range w.w.DayShown(i) {
 			if w.w.DayCard(one).Title == title {
-				return numberApart(partsDrawn(w.w), PartsOf(DayCardAt(WeekDayAt(l, i), j)).Panel)
+				return numberApart(partsDrawn(w.w), PartsOf(DayCardAt(WeekDayAt(l, i), j, len(w.w.DayHeld(i).Tasks))).Panel)
 			}
 		}
 	}
@@ -352,6 +354,52 @@ func numberApart(drawn []Drawing, card Box) error {
 		if cross(f.At, number[0].At) {
 			return fmt.Errorf("the card's facts %+v cover its number %+v", f.At, number[0].At)
 		}
+	}
+	return nil
+}
+
+func (w *world) weekCard(title string) (engine.Card, Box, Box, error) {
+	l := w.w.Layout()
+	for i := range 7 {
+		for j, one := range w.w.DayShown(i) {
+			if c := w.w.DayCard(one); c.Title == title {
+				day := WeekDayAt(l, i)
+				return c, day, DayCardAt(day, j, len(w.w.DayHeld(i).Tasks)), nil
+			}
+		}
+	}
+	return engine.Card{}, Box{}, Box{}, fmt.Errorf("no card titled %q is on the time page", title)
+}
+
+func (w *world) titleInWholeWords(title string) error {
+	c, _, card, err := w.weekCard(title)
+	if err != nil {
+		return err
+	}
+	m := w.w.measured()
+	first, rest := TitleRoom(c, PartsOf(card).Title)
+	words := strings.Fields(title)
+	for _, line := range TitleLines(c.Title, first, rest, func(said string) int { return ends(m, said, reads) }) {
+		said := strings.Fields(strings.TrimSuffix(line, "…"))
+		if strings.HasSuffix(line, "…") && len(said) > 0 {
+			said = said[:len(said)-1]
+		}
+		for _, word := range said {
+			if !slices.Contains(words, word) {
+				return fmt.Errorf("the title %q is broken inside a word: %q", title, line)
+			}
+		}
+	}
+	return nil
+}
+
+func (w *world) cardAsWideAsItsDay(title string) error {
+	_, day, card, err := w.weekCard(title)
+	if err != nil {
+		return err
+	}
+	if card.X != day.X || card.W != day.W {
+		return fmt.Errorf("the card is drawn at %+v in its day %+v", card, day)
 	}
 	return nil
 }

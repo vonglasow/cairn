@@ -247,10 +247,16 @@ disagreed, the sheet of #230 chose again:
   (`@gui-the-steps-stand-in-a-field`);
 - a box before a step or a value (`Check`), rounded at 3: empty, a line of
   an edge; done, filled faint; taken, filled with the accent. A filter's
-  values and the labels to choose gain the box where a bare `✓` stood
-  (`@gui-a-taken-value-is-a-filled-box`);
+  values and every list chosen from — the labels, a column, a priority, an
+  objective — gain the box where a bare `✓` stood, the row's words no
+  longer carrying it (`@gui-a-taken-value-is-a-filled-box`,
+  `TestEveryChoosingListShowsABoxWhereItWroteAGlyph`);
 - one track for what is done (`Progress`), 3 high: an objective's form
-  drew it at 4;
+  drew it at 4, and sized the box it stands in a point higher than its
+  track too;
+- a scrollbar with every line in sight is not drawn at all, as a day of
+  the week already left it out: the description and the steps of a form
+  showed a thumb as high as their track;
 - two rings (`Ring`), always at the element's own radius, never square:
   what the keyboard is on in `Line.Selected` — a card, a step, a serving
   task, a month's line — and a target, written into or where a drop lands,
@@ -398,6 +404,14 @@ found when it was written, and what was done:
 - the calendar and a list chosen from are dropped over the form: they are
   drawn on the popover layer, as what is dropped over the rest is; the
   command bar's panel and a question stand on their veil.
+
+A card's title is broken between words only: a word the first line has
+no room for — beside the glow of a card in focus — moves to the second,
+and a word wider than any line is cut with an ellipsis. A card of the
+week stands across its day as a card of the board across its column; it
+was inset by the day's padding on top of its own, and at 720 broke its
+title inside a word, `Wri` over `te th…`
+(`@gui-a-title-never-breaks-inside-a-word`).
 
 The text check found one more on the new screens: at 720 a day of the week
 had no room for its total beside its date, and now writes it on the line

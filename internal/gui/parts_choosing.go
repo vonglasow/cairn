@@ -66,7 +66,12 @@ func ChoosingFrom(box Box) int {
 
 // LabelPillAt is where a list of labels draws one as a pill: past the room its tick takes, as wide as its name written small.
 func LabelPillAt(line Box, wide int) Box {
-	return Box{X: line.X + tickRoom, Y: line.Y + (line.H-pillHigh)/2, W: wide + 2*pillPad, H: pillHigh}
+	return Box{X: PastCheck(line).X, Y: line.Y + (line.H-pillHigh)/2, W: wide + 2*pillPad, H: pillHigh}
 }
 
 const tickRoom = 20
+
+// PastCheck is what is left of a line once its box has taken its room.
+func PastCheck(line Box) Box {
+	return Box{X: line.X + tickRoom, Y: line.Y, W: line.W - tickRoom, H: line.H}
+}

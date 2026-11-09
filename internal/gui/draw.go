@@ -290,10 +290,11 @@ func drawFilters(k Kit, w Window) {
 				continue
 			}
 			taken := w.FilterTaken(i)
-			Row{Taken: taken, Picked: i == w.FilterPick()}.Draw(k, value)
+			row := Row{Taken: taken, Picked: i == w.FilterPick()}
+			row.Draw(k, value)
 			line := Inside(value)
-			Check{Taken: taken}.Draw(k.inside("row"), CheckAt(line))
-			named := Box{X: line.X + tickRoom, Y: line.Y, W: line.W - tickRoom, H: line.H}
+			row.Check(k, Check{Taken: taken}, CheckAt(line))
+			named := PastCheck(line)
 			if f.Arg == "label" {
 				dot := Box{X: named.X, Y: named.Y + (named.H-dotSide)/2, W: dotSide, H: dotSide}
 				Dot{Colour: w.LabelColour(f.Shown[i])}.Draw(k.inside("row"), dot)
@@ -368,7 +369,8 @@ func drawWeek(k Kit, l Layout, w Window) {
 		in, clipped := on.within(box)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
-			w.cardOf(w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, DayCardAt(box, j) == w.pointed).Draw(in, DayCardAt(box, j))
+			card := DayCardAt(box, j, len(w.DayHeld(i).Tasks))
+			w.cardOf(w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, card == w.pointed).Draw(in, card)
 			say(k.gtx, k.th, k.skin.Colour.Accent.Base, DaySpentAt(row), one.Spent(), small)
 			Spent{}.Draw(in, WeekBar(row, one.Minutes, longest))
 		}
@@ -526,14 +528,14 @@ func drawChoosing(k Kit, w Window) {
 			at += apart
 			continue
 		}
+		row.Check(in, Check{Taken: w.Ticked(one.Number)}, CheckAt(line))
 		if w.choosingFor == "label" {
-			Check{Taken: w.Ticked(one.Number)}.Draw(in.inside("row"), CheckAt(line))
 			LabelChip{Label: one.Title, Colour: w.LabelColour(one.Title)}.Draw(in.inside("row"), LabelPillAt(line, ends(w.measured(), one.Title, small)))
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, strconv.Itoa(one.Carried), small, k.skin.Type.Mono, text.End)
 			at += apart
 			continue
 		}
-		say(k.gtx, k.th, k.skin.Colour.Ink.Text, line, w.RowSays(one), reads)
+		say(k.gtx, k.th, k.skin.Colour.Ink.Text, PastCheck(line), w.RowSays(one), reads)
 		if stripe, ok := w.RowStripe(one, line); ok {
 			Stripe{Priority: one.Title, Free: true}.Draw(in.inside("row"), stripe)
 		}
@@ -879,7 +881,7 @@ func drawProgressBeside(k Kit, w Window) {
 	inside := Box{X: card.X + padding, Y: card.Y + padding/2, W: card.W - 2*padding, H: card.H - padding}
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: inside.X, Y: inside.Y, W: inside.W, H: titleHi + 4}, strconv.Itoa(g.Percent())+"%", k.skin.Type.Figure, font.SemiBold, 1, text.Start)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: inside.X, Y: inside.Y + 4, W: inside.W, H: lineHigh}, fmt.Sprintf("%d of %d tasks done", g.Done, g.Total), reads, font.Font{}, text.End)
-	track := Progress{Done: g.Done, Total: g.Total}.Draw(k, Box{X: inside.X, Y: inside.Y + titleHi + 12, W: inside.W, H: k.skin.Size.Track + 1})
+	track := Progress{Done: g.Done, Total: g.Total}.Draw(k, Box{X: inside.X, Y: inside.Y + titleHi + 12, W: inside.W, H: k.skin.Size.Track})
 	facts := ProgressFacts(g, w.now)
 	third := inside.W / len(facts)
 	for i, fact := range facts {

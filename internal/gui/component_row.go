@@ -34,6 +34,11 @@ func (r Row) Chip(k Kit, c KeyChip, at Box) Box {
 	return c.Draw(k.inside("row"), at)
 }
 
+// Check draws the box before the row's value, taken or not.
+func (r Row) Check(k Kit, c Check, at Box) Box {
+	return c.Draw(k.inside("row"), at)
+}
+
 // Pill draws a pill on the row, on the ground a picked row's ground calls for.
 func (r Row) Pill(k Kit, p Pill, at Box) Box {
 	p.OnControl = r.Picked
