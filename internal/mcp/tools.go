@@ -70,6 +70,8 @@ func schemaFor(op engine.Operation) map[string]any {
 			prop["items"] = map[string]any{"type": "string"}
 		case len(arg.OneOf) > 0:
 			prop["enum"] = arg.OneOf
+		case arg.Kind == engine.Text && arg.Of != "":
+			prop["type"] = []string{"integer", "string"}
 		}
 		properties[arg.Name] = prop
 		if arg.Required {

@@ -117,6 +117,9 @@ type Objective struct {
 	Progress  *domain.ProgressShape `json:"progress"`
 	TimeSpent string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
 	Left      []int                 `json:"left" jsonschema:"the numbers of the tasks serving it that are neither done nor archived"`
+	Parent    *int                  `json:"parent" jsonschema:"the number of the objective it sits under; null when it stands on its own"`
+	Children  []int                 `json:"children" jsonschema:"the numbers of its sub-objectives; empty when it holds none"`
+	Proposed  *int                  `json:"proposed_reached,omitempty" jsonschema:"the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"`
 	Added     *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
 	TakenOff  *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 }
@@ -133,7 +136,29 @@ func OfObjective(o objective.Objective, under []task.Task, p domain.Progress) Ob
 		Progress:  domain.OfProgress(p),
 		TimeSpent: domain.FormatDuration(reviewOf(under).Spent),
 		Left:      leftOf(under),
+		Children:  []int{},
 	}
+}
+
+func seated(said Objective, o objective.Objective, tree map[int][]int) Objective {
+	c := o.Carried()
+	if c.Parent != 0 {
+		said.Parent = &c.Parent
+	}
+	said.Children = listed(tree[c.Number])
+	return said
+}
+
+func proposedIn(a Answer) *int {
+	if a.Proposes != nil {
+		n := a.Proposes.Carried().Number
+		return &n
+	}
+	if a.Family != nil && a.Family.Proposed {
+		n := a.Objective.Carried().Number
+		return &n
+	}
+	return nil
 }
 
 // Labelled is how labelling answers: how many it put one on.
@@ -149,9 +174,13 @@ type Swept struct {
 
 // Deleted confirms an act on something numbered — a task deleted, an objective deleted, a backup deleted.
 type Deleted struct {
-	Deleted     int   `json:"deleted"`
-	Also        []int `json:"also,omitempty"`
-	WasBlocking []int `json:"was_blocking,omitempty"`
+	Deleted       int   `json:"deleted"`
+	Also          []int `json:"also,omitempty"`
+	WasBlocking   []int `json:"was_blocking,omitempty"`
+	Kept          []int `json:"kept,omitempty" jsonschema:"the sub-objectives kept, each standing on its own now; left out when none was"`
+	SubObjectives []int `json:"sub_objectives_deleted,omitempty" jsonschema:"the sub-objectives deleted with it; left out when none was"`
+	Detached      []int `json:"detached,omitempty" jsonschema:"the tasks detached from what was deleted; left out when none was"`
+	TasksDeleted  []int `json:"tasks_deleted,omitempty" jsonschema:"the tasks deleted with it; left out when none was"`
 }
 
 // Restored confirms a backup was restored, replacing the store with what it held.
@@ -182,7 +211,9 @@ func Of(op Operation, a Answer) any {
 	case Timesheet:
 		return ofSheet(*a.Sheet, a.Named, a.Gone)
 	case Review:
-		return OfReview(*a.Objective, a.Under, a.Progress, *a.Period)
+		r := OfReview(*a.Objective, a.Under, a.Progress, *a.Period)
+		r.Objective = seated(r.Objective, *a.Objective, a.Tree)
+		return r
 	case Focus:
 		held := a.Held
 		if a.Task != nil {
@@ -216,14 +247,15 @@ func Of(op Operation, a Answer) any {
 		said.Total, said.Counts = a.Total, ofCounts(a.Counts)
 		return said
 	case Objective:
-		said := OfObjective(*a.Objective, a.Under, a.Progress)
+		said := seated(OfObjective(*a.Objective, a.Under, a.Progress), *a.Objective, a.Tree)
 		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
+		said.Proposed = proposedIn(a)
 		return said
 	case Objectives:
 		if a.MatchedObjectives != nil {
-			return Objectives{Objectives: ofObjectives(a.MatchedObjectives, a.Along)}
+			return Objectives{Objectives: ofObjectives(a.MatchedObjectives, a)}
 		}
-		return Objectives{Objectives: ofObjectives(a.Objectives, a.Along)}
+		return Objectives{Objectives: ofObjectives(a.Objectives, a)}
 	case BackupShape:
 		return OfBackup(*a.Backup, a.Holds)
 	case Kept:
@@ -245,7 +277,11 @@ func Of(op Operation, a Answer) any {
 	case Steps:
 		return ofSteps(*a.Task)
 	case Deleted:
-		return Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
+		said := Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
+		if a.Went != nil {
+			said.Kept, said.SubObjectives, said.Detached, said.TasksDeleted = a.Went.Kept, a.Went.Gone, a.Went.Detached, a.Went.Deleted
+		}
+		return said
 	case Restored:
 		return Restored{Restored: *a.Restored}
 	case PluginWritten:
@@ -312,10 +348,12 @@ func listed(numbers []int) []int {
 	return numbers
 }
 
-func ofObjectives(all []objective.Objective, along map[int]domain.Progress) []Objective {
+func ofObjectives(all []objective.Objective, a Answer) []Objective {
 	out := make([]Objective, 0, len(all))
 	for _, o := range all {
-		out = append(out, OfObjective(o, nil, along[o.Carried().Number]))
+		said := seated(OfObjective(o, nil, a.Along[o.Carried().Number]), o, a.Tree)
+		said.TimeSpent = domain.FormatDuration(a.Spent[o.Carried().Number])
+		out = append(out, said)
 	}
 	return out
 }

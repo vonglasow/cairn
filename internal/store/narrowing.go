@@ -43,11 +43,18 @@ func (n *narrowing) Carrying(priority string) {
 	n.keep(`priority = ?`, priority)
 }
 
-// Serving keeps what serves one objective, among however many others it also serves.
-func (n *narrowing) Serving(objective int) {
-	n.keep(`EXISTS (SELECT 1 FROM task_objectives
+// Serving keeps what serves any one of the objectives named together, among however many others it also serves.
+func (n *narrowing) Serving(objectives []int) {
+	n.clauses = append(n.clauses, `EXISTS (SELECT 1 FROM task_objectives
 		WHERE task_objectives.task_number = tasks.number
-		  AND task_objectives.objective_number = ?)`, objective)
+		  AND task_objectives.objective_number IN (`+placeholders(len(objectives))+`))`)
+	for _, o := range objectives {
+		n.args = append(n.args, o)
+	}
+}
+
+func placeholders(n int) string {
+	return strings.TrimSuffix(strings.Repeat("?, ", n), ", ")
 }
 
 // Labelled keeps what carries every label named.

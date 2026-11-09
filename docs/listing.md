@@ -421,8 +421,9 @@ tests judge the code that exists, and three tested copies of one rule score
 three perfect marks — mutation *rewards* duplication. The only cure was to
 keep one.
 
-An objective is narrowed the same way, minus what it serves — nothing puts an
-objective under another, and an objective carries no steps.
+An objective is narrowed the same way, minus what it serves — an objective
+serves nothing, though it may sit under another — and an objective carries no
+steps.
 
 ## Everything named has to hold
 
@@ -516,7 +517,10 @@ read as an objective nobody is working towards rather than a filter nobody
 could satisfy.
 
 A task serves a set, so naming two keeps what serves **both**, the way two
-labels do.
+labels do. An objective named reaches its sub-objectives too: `--objective 4`
+keeps what serves 4 or one of the objectives under it, as 4's numbers count
+them, and `--itself` keeps to 4 alone. See
+[objectives.md](objectives.md#two-levels).
 
 ## A deadline narrows as a range, and is looked in as text
 

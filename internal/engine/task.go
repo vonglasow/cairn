@@ -72,7 +72,7 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	"state":     "keep only the tasks sitting in this column",
 	"priority":  "keep only the tasks carrying this priority",
 	"label":     "keep only the tasks carrying this label; named twice, only those carrying both",
-	"objective": "keep only the tasks serving this objective",
+	"objective": "keep only the tasks serving this objective or one of its sub-objectives",
 }),
 	Argument{
 		Name:  "due-before",
@@ -88,6 +88,11 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 		Name:  "with-archived",
 		Kind:  Bool,
 		Means: "keep both the tasks on the board and the ones taken off it",
+	},
+	Argument{
+		Name:  "itself",
+		Kind:  Bool,
+		Means: "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
 	},
 )
 
@@ -165,7 +170,7 @@ cairn task archive --state done`,
 		if len(in.Listed["also"]) > 0 {
 			return Answer{}, ErrAlsoWithoutNumber
 		}
-		kept, err := keeping(in, taskNarrowing)
+		kept, err := keeping(in, taskNarrowing, on.Engine)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -200,7 +205,7 @@ var TaskLabel = Operation{
 		if given := in.Change("put"); given != nil {
 			label = *given
 		}
-		kept, err := keeping(in, taskNarrowing)
+		kept, err := keeping(in, taskNarrowing, on.Engine)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -352,7 +357,7 @@ cairn task search spec --limit 50 --offset 100`,
 	}, append(append(slices.Clone(taskNarrowing), fieldsArgument), pageArguments...)...),
 	Run: func(on On, in Input) (Answer, error) {
 		named := in.Changed("named")
-		kept, err := keeping(in, taskNarrowing)
+		kept, err := keeping(in, taskNarrowing, on.Engine)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -507,7 +512,7 @@ func taskChanges(in Input) (Changes, error) {
 }
 
 func listing(on On, in Input) (Answer, error) {
-	kept, err := keeping(in, taskNarrowing)
+	kept, err := keeping(in, taskNarrowing, on.Engine)
 	if err != nil {
 		return Answer{}, err
 	}

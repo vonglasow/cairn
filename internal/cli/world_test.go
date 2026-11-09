@@ -167,8 +167,34 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^I added an objective titled "([^"]*)"$`, func(title string) error {
-		return w.Seed(fmt.Sprintf(`cairn objective new "%s"`, title))
+	sc.Step("^`([^`]*)` says it sits under nothing$", func(line string) error {
+		w.Run(line)
+		if got := w.field("parent"); got != "" {
+			return fmt.Errorf("it sits under %q, want nothing:\n%s%s", got, w.Out.Stdout, w.Out.Stderr)
+		}
+		return test.WantContains(w.Out.Stdout, "\nparent", "the answer")
+	})
+
+	sc.Step("^`([^`]*)` says it serves no objective$", func(line string) error {
+		w.Run(line)
+		if w.Out.Code != exitOK {
+			return fmt.Errorf("%s failed: exit %d (%s)", line, w.Out.Code, w.Out.Stderr)
+		}
+		if got := w.field("objectives"); got != "" {
+			return fmt.Errorf("it serves %q, want none", got)
+		}
+		return nil
+	})
+
+	sc.Step(`^the answer says "([^"]*)"$`, func(said string) error {
+		return test.WantContains(w.Out.Stdout, said, "the answer")
+	})
+
+	sc.Step(`^the answer does not say "([^"]*)"$`, func(said string) error {
+		if strings.Contains(w.Out.Stdout, said) {
+			return fmt.Errorf("the answer says %q:\n%s", said, w.Out.Stdout)
+		}
+		return nil
 	})
 
 	sc.Step(`^I added a task titled "([^"]*)" with the (description|deadline|estimate|priority|state|time spent|objective) "([^"]*)"$`,

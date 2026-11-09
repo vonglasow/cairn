@@ -292,3 +292,33 @@ Feature: Changes to the shape of the store
       When I run `cairn migration apply`
       Then it succeeds
       And `cairn task show 1` says it serves objective 1 alone
+
+  Rule: An objective can sit under another, and rolling that back keeps every objective
+
+    @objective-sub-migration-every-objective-level-one
+    Scenario: every objective already in a store stands on its own once the change is applied
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      And I rolled back the change named "an objective can sit under another"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And `cairn objective show 1` says it sits under nothing
+      And `cairn task show 1` says it serves objective 1 alone
+
+    @objective-sub-migration-rollback-sets-every-one-loose
+    Scenario: rolled back, a sub-objective stands on its own and its parent counts only its own tasks
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Print the case" with the objective "2"
+      And I rolled back the change named "an objective can sit under another"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And `cairn objective show 2` says it sits under nothing
+      And `cairn objective show 1` says "nothing is under it"
+      And `cairn objective show 2` says "0 of 1 tasks are done"
+
+    @objective-sub-migration-says-what-rolling-back-loses
+    Scenario: what rolling the change back loses is said before it is applied
+      When I run `cairn migration show 18`
+      Then it succeeds
+      And the answer says "which objective each sub-objective sat under"

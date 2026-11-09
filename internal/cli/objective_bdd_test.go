@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -207,7 +208,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^the row for objective (\d+) says "([^"]*)"$`, func(n int, want string) error {
-		row, err := w.listedRow(n)
+		row, err := w.objectiveRow(n)
 		if err != nil {
 			return err
 		}
@@ -217,7 +218,7 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^the row for objective (\d+) says nothing of how far along it is$`, func(n int) error {
-		row, err := w.listedRow(n)
+		row, err := w.objectiveRow(n)
 		if err != nil {
 			return err
 		}
@@ -335,6 +336,8 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	w.registerSubObjective(sc)
+
 	for step, said := range map[string]string{
 		`^it says there is no such objective$`:      "there is no such objective",
 		`^it says an objective needs a title$`:      "an objective needs a title",
@@ -382,4 +385,124 @@ func countedUnder(card string, want int) error {
 		return fmt.Errorf("%d tasks are under it, want %d:\n%s", count, want, card)
 	}
 	return nil
+}
+
+func (w *world) objectiveRow(number int) (string, error) {
+	rows := strings.Split(w.Out.Stdout, "\n")
+	want := "#" + strconv.Itoa(number) + " "
+	for i, row := range rows {
+		if !strings.HasPrefix(strings.TrimLeft(row, " ├└│"), want) {
+			continue
+		}
+		if i+1 < len(rows) && !strings.Contains(rows[i+1], "#") {
+			return row + "\n" + rows[i+1], nil
+		}
+		return row, nil
+	}
+	return "", fmt.Errorf("objective %d is not in the listing:\n%s", number, w.Out.Stdout)
+}
+
+func blockUnder(out, heading string) (string, error) {
+	_, block, found := strings.Cut(out, "\n"+heading+"\n")
+	if !found {
+		return "", fmt.Errorf("nothing is said under %q:\n%s", heading, out)
+	}
+	block, _, _ = strings.Cut(block, "\n\n")
+	return block, nil
+}
+
+func (w *world) namesUnder(heading, want string) error {
+	block, err := blockUnder(w.Out.Stdout, heading)
+	if err != nil {
+		return err
+	}
+	for _, row := range strings.Split(block, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(row), want) {
+			return nil
+		}
+	}
+	return fmt.Errorf("%q is not under %q:\n%s", want, heading, w.Out.Stdout)
+}
+
+func (w *world) jsonFamily() (*int, []int, error) {
+	var got struct {
+		Parent   *int  `json:"parent"`
+		Children []int `json:"children"`
+	}
+	if err := json.Unmarshal([]byte(w.Out.Stdout), &got); err != nil {
+		return nil, nil, fmt.Errorf("the answer is not JSON (%w):\n%s", err, w.Out.Stdout)
+	}
+	return got.Parent, got.Children, nil
+}
+
+func (w *world) drawnUnder(child, parent int) error {
+	above := 0
+	for _, row := range strings.Split(w.Out.Stdout, "\n") {
+		if n, ok := numberOfRow(row); ok && strings.HasPrefix(row, "#") {
+			above = n
+			continue
+		}
+		trimmed := strings.TrimLeft(row, " │")
+		if strings.HasPrefix(trimmed, fmt.Sprintf("├ #%d ", child)) || strings.HasPrefix(trimmed, fmt.Sprintf("└ #%d ", child)) {
+			if above != parent {
+				return fmt.Errorf("objective %d is drawn under objective %d:\n%s", child, above, w.Out.Stdout)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("objective %d is not drawn under another:\n%s", child, w.Out.Stdout)
+}
+
+func (w *world) registerSubObjective(sc *godog.ScenarioContext) {
+	sc.Step(`^the objective sits under "([^"]*)"$`, func(want string) error {
+		return w.wantField("parent", want)
+	})
+	sc.Step(`^the objective sits under nothing$`, func() error {
+		if !strings.Contains(w.Out.Stdout, "\nparent") {
+			return fmt.Errorf("the answer says nothing of a parent:\n%s", w.Out.Stdout)
+		}
+		return w.wantField("parent", "")
+	})
+	sc.Step(`^the refusal says "([^"]*)"$`, func(said string) error {
+		return test.WantContains(w.Out.Stderr, said, "the reason")
+	})
+	sc.Step(`^I edited objective (\d+) with the state "([^"]*)"$`, func(n int, state string) error {
+		return w.Seed(fmt.Sprintf(`cairn objective edit %d --state %s`, n, state))
+	})
+	sc.Step(`^it names the sub-objective (\d+) titled "([^"]*)"$`, func(n int, title string) error {
+		return w.namesUnder("sub-objectives", fmt.Sprintf("#%d  %s", n, title))
+	})
+	sc.Step(`^it names task (\d+) on the objective itself$`, func(n int) error {
+		return w.namesUnder("tasks on it directly", fmt.Sprintf("#%d ", n))
+	})
+	sc.Step(`^it names task (\d+) in its sub-objectives$`, func(n int) error {
+		return w.namesUnder("tasks in its sub-objectives", fmt.Sprintf("#%d ", n))
+	})
+	sc.Step(`^objective (\d+) is drawn under objective (\d+)$`, w.drawnUnder)
+	sc.Step(`^objective (\d+) is drawn on its own$`, func(n int) error {
+		if !strings.Contains("\n"+w.Out.Stdout, fmt.Sprintf("\n#%d ", n)) {
+			return fmt.Errorf("objective %d is not drawn on its own:\n%s", n, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the JSON objective sits under nothing and holds "([^"]*)"$`, func(holds string) error {
+		parent, children, err := w.jsonFamily()
+		if err != nil {
+			return err
+		}
+		if parent != nil || fmt.Sprint(children) != "["+holds+"]" {
+			return fmt.Errorf("the JSON says parent %v, children %v:\n%s", parent, children, w.Out.Stdout)
+		}
+		return nil
+	})
+	sc.Step(`^the JSON objective sits under (\d+) and holds nothing$`, func(under int) error {
+		parent, children, err := w.jsonFamily()
+		if err != nil {
+			return err
+		}
+		if parent == nil || *parent != under || children == nil || len(children) != 0 {
+			return fmt.Errorf("the JSON says parent %v, children %v:\n%s", parent, children, w.Out.Stdout)
+		}
+		return nil
+	})
 }

@@ -26,7 +26,7 @@ func narrowedBy(attributes []Argument, means map[string]string) []Argument {
 	return taken
 }
 
-func keeping(in Input, taken []Argument) (*domain.Narrowing, error) {
+func keeping(in Input, taken []Argument, e *Engine) (*domain.Narrowing, error) {
 	for _, argument := range taken {
 		if err := accepted(in, argument); err != nil {
 			return nil, err
@@ -48,7 +48,11 @@ func keeping(in Input, taken []Argument) (*domain.Narrowing, error) {
 			if err != nil || number <= 0 {
 				return nil, fmt.Errorf("%q: %w", one, ErrObjectiveRequired)
 			}
-			kept.Serving(number)
+			reached, err := reaching(e, number, in.Yes("itself"))
+			if err != nil {
+				return nil, err
+			}
+			kept.Serving(reached)
 		}
 	}
 	if labels := in.Changed("label"); labels != nil {
@@ -98,4 +102,15 @@ func heldAmong(tasks []task.Task, inFocus []int) []int {
 		}
 	}
 	return kept
+}
+
+func reaching(e *Engine, number int, itself bool) ([]int, error) {
+	if e == nil || itself {
+		return []int{number}, nil
+	}
+	t, err := e.tree()
+	if err != nil {
+		return nil, err
+	}
+	return t.reach(number), nil
 }

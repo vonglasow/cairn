@@ -125,7 +125,7 @@ func (k *keptBy) Narrowed(n *domain.Narrowing) ([]task.Task, error) {
 func (k *keptBy) InColumn(s string)   { k.told = append(k.told, "column "+s) }
 func (k *keptBy) Carrying(p string)   { k.told = append(k.told, "priority "+p) }
 func (k *keptBy) DueBefore(string)    {}
-func (k *keptBy) Serving(int)         {}
+func (k *keptBy) Serving([]int)       {}
 func (k *keptBy) Labelled(l []string) { k.told = append(k.told, "labels "+strings.Join(l, ",")) }
 func (k *keptBy) Archived()           {}
 func (k *keptBy) WithArchived()       {}
@@ -134,7 +134,7 @@ func TestNarrowed_isSaidToWhateverKeepsTheTasks(t *testing.T) {
 	kept, err := keeping(Input{
 		Given:  map[string]string{"state": "done", "priority": "high"},
 		Listed: map[string][]string{"label": {"spec"}},
-	}, taskNarrowing)
+	}, taskNarrowing, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

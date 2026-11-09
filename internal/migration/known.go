@@ -302,4 +302,12 @@ CREATE TABLE IF NOT EXISTS label_colours (
 DROP TABLE IF EXISTS label_colours;`,
 		loses: "the colours chosen for labels, which take back the one read off their names",
 	},
+	{
+		name: "an objective can sit under another",
+		does: `
+ALTER TABLE objectives ADD COLUMN parent INTEGER REFERENCES objectives(number);`,
+		undoes: `
+ALTER TABLE objectives DROP COLUMN parent;`,
+		loses: "which objective each sub-objective sat under; every objective stays, each one level one with its own tasks, so a parent counts only the tasks attached to it directly",
+	},
 }

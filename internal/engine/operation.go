@@ -316,6 +316,11 @@ type Answer struct {
 	Offset            int
 	Fields            []string
 	Under             []task.Task
+	Family            *objective.Family
+	Tree              map[int][]int
+	Spent             map[int]time.Duration
+	Proposes          *objective.Objective
+	Went              *Went
 	Objective         *objective.Objective
 	Objectives        []objective.Objective
 	MatchedObjectives []objective.Objective

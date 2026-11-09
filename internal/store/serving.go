@@ -6,10 +6,10 @@ const (
 	keepServing  = `INSERT OR IGNORE INTO task_objectives (task_number, objective_number) VALUES (?, ?)`
 	servedBy     = `SELECT objective_number FROM task_objectives WHERE task_number = ? ORDER BY objective_number`
 	clearServing = `DELETE FROM task_objectives WHERE task_number = ?`
-	servingOne   = `FROM tasks
+	servingAny   = `FROM tasks
 		WHERE EXISTS (SELECT 1 FROM task_objectives
 			WHERE task_objectives.task_number = tasks.number
-			  AND task_objectives.objective_number = ?) `
+			  AND task_objectives.objective_number IN (%s)) `
 )
 
 func (s *Store) objectivesServedBy(number int) ([]int, error) {

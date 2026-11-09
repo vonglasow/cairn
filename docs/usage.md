@@ -143,6 +143,11 @@ cairn objective list --state on-hold --label urgent   # only what carries all of
 cairn objective show 1           # what it carries, what is under it, how far along
 cairn objective edit 1 --state reached --label +done
 cairn objective delete 1 --yes
+cairn objective new "Enclosure" --parent 1          # a sub-objective of 1
+cairn objective edit 5 --parent none                # standing on its own again
+cairn task list --objective 1                       # 1 and its sub-objectives
+cairn task list --objective 1 --itself              # 1 alone
+cairn objective delete 1 --sub-objectives keep --tasks detach --yes
 ```
 
 Three of the seven columns mean the work is stopped: `blocked` waits on somebody
@@ -177,9 +182,18 @@ Nothing under it, nothing said.
 A task serves as many objectives as it actually serves, and its steps are
 counted towards them through it. A task serving two counts in both,
 which is the point — made to serve one, work that advanced two had to pick, and
-the objective it did not name then read low. An objective with tasks under it is
-not deleted. See [docs/objectives.md](objectives.md) for what serving
-several cost and bought.
+the objective it did not name then read low. See
+[docs/objectives.md](objectives.md) for what serving several cost and bought.
+
+An objective may hold sub-objectives, two levels deep and no more. A parent
+counts its own tasks and its sub-objectives', each task once, and `objective
+list` draws the tree. A task is never attached to a parent and one of its
+sub-objectives at once: that is refused, and nothing changes. A parent whose
+every sub-objective is reached is proposed as reached, never put there by
+itself. Deleting an objective holding sub-objectives or carrying tasks lists
+them and is refused until you say what goes with it: `--sub-objectives
+keep|delete` (or one by one, `--keep 5,7 --delete 6`) and `--tasks
+detach|delete`. See [docs/objectives.md](objectives.md#two-levels).
 
 ## What happened, and how the day went
 

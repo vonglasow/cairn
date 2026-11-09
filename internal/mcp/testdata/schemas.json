@@ -83,6 +83,46 @@
           "items": {
             "type": "integer"
           }
+        },
+        "kept": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the sub-objectives kept, each standing on its own now; left out when none was"
+        },
+        "sub_objectives_deleted": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the sub-objectives deleted with it; left out when none was"
+        },
+        "detached": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks detached from what was deleted; left out when none was"
+        },
+        "tasks_deleted": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks deleted with it; left out when none was"
         }
       },
       "required": [
@@ -1214,9 +1254,45 @@
           },
           "type": "array"
         },
+        "delete": {
+          "description": "a sub-objective deleted, whatever sub-objectives says",
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "type": "array"
+        },
+        "keep": {
+          "description": "a sub-objective kept, standing on its own, whatever sub-objectives says",
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "type": "array"
+        },
         "number": {
           "description": "the number of the objective",
           "type": "integer"
+        },
+        "sub-objectives": {
+          "description": "what becomes of its sub-objectives: kept, each standing on its own, or deleted",
+          "enum": [
+            "keep",
+            "delete"
+          ],
+          "type": "string"
+        },
+        "tasks": {
+          "description": "what becomes of the tasks attached to what is deleted: detached from it, or deleted",
+          "enum": [
+            "detach",
+            "delete"
+          ],
+          "type": "string"
         }
       },
       "required": [
@@ -1248,6 +1324,46 @@
           "items": {
             "type": "integer"
           }
+        },
+        "kept": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the sub-objectives kept, each standing on its own now; left out when none was"
+        },
+        "sub_objectives_deleted": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the sub-objectives deleted with it; left out when none was"
+        },
+        "detached": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks detached from what was deleted; left out when none was"
+        },
+        "tasks_deleted": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks deleted with it; left out when none was"
         }
       },
       "required": [
@@ -1293,6 +1409,13 @@
         "number": {
           "description": "the number of the objective",
           "type": "integer"
+        },
+        "parent": {
+          "description": "the number of the objective it sits under, two levels deep at most; none to stand on its own",
+          "type": [
+            "integer",
+            "string"
+          ]
         },
         "priority": {
           "description": "the priority it carries",
@@ -1446,6 +1569,30 @@
           },
           "description": "the numbers of the tasks serving it that are neither done nor archived"
         },
+        "parent": {
+          "type": [
+            "null",
+            "integer"
+          ],
+          "description": "the number of the objective it sits under; null when it stands on its own"
+        },
+        "children": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of its sub-objectives; empty when it holds none"
+        },
+        "proposed_reached": {
+          "type": [
+            "null",
+            "integer"
+          ],
+          "description": "the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"
+        },
         "added": {
           "type": [
             "null",
@@ -1559,7 +1706,9 @@
         "tasks",
         "progress",
         "time_spent",
-        "left"
+        "left",
+        "parent",
+        "children"
       ],
       "additionalProperties": false
     }
@@ -1732,6 +1881,30 @@
                 },
                 "description": "the numbers of the tasks serving it that are neither done nor archived"
               },
+              "parent": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "the number of the objective it sits under; null when it stands on its own"
+              },
+              "children": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of its sub-objectives; empty when it holds none"
+              },
+              "proposed_reached": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"
+              },
               "added": {
                 "type": [
                   "null",
@@ -1845,7 +2018,9 @@
               "tasks",
               "progress",
               "time_spent",
-              "left"
+              "left",
+              "parent",
+              "children"
             ],
             "additionalProperties": false
           }
@@ -1886,6 +2061,13 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "parent": {
+          "description": "the number of the objective it sits under, two levels deep at most; none to stand on its own",
+          "type": [
+            "integer",
+            "string"
+          ]
         },
         "priority": {
           "description": "the priority it carries",
@@ -2035,6 +2217,30 @@
           },
           "description": "the numbers of the tasks serving it that are neither done nor archived"
         },
+        "parent": {
+          "type": [
+            "null",
+            "integer"
+          ],
+          "description": "the number of the objective it sits under; null when it stands on its own"
+        },
+        "children": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of its sub-objectives; empty when it holds none"
+        },
+        "proposed_reached": {
+          "type": [
+            "null",
+            "integer"
+          ],
+          "description": "the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"
+        },
         "added": {
           "type": [
             "null",
@@ -2148,7 +2354,9 @@
         "tasks",
         "progress",
         "time_spent",
-        "left"
+        "left",
+        "parent",
+        "children"
       ],
       "additionalProperties": false
     }
@@ -2304,6 +2512,30 @@
               },
               "description": "the numbers of the tasks serving it that are neither done nor archived"
             },
+            "parent": {
+              "type": [
+                "null",
+                "integer"
+              ],
+              "description": "the number of the objective it sits under; null when it stands on its own"
+            },
+            "children": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of its sub-objectives; empty when it holds none"
+            },
+            "proposed_reached": {
+              "type": [
+                "null",
+                "integer"
+              ],
+              "description": "the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"
+            },
             "added": {
               "type": [
                 "null",
@@ -2417,7 +2649,9 @@
             "tasks",
             "progress",
             "time_spent",
-            "left"
+            "left",
+            "parent",
+            "children"
           ],
           "additionalProperties": false
         },
@@ -2445,6 +2679,33 @@
               },
               "time_spent": {
                 "type": "string"
+              },
+              "sub_objectives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    },
+                    "time_spent": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "time_spent"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "the time spent through each sub-objective that month; left out for an objective holding none"
+              },
+              "itself": {
+                "type": "string",
+                "description": "the time spent on the tasks put on the parent itself that month; left out when none was"
               }
             },
             "required": [
@@ -2642,6 +2903,30 @@
                 },
                 "description": "the numbers of the tasks serving it that are neither done nor archived"
               },
+              "parent": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "the number of the objective it sits under; null when it stands on its own"
+              },
+              "children": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of its sub-objectives; empty when it holds none"
+              },
+              "proposed_reached": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"
+              },
               "added": {
                 "type": [
                   "null",
@@ -2755,7 +3040,9 @@
               "tasks",
               "progress",
               "time_spent",
-              "left"
+              "left",
+              "parent",
+              "children"
             ],
             "additionalProperties": false
           }
@@ -2906,6 +3193,30 @@
           },
           "description": "the numbers of the tasks serving it that are neither done nor archived"
         },
+        "parent": {
+          "type": [
+            "null",
+            "integer"
+          ],
+          "description": "the number of the objective it sits under; null when it stands on its own"
+        },
+        "children": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of its sub-objectives; empty when it holds none"
+        },
+        "proposed_reached": {
+          "type": [
+            "null",
+            "integer"
+          ],
+          "description": "the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"
+        },
         "added": {
           "type": [
             "null",
@@ -3019,7 +3330,9 @@
         "tasks",
         "progress",
         "time_spent",
-        "left"
+        "left",
+        "parent",
+        "children"
       ],
       "additionalProperties": false
     }
@@ -3360,6 +3673,10 @@
           "description": "keep only the tasks due on or before this day",
           "type": "string"
         },
+        "itself": {
+          "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
+          "type": "boolean"
+        },
         "label": {
           "description": "keep only the tasks carrying this label; named twice, only those carrying both",
           "items": {
@@ -3372,7 +3689,7 @@
           "type": "integer"
         },
         "objective": {
-          "description": "keep only the tasks serving this objective",
+          "description": "keep only the tasks serving this objective or one of its sub-objectives",
           "items": {
             "type": [
               "integer",
@@ -3775,6 +4092,46 @@
           "items": {
             "type": "integer"
           }
+        },
+        "kept": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the sub-objectives kept, each standing on its own now; left out when none was"
+        },
+        "sub_objectives_deleted": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the sub-objectives deleted with it; left out when none was"
+        },
+        "detached": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks detached from what was deleted; left out when none was"
+        },
+        "tasks_deleted": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks deleted with it; left out when none was"
         }
       },
       "required": [
@@ -4689,6 +5046,10 @@
           "description": "keep only the tasks due on or before this day",
           "type": "string"
         },
+        "itself": {
+          "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
+          "type": "boolean"
+        },
         "label": {
           "description": "keep only the tasks carrying this label; named twice, only those carrying both",
           "items": {
@@ -4697,7 +5058,7 @@
           "type": "array"
         },
         "objective": {
-          "description": "keep only the tasks serving this objective",
+          "description": "keep only the tasks serving this objective or one of its sub-objectives",
           "items": {
             "type": [
               "integer",
@@ -4807,6 +5168,10 @@
           },
           "type": "array"
         },
+        "itself": {
+          "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
+          "type": "boolean"
+        },
         "label": {
           "description": "keep only the tasks carrying this label; named twice, only those carrying both",
           "items": {
@@ -4829,7 +5194,7 @@
           "type": "array"
         },
         "objective": {
-          "description": "keep only the tasks serving this objective",
+          "description": "keep only the tasks serving this objective or one of its sub-objectives",
           "items": {
             "type": [
               "integer",
@@ -5731,6 +6096,10 @@
           },
           "type": "array"
         },
+        "itself": {
+          "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
+          "type": "boolean"
+        },
         "label": {
           "description": "keep only the tasks carrying this label; named twice, only those carrying both",
           "items": {
@@ -5750,7 +6119,7 @@
           "type": "array"
         },
         "objective": {
-          "description": "keep only the tasks serving this objective",
+          "description": "keep only the tasks serving this objective or one of its sub-objectives",
           "items": {
             "type": [
               "integer",

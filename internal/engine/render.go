@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -63,12 +64,12 @@ func rendered(op Operation, a Answer) string {
 		}
 		return crossedText(a.Crossed) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks))
 	case Objective:
-		return objective.Text(*a.Objective, a.Progress, reviewOf(a.Under)) + objective.Serving(linesOf(a.Under)) + movedText(a.Moved)
+		return objectiveText(a) + movedText(a.Moved)
 	case Objectives:
 		if a.MatchedObjectives != nil {
-			return objectivesText(a.MatchedObjectives, a.Along)
+			return objectivesText(a.MatchedObjectives, a)
 		}
-		return objectivesText(a.Objectives, a.Along)
+		return objectivesText(a.Objectives, a)
 	case BackupShape:
 		return backupLine(*a.Backup, *a.Holds)
 	case Kept:
@@ -97,7 +98,7 @@ func rendered(op Operation, a Answer) string {
 		for _, n := range a.Unblocked {
 			said += fmt.Sprintf("task %d was waiting on it, and nothing names what stops it now\n", n)
 		}
-		return said
+		return said + wentText(a.Went)
 	case Restored:
 		return fmt.Sprintf("backup %d was restored\n", *a.Restored)
 	case PluginWritten:
@@ -184,11 +185,40 @@ func linesOf(tasks []task.Task) []string {
 	return out
 }
 
-func objectivesText(all []objective.Objective, along map[int]domain.Progress) string {
+func objectivesText(all []objective.Objective, a Answer) string {
 	if len(all) == 0 {
 		return "there is no objective\n"
 	}
-	return objective.List(all, along)
+	return objective.List(all, a.Along, a.Spent)
+}
+
+func objectiveText(a Answer) string {
+	var f objective.Family
+	if a.Family != nil {
+		f = *a.Family
+	}
+	said := objective.Text(*a.Objective, a.Progress, reviewOf(a.Under), f)
+	if len(f.Children) == 0 {
+		said += objective.Serving(linesOf(a.Under))
+	} else {
+		n := a.Objective.Carried().Number
+		var own, through []task.Task
+		for _, t := range a.Under {
+			if slices.Contains(factsOf(t).Objectives, n) {
+				own = append(own, t)
+			} else {
+				through = append(through, t)
+			}
+		}
+		said += objective.Children(f) + objective.Apart(linesOf(own), linesOf(through))
+	}
+	if f.Proposed {
+		said += objective.Proposal(*a.Objective, true)
+	}
+	if a.Proposes != nil {
+		said += objective.Proposal(*a.Proposes, false)
+	}
+	return said
 }
 
 func backupLine(b domain.Backup, holds domain.Held) string {

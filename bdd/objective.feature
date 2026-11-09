@@ -657,6 +657,294 @@ Feature: Objectives
       When I run `cairn objective report 1 --since 2026-08-01 --json`
       Then the JSON report gives the month "2026-08" at "1h30m" and task 1 done
 
+  Rule: An objective may hold sub-objectives, two levels deep and no more
+
+    @objective-sub-made-under-a-parent
+    Scenario: an objective is made under another
+      Given I added an objective titled "Home automation"
+      When I run `cairn objective new "Enclosure" --parent 1`
+      Then it succeeds
+      And the objective sits under "#1 Home automation"
+
+    @objective-sub-level-one-sits-under-nothing
+    Scenario: an objective made with no parent sits under nothing
+      When I run `cairn objective new "Home automation"`
+      Then the objective sits under nothing
+
+    @objective-sub-third-level-refused
+    Scenario: a sub-objective holds no sub-objective of its own
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      When I run `cairn objective new "Bootloader" --parent 2`
+      Then it fails
+      And the refusal says "an objective goes two levels deep at most"
+      And `cairn objective list` lists 2 objectives
+
+    @objective-sub-parent-stays-level-one
+    Scenario: an objective holding sub-objectives is not put under another
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden watering"
+      When I run `cairn objective edit 1 --parent 3`
+      Then it fails
+      And the refusal says "an objective goes two levels deep at most"
+      And `cairn objective show 1` says it sits under nothing
+
+    @objective-sub-not-under-itself
+    Scenario: an objective does not sit under itself
+      Given I added an objective titled "Home automation"
+      When I run `cairn objective edit 1 --parent 1`
+      Then it fails
+      And the refusal says "an objective does not sit under itself"
+
+    @objective-sub-parent-that-does-not-exist
+    Scenario: a parent nothing carries is refused
+      When I run `cairn objective new "Enclosure" --parent 9`
+      Then it fails
+      And it says there is no such objective
+      And `cairn objective list` says there is no objective
+
+    @objective-sub-parent-not-a-number
+    Scenario: a parent that is no number and not none is refused
+      Given I added an objective titled "Home automation"
+      When I run `cairn objective edit 1 --parent home`
+      Then it fails
+      And it says an objective number is expected
+
+    @objective-sub-moves-to-another-parent
+    Scenario: a sub-objective moves to another parent with its tasks
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Garden watering"
+      And I added an objective titled "Valves" under objective 1
+      And I added a task titled "Buy the valves" with the objective "3"
+      When I run `cairn objective edit 3 --parent 2`
+      Then it succeeds
+      And the objective sits under "#2 Garden watering"
+      And `cairn objective show 2` says "0 of 1 tasks are done"
+      And `cairn objective show 1` says nothing is under it
+
+    @objective-sub-moves-to-level-one
+    Scenario: a sub-objective put under none stands on its own
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      When I run `cairn objective edit 2 --parent none`
+      Then it succeeds
+      And the objective sits under nothing
+
+    @objective-sub-move-refused-when-counted-twice
+    Scenario: a sub-objective does not move under a parent one of its tasks already serves
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Garden watering"
+      And I added an objective titled "Valves" under objective 1
+      And I added a task titled "Buy the valves" with the objectives "2" and "3"
+      When I run `cairn objective edit 3 --parent 2`
+      Then it fails
+      And the refusal says "#1 is already counted in #2 Garden watering through #3 Valves; nothing was changed"
+      And `cairn objective show 3` says "#1 Home automation"
+
+  Rule: A task is counted once in a tree
+
+    @objective-sub-attached-to-a-parent-and-its-sub-objectives-refused
+    Scenario: a task on two sub-objectives is not attached to their parent as well
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Mount the board" with the objectives "2" and "3"
+      When I run `cairn task edit 1 --objective +1`
+      Then it fails
+      And the refusal says "#1 is already counted in #1 Home automation through #2 Enclosure and #3 Firmware; nothing was changed"
+      And `cairn task show 1` says it serves objectives 2 and 3
+
+    @objective-sub-attached-to-a-parent-then-a-sub-objective-refused
+    Scenario: a task on a parent is not attached to one of its sub-objectives as well
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Wiring diagram" with the objective "1"
+      When I run `cairn task edit 1 --objective +2`
+      Then it fails
+      And the refusal says "#1 is already counted in #1 Home automation through #2 Enclosure; nothing was changed"
+      And `cairn task show 1` says it serves objective 1 alone
+
+    @objective-sub-new-task-attached-twice-refused
+    Scenario: a new task is not attached to a parent and one of its sub-objectives at once
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      When I run `cairn task new "Wiring diagram" --objective 1 --objective 2`
+      Then it fails
+      And the refusal says "the task is already counted in #1 Home automation through #2 Enclosure; nothing was changed"
+      And `cairn task list` says there is no task
+
+    @objective-sub-two-sub-objectives-of-one-parent
+    Scenario: a task may serve two sub-objectives of one parent
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      When I run `cairn task new "Mount the board" --objective 2 --objective 3`
+      Then it succeeds
+
+  Rule: A parent counts over its own tasks and its sub-objectives', each task once
+
+    @objective-sub-parent-counts-each-task-once
+    Scenario: a parent's progress and time are over the union of its tree
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Mount the board" with the objectives "2" and "3"
+      And I added a task titled "Wiring diagram" with the objective "1"
+      And I added a task titled "Flash it" with the objective "3"
+      And I edited task 1 with the state "done"
+      And I edited task 1 with the time spent "1h"
+      And I edited task 2 with the time spent "30m"
+      And I edited task 3 with the time spent "15m"
+      When I run `cairn objective show 1`
+      Then the answer says "1 of 3 tasks are done"
+      And the objective carries the time spent "1h45m"
+      And the objective carries the left "2 tasks, none due"
+
+    @objective-sub-show-splits-its-tasks
+    Scenario: a parent names its sub-objectives, the tasks on itself and those in its sub-objectives
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Print the case" with the objective "2"
+      And I added a task titled "Wiring diagram" with the objective "1"
+      When I run `cairn objective show 1`
+      Then it names the sub-objective 2 titled "Enclosure"
+      And it names task 2 on the objective itself
+      And it names task 1 in its sub-objectives
+
+    @objective-sub-list-as-a-tree
+    Scenario: the list draws each sub-objective under its parent, counting over the union
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Garden watering"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Print the case" with the objective "3"
+      And I added a task titled "Wiring diagram" with the objective "1"
+      And I edited task 1 with the state "done"
+      When I run `cairn objective list`
+      Then objective 3 is drawn under objective 1
+      And the row for objective 1 says "1 of 2 tasks"
+      And the row for objective 3 says "1 of 1 tasks"
+      And objective 2 is drawn on its own
+
+    @objective-sub-task-list-reaches-the-sub-objectives
+    Scenario: a listing by a parent reaches its sub-objectives, and by itself alone when asked
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Print the case" with the objective "2"
+      And I added a task titled "Wiring diagram" with the objective "1"
+      And I added a task titled "Elsewhere"
+      When I run `cairn task list --objective 1`
+      Then it lists 2 tasks
+      And `cairn task list --objective 1 --itself` lists 1 task
+
+    @objective-sub-report-splits-the-time
+    Scenario: a parent's review splits each month's time by sub-objective
+      Given I added an objective titled "Probation"
+      And I added an objective titled "Release" under objective 1
+      And I added a task titled "Tag it" with the objective "2"
+      And I added a task titled "Write it up" with the objective "1"
+      And I ran `cairn timesheet add 1 2h --on 2026-09-10`
+      And I ran `cairn timesheet add 2 30m --on 2026-09-11`
+      When I run `cairn objective report 1 --since 2026-09-01 --until 2026-09-30`
+      Then it succeeds
+      And the month "2026-09" says "2h30m  · #2 2h  · itself 30m"
+
+    @objective-sub-json-parent-and-children
+    Scenario: a machine reads which objective sits under which
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      When I run `cairn objective show 1 --json`
+      Then the JSON objective sits under nothing and holds "2"
+      When I run `cairn objective show 2 --json`
+      Then the JSON objective sits under 1 and holds nothing
+
+  Rule: A parent is proposed as reached, never put there on its own
+
+    @objective-sub-reached-proposed-by-the-last-one
+    Scenario: reaching the last sub-objective proposes the parent
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I edited objective 2 with the state "reached"
+      When I run `cairn objective edit 3 --state reached`
+      Then it succeeds
+      And the answer says "every sub-objective of #1 Home automation is reached: it may be put reached too"
+      And `cairn objective show 1` says "every sub-objective is reached: it may be put reached too"
+      And `cairn objective show 1` says "active"
+
+    @objective-sub-reached-not-proposed-while-one-is-open
+    Scenario: a parent is not proposed while a sub-objective is not reached
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      When I run `cairn objective edit 2 --state reached`
+      Then the answer does not say "may be put reached"
+
+  Rule: Deleting an objective with sub-objectives or tasks asks what goes with them
+
+    @objective-sub-delete-asks
+    Scenario: deleting a parent without saying what goes with it lists what it touches
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Wiring diagram" with the objective "1"
+      When I run `cairn objective delete 1 --yes`
+      Then it fails
+      And the refusal says "#2  Enclosure"
+      And the refusal says "#1  Wiring diagram"
+      And the refusal says "--sub-objectives keep|delete"
+      And the refusal says "--tasks detach|delete"
+      And `cairn objective list` lists 2 objectives
+
+    @objective-sub-delete-keeps-and-detaches
+    Scenario: a parent deleted keeping its sub-objectives and detaching its tasks
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Wiring diagram" with the objective "1"
+      When I run `cairn objective delete 1 --sub-objectives keep --tasks detach --yes`
+      Then it succeeds
+      And `cairn objective show 2` says it sits under nothing
+      And `cairn task show 1` says it serves no objective
+      And `cairn trace show 1` says "objectives"
+
+    @objective-sub-delete-takes-everything
+    Scenario: a parent deleted with its sub-objectives and their tasks
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Print the case" with the objective "2"
+      And I added a task titled "Wiring diagram" with the objective "1"
+      When I run `cairn objective delete 1 --sub-objectives delete --tasks delete --yes`
+      Then it succeeds
+      And `cairn objective list` says there is no objective
+      And `cairn task list` says there is no task
+
+    @objective-sub-delete-one-by-one
+    Scenario: each sub-objective is kept or deleted on its own
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      When I run `cairn objective delete 1 --keep 2 --delete 3 --yes`
+      Then it succeeds
+      And `cairn objective list` lists 1 objective
+      And `cairn objective show 2` says it sits under nothing
+
+    @objective-sub-delete-a-sub-objective-it-does-not-hold
+    Scenario: naming one that is not its sub-objective is refused
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Garden watering"
+      When I run `cairn objective delete 1 --keep 3 --sub-objectives delete --yes`
+      Then it fails
+      And the refusal says "#3 is not a sub-objective of #1"
+      And `cairn objective list` lists 3 objectives
+
+    @objective-sub-delete-level-one-detaching-its-tasks
+    Scenario: an objective with tasks and no sub-objective is deleted once its tasks are seen to
+      Given I added an objective titled "Ship cairn 1.0"
+      And I added a task titled "Write the spec" with the objective "1"
+      When I run `cairn objective delete 1 --tasks detach --yes`
+      Then it succeeds
+      And `cairn task show 1` says it serves no objective
+
   Rule: An objective outlives the command that created it
 
     @objective-survives

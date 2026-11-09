@@ -38,15 +38,20 @@ cairn objective report 6 --since 2026-07-01 --until 2026-09-30`,
 		if err != nil {
 			return Answer{}, err
 		}
-		o, under, p, err := readObjective(on.Engine, n)
+		read, err := readObjective(on.Engine, n)
 		if err != nil {
 			return Answer{}, err
 		}
-		period, err := on.Engine.periodOf(under, first, last)
+		parts, err := on.Engine.partsOf(n, *read.Family)
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Objective: &o, Under: under, Progress: p, Period: &period}, nil
+		period, err := on.Engine.periodOf(read.Under, parts, first, last)
+		if err != nil {
+			return Answer{}, err
+		}
+		read.Period = &period
+		return read, nil
 	},
 }
 
@@ -60,9 +65,17 @@ type Review struct {
 	Done      []DoneShape  `json:"done"`
 }
 
-// MonthShape is the time spent in one month of the period.
+// MonthShape is the time spent in one month of the period, and for a parent how it splits over its sub-objectives and itself.
 type MonthShape struct {
-	Month     string `json:"month" jsonschema:"the month, as 2026-08"`
+	Month         string      `json:"month" jsonschema:"the month, as 2026-08"`
+	TimeSpent     string      `json:"time_spent"`
+	SubObjectives []PartShape `json:"sub_objectives,omitempty" jsonschema:"the time spent through each sub-objective that month; left out for an objective holding none"`
+	Itself        string      `json:"itself,omitempty" jsonschema:"the time spent on the tasks put on the parent itself that month; left out when none was"`
+}
+
+// PartShape is the time a month spent through one sub-objective.
+type PartShape struct {
+	Number    int    `json:"number"`
 	TimeSpent string `json:"time_spent"`
 }
 
@@ -84,7 +97,15 @@ func OfReview(o objective.Objective, under []task.Task, p domain.Progress, in ob
 		Done:      []DoneShape{},
 	}
 	for _, m := range in.Months {
-		r.Months = append(r.Months, MonthShape{Month: m.Month.Format("2006-01"), TimeSpent: domain.FormatDuration(m.Spent)})
+		month := MonthShape{Month: m.Month.Format("2006-01"), TimeSpent: domain.FormatDuration(m.Spent)}
+		for _, part := range m.Split {
+			if part.Number == 0 {
+				month.Itself = domain.FormatDuration(part.Spent)
+				continue
+			}
+			month.SubObjectives = append(month.SubObjectives, PartShape{Number: part.Number, TimeSpent: domain.FormatDuration(part.Spent)})
+		}
+		r.Months = append(r.Months, month)
 	}
 	for _, f := range in.Done {
 		r.Done = append(r.Done, DoneShape{Number: f.Number, Title: f.Title, On: domain.FormatDay(f.On)})
@@ -92,7 +113,32 @@ func OfReview(o objective.Objective, under []task.Task, p domain.Progress, in ob
 	return r
 }
 
-func (e *Engine) periodOf(under []task.Task, first, last time.Time) (objective.Period, error) {
+type part struct {
+	number int
+	tasks  []task.Task
+}
+
+func (e *Engine) partsOf(n int, f objective.Family) ([]part, error) {
+	if len(f.Children) == 0 {
+		return nil, nil
+	}
+	var parts []part
+	for _, c := range append(slices.Clone(f.Children), objective.Child{}) {
+		number := c.Objective.Carried().Number
+		served := number
+		if number == 0 {
+			served = n
+		}
+		tasks, err := e.objectives.TasksServing(served)
+		if err != nil {
+			return nil, err
+		}
+		parts = append(parts, part{number: number, tasks: tasks})
+	}
+	return parts, nil
+}
+
+func (e *Engine) periodOf(under []task.Task, parts []part, first, last time.Time) (objective.Period, error) {
 	sheet, _, _, err := e.timed(first, last)
 	if err != nil {
 		return objective.Period{}, err
@@ -101,11 +147,27 @@ func (e *Engine) periodOf(under []task.Task, first, last time.Time) (objective.P
 	if err != nil {
 		return objective.Period{}, err
 	}
+	months := monthsOf(sheet, servingOf(under))
+	for i, m := range months {
+		for _, p := range parts {
+			var spent time.Duration
+			for _, pm := range monthsOf(sheet, servingOf(p.tasks)) {
+				if pm.Month.Equal(m.Month) {
+					spent = pm.Spent
+				}
+			}
+			months[i].Split = append(months[i].Split, objective.Part{Number: p.number, Spent: spent})
+		}
+	}
+	return objective.Period{Since: first, Until: last, Months: months, Done: finishedIn(acts, under, first, last)}, nil
+}
+
+func servingOf(tasks []task.Task) map[int]bool {
 	serving := map[int]bool{}
-	for _, t := range under {
+	for _, t := range tasks {
 		serving[t.Carried().Number] = true
 	}
-	return objective.Period{Since: first, Until: last, Months: monthsOf(sheet, serving), Done: finishedIn(acts, under, first, last)}, nil
+	return serving
 }
 
 func monthsOf(sheet trace.Sheet, serving map[int]bool) []objective.Month {

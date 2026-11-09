@@ -174,3 +174,81 @@ func TestTasksServing_handsBackWhatServesTheObjective(t *testing.T) {
 		t.Errorf("serving objective 1: %v, want only Write the spec", got)
 	}
 }
+
+func TestKeepObjective_keepsWhatItSitsUnder(t *testing.T) {
+	s := openStore(t)
+	keepObjective(t, s, "Home automation")
+	built, err := objective.NewObjective("Enclosure")
+	if err != nil {
+		t.Fatal(err)
+	}
+	told := objective.From(built)
+	told.Under(1)
+	if _, err := s.KeepObjective(told.Objective()); err != nil {
+		t.Fatal(err)
+	}
+	found, err := s.FindObjective(2)
+	if err != nil || found.Carried().Parent != 1 {
+		t.Fatalf("FindObjective(2) = %+v, %v, want it under 1", found.Carried(), err)
+	}
+	all, err := s.AllObjectives()
+	if err != nil || all[0].Carried().Parent != 0 || all[1].Carried().Parent != 1 {
+		t.Fatalf("AllObjectives = %v, %v", all, err)
+	}
+	loose := objective.From(found)
+	loose.Under(0)
+	if err := s.UpdateObjective(loose.Objective()); err != nil {
+		t.Fatal(err)
+	}
+	if found, _ := s.FindObjective(2); found.Carried().Parent != 0 {
+		t.Errorf("an objective set loose still sits under %d", found.Carried().Parent)
+	}
+}
+
+func TestTasksServing_handsBackWhatServesAnyOfThemOnce(t *testing.T) {
+	s := openStore(t)
+	keepObjective(t, s, "Home automation")
+	keepObjective(t, s, "Enclosure")
+	keepObjective(t, s, "Garden")
+	for _, serves := range [][]int{{2}, {1}, {1, 2}, {3}} {
+		if _, err := s.Keep(changed(mustTask(t, "Task"), func(a *task.AsTold) {
+			for _, n := range serves {
+				a.Serves(n)
+			}
+		})); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := s.TasksServing(1, 2)
+	if err != nil {
+		t.Fatalf("TasksServing: %v", err)
+	}
+	numbers := []int{}
+	for _, one := range got {
+		numbers = append(numbers, factsOf(one).Number)
+	}
+	if !slices.Equal(numbers, []int{1, 2, 3}) {
+		t.Errorf("serving 1 or 2: %v, want [1 2 3]", numbers)
+	}
+}
+
+func TestNarrowed_keepsWhatServesAnyOfTheObjectivesNamedTogether(t *testing.T) {
+	s := openStore(t)
+	keepObjective(t, s, "Home automation")
+	keepObjective(t, s, "Enclosure")
+	for _, serves := range []int{1, 2, 0} {
+		if _, err := s.Keep(changed(mustTask(t, "Task"), func(a *task.AsTold) {
+			if serves != 0 {
+				a.Serves(serves)
+			}
+		})); err != nil {
+			t.Fatal(err)
+		}
+	}
+	kept := domain.Narrowing{}
+	kept.Serving([]int{1, 2})
+	got, err := s.Narrowed(&kept)
+	if err != nil || len(got) != 2 {
+		t.Errorf("Narrowed serving 1 or 2 = %d tasks, %v, want 2", len(got), err)
+	}
+}

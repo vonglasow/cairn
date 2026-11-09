@@ -20,14 +20,14 @@ func plan(t *testing.T) Objective {
 }
 
 func TestText_leadsWithTheNumberAndTheTitle(t *testing.T) {
-	got := Text(plan(t), domain.Progress{}, Review{})
+	got := Text(plan(t), domain.Progress{}, Review{}, Family{})
 	if first := strings.SplitN(got, "\n", 2)[0]; !strings.Contains(first, "1") || !strings.Contains(first, "Ship the release") {
 		t.Errorf("first line = %q, want the number and the title", first)
 	}
 }
 
 func TestText_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
-	got := Text(plan(t), domain.Progress{}, Review{})
+	got := Text(plan(t), domain.Progress{}, Review{}, Family{})
 	for _, key := range []string{"state", "priority", "description", "labels", "deadline", "estimate"} {
 		if !strings.Contains(got, key) {
 			t.Errorf("text is missing %q:\n%s", key, got)
@@ -36,7 +36,7 @@ func TestText_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
 }
 
 func TestText_showsTheDefaultsAnObjectiveStartsWith(t *testing.T) {
-	got := Text(plan(t), domain.Progress{}, Review{})
+	got := Text(plan(t), domain.Progress{}, Review{}, Family{})
 	if !strings.Contains(got, "active") || !strings.Contains(got, "normal") {
 		t.Errorf("text should show active and normal:\n%s", got)
 	}
@@ -60,7 +60,7 @@ func TestText_showsWhatTheObjectiveCarries(t *testing.T) {
 	a.Estimated(estimate)
 	built = a.Objective()
 
-	got := Text(built, domain.Progress{}, Review{})
+	got := Text(built, domain.Progress{}, Review{}, Family{})
 	for _, want := range []string{"the whole thing", "launch, team", "2026-10-01", "5h"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("text is missing %q:\n%s", want, got)
@@ -69,14 +69,14 @@ func TestText_showsWhatTheObjectiveCarries(t *testing.T) {
 }
 
 func TestText_showsHowFarAlongItIs(t *testing.T) {
-	got := Text(plan(t), domain.Progress{Tasks: domain.Tally{Total: 3, Done: 1}}, Review{})
+	got := Text(plan(t), domain.Progress{Tasks: domain.Tally{Total: 3, Done: 1}}, Review{}, Family{})
 	if !strings.Contains(got, "1 of 3 tasks are done") {
 		t.Errorf("text is missing the progress line:\n%s", got)
 	}
 }
 
 func TestText_countsStepsApartFromTasks(t *testing.T) {
-	got := Text(plan(t), domain.Progress{Steps: domain.Tally{Total: 4, Done: 2}}, Review{})
+	got := Text(plan(t), domain.Progress{Steps: domain.Tally{Total: 4, Done: 2}}, Review{}, Family{})
 	if !strings.Contains(got, "2 of 4 steps are done") {
 		t.Errorf("text is missing the progress line:\n%s", got)
 	}
@@ -100,7 +100,7 @@ func TestList_writesEveryObjectiveAsOneRow(t *testing.T) {
 	b = From(second)
 	b.Numbered(2)
 
-	got := List([]Objective{a.Objective(), b.Objective()}, nil)
+	got := List([]Objective{a.Objective(), b.Objective()}, nil, nil)
 	if !strings.Contains(got, "#1  First") || !strings.Contains(got, "#2  Second") {
 		t.Errorf("List is missing a row:\n%s", got)
 	}
@@ -126,7 +126,7 @@ func TestAListingSaysWhereAnObjectiveStands(t *testing.T) {
 	a.Standing(Reached)
 	a.Carries(domain.High)
 	a.Due(time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC))
-	listed := List([]Objective{a.Objective()}, nil)
+	listed := List([]Objective{a.Objective()}, nil, nil)
 	for _, said := range []string{"Ship cairn", "reached", "high", "2026-12-01"} {
 		if !strings.Contains(listed, said) {
 			t.Errorf("the listing does not say %q: %q", said, listed)
@@ -136,7 +136,7 @@ func TestAListingSaysWhereAnObjectiveStands(t *testing.T) {
 
 func TestText_saysTheTimeSpentAndWhatIsLeft(t *testing.T) {
 	got := Text(plan(t), domain.Progress{}, Review{Spent: 2*time.Hour + 15*time.Minute,
-		Left: Left{Tasks: 2, Due: time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC), On: 3}})
+		Left: Left{Tasks: 2, Due: time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC), On: 3}}, Family{})
 	for _, want := range []string{"time spent   2h15m", "left         2 tasks, the next due 2026-11-05 (#3)"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("text is missing %q:\n%s", want, got)
@@ -171,9 +171,9 @@ func TestList_saysHowFarAlongEachIs(t *testing.T) {
 	got := List([]Objective{a.Objective(), b.Objective()}, map[int]domain.Progress{
 		1: {Tasks: domain.Tally{Total: 4, Done: 2}},
 		2: {},
-	})
+	}, nil)
 	rows := strings.Split(strings.TrimSpace(got), "\n")
-	if len(rows) != 2 || !strings.HasSuffix(rows[0], "· 50% done") || strings.Contains(rows[1], "done") {
+	if len(rows) != 3 || !strings.HasSuffix(rows[1], "· 50% done") || strings.Contains(rows[2], "done") {
 		t.Errorf("the list reads:\n%s", got)
 	}
 }

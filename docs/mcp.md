@@ -647,6 +647,15 @@ as a number or as a string: its items are `{"type": ["integer", "string"]}`
 refused, the refusal printing the integer in quotes as if a string had been
 sent (cairn#241).
 
+The same holds for one value naming an objective by its number: `parent` on
+`objective_new` and `objective_edit` is `{"type": ["integer", "string"]}`, so
+`"parent": 4` reads as `4` does, and `"none"` — or null — sets it loose
+(`@objective-sub-mcp-made-under-a-parent`). An objective's answer carries its
+`parent`, null at level one, and its `children`
+(`@objective-sub-mcp-parent-and-children`); `objective_delete` takes the
+choices the command line takes, and is refused with the list until they are
+given (`@objective-sub-mcp-delete-asks`).
+
 - **Strings stay.** `blocker` takes `"+3"`, `"-3"` and `"=3"`, which are no
   numbers, and every list was strings until now: taking them away would be a
   break.

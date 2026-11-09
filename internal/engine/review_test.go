@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -58,7 +59,7 @@ func TestThePeriodFoldsTheTimeOfItsTasksIntoMonths(t *testing.T) {
 		{Month: time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC), Spent: 90 * time.Minute},
 		{Month: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC), Spent: 45 * time.Minute},
 	}
-	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("the months are %+v, want %+v", got, want)
 	}
 }

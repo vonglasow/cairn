@@ -11,7 +11,7 @@ type NarrowingTold interface {
 	InColumn(state string)
 	Carrying(priority string)
 	DueBefore(day string)
-	Serving(objective int)
+	Serving(objectives []int)
 	Labelled(labels []string)
 	Archived()
 	WithArchived()
@@ -37,9 +37,9 @@ func (n *Narrowing) DueBefore(day string) {
 	n.name(true, func(to NarrowingTold) { to.DueBefore(day) })
 }
 
-// Serving keeps what serves one objective.
-func (n *Narrowing) Serving(objective int) {
-	n.name(true, func(to NarrowingTold) { to.Serving(objective) })
+// Serving keeps what serves any one of the objectives named together — an objective and the ones under it.
+func (n *Narrowing) Serving(objectives []int) {
+	n.name(true, func(to NarrowingTold) { to.Serving(objectives) })
 }
 
 // Labelled keeps what carries every label named.

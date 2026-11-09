@@ -189,6 +189,16 @@ func (w *World) IAddedATaskTitled(title string) error {
 	return w.Seed(fmt.Sprintf(`cairn task new "%s"`, title))
 }
 
+// IAddedAnObjectiveTitled seeds the store with one objective, standing on its own.
+func (w *World) IAddedAnObjectiveTitled(title string) error {
+	return w.Seed(fmt.Sprintf(`cairn objective new "%s"`, title))
+}
+
+// IAddedAnObjectiveUnder seeds the store with one objective, put under the one numbered parent.
+func (w *World) IAddedAnObjectiveUnder(title string, parent int) error {
+	return w.Seed(fmt.Sprintf(`cairn objective new "%s" --parent %d`, title, parent))
+}
+
 // IRun hands a command line over and keeps what came back.
 func (w *World) IRun(line string) error {
 	w.Run(line)
@@ -272,6 +282,9 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^it says what it expects instead of "([^"]*)"$`, w.ItSaysWhatItExpectsInsteadOf)
 	sc.Step("^`([^`]*)` says \"([^\"]*)\"$", w.CommandSays)
 	sc.Step("^`([^`]*)` lists (\\d+) tasks?$", w.LineListsTasks)
+	sc.Step("^`([^`]*)` lists (\\d+) objectives?$", w.LineListsTasks)
+	sc.Step(`^I added an objective titled "([^"]*)"$`, w.IAddedAnObjectiveTitled)
+	sc.Step(`^I added an objective titled "([^"]*)" under objective (\d+)$`, w.IAddedAnObjectiveUnder)
 	sc.Step(`^I put task (\d+) in focus$`, func(n int) error {
 		return w.Seed(fmt.Sprintf(`cairn task focus %d`, n))
 	})

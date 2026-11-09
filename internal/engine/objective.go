@@ -20,7 +20,7 @@ type objectives interface {
 	NarrowedObjectives(*domain.Narrowing) ([]objective.Objective, error)
 	UpdateObjective(objective.Objective) error
 	DeleteObjective(int) error
-	TasksServing(int) ([]task.Task, error)
+	TasksServing(...int) ([]task.Task, error)
 }
 
 // ObjectiveChanges are the attributes an operation was given for an objective.
@@ -34,11 +34,12 @@ type ObjectiveChanges struct {
 	Labels      *[]string
 	Deadline    *string
 	Estimate    *string
+	Parent      *string
 }
 
 func (c ObjectiveChanges) named() bool {
 	return c.Title != nil || c.Description != nil || c.Replace != nil || c.By != nil || c.State != nil ||
-		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil
+		c.Priority != nil || c.Labels != nil || c.Deadline != nil || c.Estimate != nil || c.Parent != nil
 }
 
 func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objective, error) {
@@ -47,6 +48,9 @@ func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objec
 		return objective.Objective{}, err
 	}
 	if o, err = applyObjective(o, c, creating); err != nil {
+		return objective.Objective{}, err
+	}
+	if err := e.mayHang(o); err != nil {
 		return objective.Objective{}, err
 	}
 	return e.objectives.KeepObjective(o)
@@ -75,21 +79,13 @@ func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Object
 	if o, err = applyObjective(o, c, changing); err != nil {
 		return objective.Objective{}, err
 	}
+	if err := e.mayHang(o); err != nil {
+		return objective.Objective{}, err
+	}
 	if err := e.objectives.UpdateObjective(o); err != nil {
 		return objective.Objective{}, err
 	}
 	return o, nil
-}
-
-func (e *Engine) deleteObjective(number int) error {
-	serving, err := e.objectives.TasksServing(number)
-	if err != nil {
-		return err
-	}
-	if err := objective.MayDelete(number, len(serving)); err != nil {
-		return err
-	}
-	return e.objectives.DeleteObjective(number)
 }
 
 func factsOfObjective(o objective.Objective) objective.Carried { return o.Carried() }
@@ -109,6 +105,13 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 		}
 		a.State = state
 	}
+	if c.Parent != nil {
+		parent, err := parentNamed(*c.Parent)
+		if err != nil {
+			return objective.Objective{}, err
+		}
+		a.Parent = parent
+	}
 	return objective.Made(a), nil
 }
 
@@ -122,11 +125,15 @@ func (e *Engine) canServe(t task.Task) error {
 			return err
 		}
 	}
-	return nil
+	return e.countedOnce(factsOf(t).Number, served, nil)
 }
 
 func (e *Engine) tasksUnder(number int) ([]task.Task, error) {
-	return spentTasks{history: e.history}.told(e.objectives.TasksServing(number))
+	t, err := e.tree()
+	if err != nil {
+		return nil, err
+	}
+	return spentTasks{history: e.history}.told(e.objectives.TasksServing(t.reach(number)...))
 }
 
 func (e *Engine) objectiveProgress(number int) (domain.Progress, error) {
@@ -149,12 +156,16 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 			return nil, nil, err
 		}
 	}
+	tr, err := e.tree()
+	if err != nil {
+		return nil, nil, err
+	}
 	tasks, objectives = map[int]domain.Progress{}, map[int]domain.Progress{}
 	serves := map[int][]int{}
 	for _, t := range all {
 		f := factsOf(t)
-		serves[f.Number] = f.Objectives
-		for _, o := range f.Objectives {
+		serves[f.Number] = tr.counted(f.Objectives)
+		for _, o := range serves[f.Number] {
 			p := objectives[o]
 			p.Tasks = counted(p.Tasks, t)
 			objectives[o] = p
@@ -204,6 +215,7 @@ var objectiveAttributes = []Argument{
 	{Name: "label", Kind: List, Means: "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all"},
 	{Name: "deadline", Kind: Day, Means: "the day it is due"},
 	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
+	{Name: "parent", Kind: Text, Of: "an objective", Means: "the number of the objective it sits under, two levels deep at most; none to stand on its own"},
 }
 
 func objectiveChanges(in Input) ObjectiveChanges {
@@ -214,23 +226,32 @@ func objectiveChanges(in Input) ObjectiveChanges {
 	c.Labels = in.Changed("label")
 	c.Deadline = in.Change("deadline")
 	c.Estimate = in.Change("estimate")
+	c.Parent = in.Change("parent")
 	return c
 }
 
-func readObjective(eng *Engine, n int) (objective.Objective, []task.Task, domain.Progress, error) {
+func readObjective(eng *Engine, n int) (Answer, error) {
 	o, err := eng.showObjective(n)
 	if err != nil {
-		return objective.Objective{}, nil, domain.Progress{}, err
+		return Answer{}, err
 	}
 	under, err := eng.tasksUnder(n)
 	if err != nil {
-		return objective.Objective{}, nil, domain.Progress{}, err
+		return Answer{}, err
 	}
 	p, err := eng.objectiveProgress(n)
 	if err != nil {
-		return objective.Objective{}, nil, domain.Progress{}, err
+		return Answer{}, err
 	}
-	return o, under, p, nil
+	f, err := eng.familyOf(n)
+	if err != nil {
+		return Answer{}, err
+	}
+	tree, err := eng.treeMap()
+	if err != nil {
+		return Answer{}, err
+	}
+	return Answer{Objective: &o, Under: under, Progress: p, Family: &f, Tree: tree}, nil
 }
 
 // ObjectiveNew records a new objective.
@@ -256,7 +277,12 @@ var ObjectiveNew = Operation{
 		if err != nil {
 			return Answer{}, withTypedTitle(err, title)
 		}
-		return Answer{Objective: &o, Progress: domain.Progress{}}, nil
+		read, err := readObjective(on.Engine, o.Carried().Number)
+		if err != nil {
+			return Answer{}, err
+		}
+		read.Proposes, err = on.Engine.proposedBy(nil, o)
+		return read, err
 	},
 }
 
@@ -273,7 +299,7 @@ cairn objective list --state reached`,
 	Answers: Objectives{},
 	Takes:   objectiveNarrowing,
 	Run: func(on On, in Input) (Answer, error) {
-		kept, err := keeping(in, objectiveNarrowing)
+		kept, err := keeping(in, objectiveNarrowing, nil)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -285,10 +311,18 @@ cairn objective list --state reached`,
 		if err != nil {
 			return Answer{}, err
 		}
-		if kept.Narrows() {
-			return Answer{MatchedObjectives: all, Along: along}, nil
+		spent, err := on.Engine.spentEvery()
+		if err != nil {
+			return Answer{}, err
 		}
-		return Answer{Objectives: all, Along: along}, nil
+		tree, err := on.Engine.treeMap()
+		if err != nil {
+			return Answer{}, err
+		}
+		if kept.Narrows() {
+			return Answer{MatchedObjectives: all, Along: along, Spent: spent, Tree: tree}, nil
+		}
+		return Answer{Objectives: all, Along: along, Spent: spent, Tree: tree}, nil
 	},
 }
 
@@ -313,11 +347,7 @@ var ObjectiveShow = Operation{
 	},
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
-		o, under, p, err := readObjective(on.Engine, n)
-		if err != nil {
-			return Answer{}, err
-		}
-		return Answer{Objective: &o, Under: under, Progress: p}, nil
+		return readObjective(on.Engine, n)
 	},
 }
 
@@ -351,11 +381,13 @@ var ObjectiveEdit = Operation{
 			}
 			return Answer{}, withTypedTitle(editReason(err), title)
 		}
-		o, under, p, err := readObjective(on.Engine, n)
+		read, err := readObjective(on.Engine, n)
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Objective: &o, Under: under, Progress: p, Moved: movedOfObjective(was, edited)}, nil
+		read.Moved = movedOfObjective(was, edited)
+		read.Proposes, err = on.Engine.proposedBy(&was, edited)
+		return read, err
 	},
 }
 
@@ -384,36 +416,42 @@ var ObjectiveSearch = Operation{
 				found = append(found, o)
 			}
 		}
-		return Answer{MatchedObjectives: found}, nil
+		tree, err := on.Engine.treeMap()
+		return Answer{MatchedObjectives: found, Tree: tree}, err
 	},
 }
 
-// ObjectiveDelete removes an objective.
+// ObjectiveDelete removes an objective, and what was said to go with it.
 var ObjectiveDelete = Operation{
-	Thing:   "objective",
-	Verb:    "delete",
-	Short:   "Delete an objective",
-	Does:    "Delete an objective.",
-	Example: "cairn objective delete 1 --yes",
+	Thing: "objective",
+	Verb:  "delete",
+	Short: "Delete an objective",
+	Does:  "Delete an objective. One holding sub-objectives or carrying tasks is refused, the refusal listing them, until it is said what becomes of each: a sub-objective is kept, standing on its own, or deleted; a task is detached or deleted. Nothing is decided for the person.",
+	Example: `cairn objective delete 1 --yes
+cairn objective delete 4 --sub-objectives keep --tasks detach --yes
+cairn objective delete 4 --keep 5,7 --delete 6 --tasks delete --yes`,
 	Level:   Full,
 	Needs:   AStore,
 	Again:   ChangesNothingMore,
 	Answers: Deleted{},
-	Takes: []Argument{
+	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		alsoOf("an objective"),
-	},
+	}, deletionChoices...),
 	Run: func(on On, in Input) (Answer, error) {
 		numbers, err := together(in)
 		if err != nil {
 			return Answer{}, err
 		}
-		for _, n := range numbers {
-			if err := on.Engine.deleteObjective(n); err != nil {
-				return Answer{}, err
-			}
+		d, err := deletionOf(in)
+		if err != nil {
+			return Answer{}, err
 		}
-		return Answer{Deleted: &numbers[0], Also: numbers[1:]}, nil
+		went, err := on.Engine.deleteObjectives(numbers, d)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Deleted: &numbers[0], Also: numbers[1:], Went: &went}, nil
 	},
 }
 

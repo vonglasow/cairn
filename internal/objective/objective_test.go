@@ -189,18 +189,3 @@ func TestNewObjective_refusesATitleThatIsNotOneLine(t *testing.T) {
 		t.Errorf("err = %v, want ErrTitleNotOneLine", err)
 	}
 }
-
-func TestMayDelete_refusesAnObjectiveCarryingTasks(t *testing.T) {
-	for _, c := range []struct {
-		name    string
-		serving int
-		want    error
-	}{
-		{"tasks serve it", 2, ErrObjectiveCarriesTasks},
-		{"nothing serves it", 0, nil},
-	} {
-		if err := MayDelete(1, c.serving); !errors.Is(err, c.want) {
-			t.Errorf("%s: err = %v, want %v", c.name, err, c.want)
-		}
-	}
-}

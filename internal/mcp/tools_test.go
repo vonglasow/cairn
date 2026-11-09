@@ -322,3 +322,11 @@ func TestHandlerFor_runsNothingTheClientGaveUpOn(t *testing.T) {
 		t.Errorf("%d tasks, want none: the call was given up on", len(answer.Tasks))
 	}
 }
+
+func TestSchemaFor_aTextNamingAnObjectiveTakesAWholeNumberToo(t *testing.T) {
+	props, _ := schemaFor(engine.ObjectiveNew)["properties"].(map[string]any)
+	parent, _ := props["parent"].(map[string]any)
+	if fmt.Sprint(parent["type"]) != "[integer string]" {
+		t.Errorf("parent is typed %v, want a whole number or text", parent["type"])
+	}
+}

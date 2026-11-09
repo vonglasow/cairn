@@ -248,7 +248,7 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 		}
 		in.Given[f.Arg] = taken[0]
 	}
-	kept, err := keeping(in, TaskList.Takes)
+	kept, err := keeping(in, TaskList.Takes, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -270,8 +270,8 @@ type cardJudged struct {
 
 func (j *cardJudged) InColumn(state string)    { j.kept = j.kept && j.card.State == state }
 func (j *cardJudged) Carrying(priority string) { j.kept = j.kept && j.card.Priority == priority }
-func (j *cardJudged) Serving(objective int) {
-	j.kept = j.kept && slices.Contains(j.card.Objectives, objective)
+func (j *cardJudged) Serving(objectives []int) {
+	j.kept = j.kept && slices.ContainsFunc(j.card.Objectives, func(o int) bool { return slices.Contains(objectives, o) })
 }
 func (j *cardJudged) Archived()     {}
 func (j *cardJudged) WithArchived() {}

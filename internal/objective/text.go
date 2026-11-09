@@ -38,10 +38,11 @@ func (l Left) Line() string {
 }
 
 // Text renders an objective in full, empty attributes included, the way a person reads it.
-func Text(o Objective, p domain.Progress, r Review) string {
+func Text(o Objective, p domain.Progress, r Review, f Family) string {
 	c := o.Carried()
 	return domain.Card(c.Number, c.Title, []domain.Fact{
 		{Key: "state", Value: string(c.State)},
+		{Key: "parent", Value: f.parentLine()},
 		{Key: "priority", Value: string(c.Priority)},
 		{Key: "description", Value: c.Description},
 		{Key: "labels", Value: strings.Join(c.Labels, ", ")},
@@ -66,25 +67,48 @@ func Serving(lines []string) string {
 	return out.String()
 }
 
-// List renders every objective as one row each, with how far along it is when it has anything to count.
-func List(all []Objective, along map[int]domain.Progress) string {
+// List renders every objective as a tree, each on two lines: its number and title, then where it stands, how far along it is over its subtree and the time spent; a sub-objective is drawn under its parent when the parent is listed too.
+func List(all []Objective, along map[int]domain.Progress, spent map[int]time.Duration) string {
+	listed := map[int]bool{}
+	for _, o := range all {
+		listed[o.number] = true
+	}
 	var out strings.Builder
 	for _, o := range all {
-		r := o.Carried()
-		line := fmt.Sprintf("#%d  %s", r.Number, r.Title)
-		for _, said := range []string{
-			string(r.State), string(r.Priority), domain.FormatDay(r.Deadline),
-		} {
-			if said != "" {
-				line += "  · " + said
+		if o.parent != 0 && listed[o.parent] {
+			continue
+		}
+		row(&out, o, along, spent, "", "    ", !listed[o.parent] && o.parent != 0)
+		var under []Objective
+		for _, c := range all {
+			if c.parent == o.number && o.parent == 0 {
+				under = append(under, c)
 			}
 		}
-		if p := along[r.Number]; p.Any() {
-			line += fmt.Sprintf("  · %d%% done", p.Percent())
+		for i, c := range under {
+			first, rest := "  ├ ", "  │   "
+			if i == len(under)-1 {
+				first, rest = "  └ ", "      "
+			}
+			row(&out, c, along, spent, first, rest, false)
 		}
-		fmt.Fprintf(&out, "%s\n", line)
 	}
 	return out.String()
+}
+
+func row(out *strings.Builder, o Objective, along map[int]domain.Progress, spent map[int]time.Duration, first, rest string, away bool) {
+	fmt.Fprintf(out, "%s#%d  %s\n", first, o.number, o.title)
+	said := []string{string(o.state), string(o.priority), domain.FormatDay(o.deadline)}
+	if p := along[o.number]; p.Any() {
+		said = append(said, counts(p), fmt.Sprintf("%d%% done", p.Percent()))
+	}
+	said = append(said, domain.FormatDuration(spent[o.number]))
+	if away {
+		said = append(said, fmt.Sprintf("under objective %d", o.parent))
+	}
+	if line := strings.TrimPrefix(dotted(said...), "  · "); line != "" {
+		fmt.Fprintf(out, "%s%s\n", rest, line)
+	}
 }
 
 // Period is what a review says of a stretch of days: its first and last, the time spent on the objective's tasks month by month, and the tasks done in it.
@@ -94,10 +118,29 @@ type Period struct {
 	Done         []Finished
 }
 
-// Month is the time spent in one month, named by its first day.
+// Month is the time spent in one month, named by its first day, and how it splits over a parent's sub-objectives and itself.
 type Month struct {
 	Month time.Time
 	Spent time.Duration
+	Split []Part
+}
+
+// Part is the time a month spent through one sub-objective, numbered, or on the parent itself, numbered 0.
+type Part struct {
+	Number int
+	Spent  time.Duration
+}
+
+func (m Month) splitText() string {
+	parts := make([]string, 0, len(m.Split))
+	for _, p := range m.Split {
+		name := "itself"
+		if p.Number != 0 {
+			name = domain.Ref(p.Number)
+		}
+		parts = append(parts, name+" "+said(p.Spent))
+	}
+	return dotted(parts...)
 }
 
 // Finished is a task put in done within a period, and the day it was.
@@ -132,7 +175,7 @@ func Report(o Objective, p domain.Progress, r Review, in Period) string {
 	} else {
 		out.WriteString("\nby month\n")
 		for _, m := range in.Months {
-			fmt.Fprintf(&out, "  %s  %s\n", m.Month.Format("2006-01"), domain.FormatDuration(m.Spent))
+			fmt.Fprintf(&out, "  %s  %s%s\n", m.Month.Format("2006-01"), domain.FormatDuration(m.Spent), m.splitText())
 		}
 	}
 	if len(in.Done) == 0 {

@@ -145,22 +145,15 @@ is not a thing the store knows, since a set has no order but its numbers.
 
 - **Weighting.** "This task is mostly for objective 1" — there is no honest
   number to put on that, and nothing has asked for one.
-- **An objective serving an objective.** Nothing puts an objective under
-  another, so nothing narrows or attaches that way either. Decided, not built:
-  see [two levels](#two-levels--decided-built-in-226).
-- **Deleting an objective that has tasks.** Still refused, so nothing here
-  releases links to an objective that is gone: there can never be one. A
-  function for it was written and taken back out, because unreachable code is
-  code nothing can vouch for. Deleting a parent that asks what goes with it is
-  decided, not built: see [two levels](#two-levels--decided-built-in-226).
+- **A third level.** An objective holds sub-objectives and a sub-objective
+  holds none; see [two levels](#two-levels).
 
-## Two levels — decided, built in #226
+## Two levels
 
 Decided on 2026-11-09 in #222, after a study of how other tools organise work
-and a mockup drawn over the rule; #226 builds it. **None of it is built yet.**
-Today an objective sits under nothing, and what follows is what cairn will do,
-not what it does: this page does not describe it as what cairn does until it
-is built, and each part moves into the sections above as it is.
+and a mockup drawn over the rule; #226 builds it. The model, its migration,
+the rules, the command line and the MCP server are built; what is left to
+build is [below](#decided-not-built-yet).
 
 **Why a second level.** Home automation is an enclosure, a firmware and some
 features that wait on one another and have to be seen together; a probation
@@ -173,14 +166,112 @@ longer be seen together, wait on each other or add up. A store is for what
 must never mix — a workspace, see [config.md](config.md) — and what may ever
 be linked shares one.
 
-**Two levels, and the names kept.** An objective may hold sub-objectives; a
-sub-objective holds none, and a third level is refused. Two cover every case
-asked and draw on a board; the personal tools nest freely, GitHub stops at
-eight, and a third need is a task with steps. Two can grow into more without
-breaking anything, the day they prove short. The names stay Objective ›
-Sub-objective: Area › Project read oddly for a probation objective, which
-ends, and Goal › Key result for an enclosure, which is no result. Keeping the
-word keeps every command, every tool and the trace as they are.
+**Two levels, and the names kept.** An objective may hold sub-objectives —
+`objective new "Enclosure" --parent 4`, `objective edit 5 --parent 6`, or
+`--parent none` to stand on its own again (`@objective-sub-made-under-a-parent`,
+`@objective-sub-moves-to-level-one`). A sub-objective holds none: putting
+anything under it, or putting an objective holding sub-objectives under
+another, is refused — `an objective goes two levels deep at most`
+(`@objective-sub-third-level-refused`, `@objective-sub-parent-stays-level-one`).
+Two cover every case asked and draw on a board; the personal tools nest
+freely, GitHub stops at eight, and a third need is a task with steps. Two can
+grow into more without breaking anything, the day they prove short. The names
+stay Objective › Sub-objective: Area › Project read oddly for a probation
+objective, which ends, and Goal › Key result for an enclosure, which is no
+result. Keeping the word keeps every command, every tool and the trace as they
+are. `objective show` says the parent of each, `—` for one standing on its
+own; a machine reads `parent`, null at level one, and `children`
+(`@objective-sub-json-parent-and-children`).
+
+**What a task serves, and how it counts.** A task serves objectives or
+sub-objectives, as many as it serves. On a sub-objective it counts in the
+parent too, and that link is worked out, never stored. A parent's time spent,
+progress and what is left are read over the union of its own tasks and its
+sub-objectives', each task once: adding the sub-objectives up would count a
+task serving two of them twice (`@objective-sub-parent-counts-each-task-once`).
+Across two trees the rule above holds — it counts in each. `objective show`
+on a parent names its sub-objectives with their counts and time, then the
+tasks on it directly apart from those in its sub-objectives
+(`@objective-sub-show-splits-its-tasks`). `objective list` draws the tree, two
+lines an objective — its number and title, then where it stands, its counts
+over its subtree and its time — each sub-objective under its parent
+(`@objective-sub-list-as-a-tree`); one listed without its parent says which it
+sits under. `objective report` on a parent splits each month's time by
+sub-objective and the parent itself, `2026-09  2h30m  · #2 2h  · itself 30m`,
+a task serving two sub-objectives counting in both columns and once in the
+total (`@objective-sub-report-splits-the-time`).
+
+**Attached twice is refused, and only refused.** A task attached to a parent
+and to one of its sub-objectives at once is refused —
+`#44 is already counted in #4 Home automation through #5 Enclosure and #6 Firmware; nothing was changed`
+— whichever is ticked second, and nothing changes
+(`@objective-sub-attached-to-a-parent-and-its-sub-objectives-refused`,
+`@objective-sub-attached-to-a-parent-then-a-sub-objective-refused`). The link
+would add nothing the parent does not already count, and moving the task up in
+the same act would write a set nobody asked for, as [one that does not
+exist](#one-that-does-not-exist-turns-down-the-whole-set) does not drop the
+rest. Two sub-objectives of one parent, or two trees, stay allowed
+(`@objective-sub-two-sub-objectives-of-one-parent`). The rule is
+`objective.CountedOnce`, asked by every act that changes what a task serves.
+
+**A sub-objective moves, unless it would be attached twice.** Changing its
+parent moves it with its tasks, and both trees count again
+(`@objective-sub-moves-to-another-parent`). It is refused when one of its tasks
+is already attached to the new parent: the move would make the double
+attachment the rule refuses (`@objective-sub-move-refused-when-counted-twice`).
+
+**What is listed under a parent.** `task list --objective 4` reaches its
+sub-objectives too, and `--itself` keeps to the parent alone
+(`@objective-sub-task-list-reaches-the-sub-objectives`); an agent passes
+`itself` to `task_list`. A parent's tasks are its subtree's, as its numbers
+count them; a listing that said fewer would disagree with the count. The
+boards' filter still reaches the objective named alone, until the boards are
+built for two levels.
+
+**Reached is proposed, never put.** A parent is proposed as reached when every
+sub-objective is: the act that reached the last one says so —
+`every sub-objective of #1 Home automation is reached: it may be put reached too`
+— and so does `objective show` on the parent; a machine reads
+`proposed_reached` (`@objective-sub-reached-proposed-by-the-last-one`). It is
+put there by the person. Its standing is theirs — a parent can hold work of
+its own beyond its sub-objectives — and no average of percentages decides it.
+
+**Deleting asks.** Deleting an objective — a parent or not — that holds
+sub-objectives or carries tasks is refused, the refusal listing every
+sub-objective with its tasks and every task it carries, and the flags that say
+what goes with them (`@objective-sub-delete-asks`). For the sub-objectives,
+`--sub-objectives keep|delete`, all or none, and `--keep 5,7 --delete 6` for
+some, which win over the first; for the tasks attached to whatever is deleted,
+`--tasks detach|delete` (`@objective-sub-delete-keeps-and-detaches`,
+`@objective-sub-delete-takes-everything`, `@objective-sub-delete-one-by-one`).
+A kept sub-objective stands on its own with its tasks. A task detached loses
+the objectives deleted and keeps any other, its trace saying so; a task deleted
+goes the way `task delete` takes it. Naming a number that is no sub-objective
+of what is deleted is refused (`@objective-sub-delete-a-sub-objective-it-does-not-hold`).
+An agent passes the same as `sub-objectives`, `keep`, `delete` and `tasks`.
+Which work goes with an objective is a deliberate choice, and nothing is
+decided for the person — which is why an objective with tasks and no
+sub-objective, refused outright before, now asks the same way
+(`@objective-sub-delete-level-one-detaching-its-tasks`).
+
+**What the migration keeps.** One migration, #18 `an objective can sit under
+another`, adds a parent to every objective, empty for every one already there
+(`@objective-sub-migration-every-objective-level-one`). Every objective already
+in a store becomes level one with its number, title, standing, labels, tasks,
+time and trace as they were — checked on a copy of this repository's store on
+2026-11-09: before, after and after the rollback, every objective's tasks,
+progress, time and every one of its tasks' trace were identical. Rolling back
+loses which parent, and says so before it is applied
+(`@objective-sub-migration-says-what-rolling-back-loses`): a sub-objective
+becomes level one with its own tasks, and a parent counts only the tasks
+attached to it directly (`@objective-sub-migration-rollback-sets-every-one-loose`).
+
+**What is not traced.** The trace is what was done to a task, and an
+objective has none of its own: setting or changing a parent writes nothing
+there, as no change to an objective ever has. What a deletion does to a task —
+detached, deleted — is traced on the task, as any change to it is.
+
+### Decided, not built yet
 
 **What kind of thing it is, as a label.** An area, a project, a key result: a
 type is a label the objective carries, as objectives already carry labels. A
@@ -188,30 +279,7 @@ label gains a scope — tasks, objectives or both — so an objective's form off
 only the labels meant for objectives. A fixed set of types would be a second
 list beside the labels, with its own colours, rename and delete; nothing exists
 twice. A label nobody scoped is for both, so every label already in a store is
-offered where it was.
-
-**What a task serves, and how it counts.** A task serves objectives or
-sub-objectives, as many as it serves. On a sub-objective it counts in the
-parent too, and that link is worked out, never stored. A parent's time spent,
-progress and what is left are read over the union of its own tasks and its
-sub-objectives', each task once: adding the sub-objectives up would count a
-task serving two of them twice. Across two trees the rule above holds — it
-counts in each.
-
-**Attached twice is refused, and only refused.** A task attached to a parent
-and to one of its sub-objectives at once is refused —
-`#44 is already counted in #4 Home automation through #5 Enclosure` — whichever
-is ticked second, and nothing changes. The link would add nothing the parent
-does not already count, and moving the task up in the same act would write a
-set nobody asked for, as [one that does not
-exist](#one-that-does-not-exist-turns-down-the-whole-set) does not drop the
-rest. Two sub-objectives of one parent, or two trees, stay allowed.
-
-**A sub-objective moves, unless it would be attached twice.** Changing its
-parent moves it with its tasks, and both trees count again. It is refused when
-one of its tasks is already attached to the new parent: the move would make the
-double attachment the rule refuses. A parent is not given a parent of its own:
-that would be a third level.
+offered where it was. It will be a migration of its own.
 
 **A dependency warns, never blocks.** An objective or a sub-objective may say
 it waits on another — "Firmware waits on Enclosure" — as a link stored between
@@ -219,18 +287,7 @@ the two. Read off the tasks' blockers, it could not be seen at a glance; Linear
 puts the same link between projects and warns when it is not kept. It never
 shuts a column: an objective is not work but what work is for (see
 [blocking.md](blocking.md#deliberately-not-there-yet)), and blocking is added
-the day it proves needed.
-
-**Reached is proposed, never put.** A parent is proposed as reached when every
-sub-objective is; it is put there by the person. Its standing is theirs — a
-parent can hold work of its own beyond its sub-objectives — and no average of
-percentages decides it.
-
-**Deleting a parent asks.** It lists the tasks it touches, then asks, for each
-sub-objective, whether to delete it or keep it as a level-one objective — all,
-none or some — and, for the tasks, whether to delete them or only detach them.
-Which work goes with an objective is a deliberate choice, and nothing is decided
-for the person.
+the day it proves needed. It will be a migration of its own.
 
 **On screen.** The window's Objectives tab becomes a tree on the left — each
 level-one objective with its sub-objectives indented under it — and the chosen
@@ -240,18 +297,9 @@ the objective it is directly attached to, by name — `◇ Firmware` — whether
 level-one objective or a sub-objective; hovering gives the whole path, which is
 too long for a card. "Show its tasks" narrows the board to an objective and its
 sub-objectives with the filter that exists. The mockup is the reference: every
-screen is checked against it at the end of #226.
+screen is checked against it at the end of #226. Until then the boards count
+over the union like the command line, and draw the objectives flat.
 
-**What is listed under a parent.** `task list --objective 4` reaches its
-sub-objectives too, and `--itself` keeps to the parent alone. A parent's tasks
-are its subtree's, as its numbers count them; a listing that said fewer would
-disagree with the count.
-
-**What the migration keeps.** One migration per change: a parent on
-objectives, empty for every one already there; a scope on labels, none meaning
-both; the links between objectives, none. Every objective already in a store
-becomes level one with its number, title, standing, labels, tasks, time and
-trace as they were — checked on a copy of this repository's store and of the
-fixtures on 2026-11-09. Rolling back loses which parent, which scope and which
-dependency: a sub-objective becomes level one with its own tasks, and a parent
-counts only the tasks attached to it directly.
+**A task file carries no parent.** `task export` writes the objectives its
+tasks serve and not which sits under which, and `task import` brings them in
+level one.

@@ -330,7 +330,7 @@ func (w *world) iCallWithTheNumber(tool string, n int) error {
 }
 
 func (w *world) iAddedATaskTitledWith(title, what, value string) error {
-	flag := map[string]string{"deadline": "--deadline", "description": "--desc", "state": "--state"}[what]
+	flag := map[string]string{"deadline": "--deadline", "description": "--desc", "state": "--state", "objective": "--objective"}[what]
 	return w.Seed(fmt.Sprintf(`cairn task new "%s" %s "%s"`, title, flag, value))
 }
 
@@ -1300,7 +1300,9 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step("^it answers with the shape `--json` would have printed$", w.itAnswersWithTheShapeJSONWouldHavePrinted)
 		sc.Step("^`task_new` names every state cairn accepts$", w.taskAddNamesEveryStateCairnAccepts)
 		sc.Step("^it says what each thing it takes is for$", w.itSaysWhatEachThingItTakesIsFor)
-		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description|state) "([^"]*)"$`, w.iAddedATaskTitledWith)
+		sc.Step(`^I added a task titled "([^"]*)" with the (deadline|description|state|objective) "([^"]*)"$`, w.iAddedATaskTitledWith)
+		sc.Step("^I call `([a-z_]+)` with (\\{.*\\})$", w.iCallWithJSON)
+		sc.Step(`^it answers objective (\d+) under (nothing|\d+), holding (nothing|[\d, ]+)$`, w.itAnswersObjectiveUnder)
 		sc.Step("^I call `task_edit` with the number (\\d+) and the priority \"([^\"]*)\"$",
 			w.iCallTaskEditWithThePriority)
 		sc.Step("^the trace of task (\\d+) says the change was made by the agent that asked$", func(n int) error {
@@ -1352,4 +1354,51 @@ func TestAcceptance_MCP(t *testing.T) {
 			runAcceptance(t, tag)
 		})
 	}
+}
+
+func (w *world) iCallWithJSON(tool, sent string) error {
+	args := map[string]any{}
+	if err := json.Unmarshal([]byte(sent), &args); err != nil {
+		return err
+	}
+	_ = w.callTool(tool, args)
+	return nil
+}
+
+func (w *world) itAnswersObjectiveUnder(n int, under, holding string) error {
+	if w.callErr != nil {
+		return fmt.Errorf("the call failed: %w", w.callErr)
+	}
+	if w.result.IsError {
+		return fmt.Errorf("the call was refused: %s", textOf(w.result))
+	}
+	doc, _ := w.result.StructuredContent.(map[string]any)
+	answered := []any{doc}
+	if listed, ok := doc["objectives"].([]any); ok {
+		answered = listed
+	}
+	for _, one := range answered {
+		o, _ := one.(map[string]any)
+		if fmt.Sprint(o["number"]) != fmt.Sprint(n) {
+			continue
+		}
+		parent := "nothing"
+		if o["parent"] != nil {
+			parent = fmt.Sprint(o["parent"])
+		}
+		children, _ := o["children"].([]any)
+		held := "nothing"
+		if len(children) > 0 {
+			numbers := make([]string, 0, len(children))
+			for _, c := range children {
+				numbers = append(numbers, fmt.Sprint(c))
+			}
+			held = strings.Join(numbers, ", ")
+		}
+		if children == nil || parent != under || held != holding {
+			return fmt.Errorf("objective %d is answered under %s, holding %s (children %v)", n, parent, held, o["children"])
+		}
+		return nil
+	}
+	return fmt.Errorf("objective %d is not in the answer: %v", n, doc)
 }

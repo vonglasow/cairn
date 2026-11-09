@@ -653,6 +653,47 @@ Feature: Answering a machine over MCP
       Then the task has no deadline
       And it is still titled "Write the spec"
 
+    @objective-sub-mcp-parent-and-children
+    Scenario: a listing of objectives says which sits under which
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And a cairn server started with `--access read`
+      When I call `objective_list`
+      Then it answers objective 1 under nothing, holding 2
+      And it answers objective 2 under 1, holding nothing
+      And its answer holds to the shape the tool described
+
+    @objective-sub-mcp-made-under-a-parent
+    Scenario: an objective is made under another, named by its number
+      Given I added an objective titled "Home automation"
+      And a cairn server started with `--access write`
+      When I call `objective_new` with {"title": "Enclosure", "parent": 1}
+      Then it answers objective 2 under 1, holding nothing
+
+    @objective-sub-mcp-task-list-itself
+    Scenario: a listing by a parent reaches its sub-objectives, or keeps to it alone when asked
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Print the case" with the objective "2"
+      And I added a task titled "Wiring diagram" with the objective "1"
+      And a cairn server started with `--access read`
+      When I call `task_list` with {"objective": [1]}
+      Then it answers with the tasks 1 and 2
+      When I call `task_list` with {"objective": [1], "itself": true}
+      Then it answers with the task 2
+
+    @objective-sub-mcp-delete-asks
+    Scenario: deleting a parent lists what it touches until it is told what goes with it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And a cairn server started with `--access full`
+      When I call `objective_delete` with {"number": 1}
+      Then it answers that it failed
+      And the answer says #2  Enclosure
+      When I call `objective_delete` with {"number": 1, "sub-objectives": "keep"}
+      Then it answers without an error
+      And `cairn objective list` lists 1 objective
+
   Rule: A refusal is a refusal, not a broken tool
 
     @mcp-refusal-is-answered

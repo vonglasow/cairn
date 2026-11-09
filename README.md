@@ -18,7 +18,8 @@ calls the same engine, so each one behaves the same way.
   done. Each task has a priority, labels, steps, links, a deadline and an
   estimate.
 - **Objectives**: a task serves objectives, and an objective adds up the
-  progress and time of its tasks.
+  progress and time of its tasks. An objective may hold sub-objectives, two
+  levels deep, and counts over its whole tree.
 - **Time from focus**: the task in focus counts its time. `timesheet` reads it
   back by day, and you can add time spent away from the board.
 - **Built for agents**: an MCP server and a Claude Code plugin. An agent keeps
