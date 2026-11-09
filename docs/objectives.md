@@ -152,8 +152,8 @@ is not a thing the store knows, since a set has no order but its numbers.
 
 Decided on 2026-11-09 in #222, after a study of how other tools organise work
 and a mockup drawn over the rule; #226 builds it. The model, its migration,
-the rules, the command line and the MCP server are built; what is left to
-build is [below](#decided-not-built-yet).
+the rules, the command line, the MCP server and both boards are built; how
+they show it is [below](#on-screen).
 
 **Why a second level.** Home automation is an enclosure, a firmware and some
 features that wait on one another and have to be seen together; a probation
@@ -326,16 +326,14 @@ objective has none of its own: setting or changing a parent writes nothing
 there, as no change to an objective ever has. What a deletion does to a task —
 detached, deleted — is traced on the task, as any change to it is.
 
-### Decided, not built yet
+### On screen
 
-**On screen, in the window.** The window's Objectives tab becomes a tree on the
-left — each level-one objective with its sub-objectives indented under it — and
-the chosen objective on the right, its numbers over the union. A grid cannot
-show what sits under what. Hovering a card's `◇ Firmware` gives the whole path,
-which is too long for a card. The mockup is the reference: every screen is
-checked against it at the end of #226. Until then the window draws the
-objectives flat.
-
-The terminal's board is built: rows in a tree, the sub-objectives as chips on
-an objective's board, `◇ Firmware` on a card, "show its tasks", and the
-deletion asked row by row — see [tui.md](tui.md#objectives).
+The window's Objectives tab is a tree on the left — each level-one objective
+with its sub-objectives indented under it — and the chosen objective on the
+right, its numbers over the union, its sub-objectives as tiles, its tasks on
+it itself apart from those in its sub-objectives. `t` shows its tasks on the
+tasks board, with a bar narrowing to each part; a card names what it serves,
+`◇ Firmware`; the deletion is asked row by row; a task's objectives are
+picked from a tree that refuses a double count where it is ticked. See
+[gui.md](gui.md#the-window). The terminal's board does the same with rows in
+a tree; see [tui.md](tui.md#objectives).

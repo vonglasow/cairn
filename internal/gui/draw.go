@@ -116,6 +116,9 @@ func Draw(k Kit, w Window) {
 	if w.Screen() == OnChoosing {
 		drawChoosing(popover, w)
 	}
+	if w.Screen() == OnFates {
+		drawFates(panel, w)
+	}
 	if w.Screen() == OnCalendar {
 		drawCalendar(popover, w)
 	}
@@ -528,6 +531,12 @@ func drawChoosing(k Kit, w Window) {
 			at += apart
 			continue
 		}
+		if one.Depth > 0 {
+			top := ChoosingRow(box, at).Y
+			gutter := apart - ChoosingRow(box, at).H
+			row.Connector(in, Connector{Last: one.Last, Elbow: line.Y + line.H/2 - top + gutter}, Box{X: line.X + checkSide/2, Y: top - gutter, W: indent - checkSide/2 - inset, H: apart})
+			line.X, line.W = line.X+indent, line.W-indent
+		}
 		row.Check(in, Check{Taken: w.Ticked(one.Number)}, CheckAt(line))
 		if w.choosingFor == "label" {
 			LabelChip{Label: one.Title, Colour: w.LabelColour(one.Title)}.Draw(in.inside("row"), LabelPillAt(line, ends(w.measured(), one.Title, small)))
@@ -535,7 +544,12 @@ func drawChoosing(k Kit, w Window) {
 			at += apart
 			continue
 		}
-		say(k.gtx, k.th, k.skin.Colour.Ink.Text, PastCheck(line), w.RowSays(one), reads)
+		ink := k.skin.Colour.Ink.Text
+		if aside := w.RowAside(one); aside != "" {
+			ink = k.skin.Colour.Ink.Faint
+			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, aside, small, font.Font{}, text.End)
+		}
+		say(k.gtx, k.th, ink, PastCheck(line), w.RowSays(one), reads)
 		if stripe, ok := w.RowStripe(one, line); ok {
 			Stripe{Priority: one.Title, Free: true}.Draw(in.inside("row"), stripe)
 		}
@@ -545,6 +559,9 @@ func drawChoosing(k Kit, w Window) {
 
 	Scrollbar{Lines: len(offered), Rows: w.ChoosingRoom(), At: from}.Draw(k, ChoosingBar(box))
 	drawPanelOffers(k, box, w)
+	if refused, at, ok := w.RefusalBox(); ok {
+		Banner{Said: refused, Then: NothingChanged}.Draw(k.on(LayerPopover), at)
+	}
 }
 
 func drawSaid(k Kit, w Window, said []Said, box Box) {
@@ -602,6 +619,20 @@ func drawColumns(k Kit, l Layout, w Window) {
 			Empty{Said: said}.Draw(on, EmptyAt(l.CardAt(i, 0, 0)))
 		}
 		drawPlaced(on, w, l.Column[i])
+		drawReferences(on, w, l.Column[i])
+	}
+}
+
+func drawReferences(k Kit, w Window, within Box) {
+	for _, p := range w.References() {
+		if p.Within != within || !p.seen() {
+			continue
+		}
+		in, clipped := k.within(p.Within)
+		card := w.cardOf(p.Card, false, false)
+		card.Reference, card.Why = true, p.Why()
+		card.Draw(in, p.Slot)
+		clipped.Pop()
 	}
 }
 
@@ -681,21 +712,6 @@ func disc(gtx layout.Context, x, y, r float32, ink color.NRGBA) {
 
 func (w Window) cardOf(c engine.Card, chosen, hovered bool) Card {
 	return Card{Face: c, Chosen: chosen, Hovered: hovered, Pages: w.pages, Colour: w.LabelColour}
-}
-
-func drawGoals(k Kit, l Layout, w Window) {
-	in, clipped := k.within(GoalsRun(l))
-	defer clipped.Pop()
-	for at, g := range engine.Sorted(w.Showing().Goals) {
-		box := GoalAt(l, at, w.goals)
-		face := goalFace(g)
-		card := w.cardOf(face, g.Number == w.Chosen() || w.isTaken(g.Number), box == w.pointed)
-		card.Standing = g.State
-		card.Draw(in, box)
-		if g.Total > 0 {
-			Progress{Done: g.Done, Total: g.Total, Said: Counted(g)}.Draw(in.inside("card"), PartsOf(box).Steps)
-		}
-	}
 }
 
 func goalFace(g engine.Goal) engine.Card {
@@ -875,20 +891,13 @@ func drawProgressBeside(k Kit, w Window) {
 		return
 	}
 	at := w.ProgressBox()
-	Head{Said: ProgressHead}.Draw(k, Box{X: at.X, Y: at.Y, W: at.W, H: lineHigh})
-	card := InfoBox{}.Draw(k, Box{X: at.X, Y: at.Y + lineHigh + between, W: at.W, H: at.H - lineHigh - between})
+	card := InfoBox{}.Draw(k, at)
 	k = k.inside("info")
-	inside := Box{X: card.X + padding, Y: card.Y + padding/2, W: card.W - 2*padding, H: card.H - padding}
-	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: inside.X, Y: inside.Y, W: inside.W, H: titleHi + 4}, strconv.Itoa(g.Percent())+"%", k.skin.Type.Figure, font.SemiBold, 1, text.Start)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: inside.X, Y: inside.Y + 4, W: inside.W, H: lineHigh}, fmt.Sprintf("%d of %d tasks done", g.Done, g.Total), reads, font.Font{}, text.End)
-	track := Progress{Done: g.Done, Total: g.Total}.Draw(k, Box{X: inside.X, Y: inside.Y + titleHi + 12, W: inside.W, H: k.skin.Size.Track})
-	facts := ProgressFacts(g, w.now)
-	third := inside.W / len(facts)
-	for i, fact := range facts {
-		cell := Box{X: inside.X + i*third, Y: track.Y + track.H + between, W: third, H: lineHigh}
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, cell, fact[0], small, k.skin.Type.MonoBold, text.Start)
-		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: cell.X, Y: cell.Y + lineHigh, W: cell.W, H: lineHigh}, fact[1], small)
-	}
+	inside := Box{X: card.X + padding, Y: card.Y + padding, W: card.W - 2*padding, H: card.H - 2*padding}
+	Head{Said: ProgressHead, Count: strconv.Itoa(g.Percent()) + "%"}.Draw(k, Box{X: inside.X, Y: inside.Y, W: inside.W, H: lineHigh})
+	track := Progress{Done: g.Done, Total: g.Total}.Draw(k, Box{X: inside.X, Y: inside.Y + lineHigh + between, W: inside.W, H: k.skin.Size.Track})
+	facts := w.GoalProgress(g)
+	facts.Draw(k, Box{X: inside.X, Y: track.Y + track.H + padding, W: inside.W, H: facts.High()})
 }
 
 func drawHistory(k Kit, box Box, w Window) {
@@ -1299,6 +1308,7 @@ func drawPills(k Kit, w Window) {
 	for _, pill := range w.Pills() {
 		pill.Draw(k, pill.Box)
 	}
+	drawNarrowing(k, w)
 }
 
 func drawFieldPills(k Kit, w Window, m Measure, frame Box, labels []string) {

@@ -2324,11 +2324,6 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the field "([^"]*)" has room for more than one line$`, w.fieldHasRoomForMoreThanOneLine)
 	sc.Then(`^the field "([^"]*)" has room for one$`, w.fieldHasRoomForOne)
 	sc.Then(`^the field "([^"]*)" shows the end of what was typed$`, w.fieldShowsTheEnd)
-	sc.Then(`^the objectives are laid out more than one to a row$`, w.objectivesAcross)
-	sc.Then(`^every objective is drawn inside the board$`, w.objectivesInsideTheBoard)
-	sc.Then(`^the objectives all fit without scrolling$`, w.objectivesAllFit)
-	sc.Then(`^what is chosen has moved on one$`, w.chosenMovedOnOne)
-	sc.Then(`^what is chosen has moved down one row$`, w.chosenMovedDownARow)
 	sc.Then(`^the card "([^"]*)" says it is being worked on$`, w.cardSaysInFocus)
 	sc.Then(`^the card "([^"]*)" carries a glowing dot at the right of its first line$`, w.cardCarriesAGlow)
 	sc.Then(`^the card "([^"]*)" says "([^"]*)"$`, w.cardSays)
@@ -2815,8 +2810,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 func (w *world) objectivesRead(list string) error {
 	var got []string
-	for _, g := range engine.Sorted(w.w.Reading().Goals) {
-		got = append(got, g.Title)
+	for _, b := range w.w.Tree() {
+		got = append(got, b.Goal.Title)
 	}
 	want := quoted(list)
 	if strings.Join(got, "|") != strings.Join(want, "|") {
@@ -3463,78 +3458,6 @@ func (w *world) objectivesMoved() error {
 	return nil
 }
 
-func (w *world) whereGoal() (int, error) {
-	for i, g := range engine.Sorted(w.w.Showing().Goals) {
-		if g.Number == w.w.Chosen() {
-			return i, nil
-		}
-	}
-	return 0, fmt.Errorf("no objective is chosen")
-}
-
-func (w *world) objectivesAcross() error {
-	l := w.w.Layout()
-	first, second := GoalAt(l, 0, 0), GoalAt(l, 1, 0)
-	if second.Y != first.Y {
-		return fmt.Errorf("the second objective is a row below the first: they are one to a row")
-	}
-	if second.X <= first.X {
-		return fmt.Errorf("the second objective is at %d and the first at %d", second.X, first.X)
-	}
-	return nil
-}
-
-func (w *world) objectivesInsideTheBoard() error {
-	l := w.w.Layout()
-	run := l.Column[0]
-	last := l.Column[engine.Columns-1]
-	for i := range engine.Sorted(w.w.Showing().Goals) {
-		box := GoalAt(l, i, 0)
-		if box.X < run.X || box.X+box.W > last.X+last.W {
-			return fmt.Errorf("objective %d runs from %d to %d, and the board from %d to %d",
-				i, box.X, box.X+box.W, run.X, last.X+last.W)
-		}
-	}
-	return nil
-}
-
-func (w *world) objectivesAllFit() error {
-	if got := w.w.goals; got != 0 {
-		return fmt.Errorf("the objectives start scrolled to %d", got)
-	}
-	l := w.w.Layout()
-	last := len(engine.Sorted(w.w.Showing().Goals)) - 1
-	box, run := GoalAt(l, last, 0), l.Column[0]
-	if box.Y+box.H > run.Y+run.H {
-		return fmt.Errorf("the last objective ends at %d and the board at %d", box.Y+box.H, run.Y+run.H)
-	}
-	return nil
-}
-
-func (w *world) chosenMovedOnOne() error {
-	at, err := w.whereGoal()
-	if err != nil {
-		return err
-	}
-	if at != w.was+1 {
-		return fmt.Errorf("what is chosen went from %d to %d", w.was, at)
-	}
-	w.was = at
-	return nil
-}
-
-func (w *world) chosenMovedDownARow() error {
-	at, err := w.whereGoal()
-	if err != nil {
-		return err
-	}
-	if want := w.was + GoalsAcross(); at != want {
-		return fmt.Errorf("what is chosen went from %d to %d, and a row is %d", w.was, at, GoalsAcross())
-	}
-	w.was = at
-	return nil
-}
-
 func (w *world) cardOf(title string) (engine.Card, error) {
 	for _, c := range w.w.Showing().Cards {
 		if c.Title == title {
@@ -3549,7 +3472,7 @@ func (w *world) cardSays(title, said string) error {
 	if err != nil {
 		return err
 	}
-	facts, _ := Facts(c, moment, w.w.pages)
+	facts, _ := CardFacts(c, moment, w.w.pages)
 	m := w.w.measured()
 	shown, more := Pills(c.Labels, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W, func(said string) int { return ends(m, said, small) })
 	line := strings.Join(shown, "  ") + "  +" + strconv.Itoa(more) + "  " + facts

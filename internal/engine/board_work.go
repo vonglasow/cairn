@@ -65,6 +65,8 @@ type Goal struct {
 	Parent      int
 	Children    []int
 	WaitsOn     []int
+	WaitedOnBy  []int
+	Proposed    bool
 }
 
 // Described says whether anything is written about the objective.
@@ -118,6 +120,10 @@ func Look(w Work) (Snapshot, error) {
 		}
 		found.Cards = append(found.Cards, card)
 	}
+	by := map[int]objective.Objective{}
+	for _, o := range goals.Objectives {
+		by[o.Carried().Number] = o
+	}
 	for _, o := range goals.Objectives {
 		goal, err := goalOf(o, goals.Along)
 		if err != nil {
@@ -125,6 +131,8 @@ func Look(w Work) (Snapshot, error) {
 		}
 		goal.Spent = goals.Spent[goal.Number]
 		goal.Children = goals.Tree[goal.Number]
+		goal.WaitedOnBy = goals.Waiters[goal.Number]
+		goal.Proposed = objective.ProposedReached(o, objectivesOf(by, goal.Children))
 		found.Goals = append(found.Goals, goal)
 	}
 	for i, c := range found.Cards {
@@ -133,6 +141,14 @@ func Look(w Work) (Snapshot, error) {
 		}
 	}
 	return found, nil
+}
+
+func objectivesOf(by map[int]objective.Objective, numbers []int) []objective.Objective {
+	out := make([]objective.Objective, 0, len(numbers))
+	for _, n := range numbers {
+		out = append(out, by[n])
+	}
+	return out
 }
 
 // Numbered is what every operation about one task or one objective is given.

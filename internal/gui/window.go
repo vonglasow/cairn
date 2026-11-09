@@ -42,6 +42,8 @@ const (
 	OnPalette
 	// OnWorkspaces is the switcher dropped under the pill: the workspaces and the recent folders, one of them opened in a window of its own.
 	OnWorkspaces
+	// OnFates is what deleting an objective asks, row by row, before anything goes.
+	OnFates
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -177,6 +179,9 @@ type Window struct {
 	wasScreen             Screen
 	ticked                map[int]bool
 	choosing              int
+	fates                 engine.Deleting
+	refusedChoice         string
+	fateRow               int
 
 	err      error
 	wrongFor int

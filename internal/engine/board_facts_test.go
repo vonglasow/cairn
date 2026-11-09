@@ -76,3 +76,17 @@ func TestASnapshotSaysWhatAFieldsNumbersAreCalled(t *testing.T) {
 		}
 	}
 }
+
+func TestNamed_namesTheParentAndWhatAnObjectiveWaitsOn(t *testing.T) {
+	s := Snapshot{Goals: []Goal{{Number: 1, Title: "Home automation"}, {Number: 2, Title: "Firmware"}}}
+	for _, c := range []struct{ arg, value, want string }{
+		{"parent", "1", "#1 Home automation"},
+		{"parent", "none", "none"},
+		{"parent", "", ""},
+		{"waits-on", "1 2", "#1 Home automation, #2 Firmware"},
+	} {
+		if got := s.Named(Field{Arg: c.arg, Value: c.value}); got != c.want {
+			t.Errorf("%s %q reads %q, want %q", c.arg, c.value, got, c.want)
+		}
+	}
+}

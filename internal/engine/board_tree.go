@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"cairn/internal/domain"
+	"cairn/internal/objective"
 )
 
 // Branch is one objective as a tree draws it: the objective, whether it sits under the one before it, and whether it is the last under its parent.
@@ -121,6 +122,26 @@ func (s Snapshot) Picks(ticked []int) []Pick {
 		out = append(out, p)
 	}
 	return out
+}
+
+// CountedOnce refuses the objectives ticked for a task when one of them sits under another, as saving them would be refused.
+func (s Snapshot) CountedOnce(task int, ticked []int) error {
+	served := make([]objective.Objective, 0, len(ticked))
+	for _, n := range ticked {
+		if g, found := s.Goal(n); found {
+			served = append(served, objective.Made(objective.Carried{Number: g.Number, Title: g.Title, Parent: g.Parent}))
+		}
+	}
+	return objective.CountedOnce(task, served)
+}
+
+// Left is what is left of an objective over its subtree: its tasks and its sub-objectives', each once.
+func (s Snapshot) Left(n int) objective.Left {
+	var l objective.Left
+	for _, c := range Serving(s.Cards, s.Reach(n)...) {
+		l = l.Counting(c.Number, domain.State(c.State), c.Archived, c.Deadline)
+	}
+	return l
 }
 
 // Parents are the objectives one may sit under: those of level one, itself left out.

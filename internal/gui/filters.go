@@ -251,12 +251,13 @@ const (
 
 // FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
 type FilterPill struct {
-	Box   Box
-	Said  string
-	Name  string
-	Kind  PillKind
-	At    int
-	Faint bool
+	Box    Box
+	Said   string
+	Name   string
+	Kind   PillKind
+	At     int
+	Faint  bool
+	Serves bool
 }
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
@@ -275,10 +276,9 @@ func (w Window) Pills() []FilterPill {
 	l := w.Layout()
 	tab := TabAt(l, 0)
 	y, high := tab.Y+(tab.H-searchPillHigh)/2, searchPillHigh
-	start := TabAt(l, len(w.Shown())).X + between
-	end := l.Tabs.X + l.Tabs.W
-	if !w.native {
-		end = MenuButton(l).X - between
+	start, end := w.pillsRun()
+	if bar := w.Narrowing(); bar.Box.W > 0 {
+		end = bar.Box.X - between
 	}
 	m := w.measured()
 	var row []FilterPill
@@ -294,17 +294,29 @@ func (w Window) Pills() []FilterPill {
 		crossed("/", w.looking.Reads(), PillSearch, -1)
 		taken++
 	}
+	bar := w.Narrowing()
+	narrowed := bar.Box.W > 0
 	for i, f := range w.filters {
+		if len(f.Taken()) > 0 && narrowed && f.Arg == "objective" {
+			root, _ := w.snap.Goal(bar.Root)
+			crossed("", "#"+strconv.Itoa(root.Number)+" "+root.Title, PillFilter, i)
+			row[len(row)-1].Serves = true
+			row[len(row)-1].Box.W += servesSide + servesGap
+			taken++
+			continue
+		}
 		if len(f.Taken()) > 0 {
 			crossed(f.Name, f.TakenSays(), PillFilter, i)
 			row[len(row)-1].Faint = w.tab == Objectives && !f.ReachesGoals()
 			taken++
 		}
 	}
-	if taken > 0 {
+	if taken > 0 && !narrowed {
 		plain(ClearSays, PillClear)
 	}
-	plain(AddFilterSays, PillAdd)
+	if !narrowed {
+		plain(AddFilterSays, PillAdd)
+	}
 	if widthOf(row) > end-start && taken > 0 {
 		row = nil
 		plain(ClearSays, PillClear)
@@ -399,6 +411,9 @@ func (w Window) clickingPill(pill FilterPill, p Point) Window {
 func (w Window) clickingPills(p Point) (Window, bool) {
 	if w.screen != OnTheBoard {
 		return w, false
+	}
+	if narrowed, ok := w.clickingNarrowing(p); ok {
+		return narrowed, true
 	}
 	for _, pill := range w.Pills() {
 		if pill.Box.In(p) {

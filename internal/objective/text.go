@@ -21,6 +21,18 @@ type Left struct {
 	On    int
 }
 
+// Counting is what is left once one more task is counted: nothing more when it is done or archived, and its deadline kept when it is the soonest.
+func (l Left) Counting(number int, state domain.State, archived bool, due time.Time) Left {
+	if archived || state == domain.Done {
+		return l
+	}
+	l.Tasks++
+	if !due.IsZero() && (l.Due.IsZero() || due.Before(l.Due)) {
+		l.Due, l.On = due, number
+	}
+	return l
+}
+
 // Line says what is left in a few words, the next deadline named when one is set.
 func (l Left) Line() string {
 	if l.Tasks == 0 {

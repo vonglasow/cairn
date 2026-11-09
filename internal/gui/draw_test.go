@@ -473,7 +473,7 @@ func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 	}
 }
 
-func TestTheObjectivesTabIsDrawnAsAGrid(t *testing.T) {
+func TestTheObjectivesTabIsDrawnAsAListBesideADetail(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
 	w.snap = engine.Snapshot{Goals: []engine.Goal{
@@ -486,12 +486,16 @@ func TestTheObjectivesTabIsDrawnAsAGrid(t *testing.T) {
 	back := Dark().Colour.Surface.Back
 	l := w.Layout()
 	for at := range 2 {
-		if got := ink(shot, GoalAt(l, at, 0), back); got == 0 {
+		if got := ink(shot, GoalAt(l, at, 0), Dark().Colour.Surface.Ground); got == 0 {
 			t.Errorf("objective %d is not drawn", at)
 		}
 	}
-	if got := ink(shot, l.Head[1], back); got != 0 {
-		t.Errorf("the objectives tab drew %d pixels of a column header", got)
+	list, detail := SplitOf(l)
+	if got := ink(shot, Box{X: list.X + list.W, Y: list.Y + list.H/2, W: gap, H: 1}, back); got != 0 {
+		t.Errorf("the list and the detail touch: %d pixels between them", gap-got)
+	}
+	if painted(shot, Box{X: detail.X + detail.W - 4, Y: detail.Y + detail.H/2, W: 1, H: 1}, Dark().Colour.Surface.Ground) != 1 {
+		t.Error("the detail does not stand on a ground")
 	}
 }
 
@@ -1032,7 +1036,7 @@ func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 	if said != "7/12 · 58%" {
 		t.Fatalf("Counted = %q", said)
 	}
-	steps := PartsOf(GoalAt(w.Layout(), 0, 0)).Steps
+	_, _, steps := ItemLine(ItemOf(GoalAt(w.Layout(), 0, 0), 0))
 	if painted(drawn(t, w), steps, Dark().Colour.State.Done) == 0 {
 		t.Error("the objective's card draws no bar of the tasks done")
 	}
@@ -1586,12 +1590,16 @@ func TestAnObjectivesStandingIsAPillInItsOwnColour(t *testing.T) {
 	w := New(newFake(), 1200, 800)
 	w.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Wait", State: "on-hold"}}}
 	w = w.Key("tab")
-	shot := drawn(t, w)
-	for at, g := range engine.Sorted(w.Reading().Goals) {
-		pill := StandingPill(goalFace(g), GoalAt(w.Layout(), at, 0), w.measured())
+	for _, g := range w.Reading().Goals {
+		w.chosen, w.chosenGoal = g.Number, true
+		line := w.Detail().Line
 		want := Dark().Colour.Standing[g.State].Back
-		if painted(shot, Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, want) != 1 {
-			t.Errorf("objective %d, %s, does not stand on its colour at %+v", g.Number, g.State, pill)
+		if painted(drawn(t, w), Box{X: line.X + 4, Y: line.Y + line.H/2, W: 1, H: 1}, want) != 1 {
+			t.Errorf("objective %d, %s, does not stand on its colour at %+v", g.Number, g.State, line)
+		}
+		mark, _, _ := ItemLine(ItemOf(GoalAt(w.Layout(), g.Number-1, 0), 0))
+		if lettered(drawn(t, w), mark, Dark().Colour.Standing[g.State].Ink) == 0 {
+			t.Errorf("objective %d, %s, is not marked in its standing's ink in the list", g.Number, g.State)
 		}
 	}
 	if Dark().Colour.Standing["active"].Back == Dark().Colour.Standing["on-hold"].Back {

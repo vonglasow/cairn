@@ -46,8 +46,8 @@ func (w Window) OnSystem(system string) Window {
 func (w Window) WhereChosen() (box, run Box, ok bool) {
 	l := w.Layout()
 	if w.tab == Objectives {
-		for i, g := range engine.Sorted(w.Showing().Goals) {
-			if g.Number == w.chosen {
+		for i, b := range w.Tree() {
+			if b.Goal.Number == w.chosen {
 				return GoalAt(l, i, w.goals), GoalsRun(l), true
 			}
 		}

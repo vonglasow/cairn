@@ -139,6 +139,12 @@ func (g Givens) ObjectiveWaitsOn(number, on int) error {
 	return err
 }
 
+// ObjectiveIsReached puts an objective reached.
+func (g Givens) ObjectiveIsReached(number int) error {
+	_, err := g.ask(engine.ObjectiveEdit, map[string]string{"number": strconv.Itoa(number), "state": "reached"}, nil)
+	return err
+}
+
 // IMadeTheLabelFor makes a label meant for tasks only, or for objectives only.
 func (g Givens) IMadeTheLabelFor(label, scope string) error {
 	_, err := g.ask(engine.LabelNew, map[string]string{"label": label, "scope": scope}, nil)
@@ -331,6 +337,8 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I added a task titled "([^"]*)" serving objectives (\d+) and (\d+)$`, g.IAddedATaskServingObjectives)
 	sc.Step(`^objective (\d+) waits on objective (\d+)$`, g.ObjectiveWaitsOn)
 	sc.Step(`^I made the label "([^"]*)" for (tasks|objectives)$`, g.IMadeTheLabelFor)
+	sc.Step(`^objective (\d+) is reached$`, g.ObjectiveIsReached)
+	g.registerTree(sc)
 	sc.Step(`^I archived task (\d+)$`, g.IArchivedTask)
 	sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, g.IEditedTaskWithTheBlocker)
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, g.IEditedTaskWithTheState)
@@ -341,4 +349,77 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, g.IEditedTaskWithTheDeadline)
 	sc.Step(`^I deleted task (\d+)$`, g.IDeletedTask)
 	sc.Step(`^I put task (\d+) in focus$`, g.IPutTaskInFocus)
+}
+
+func (g Givens) registerTree(sc *godog.ScenarioContext) {
+	sc.Then(`^objective (\d+) sits under objective (\d+)$`, func(n, parent int) error {
+		o, err := g.Objective(n)
+		if err != nil {
+			return err
+		}
+		if got := o.Carried().Parent; got != parent {
+			return fmt.Errorf("objective %d sits under %d, not under %d", n, got, parent)
+		}
+		return nil
+	})
+	sc.Then(`^objective (\d+) stands on its own$`, func(n int) error {
+		o, err := g.Objective(n)
+		if err != nil {
+			return err
+		}
+		if got := o.Carried().Parent; got != 0 {
+			return fmt.Errorf("objective %d sits under %d", n, got)
+		}
+		return nil
+	})
+	sc.Then(`^objective (\d+) stands "([^"]*)"$`, func(n int, state string) error {
+		o, err := g.Objective(n)
+		if err != nil {
+			return err
+		}
+		if got := string(o.Carried().State); got != state {
+			return fmt.Errorf("objective %d stands %q, not %q", n, got, state)
+		}
+		return nil
+	})
+	sc.Then(`^objective (\d+) now waits on objective (\d+)$`, func(n, on int) error {
+		o, err := g.Objective(n)
+		if err != nil {
+			return err
+		}
+		if !slices.Contains(o.Carried().WaitsOn, on) {
+			return fmt.Errorf("objective %d waits on %v, not on %d", n, o.Carried().WaitsOn, on)
+		}
+		return nil
+	})
+	sc.Then(`^objective (\d+) is gone$`, func(n int) error {
+		if _, err := g.Objective(n); err == nil {
+			return fmt.Errorf("objective %d is still there", n)
+		}
+		return nil
+	})
+	sc.Then(`^objective (\d+) is still there$`, func(n int) error {
+		_, err := g.Objective(n)
+		return err
+	})
+	sc.Then(`^task (\d+) serves nothing$`, func(n int) error {
+		t, err := g.Task(n)
+		if err != nil {
+			return err
+		}
+		if got := t.Carried().Objectives; len(got) > 0 {
+			return fmt.Errorf("task %d serves %v", n, got)
+		}
+		return nil
+	})
+	sc.Then(`^task (\d+) serves objective (\d+)$`, func(n, objective int) error {
+		t, err := g.Task(n)
+		if err != nil {
+			return err
+		}
+		if !slices.Contains(t.Carried().Objectives, objective) {
+			return fmt.Errorf("task %d serves %v, not %d", n, t.Carried().Objectives, objective)
+		}
+		return nil
+	})
 }

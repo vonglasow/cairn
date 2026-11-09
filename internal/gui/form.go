@@ -431,6 +431,7 @@ func (w Window) stored() (Window, int, error) {
 	if err != nil {
 		return w.failing(err), 0, err
 	}
+	w = w.warned(answer)
 	number := w.form.Number
 	if w.form.Adding {
 		number = engine.Added(answer)
@@ -516,12 +517,21 @@ func (w Window) recoverable() bool {
 
 // Choose is a button pressed by name, which is how a scenario says it and how a pointer says it.
 func (w Window) Choose(name string) Window {
+	if w.screen == OnFates {
+		if strings.HasPrefix(name, "Delete") {
+			return w.confirmingFates()
+		}
+		w.screen = OnTheBoard
+		return w
+	}
 	switch strings.ToLower(name) {
 	case "quit":
 		w.quitting = true
 		return w
 	case "edit":
 		return w.Edit()
+	case "show its tasks":
+		return w.detailing(ShowItsTasks)
 	case "new linked task":
 		return w.startingLinked()
 	case "save":
@@ -776,6 +786,9 @@ func (w Window) Delete() Window {
 	if w.chosen == 0 {
 		return w
 	}
+	if w.chosenGoal && len(w.taken) == 0 {
+		return w.deletingGoal(w.chosen)
+	}
 	w.screen = OnAsking
 	return w
 }
@@ -818,13 +831,16 @@ func (w Window) choosingList() Window {
 	if !chosenFromAList(on) {
 		return w
 	}
-	w.ticked, w.choosing, w.choosingFrom = map[int]bool{}, 0, 0
+	w.ticked, w.choosing, w.choosingFrom, w.refusedChoice = map[int]bool{}, 0, 0, ""
 	w.choosingFor, w.filtering, w.pickingLabels = on.Arg, Written{}, false
 	if on.Arg == "label" {
 		w = w.openingLabels(on.Value)
 	} else {
 		for _, number := range engine.NumbersIn(on.Value) {
 			w.ticked[number] = true
+		}
+		if on.Arg == "parent" && len(w.ticked) == 0 {
+			w.ticked[0] = true
 		}
 	}
 	if len(on.Choices) > 0 {
@@ -852,11 +868,17 @@ type Choice struct {
 	Title   string
 	Creates string
 	Carried int
+	Depth   int
+	Last    bool
+	Through int
 }
 
 // RowSays is what a row of the open list reads after its box: what it is known by.
 func (w Window) RowSays(one Choice) string {
 	said := ""
+	if w.choosingFor == "parent" && one.Number == 0 {
+		return one.Title
+	}
 	if len(w.closedSet()) == 0 && w.choosingFor != "label" {
 		said += "#" + Numbered(engine.Card{Number: one.Number}) + "  "
 	}
@@ -880,11 +902,41 @@ func (w Window) choices() []Choice {
 		}
 		return out
 	}
+	if w.choosingFor == "parent" {
+		out = append(out, Choice{Title: "none"})
+		for _, g := range w.snap.Parents(w.form.Number) {
+			out = append(out, Choice{Number: g.Number, Title: g.Title})
+		}
+		return out
+	}
+	if looking == "" {
+		var ticked []int
+		for n, on := range w.ticked {
+			if on {
+				ticked = append(ticked, n)
+			}
+		}
+		for _, p := range w.snap.Picks(ticked) {
+			out = append(out, Choice{Number: p.Goal.Number, Title: p.Goal.Title, Depth: depthOf(p.Branch), Last: p.Last, Through: p.Through})
+		}
+		return out
+	}
 	for _, g := range engine.FoundGoals(w.snap.Goals, looking) {
 		out = append(out, Choice{Number: g.Number, Title: g.Title})
 	}
 	return out
 }
+
+// RowAside is what a row of the open list says at its right: of an objective counted already through what is ticked below it, so.
+func (w Window) RowAside(one Choice) string {
+	if w.choosingFor == "objective" && one.Through > 0 && !w.ticked[one.Number] {
+		return "counted through " + strconv.Itoa(one.Through) + " below"
+	}
+	return ""
+}
+
+// ChoosingRefused is what the open list refused last, said at its foot: nothing when the last tick was taken.
+func (w Window) ChoosingRefused() string { return w.refusedChoice }
 
 // Filtering is what has been typed into the open list.
 func (w Window) Filtering() Written { return w.filtering }
@@ -905,7 +957,7 @@ func (w Window) RowStripe(one Choice, line Box) (Box, bool) {
 const stripeHigh = 12
 
 // OneOnly says whether the open list takes one answer rather than several.
-func (w Window) OneOnly() bool { return len(w.closedSet()) > 0 }
+func (w Window) OneOnly() bool { return len(w.closedSet()) > 0 || w.choosingFor == "parent" }
 
 func (w Window) closedSet() []string {
 	if w.screen != OnChoosing {
@@ -955,7 +1007,19 @@ func (w Window) taking() Window {
 		}
 		return w.keeping()
 	}
-	w.ticked[number] = !w.ticked[number]
+	if !w.ticked[number] && w.choosingFor == "objective" {
+		numbers := []int{number}
+		for n, on := range w.ticked {
+			if on {
+				numbers = append(numbers, n)
+			}
+		}
+		if err := w.snap.CountedOnce(w.form.Number, numbers); err != nil {
+			w.refusedChoice, _, _ = strings.Cut(err.Error(), "; ")
+			return w
+		}
+	}
+	w.ticked[number], w.refusedChoice = !w.ticked[number], ""
 	return w
 }
 
@@ -992,9 +1056,14 @@ func (w Window) keeping() Window {
 	}
 	var numbers []int
 	for _, g := range w.Choosing() {
-		if w.ticked[g.Number] {
+		if w.ticked[g.Number] && g.Number != 0 {
 			numbers = append(numbers, g.Number)
 		}
+	}
+	if w.choosingFor == "parent" && len(numbers) == 0 {
+		w.form = w.form.Writes(Ending("none"))
+		w.screen = OnForm
+		return w
 	}
 	w.form = w.form.Writes(Ending(engine.Numbers(numbers)))
 	w.screen = OnForm
@@ -1003,3 +1072,21 @@ func (w Window) keeping() Window {
 
 // ChoosingSearched says whether the open list has a line to type into: only the labels', a label being written as often as picked.
 func (w Window) ChoosingSearched() bool { return w.choosingFor == "label" }
+
+// NothingChanged is what a refusal at the foot of a list says under it.
+const NothingChanged = "Untick what is below it to count it on the parent itself. Nothing was changed."
+
+// RefusalBox is where the open list says what it refused: under it, or above it when there is no room below.
+func (w Window) RefusalBox() (string, Box, bool) {
+	refused := w.ChoosingRefused()
+	if refused == "" || w.screen != OnChoosing {
+		return "", Box{}, false
+	}
+	box := w.ChoosingBox()
+	high := BannerHigh(w.measured(), refused, NothingChanged, box.W)
+	at := Box{X: box.X, Y: box.Y + box.H + between, W: box.W, H: high}
+	if at.Y+at.H > w.height-margin {
+		at.Y = box.Y - between - high
+	}
+	return refused, at, true
+}

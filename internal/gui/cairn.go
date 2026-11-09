@@ -55,9 +55,11 @@ func Arriving(progress float64, k, n int) (fall, fade float64) {
 
 // Placed is a card where the board draws it: its slot, and the column or lane it is seen through.
 type Placed struct {
-	Card   engine.Card
-	Slot   Box
-	Within Box
+	Card      engine.Card
+	Slot      Box
+	Within    Box
+	Reference bool
+	Blocks    []int
 }
 
 // Placed is every card the board draws, the columns' then the lanes', in the order they arrive.

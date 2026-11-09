@@ -2,6 +2,7 @@ package gui
 
 import (
 	"errors"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -26,10 +27,24 @@ func (w Window) openingLabels(held string) Window {
 		}
 	}
 	w.labelsCarried = map[string]int{}
+	scopes := maps.Clone(w.snap.Scopes)
 	if listed, err := w.work.Ask(engine.LabelList, engine.Input{}); err == nil && listed.Labels != nil {
 		for _, one := range *listed.Labels {
 			known[one.Label] = true
 			w.labelsCarried[one.Label] = one.Tasks
+			if scopes == nil {
+				scopes = map[string]string{}
+			}
+			scopes[one.Label] = one.Scope
+		}
+	}
+	bearer := domain.OnTasks
+	if w.form.ForObjective {
+		bearer = domain.OnObjectives
+	}
+	for label := range known {
+		if scope, err := domain.ParseScope(scopes[label]); err == nil && !scope.Admits(bearer) {
+			delete(known, label)
 		}
 	}
 	holding := engine.Words(held)

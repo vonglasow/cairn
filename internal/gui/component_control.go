@@ -129,7 +129,7 @@ func (p Progress) Draw(k Kit, at Box) Box {
 	high := k.skin.Size.Track
 	room, counted := at.W, 0
 	if p.Said != "" {
-		counted = monoWide(p.Said, small)
+		counted = monoWide(p.Said, small) + pillPad
 		room = max(0, at.W-counted-pillGap*2)
 	}
 	track := Box{X: at.X, Y: at.Y + (at.H-high)/2, W: room, H: high}

@@ -416,6 +416,7 @@ func TestAFilterPillIsDrawnByItsKind(t *testing.T) {
 		parts  []string
 	}{
 		{FilterPill{Kind: PillFilter, Name: "label", Said: "label feature"}, s.Colour.Surface.Tint, []string{"filter", "filter/cross"}},
+		{FilterPill{Kind: PillFilter, Said: "#8 Home automation", Serves: true}, s.Colour.Surface.Tint, []string{"filter", "filter/serves", "filter/cross"}},
 		{FilterPill{Kind: PillFolded, Said: "3 filters"}, s.Colour.Surface.Tint, []string{"filter"}},
 		{FilterPill{Kind: PillClear, Said: "clear"}, s.Colour.Surface.Back, []string{"filter"}},
 		{FilterPill{Kind: PillAdd, Said: "+ filter"}, s.Colour.Surface.Back, []string{"filter", "filter/dashed"}},

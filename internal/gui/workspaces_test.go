@@ -295,11 +295,11 @@ func TestTheSettingsOfAWorkspaceSayWhereEachKeyComesFrom(t *testing.T) {
 
 func TestACardSaysNothingOfItsTimeWhenTheTimeIsNotShown(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	c := engine.Card{Estimate: "2h", Spent: "1h", Objectives: []int{4}}
-	if said, _ := Facts(c, now, engine.PagesOff(engine.PageTime)); strings.Contains(said, "1h") || !strings.Contains(said, "◇4") {
+	c := engine.Card{Estimate: "2h", Spent: "1h", Objectives: []int{4}, Serves: []string{"Ops"}}
+	if said, _ := CardFacts(c, now, engine.PagesOff(engine.PageTime)); strings.Contains(said, "1h") || !strings.Contains(said, "Ops") {
 		t.Errorf("with the time off a card says %q", said)
 	}
-	if said, _ := Facts(c, now, engine.Pages{}); !strings.Contains(said, "1h/2h") {
+	if said, _ := CardFacts(c, now, engine.Pages{}); !strings.Contains(said, "1h/2h") {
 		t.Errorf("with the time on a card says %q", said)
 	}
 }

@@ -150,6 +150,8 @@ func Shortcut(offer string) string {
 		return "cmd+enter"
 	case "edit":
 		return "e"
+	case "show its tasks":
+		return "t"
 	case "delete":
 		return "cmd+backspace"
 	case "quit":
@@ -222,6 +224,10 @@ func (w Window) leavingOffer() string {
 // OfferLook is how the panel draws its i-th offer: red when it destroys, filled with the accent when it is the verb the panel is for, plain when it leaves or does something beside.
 func (w Window) OfferLook(i int, offer string) buttonLook {
 	switch {
+	case w.screen == OnFates && strings.HasPrefix(offer, "Delete") && !w.fates.Ready():
+		return buttonFaint
+	case w.screen == OnFates && strings.HasPrefix(offer, "Delete"):
+		return buttonDanger
 	case offer == "Delete" || offer == "Throw away" || (i == 0 && w.screen == OnAsking && w.destroys()):
 		return buttonDanger
 	case i == 0 && !leaving[offer]:
@@ -314,6 +320,8 @@ func (w Window) Offers() []string {
 		return []string{w.agreeingVerb(), "Cancel"}
 	case OnHelp:
 		return []string{"Close"}
+	case OnFates:
+		return []string{w.DeletesSays(), "Cancel"}
 	case OnSearch:
 		return []string{"Keep search", "Close"}
 	}
@@ -334,6 +342,9 @@ func (w Window) BoardOffers() []string {
 	}
 	if w.chosen == 0 {
 		return append(offers, "Export", "Import")
+	}
+	if w.chosenGoal {
+		return append(offers, ShowItsTasks, "Edit", "Delete")
 	}
 	{
 		card, _ := w.snap.Card(w.chosen)
@@ -365,7 +376,7 @@ func (w Window) clickingList(p Point) Window {
 func chosenOnACalendar(field engine.Field) bool { return field.Arg == "deadline" }
 
 func chosenFromAList(field engine.Field) bool {
-	return field.Arg == "objective" || field.Arg == "label" || len(field.Choices) > 0
+	return field.Arg == "objective" || field.Arg == "label" || field.Arg == "parent" || len(field.Choices) > 0
 }
 
 func (w Window) offerAt(p Point) (string, bool) {
@@ -465,6 +476,9 @@ func (w Window) shortcut(offer string) string {
 		return "enter"
 	}
 	if w.screen == OnLabels && (w.renaming && offer == "Save" || offer == "Create") {
+		return "enter"
+	}
+	if w.screen == OnFates && strings.HasPrefix(offer, "Delete") {
 		return "enter"
 	}
 	return Shortcut(offer)

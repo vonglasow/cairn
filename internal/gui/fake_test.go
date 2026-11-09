@@ -23,6 +23,7 @@ type fake struct {
 	refuseDelete error
 
 	acts []trace.Act
+	warn []string
 
 	asked []asked
 	reads int
@@ -57,6 +58,9 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 	}
 	if op.Thing == "task" && op.Verb == "delete" && f.refuseDelete != nil {
 		return engine.Answer{}, f.refuseDelete
+	}
+	if op.Level != engine.Read && len(f.warn) > 0 {
+		return engine.Answer{Warnings: f.warn}, nil
 	}
 	switch op.Thing + " " + op.Verb {
 	case "task list":

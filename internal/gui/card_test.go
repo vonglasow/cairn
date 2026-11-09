@@ -119,7 +119,7 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 }
 
 func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
-	c := engine.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
+	c := engine.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Firmware"}}
 	said, over := c.Cost()
 	if said != "9h/2h" {
 		t.Fatalf("Cost = %q, want 9h/2h", said)
@@ -127,8 +127,12 @@ func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
 	if !over {
 		t.Fatal("nine hours against two is not said to be over")
 	}
-	if Serves(c) != "◇4" {
+	if Serves(c) != "Firmware" {
 		t.Fatalf("Serves = %q", Serves(c))
+	}
+	c.Objectives, c.Serves = []int{4, 5}, []string{"Enclosure", "Firmware"}
+	if Serves(c) != "Enclosure +1" {
+		t.Fatalf("Serves of two = %q", Serves(c))
 	}
 }
 
@@ -148,17 +152,17 @@ func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 
 func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	if said, warn := Facts(engine.Card{State: "blocked", Freed: true}, now, engine.Pages{}); said != FreedMark || !warn {
+	if said, warn := CardFacts(engine.Card{State: "blocked", Freed: true}, now, engine.Pages{}); said != FreedMark || !warn {
 		t.Fatalf("a card waiting on nothing any more says %q %v", said, warn)
 	}
-	said, warn := Facts(engine.Card{}, now, engine.Pages{})
+	said, warn := CardFacts(engine.Card{}, now, engine.Pages{})
 	if said != "" || warn {
 		t.Fatalf("a card carrying nothing says %q %v", said, warn)
 	}
-	said, warn = Facts(engine.Card{
-		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4},
+	said, warn = CardFacts(engine.Card{
+		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Firmware"},
 	}, now, engine.Pages{})
-	for _, word := range []string{"2d", "9h/2h", "◇4"} {
+	for _, word := range []string{"2d", "9h/2h", "Firmware"} {
 		if !strings.Contains(said, word) {
 			t.Errorf("%q does not say %q", said, word)
 		}
@@ -227,7 +231,7 @@ func TestOnlyTheTitleOpensItsBubble(t *testing.T) {
 }
 
 func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
-	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Objectives: []int{1, 2}}
+	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Objectives: []int{1, 2}, Serves: []string{"Ship the desktop board", "Write the docs"}}
 	w := holding(newFake(), c)
 	w.snap.Goals = []engine.Goal{{Number: 1, Title: "Ship the desktop board"}, {Number: 2, Title: "Write the docs"}}
 	row := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now, engine.Pages{})
@@ -240,12 +244,15 @@ func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
 	}
 }
 
-func TestTheFactsMakeRoomForTheMarksGoMonoLacks(t *testing.T) {
-	c := engine.Card{Number: 1, Objectives: []int{1}}
+func TestTheFactsMakeRoomForTheMarkDrawnBeforeWhatTheyServe(t *testing.T) {
+	c := engine.Card{Number: 1, Objectives: []int{1}, Serves: []string{"Firmware"}}
 	m := holding(newFake()).measured()
 	row := CardRowOf(c, Box{W: 300, H: lineHigh}, m, time.Time{}, engine.Pages{})
-	if want := monoWide("1", small) + ends(m, ServesMark, small); row.FactsAt.W < want {
+	if want := mixedWide(m, "Firmware", small) + servesSide + servesGap; row.FactsAt.W < want {
 		t.Errorf("the facts %q are given %d wide, want %d at least", row.Facts, row.FactsAt.W, want)
+	}
+	if row.MarkAt.X != row.ServesAt.X || row.MarkAt.W != servesSide {
+		t.Errorf("the mark %+v does not lead what it serves %+v", row.MarkAt, row.ServesAt)
 	}
 }
 
@@ -307,16 +314,16 @@ func TestALabelsNameStandsInTheMiddleOfItsPill(t *testing.T) {
 
 func TestTheFactsGiveTheirLastPiecesUpBeforeTheyCoverTheNumber(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	c := engine.Card{Number: 10, Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}}
+	c := engine.Card{Number: 10, Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Ops"}}
 	m := holding(newFake()).measured()
-	whole, _ := Facts(c, now, engine.Pages{})
+	whole, _ := CardFacts(c, now, engine.Pages{})
 	number := monoWide("#10", small) + 2*pillGap
 	for _, c2 := range []struct {
 		room  int
 		facts string
 		late  bool
 	}{
-		{number + mixedWide(m, whole, small), whole, true},
+		{number + mixedWide(m, whole, small) + servesSide + servesGap, whole, true},
 		{number + mixedWide(m, "2d  9h/2h", small), "2d  9h/2h", true},
 		{number + mixedWide(m, "2d", small), "2d", false},
 		{number + mixedWide(m, "2d", small) - 1, "", false},
@@ -328,7 +335,7 @@ func TestTheFactsGiveTheirLastPiecesUpBeforeTheyCoverTheNumber(t *testing.T) {
 		if row.Facts != "" && row.FactsAt.X < row.NumberAt.X+row.NumberAt.W {
 			t.Errorf("in %d the facts at %+v cover the number at %+v", c2.room, row.FactsAt, row.NumberAt)
 		}
-		if strings.Contains(row.Facts, ServesMark) != (row.ServesAt != Box{}) {
+		if strings.HasSuffix(row.Facts, "Ops") != (row.ServesAt != Box{}) {
 			t.Errorf("in %d the facts %q mark what they serve at %+v", c2.room, row.Facts, row.ServesAt)
 		}
 	}

@@ -484,13 +484,7 @@ func reviewOf(under []task.Task) objective.Review {
 	for _, t := range under {
 		c := t.Carried()
 		r.Spent += c.Spent
-		if c.Archived || c.State == domain.Done {
-			continue
-		}
-		r.Left.Tasks++
-		if !c.Deadline.IsZero() && (r.Left.Due.IsZero() || c.Deadline.Before(r.Left.Due)) {
-			r.Left.Due, r.Left.On = c.Deadline, c.Number
-		}
+		r.Left = r.Left.Counting(c.Number, c.State, c.Archived, c.Deadline)
 	}
 	return r
 }

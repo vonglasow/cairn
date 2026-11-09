@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -94,6 +95,7 @@ func everyScreen(w Window) []struct {
 	w    Window
 } {
 	card := w.clicked(middleOf(w, 1, 0))
+	parent, sub, refused := objectiveScreens(w)
 	return []struct {
 		name string
 		w    Window
@@ -124,7 +126,39 @@ func everyScreen(w Window) []struct {
 		{"the month", w.onPage(Time).ranged("Month")},
 		{"the months", func() Window { m := w.onPage(Time).ranged("Month"); m.grid = viewMonths; return m }()},
 		{"the years", func() Window { m := w.onPage(Time).ranged("Month"); m.grid = viewYears; return m }()},
+		{"an objective holding sub-objectives", parent},
+		{"its tasks shown", parent.Key("t")},
+		{"its tasks narrowed", parent.Key("t").Key("]")},
+		{"its deletion asked", parent.Delete()},
+		{"a sub-objective's form", sub.Edit()},
+		{"the parents offered", onField(sub.Edit(), "parent")},
+		{"what a task serves, refused", refused},
 	}
+}
+
+func objectiveScreens(w Window) (parent, sub, refused Window) {
+	for _, g := range w.snap.Goals {
+		if len(g.Children) > 0 && parent.width == 0 {
+			parent = w.onPage(Objectives)
+			parent.chosen, parent.chosenGoal = g.Number, true
+			sub = parent
+			sub.chosen = g.Children[0]
+		}
+	}
+	for _, c := range w.snap.Cards {
+		if g, ok := w.snap.Goal(sub.chosen); ok && slices.Contains(c.Objectives, g.Number) && refused.width == 0 {
+			refused = w
+			refused.chosen = c.Number
+			refused = onField(refused.Edit(), "objective")
+			for i, one := range refused.Choosing() {
+				if one.Number == g.Parent {
+					refused.choosing = i
+				}
+			}
+			refused = refused.taking()
+		}
+	}
+	return parent, sub, refused
 }
 
 func TestTheFixturesDrawEveryTextWhereItFits(t *testing.T) {

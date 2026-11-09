@@ -268,3 +268,76 @@ func TestDeleting_asksAboutTasksOnlyOnceTheyAreTouched(t *testing.T) {
 		t.Error("keeping the only sub-objective left nothing to ask, and it was not ready")
 	}
 }
+
+func TestLook_proposesAParentReachedOnceEverySubObjectiveIs(t *testing.T) {
+	e := homeTree(t)
+	reach := func(n string) {
+		t.Helper()
+		if _, err := e.Ask(ObjectiveEdit, Input{Given: map[string]string{"number": n, "state": "reached"}}); err != nil {
+			t.Fatalf("reach %s: %v", n, err)
+		}
+	}
+	reach("2")
+	if home, _ := lookAt(t, e).Goal(1); home.Proposed {
+		t.Error("Home automation was proposed reached with Firmware still active")
+	}
+	reach("3")
+	s := lookAt(t, e)
+	if home, _ := s.Goal(1); !home.Proposed {
+		t.Error("Home automation was not proposed reached once every sub-objective was")
+	}
+	if tidy, _ := s.Goal(4); tidy.Proposed {
+		t.Error("an objective holding no sub-objective was proposed reached")
+	}
+	if enclosure, _ := s.Goal(2); enclosure.Proposed {
+		t.Error("a sub-objective was proposed reached")
+	}
+	reach("1")
+	if home, _ := lookAt(t, e).Goal(1); home.Proposed {
+		t.Error("a parent already reached was proposed reached again")
+	}
+}
+
+func TestLook_saysWhichObjectivesWaitOnOne(t *testing.T) {
+	e := homeTree(t)
+	for _, n := range []string{"4", "2"} {
+		if _, err := e.Ask(ObjectiveEdit, Input{Given: map[string]string{"number": n}, Listed: map[string][]string{"waits-on": {"3"}}}); err != nil {
+			t.Fatalf("waits-on: %v", err)
+		}
+	}
+	s := lookAt(t, e)
+	if firmware, _ := s.Goal(3); !slices.Equal(firmware.WaitedOnBy, []int{2, 4}) {
+		t.Errorf("Firmware is waited on by %v, want [2 4]", firmware.WaitedOnBy)
+	}
+	if home, _ := s.Goal(1); len(home.WaitedOnBy) != 0 {
+		t.Errorf("Home automation is waited on by %v, want nothing", home.WaitedOnBy)
+	}
+}
+
+func TestCountedOnce_refusesAParentTickedBesideItsSubObjectives(t *testing.T) {
+	s := lookAt(t, homeTree(t))
+	err := s.CountedOnce(44, []int{2, 1, 3})
+	if err == nil || err.Error() != "#44 is already counted in #1 Home automation through #2 Enclosure and #3 Firmware; nothing was changed" {
+		t.Errorf("CountedOnce = %v", err)
+	}
+	if err := s.CountedOnce(0, []int{2, 3, 4}); err != nil {
+		t.Errorf("two sub-objectives of one parent and another tree were refused: %v", err)
+	}
+	if err := s.CountedOnce(0, []int{1, 99}); err != nil {
+		t.Errorf("an objective that is not there was judged: %v", err)
+	}
+}
+
+func TestLeft_countsWhatIsOpenOverTheSubtreeOnce(t *testing.T) {
+	e := homeTree(t)
+	if _, err := e.Ask(TaskEdit, Input{Given: map[string]string{"number": "1", "deadline": "2026-12-01"}}); err != nil {
+		t.Fatalf("deadline: %v", err)
+	}
+	s := lookAt(t, e)
+	if got := s.Left(1); got.Tasks != 2 || got.On != 1 {
+		t.Errorf("Home automation has %+v left, want 2 tasks, the next due #1", got)
+	}
+	if got := s.Left(4); got.Tasks != 0 {
+		t.Errorf("Tidy the workshop has %+v left, want nothing", got)
+	}
+}

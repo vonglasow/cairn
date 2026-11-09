@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"cairn/internal/domain"
-	"cairn/internal/engine"
 )
 
 // TabAt is where one of the two tabs sits.
@@ -47,36 +46,22 @@ func OfferAt(l Layout, at int) Box {
 	return Box{X: l.Bar.X + at*offerWide, Y: l.Bar.Y, W: offerWide, H: l.Bar.H}
 }
 
-// GoalsRun is the whole of the board the objectives are laid out in: every column's width, and the height the first of them runs to.
+// GoalsRun is where the objectives are listed: the list's ground under its head, which scrolls.
 func GoalsRun(l Layout) Box {
-	last := l.Column[engine.Columns-1]
-	return Box{
-		X: l.Column[0].X,
-		Y: l.Column[0].Y,
-		W: last.X + last.W - l.Column[0].X,
-		H: l.Column[0].H,
-	}
+	list, _ := SplitOf(l)
+	return Box{X: list.X + gap, Y: list.Y + headHigh, W: list.W - 2*gap, H: list.H - headHigh - gap}
 }
 
-// GoalsAcross is how many objectives stand side by side.
-func GoalsAcross() int { return engine.Columns }
+// GoalsHead is the head naming the list of objectives, with how many it holds.
+func GoalsHead(l Layout) Box {
+	list, _ := SplitOf(l)
+	return NameIn(Box{X: list.X, Y: list.Y, W: list.W, H: headHigh})
+}
 
-// GoalAt is where the n-th objective sits in the grid, filled across and then down.
+// GoalAt is where the n-th objective of the tree has its slot, one under the other.
 func GoalAt(l Layout, at, scrolled int) Box {
-	across := GoalsAcross()
-	column := l.Column[at%across]
-	return Box{
-		X: column.X,
-		Y: l.Column[0].Y + (at/across)*CardHeight - scrolled,
-		W: column.W,
-		H: CardHeight,
-	}
-}
-
-// GoalRows is how many rows a given number of objectives comes to.
-func GoalRows(goals int) int {
-	across := GoalsAcross()
-	return (goals + across - 1) / across
+	run := GoalsRun(l)
+	return Box{X: run.X, Y: run.Y + at*ItemHigh - scrolled, W: run.W, H: ItemHigh}
 }
 
 // Searching is where what is being looked for is written: the command bar itself, the search being what it turns into after a slash.

@@ -205,3 +205,16 @@ func TestReport_saysThePeriodTheMonthsAndWhatWasDone(t *testing.T) {
 		}
 	}
 }
+
+func TestLeft_countsWhatIsOpenAndKeepsTheSoonestDeadline(t *testing.T) {
+	soon, late := time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
+	var l Left
+	l = l.Counting(1, domain.Todo, false, late)
+	l = l.Counting(2, domain.Done, false, soon)
+	l = l.Counting(3, domain.Todo, true, soon)
+	l = l.Counting(4, domain.Current, false, soon)
+	l = l.Counting(5, domain.Backlog, false, time.Time{})
+	if want := (Left{Tasks: 3, Due: soon, On: 4}); l != want {
+		t.Errorf("Left = %+v, want %+v", l, want)
+	}
+}

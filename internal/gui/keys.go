@@ -59,6 +59,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnFiltering:     Window.onFilters,
 	OnConfiguration: Window.onConfiguration,
 	OnWorkspaces:    Window.onWorkspaces,
+	OnFates:         Window.onFates,
 }
 
 func (w Window) onBoard(name string) Window {
@@ -74,6 +75,16 @@ func (w Window) onBoard(name string) Window {
 	if name == "esc" && w.chosen != 0 {
 		w.chosen, w.chosenGoal = 0, false
 		return w
+	}
+	if w.tab == Objectives && name == "t" {
+		return w.detailing(ShowItsTasks)
+	}
+	if w.tab == Tasks && (name == "[" || name == "]") {
+		by := 1
+		if name == "[" {
+			by = -1
+		}
+		return w.walkingNarrowing(by)
 	}
 	if card, ok := w.snap.Card(w.chosen); ok && w.chosen != 0 && !w.chosenGoal && w.tab == Tasks {
 		switch name {
@@ -426,39 +437,51 @@ func (w Window) following(column, at int) Window {
 
 func (w Window) followingGoal(at int) Window {
 	run := GoalsRun(w.Layout())
-	w.goals = w.settledGoals(inSight(at/GoalsAcross(), CardHeight, run.H, w.goals))
+	w.goals = w.settledGoals(inSight(at, ItemHigh, run.H, w.goals))
 	return w
 }
 
 func (w Window) settledGoals(want int) int {
 	run := GoalsRun(w.Layout())
-	return min(max(0, GoalRows(len(w.Showing().Goals))*CardHeight-run.H), max(0, want))
+	return min(max(0, len(w.Tree())*ItemHigh-run.H), max(0, want))
 }
 
 func (w Window) walkingGoals(across, down int) Window {
-	here := engine.Sorted(w.Showing().Goals)
+	here := w.Tree()
 	if len(here) == 0 {
 		return w
 	}
-	at := 0
-	for i, g := range here {
-		if g.Number == w.chosen {
+	at := -1
+	for i, b := range here {
+		if w.chosenGoal && b.Goal.Number == w.chosen {
 			at = i
 		}
 	}
-	at = min(len(here)-1, max(0, at+across+down*GoalsAcross()))
-	w.chosen, w.chosenGoal = here[at].Number, true
+	if at < 0 {
+		at = 0
+	} else {
+		at = min(len(here)-1, max(0, at+across+down))
+	}
+	w.chosen, w.chosenGoal = here[at].Goal.Number, true
 	return w.followingGoal(at)
 }
 
 func (w Window) asking(op engine.Operation, in engine.Input) Window {
-	if _, err := w.work.Ask(op, in); err != nil {
+	answer, err := w.work.Ask(op, in)
+	if err != nil {
 		if agreeing, ok := engine.AgreeingTo(op, in, err); ok {
 			return w.agreeingTo(agreeing).Look()
 		}
 		return w.failing(err)
 	}
-	return w.Look()
+	return w.warned(answer).Look()
+}
+
+func (w Window) warned(answer engine.Answer) Window {
+	if len(answer.Warnings) == 0 {
+		return w
+	}
+	return w.telling(strings.Join(answer.Warnings, "; "))
 }
 
 func (w Window) agreed() Window {

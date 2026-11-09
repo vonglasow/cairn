@@ -47,7 +47,10 @@ func (s Snapshot) Served(c Card) []Goal {
 func (s Snapshot) Named(f Field) string {
 	var said []string
 	switch f.Arg {
-	case "objective":
+	case "objective", "parent", "waits-on":
+		if f.Value == "none" {
+			return f.Value
+		}
 		for _, n := range NumbersIn(f.Value) {
 			g, _ := s.Goal(n)
 			said = append(said, "#"+strconv.Itoa(n)+" "+g.Title)

@@ -39,6 +39,11 @@ func (r Row) Check(k Kit, c Check, at Box) Box {
 	return c.Draw(k.inside("row"), at)
 }
 
+// Connector draws the line joining the row to the one it sits under, in the room left of its box.
+func (r Row) Connector(k Kit, c Connector, at Box) Box {
+	return c.Draw(k.inside("row"), at)
+}
+
 // Pill draws a pill on the row, on the ground a picked row's ground calls for.
 func (r Row) Pill(k Kit, p Pill, at Box) Box {
 	p.OnControl = r.Picked

@@ -3,6 +3,7 @@ package gui
 import (
 	"image/color"
 	"strconv"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/op/clip"
@@ -12,19 +13,31 @@ import (
 	"cairn/internal/engine"
 )
 
-// Card is a task's card, or an objective's, in one of its states: at rest, under the pointer, chosen, dimmed, dragged, or a reference to one the board leaves out.
+// Card is a task's card, or an objective's, in one of its states: at rest, under the pointer, chosen, dimmed, dragged, or a reference to one the board leaves out, saying why it is there; laid out as a tile when it carries a sub-objective.
 type Card struct {
 	Face                                        engine.Card
 	Chosen, Hovered, Dimmed, Dragged, Reference bool
-	Standing                                    string
+	Standing, Why                               string
 	Pages                                       engine.Pages
 	Colour                                      func(label string) string
+	Goal                                        *GoalTile
+}
+
+// GoalTile is what a card in tile layout carries: an objective's mark, number, title and type, its progress and counts, notes on its tasks, and a warning.
+type GoalTile struct {
+	Number, Title, State, Priority, Chip, ChipColour string
+	Counts, Warn                                     string
+	Done, Total                                      int
+	Notes                                            []string
 }
 
 // Draw draws the card in the slot at, which holds the gap under it.
 func (c Card) Draw(k Kit, at Box) Box {
 	if c.Dragged {
 		return c.dragged(k, at)
+	}
+	if c.Goal != nil {
+		return c.tile(k, at)
 	}
 	if c.Dimmed {
 		half := paint.PushOpacity(k.gtx.Ops, 0.5)
@@ -59,13 +72,25 @@ func (c Card) Draw(k Kit, at Box) Box {
 	laid := CardRowOf(c.Face, parts.Number, m, k.gtx.Now, c.Pages)
 	in.put("number", laid.NumberAt)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, parts.Number, laid.Number, small, mono, text.Start)
+	if c.Reference && c.Why != "" {
+		laid.Facts, laid.Late, laid.FactsAt = c.Why, true, FactsAt(parts.Number, ends(m, c.Why, small))
+	}
 	if laid.Facts != "" {
 		in.put("facts", laid.FactsAt)
 		ink := k.skin.Colour.Ink.Low
 		if laid.Late {
 			ink = k.skin.Colour.State.Late
 		}
-		sayIn(k.gtx, k.th, ink, laid.FactsAt, laid.Facts, small, mono, text.End)
+		front := laid.FactsAt
+		if laid.ServesAt.W > 0 {
+			name := Serves(c.Face)
+			ServesMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in.inside("facts"), laid.MarkAt)
+			at := laid.MarkAt.X + servesSide + servesGap
+			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: at, Y: laid.FactsAt.Y, W: laid.ServesAt.X + laid.ServesAt.W - at, H: laid.FactsAt.H}, name, small, mono, text.End)
+			front.W = laid.ServesAt.X - front.X
+			laid.Facts = strings.TrimSuffix(laid.Facts, name)
+		}
+		sayIn(k.gtx, k.th, ink, front, laid.Facts, small, mono, text.End)
 	}
 	for i, pill := range laid.Pills {
 		if i == 0 && c.Standing != "" {
@@ -81,6 +106,45 @@ func (c Card) Draw(k Kit, at Box) Box {
 		Progress{Done: c.Face.SubDone, Total: c.Face.SubTotal, Said: strconv.Itoa(c.Face.SubDone) + "/" + strconv.Itoa(c.Face.SubTotal)}.Draw(in, parts.Steps)
 	}
 	return parts.Panel
+}
+
+func (c Card) tile(k Kit, at Box) Box {
+	g := c.Goal
+	panel := k.put("card", PartsOf(at).Panel)
+	in := k.inside("card")
+	rounded(k.gtx, panel, k.skin.Radius.Card, c.ground(k.skin))
+	if c.Chosen {
+		Ring{Radius: k.skin.Radius.Card}.Draw(in, panel)
+	}
+	Stripe{Priority: g.Priority}.Draw(in, PartsOf(at).Edge)
+	first, track, counts, notes := TileParts(panel)
+	m := k.measured()
+	mark := StandingMark{State: g.State}.Draw(in, Box{X: first.X, Y: first.Y + (lineHigh-markSide)/2, W: markSide, H: markSide})
+	end := first.X + first.W
+	if g.Chip != "" {
+		wide := ends(m, g.Chip, small) + 2*pillPad
+		chip := LabelChip{Label: g.Chip, Colour: g.ChipColour}.Draw(in, Box{X: end - wide, Y: first.Y + (lineHigh-pillHigh)/2, W: wide, H: pillHigh})
+		end = chip.X - pillGap
+	}
+	x := mark.X + mark.W + markSpace
+	numbered := monoWide(g.Number, small)
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: x, Y: first.Y, W: numbered, H: lineHigh}, g.Number, small, k.skin.Type.Mono, text.Start)
+	title := Box{X: x + numbered + markSpace, Y: first.Y, W: max(0, end-x-numbered-markSpace), H: lineHigh}
+	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, title, fits(k.gtx, k.th, g.Title, title.W, reads), reads, font.Medium, 1, text.Start)
+	Progress{Done: g.Done, Total: g.Total}.Draw(in, track)
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, counts, g.Counts, small, k.skin.Type.Mono, text.Start)
+	lines := g.Notes
+	if g.Warn != "" {
+		lines = append(lines[:min(len(lines), 1):min(len(lines), 1)], g.Warn)
+	}
+	for i, line := range lines[:min(len(lines), 2)] {
+		ink := k.skin.Colour.Ink.Faint
+		if line == g.Warn && g.Warn != "" {
+			ink = k.skin.Colour.State.Late
+		}
+		say(k.gtx, k.th, ink, Box{X: notes.X, Y: notes.Y + i*lineHigh, W: notes.W, H: lineHigh}, fits(k.gtx, k.th, line, notes.W, small), small)
+	}
+	return panel
 }
 
 func (c Card) dragged(k Kit, at Box) Box {

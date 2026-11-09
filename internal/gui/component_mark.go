@@ -178,6 +178,10 @@ func (p FilterPill) inForce(k, in Kit, at Box) {
 	}
 	rounded(k.gtx, at, k.skin.Radius.Full(at), k.skin.Colour.Surface.Tint)
 	line := Box{X: at.X + pillPad, Y: at.Y + (at.H-lineHigh)/2, W: at.W - pillPad - pillCross, H: lineHigh}
+	if p.Serves {
+		ServesMark{Ink: value}.Draw(in, Box{X: line.X, Y: at.Y + (at.H-servesSide)/2, W: servesSide, H: servesSide})
+		line.X, line.W = line.X+servesSide+servesGap, line.W-servesSide-servesGap
+	}
 	sayIn(k.gtx, k.th, name, line, p.Name, small, font.Font{}, text.Start)
 	said := ends(k.measured(), p.Name, small) + nameGap
 	sayIn(k.gtx, k.th, value, Box{X: line.X + said, Y: line.Y, W: line.W - said, H: line.H}, strings.TrimPrefix(p.Said, p.Name+" "), small, font.Font{Weight: font.Medium}, text.Start)

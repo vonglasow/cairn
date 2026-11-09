@@ -355,11 +355,11 @@ func (w *world) clickTab(name string) error {
 }
 
 func (w *world) findGoal(title string) (Point, error) {
-	for i, g := range engine.Sorted(w.w.Reading().Goals) {
-		if g.Title != title {
+	for i, b := range w.w.Tree() {
+		if b.Goal.Title != title {
 			continue
 		}
-		box := GoalAt(w.w.Layout(), i, 0)
+		box := ItemOf(GoalAt(w.w.Layout(), i, w.w.goals), depthOf(b))
 		return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
 	}
 	return Point{}, fmt.Errorf("no objective titled %q is on screen", title)
@@ -1684,6 +1684,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.configurationSteps(sc)
 	w.workspaceSteps(sc)
 	w.componentsSteps(sc)
+	w.objectivesSteps(sc)
 }
 
 func (w *world) workedOn(times int) error {

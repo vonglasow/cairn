@@ -46,6 +46,9 @@ func (w Window) Click(p Point) Window {
 	if clicked, on := w.clickingPills(p); on {
 		return clicked
 	}
+	if clicked, on := w.clickingDetail(p); on {
+		return clicked
+	}
 	if cross, ok := w.PanelClose(); ok && cross.In(p) {
 		return w.Choose(w.leavingOffer())
 	}
@@ -69,6 +72,9 @@ func (w Window) Click(p Point) Window {
 	}
 	if offer, on := w.offerAt(p); on {
 		return w.Choose(offer)
+	}
+	if w.screen == OnFates {
+		return w.clickingFates(p)
 	}
 	if w.screen == OnChoosing {
 		return w.clickingList(p)
@@ -385,10 +391,12 @@ func (w Window) Lighting(offer string) bool { return w.hovered && w.over == offe
 
 func (w Window) goalAt(p Point) int {
 	l := w.Layout()
-	here := engine.Sorted(w.Showing().Goals)
-	for i := range here {
-		if GoalAt(l, i, w.goals).In(p) {
-			return here[i].Number
+	if !GoalsRun(l).In(p) {
+		return 0
+	}
+	for i, b := range w.Tree() {
+		if ItemOf(GoalAt(l, i, w.goals), depthOf(b)).In(p) {
+			return b.Goal.Number
 		}
 	}
 	return 0

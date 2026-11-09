@@ -4,9 +4,7 @@ import (
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"fmt"
-	"math"
 	"strconv"
-	"time"
 )
 
 // Ghost is the card in mid-air under the pointer, and whether there is one.
@@ -273,6 +271,8 @@ func (w Window) panel() Box {
 		return w.ChoosingBox()
 	case OnAsking:
 		return w.QuestionBox()
+	case OnFates:
+		return w.FatesAsked().Box
 	case OnHelp:
 		return w.HelpBox()
 	case OnCalendar:
@@ -472,24 +472,29 @@ func (w Window) ProgressBox() Box {
 		bottom = max(bottom, frame.Y+frame.H)
 	}
 	right := FormBeside(w.formPanel())
-	return Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: progressHigh}
+	g, _ := w.snap.Goal(w.form.Number)
+	high := lineHigh + between + 2*padding + lineHigh + w.GoalProgress(g).High()
+	return Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: high}
 }
 
-const progressHigh = 130
-
-// ProgressFacts is what an objective's progress says under its bar: the time spent on it, the time it was estimated at, and the days left to its deadline, each a figure and what it is.
-func ProgressFacts(g engine.Goal, now time.Time) [][2]string {
+// GoalProgress is what an objective's form says of how far it has got: what is done, the time spent against the estimate, what is left, and where else it is counted.
+func (w Window) GoalProgress(g engine.Goal) Facts {
 	spent := "—"
 	if g.Spent > 0 {
 		spent = domain.FormatDuration(g.Spent)
 	}
-	estimate := g.Estimate
-	if estimate == "" {
-		estimate = "—"
+	time := Fact{Name: "time spent", Value: spent}
+	if g.Estimate != "" {
+		time.Aside = "of " + g.Estimate + " estimated"
 	}
-	left := "—"
-	if !g.Deadline.IsZero() {
-		left = strconv.Itoa(int(math.Ceil(g.Deadline.Sub(engine.DayOf(now)).Hours()/24))) + "d"
+	f := Facts{Lines: []Fact{
+		{Name: "done", Value: strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " tasks"},
+		time,
+		{Name: "left", Value: w.snap.Left(g.Number).Line()},
+	}}
+	if parent, ok := w.snap.Goal(g.Parent); ok && g.Parent != 0 {
+		f.Lines = append(f.Lines, Fact{Name: "counted in", Value: "#" + strconv.Itoa(parent.Number) + " " + parent.Title,
+			Aside: strconv.Itoa(parent.Done) + " of " + strconv.Itoa(parent.Total) + " there, each task once"})
 	}
-	return [][2]string{{spent, "spent"}, {estimate, "estimated"}, {left, "to the deadline"}}
+	return f
 }

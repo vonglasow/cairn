@@ -104,6 +104,7 @@ type CardRow struct {
 	Facts    string
 	FactsAt  Box
 	ServesAt Box
+	MarkAt   Box
 	Late     bool
 }
 
@@ -117,16 +118,24 @@ func CardRowOf(c engine.Card, row Box, m Measure, now time.Time, pages engine.Pa
 	x := row.X + out.NumberAt.W + 2*pillGap
 	end := row.X + row.W
 	pieces := factsOf(c, now, pages)
-	out.Facts, out.Late = joined(pieces)
-	for out.Facts != "" && mixedWide(m, out.Facts, small) > end-x {
-		pieces = pieces[:len(pieces)-1]
-		out.Facts, out.Late = joined(pieces)
+	serves := Serves(c)
+	wideOf := func(pieces []fact) int {
+		said, _ := joined(pieces)
+		if serves != "" && len(pieces) > 0 && pieces[len(pieces)-1].serves {
+			return mixedWide(m, said, small) + servesSide + servesGap
+		}
+		return mixedWide(m, said, small)
 	}
+	for len(pieces) > 0 && wideOf(pieces) > end-x {
+		pieces = pieces[:len(pieces)-1]
+	}
+	out.Facts, out.Late = joined(pieces)
 	if out.Facts != "" {
-		out.FactsAt = FactsAt(row, mixedWide(m, out.Facts, small))
-		if serves := Serves(c); serves != "" && strings.HasSuffix(out.Facts, serves) {
-			wide := mixedWide(m, serves, small)
+		out.FactsAt = FactsAt(row, wideOf(pieces))
+		if pieces[len(pieces)-1].serves {
+			wide := mixedWide(m, serves, small) + servesSide + servesGap
 			out.ServesAt = Box{X: out.FactsAt.X + out.FactsAt.W - wide, Y: row.Y, W: wide, H: row.H}
+			out.MarkAt = Box{X: out.ServesAt.X, Y: row.Y + (row.H-servesSide)/2, W: servesSide, H: servesSide}
 		}
 		end = out.FactsAt.X - 2*pillGap
 	}
@@ -251,15 +260,20 @@ func Due(c engine.Card, now time.Time) (said string, late bool) {
 // FreedMark is what a blocked task wears once every task it waits on is done.
 const FreedMark = "✓ nothing blocks it"
 
-// ServesMark is what stands in front of the objectives a task serves.
-const ServesMark = "◇"
+const (
+	servesSide = 11
+	servesGap  = 3
+)
 
-// Serves is what a task contributes to, which the detail carried and no overview ever summarised.
+// Serves is what a task contributes to, by name: the first objective it serves, and how many more.
 func Serves(c engine.Card) string {
-	if len(c.Objectives) == 0 {
+	if len(c.Serves) == 0 {
 		return ""
 	}
-	return ServesMark + engine.Numbers(c.Objectives)
+	if len(c.Serves) == 1 {
+		return c.Serves[0]
+	}
+	return c.Serves[0] + " +" + strconv.Itoa(len(c.Serves)-1)
 }
 
 // Standing is the mark an objective's card wears for where it stands.
@@ -277,29 +291,29 @@ func Standing(g engine.Goal) string {
 	return ""
 }
 
-// Facts is the right-hand end of a card's label row: when it is wanted, what it has cost against what it was reckoned to cost while the time is shown, and what it serves.
-func Facts(c engine.Card, now time.Time, pages engine.Pages) (said string, warn bool) {
+// CardFacts is the right-hand end of a card's label row: when it is wanted, what it has cost against what it was reckoned to cost while the time is shown, and what it serves.
+func CardFacts(c engine.Card, now time.Time, pages engine.Pages) (said string, warn bool) {
 	return joined(factsOf(c, now, pages))
 }
 
 type fact struct {
-	said string
-	warn bool
+	said         string
+	warn, serves bool
 }
 
 func factsOf(c engine.Card, now time.Time, pages engine.Pages) []fact {
 	if c.Freed {
-		return []fact{{FreedMark, true}}
+		return []fact{{said: FreedMark, warn: true}}
 	}
 	var pieces []fact
 	if due, late := Due(c, now); due != "" {
-		pieces = append(pieces, fact{due, late})
+		pieces = append(pieces, fact{said: due, warn: late})
 	}
 	if spent, over := pages.Cost(c); spent != "" {
-		pieces = append(pieces, fact{spent, over})
+		pieces = append(pieces, fact{said: spent, warn: over})
 	}
 	if serves := Serves(c); serves != "" {
-		pieces = append(pieces, fact{serves, false})
+		pieces = append(pieces, fact{said: serves, serves: true})
 	}
 	return pieces
 }

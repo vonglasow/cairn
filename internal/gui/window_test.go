@@ -325,8 +325,8 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 		t.Fatalf("the detail opened on %d", w.Chosen())
 	}
 
-	second := GoalAt(w.Layout(), 1, 0)
-	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	second := ItemOf(GoalAt(w.Layout(), 1, 0), 0)
+	w = w.clicked(Point{X: second.X + inset, Y: second.Y + second.H/2})
 	if w.Chosen() != 3 {
 		t.Errorf("clicking behind an open detail changed it to %d", w.Chosen())
 	}
@@ -589,9 +589,8 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 	}
 	w.tab = Objectives
 	run := GoalsRun(w.Layout())
-	rows := GoalRows(len(w.snap.Goals))
 
-	end := rows*CardHeight - run.H
+	end := len(w.snap.Goals)*ItemHigh - run.H
 	if end <= 0 {
 		t.Fatalf("%d objectives in a run of %d all fit: this proves nothing", len(w.snap.Goals), run.H)
 	}
@@ -603,14 +602,14 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 	}
 
 	if got := w.followingGoal(1).goals; got != 0 {
-		t.Errorf("following the second objective moved the grid to %d", got)
+		t.Errorf("following the second objective moved the list to %d", got)
 	}
 	last := len(w.snap.Goals) - 1
 	if got, want := w.followingGoal(last).goals, end; got != want {
-		t.Errorf("following the last objective moved the grid to %d, want %d", got, want)
+		t.Errorf("following the last objective moved the list to %d, want %d", got, want)
 	}
-	fits := run.H / CardHeight
-	if got, want := w.followingGoal(fits*GoalsAcross()).goals, (fits+1)*CardHeight-run.H; got != want {
+	fits := run.H / ItemHigh
+	if got, want := w.followingGoal(fits).goals, (fits+1)*ItemHigh-run.H; got != want {
 		t.Errorf("following the first objective past what fits moved to %d, want %d", got, want)
 	}
 }

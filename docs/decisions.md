@@ -42,8 +42,8 @@ Decided on 2026-11-09, built in #226: until then cairn does none of it.
 | a sub-objective may move to another parent, unless one of its tasks is already attached to the new parent | the move would make the double attachment the rule refuses | [objectives.md](objectives.md#two-levels) |
 | deleting a parent asks, per sub-objective, delete or keep as level one, and for its tasks, delete or only detach | which work goes with an objective is a deliberate choice; nothing is decided for the person | [objectives.md](objectives.md#two-levels) |
 | a parent is proposed as reached when every sub-objective is, never put there on its own | its standing is the person's: a parent can hold work of its own beyond its sub-objectives | [objectives.md](objectives.md#two-levels) |
-| the Objectives tab is a tree beside the chosen objective's detail | a grid of cards cannot show what sits under what | [objectives.md](objectives.md#decided-not-built-yet) |
-| a card names, by name, the objective it is directly attached to | a number says nothing to a reader, and the whole path is too long for a card | [objectives.md](objectives.md#decided-not-built-yet) |
+| the Objectives tab is a tree beside the chosen objective's detail | a grid of cards cannot show what sits under what | [objectives.md](objectives.md#on-screen) |
+| a card names, by name, the objective it is directly attached to | a number says nothing to a reader, and the whole path is too long for a card | [objectives.md](objectives.md#on-screen) |
 | `--objective N` includes the sub-objectives, `--itself` the parent alone | a parent's tasks are its subtree's, as its numbers count them; a listing saying fewer would disagree | [objectives.md](objectives.md#two-levels) |
 
 ## What is remembered, and what is not

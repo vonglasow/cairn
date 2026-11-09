@@ -342,11 +342,13 @@ label is looked up in — then `Space`, `Radius`, `Size`, `Type` and the
 |---|---|
 | `Backdrop` | the window's own back, under everything |
 | `Ground` | what a column, a lane or a day stands on, raised for a day |
-| `Panel`, `Heading` | a raised box over the board, and its title |
+| `Panel`, `Heading` | a raised box over the board, and its title, with the number of what it shows beside it when it has one |
 | `Popover` | a small raised box dropped over the rest: a menu, a bubble, a tip, the swatches, the switcher |
 | `Veil` | what dims the board under a question or the command bar |
 | `Rule` | a line between what something shows and what it offers |
-| `Card`, `Stripe` | a task's or an objective's card in each of its states, and its priority's edge |
+| `Card`, `Stripe` | a task's card in each of its states — a reference saying why it is there (`Why`) among them — a sub-objective's in tile layout (`GoalTile`), and a priority's edge |
+| `ListItem`, `Connector` | an objective of the list beside a detail, two lines, moved right and joined to its parent below level one; the line that joins, also in a list's row (`Row.Connector`) |
+| `Facts`, `Figures`, `Banner` | names and their values; a row of numbers at the figures' size; a short message boxed in a panel, refused or warned |
 | `LabelChip`, `Pill`, `KeyChip`, `Dot` | a label, a word on a rounded ground, a key on its chip, a colour beside its name |
 | `Button`, `Tabs`, `Segmented` | a word to click, the window's tabs, one choice among a few |
 | `Row`, `Tile`, `Head` | a line of a list, a line inside a field, the line naming what follows |
@@ -356,7 +358,7 @@ label is looked up in — then `Space`, `Radius`, `Size`, `Type` and the
 | `Bar`, `Hint` | the command bar and one of its offers |
 | `WorkspacePill`, `FilterPill`, `InfoBox` | the workspace, a filter in force, a box of facts |
 | `Empty`, `Dashed`, `Struck`, `Landing` | an empty slot, a dashed line, the line through what is done, where a drop lands |
-| `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`, `CopyMark`, `MenuMark`, `Stone` | the marks |
+| `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`, `CopyMark`, `MenuMark`, `Stone`, `StandingMark`, `ServesMark` | the marks; where an objective stands and what a task serves are drawn, not written, since neither face carries `▶ ‖ ◇` |
 
 **The `Kit` is what every drawing is handed**: Gio's context, the theme,
 the skin, the layer it draws on, the clip it draws within, and the record
@@ -388,7 +390,9 @@ fixtures — the board, a chosen card, a task's form and its trace, an
 objective's form, the help, a question, a menu, a calendar, a list, the
 labels, the backups, the filters, the configuration, the command bar, the
 switcher, the objectives, the week, the week before, a day, a month, its
-months and its years — at the two sizes the layout is pinned at, 720 by
+months and its years, an objective holding sub-objectives, its tasks shown
+and narrowed, its deletion asked, a sub-objective's form, the parents
+offered and what a task serves refused — at the two sizes the layout is pinned at, 720 by
 560 and 1200 by 800, and fails on any overlap. A card records where it
 writes its number and its facts, so what it writes is judged too. What it
 found when it was written, and what was done:
@@ -1066,6 +1070,17 @@ keyboard is on and closes the list, **⌘⏎** takes it and keeps the list open 
 the next; `esc` closes it. Nothing reaches the store until the
 form is saved, the way nothing else in a form does.
 
+**The list is a tree** (#226): each objective of level one, its
+sub-objectives under it, joined to it and moved right as in the objectives
+tab (`Snapshot.Picks`, `@gui-objective-the-task-form-draws-the-tree`). A
+parent of what is ticked is drawn faint, saying `counted through 2 below` at
+its right. Ticking it anyway is refused where it is ticked, in a `Banner` at
+the list's foot — `#44 is already counted in #4 Home automation through #5
+Enclosure and #6 Firmware` — and nothing changes; saving would be refused the
+same way, the rule being the engine's (`Snapshot.CountedOnce`,
+`@gui-objective-the-task-form-refuses-a-double-count`). Two sub-objectives of
+one parent, or two trees, are ticked as any two objectives.
+
 `enter` never saves a form: it opens the list a field answers with, and it
 breaks a line in a field with room for more than one. **⌘⏎** (or ⌘S) saves,
 wherever the keyboard is. So the bar offers *Save* on every field, and adds
@@ -1073,7 +1088,8 @@ wherever the keyboard is. So the bar offers *Save* on every field, and adds
 there, and with the keyboard left on that field after the list closed there
 was no way to save at all. A key does what the bar offers; the bar says both.
 
-**The field carries numbers and is drawn as names.** `1 2` is what the engine
+**The field carries numbers and is drawn as names**, an objective's parent
+and what it waits on as well. `1 2` is what the engine
 takes, and a surface inventing its own spelling of an argument would be a
 surface deciding something; `#1 Ship the desktop board, #2 Keep it honest` is
 what a person reads, because nobody knows an objective by its number and the
@@ -1184,18 +1200,66 @@ whose state and whose place are all unknown to whoever chose it. Walking down a
 column and walking across into one somebody had scrolled both follow, and so
 does walking along a lane of the band.
 
-**The objectives are a grid**, filled across and then down, each one the width
-of a card. One to a row and the width of the whole board, an objective was a
-card's height stretched over four columns of nothing — and a dozen of them ran
-off the bottom of the window, so the ones that mattered least were the only
-ones in sight. Across, a dozen fit without scrolling at the smallest window
-this board draws in, and the grid reflows with the window because it is laid
-out in the board's own columns rather than on a sum of its own.
+**The objectives are a tree beside the one chosen** (#226). A grid could not
+show what sits under what, so the tab is split (`SplitOf`): a list on the
+left, no wider than 420 and two fifths of the board, and the detail of the
+objective chosen on the right — of the first while none is. The list draws an
+item of two lines for each objective (`ListItem`): its standing's mark, its
+number, its title and its first label on the first, its progress over its
+subtree on the second; a sub-objective stands under its parent, moved right
+by 24 and joined to it by a line (`Connector`,
+`@gui-objective-sub-objectives-sit-under-their-parent`). An item has no
+ground at rest, the hover's under the pointer, a card's and a ring when
+chosen. The list scrolls on a number of its own, and the arrows walk it,
+bringing what they reach into sight.
 
-They scroll on a number of their own, being one grid rather than four columns.
-They had none at all: the wheel did nothing over them and the arrows walked
-past the bottom of the window. The arrows walk the grid — across to the next,
-down to the one a row below.
+The detail heads the objective with its number, offers *Show its tasks* `t`
+and *Edit* `e` beside it, and writes its standing, its labels, and where it
+sits on the line under (`Detail`,
+`@gui-objective-the-detail-shows-the-objective-chosen`). Its progress, the
+time spent and what is left are counted over its subtree, each task once —
+adding the sub-objectives up would count a task serving two of them twice
+(`@gui-objective-the-detail-counts-each-task-once`). A parent shows its
+sub-objectives as tiles (`Card` with a `GoalTile`), one row of them, each
+saying what else its tasks serve and warning, in the late ink, of an
+objective it waits on not reached (`@gui-objective-a-tile-warns-of-what-it-waits-on`);
+then its tasks on it itself, then those in its sub-objectives, each after a
+drawn `◇` and the sub-objectives it serves, the open first and the done
+faded; what has no room is counted, `2 more · t shows them all on the board`.
+What it waits on, and what waits on it, are said as facts
+(`@gui-objective-the-detail-says-what-waits-on-what`). A parent every
+sub-objective of which is reached is proposed as reached in a banner, and
+left where it stands: its standing is the person's
+(`@gui-objective-a-parent-is-proposed-as-reached`).
+
+**`t` shows its tasks** on the tasks board, the objective filter put on it,
+which reaches its sub-objectives (`@gui-objective-t-shows-its-tasks`). Beside
+the pill, which then names the objective after a drawn `◇`, a bar of segments
+counts all of it, each sub-objective, and the objective itself, and narrows
+to the one clicked, or walked to with `[` and `]` (`Narrowing`,
+`@gui-objective-the-narrowing-bar-counts-each-part`); the pill gives up its
+name and the pills clearing and adding filters give up their room for it, and
+where even then it has none, at 720, the bar is left out and the brackets
+still walk. A task outside the objective that blocks one in it stays in
+sight as a reference, dashed and faint, saying `outside this view · blocks
+#2` in the late ink, at the foot of its column, and never counted
+(`References`, `@gui-objective-a-blocker-outside-is-a-reference`). A card
+names what it serves by name after a drawn `◇` — `◇ Firmware`, `◇ Enclosure
++1` — where it wrote `◇6` (`@gui-objective-a-card-names-what-it-serves`).
+
+**Deleting an objective asks, row by row** (`Fates`,
+`@gui-objective-deleting-asks-row-by-row`): each sub-objective deleted or kept
+as level one, and the tasks it touches deleted or detached, each on a row
+with a small `Segmented` at its right. Nothing is chosen for the person: the
+button that deletes is faint, and does nothing, until every row is answered,
+and then names what it deletes, `Delete #1 and #3`. `esc` keeps everything
+(`@gui-objective-a-deletion-asked-is-kept-on-escape`). An objective holding
+nothing is asked about as a task is.
+
+**Work started early is told** above the bar, where the window says what it
+did: putting a task in current — moved, focused, edited — while an objective
+it counts in waits on one not reached says so, as the engine warns
+(`@gui-objective-work-started-early-is-warned-about`).
 
 **The tab somebody is on stands on a pill.** The tabs were folders, a band
 closed by a line that the open tab broke; the design has no band and no line,
@@ -2209,9 +2273,15 @@ is on, and `tab` goes on to the details (`WorkOn`,
 `@gui-an-objectives-work-is-walked-with-the-keyboard`); its last line, *+ new task serving it*, opens a new task's form
 serving the objective already (`engine.ServingTaskFields`,
 `@gui-an-objective-makes-a-task-that-serves-it`). The column beside has no
-tabs, an objective having no history: its details, then *Progress* — the
-share done, its bar, the time spent, the estimate and the days to the
-deadline (`ProgressFacts`). The work stood in the column beside, behind a
+tabs, an objective having no history: its details — its parent, chosen among
+the objectives of level one or none (`Snapshot.Parents`,
+`@gui-objective-the-form-offers-level-one-parents`), what it waits on, its
+labels among those meant for objectives
+(`@gui-objective-the-form-offers-labels-for-objectives`; a task's form offers
+those meant for tasks) — then *Progress*, an `InfoBox`: the share done, its
+bar, and as `Facts` what is done, the time spent against the estimate, what is
+left, and, for a sub-objective, the parent it is counted in too
+(`GoalProgress`, `@gui-objective-the-form-says-where-it-is-counted`). The work stood in the column beside, behind a
 tab, and the room under the description was empty.
 
 **Two columns and not one above the other.** The fields take the left five

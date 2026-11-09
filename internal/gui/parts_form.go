@@ -9,6 +9,7 @@ var formSections = []struct {
 	head string
 	args []string
 }{
+	{"TREE", []string{"parent", "waits-on"}},
 	{"STATE", []string{"state", "priority", "label"}},
 	{"TIME", []string{"deadline", "estimate", "spent"}},
 	{"BLOCKED", []string{"blocker", "because"}},

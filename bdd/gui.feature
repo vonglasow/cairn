@@ -3308,27 +3308,6 @@ Feature: The desktop board
       And I press "down" 11 times
       Then what is chosen is in sight
 
-    @gui-the-objectives-are-a-grid
-    Scenario: the objectives are laid out across the board rather than one to a row
-      Given I added 12 objectives
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the objectives are laid out more than one to a row
-      And every objective is drawn inside the board
-      And the objectives all fit without scrolling
-
-    @gui-the-arrows-walk-the-grid
-    Scenario: the arrows walk the grid across and down
-      Given I added 12 objectives
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Objective 1"
-      And I press "right"
-      Then what is chosen has moved on one
-      When I press "down"
-      Then what is chosen has moved down one row
-      And what is chosen is in sight
-
     @gui-the-wheel-scrolls-the-objectives
     Scenario: the wheel moves the objectives, which used to stand still
       Given I added 40 objectives
@@ -5441,3 +5420,264 @@ Feature: The desktop board
       When I open the window on the workspace "home"
       Then the card "Plant the tulips" says nothing of "2h"
       And the card "Plant the tulips" says it is being worked on
+
+  Rule: The objectives tab is a tree beside the objective chosen
+
+    @gui-objective-sub-objectives-sit-under-their-parent
+    Scenario: the objectives tab lists each sub-objective under its parent, indented and joined to it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
+      And the objective "Firmware" is drawn indented under "Home automation" and joined to it
+
+    @gui-objective-the-detail-shows-the-objective-chosen
+    Scenario: the right of the tab shows the objective chosen, and the first while none is
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the detail is headed "Home automation"
+      When I click the objective "Tidy the workshop"
+      Then the detail is headed "Tidy the workshop"
+      When I press "up"
+      Then the detail is headed "Home automation"
+
+    @gui-objective-the-detail-counts-each-task-once
+    Scenario: a parent's detail counts the tasks of its subtree once each, and lists them apart
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Pin map" serving objectives 2 and 3
+      And I added a task titled "OTA updates" with the state "done" serving objective 3
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      Then the detail says "1 of 3 tasks"
+      And the detail's sub-objectives read "Enclosure", "Firmware"
+      And the detail's tasks on it itself read "Buy the relay"
+      And the detail's tasks in its sub-objectives read "Pin map", "OTA updates"
+
+    @gui-objective-the-detail-says-what-waits-on-what
+    Scenario: an objective's detail says what it waits on, and what waits on it
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And objective 2 waits on objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Features"
+      Then the detail says "#1 Firmware"
+      When I click the objective "Firmware"
+      Then the detail says "#2 Features"
+
+    @gui-objective-a-tile-warns-of-what-it-waits-on
+    Scenario: the tile of a sub-objective waiting on one not reached warns of it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Features" under objective 1
+      And objective 3 waits on objective 2
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      Then the tile of "Features" warns "waits on Firmware"
+
+    @gui-objective-a-parent-is-proposed-as-reached
+    Scenario: a parent whose every sub-objective is reached is proposed as reached, and left where it stands
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And objective 2 is reached
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      Then the detail says "every sub-objective is reached: it may be put reached too"
+      And objective 1 stands "active"
+
+  Rule: Show its tasks narrows the tasks board to a subtree
+
+    @gui-objective-t-shows-its-tasks
+    Scenario: t on an objective shows on the tasks board its tasks and those of its sub-objectives
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "Buy the relay" serving objective 1
+      And I added a task titled "Buy a lamp"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "t"
+      Then the tab is "TASKS"
+      And the board says it is filtered by "objective #1 Home automation, with its sub-objectives"
+      And "BACKLOG" carries "Vent slots"
+      And "BACKLOG" carries "Buy the relay"
+      And "BACKLOG" does not carry "Buy a lamp"
+
+    @gui-objective-the-narrowing-bar-counts-each-part
+    Scenario: the bar beside the pill counts every part of the subtree, and narrows to one
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "t"
+      Then the narrowing bar reads "all 2", "Enclosure 1", "itself 1"
+      When I click the segment "Enclosure"
+      Then "BACKLOG" carries "Vent slots"
+      And "BACKLOG" does not carry "Buy the relay"
+      When I click the segment "itself"
+      Then "BACKLOG" carries "Buy the relay"
+      And "BACKLOG" does not carry "Vent slots"
+
+    @gui-objective-a-card-names-what-it-serves
+    Scenario: a card names the objective it serves, after a mark drawn rather than written
+      Given I added an objective titled "Firmware"
+      And I added a task titled "OTA updates" serving objective 1
+      When I open the window
+      Then the card "OTA updates" says it serves "Firmware"
+
+    @gui-objective-a-blocker-outside-is-a-reference
+    Scenario: a task outside the objective that blocks one in it is drawn as a reference, and not counted
+      Given I added an objective titled "Firmware"
+      And I added a task titled "Order the relay"
+      And I added a task titled "Wire the relay" serving objective 1
+      And I edited task 2 with the blocker "1"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Firmware"
+      And I press "t"
+      Then "Order the relay" is drawn as a reference saying "outside this view · blocks #2"
+      And the head of "BACKLOG" counts 1
+
+  Rule: An objective's form says where it sits and how far along it is
+
+    @gui-objective-the-form-offers-level-one-parents
+    Scenario: the parent of an objective is chosen among the objectives of level one, or none
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware"
+      And I added an objective titled "Enclosure" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Firmware"
+      And I choose "Edit"
+      And I put the keyboard on "parent"
+      And I press "enter"
+      Then the list reads "none", "Home automation"
+      When I press "down"
+      And I press "enter"
+      And I choose "Save"
+      Then objective 2 sits under objective 1
+
+    @gui-objective-the-form-offers-labels-for-objectives
+    Scenario: the labels of an objective are chosen among those meant for objectives
+      Given I made the label "area" for objectives
+      And I made the label "backend" for tasks
+      And I added an objective titled "Home automation"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I choose "Edit"
+      And I put the keyboard on "labels"
+      And I press "enter"
+      Then the list offers "area"
+      And the list does not offer "backend"
+
+    @gui-objective-the-form-says-where-it-is-counted
+    Scenario: the progress of a sub-objective says where else it is counted
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Enclosure"
+      And I choose "Edit"
+      Then the progress says "counted in" "#1 Home automation"
+      And the progress says "done" "0 of 1 tasks"
+
+  Rule: A task's objectives are a tree, and counting one twice is refused where it is chosen
+
+    @gui-objective-the-task-form-draws-the-tree
+    Scenario: the list of what a task serves draws the tree, a parent counted through what is ticked below it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Pin map" serving objectives 2 and 3
+      When I open the window
+      And I click the card "Pin map"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      Then the list draws "Enclosure" indented under "Home automation" and joined to it
+      And the row "Home automation" of the list says "counted through 2 below"
+
+    @gui-objective-the-task-form-refuses-a-double-count
+    Scenario: ticking a parent beside its sub-objectives is refused at the foot of the list, and nothing changes
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Pin map" serving objectives 2 and 3
+      When I open the window
+      And I click the card "Pin map"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      And I press "up"
+      And I press "enter"
+      Then the list says "#1 is already counted in #1 Home automation through #2 Enclosure and #3 Firmware"
+      And objective 1 is not ticked
+      And objective 2 is ticked
+
+  Rule: Deleting an objective asks what goes with it, and decides nothing
+
+    @gui-objective-deleting-asks-row-by-row
+    Scenario: deleting an objective holding sub-objectives and tasks asks about each, and deletes once each is chosen
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "OTA updates" serving objective 3
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I choose "Delete"
+      Then the deletion asks about "#2 Enclosure" and "#3 Firmware"
+      And the deletion cannot be confirmed yet
+      When I choose "Keep as level one" for "#2 Enclosure"
+      And I choose "Delete" for "#3 Firmware"
+      Then the deletion asks about the tasks "#1"
+      And the deletion cannot be confirmed yet
+      When I choose "Detach" for the tasks
+      Then the deletion is confirmed by "Delete #1 and #3"
+      When I confirm the deletion
+      Then objective 1 is gone
+      And objective 2 stands on its own
+      And objective 3 is gone
+      And task 1 serves nothing
+
+    @gui-objective-a-deletion-asked-is-kept-on-escape
+    Scenario: escape keeps an objective whose deletion was asked about
+      Given I added an objective titled "Home automation"
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I choose "Delete"
+      And I press "esc"
+      Then objective 1 is still there
+      And task 1 serves objective 1
+
+  Rule: Work started early is warned about
+
+    @gui-objective-work-started-early-is-warned-about
+    Scenario: putting a task in focus says when its objective waits on one not reached
+      Given I added an objective titled "Firmware"
+      And I added an objective titled "Features"
+      And objective 2 waits on objective 1
+      And I added a task titled "OTA updates" serving objective 2
+      When I open the window
+      And I click the card "OTA updates"
+      And I press "f"
+      Then the window tells "#2 Features waits on #1 Firmware, not reached"
