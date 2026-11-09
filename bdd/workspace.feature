@@ -274,3 +274,172 @@ Feature: Workspaces, each a folder holding a store and its notes
       When I run `cairn workspace show --workspace home`
       Then it says "time       off, set in the store's settings"
       And it does not say "switch"
+
+  Rule: A store a board opens by path is remembered among the recent folders
+
+    @workspace-a-board-opened-by-path-is-recent
+    Scenario: a store a board opened with --store is listed among the recent folders
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I open the board with `cairn tui --store ~/loose/cairn.db`
+      And I run `cairn workspace list`
+      Then it lists the recent folder "~/loose"
+
+    @workspace-a-board-opened-by-the-environment-is-recent
+    Scenario: a store the environment names, opened by a board, is listed among the recent folders
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment says the store lives at "~/elsewhere/cairn.db"
+      When I open the board with `cairn tui`
+      And I run `cairn workspace list`
+      Then it lists the recent folder "~/elsewhere"
+
+    @workspace-a-command-leaves-the-recent-folders-alone
+    Scenario: a command run with --store leaves the recent folders as they were
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I run `cairn task new "Buy bread" --store ~/loose/cairn.db`
+      And I run `cairn workspace list`
+      Then it lists no recent folder
+
+    @workspace-a-workspace-opened-is-not-a-recent-folder
+    Scenario: a board opened on a workspace leaves the recent folders as they were
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I open the board with `cairn tui --workspace home`
+      And I run `cairn workspace list`
+      Then it lists no recent folder
+
+    @workspace-ten-recent-folders-are-kept
+    Scenario: ten recent folders are kept, the newest first
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And ten recent folders, "~/old/1" opened first and "~/old/10" last
+      When I open the board with `cairn tui --store ~/loose/cairn.db`
+      And I run `cairn workspace list`
+      Then the recent folders listed are 10, "~/loose" first and "~/old/10" next
+      And it does not list the recent folder "~/old/1"
+
+    @workspace-a-recent-folder-gone-is-not-found
+    Scenario: a recent folder whose store is gone is listed as not found
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I open the board with `cairn tui --store ~/trip/cairn.db`
+      And the folder "~/trip" is not there
+      And I run `cairn workspace list`
+      Then it lists the recent folder "~/trip" as not found
+
+    @workspace-recent-folders-as-json
+    Scenario: workspace list answers a machine with the recent folders too
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I open the board with `cairn tui --store ~/loose/cairn.db`
+      And I run `cairn workspace list --json`
+      Then the structured answer holds the recent folder "~/loose", opened today
+
+    @workspace-recent-folders-are-not-the-configuration
+    Scenario: the recent folders are kept in the state directory, never in the configuration
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I open the board with `cairn tui --store ~/loose/cairn.db`
+      Then the file "~/.local/state/cairn/recent.json" names "~/loose/cairn.db"
+      And the configuration still holds, unchanged, everything it held
+
+    @workspace-recent-folders-follow-xdg-state-home
+    Scenario: XDG_STATE_HOME says where the recent folders are kept
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment says XDG_STATE_HOME is "~/state"
+      When I open the board with `cairn tui --store ~/loose/cairn.db`
+      Then the file "~/state/cairn/recent.json" names "~/loose/cairn.db"
+
+    @workspace-a-recent-folder-kept-as-a-workspace-leaves-the-list
+    Scenario: a recent folder a workspace now names is no longer listed among them
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I open the board with `cairn tui --store ~/loose/cairn.db`
+      And I run `cairn workspace add loose ~/loose`
+      And I run `cairn workspace list`
+      Then it lists no recent folder
+      And it lists "loose" at "~/loose"
+
+  Rule: Each workspace wears a colour, said in its settings or read off its name
+
+    @workspace-colour-said-in-its-settings
+    Scenario: a workspace wears the colour its settings say
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the settings in "~/cairn/home" say:
+        """
+        [workspace]
+        colour = "green"
+        """
+      When I run `cairn workspace list`
+      Then it lists "home" at "~/cairn/home" wearing "green"
+
+    @workspace-colour-read-off-its-name
+    Scenario: a workspace whose settings say no colour wears one of the label colours, the same each time
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I run `cairn workspace list`
+      Then "work" wears one of the label colours
+      And "work" wears the same colour when the workspaces are listed again
+
+    @workspace-colour-shown-and-as-json
+    Scenario: workspace show says the colour, and so does the structured answer of workspace list
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the settings in "~/cairn/home" say:
+        """
+        [workspace]
+        colour = "teal"
+        """
+      When I run `cairn workspace show --workspace home`
+      Then it says "colour     teal"
+      When I run `cairn workspace list --json`
+      Then the structured answer holds "home" wearing "teal"
+
+    @workspace-a-colour-not-in-the-palette-is-refused
+    Scenario: a colour that is none of the label colours is refused, naming it
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the settings in "~/cairn/home" say:
+        """
+        [workspace]
+        colour = "chartreuse"
+        """
+      When I run `cairn task list --workspace home`
+      Then it refuses, and names "chartreuse"
+      And it names "workspace.colour"
+
+    @workspace-colour-in-the-global-file-is-passed-over
+    Scenario: a colour written in the global configuration is passed over, since it belongs to a store
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the global configuration also says:
+        """
+        [workspace]
+        colour = "green"
+        """
+      When I run `cairn task list`
+      Then it says on standard error that "workspace.colour" is ignored
+
+  Rule: A workspace removed leaves the configuration, and nothing else
+
+    @workspace-remove-drops-only-the-entry
+    Scenario: workspace remove drops the workspace from the configuration and touches no file
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And I run `cairn task new "Buy bread" --workspace home`
+      When I run `cairn workspace remove home`
+      Then it succeeds
+      And the task was written to "~/cairn/home/cairn.db"
+      When I run `cairn workspace list`
+      Then it does not list "home"
+      And it lists "work" at "~/cairn/work" as the default
+
+    @workspace-remove-refuses-an-unknown-name
+    Scenario: workspace remove refuses a workspace nobody named
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I run `cairn workspace remove play`
+      Then it refuses, and names "play"
+      And the configuration still holds, unchanged, everything it held
+
+    @workspace-remove-refuses-the-default
+    Scenario: workspace remove refuses the default, and says how to choose another
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I run `cairn workspace remove work`
+      Then it refuses, and names "work"
+      And it names "cairn workspace use"
+      And the configuration still holds, unchanged, everything it held
+
+    @workspace-a-folder-gone-is-listed-not-found
+    Scenario: a workspace whose folder is gone is listed as not found
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the folder "~/cairn/home" is not there
+      When I run `cairn workspace list`
+      Then it lists "home" at "~/cairn/home" as not found

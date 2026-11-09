@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strings"
 )
 
 // SettingsFile is the name of the file beside a store that holds the settings belonging to that store.
@@ -16,7 +17,9 @@ const SettingsFile = "settings.toml"
 // SettingsHeader is what cairn workspace add writes in a workspace's settings: nothing set, and what the file is for.
 const SettingsHeader = `# The settings of the store beside this file, written as in the global
 # configuration: [pages], [archive], [focus], [approach], [time], [window].
-# A key said here is used for this store instead of the global one. store,
+# A key said here is used for this store instead of the global one. One table
+# is this file's alone: [workspace], whose colour = "green" is the colour its
+# workspace wears, one of the label colours. store,
 # notes, plugin and [workspaces] belong to the machine, and stay there.
 # Nothing is said yet: everything comes from the global configuration until
 # this file says otherwise.
@@ -120,4 +123,20 @@ func (f file) under(s file) file {
 		into.Field(i).Set(merged)
 	}
 	return f
+}
+
+// ColourIn is the colour the settings at path say their workspace wears, read alone, so that no other store's colour is lent to it; nothing when there is no file, or it says none.
+func ColourIn(path string) (string, error) {
+	read, err := Places{}.WithSettings(path)
+	return read.colour, err
+}
+
+func storesOwn(data []byte) []string {
+	var said []string
+	for _, key := range writtenIn(data) {
+		if strings.HasPrefix(key, "workspace.") {
+			said = append(said, fmt.Sprintf("%q is %s here — it belongs to a store, in the %s beside it; it is ignored", key, ErrUnknownKey, SettingsFile))
+		}
+	}
+	return said
 }

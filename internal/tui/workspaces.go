@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -8,11 +9,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
-// Switcher opens the store of another workspace in place of the one a board holds, and says which pages the settings of the store now held show.
-type Switcher func(workspace string) (engine.Pages, error)
+// Switcher opens the store of another workspace, a folder or a store opened before in place of the one a board holds, and says which pages the settings of the store now held show.
+type Switcher func(to engine.Elsewhere) (engine.Pages, error)
 
 // Switching gives the board the way to open another workspace in place of the one it shows; without one, ctrl+o does nothing and is not offered.
 func (b Board) Switching(s Switcher) Board {
@@ -28,11 +30,22 @@ type Placed struct {
 	Err   error
 }
 
-// Listed is every workspace the configuration names, read when the switcher opens.
+// Listed is every workspace the configuration names, and the folders a board opened by path that none names, read when the switcher opens.
 type Listed struct {
 	Spaces []engine.Workspace
+	Recent []engine.RecentFolder
 	Err    error
 }
+
+type spaceTyping int
+
+const (
+	narrowing spaceTyping = iota
+	aFolder
+	aName
+	itsFolder
+	keepingAs
+)
 
 // Switched is the board read again once another workspace's store is held in place of the one it showed.
 type Switched struct {
@@ -68,21 +81,45 @@ func (b Board) listing() tea.Cmd {
 		if err != nil || answer.Workspaces == nil {
 			return Listed{Err: err}
 		}
-		return Listed{Spaces: answer.Workspaces.Workspaces}
+		return Listed{Spaces: answer.Workspaces.Workspaces, Recent: answer.Workspaces.Recent}
 	}
 }
 
-func (b Board) switchingTo(name string) tea.Cmd {
+func (b Board) switchingTo(to engine.Elsewhere) tea.Cmd {
+	return func() tea.Msg { return b.opening(to) }
+}
+
+func (b Board) opening(to engine.Elsewhere) Switched {
+	if b.switcher == nil {
+		return Switched{Err: errNoSwitching}
+	}
+	pages, err := b.switcher(to)
+	if err != nil {
+		return Switched{Err: err}
+	}
+	found, err := engine.Look(b.work)
+	return Switched{Pages: pages, Looked: Looked{Snapshot: found, Err: err}, Placed: placedOf(b.work)}
+}
+
+func namedAt(name, folder string) engine.Input {
+	return engine.Input{Given: map[string]string{"name": name, "folder": folder}}
+}
+
+func (b Board) making(name, folder string) tea.Cmd {
 	return func() tea.Msg {
-		if b.switcher == nil {
-			return Switched{Err: errNoSwitching}
-		}
-		pages, err := b.switcher(name)
-		if err != nil {
+		if _, err := b.work.Ask(engine.WorkspaceAdd, namedAt(name, folder)); err != nil {
 			return Switched{Err: err}
 		}
-		found, err := engine.Look(b.work)
-		return Switched{Pages: pages, Looked: Looked{Snapshot: found, Err: err}, Placed: placedOf(b.work)}
+		return b.opening(engine.Elsewhere{Workspace: name})
+	}
+}
+
+func (b Board) keepingIt(name, folder string) tea.Cmd {
+	return func() tea.Msg {
+		if _, err := b.work.Ask(engine.WorkspaceAdd, namedAt(name, folder)); err != nil {
+			return Listed{Err: err}
+		}
+		return b.listing()()
 	}
 }
 
@@ -91,7 +128,8 @@ func (b Board) listedAll(m Listed) Board {
 		b.err = m.Err
 		return b
 	}
-	b.spaces, b.sought, b.screen = m.Spaces, "", OnWorkspaces
+	b.spaces, b.recent, b.sought, b.screen = m.Spaces, m.Recent, "", OnWorkspaces
+	b.spaceAsk, b.spaceIn = narrowing, ""
 	b.spaceAt = b.firstElsewhere()
 	return b
 }
@@ -170,21 +208,96 @@ func (b Board) placeOf(one engine.Workspace) int {
 	return 0
 }
 
+func (b Board) recentListed() []engine.RecentFolder {
+	var out []engine.RecentFolder
+	for _, one := range b.recent {
+		if strings.Contains(one.Shown(), b.sought) {
+			out = append(out, one)
+		}
+	}
+	return out
+}
+
+func (b Board) recentChosen() (engine.RecentFolder, bool) {
+	at := b.spaceAt - len(b.listed())
+	recent := b.recentListed()
+	if at < 0 || at >= len(recent) {
+		return engine.RecentFolder{}, false
+	}
+	return recent[at], true
+}
+
+func (b Board) isHereStore(one engine.RecentFolder) bool {
+	return b.place.Shown.Workspace == "" && one.Store == b.place.Shown.Store
+}
+
+func (b Board) leavingSwitcher() Board {
+	b.screen, b.spaces, b.recent, b.sought = OnTheBoard, nil, nil, ""
+	b.spaceAsk, b.spaceIn = narrowing, ""
+	return b
+}
+
+func (b Board) typingIn(key string) (tea.Model, tea.Cmd) {
+	switch key {
+	case "esc":
+		b.spaceAsk, b.spaceIn = narrowing, ""
+		return b, nil
+	case "backspace":
+		b.spaceIn = trimLast(b.spaceIn)
+		return b, nil
+	case "enter":
+		switch b.spaceAsk {
+		case aFolder:
+			return b, b.switchingTo(engine.Elsewhere{Folder: b.spaceIn})
+		case aName:
+			b.newSpace, b.spaceAsk, b.spaceIn = b.spaceIn, itsFolder, ""
+			return b, nil
+		case itsFolder:
+			return b, b.making(b.newSpace, b.spaceIn)
+		default:
+			return b, b.keepingIt(b.spaceIn, b.keeping.Folder)
+		}
+	}
+	if letter, ok := typed(key); ok {
+		b.spaceIn += letter
+	}
+	return b, nil
+}
+
 func (b Board) inWorkspaces(key string) (tea.Model, tea.Cmd) {
+	if b.spaceAsk != narrowing {
+		return b.typingIn(key)
+	}
 	shown := b.listed()
 	switch key {
 	case "esc":
-		b.screen, b.spaces, b.sought = OnTheBoard, nil, ""
+		return b.leavingSwitcher(), nil
+	case switcherKey:
+		b.spaceAsk, b.spaceIn = aFolder, ""
+		return b, nil
+	case "ctrl+n":
+		b.spaceAsk, b.spaceIn = aName, ""
+		return b, nil
+	case "ctrl+k":
+		if one, ok := b.recentChosen(); ok && one.Folder != "" {
+			b.spaceAsk, b.spaceIn, b.keeping = keepingAs, "", one
+		}
 		return b, nil
 	case goUp:
 		b.spaceAt = max(0, b.spaceAt-1)
 		return b, nil
 	case goDown:
-		b.spaceAt = min(len(shown)-1, b.spaceAt+1)
+		b.spaceAt = min(len(shown)+len(b.recentListed())-1, b.spaceAt+1)
 		return b, nil
 	case "enter":
 		if b.spaceAt < len(shown) {
 			return b.choosingSpace(shown[b.spaceAt])
+		}
+		if one, ok := b.recentChosen(); ok {
+			if b.isHereStore(one) {
+				return b.leavingSwitcher(), nil
+			}
+			return b, b.switchingTo(engine.Elsewhere{Store: one.Store})
 		}
 		return b, nil
 	case "backspace":
@@ -209,15 +322,22 @@ func (b Board) inWorkspaces(key string) (tea.Model, tea.Cmd) {
 
 func (b Board) choosingSpace(one engine.Workspace) (tea.Model, tea.Cmd) {
 	if b.isHere(one) {
-		b.screen, b.spaces, b.sought = OnTheBoard, nil, ""
-		return b, nil
+		return b.leavingSwitcher(), nil
 	}
-	return b, b.switchingTo(one.Name)
+	return b, b.switchingTo(engine.Elsewhere{Workspace: one.Name})
+}
+
+func (b Board) wearing(colour string) lipgloss.Style {
+	ink, ok := domain.LabelInks[colour]
+	if !ok {
+		return b.skin.Crumb
+	}
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", ink[0], ink[1], ink[2])))
 }
 
 func (b Board) placeMark() string {
 	if b.place.Shown.Workspace != "" {
-		return b.skin.Crumb.Render("● "+b.place.Shown.Workspace) + "  "
+		return b.wearing(b.place.Shown.Colour).Render("● ") + b.skin.Crumb.Render(b.place.Shown.Workspace) + "  "
 	}
 	if b.place.Shown.Store == "" {
 		return ""
@@ -251,20 +371,98 @@ func (b Board) switcherBox() string {
 		s = Clip(s, inner)
 		lines = append(lines, edge.Render("│")+s+strings.Repeat(" ", inner-lipgloss.Width(s))+edge.Render("│"))
 	}
-	row(" " + b.skin.Prompt.Render("› "+b.sought) + b.skin.Key.Render("▏"))
+	row(" " + b.skin.Prompt.Render(b.typingLabel()+"› "+b.typedLine()) + b.skin.Key.Render("▏"))
 	row("")
-	row(" " + b.skin.Head.Render("WORKSPACES"))
-	shown := b.listed()
-	if len(shown) == 0 {
-		row("   " + b.skin.Faint.Render("none is named "+b.sought))
+	body, at := b.switcherBody(inner)
+	room := max(1, b.height-14)
+	from := max(0, at-room+1)
+	for _, line := range body[from:min(len(body), from+room)] {
+		row(line)
 	}
-	room := max(1, b.height-11)
-	from := max(0, b.spaceAt-room+1)
-	for i := from; i < min(len(shown), from+room); i++ {
-		row(b.spaceLine(shown[i], i == b.spaceAt, inner))
-	}
+	row("")
+	row(" " + b.switcherActions())
 	lines = append(lines, edge.Render("└"+strings.Repeat("─", inner)+"┘"))
 	return strings.Join(lines, "\n")
+}
+
+func (b Board) typingLabel() string {
+	switch b.spaceAsk {
+	case aFolder:
+		return "folder "
+	case aName:
+		return "new workspace "
+	case itsFolder:
+		return b.newSpace + "'s folder "
+	case keepingAs:
+		return "keep as "
+	}
+	return ""
+}
+
+func (b Board) typedLine() string {
+	if b.spaceAsk == narrowing {
+		return b.sought
+	}
+	return b.spaceIn
+}
+
+func (b Board) switcherBody(inner int) ([]string, int) {
+	body := []string{" " + b.skin.Head.Render("WORKSPACES")}
+	shown := b.listed()
+	if len(shown) == 0 {
+		body = append(body, "   "+b.skin.Faint.Render("none is named "+b.sought))
+	}
+	at := 0
+	for i, one := range shown {
+		if i == b.spaceAt {
+			at = len(body)
+		}
+		body = append(body, b.spaceLine(one, i == b.spaceAt, inner))
+	}
+	recent := b.recentListed()
+	if len(recent) == 0 {
+		return body, at
+	}
+	body = append(body, "", " "+b.skin.Head.Render("RECENT FOLDERS"))
+	for i, one := range recent {
+		chosen := len(shown)+i == b.spaceAt
+		if chosen {
+			at = len(body)
+		}
+		body = append(body, b.recentLine(one, chosen, inner))
+	}
+	return body, at
+}
+
+func (b Board) recentLine(one engine.RecentFolder, chosen bool, inner int) string {
+	cursor := "   "
+	if chosen {
+		cursor = " " + b.skin.Key.Render("›") + " "
+	}
+	marks := []string{one.Said(b.clock())}
+	if b.isHereStore(one) {
+		marks = append([]string{"here"}, marks...)
+	}
+	right := b.skin.Faint.Render(strings.Join(marks, " · ")) + " "
+	room := inner - 3 - 2 - lipgloss.Width(right) - 1
+	return Spread(cursor+b.skin.Faint.Render("◌ "+clipStart(one.Shown(), max(2, room))), right, inner)
+}
+
+func (b Board) switcherActions() string {
+	if b.spaceAsk == aFolder || b.spaceAsk == itsFolder {
+		return b.skin.Faint.Render("absolute, or under ~") + "   " + b.offer("esc", "back to the list")
+	}
+	if b.spaceAsk == keepingAs {
+		return b.offer("⏎", "keep "+clipStart(b.keeping.Folder, max(2, b.width/3))) + "   " + b.offer("esc", "back to the list")
+	}
+	if b.spaceAsk != narrowing {
+		return b.offer("⏎", "next") + "   " + b.offer("esc", "back to the list")
+	}
+	said := b.offer("^O", "open a folder") + "   " + b.offer("^N", "new workspace")
+	if one, ok := b.recentChosen(); ok && one.Folder != "" {
+		said += "   " + b.offer("^K", "keep as a workspace")
+	}
+	return said
 }
 
 func (b Board) spaceLine(one engine.Workspace, chosen bool, inner int) string {
@@ -276,7 +474,7 @@ func (b Board) spaceLine(one engine.Workspace, chosen bool, inner int) string {
 	if chosen {
 		cursor = " " + b.skin.Key.Render("›") + " "
 	}
-	name := b.skin.Crumb.Render("● " + pad(one.Name, wide))
+	name := b.wearing(one.Colour).Render("● ") + b.skin.Crumb.Render(pad(one.Name, wide))
 	if !one.Found() {
 		name = b.skin.Faint.Render("● " + pad(one.Name, wide))
 	}

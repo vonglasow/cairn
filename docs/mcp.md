@@ -393,13 +393,16 @@ store (`@mcp-marks-what-it-never-reaches`). Replacing the binary an agent's
 own server runs from is for the person at the terminal to decide; once they
 have, the server takes the new one over on its own, above.
 
-`workspace add` and `workspace use` are operations of the engine and still not
-tools: they change which store every later command uses, the agent's own
-server included, and that is the person's to decide too
-(`@workspace-an-agent-cannot-add-or-switch`). They sit apart from the list,
+`workspace add`, `workspace use` and `workspace remove` are operations of the
+engine and still not tools: they change which store every later command uses,
+the agent's own server included, and that is the person's to decide too
+(`@workspace-an-agent-cannot-add-or-switch`, `@workspace-an-agent-cannot-remove-one`). They sit apart from the list,
 in `engine.ForAPersonOnly`, which the command line adds to its tree and the
 server never reads. `workspace_list` and `workspace_show` are tools; a server
-keeps the store it started on (above).
+keeps the store it started on (above). `workspace_list` answers the recent
+folders too, and each workspace's colour: reading them changes nothing, and a
+server opening its store never adds to them — only a board does
+([config.md](config.md#recent-folders-remembered-and-never-configured)).
 
 ## Each tool says what shape its answer takes, and that shape is an object
 

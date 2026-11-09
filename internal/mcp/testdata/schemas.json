@@ -513,11 +513,19 @@
               },
               "default": {
                 "type": "boolean"
+              },
+              "colour": {
+                "type": "string",
+                "description": "one of the label colours: the one its settings say, or one read off its name"
+              },
+              "not_found": {
+                "type": "boolean"
               }
             },
             "required": [
               "name",
-              "folder"
+              "folder",
+              "colour"
             ],
             "additionalProperties": false
           }
@@ -7260,11 +7268,48 @@
               },
               "default": {
                 "type": "boolean"
+              },
+              "colour": {
+                "type": "string",
+                "description": "one of the label colours: the one its settings say, or one read off its name"
+              },
+              "not_found": {
+                "type": "boolean"
               }
             },
             "required": [
               "name",
-              "folder"
+              "folder",
+              "colour"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "recent": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "store": {
+                "type": "string"
+              },
+              "folder": {
+                "type": "string",
+                "description": "the folder holding the store, when the store is its cairn.db: what keeping it as a workspace would name"
+              },
+              "opened": {
+                "type": "string"
+              },
+              "not_found": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "store",
+              "opened"
             ],
             "additionalProperties": false
           }
@@ -7308,6 +7353,10 @@
         },
         "notes": {
           "type": "string"
+        },
+        "colour": {
+          "type": "string",
+          "description": "one of the label colours: the one the store's settings say, or one read off the workspace's name; none for a store no workspace names and whose settings say none"
         },
         "time": {
           "type": "string",

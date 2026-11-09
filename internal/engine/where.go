@@ -9,6 +9,7 @@ import (
 
 	"cairn/internal/config"
 	"cairn/internal/debug"
+	"cairn/internal/domain"
 )
 
 // Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, the workspace or the store its command line named, and where a server kept answering from since it started.
@@ -111,9 +112,15 @@ func (h Home) settled() (config.Places, answering, error) {
 	if err != nil {
 		return config.Places{}, answering{}, err
 	}
-	settled, err := found.WithSettings(config.SettingsBeside(answers.store.At))
+	beside := config.SettingsBeside(answers.store.At)
+	settled, err := found.WithSettings(beside)
 	if err != nil {
 		return config.Places{}, answering{}, refusedOrUnusable(err)
+	}
+	if said := settled.Colour(); said != "" {
+		if _, err := domain.ParseColour(said); err != nil {
+			return config.Places{}, answering{}, fmt.Errorf("%s: workspace.colour %w", beside, err)
+		}
 	}
 	return settled, answers, nil
 }
@@ -155,6 +162,9 @@ func Hold(h Home, acting Acting) (*Engine, error) {
 	}
 	if err != nil {
 		return nil, err
+	}
+	if h.openedByPath() {
+		_ = remember(h, at.Store, time.Now())
 	}
 	held.acting = acting
 	held.sweepOwed = true

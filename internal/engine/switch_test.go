@@ -25,7 +25,7 @@ func TestSwitch_holdsTheOtherWorkspacesStoreInPlace(t *testing.T) {
 	if _, err := held.Ask(TaskNew, Input{Given: map[string]string{"title": "at work"}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Switch(held, "home"); err != nil {
+	if _, err := Switch(held, Elsewhere{Workspace: "home"}); err != nil {
 		t.Fatalf("Switch = %v", err)
 	}
 	listed, err := held.Ask(TaskList, Input{})
@@ -44,7 +44,7 @@ func TestSwitch_holdsTheOtherWorkspacesStoreInPlace(t *testing.T) {
 func TestSwitch_writesNoConfiguration(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	held := heldOn(t, h)
-	if _, err := Switch(held, "home"); err != nil {
+	if _, err := Switch(held, Elsewhere{Workspace: "home"}); err != nil {
 		t.Fatal(err)
 	}
 	said, err := os.ReadFile(config.FileIn(h.Dir))
@@ -59,7 +59,7 @@ func TestSwitch_aFolderGoneIsRefusedAndTheStoreHeldStays(t *testing.T) {
 	if _, err := held.Ask(TaskNew, Input{Given: map[string]string{"title": "at work"}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Switch(held, "home"); !errors.Is(err, ErrWorkspaceNotThere) {
+	if _, err := Switch(held, Elsewhere{Workspace: "home"}); !errors.Is(err, ErrWorkspaceNotThere) {
 		t.Fatalf("Switch = %v; want %v", err, ErrWorkspaceNotThere)
 	}
 	listed, err := held.Ask(TaskList, Input{})
@@ -72,7 +72,7 @@ func TestSwitch_keepsWhoActsAndThroughWhat(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	held := heldOn(t, h)
 	was := held.acting
-	if _, err := Switch(held, "home"); err != nil {
+	if _, err := Switch(held, Elsewhere{Workspace: "home"}); err != nil {
 		t.Fatal(err)
 	}
 	if held.acting != was {
@@ -86,14 +86,14 @@ func TestSwitch_saysThePagesOfTheStoreNowHeld(t *testing.T) {
 		t.Fatal(err)
 	}
 	held := heldOn(t, h)
-	pages, err := Switch(held, "home")
+	pages, err := Switch(held, Elsewhere{Workspace: "home"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if pages.Shows(PageTime) {
 		t.Errorf("home shows its time; want it off")
 	}
-	if pages, err = Switch(held, "work"); err != nil || !pages.Shows(PageTime) {
+	if pages, err = Switch(held, Elsewhere{Workspace: "work"}); err != nil || !pages.Shows(PageTime) {
 		t.Errorf("work hides its time, %v; want it shown", err)
 	}
 }

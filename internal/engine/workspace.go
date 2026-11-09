@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"cairn/internal/config"
+	"cairn/internal/domain"
 )
 
 const (
@@ -29,21 +30,34 @@ var ErrWorkspaceNotThere = errors.New("the folder of this workspace is not there
 // ErrWorkspaceKnown is returned when a workspace is added under a name the configuration already gives one.
 var ErrWorkspaceKnown = errors.New("a workspace by that name is already there")
 
+// ErrRemovingTheDefault is returned when the workspace asked to be removed is the default, which every command would then be refused for naming nobody.
+var ErrRemovingTheDefault = errors.New("is the default: make another the default first, with cairn workspace use")
+
 // ErrNotAWorkspaceName is returned when a workspace is added under a name that is not lowercase letters, digits and dashes, or is the one name kept for the default.
 var ErrNotAWorkspaceName = errors.New("a workspace is named in lowercase letters, digits and dashes, and is not called default")
 
 var plainName = regexp.MustCompile(`^[a-z0-9-]+$`)
 
-// Workspace is one workspace the configuration names: its name, its folder, and whether it is the default.
+// Workspace is one workspace the configuration names: its name, its folder, whether it is the default, the colour it wears, and whether its folder is gone.
 type Workspace struct {
-	Name    string `json:"name"`
-	Folder  string `json:"folder"`
-	Default bool   `json:"default,omitempty"`
+	Name     string `json:"name"`
+	Folder   string `json:"folder"`
+	Default  bool   `json:"default,omitempty"`
+	Colour   string `json:"colour" jsonschema:"one of the label colours: the one its settings say, or one read off its name"`
+	NotFound bool   `json:"not_found,omitempty"`
 }
 
-// Workspaces is how workspace list answers: every workspace the configuration names, by name.
+// Workspaces is how workspace list answers: every workspace the configuration names, by name, and the stores a board opened by path that none names, the newest first.
 type Workspaces struct {
-	Workspaces []Workspace `json:"workspaces"`
+	Workspaces []Workspace    `json:"workspaces"`
+	Recent     []RecentFolder `json:"recent,omitempty"`
+}
+
+// WorkspaceRemoved is how workspace remove answers: the workspace the configuration no longer names, its folder, left as it was, and the file it was taken out of.
+type WorkspaceRemoved struct {
+	Name    string `json:"name"`
+	Folder  string `json:"folder"`
+	Written string `json:"written"`
 }
 
 // WorkspaceAdded is how workspace add answers: the workspace written, its two places, and the file it was written in.
@@ -68,6 +82,7 @@ type WorkspaceShown struct {
 	Because   string `json:"because"`
 	Store     string `json:"store"`
 	Notes     string `json:"notes"`
+	Colour    string `json:"colour,omitempty" jsonschema:"one of the label colours: the one the store's settings say, or one read off the workspace's name; none for a store no workspace names and whose settings say none"`
 	Time      string `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
 	TimeFrom  string `json:"time_from" jsonschema:"where the time is said: set in the store's settings, from the global configuration, or by default"`
 	Add       string `json:"add,omitempty"`
@@ -113,9 +128,22 @@ func (h Home) file() (string, error) {
 func workspacesIn(p config.Places) []Workspace {
 	var listed []Workspace
 	for _, one := range p.Workspaces() {
-		listed = append(listed, Workspace{Name: one.Name, Folder: one.Folder, Default: one.Name == p.DefaultWorkspace()})
+		w := Workspace{Name: one.Name, Folder: one.Folder, Default: one.Name == p.DefaultWorkspace(), Colour: colourOf(one.Name, filepath.Join(one.Folder, storeFile))}
+		w.NotFound = !w.Found()
+		listed = append(listed, w)
 	}
 	return listed
+}
+
+func colourOf(name, store string) string {
+	said, err := config.ColourIn(config.SettingsBeside(store))
+	if colour, wrong := domain.ParseColour(said); err == nil && wrong == nil {
+		return colour
+	}
+	if name == "" {
+		return ""
+	}
+	return domain.ColourOf(name)
 }
 
 func workspaceNamed(p config.Places, name string) (config.Workspace, error) {
@@ -215,7 +243,7 @@ func (a answering) named(p config.Places) answering {
 }
 
 func (a answering) shown() WorkspaceShown {
-	shown := WorkspaceShown{Workspace: a.workspace, Folder: a.folder, Because: a.because, Store: a.store.At, Notes: a.notes.At}
+	shown := WorkspaceShown{Workspace: a.workspace, Folder: a.folder, Because: a.because, Store: a.store.At, Notes: a.notes.At, Colour: colourOf(a.workspace, a.store.At)}
 	if a.workspace == "" {
 		shown.Add = "cairn workspace add <name> <folder>"
 		if filepath.Base(a.store.At) == storeFile {
@@ -278,7 +306,7 @@ var WorkspaceList = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Workspaces: &Workspaces{Workspaces: workspacesIn(read)}}, nil
+		return Answer{Workspaces: &Workspaces{Workspaces: workspacesIn(read), Recent: recentIn(on.Home, read)}}, nil
 	},
 }
 
@@ -358,6 +386,40 @@ var WorkspaceUse = Operation{
 	},
 }
 
+// WorkspaceRemove takes a workspace out of the configuration, and leaves its folder as it is.
+var WorkspaceRemove = Operation{
+	Thing:   "workspace",
+	Verb:    "remove",
+	Short:   "Forget a workspace, leaving its folder as it is",
+	Does:    "Take a workspace out of the configuration file, leaving the rest of the file as it was and its folder, its store and its notes untouched; the default is refused until another is made the default. A folder moved is named again with cairn workspace add.",
+	Example: "cairn workspace remove play",
+	Level:   Write,
+	Needs:   AConfiguration,
+	Answers: WorkspaceRemoved{},
+	Takes: []Argument{
+		{Name: "name", Kind: Text, Positional: true, Required: true, Means: "the workspace's name"},
+	},
+	Run: func(on On, in Input) (Answer, error) {
+		removed := WorkspaceRemoved{Name: in.Given["name"]}
+		err := withConfiguration(on.Home, func(was []byte, read config.Places) ([]byte, error) {
+			one, err := workspaceNamed(read, removed.Name)
+			if err != nil {
+				return nil, err
+			}
+			if read.DefaultWorkspace() == removed.Name {
+				return nil, fmt.Errorf("%q %w", removed.Name, ErrRemovingTheDefault)
+			}
+			removed.Folder = one.Folder
+			return config.WithoutWorkspace(was, removed.Name)
+		})
+		if err != nil {
+			return Answer{}, err
+		}
+		removed.Written, _ = on.Home.file()
+		return Answer{WorkspaceRemoved: &removed}, nil
+	},
+}
+
 // WorkspaceShow says which workspace answers, why, and where its store and notes are.
 var WorkspaceShow = Operation{
 	Thing:   "workspace",
@@ -396,7 +458,10 @@ func workspacesText(listed []Workspace) string {
 		if one.Default {
 			line += "  default"
 		}
-		said.WriteString(line + "\n")
+		if one.NotFound {
+			line += "  not found"
+		}
+		said.WriteString(line + "  " + one.Colour + "\n")
 	}
 	return said.String()
 }
@@ -404,6 +469,10 @@ func workspacesText(listed []Workspace) string {
 func workspaceAddedText(added WorkspaceAdded) string {
 	return fmt.Sprintf("workspace %s is %s, written in %s\nits store is %s, its notes %s\ncairn workspace use %s makes it the default\n",
 		added.Name, added.Folder, added.Written, added.Store, added.Notes, added.Name)
+}
+
+func workspaceRemovedText(removed WorkspaceRemoved) string {
+	return fmt.Sprintf("workspace %s is no longer named, in %s\n%s is left as it was; cairn workspace add names it again\n", removed.Name, removed.Written, removed.Folder)
 }
 
 func workspaceUsedText(used WorkspaceUsed) string {
@@ -422,6 +491,9 @@ func workspaceShownText(shown WorkspaceShown) string {
 		fmt.Fprintf(&said, "workspace  %s\nfolder     %s\n", shown.Workspace, shown.Folder)
 	}
 	fmt.Fprintf(&said, "because    %s\nstore      %s\nnotes      %s\n", shown.Because, shown.Store, shown.Notes)
+	if shown.Colour != "" {
+		fmt.Fprintf(&said, "colour     %s\n", shown.Colour)
+	}
 	if shown.Time != "" {
 		fmt.Fprintf(&said, "time       %s, %s\n", shown.Time, shown.TimeFrom)
 	}

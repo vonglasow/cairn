@@ -23,6 +23,8 @@ type roaming struct {
 	refuse   error
 	pages    map[string]engine.Pages
 	switched []string
+	recent   []engine.RecentFolder
+	added    []string
 }
 
 func newRoaming(t *testing.T, f *fake) *roaming {
@@ -58,15 +60,28 @@ func (r *roaming) Ask(op engine.Operation, in engine.Input) (engine.Answer, erro
 		shown := r.shown[r.on]
 		return engine.Answer{WorkspaceShown: &shown}, nil
 	case "workspace list":
-		return engine.Answer{Workspaces: &engine.Workspaces{Workspaces: r.spaces}}, nil
+		return engine.Answer{Workspaces: &engine.Workspaces{Workspaces: r.spaces, Recent: r.recent}}, nil
+	case "workspace add":
+		name, folder := in.Given["name"], in.Given["folder"]
+		for _, one := range r.spaces {
+			if one.Name == name {
+				return engine.Answer{}, engine.ErrWorkspaceKnown
+			}
+		}
+		r.added = append(r.added, name+" "+folder)
+		r.spaces = append(r.spaces, engine.Workspace{Name: name, Folder: folder})
+		r.recent = slices.DeleteFunc(r.recent, func(one engine.RecentFolder) bool { return one.Folder == folder })
+		r.shown[name] = engine.WorkspaceShown{Workspace: name, Folder: folder, Store: folder + "/cairn.db"}
+		return engine.Answer{}, nil
 	}
 	return r.fake.Ask(op, in)
 }
 
-func (r *roaming) Switch(name string) (engine.Pages, error) {
+func (r *roaming) Switch(to engine.Elsewhere) (engine.Pages, error) {
 	if r.refuse != nil {
 		return engine.Pages{}, r.refuse
 	}
+	name := to.Workspace + to.Folder + to.Store
 	r.switched = append(r.switched, name)
 	r.on = name
 	r.cards = nil
@@ -327,7 +342,7 @@ func TestSwitcher_aListThatCannotBeReadIsSaid(t *testing.T) {
 
 func TestSwitcher_aBoardThatCannotSwitchIsRefused(t *testing.T) {
 	b := New(newFake(), GlyphsFor(Unicode), func() time.Time { return today }, 100, 40)
-	msg := b.switchingTo("home")()
+	msg := b.switchingTo(engine.Elsewhere{Workspace: "home"})()
 	if switched, ok := msg.(Switched); !ok || !errors.Is(switched.Err, errNoSwitching) {
 		t.Errorf("switching = %#v; want it refused", msg)
 	}

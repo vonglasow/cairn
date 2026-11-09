@@ -175,6 +175,8 @@ func Of(op Operation, a Answer) any {
 		return *a.WorkspaceAdded
 	case WorkspaceUsed:
 		return *a.WorkspaceUsed
+	case WorkspaceRemoved:
+		return *a.WorkspaceRemoved
 	case WorkspaceShown:
 		return *a.WorkspaceShown
 	case Timesheet:

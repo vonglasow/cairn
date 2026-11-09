@@ -1129,6 +1129,96 @@ Feature: The board
       Then the header opens with "● home"
       And the board does not say "time"
 
+    @tui-workspace-the-header-wears-its-colour
+    Scenario: the dot of the header wears the colour the workspace's settings say
+      Given the workspace "work", the default
+      And the settings of the workspace "work" say its colour is "green"
+      When I open the board
+      Then the dot of the header wears "green"
+
+    @tui-workspace-recent-folders-listed
+    Scenario: ctrl+o lists the recent folders under the workspaces, one gone said not found
+      Given the workspace "work", the default
+      And the recent folder "scratch", opened yesterday
+      And the recent folder "trip", whose store is gone
+      When I open the board
+      And I press "ctrl+o"
+      Then the board says "RECENT FOLDERS"
+      And the recent folder "scratch" is marked "opened yesterday"
+      And the recent folder "trip" is marked "not found now"
+
+    @tui-workspace-a-recent-folder-opens-in-place
+    Scenario: a recent folder chosen opens in place of the board
+      Given the workspace "work", the default
+      And the folder "scratch" holds a task titled "Plant the bulbs"
+      And the recent folder "scratch", opened yesterday
+      When I open the board
+      And I press "ctrl+o", "down", "enter"
+      Then the header opens with "◌ " and the folder "scratch"
+      And "BACKLOG" carries "Plant the bulbs"
+
+    @tui-workspace-a-folder-opened-in-place
+    Scenario: ctrl+o in the list opens a folder typed, in place, and remembers it
+      Given the workspace "work", the default
+      And the folder "scratch" holds a task titled "Plant the bulbs"
+      When I open the board
+      And I press "ctrl+o", "ctrl+o"
+      And I type the folder "scratch"
+      And I press "enter"
+      Then the header opens with "◌ " and the folder "scratch"
+      And "BACKLOG" carries "Plant the bulbs"
+      When I press "ctrl+o"
+      Then the recent folder "scratch" is marked "opened today"
+
+    @tui-workspace-a-relative-folder-is-refused
+    Scenario: a folder typed that is not absolute is refused, and the board stays
+      Given the workspace "work", the default
+      When I open the board
+      And I press "ctrl+o", "ctrl+o"
+      And I type "scratch"
+      And I press "enter"
+      Then the board says "must be absolute"
+      When I press "esc", "esc"
+      Then the header opens with "● work"
+
+    @tui-workspace-a-new-one-made-and-opened
+    Scenario: ctrl+n in the list makes a workspace and opens it in place
+      Given the workspace "work", the default
+      When I open the board
+      And I press "ctrl+o", "ctrl+n"
+      And I type "garden"
+      And I press "enter"
+      And I type the folder "cairn/garden"
+      And I press "enter"
+      Then the header opens with "● garden"
+      And the configuration names the workspace "garden"
+      And the default workspace is still "work"
+
+    @tui-workspace-a-new-one-refuses-a-name-known
+    Scenario: a new workspace under a name already there is refused, as workspace add refuses it
+      Given the workspace "work", the default
+      When I open the board
+      And I press "ctrl+o", "ctrl+n"
+      And I type "work"
+      And I press "enter"
+      And I type the folder "cairn/other"
+      And I press "enter"
+      Then the board says "already there"
+      And the header opens with "● work"
+
+    @tui-workspace-a-recent-folder-kept
+    Scenario: ctrl+k on a recent folder keeps it as a workspace
+      Given the workspace "work", the default
+      And the folder "scratch" holds a task titled "Plant the bulbs"
+      And the recent folder "scratch", opened yesterday
+      When I open the board
+      And I press "ctrl+o", "down", "ctrl+k"
+      And I type "scratch"
+      And I press "enter"
+      Then the workspaces listed read "scratch", "work"
+      And the board does not say "RECENT FOLDERS"
+      And the configuration names the workspace "scratch"
+
   Rule: Every screen fits the terminal it is drawn in, whatever the store holds
 
     @tui-the-fixtures-fit

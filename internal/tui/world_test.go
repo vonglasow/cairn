@@ -75,7 +75,7 @@ func (w *world) open() {
 	w.refresh()
 	if w.spaces.dir != "" {
 		held := w.held
-		w.b = w.b.Switching(func(name string) (engine.Pages, error) { return engine.Switch(held, name) })
+		w.b = w.b.Switching(func(to engine.Elsewhere) (engine.Pages, error) { return engine.Switch(held, to) })
 		w.settle(w.b.placing())
 	}
 }

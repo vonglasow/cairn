@@ -122,15 +122,18 @@ prints the configuration in use and where each value came from.
 
 A workspace is a named folder holding a store and its notes. `cairn workspace
 add work ~/cairn/work` names one, `cairn workspace use work` makes it the
-default, `cairn workspace list` and `cairn workspace show` say which there are
-and which one answers, and why. `--workspace <name>` or `--store <path>` on any
+default, `cairn workspace remove work` forgets it and leaves its folder alone,
+`cairn workspace list` and `cairn workspace show` say which there are and which
+one answers, and why, each in its colour. `--workspace <name>` or `--store <path>` on any
 command picks another for that command alone, whatever the environment says.
 An MCP server keeps the workspace it started on — `cairn mcp serve --workspace
 <name>` names it — and `workspace use` does not move it.
 Beside each store, `settings.toml` says what belongs to that store —
-`[pages]`, `[archive]`, `[focus]`, `[approach]`, `[time]`, `[window]` — and
-wins over the global file key by key; `cairn workspace add` writes one that
-says nothing yet. [docs/config.md](docs/config.md) explains why it works this
+`[pages]`, `[archive]`, `[focus]`, `[approach]`, `[time]`, `[window]`, and the
+`[workspace]` colour it wears — and wins over the global file key by key;
+`cairn workspace add` writes one that says nothing yet. A store a board opens
+by path is remembered among the recent folders, in
+`~/.local/state/cairn/recent.json`, never in the configuration. [docs/config.md](docs/config.md) explains why it works this
 way.
 
 <details>
@@ -194,7 +197,8 @@ keep_sizes = false
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
 # the one used when nothing else says; when it is said, it comes before store
 # and notes above, and CAIRN_STORE, --workspace and --store come before it.
-# cairn workspace add and cairn workspace use write here for you.
+# cairn workspace add, use and remove write here for you. The colour a
+# workspace wears is its own settings.toml's to say, under [workspace].
 [workspaces]
 # default = "work"
 # work = "~/cairn/work"

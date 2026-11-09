@@ -159,6 +159,7 @@ func (w *World) setAsideConfig() func() {
 func (w *World) AHomeOfMyOwn() error {
 	w.Defaults = w.T.TempDir()
 	w.Setenv("HOME", w.Defaults)
+	w.Setenv(engine.StateVariable, "")
 	return nil
 }
 
@@ -169,6 +170,7 @@ func (w *World) AStoreOfMyOwn() error {
 	w.Defaults = w.T.TempDir()
 	w.Setenv(config.StoreVariable, w.StorePath)
 	w.Setenv("HOME", w.Defaults)
+	w.Setenv(engine.StateVariable, "")
 	return nil
 }
 

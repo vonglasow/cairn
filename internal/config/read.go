@@ -98,6 +98,7 @@ type Places struct {
 	archiveDays      int
 	focusSession     string
 	approach         string
+	colour           string
 	timeDeleted      string
 	timeWeekends     string
 	keepSizes        bool
@@ -121,7 +122,19 @@ type file struct {
 	Approach   *approach         `toml:"approach"`
 	Time       *timed            `toml:"time"`
 	Window     *window           `toml:"window"`
+	Workspace  *workspace        `toml:"workspace"`
 	Workspaces map[string]string `toml:"workspaces"`
+}
+
+type workspace struct {
+	Colour *string `toml:"colour"`
+}
+
+func (w *workspace) colour() string {
+	if w == nil || w.Colour == nil {
+		return ""
+	}
+	return *w.Colour
 }
 
 type window struct {
@@ -263,6 +276,9 @@ func (p Places) FocusSession() string { return p.focusSession }
 // ApproachLabel is the label asking for the approach to be agreed before any code, exactly as the file wrote it; nothing when the file does not say.
 func (p Places) ApproachLabel() string { return p.approach }
 
+// Colour is the colour the store's settings say its workspace wears, exactly as written; nothing when they say none, and never the global file's, which a store's colour is not.
+func (p Places) Colour() string { return p.colour }
+
 // KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
 func (p Places) KeepSizes() bool { return p.keepSizes }
 
@@ -385,6 +401,8 @@ func NewReading(home string, lookupEnv func(string) (string, bool)) (Reading, er
 		if err != nil {
 			return Reading{}, err
 		}
+		ignored = append(ignored, storesOwn(data)...)
+		f.Workspace = nil
 	}
 
 	answer := Places{
@@ -467,6 +485,7 @@ func (p *Places) settle(f file) error {
 	p.timeMode = mode
 	p.archiveStart, p.archiveDays, p.timeDeleted, p.timeWeekends, p.keepSizes = start, days, deleted, weekends, keep
 	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off(mode == TimeOn)
+	p.colour = f.Workspace.colour()
 	return nil
 }
 

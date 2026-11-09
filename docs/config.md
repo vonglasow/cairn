@@ -97,7 +97,9 @@ otherwise start a new, empty board somewhere nobody looks.
 
 - `cairn workspace list` names each workspace and its folder, the default
   marked (`@workspace-list-names-each-and-the-default`, `--json` too:
-  `@workspace-list-as-json`).
+  `@workspace-list-as-json`), one whose folder is gone marked `not found`
+  (`@workspace-a-folder-gone-is-listed-not-found`), and the colour each
+  wears; under them, the recent folders (see below).
 - `cairn workspace add <name> <folder>` writes the workspace into the file
   and makes its folder, with an empty `notes` in it
   (`@workspace-add-writes-it-and-makes-its-folder`) and settings that say
@@ -114,6 +116,15 @@ otherwise start a new, empty board somewhere nobody looks.
   folder is written as it was typed, so `~` stays `~`.
 - `cairn workspace use <name>` sets `default`, and says which one it was
   (`@workspace-use-sets-the-default`, `@workspace-use-refuses-an-unknown-name`).
+- `cairn workspace remove <name>` takes the workspace out of the file — its
+  line, and nothing else of the file — and touches no other file: its
+  folder, its store and its notes stay where they are
+  (`@workspace-remove-drops-only-the-entry`). A name the file does not give
+  is refused (`@workspace-remove-refuses-an-unknown-name`), and so is the
+  default, naming `cairn workspace use` to choose another first
+  (`@workspace-remove-refuses-the-default`): removed, it would leave a default
+  that names nobody, and every command refused for it. A folder moved by hand
+  is named again with `cairn workspace add`.
 - `cairn workspace show` says which workspace answers this command and why — a
   flag, `CAIRN_STORE`, the default — and the store and notes it uses
   (`@workspace-show-says-the-default-answers`,
@@ -132,8 +143,9 @@ otherwise start a new, empty board somewhere nobody looks.
 
 `workspace list` and `workspace show` are tools of the MCP server too:
 `workspace_show` says which workspace a server answers from — the one it
-started on, which it keeps whatever the default becomes ([mcp.md](mcp.md)). `workspace add`
-and `workspace use` are not (`@workspace-an-agent-cannot-add-or-switch`):
+started on, which it keeps whatever the default becomes ([mcp.md](mcp.md)). `workspace add`,
+`workspace use` and `workspace remove` are not (`@workspace-an-agent-cannot-add-or-switch`,
+`@workspace-an-agent-cannot-remove-one`):
 they change where every later command reads and writes, which is the
 person's to decide, like `cairn upgrade` ([mcp.md](mcp.md)). They are
 `engine.ForAPersonOnly`, which the command line offers and the server does not.
@@ -146,6 +158,73 @@ becomes is `config.WithWorkspace` and `config.WithDefault`, which edit its text
 rather than encode it again — encoding it again would drop every comment a
 person wrote. A file that says its workspaces some other way, an inline table
 for one, is refused rather than broken, and left to be changed by hand.
+
+### The colour a workspace wears
+
+```toml
+# ~/cairn/home/settings.toml
+[workspace]
+colour = "green"
+```
+
+Each workspace wears a colour, so two boards side by side are told apart at a
+glance: the dot before its name at the head of the terminal board, and in the
+`^O` list ([tui.md](tui.md#another-workspace-in-place-of-this-one)). It is one
+of the fourteen a label wears, said by `colour` under `[workspace]` in the
+store's own settings (`@workspace-colour-said-in-its-settings`). Not said, it
+is read off the workspace's name the way a label's is, so it is the same each
+time and two workspaces seldom share one
+(`@workspace-colour-read-off-its-name`). `workspace list` and `workspace show`
+name it, `--json` too (`@workspace-colour-shown-and-as-json`); a store no
+workspace names wears the colour its settings say, or none.
+
+A colour that is none of the fourteen is refused like any value the settings
+get wrong, naming it and `workspace.colour`
+(`@workspace-a-colour-not-in-the-palette-is-refused`). **It belongs to the
+store and to nothing else**: written in the global file it would colour every
+workspace alike, so it is passed over there, and said
+(`@workspace-colour-in-the-global-file-is-passed-over`). Listing reads each
+workspace's settings on their own, so the colour of the store in use is never
+lent to another (`config.ColourIn`).
+
+### Recent folders, remembered and never configured
+
+A store a board opens by path — `--store`, `CAIRN_STORE`, or a folder opened
+from the terminal's `^O` list — that no workspace names is remembered among the
+recent folders: ten at most, the newest first, one opened again moving back to
+the head (`@workspace-a-board-opened-by-path-is-recent`,
+`@workspace-a-board-opened-by-the-environment-is-recent`,
+`@workspace-ten-recent-folders-are-kept`). `workspace list` names them under
+the workspaces, each with the day it was last opened, and one whose store is
+gone since as `not found now` (`@workspace-a-recent-folder-gone-is-not-found`,
+`--json`: `@workspace-recent-folders-as-json`). A recent folder a workspace has
+named since is no longer listed among them
+(`@workspace-a-recent-folder-kept-as-a-workspace-leaves-the-list`).
+
+**A board remembers, a command does not.** `cairn task list --store …` leaves
+the list as it was (`@workspace-a-command-leaves-the-recent-folders-alone`):
+a script that runs a command a thousand times, each with its own store, would
+otherwise push out every folder a person opened by hand, and a list a script
+churns is no list of what was opened. A board is a person at a screen; so is
+the window, which opens through the same `engine.Hold`. A board opened on a
+workspace, on the default or on the file's `store` leaves it alone too
+(`@workspace-a-workspace-opened-is-not-a-recent-folder`): those are named
+already.
+
+**They are kept in the state directory, never in the configuration**
+(`@workspace-recent-folders-are-not-the-configuration`):
+`$XDG_STATE_HOME/cairn/recent.json` when that variable is absolute, otherwise
+`~/.local/state/cairn/recent.json`
+(`@workspace-recent-folders-follow-xdg-state-home`). What was opened last is a
+fact cairn noticed, not a choice somebody made, and the configuration holds
+choices — it is the file a person reads and keeps. The same place on every
+system, macOS included, as the configuration is `~/.config/cairn` on every
+system: `~/Library/Application Support` would split what cairn keeps between
+two conventions on one machine. The window's sizes stay beside their store,
+because they are that store's; the recent folders are about every store at
+once, so they cannot sit beside any one of them. A file that cannot be read
+is read as none, and written over the next time a board opens by path; one
+that cannot be written leaves the board opening without it.
 
 ## Settings that belong to the store
 
@@ -168,7 +247,8 @@ switching workspace switches them with the store (`bdd/settings.feature`,
   reads the settings beside it as well (`@settings-beside-a-store-named`), so
   a store moved by hand takes its settings with it.
 - **What it may say**: every table but the machine's — `[pages]`, `[archive]`,
-  `[focus]`, `[approach]`, `[time]`, `[window]`. A key it says wins
+  `[focus]`, `[approach]`, `[time]`, `[window]` — and one table of its own,
+  `[workspace]`, the colour it wears (above). A key it says wins
   (`@settings-the-store-wins`); a key it leaves out is the global file's, or
   the default (`@settings-a-key-not-said-comes-from-the-global-file`); each
   page is said on its own, so `objectives = false` here leaves

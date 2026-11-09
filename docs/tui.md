@@ -120,8 +120,11 @@ tabs (`@tui-workspace-the-header-names-it`). A store no workspace names — give
 `◌`, cut at its start when it is long so that its end is kept
 (`@tui-workspace-a-loose-store-shows-its-folder`). Which workspace it is comes
 from `workspace show`, asked once when the board opens and once each time
-another is opened; nothing works it out a second time. A colour of its own per
-workspace is not there yet: every one is drawn in the accent.
+another is opened; nothing works it out a second time. The dot wears the
+workspace's colour, the one its settings say or one read off its name
+(`@tui-workspace-the-header-wears-its-colour`,
+[config.md](config.md#the-colour-a-workspace-wears)); its name is in the
+accent.
 
 Four columns side by side, left to right: **backlog, todo, current, done**. The
 backlog runs the full height, because it is the heap everything lands in and it
@@ -827,6 +830,12 @@ something would be a key that looked broken.
          │ › ● client-a  /Users/me/cairn/client-a                               1 │
          │   ● home      /Users/me/cairn/home                       not found · 2 │
          │   ● work      /Users/me/cairn/work                      here · default │
+         │                                                                        │
+         │ RECENT FOLDERS                                                         │
+         │   ◌ /Users/me/scratch                                 opened yesterday │
+         │   ◌ /Volumes/usb/trip-2026                               not found now │
+         │                                                                        │
+         │ ^O open a folder   ^N new workspace                                    │
          └────────────────────────────────────────────────────────────────────────┘
 
  ↑↓ choose   ⏎ open here   1-9 by place   esc back
@@ -858,6 +867,39 @@ not released by switching — the store keeps it — and the same line says so,
 the settings of the store opened, so a workspace whose time is off has no time
 tab once it is shown (`@tui-workspace-time-off-there-takes-the-time-tab`).
 
+**The recent folders come under the workspaces**: the stores a board opened by
+path that no workspace names, the newest first, each with the day it was last
+opened, and one gone since said `not found now`
+(`@tui-workspace-recent-folders-listed`, and what they are in
+[config.md](config.md#recent-folders-remembered-and-never-configured)). The
+same `↑↓` walks on from the workspaces into them, the line at the head narrows
+them too, and `⏎` opens one in place (`@tui-workspace-a-recent-folder-opens-in-place`).
+No digit opens one: the places `1` to `9` are the workspaces'.
+
+**Three keys at the foot of the list, each a control key.** Every letter is
+typed into the line at its head, so a letter cannot also be an act: `o` would
+make `home` impossible to type. So:
+
+- `^O`, pressed again inside the list, asks for a folder on that line and
+  opens it in place, remembered among the recent folders
+  (`@tui-workspace-a-folder-opened-in-place`). It is absolute or under `~`,
+  like every place cairn reads, and one that is not is refused with the
+  engine's reason, the line kept as typed
+  (`@tui-workspace-a-relative-folder-is-refused`); a folder that is not
+  there is refused too (`engine.ErrNotThere`), rather than starting an empty
+  board where nobody looks. A folder holding no store yet opens on a new one.
+- `^N` asks a name, then a folder, and makes the workspace through the same
+  operation as `cairn workspace add` — the same rules, the same refusals — and
+  opens it in place (`@tui-workspace-a-new-one-made-and-opened`,
+  `@tui-workspace-a-new-one-refuses-a-name-known`). The default stays what it was.
+- `^K`, on a recent folder, asks a name and keeps the folder as a workspace,
+  again through `workspace add`; the list is read again, the folder now among
+  the workspaces and gone from the recent ones
+  (`@tui-workspace-a-recent-folder-kept`). A store that is not its folder's
+  `cairn.db` cannot be kept, and `^K` is not offered on it.
+
+`esc` on one of those lines goes back to the list, and a second leaves it.
+
 **A workspace whose folder is gone is refused when chosen**, with the
 engine's reason, and the switcher stays open on the board as it was
 (`@tui-workspace-a-folder-gone-is-refused`): opening it would make an empty
@@ -868,8 +910,8 @@ write the configuration: the default stays what it was, and `workspace use` —
 which changes the default for every command — is not what `^O` does. `cairn tui
 --workspace home` starts the board on `home`.
 
-Not there yet: recent folders opened by path, opening a folder, making a
-workspace from the switcher, and a colour per workspace.
+The settings of a workspace are not changed from here; the window's panel is
+where they will be.
 
 ## Staying true while the store changes
 

@@ -138,3 +138,28 @@ func checked(said, was []byte, key, value string) ([]byte, error) {
 	}
 	return said, nil
 }
+
+// WithoutWorkspace is the file with the workspace named taken out of [workspaces], its line and nothing else; every other byte is the file's.
+func WithoutWorkspace(data []byte, name string) ([]byte, error) {
+	lines := linesOf(data)
+	head, end := tableIn(lines)
+	if head < 0 {
+		return nil, ErrNotWritten
+	}
+	entry := regexp.MustCompile(`^\s*` + regexp.QuoteMeta(name) + `\s*=`)
+	at := slices.IndexFunc(lines[head+1:end], entry.MatchString)
+	if at < 0 {
+		return nil, ErrNotWritten
+	}
+	said := []byte(strings.Join(slices.Delete(slices.Clone(lines), head+1+at, head+2+at), ""))
+	var after struct {
+		Workspaces map[string]any `toml:"workspaces"`
+	}
+	if toml.Unmarshal(said, &after) != nil {
+		return nil, ErrNotWritten
+	}
+	if _, still := after.Workspaces[name]; still {
+		return nil, ErrNotWritten
+	}
+	return said, nil
+}

@@ -29,7 +29,9 @@ func rendered(op Operation, a Answer) string {
 	case Config:
 		return configText(*a.Config)
 	case Workspaces:
-		return workspacesText(a.Workspaces.Workspaces)
+		return workspacesText(a.Workspaces.Workspaces) + recentText(a.Workspaces.Recent)
+	case WorkspaceRemoved:
+		return workspaceRemovedText(*a.WorkspaceRemoved)
 	case WorkspaceAdded:
 		return workspaceAddedText(*a.WorkspaceAdded)
 	case WorkspaceUsed:

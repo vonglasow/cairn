@@ -971,15 +971,13 @@ func pillLine(th *material.Theme, pill Box) Box {
 	return Box{X: pill.X, Y: pill.Y + (pill.H-top-bottom)/2, W: pill.W, H: lineHigh}
 }
 
-var labelColours = map[string]color.NRGBA{
-	"rosewater": {R: 0xf5, G: 0xe0, B: 0xdc, A: 255}, "flamingo": {R: 0xf2, G: 0xcd, B: 0xcd, A: 255},
-	"pink": {R: 0xf5, G: 0xc2, B: 0xe7, A: 255}, "mauve": {R: 0xcb, G: 0xa6, B: 0xf7, A: 255},
-	"red": {R: 0xf3, G: 0x8b, B: 0xa8, A: 255}, "maroon": {R: 0xeb, G: 0xa0, B: 0xac, A: 255},
-	"peach": {R: 0xfa, G: 0xb3, B: 0x87, A: 255}, "yellow": {R: 0xf9, G: 0xe2, B: 0xaf, A: 255},
-	"green": {R: 0xa6, G: 0xe3, B: 0xa1, A: 255}, "teal": {R: 0x94, G: 0xe2, B: 0xd5, A: 255},
-	"sky": {R: 0x89, G: 0xdc, B: 0xeb, A: 255}, "sapphire": {R: 0x74, G: 0xc7, B: 0xec, A: 255},
-	"blue": {R: 0x89, G: 0xb4, B: 0xfa, A: 255}, "lavender": {R: 0xb4, G: 0xbe, B: 0xfe, A: 255},
-}
+var labelColours = func() map[string]color.NRGBA {
+	inked := map[string]color.NRGBA{}
+	for name, ink := range domain.LabelInks {
+		inked[name] = color.NRGBA{R: ink[0], G: ink[1], B: ink[2], A: 255}
+	}
+	return inked
+}()
 
 // LabelPill is the ground a label of that colour is drawn on, a fifth of its colour over a card's ground, and the ink its name is written in, the colour itself.
 func (s Skin) LabelPill(colour string) (ground, ink color.NRGBA) {

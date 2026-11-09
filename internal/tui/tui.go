@@ -139,9 +139,14 @@ type Board struct {
 	place    Placed
 	switcher Switcher
 	spaces   []engine.Workspace
+	recent   []engine.RecentFolder
 	sought   string
 	spaceAt  int
 	opened   string
+	spaceAsk spaceTyping
+	spaceIn  string
+	newSpace string
+	keeping  engine.RecentFolder
 
 	err   error
 	noted *debug.Log

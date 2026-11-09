@@ -27,6 +27,7 @@ func initWorkspace(t *testing.T) func(*godog.ScenarioContext) {
 		w.registerConfig(sc)
 		w.registerContext(sc)
 		w.registerWorkspace(sc)
+		w.registerRecent(sc)
 		w.registerSettings(sc)
 		w.registerServer(sc)
 	}

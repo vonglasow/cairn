@@ -29,3 +29,14 @@ func TestALabelWithNoColourTakesOneOfItsName(t *testing.T) {
 		t.Errorf("eight labels share %d colours", len(seen))
 	}
 }
+
+func TestEveryColourIsInkedAsCatppuccinMochaInksIt(t *testing.T) {
+	for _, name := range LabelColours {
+		if _, ok := LabelInks[name]; !ok {
+			t.Errorf("%s has no ink", name)
+		}
+	}
+	if len(LabelInks) != len(LabelColours) || LabelInks["green"] != [3]uint8{0xa6, 0xe3, 0xa1} || LabelInks["rosewater"] != [3]uint8{0xf5, 0xe0, 0xdc} {
+		t.Errorf("the inks are %v", LabelInks)
+	}
+}

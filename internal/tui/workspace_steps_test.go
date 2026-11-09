@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -8,9 +9,11 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -29,6 +32,17 @@ func (w *world) registerWorkspaces(sc *godog.ScenarioContext) {
 	sc.Given(`^the settings of the workspace "([^"]*)" turn the time off$`, func(name string) error {
 		return os.WriteFile(filepath.Join(w.folderOf(name), "settings.toml"), []byte("[pages]\ntime = \"off\"\n"), 0o600)
 	})
+	sc.Given(`^the settings of the workspace "([^"]*)" say its colour is "([^"]*)"$`, func(name, colour string) error {
+		return os.WriteFile(filepath.Join(w.folderOf(name), "settings.toml"), []byte("[workspace]\ncolour = \""+colour+"\"\n"), 0o600)
+	})
+	sc.Given(`^the recent folder "([^"]*)", (opened yesterday|whose store is gone)$`, w.aRecentFolder)
+	sc.Given(`^the folder "([^"]*)" holds a task titled "([^"]*)"$`, w.folderHolds)
+	sc.When(`^I type the folder "([^"]*)"$`, func(folder string) error {
+		return w.typeIn(filepath.Join(w.spaces.dir, folder))
+	})
+	sc.Then(`^the dot of the header wears "([^"]*)"$`, w.dotWears)
+	sc.Then(`^the recent folder "([^"]*)" is marked "([^"]*)"$`, w.recentMarked)
+	sc.Then(`^the configuration names the workspace "([^"]*)"$`, w.configurationNames)
 	sc.Then(`^the header opens with "([^"]*)"$`, w.headerOpensWith)
 	sc.Then(`^the header opens with "([^"]*)" and the folder "([^"]*)"$`, w.headerOpensWithFolder)
 	sc.Then(`^the workspaces listed read (".*")$`, w.workspacesListedRead)
@@ -173,4 +187,83 @@ func (w *world) stillInFocus(number int, name string) error {
 		return errors.New("task " + strconv.Itoa(number) + " of " + name + " is no longer in focus")
 	}
 	return nil
+}
+
+func (w *world) aRecentFolder(folder, how string) error {
+	w.settingSpaces()
+	store := filepath.Join(w.spaces.dir, folder, "cairn.db")
+	if how == "opened yesterday" {
+		if err := os.MkdirAll(filepath.Dir(store), 0o700); err != nil {
+			return err
+		}
+		if _, err := os.Stat(store); errors.Is(err, os.ErrNotExist) {
+			if err := os.WriteFile(store, nil, 0o600); err != nil {
+				return err
+			}
+		}
+	}
+	path := filepath.Join(w.spaces.dir, ".local", "state", "cairn", "recent.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	var kept struct {
+		Recent []map[string]any `json:"recent"`
+	}
+	if read, err := os.ReadFile(path); err == nil {
+		if err := json.Unmarshal(read, &kept); err != nil {
+			return err
+		}
+	}
+	kept.Recent = append(kept.Recent, map[string]any{"store": store, "opened": stood.Add(-24 * time.Hour)})
+	said, err := json.Marshal(kept)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, said, 0o600)
+}
+
+func (w *world) folderHolds(folder, title string) error {
+	w.settingSpaces()
+	h := engine.Home{Dir: w.spaces.dir, Store: filepath.Join(w.spaces.dir, folder, "cairn.db")}
+	_, err := engine.DoFrom(engine.TaskNew, h, engine.Input{Given: map[string]string{"title": title}}, engine.Through("test", h))
+	return err
+}
+
+func (w *world) dotWears(colour string) error {
+	ink, ok := domain.LabelInks[colour]
+	if !ok {
+		return fmt.Errorf("%q is none of the label colours", colour)
+	}
+	worn := fmt.Sprintf("38;2;%d;%d;%dm● ", ink[0], ink[1], ink[2])
+	if header := strings.SplitN(w.b.Draw(), "\n", 2)[0]; !strings.Contains(header, worn) {
+		return fmt.Errorf("the dot of the header does not wear %s (%q):\n%q", colour, worn, header)
+	}
+	return nil
+}
+
+func (w *world) recentMarked(folder, mark string) error {
+	for _, line := range strings.Split(w.screen(), "\n") {
+		if strings.Contains(line, "│") && strings.Contains(line, "◌ ") && strings.Contains(line, string(filepath.Separator)+folder+" ") {
+			if strings.Contains(line, mark) {
+				return nil
+			}
+			return fmt.Errorf("the recent folder %q is not marked %q:\n%s", folder, mark, line)
+		}
+	}
+	return fmt.Errorf("the recent folder %q is not listed:\n%s", folder, w.screen())
+}
+
+func (w *world) configurationNames(name string) error {
+	h := w.homeOf("")
+	h.Store = ""
+	answer, err := engine.DoFrom(engine.WorkspaceList, h, engine.Input{}, engine.Through("test", h))
+	if err != nil {
+		return err
+	}
+	for _, one := range answer.Workspaces.Workspaces {
+		if one.Name == name {
+			return nil
+		}
+	}
+	return fmt.Errorf("the configuration does not name %q: %+v", name, answer.Workspaces.Workspaces)
 }

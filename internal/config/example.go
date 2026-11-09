@@ -58,7 +58,8 @@ keep_sizes = false
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
 # the one used when nothing else says; when it is said, it comes before store
 # and notes above, and CAIRN_STORE, --workspace and --store come before it.
-# cairn workspace add and cairn workspace use write here for you.
+# cairn workspace add, use and remove write here for you. The colour a
+# workspace wears is its own settings.toml's to say, under [workspace].
 [workspaces]
 # default = "work"
 # work = "~/cairn/work"

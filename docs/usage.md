@@ -427,6 +427,7 @@ A workspace keeps a store and its notes together in one folder, under a name:
 ```sh
 cairn workspace add work ~/cairn/work   # names it in the file, makes the folder
 cairn workspace use work                # the one used when nothing else says
+cairn workspace remove play             # forgets it; its folder is left alone
 cairn workspace list                    # each one, the default marked
 cairn workspace show                    # which one answers, and why
 cairn task list --workspace home        # another, for this command alone

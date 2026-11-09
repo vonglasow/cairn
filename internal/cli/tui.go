@@ -25,7 +25,7 @@ func openTerminal(cmd *cobra.Command, h engine.Home, icons string) error {
 	}
 	defer func() { _ = held.Close() }()
 	board := tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(h)).Noting(notedIn(cmd.Context()))
-	return openTui(cmd, board.Switching(func(workspace string) (engine.Pages, error) { return engine.Switch(held, workspace) }))
+	return openTui(cmd, board.Switching(func(to engine.Elsewhere) (engine.Pages, error) { return engine.Switch(held, to) }))
 }
 
 func runTui(cmd *cobra.Command, model tea.Model) error {

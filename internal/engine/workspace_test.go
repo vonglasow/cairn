@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"cairn/internal/config"
+	"cairn/internal/domain"
 )
 
 func homeHolding(t *testing.T, said string, env map[string]string, folders ...string) Home {
@@ -235,12 +236,15 @@ func TestWorkspaceList_namesEachAndTheDefault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []Workspace{{Name: "home", Folder: filepath.Join(h.Dir, "h")}, {Name: "work", Folder: filepath.Join(h.Dir, "w"), Default: true}}
+	want := []Workspace{
+		{Name: "home", Folder: filepath.Join(h.Dir, "h"), Colour: domain.ColourOf("home"), NotFound: true},
+		{Name: "work", Folder: filepath.Join(h.Dir, "w"), Default: true, Colour: domain.ColourOf("work"), NotFound: true},
+	}
 	if got := answer.Workspaces.Workspaces; len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
 		t.Errorf("Workspaces = %+v, want %+v", got, want)
 	}
 	said := RenderText(WorkspaceList, answer)
-	if !strings.Contains(said, "home  "+want[0].Folder+"\n") || !strings.Contains(said, "work  "+want[1].Folder+"  default\n") {
+	if !strings.Contains(said, "home  "+want[0].Folder+"  not found  "+want[0].Colour+"\n") || !strings.Contains(said, "work  "+want[1].Folder+"  default  not found  "+want[1].Colour+"\n") {
 		t.Errorf("it says\n%s", said)
 	}
 	if got := Of(WorkspaceList, answer); got.(Workspaces).Workspaces[1] != want[1] {
@@ -415,8 +419,8 @@ func TestWorkspaces_areDescribedForEverySurface(t *testing.T) {
 			t.Errorf("%s is among All(), so offered to an agent", op.Name())
 		}
 	}
-	if typed := ForAPersonOnly(); len(typed) != 2 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() {
-		t.Errorf("ForAPersonOnly() = %d operations, want workspace add and use", len(typed))
+	if typed := ForAPersonOnly(); len(typed) != 3 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() || typed[2].Name() != WorkspaceRemove.Name() {
+		t.Errorf("ForAPersonOnly() = %d operations, want workspace add, use and remove", len(typed))
 	}
 	if WorkspaceList.Level != Read || WorkspaceShow.Level != Read || WorkspaceAdd.Level != Write || WorkspaceUse.Level != Write {
 		t.Error("listing and showing read, adding and using write")

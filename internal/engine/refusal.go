@@ -140,6 +140,8 @@ var reasons = []reason{
 	{ErrWorkspaceNotThere, KindRefused, "workspace-not-there"},
 	{ErrWorkspaceKnown, KindRefused, "workspace-known"},
 	{ErrNotAWorkspaceName, KindRefused, "not-a-workspace-name"},
+	{ErrRemovingTheDefault, KindRefused, "removing-the-default"},
+	{ErrNotThere, KindRefused, "not-there"},
 }
 
 // RefusalOf says what kind of answer a failure is, and which one when cairn foresaw it.

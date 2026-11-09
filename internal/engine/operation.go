@@ -241,9 +241,9 @@ func All() []Operation {
 	}
 }
 
-// ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace and switching to another change where every later command reads and writes.
+// ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes.
 func ForAPersonOnly() []Operation {
-	return []Operation{WorkspaceAdd, WorkspaceUse}
+	return []Operation{WorkspaceAdd, WorkspaceUse, WorkspaceRemove}
 }
 
 // Check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
@@ -359,6 +359,7 @@ type Answer struct {
 	Workspaces        *Workspaces
 	WorkspaceAdded    *WorkspaceAdded
 	WorkspaceUsed     *WorkspaceUsed
+	WorkspaceRemoved  *WorkspaceRemoved
 	WorkspaceShown    *WorkspaceShown
 }
 

@@ -100,6 +100,12 @@ Feature: Answering a machine over MCP
       And it does not offer `workspace_add`
       And it does not offer `workspace_use`
 
+    @workspace-an-agent-cannot-remove-one
+    Scenario: an agent cannot remove a workspace
+      Given a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it does not offer `workspace_remove`
+
   Rule: A tool says what calling it would cost
 
     @mcp-marks-what-loses-work
