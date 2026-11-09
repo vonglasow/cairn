@@ -169,6 +169,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 
 	w.givens().Register(sc)
 	w.registerWorkspaces(sc)
+	w.registerColours(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 
 	sc.When(`^I open the board$`, func() error {
@@ -892,6 +893,19 @@ func drawsWithoutFault(b Board) (err error) {
 	return nil
 }
 
+func (w *world) everyScreen(look func(name string)) {
+	look("the board")
+	for _, step := range []struct{ key, name string }{
+		{"enter", "a task's detail"}, {"esc", "the board again"}, {"e", "a task's form"}, {"esc", "the board again"},
+		{"?", "the help"}, {"?", "the board again"},
+		{"tab", "the objectives"}, {"enter", "an objective's detail"}, {"esc", "the objectives again"},
+		{"tab", "the time"},
+	} {
+		w.press(step.key)
+		look(step.name)
+	}
+}
+
 func (w *world) noScreenRunsPastTheTerminal() error {
 	var problems []string
 	look := func(name string) {
@@ -905,19 +919,10 @@ func (w *world) noScreenRunsPastTheTerminal() error {
 			}
 		}
 	}
-	look("the board")
 	if strings.Contains(w.screen(), "needs a bigger window") {
 		return fmt.Errorf("the board is not drawn at %d by %d, so nothing was checked", w.width, w.high)
 	}
-	for _, step := range []struct{ key, name string }{
-		{"enter", "a task's detail"}, {"esc", "the board again"}, {"e", "a task's form"}, {"esc", "the board again"},
-		{"?", "the help"}, {"?", "the board again"},
-		{"tab", "the objectives"}, {"enter", "an objective's detail"}, {"esc", "the objectives again"},
-		{"tab", "the time"},
-	} {
-		w.press(step.key)
-		look(step.name)
-	}
+	w.everyScreen(look)
 	if len(problems) > 0 {
 		return fmt.Errorf("%d problem(s):\n%s", len(problems), strings.Join(problems, "\n"))
 	}

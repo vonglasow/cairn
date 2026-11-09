@@ -106,16 +106,12 @@ func (b Board) roamingSays() []string {
 
 func (b Board) legend() []string {
 	g, p := b.glyphs, b.skin.palette
-	swatch := func(c any, name string) string {
-		return "  " + lipgloss.NewStyle().Foreground(c.(interface {
-			RGBA() (uint32, uint32, uint32, uint32)
-		})).Render("▌") +
+	swatch := func(c Ink, name string) string {
+		return "  " + lipgloss.NewStyle().Foreground(c.Border()).Render("▌") +
 			" " + b.skin.Says.Render(name)
 	}
-	mark := func(glyph string, c any, name, means string) string {
-		return "  " + lipgloss.NewStyle().Foreground(c.(interface {
-			RGBA() (uint32, uint32, uint32, uint32)
-		})).Render(glyph) +
+	mark := func(glyph string, c Ink, name, means string) string {
+		return "  " + c.Style().Render(glyph) +
 			"  " + b.skin.Bright.Render(pad(name, 10)) + b.skin.Says.Render(means)
 	}
 	out := b.group("PRIORITY — the left edge of a card",
@@ -251,10 +247,10 @@ func (b Board) detailBand(c engine.Card) string {
 	head := " " + b.skin.Faint.Render(strconv.Itoa(c.Number)) + "   " + b.skin.Title.Render(c.Title)
 	state := c.State
 	if engine.Stopped(c.State) {
-		state = lipgloss.NewStyle().Foreground(b.skin.palette.Stopped(c.State)).
+		state = b.skin.palette.Stopped(c.State).Style().
 			Render(StoppedGlyph(c.State, b.glyphs) + " " + c.State)
 	}
-	right := state + "  " + lipgloss.NewStyle().Foreground(b.skin.palette.Priority(c.Priority)).Render(c.Priority)
+	right := state + "  " + b.skin.palette.Priority(c.Priority).Style().Render(c.Priority)
 	var told []string
 	for _, label := range c.Labels {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
@@ -311,7 +307,7 @@ func (b Board) serves(c engine.Card, width int) string {
 	var out []string
 	for _, g := range b.snap.Served(c) {
 		out = append(out, Spread(
-			lipgloss.NewStyle().Foreground(b.skin.palette.Standing(g.State)).Render(StandingGlyph(g.State, b.glyphs))+
+			b.skin.palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs))+
 				" "+b.skin.Faint.Render(strconv.Itoa(g.Number))+"  "+b.skin.Bright.Render(g.Title),
 			b.skin.Says.Render(g.Counted()), width))
 	}

@@ -119,7 +119,7 @@ func Rows(c engine.Card, g Glyphs, s Skin, now time.Time, width int) []string {
 	mark := marks(c, g)
 	if glyph := StoppedGlyph(c.State, g); glyph != "" {
 		mark = strings.Replace(mark, glyph,
-			lipgloss.NewStyle().Foreground(s.palette.Stopped(c.State)).Render(glyph), 1)
+			s.palette.Stopped(c.State).Style().Render(glyph), 1)
 	}
 	rows = append(rows, Spread(number, mark, width))
 	for _, line := range Wrap(c.Title, width, titleLines) {

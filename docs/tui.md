@@ -39,6 +39,7 @@ afternoon to spend:
 - [Width](#width)
 - [A card is six lines](#a-card-is-six-lines)
 - [Colour carries what a glyph would cost width for](#colour-carries-what-a-glyph-would-cost-width-for)
+- [The terminal's own colours](#the-terminals-own-colours)
 - [Glyphs](#glyphs)
 - [The modes](#the-modes)
 - [Every key](#every-key)
@@ -252,13 +253,13 @@ which changes the border's *style* rather than its colour.
 
 | | |
 |---|---|
-| `low` | blue |
-| `normal` | grey |
-| `high` | amber |
+| `low` | cyan |
+| `normal` | the terminal's own foreground |
+| `high` | yellow |
 | `critical` | red |
 
 Colouring the whole border was turned down: three `high` cards in a row turn a
-column into an amber wall and nothing stands out any more.
+column into a yellow wall and nothing stands out any more.
 
 **The task in focus has a double border**, and it is the only one on screen. A
 dot beside the number was drawn and removed — the frame already says it, better,
@@ -273,6 +274,79 @@ board. It carries no clock glyph: the glyph rendered badly and said nothing the
 and a `−3d` in red on it would call for an act nobody has left to do. The open
 task still says the day it was due, without the count. The window reads the
 same rule, `engine.CardDeadline`.
+
+## The terminal's own colours
+
+**The board draws in the terminal's sixteen colours and nothing else**, so it
+wears whatever theme the terminal wears
+(`@tui-colours-follow-the-terminal`). The 256-colour indexes it once used
+(39, 203, 214, 245…) are fixed in most terminals: a person who themed theirs
+Gruvbox got cairn's blues and pinks on a Gruvbox ground. The sixteen are the
+ones every terminal scheme sets — base16's shell templates write `base08`
+into red, `base0D` into blue — so the board follows the theme for nothing.
+
+| what | drawn in |
+|---|---|
+| the accent — the tab open, the crumb, a key, a title, the chosen card | blue (4) |
+| `low`, `watching` | cyan (6) |
+| `high`, the STALLED band | yellow (3) |
+| `critical`, `blocked`, a deadline passed, what is refused | red (1) |
+| a `reached` objective | green (2) |
+| `normal`, `paused`, `on-hold`, `dropped`, what is said quietly, the rules | faint, on the terminal's own foreground |
+| a title, a heading, `done` | the terminal's own foreground |
+| the tab open, the mode, the choice picked, the button in focus | reversed: the colour becomes the ground, the terminal's ground the ink |
+| the task in focus | a double border — a shape, not a colour |
+
+**Faint is an attribute, never "bright black"**
+(`@tui-colours-faint-is-the-terminals-own-foreground`). In Solarized, bright
+black is `base03`, the background itself; text drawn in it disappears. Faint
+dims the terminal's own foreground, whatever it is, so it reads on a light
+ground as on a dark one. Black, white and their bright twins are not used at
+all: themes spend them on grounds as often as on inks.
+
+**A border carries no faint.** A terminal cannot dim a border lipgloss draws,
+so a card's frame and a panel's are in the terminal's own foreground, and a
+`normal` card's left edge with them — the colours of `low`, `high` and
+`critical` stand out against it, which is what the edge is for
+(`@tui-colours-a-priority-is-one-of-the-terminals`). The rules between the
+columns are text, and are faint.
+
+**A label's colour is the nearest the terminal has.** The fourteen label
+colours are Catppuccin's, made for a window that paints its own ground; the
+terminal has six accents and their bright twins. The workspace's dot wears
+the nearest (`@tui-colours-a-workspace-wears-the-nearest-of-the-terminals`),
+and two colours close in Catppuccin may meet in one:
+
+| label colour | the terminal's |
+|---|---|
+| `red` | red (1) |
+| `flamingo`, `maroon` | bright red (9) |
+| `green` | green (2) |
+| `yellow` | yellow (3) |
+| `peach` | bright yellow (11) |
+| `blue` | blue (4) |
+| `sapphire`, `lavender` | bright blue (12) |
+| `pink` | magenta (5) |
+| `rosewater`, `mauve` | bright magenta (13) |
+| `teal` | cyan (6) |
+| `sky` | bright cyan (14) |
+
+In a base16 terminal the bright twins are often the plain six again, and a
+pair of the table then wears one colour: the label's name is still beside
+it.
+
+**The window's theme does not reach the terminal.** The scheme a window
+wears ([gui.md](gui.md), [config.md](config.md#the-colours-the-window-wears))
+is the window's; a terminal app that repainted its ground in another scheme
+would fight the terminal's own.
+
+**Nothing else can come back.** A test reads every file of `internal/tui`
+and refuses a colour written in hex, `lipgloss.Color`, `ANSIColor`, a colour
+made by hand, and black, white and their bright twins; another reads every
+pinned frame and the fixtures' every screen and refuses a colour of 256 or of
+true colour, and bright black. What the form borrows from huh keeps huh's
+white prompt and line numbers on the fields not in focus: white is one of
+the sixteen, and huh does not hand them over.
 
 ## Glyphs
 
@@ -298,12 +372,12 @@ edge out of line.
 | meaning | Nerd Font | Unicode | colour |
 |---|---|---|---|
 | `blocked` — waiting on somebody else | `nf-oct-blocked` | `⊘` | red |
-| `watching` — handed over, needs checking | `nf-oct-eye` | `◉` | blue |
-| `paused` — waiting on your own decision | `nf-md-pause` | `‖` | grey |
-| `active` objective | `nf-oct-play` | `▶` | green |
-| `on-hold` objective | `nf-md-pause` | `‖` | grey |
+| `watching` — handed over, needs checking | `nf-oct-eye` | `◉` | cyan |
+| `paused` — waiting on your own decision | `nf-md-pause` | `‖` | faint |
+| `active` objective | `nf-oct-play` | `▶` | blue |
+| `on-hold` objective | `nf-md-pause` | `‖` | faint |
 | `reached` objective | `nf-oct-check` | `✓` | green |
-| `dropped` objective | `nf-oct-x` | `✕` | dim |
+| `dropped` objective | `nf-oct-x` | `✕` | faint |
 | a description exists | `nf-oct-note` | `≡` | |
 | steps done / total | `nf-oct-checklist` | `▪` | |
 | a label | `nf-oct-tag` | `⚑` | |
@@ -676,8 +750,8 @@ because with two hundred tasks what is highlighted is usually off screen.
  ┌─ KEYS ──────────────────────────────┬─ LEGEND ──────────────────────────────────┐
  │                                     │                                           │
  │ NORMAL — cursor on a column         │ PRIORITY — the left border                │
- │   hjkl ←↓↑→  change column          │   ▏ blue   low       ▏ amber   high       │
- │   i          insert mode            │   ▏ grey   normal    ▏ red     critical   │
+ │   hjkl ←↓↑→  change column          │   ▏ cyan   low       ▏ yellow  high       │
+ │   i          insert mode            │   ▏ own    normal    ▏ red     critical   │
  │   a          a new task             │                                           │
  │   /          search                 │ STALLED — top right of the card           │
  │   ⇥          next tab               │   ⊘  blocked    waiting on somebody else  │
@@ -1040,5 +1114,9 @@ would otherwise lose the whole form.
   command-line command, and it is the only operation with no place here.
 - **What a card shows of its objectives.** It was left off: an objective is a
   link to elsewhere and there is a tab for it.
+- **The window's scheme in the terminal, `[board] colours = "theme"`.** It
+  would paint the window's tokens in true colour, for whoever wants one look
+  in both; it is not built. The sixteen colours stay the default either way,
+  since a board that repaints the ground fights the terminal's own.
 - **Moving between the three stopped states.** Once a task is in the band, going
   from blocked to watching is the form's job. The popup only asks on the way in.

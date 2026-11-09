@@ -134,6 +134,9 @@ func TestFrames(t *testing.T) {
 
 func pinned(t *testing.T, name, got string) {
 	t.Helper()
+	if found := outsideTheTheme(got); len(found) > 0 {
+		t.Errorf("the frame %s wears colours the terminal's theme does not set: %q", name, found)
+	}
 	got = bare(got)
 	path := filepath.Join("testdata", name+".txt")
 	if update {

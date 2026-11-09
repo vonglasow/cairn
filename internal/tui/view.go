@@ -217,7 +217,7 @@ func (b Board) insideBand() string {
 		if g.Number != b.inside {
 			continue
 		}
-		mark := lipgloss.NewStyle().Foreground(b.skin.palette.Standing(g.State)).Render(StandingGlyph(g.State, b.glyphs))
+		mark := b.skin.palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs))
 		head := Spread(" "+b.skin.Title.Render(strconv.Itoa(g.Number)+"   "+g.Title), mark+" ", b.width)
 		return head + "\n " + b.progress(g.Done, g.Total, barWidth) + "  " + b.skin.Faint.Render(g.Counted())
 	}

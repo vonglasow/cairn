@@ -645,15 +645,15 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 9 {
-		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
+		f.acts = append(f.acts, aChange("title", "act-"+strconv.Itoa(i)))
 	}
 	b := heardOf(standing(f), 1)
 	b.mode, b.task = Insert, 1
-	got := b.history(1, 40, 3)
+	got := b.history(1, 60, 3)
 	if len(got) != 3 {
 		t.Fatalf("a window three rows tall showed %d acts", len(got))
 	}
-	if !strings.Contains(got[2], "8") {
+	if !strings.Contains(strip(got[2]), "act-8") {
 		t.Fatalf("the last act shown is %q, want the latest", got[2])
 	}
 	if all := b.history(1, 40, 0); len(all) != 9 {
@@ -731,13 +731,13 @@ func TestTheHistoryShowsItsEndAndNotItsBeginning(t *testing.T) {
 	f := newFake()
 	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo"}}
 	for i := range 9 {
-		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
+		f.acts = append(f.acts, aChange("title", "act-"+strconv.Itoa(i)))
 	}
-	got := heardOf(standing(f), 1).history(1, 40, 3)
-	if !strings.Contains(got[0], "6") {
+	got := heardOf(standing(f), 1).history(1, 60, 3)
+	if !strings.Contains(strip(got[0]), "act-6") {
 		t.Fatalf("the first row shown is %q, want the seventh act", got[0])
 	}
-	if !strings.Contains(got[2], "8") {
+	if !strings.Contains(strip(got[2]), "act-8") {
 		t.Fatalf("the last row shown is %q, want the ninth act", got[2])
 	}
 }

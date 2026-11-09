@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/lipgloss/v2"
-
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/objective"
@@ -84,7 +82,7 @@ func (b Board) goalRows(g engine.Goal, width int) []string {
 	mark := goalMarks(g, b.glyphs)
 	if glyph := StandingGlyph(g.State, b.glyphs); glyph != "" {
 		mark = strings.Replace(mark, glyph,
-			lipgloss.NewStyle().Foreground(b.skin.palette.Standing(g.State)).Render(glyph), 1)
+			b.skin.palette.Standing(g.State).Style().Render(glyph), 1)
 	}
 	rows = append(rows, Spread(b.skin.Faint.Render(strconv.Itoa(g.Number)), mark, width))
 	for _, line := range Wrap(g.Title, width, titleLines) {

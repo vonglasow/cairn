@@ -1219,6 +1219,52 @@ Feature: The board
       And the board does not say "RECENT FOLDERS"
       And the configuration names the workspace "scratch"
 
+  Rule: The board wears the terminal's own colours, whatever theme the terminal has
+
+    @tui-colours-follow-the-terminal
+    Scenario: on the fixtures, every screen is drawn in the terminal's own colours alone
+      Given the fixtures
+      When I open the board
+      Then the board says "Done this week"
+      And no screen wears a colour the terminal's theme does not set
+
+    @tui-colours-faint-is-the-terminals-own-foreground
+    Scenario: the rule between two columns is faint, in the terminal's own foreground
+      When I open the board
+      Then the rule between two columns is faint, in no colour of its own
+
+    @tui-colours-a-priority-is-one-of-the-terminals
+    Scenario Outline: the left edge of a card wears its priority in one of the terminal's colours
+      Given I added a task titled "Ask legal" in "todo" at the priority "<priority>" carrying the label "spec"
+      When I open the board
+      Then the left edge of the card for task 1 wears the terminal's <colour>
+
+      Examples:
+        | priority | colour         |
+        | low      | cyan           |
+        | normal   | own foreground |
+        | high     | yellow         |
+        | critical | red            |
+
+    @tui-colours-the-tab-open-is-reversed
+    Scenario: the tab open is the terminal's blue, reversed onto its ground
+      When I open the board
+      Then the tab "TASKS" is drawn reversed in the terminal's blue
+
+    @tui-colours-a-workspace-wears-the-nearest-of-the-terminals
+    Scenario Outline: the colour of a workspace is the nearest the terminal has
+      Given the workspace "work", the default
+      And the settings of the workspace "work" say its colour is "<colour>"
+      When I open the board
+      Then the dot of the header wears the terminal's <terminal>
+
+      Examples:
+        | colour   | terminal       |
+        | green    | green          |
+        | lavender | bright blue    |
+        | peach    | bright yellow  |
+        | maroon   | bright red     |
+
   Rule: Every screen fits the terminal it is drawn in, whatever the store holds
 
     @tui-the-fixtures-fit

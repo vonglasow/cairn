@@ -719,9 +719,11 @@ Every scheme cairn carries meets them all
 (`@theme-every-shipped-scheme-passes-contrast`). The window's configuration
 panel says `window.theme` beside the other keys.
 
-**What it does not do yet.** The terminal board keeps its own colours: moving
-it to the sixteen colours a terminal's own scheme sets is a task of its own.
-A window does not follow the system between light and dark: `theme` is one
+**The terminal board does not wear it.** It draws in the sixteen colours
+the terminal's own scheme sets, and so follows that scheme instead
+([tui.md](tui.md#the-terminals-own-colours)).
+
+**What it does not do yet.** A window does not follow the system between light and dark: `theme` is one
 name, and can become a table later without breaking a file that names one.
 
 ## TOML, because a person opens this file

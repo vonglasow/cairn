@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -165,8 +164,7 @@ func TestSwitcher_theFootOffersToOpenAFolderAndMakeAWorkspace(t *testing.T) {
 }
 
 func inked(colour string) string {
-	ink := domain.LabelInks[colour]
-	return fmt.Sprintf("38;2;%d;%d;%dm● ", ink[0], ink[1], ink[2])
+	return "\x1b[" + terminalColours[labelsInTheTerminal[colour]] + "m● "
 }
 
 func TestHeader_theDotWearsTheColourOfTheWorkspace(t *testing.T) {

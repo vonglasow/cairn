@@ -187,6 +187,16 @@ func anAct(did, became string) trace.Act {
 	return told.Act()
 }
 
+func aChange(field, became string) trace.Act {
+	var told trace.AsTold
+	told.On(1)
+	told.Did("changed")
+	told.Changing(field)
+	told.Became(became)
+	told.At(today)
+	return told.Act()
+}
+
 func (b Board) with(skin Skin) Board {
 	b.skin = skin
 	return b

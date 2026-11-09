@@ -133,17 +133,20 @@ func oneField(field engine.Field, into *string) huh.Field {
 func themeOf(skin Skin) *huh.Styles {
 	theme := huh.ThemeBase(true)
 	p := skin.palette
-	theme.Focused.Base = theme.Focused.Base.BorderForeground(p.Accent)
-	theme.Focused.Title = theme.Focused.Title.Foreground(p.Accent).Bold(true)
-	theme.Focused.Description = theme.Focused.Description.Foreground(p.Faint)
-	theme.Focused.SelectedOption = theme.Focused.SelectedOption.Foreground(p.Accent)
-	theme.Focused.SelectSelector = theme.Focused.SelectSelector.Foreground(p.Accent)
-	theme.Focused.FocusedButton = theme.Focused.FocusedButton.Foreground(p.Ink).Background(p.Accent).Bold(true)
-	theme.Focused.BlurredButton = theme.Focused.BlurredButton.Foreground(p.Faint)
-	theme.Focused.TextInput.Prompt = theme.Focused.TextInput.Prompt.Foreground(p.Accent)
-	theme.Focused.TextInput.Cursor = theme.Focused.TextInput.Cursor.Foreground(p.Accent)
-	theme.Blurred.Base = theme.Blurred.Base.BorderForeground(p.Line)
-	theme.Blurred.Title = theme.Blurred.Title.Foreground(p.Faint)
+	for _, state := range []*huh.FieldStyles{&theme.Focused, &theme.Blurred} {
+		state.FocusedButton = p.Accent.On(state.FocusedButton).Background(lipgloss.NoColor{}).Reverse(true).Bold(true)
+		state.BlurredButton = p.Faint.On(state.BlurredButton).Background(lipgloss.NoColor{})
+		state.TextInput.Placeholder = p.Faint.Style()
+	}
+	theme.Focused.Base = theme.Focused.Base.BorderForeground(p.Accent.Border())
+	theme.Focused.Title = p.Accent.On(theme.Focused.Title).Bold(true)
+	theme.Focused.Description = p.Faint.On(theme.Focused.Description)
+	theme.Focused.SelectedOption = p.Accent.On(theme.Focused.SelectedOption)
+	theme.Focused.SelectSelector = p.Accent.On(theme.Focused.SelectSelector)
+	theme.Focused.TextInput.Prompt = p.Accent.On(theme.Focused.TextInput.Prompt)
+	theme.Focused.TextInput.Cursor = p.Accent.On(theme.Focused.TextInput.Cursor)
+	theme.Blurred.Base = theme.Blurred.Base.BorderForeground(p.Line.Border())
+	theme.Blurred.Title = p.Faint.On(theme.Blurred.Title)
 	return theme
 }
 
@@ -266,13 +269,13 @@ func (b Board) formHead() string {
 		title = b.skin.Title.Render(title)
 	}
 	standing, priority := b.form.valueOf("column"), b.form.valueOf("priority")
-	dressed := lipgloss.NewStyle().Foreground(b.skin.palette.Stopped(standing))
+	dressed := b.skin.palette.Stopped(standing).Style()
 	if b.form.ForObjective {
 		standing = b.form.valueOf("standing")
-		dressed = lipgloss.NewStyle().Foreground(b.skin.palette.Standing(standing))
+		dressed = b.skin.palette.Standing(standing).Style()
 	}
 	right := dressed.Render(standing) + "  " +
-		lipgloss.NewStyle().Foreground(b.skin.palette.Priority(priority)).Render(priority)
+		b.skin.palette.Priority(priority).Style().Render(priority)
 	return Spread(number+"   "+title, right, b.width-margin-margin-frame)
 }
 

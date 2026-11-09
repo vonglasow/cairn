@@ -10,7 +10,6 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -128,15 +127,11 @@ func (w *world) stillInFocus(number int, name string) error {
 }
 
 func (w *world) dotWears(colour string) error {
-	ink, ok := domain.LabelInks[colour]
+	inTheTerminal, ok := labelsInTheTerminal[colour]
 	if !ok {
 		return fmt.Errorf("%q is none of the label colours", colour)
 	}
-	worn := fmt.Sprintf("38;2;%d;%d;%dm● ", ink[0], ink[1], ink[2])
-	if header := strings.SplitN(w.b.Draw(), "\n", 2)[0]; !strings.Contains(header, worn) {
-		return fmt.Errorf("the dot of the header does not wear %s (%q):\n%q", colour, worn, header)
-	}
-	return nil
+	return w.dotWearsTheTerminals(inTheTerminal)
 }
 
 func (w *world) recentMarked(folder, mark string) error {

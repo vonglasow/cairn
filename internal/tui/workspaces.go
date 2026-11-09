@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -9,7 +8,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -318,11 +316,11 @@ func (b Board) choosingSpace(one engine.Workspace) (tea.Model, tea.Cmd) {
 }
 
 func (b Board) wearing(colour string) lipgloss.Style {
-	ink, ok := domain.LabelInks[colour]
+	ink, ok := LabelsInTheTerminal[colour]
 	if !ok {
 		return b.skin.Crumb
 	}
-	return lipgloss.NewStyle().Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", ink[0], ink[1], ink[2])))
+	return lipgloss.NewStyle().Foreground(ink)
 }
 
 func (b Board) placeMark() string {
