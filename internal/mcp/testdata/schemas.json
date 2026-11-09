@@ -7381,7 +7381,7 @@
           "properties": {
             "rung": {
               "type": "string",
-              "description": "--workspace, --store, CAIRN_STORE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"
+              "description": "--workspace, --store, CAIRN_STORE, CAIRN_WORKSPACE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"
             },
             "over": {
               "type": [

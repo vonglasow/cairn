@@ -74,6 +74,98 @@ Feature: Workspaces, each a folder holding a store and its notes
       And it names "--workspace"
       And it names "--store"
 
+  Rule: CAIRN_WORKSPACE in the environment names a workspace, under a place the environment names
+
+    @workspace-the-environment-names-a-workspace
+    Scenario: CAIRN_WORKSPACE names the workspace whose store and notes answer
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "home"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/cairn/home/cairn.db"
+      When I run `cairn task show 1`
+      Then it says the context lives at "~/cairn/home/notes/1"
+
+    @workspace-cairn-store-wins-over-cairn-workspace-for-the-store
+    Scenario: CAIRN_STORE names a store, which keeps its own notes, over the workspace CAIRN_WORKSPACE names
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "home"
+      And the environment says the store lives at "~/elsewhere/cairn.db"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/elsewhere/cairn.db"
+      When I run `cairn task show 1`
+      Then it says the context lives at "~/.cairn/notes/1"
+      When I run `cairn workspace show`
+      Then it says "why        CAIRN_STORE — over CAIRN_WORKSPACE (home) and the default (work)"
+
+    @workspace-cairn-notes-wins-over-cairn-workspace-for-the-notes
+    Scenario: CAIRN_NOTES names the notes alone, the store staying the workspace's
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "home"
+      And the environment says the notes live at "~/elsewhere/notes"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/cairn/home/cairn.db"
+      When I run `cairn task show 1`
+      Then it says the context lives at "~/elsewhere/notes/1"
+
+    @workspace-the-flag-replaces-cairn-workspace
+    Scenario Outline: a flag replaces the workspace CAIRN_WORKSPACE names
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "home"
+      When I run `cairn task new "Buy bread" <flag>`
+      Then the task was written to "<store>"
+
+      Examples:
+        | flag                     | store                 |
+        | --workspace work         | ~/cairn/work/cairn.db |
+        | --store ~/loose/cairn.db | ~/loose/cairn.db      |
+
+    @workspace-an-unknown-workspace-in-the-environment-is-refused
+    Scenario: a workspace CAIRN_WORKSPACE names and nobody named is refused, with the ones there are
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "play"
+      When I run `cairn task list`
+      Then it refuses, and names "play"
+      And it names "CAIRN_WORKSPACE"
+      And it names "home"
+      And it names "work"
+
+    @workspace-a-folder-gone-in-the-environment-is-refused
+    Scenario: a workspace CAIRN_WORKSPACE names whose folder is not there is refused, naming the folder
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the folder "~/cairn/home" is not there
+      And the environment names the workspace "home"
+      When I run `cairn task list`
+      Then it refuses, and names the folder "~/cairn/home"
+      And it names "CAIRN_WORKSPACE"
+
+    @workspace-show-says-cairn-workspace
+    Scenario: workspace show says CAIRN_WORKSPACE chose the workspace, over the default
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "home"
+      When I run `cairn workspace show`
+      Then it says the workspace "home" answers, why "CAIRN_WORKSPACE — over the default, work"
+      And it says the store is at "~/cairn/home/cairn.db"
+      And it says the notes are at "~/cairn/home/notes"
+
+    @workspace-a-server-keeps-the-workspace-the-environment-names
+    Scenario: a server started under CAIRN_WORKSPACE answers from that workspace, and says why
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "home"
+      And a cairn server started with `cairn mcp serve --access full`
+      When I ask the server for `workspace_show`
+      Then the server says the workspace "home" answers, why "when this server started, CAIRN_WORKSPACE — over the default, work"
+      When I ask the server to add a task titled "Buy bread"
+      Then `cairn task list --workspace home` says "Buy bread"
+      And no store was written to "~/cairn/work/cairn.db"
+
+    @workspace-a-workspace-the-environment-names-is-not-a-recent-folder
+    Scenario: a board opened on the workspace CAIRN_WORKSPACE names leaves the recent folders as they were
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And the environment names the workspace "home"
+      When I open the board with `cairn tui`
+      And I run `cairn workspace list`
+      Then it lists no recent folder
+
   Rule: A workspace named is one that is there
 
     @workspace-an-unknown-name-is-refused

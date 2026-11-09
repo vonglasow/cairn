@@ -48,6 +48,7 @@ func (w *sessionWorld) reset() {
 		"PATH="+cairnOnPath(w.t)+string(os.PathListSeparator)+os.Getenv("PATH"),
 		"CAIRN_STORE="+filepath.Join(home, "cairn.db"),
 		"CAIRN_NOTES="+w.notes,
+		"CAIRN_WORKSPACE=",
 		"CAIRN_IDLE_SECONDS="+strconv.Itoa(idleSeconds),
 		"TMPDIR="+home,
 	)
@@ -209,6 +210,30 @@ func (w *sessionWorld) quietAndFine() error {
 	return nil
 }
 
+func (w *sessionWorld) theWorkspaceTheEnvironmentNames(name string) error {
+	if err := w.theDefaultWorkspace("main"); err != nil {
+		return err
+	}
+	var home string
+	for _, kv := range w.env {
+		if said, ok := strings.CutPrefix(kv, "HOME="); ok {
+			home = said
+		}
+	}
+	folder := filepath.Join(home, name)
+	w.notes = filepath.Join(folder, "notes")
+	if err := os.MkdirAll(w.notes, 0o700); err != nil {
+		return err
+	}
+	file := filepath.Join(home, ".config", "cairn", "config.toml")
+	said, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	w.env = append(w.env, "CAIRN_WORKSPACE="+name)
+	return os.WriteFile(file, fmt.Appendf(said, "%s = %q\n", name, folder), 0o600)
+}
+
 func (w *sessionWorld) theDefaultWorkspace(name string) error {
 	var home string
 	kept := w.env[:0:0]
@@ -342,6 +367,14 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 		})
 		sc.Then(`^the hook said nothing and succeeded$`, w.quietAndFine)
 		sc.Given(`^the workspace "([^"]*)" is the default, and nothing names another store$`, w.theDefaultWorkspace)
+		sc.Given(`^the environment names the workspace "([^"]*)", which is not the default$`, w.theWorkspaceTheEnvironmentNames)
+		sc.Given(`^the environment names a workspace nobody named$`, func() error {
+			if err := w.theDefaultWorkspace("main"); err != nil {
+				return err
+			}
+			w.env = append(w.env, "CAIRN_WORKSPACE=play")
+			return nil
+		})
 		sc.When(`^session "([^"]*)" starts$`, func(session string) error {
 			w.hook(map[string]any{"hook_event_name": "SessionStart", "session_id": session, "source": "startup"})
 			return nil

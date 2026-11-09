@@ -153,10 +153,10 @@ case $(field .hook_event_name) in
       (sleep "$idle"; [ ! -e "$wait" ] || { let_go; rm -f "$wait"; }) </dev/null &>/dev/null &
     } ;;
   SessionStart)
-    cairn workspace show --json 2>/dev/null | jq -r '
-      (if .workspace then "the workspace \(.workspace) (\(.folder))"
+    cairn workspace show --json 2>/dev/null | jq -r 'select(.why)
+      | (if .workspace then "the workspace \(.workspace) (\(.folder))"
        else "the store \(.store), which no workspace names" end) as $where
-      | "cairn: the cairn MCP server of this session answers from \($where), because \(.because). "
+      | "cairn: the cairn MCP server of this session answers from \($where), because \(.why.rung). "
       + "It keeps it while the session lasts; workspace_show says it again. "
       + "Switching is for the person: another workspace is another server."' ;;
   SessionEnd)
@@ -204,8 +204,10 @@ where it writes before its first write. The hook asks `cairn workspace show`
 in the session's own environment, which is the plugin's server's: both are
 started by Claude Code from the same environment, at the same moment, and the
 server keeps what it found then ([mcp.md](mcp.md), "It keeps the store it
-started on"). Nothing on `cairn` failing: no line is printed, and the session
-starts as before.
+started on"). Nothing on `cairn` failing — a refusal answered as JSON too,
+which the line keeps out by asking for its `why` — no line is printed, and the
+session starts as before
+(`@claude-session-start-says-nothing-when-the-environment-names-no-workspace`).
 
 ## The skill
 
@@ -313,32 +315,36 @@ remove it.
 ## A repository that names its workspace
 
 A server keeps the workspace it started on, and no tool switches it
-([mcp.md](mcp.md)). What a person does to point a repository at its
-workspace, as things stand:
+([mcp.md](mcp.md)). A repository points its sessions at a workspace in the
+environment Claude Code starts them with — its `.claude/settings.json`:
 
-- **The environment, for the plugin's server and the hook together.** In the
-  repository's `.claude/settings.json`, `"env": {"CAIRN_STORE":
-  "<folder>/cairn.db", "CAIRN_NOTES": "<folder>/notes"}`. Claude Code starts
-  the plugin's server and runs the hook with it, so both reach that
-  workspace, and `workspace_show` names it when a workspace's folder holds
-  that store. It is the only way today that keeps one server and the hook on
-  the same board. Not tried with `claude -p` yet.
-- **The repository's `.mcp.json`**, `"args": ["mcp", "serve", "--access",
-  "full", "--workspace", "cairn-dev"]` ([mcp.md](mcp.md)). Its server is
-  `mcp__cairn__…`; the plugin's stays `mcp__plugin_cairn_cairn__…`, and since
-  their commands differ Claude Code loads both (above, "The plugin declares
-  the cairn MCP server"): two servers, on two workspaces, each tool twice. The
-  hook and the line said at the start follow the environment, not that
-  server: a focus taken through it is written in the notes of the
-  environment's workspace and let go there. Usable for an agent that is told
-  to use `mcp__cairn__…` alone; not yet whole.
+```json
+{
+  "env": { "CAIRN_WORKSPACE": "cairn-dev" }
+}
+```
 
-**Proposed, not built:** a `CAIRN_WORKSPACE` variable, between `CAIRN_STORE`
-and the default in the order ([config.md](config.md)), set in the
-repository's `.claude/settings.json` — one name instead of two paths, the
-plugin's server and the hook both following it, and no second server. It
-needs its scenarios first: the variable naming the workspace, `workspace show`
-saying so, the hook acting on that workspace's notes.
+Claude Code starts the plugin's server and runs the hook in that environment,
+so both are on `cairn-dev`: one server, `mcp__plugin_cairn_cairn__…`, whose
+`workspace_show` says `when this server started, CAIRN_WORKSPACE — over the
+default, …`; the line said at the session's start names the workspace and
+`because CAIRN_WORKSPACE`
+(`@claude-session-start-says-the-workspace-the-environment-names`); and the
+session's entries are written in that workspace's notes
+(`@claude-session-the-hook-works-in-the-workspace-the-environment-names`).
+One name instead of two paths, and the name the person already uses with
+`--workspace`. `CAIRN_STORE` and `CAIRN_NOTES`, set beside it, still win for
+the place each names ([config.md](config.md)); a name no workspace has is
+refused, and the server answers each call with that refusal until it is
+fixed. That Claude Code hands `.claude/settings.json`'s `env` to a plugin's
+server is what its documentation says; not tried with `claude -p` yet.
+
+**Not a second server.** Declaring one in the repository's `.mcp.json` with
+`--workspace cairn-dev` gives two servers whose commands differ, so Claude
+Code loads both (above, "The plugin declares the cairn MCP server"): each tool
+twice, on two workspaces, and the hook following the environment's, not that
+server's — a focus taken through it was written in the notes of the other
+workspace. That is what `CAIRN_WORKSPACE` replaces.
 
 ## How it is held
 

@@ -312,7 +312,8 @@ kept (below).
 
 A server answers from one workspace for as long as it runs: the one
 `--workspace` or `--store` names when it starts, or else the one the
-environment or the configuration named then. `cairn workspace use`, run by the
+environment — `CAIRN_STORE`, or `CAIRN_WORKSPACE` by name — or the
+configuration named then (`@workspace-a-server-keeps-the-workspace-the-environment-names`). `cairn workspace use`, run by the
 person while it runs, changes where every later command goes and leaves the
 server where it was (`@workspace-a-server-keeps-the-default-it-started-on`,
 `@workspace-a-server-keeps-the-workspace-it-was-given`). An agent that wrote
@@ -339,19 +340,20 @@ and which pages are on, each with where that is said, and a `switch` line: not f
 here; another workspace is another server, which the person starts
 (`@workspace-the-server-says-the-workspace-it-was-given`,
 `@workspace-the-server-says-the-default-it-started-on`). Its structured answer
-carries the same, `switch` included. A repository names the workspace of the
-server it declares in its `.mcp.json`:
+carries the same, `switch` included. A repository names the workspace of its
+sessions in the environment Claude Code starts them with, its
+`.claude/settings.json`:
 
 ```json
 {
-  "mcpServers": {
-    "cairn": { "command": "cairn", "args": ["mcp", "serve", "--access", "full", "--workspace", "cairn-dev"] }
-  }
+  "env": { "CAIRN_WORKSPACE": "cairn-dev" }
 }
 ```
 
-What that does beside the plugin's own server is in
-[claude-code.md](claude-code.md).
+The plugin's one server starts on `cairn-dev`, says `when this server
+started, CAIRN_WORKSPACE — over the default, …`, and the plugin's hook works
+in the same workspace. Why not a second server declared with `--workspace` in
+the repository's `.mcp.json` is in [claude-code.md](claude-code.md#a-repository-that-names-its-workspace).
 
 ## A client that hangs up is not a failure
 

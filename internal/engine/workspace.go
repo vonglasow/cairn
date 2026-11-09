@@ -31,7 +31,10 @@ const (
 	rungEnvironment   = config.StoreVariable
 )
 
-var rungs = []string{rungWorkspaceFlag, rungEnvironment, rungDefault, rungFile, rungNothing}
+// WorkspaceVariable is the environment variable naming a workspace: under CAIRN_STORE and CAIRN_NOTES, which name places, and over the default workspace.
+const WorkspaceVariable = "CAIRN_WORKSPACE"
+
+var rungs = []string{rungWorkspaceFlag, rungEnvironment, WorkspaceVariable, rungDefault, rungFile, rungNothing}
 
 // ErrNoSuchWorkspace is returned when a workspace is named that the configuration does not name.
 var ErrNoSuchWorkspace = errors.New("no workspace by that name")
@@ -68,7 +71,7 @@ type Rung struct {
 
 // Why is why a store answers: the rung that named it, the rungs under it that named another and were passed over, those over it that said nothing, and whether it was settled when a server started.
 type Why struct {
-	Rung    string   `json:"rung" jsonschema:"--workspace, --store, CAIRN_STORE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"`
+	Rung    string   `json:"rung" jsonschema:"--workspace, --store, CAIRN_STORE, CAIRN_WORKSPACE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"`
 	Over    []Rung   `json:"over,omitempty" jsonschema:"the rungs under it that named a store too, and were passed over"`
 	Unsaid  []string `json:"unsaid,omitempty" jsonschema:"the rungs over it that named nothing"`
 	Started bool     `json:"started,omitempty" jsonschema:"settled when this server started, and kept since"`
@@ -239,23 +242,42 @@ func (h Home) answering(p config.Places) (answering, error) {
 	case a.store.By == byTheEnvironment:
 		a.why = h.why(p, 1)
 		return a.ownNotes(p), nil
+	case h.environmentWorkspace() != "":
+		name := h.environmentWorkspace()
+		one, err := workspaceThere(p, name)
+		if err != nil {
+			return a, fmt.Errorf("%s: %w", WorkspaceVariable, err)
+		}
+		a.why = h.why(p, 2)
+		return a.inside(p, one, fmt.Sprintf("%s, %q", WorkspaceVariable, name)), nil
 	}
-	a.why = h.why(p, 4)
+	a.why = h.why(p, 5)
 	if a.store.By == "the file" {
-		a.why = h.why(p, 3)
+		a.why = h.why(p, 4)
 	}
 	if name := p.DefaultWorkspace(); name != "" {
 		one, err := workspaceThere(p, name)
 		if err != nil {
 			return a, err
 		}
-		store, notes := inWorkspace(one, fmt.Sprintf("the default workspace, %q", name))
-		a.store, a.workspace, a.why = store, one.Name, h.why(p, 2)
-		if a.notes.By != byTheEnvironment {
-			a.notes = notes
-		}
+		a.why = h.why(p, 3)
+		return a.inside(p, one, fmt.Sprintf("the default workspace, %q", name)), nil
 	}
 	return a.named(p), nil
+}
+
+func (h Home) environmentWorkspace() string {
+	said, _ := h.lookup()(WorkspaceVariable)
+	return said
+}
+
+func (a answering) inside(p config.Places, one config.Workspace, by string) answering {
+	store, notes := inWorkspace(one, by)
+	a.store, a.workspace = store, one.Name
+	if a.notes.By != byTheEnvironment {
+		a.notes = notes
+	}
+	return a.named(p)
 }
 
 func (a answering) ownNotes(p config.Places) answering {
@@ -289,8 +311,8 @@ func nameOf(p config.Places, store string) string {
 
 func (h Home) why(p config.Places, from int) Why {
 	why := Why{Rung: rungs[from]}
-	if from >= 2 {
-		why.Unsaid = slices.Clone(rungs[:from])
+	if from >= 3 {
+		why.Unsaid = slices.DeleteFunc(slices.Clone(rungs[:from]), func(rung string) bool { return rung == WorkspaceVariable })
 	}
 	if said, ok := h.lookup()(config.StoreVariable); from < 1 && ok && said != "" {
 		at, err := config.Absolute(said, h.Dir)
@@ -303,10 +325,13 @@ func (h Home) why(p config.Places, from int) Why {
 		}
 		why.Over = append(why.Over, Rung{Rung: rungEnvironment, Names: named})
 	}
-	if name := p.DefaultWorkspace(); from < 2 && name != "" {
+	if name := h.environmentWorkspace(); from < 2 && name != "" {
+		why.Over = append(why.Over, Rung{Rung: WorkspaceVariable, Names: name})
+	}
+	if name := p.DefaultWorkspace(); from < 3 && name != "" {
 		why.Over = append(why.Over, Rung{Rung: rungDefault, Names: name})
 	}
-	if store := p.FileStore(); from < 3 && store != "" {
+	if store := p.FileStore(); from < 4 && store != "" {
 		why.Over = append(why.Over, Rung{Rung: rungFile, Names: store})
 	}
 	return why

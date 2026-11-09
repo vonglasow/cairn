@@ -50,10 +50,10 @@ case $(field .hook_event_name) in
       (sleep "$idle"; [ ! -e "$wait" ] || { let_go; rm -f "$wait"; }) </dev/null &>/dev/null &
     } ;;
   SessionStart)
-    cairn workspace show --json 2>/dev/null | jq -r '
-      (if .workspace then "the workspace \(.workspace) (\(.folder))"
+    cairn workspace show --json 2>/dev/null | jq -r 'select(.why)
+      | (if .workspace then "the workspace \(.workspace) (\(.folder))"
        else "the store \(.store), which no workspace names" end) as $where
-      | "cairn: the cairn MCP server of this session answers from \($where), because \(.because). "
+      | "cairn: the cairn MCP server of this session answers from \($where), because \(.why.rung). "
       + "It keeps it while the session lasts; workspace_show says it again. "
       + "Switching is for the person: another workspace is another server."' ;;
   SessionEnd)

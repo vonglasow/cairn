@@ -13,7 +13,7 @@ same way, so there is one rule to know rather than two. The scenarios are in
 
 ```
 1  a flag                 --workspace <name>, or --store <path>
-2  the environment        CAIRN_STORE, CAIRN_NOTES
+2  the environment        CAIRN_STORE, CAIRN_NOTES, then CAIRN_WORKSPACE
 3  the default workspace  [workspaces] default, when it is said
 4  the file               ~/.config/cairn/config.toml: store, notes
 5  the default            ~/.cairn/cairn.db   ~/.cairn/notes
@@ -55,6 +55,32 @@ Without a default, a table of workspaces changes nothing
 (`@workspace-no-default-changes-nothing`), and a machine with no table
 answers exactly as it did before workspaces existed. The environment still
 replaces it, as it replaces the file (`@workspace-the-environment-replaces-the-default`).
+
+**`CAIRN_WORKSPACE` names a workspace, under the places the environment
+names.** `CAIRN_WORKSPACE=<name>` gives both places of that workspace, as
+`--workspace` does for one command, and as the default does when nothing
+else says (`@workspace-the-environment-names-a-workspace`). It is set where a
+whole session is started from — a repository's `.claude/settings.json`, for
+the plugin's MCP server and its hook ([claude-code.md](claude-code.md#a-repository-that-names-its-workspace)).
+Inside the environment the variable naming a place wins over the one naming a
+workspace, for that place, because it is the more precise of the two:
+`CAIRN_STORE` replaces the workspace whole, and its store keeps its own notes
+as below — never the notes of the workspace it replaced
+(`@workspace-cairn-store-wins-over-cairn-workspace-for-the-store`);
+`CAIRN_NOTES` replaces the notes alone, the store staying the workspace's
+(`@workspace-cairn-notes-wins-over-cairn-workspace-for-the-notes`). A flag
+replaces it like the rest of the environment
+(`@workspace-the-flag-replaces-cairn-workspace`). A name no workspace has is
+refused naming the variable, the name and the ones there are, and a folder gone
+naming the folder, as `--workspace` is
+(`@workspace-an-unknown-workspace-in-the-environment-is-refused`,
+`@workspace-a-folder-gone-in-the-environment-is-refused`). `workspace show`
+says `CAIRN_WORKSPACE — over the default, work`, and the variable among the
+rungs passed over when a flag or `CAIRN_STORE` answered
+(`@workspace-show-says-cairn-workspace`); the rungs said to be silent stay
+`--workspace` and `CAIRN_STORE`, as `--store` is not listed there either. A
+workspace it names is a workspace, never a recent folder
+(`@workspace-a-workspace-the-environment-names-is-not-a-recent-folder`).
 
 **A flag replaces even the environment.** `--workspace <name>` or `--store
 <path>`, on any command, is the most passing choice of all: one command, typed
@@ -611,9 +637,10 @@ refused naming `time.weekends`
 stays the one place a key is set, and `⌘,` shows the configuration in use and
 opens the file from there ([gui.md](gui.md#the-window)).
 
-## The environment names the same two places
+## The environment names the same two places, or a workspace
 
-`CAIRN_STORE` and `CAIRN_NOTES`, one per key, and nothing else. They replace the
+`CAIRN_STORE` and `CAIRN_NOTES`, one per key, and `CAIRN_WORKSPACE`, which
+names a workspace rather than a place (above). They replace the
 answer rather than taking a turn before it — see the order above — and what they
 name goes through the same expansion and the same absoluteness rule as what the
 file names, and so does `--store`. A place is read the same way wherever it was

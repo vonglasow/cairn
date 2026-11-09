@@ -11,6 +11,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/config"
+	"cairn/internal/engine"
 	"cairn/test"
 )
 
@@ -108,6 +109,11 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 
 	sc.Step(`^the environment says the store lives at "([^"]*)"$`, func(place string) error {
 		w.Setenv(config.StoreVariable, place)
+		return nil
+	})
+
+	sc.Step(`^the environment names the workspace "([^"]*)"$`, func(name string) error {
+		w.Setenv(engine.WorkspaceVariable, name)
 		return nil
 	})
 

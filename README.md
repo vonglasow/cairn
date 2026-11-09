@@ -128,6 +128,9 @@ default, `cairn workspace remove work` forgets it and leaves its folder alone,
 one answers, and why — the rung that named it and those it passed over — each
 in its colour, with its time when it is not on. `--workspace <name>` or `--store <path>` on any
 command picks another for that command alone, whatever the environment says.
+`CAIRN_WORKSPACE=<name>` in the environment names one for whatever is started
+from it — a repository's `.claude/settings.json` sets it for the plugin's MCP
+server and its hook — under `CAIRN_STORE` and `CAIRN_NOTES`, which name places.
 An MCP server keeps the workspace it started on — `cairn mcp serve --workspace
 <name>` names it — and `workspace use` does not move it.
 Beside each store, `settings.toml` says what belongs to that store —
@@ -200,10 +203,10 @@ keep_sizes = false
 # Workspaces: each a name, and the folder holding its own store and notes
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
 # the one used when nothing else says; it comes before store and notes above,
-# and CAIRN_STORE, --workspace and --store come before it. main is the folder
-# cairn has always used. cairn workspace add, use and remove write here for
-# you. The colour a workspace wears is its own settings.toml's to say, under
-# [workspace].
+# and CAIRN_WORKSPACE, CAIRN_STORE, --workspace and --store come before it.
+# main is the folder cairn has always used. cairn workspace add, use and
+# remove write here for you. The colour a workspace wears is its own
+# settings.toml's to say, under [workspace].
 [workspaces]
 default = "main"
 main = "~/.cairn"

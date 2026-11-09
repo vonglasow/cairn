@@ -160,6 +160,7 @@ func (w *World) AHomeOfMyOwn() error {
 	w.Defaults = w.T.TempDir()
 	w.Setenv("HOME", w.Defaults)
 	w.Setenv(engine.StateVariable, "")
+	w.Setenv(engine.WorkspaceVariable, "")
 	return nil
 }
 
@@ -171,6 +172,7 @@ func (w *World) AStoreOfMyOwn() error {
 	w.Setenv(config.StoreVariable, w.StorePath)
 	w.Setenv("HOME", w.Defaults)
 	w.Setenv(engine.StateVariable, "")
+	w.Setenv(engine.WorkspaceVariable, "")
 	return nil
 }
 

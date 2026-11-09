@@ -111,6 +111,27 @@ Feature: A Claude Code session tied to a cairn task
       And the hook says "workspace_show"
       And the hook succeeded
 
+    @claude-session-start-says-the-workspace-the-environment-names
+    Scenario: the start of a session names the workspace CAIRN_WORKSPACE names, and why
+      Given the environment names the workspace "cairn-dev", which is not the default
+      When session "s1" starts
+      Then the hook says "the workspace cairn-dev"
+      And the hook says "because CAIRN_WORKSPACE"
+      And the hook succeeded
+
+    @claude-session-the-hook-works-in-the-workspace-the-environment-names
+    Scenario: the session's entry is written in the notes of the workspace CAIRN_WORKSPACE names
+      Given the environment names the workspace "cairn-dev", which is not the default
+      And a task numbered 1
+      When session "s1", working in "/work/project", puts task 1 in focus
+      Then the notes of task 1 hold an open entry for session "s1"
+
+    @claude-session-start-says-nothing-when-the-environment-names-no-workspace
+    Scenario: the start of a session says nothing when the workspace CAIRN_WORKSPACE names is refused
+      Given the environment names a workspace nobody named
+      When session "s1" starts
+      Then the hook said nothing and succeeded
+
     @claude-session-start-says-a-store-no-workspace-names
     Scenario: the start of a session names a store no workspace names
       When session "s1" starts
