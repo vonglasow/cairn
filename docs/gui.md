@@ -174,7 +174,7 @@ ink, accent, state, and the maps a name picks from), `Space`, `Radius`,
 | `Surface.Field` / `Control` / `ControlLit` | an input, a label or a button, a button lit | `#131417` / `#303238` / `#42444a` |
 | `Line.Rule` / `Line.Raised` | a rule or a frame on the board, a rule on something raised | `#28292e` / `#34363c` |
 | `Line.Edge` | the edge of a control | `#60626a` |
-| `Ink.Text` / `Faint` / `Low` | text, secondary text, numbers and counts | `#e7e7ea` / `#9a9ba2` / `#5f6067` |
+| `Ink.Text` / `Faint` / `Low` | text, secondary text, numbers and counts | `#e7e7ea` / `#9a9ba2` / `#696a71` |
 | `Accent.Base` / `Line.Selected` | the accent (focus, primary button) / the keyboard's ring | `#7b93ff` / `#8d8f9c` |
 
 A colour that used to be worked out where it was drawn — a shade lighter
@@ -426,10 +426,105 @@ at the box its parts gave. If it needs something no component draws, the
 component is added first, in a `component_*.go` file, with its test, and
 every screen that drew it by hand takes it.
 
-**A theme sets tokens.** A second look (#153) is a second `Skin` value, its
-colours derived from the theme's palette (`Line.Raised` as a mix of the
-ground and the ink, for one); no component and no screen changes, since
-none of them names a colour of its own.
+**A theme sets tokens.** The window wears a colour scheme (#153): `Skin`'s
+colours are a `theme.Colours`, and `Skinned` is `Dark()` wearing the colours
+of a scheme, every other token — space, radius, size, type, shadow — as
+`Dark()` has it. No component and no screen changes, since none of them
+names a colour of its own. Which scheme a window wears, and where a person's
+own is kept, is [config.md](config.md#the-colours-the-window-wears)'s;
+the window is handed its skin when it opens (`gui.Run`), and a window on
+another workspace is another process, which reads its own.
+
+A scheme is a **base16 file as tinted-theming writes it** — `system`,
+`name`, `author`, `variant`, and `palette` from `base00` to `base0F`; the
+eight more slots of base24 are read past — so any of the several hundred
+schemes shared in that format is dropped in unchanged. It may carry one key
+more, which other tools pass over: `cairn`, with `tokens` (a token by its
+name, below, to a colour) and `labels` (one of the fourteen label colours
+by its name, to a colour). A colour is `#rrggbb`, or `#rrggbbaa` for a
+token drawn see-through. `internal/theme` reads it (`theme.Parse`); a slot
+left out, a colour that is not one, a name that is no token, or a file
+that is not YAML is said, naming the file, the key and the value.
+
+**The mapping.** `mix(a, b, t)` moves `a` a fraction `t` toward `b` in sRGB;
+`bg` is `base00`, `fg` is `base05`, and `ramp(t)` is `mix(bg, fg, t)`. Every
+neutral is a step up the ramp, so a light scheme works as a dark one does.
+A token's name is its group and its field, lower-cased with `_` between
+words (`ink.on_tint`, `surface.chip_on_control_lit`), then
+`priority.<name>`, `standing.<state>.back|ink`, `stones.<0-2>.light|dark`,
+and `label.<colour>` (set under `cairn.labels`, never `cairn.tokens`).
+
+| token | from | why |
+|---|---|---|
+| `surface.back` | `bg` | "default background" in every scheme |
+| `surface.ground` / `card` / `hover` / `field` | `ramp(.04)` / `ramp(.08)` / `ramp(.11)` / `ramp(.02)` | a column, a card, a step above it, an input sunk below it |
+| `surface.raised` / `control` | `ramp(.16)` / `ramp(.19)` | a panel, a tab or a button |
+| `surface.control_lit` | `ramp(.27)` | a button lit sits above it as `Dark()`'s does |
+| `surface.chip_on_control` / `_lit` | `ramp(.06)` / `ramp(.14)` | a key's chip sinks below its control by the same step, lit or not |
+| `surface.tint` / `ghost` | `mix(bg, base0D, .15)` / `.28` | the accent whispered, and a stronger whisper |
+| `surface.veil` / `veil_light` | `mix(bg, black, .5)` at 158 / 79 | dark in both variants; the light veil is half the other |
+| `line.rule` / `raised` / `edge` / `selected` | `ramp(.09)` / `ramp(.25)` / `ramp(.45)` / `ramp(.55)` | a column's rim, a rule on a panel, a control's edge, the keyboard's neutral ring |
+| `ink.text` / `on_accent` | `fg` / `bg` | the ink, and the window's ground through a primary button |
+| `ink.faint` / `low` | `ramp(.78)` / `ramp(.58)`, light `ramp(.86)` / `ramp(.70)` | secondary text, numbers and counts |
+| `ink.on_tint` | `mix(fg, base0D, .40)` | text on the tint, pulled toward the accent |
+| `accent.base` / `lit` | `base0D` / `mix(base0D, fg, .15)` | the scheme's main colour, and a step toward the ink |
+| `accent.halo` / `glow` | `base0D` at 38 / 76 | a field written into, a card in focus |
+| `accent.chip` / `lit_chip` | `mix(accent, bg, .15)`, lit or not | a chip on the accent sinks toward the ground |
+| `state.late` / `done` | `base09` / `base0B` | orange — yellow falls under 3 on every light ground — and green |
+| `state.wrong` | `mix(base08, fg, .5)` | red brought halfway to the ink, so an error reads as text and not as a critical stripe |
+| `state.danger` / `danger_lit` | `mix(bg, base08, .18)` / `mix(danger, fg, .08)` | red whispered, and lit |
+| `state.danger_chip` / `danger_lit_chip` | halfway from each back to `bg` | a chip on a dangerous button |
+| `priority.critical` / `high` / `normal` / `low` | `base08` / `base0A` / `base0C` / `ramp(.5)` | stripes, which need no text contrast |
+| `standing.active` / `on-hold` / `reached` | ink `base0B` / `base0A` / `base0D`, back `mix(bg, ink, .18)` | an objective's state |
+| `standing.dropped` | back `control`, ink `faint` | a state with nothing left to do |
+| `stones.0-2` | light `ramp(.30 / .38 / .46)`, dark `mix(light, bg, .4)` | the cairn mark, three neutrals |
+| labels | `red` `base08`, `peach` `09`, `yellow` `0A`, `green` `0B`, `teal` `0C`, `blue` `0D`, `mauve` `0E`, `flamingo` `0F`; `maroon` `mix(08, 09, .4)`, `pink` `mix(08, 0E, .5)`, `rosewater` `mix(08, fg, .55)`, `sky` `mix(0C, 0D, .5)`, `sapphire` `mix(0C, 0D, .75)`, `lavender` `mix(mix(0D, 0E, .4), fg, .3)` | a label keeps its name in every scheme; on a light one its colour is pulled 45% toward the ink, else yellow on cream is unreadable |
+
+The mapping is the mockup's (#153's, validated on 2026-11-09) with two
+moves and what it did not draw. `state.wrong` was `base08`, the colour of a
+critical stripe, which the skin's own test refuses; it is now red brought
+halfway to the ink, as `Dark()`'s pale red is to its red. A label's pill is
+a fifth of its colour over a card in every scheme — the mockup drew a derived
+scheme's at an eighth — and the contrast checks below decide whether it
+reads. `control_lit`, the chips, `line.raised`, `accent.lit`, the halo, the
+glow, the danger's lit and chip shades and the stones were not in the
+mockup: each is worked out from its neighbour the way `Dark()` relates
+them, as the table says.
+
+**The nine shipped**, carried in the binary (`internal/theme/schemes`):
+`default`, `solarized-dark`, `solarized-light`, `gruvbox-dark`,
+`gruvbox-light` (medium contrast), `catppuccin-mocha`, `catppuccin-latte`,
+`dracula`, `nord`, each palette read from its makers' own source, named at
+the head of its file. **`default` is `Dark()` pinned token by token**: its
+sixteen slots let other tools use it, and every token and label is written
+under `cairn`, so not one pixel moves; `TestTheDefaultSchemeIsDarkTokenByToken`
+holds the two equal. Catppuccin's two give the fourteen labels their own
+colours.
+
+**Every shipped scheme meets every contrast** (`theme.Shortfalls`, a test
+over the nine): text 4.5 — `ink.text` on the window, a column and a panel;
+`ink.faint` on those and on a card; `ink.on_tint` on the tint;
+`accent.base` and `state.wrong` and `state.late` on the window, `late` on a
+panel — then 3 for `ink.low`, `accent.base` and `state.late` on a card, an
+edge on the window and a label's name on its pill, 2 for an edge on a
+panel, and the surfaces as the skin held them: a panel 1.3 against the
+window, a column 1.08, a panel 1.15 against a column, a column's rim 1.2,
+a rule on a panel 1.2. The skin's test adds that no priority is the
+accent's colour, or the edge's, or another's, and an error is not a
+critical task's. **A scheme that falls short gets overrides, never a lower
+bar**: its file carries the tokens and labels moved under `cairn`, with a
+line saying why — a colour too close to its ground moved the least it takes
+toward black or white, a priority or an error too like its neighbour moved
+along the ramp or toward the next slot. All eight besides the default
+needed some, Solarized the most — its monotones sit close together — and
+Latte moves eight of its own labels darker. A person's own scheme that
+falls short is worn all the same, and `config show` names each pair and
+its ratio.
+
+**The default moved once, on purpose.** `Ink.Low` was `#5f6067`, 2.60
+against a card where numbers and counts are held to 3; it is `#696a71`,
+3.02, ten points lighter on each channel, the least that passes. Every
+number, count and key hint on a card is that much brighter.
 
 ## The window
 

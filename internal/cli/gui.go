@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"cairn/internal/debug"
@@ -13,8 +15,8 @@ const (
 	high = 840
 )
 
-var openGui = func(work engine.Work, pages engine.Pages, draft, sizes string, noted *debug.Log, width, height int, here gui.Here) error {
-	gui.Run(work, pages, gui.DraftsAt(draft), sizesAt(sizes), noted, width, height, here)
+var openGui = func(work engine.Work, pages engine.Pages, look gui.Skin, draft, sizes string, noted *debug.Log, width, height int, here gui.Here) error {
+	gui.Run(work, pages, look, gui.DraftsAt(draft), sizesAt(sizes), noted, width, height, here)
 	return nil
 }
 
@@ -50,6 +52,10 @@ func openWindow(cmd *cobra.Command, h engine.Home) error {
 	if engine.KeepsSizes(h) {
 		sizes = at.Sizes()
 	}
+	worn, unworn := engine.Wearing(h)
+	if unworn != "" {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "theme: %s\n", unworn)
+	}
 	here := gui.Here{Store: at.Store, Reach: func(to engine.Elsewhere) (engine.Apart, error) { return engine.OpenApart(held, to) }}
-	return openGui(held, engine.PagesFrom(h), at.Draft(), sizes, notedIn(cmd.Context()), wide, high, here)
+	return openGui(held, engine.PagesFrom(h), gui.Skinned(worn), at.Draft(), sizes, notedIn(cmd.Context()), wide, high, here)
 }

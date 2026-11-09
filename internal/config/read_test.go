@@ -728,6 +728,24 @@ func TestRead_saysWhetherTheWindowKeepsItsSizes(t *testing.T) {
 	}
 }
 
+func TestRead_saysTheSchemeTheWindowWears(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[window]\ntheme = \"nord\"\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.Theme() != "nord" {
+		t.Errorf("theme = %q, want nord", read.Theme())
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if none.Theme() != "default" {
+		t.Errorf("with no file, the theme is %q, want default", none.Theme())
+	}
+	empty, err := config.Read(writtenConfig(t, "[window]\ntheme = \"\"\n"), silentEnv)
+	if err != nil || empty.Theme() != "default" {
+		t.Errorf("an empty theme reads %q (%v), want default", empty.Theme(), err)
+	}
+}
+
 func TestRead_saysWhetherTheWeekendsAreShown(t *testing.T) {
 	read, err := config.Read(writtenConfig(t, "[time]\nweekends = \"hidden\"\n"), silentEnv)
 	if err != nil {

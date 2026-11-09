@@ -17,7 +17,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 	var readable error
 	handed := false
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, draft, sizes string, _ *debug.Log, width, height int, _ gui.Here) error {
+	openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, draft, sizes string, _ *debug.Log, width, height int, _ gui.Here) error {
 		handed = true
 		if sizes != "" {
 			t.Errorf("with nothing configured, the window keeps its sizes at %q", sizes)
@@ -48,7 +48,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 func TestGuiPassesOnWhatWentWrongOpeningTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	was := openGui
-	openGui = func(engine.Work, engine.Pages, string, string, *debug.Log, int, int, gui.Here) error {
+	openGui = func(engine.Work, engine.Pages, gui.Skin, string, string, *debug.Log, int, int, gui.Here) error {
 		return errors.New("no display here")
 	}
 	t.Cleanup(func() { openGui = was })
@@ -77,7 +77,7 @@ func TestGuiActsThroughTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", store)
 	t.Setenv("CAIRN_AUTHOR", "sam")
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+	openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
 		_, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": "Write the spec"}})
 		return err
 	}
@@ -105,7 +105,7 @@ func TestGuiKeepsTheSizesBesideTheStoreWhenTheConfigurationSaysSo(t *testing.T) 
 	}
 	var kept string
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _, sizes string, _ *debug.Log, _, _ int, _ gui.Here) error {
+	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _, sizes string, _ *debug.Log, _, _ int, _ gui.Here) error {
 		kept = sizes
 		return nil
 	}
@@ -123,7 +123,7 @@ func TestGuiHandsTheWindowTheDebugFileInDebugMode(t *testing.T) {
 	t.Setenv("CAIRN_DEBUG", "1")
 	var handed *debug.Log
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _, _ string, noted *debug.Log, _, _ int, _ gui.Here) error {
+	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, noted *debug.Log, _, _ int, _ gui.Here) error {
 		handed = noted
 		return nil
 	}
@@ -146,7 +146,7 @@ func TestGuiTellsTheWindowItsStoreAndHowToReachAnotherWorkspace(t *testing.T) {
 	}
 	var here gui.Here
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _, _ string, _ *debug.Log, _, _ int, given gui.Here) error {
+	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, _ *debug.Log, _, _ int, given gui.Here) error {
 		here = given
 		return nil
 	}

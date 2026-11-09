@@ -52,9 +52,14 @@ weekends = "shown"
 
 # Whether the window opens with the columns, the lanes and the band as wide
 # and as tall as it was left with, rather than as they start. Kept in a file
-# beside the store.
+# beside the store. And the colour scheme it wears: one cairn carries —
+# default, solarized-dark, solarized-light, gruvbox-dark, gruvbox-light,
+# catppuccin-mocha, catppuccin-latte, dracula, nord — or a base16 file of
+# your own, ~/.config/cairn/themes/<name>.yaml. A store's settings.toml can
+# name its own, so each workspace wears one.
 [window]
 keep_sizes = false
+theme = "default"
 
 # Workspaces: each a name, and the folder holding its own store and notes
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names

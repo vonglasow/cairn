@@ -1,0 +1,32 @@
+# Dracula, from its specification. It has no blue: base0D, the accent, is
+# its Purple.
+system: "base16"
+name: "Dracula"
+author: "Zeno Rocha (https://spec.draculatheme.com/)"
+variant: "dark"
+palette:
+  base00: "#282a36"
+  base01: "#44475a"
+  base02: "#44475a"
+  base03: "#6272a4"
+  base04: "#6272a4"
+  base05: "#f8f8f2"
+  base06: "#f8f8f2"
+  base07: "#f8f8f2"
+  base08: "#ff5555"
+  base09: "#ffb86c"
+  base0A: "#f1fa8c"
+  base0B: "#50fa7b"
+  base0C: "#8be9fd"
+  base0D: "#bd93f9"
+  base0E: "#ff79c6"
+  base0F: "#ff79c6"
+# What cairn wears beside the palette. Each token below is moved from what
+# the palette gives, the least it takes, until the scheme meets every
+# check cairn holds a scheme to (docs/gui.md, a theme sets tokens).
+cairn:
+  tokens:
+    line.rule: "#3f414b"
+    priority.low: "#a5a6a7"
+  labels:
+    red: "#ff6161"

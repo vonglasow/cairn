@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/theme"
 	"image"
 	"image/color"
 	"strings"
@@ -115,7 +116,7 @@ func (MenuMark) Draw(k Kit, at Box) Box {
 // Stone is one stone of the cairn the board is built from while it opens: a shape shaded from its top to its foot, grained.
 type Stone struct {
 	Shape []Point
-	Shade Shade
+	Shade theme.Shade
 }
 
 // Draw draws the stone where its shape stands; at is not read, the shape being where it is.

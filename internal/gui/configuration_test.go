@@ -93,3 +93,19 @@ func TestTheTimeIsSaidAsItsWord(t *testing.T) {
 		}
 	}
 }
+
+func TestTheConfigurationSaysTheSchemeTheWindowWears(t *testing.T) {
+	w := holding(newFake())
+	w.configured = engine.Config{File: "/h/.config/cairn/config.toml",
+		Pages: &engine.PagesConfig{}, Archive: &engine.Archive{}, Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{}, Window: &engine.WindowConfig{Theme: "nord"},
+		WrittenHere: []string{"window.theme"}, Global: map[string]string{"window.theme": "default"}}
+	for _, line := range w.ConfigLines() {
+		if line.Key == "window.theme" {
+			if line.Value != "nord" || line.From != SetHere || line.Global != "default" {
+				t.Errorf("the scheme is said %+v", line)
+			}
+			return
+		}
+	}
+	t.Error("the configuration does not say the scheme the window wears")
+}

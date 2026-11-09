@@ -2,10 +2,9 @@ package gui
 
 import (
 	"cairn/internal/engine"
+	"cairn/internal/theme"
 	"cairn/internal/trace"
 	"fmt"
-	"image/color"
-	"math"
 	"strings"
 	"time"
 )
@@ -18,23 +17,8 @@ func (w Window) ServingRows() int {
 	return max(1, w.workFrame().H/SubHeight)
 }
 
-// Contrast is how far two colours stand apart, by the measure a person reading a screen is held to: 21 at most, 1 when they are the same.
-func Contrast(a, b color.NRGBA) float64 {
-	one, two := lit(a), lit(b)
-	return (max(one, two) + 0.05) / (min(one, two) + 0.05)
-}
-
-func lit(c color.NRGBA) float64 {
-	return 0.2126*straight(c.R) + 0.7152*straight(c.G) + 0.0722*straight(c.B)
-}
-
-func straight(v uint8) float64 {
-	f := float64(v) / 255
-	if v <= 10 {
-		return f / 12.92
-	}
-	return math.Pow((f+0.055)/1.055, 2.4)
-}
+// Contrast is how far two colours stand apart, as a scheme is held to.
+var Contrast = theme.Contrast
 
 // ValueOf answers what a field holds, and nothing for a field that is not there.
 func (f Form) ValueOf(name string) string {

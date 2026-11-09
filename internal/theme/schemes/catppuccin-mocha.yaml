@@ -1,0 +1,46 @@
+# Catppuccin Mocha, from palette.json. A label wears its own colour: the
+# fourteen are Catppuccin's names.
+system: "base16"
+name: "Catppuccin Mocha"
+author: "Catppuccin (https://github.com/catppuccin/palette)"
+variant: "dark"
+palette:
+  base00: "#1e1e2e"
+  base01: "#181825"
+  base02: "#313244"
+  base03: "#45475a"
+  base04: "#585b70"
+  base05: "#cdd6f4"
+  base06: "#f5e0dc"
+  base07: "#b4befe"
+  base08: "#f38ba8"
+  base09: "#fab387"
+  base0A: "#f9e2af"
+  base0B: "#a6e3a1"
+  base0C: "#94e2d5"
+  base0D: "#89b4fa"
+  base0E: "#cba6f7"
+  base0F: "#f2cdcd"
+# What cairn wears beside the palette. Each token below is moved from what
+# the palette gives, the least it takes, until the scheme meets every
+# check cairn holds a scheme to (docs/gui.md, a theme sets tokens).
+cairn:
+  tokens:
+    line.rule: "#323344"
+    priority.low: "#878ca5"
+    state.wrong: "#deb4d1"
+  labels:
+    rosewater: "#f5e0dc"
+    flamingo: "#f2cdcd"
+    pink: "#f5c2e7"
+    mauve: "#cba6f7"
+    red: "#f38ba8"
+    maroon: "#eba0ac"
+    peach: "#fab387"
+    yellow: "#f9e2af"
+    green: "#a6e3a1"
+    teal: "#94e2d5"
+    sky: "#89dceb"
+    sapphire: "#74c7ec"
+    blue: "#89b4fa"
+    lavender: "#b4befe"

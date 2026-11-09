@@ -7,56 +7,18 @@ import (
 
 	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/theme"
 )
 
 // Skin is every token the window draws with, grouped the way a design system groups them, so a second theme is a second Skin and not a search through the drawing.
 type Skin struct {
-	Colour Colours
+	Colour theme.Colours
 	Space  Spaces
 	Radius Radii
 	Size   Extents
 	Type   Types
 	Shadow []Shadow
 }
-
-// Colours is every colour of a skin: its surfaces, lines, inks, accent and states, and the maps a name picks its colour from.
-type Colours struct {
-	Surface  Surfaces
-	Line     Strokes
-	Ink      Inks
-	Accent   Accents
-	State    States
-	Priority map[string]color.NRGBA
-	Standing map[string]Inked
-	Labels   map[string]color.NRGBA
-	Stones   []Shade
-}
-
-// Surfaces is every ground something is drawn on, from the window's back to a control lit under the pointer.
-type Surfaces struct {
-	Back, Ground, Card, Hover, Tint, Raised, Field color.NRGBA
-	Control, ControlLit                            color.NRGBA
-	ChipOnControl, ChipOnControlLit                color.NRGBA
-	Ghost, Veil, VeilLight                         color.NRGBA
-}
-
-// Strokes is every colour a line is drawn in: a rule on the board, a rule on something raised, an edge, and the ring of what is chosen.
-type Strokes struct{ Rule, Raised, Edge, Selected color.NRGBA }
-
-// Inks is every colour a text is written in.
-type Inks struct{ Text, Faint, Low, OnTint, OnAccent color.NRGBA }
-
-// Accents is the accent and what is made of it: lit, the halo of a field written into, the glow of a card in focus, and the chips drawn on it.
-type Accents struct{ Base, Lit, Halo, Glow, Chip, LitChip color.NRGBA }
-
-// States is the colour of what is late, done, wrong or dangerous, and what is made of them.
-type States struct{ Late, Done, Wrong, Danger, DangerLit, DangerChip, DangerLitChip color.NRGBA }
-
-// Inked is a ground and the ink written on it.
-type Inked struct{ Back, Ink color.NRGBA }
-
-// Shade is the light top and the dark foot of something drawn in a gradient.
-type Shade struct{ Light, Dark color.NRGBA }
 
 // Shadow is one layer of what something raised casts: how far down, how far out, and in what.
 type Shadow struct {
@@ -85,11 +47,18 @@ type Types struct {
 	Figure         int
 }
 
-// Dark is the one skin there is.
+// Skinned is the skin wearing the colours given, every other token as Dark has it.
+func Skinned(colours theme.Colours) Skin {
+	s := Dark()
+	s.Colour = colours
+	return s
+}
+
+// Dark is the window as cairn has always drawn it, the colours of the default scheme written out token by token.
 func Dark() Skin {
 	return Skin{
-		Colour: Colours{
-			Surface: Surfaces{
+		Colour: theme.Colours{
+			Surface: theme.Surfaces{
 				Back:             color.NRGBA{R: 12, G: 13, B: 15, A: 255},
 				Ground:           color.NRGBA{R: 23, G: 24, B: 27, A: 255},
 				Card:             color.NRGBA{R: 31, G: 32, B: 36, A: 255},
@@ -105,20 +74,20 @@ func Dark() Skin {
 				Veil:             color.NRGBA{R: 6, G: 7, B: 9, A: 158},
 				VeilLight:        color.NRGBA{R: 6, G: 7, B: 9, A: 79},
 			},
-			Line: Strokes{
+			Line: theme.Strokes{
 				Rule:     color.NRGBA{R: 40, G: 41, B: 46, A: 255},
 				Raised:   color.NRGBA{R: 52, G: 54, B: 60, A: 255},
 				Edge:     color.NRGBA{R: 96, G: 98, B: 106, A: 255},
 				Selected: color.NRGBA{R: 141, G: 143, B: 156, A: 255},
 			},
-			Ink: Inks{
+			Ink: theme.Inks{
 				Text:     color.NRGBA{R: 231, G: 231, B: 234, A: 255},
 				Faint:    color.NRGBA{R: 154, G: 155, B: 162, A: 255},
-				Low:      color.NRGBA{R: 95, G: 96, B: 103, A: 255},
+				Low:      color.NRGBA{R: 105, G: 106, B: 113, A: 255},
 				OnTint:   color.NRGBA{R: 195, G: 206, B: 255, A: 255},
 				OnAccent: color.NRGBA{R: 12, G: 13, B: 15, A: 255},
 			},
-			Accent: Accents{
+			Accent: theme.Accents{
 				Base:    color.NRGBA{R: 123, G: 147, B: 255, A: 255},
 				Lit:     color.NRGBA{R: 141, G: 165, B: 255, A: 255},
 				Halo:    color.NRGBA{R: 123, G: 147, B: 255, A: 38},
@@ -126,7 +95,7 @@ func Dark() Skin {
 				Chip:    color.NRGBA{R: 101, G: 125, B: 233, A: 255},
 				LitChip: color.NRGBA{R: 119, G: 143, B: 233, A: 255},
 			},
-			State: States{
+			State: theme.States{
 				Late:          color.NRGBA{R: 240, G: 186, B: 96, A: 255},
 				Done:          color.NRGBA{R: 127, G: 182, B: 159, A: 255},
 				Wrong:         color.NRGBA{R: 255, G: 155, B: 152, A: 255},
@@ -141,14 +110,14 @@ func Dark() Skin {
 				string(domain.Normal):   {R: 79, G: 174, B: 140, A: 255},
 				string(domain.Low):      {R: 125, G: 130, B: 150, A: 255},
 			},
-			Standing: map[string]Inked{
+			Standing: map[string]theme.Inked{
 				"active":  {Back: color.NRGBA{R: 29, G: 51, B: 40, A: 255}, Ink: color.NRGBA{R: 143, G: 211, B: 180, A: 255}},
 				"on-hold": {Back: color.NRGBA{R: 51, G: 42, B: 26, A: 255}, Ink: color.NRGBA{R: 232, G: 191, B: 122, A: 255}},
 				"reached": {Back: color.NRGBA{R: 30, G: 40, B: 62, A: 255}, Ink: color.NRGBA{R: 160, G: 180, B: 255, A: 255}},
 				"dropped": {Back: color.NRGBA{R: 48, G: 50, B: 56, A: 255}, Ink: color.NRGBA{R: 154, G: 155, B: 162, A: 255}},
 			},
 			Labels: labelColours,
-			Stones: []Shade{
+			Stones: []theme.Shade{
 				{Light: color.NRGBA{R: 104, G: 102, B: 110, A: 255}, Dark: color.NRGBA{R: 64, G: 62, B: 70, A: 255}},
 				{Light: color.NRGBA{R: 122, G: 119, B: 126, A: 255}, Dark: color.NRGBA{R: 82, G: 79, B: 86, A: 255}},
 				{Light: color.NRGBA{R: 140, G: 137, B: 142, A: 255}, Dark: color.NRGBA{R: 100, G: 97, B: 102, A: 255}},
@@ -178,16 +147,8 @@ var labelColours = func() map[string]color.NRGBA {
 	return inked
 }()
 
-// LabelPill is the ground a label of that colour is drawn on, a fifth of its colour over a card's ground, and the ink its name is written in, the colour itself.
-func (s Skin) LabelPill(colour string) (ground, ink color.NRGBA) {
-	ink, ok := s.Colour.Labels[colour]
-	if !ok {
-		return s.Colour.Surface.Control, s.Colour.Ink.Faint
-	}
-	card := s.Colour.Surface.Card
-	mix := func(a, b uint8) uint8 { return uint8((int(a)*1 + int(b)*4) / 5) }
-	return color.NRGBA{R: mix(ink.R, card.R), G: mix(ink.G, card.G), B: mix(ink.B, card.B), A: 255}, ink
-}
+// LabelPill is the ground a label of that colour is drawn on and the ink its name is written in, as the skin's colours say.
+func (s Skin) LabelPill(colour string) (ground, ink color.NRGBA) { return s.Colour.LabelPill(colour) }
 
 // Writing is the ink a card's title is written in.
 func (s Skin) Writing(c engine.Card) color.NRGBA {
@@ -197,4 +158,4 @@ func (s Skin) Writing(c engine.Card) color.NRGBA {
 	return s.Colour.Ink.Text
 }
 
-func (s Skin) stoneOf(i int) Shade { return s.Colour.Stones[i%len(s.Colour.Stones)] }
+func (s Skin) stoneOf(i int) theme.Shade { return s.Colour.Stones[i%len(s.Colour.Stones)] }

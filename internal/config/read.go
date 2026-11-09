@@ -102,6 +102,7 @@ type Places struct {
 	timeDeleted      string
 	timeWeekends     string
 	keepSizes        bool
+	theme            string
 	written          []string
 	ignored          []string
 	workspaces       []Workspace
@@ -139,7 +140,18 @@ func (w *workspace) colour() string {
 }
 
 type window struct {
-	KeepSizes any `toml:"keep_sizes"`
+	KeepSizes any     `toml:"keep_sizes"`
+	Theme     *string `toml:"theme"`
+}
+
+// DefaultTheme is the scheme the window wears when the file names none.
+const DefaultTheme = "default"
+
+func (w *window) theme() string {
+	if w == nil || w.Theme == nil || *w.Theme == "" {
+		return DefaultTheme
+	}
+	return *w.Theme
 }
 
 func (w *window) keepSizes() (bool, error) {
@@ -282,6 +294,9 @@ func (p Places) Colour() string { return p.colour }
 
 // KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
 func (p Places) KeepSizes() bool { return p.keepSizes }
+
+// Theme is the name of the scheme the window wears, exactly as the file wrote it; DefaultTheme when it names none.
+func (p Places) Theme() string { return p.theme }
 
 // Written is every key the file writes, dotted under its table and sorted: what is not among them holds its default, or what the environment says.
 func (p Places) Written() []string { return p.written }
@@ -489,7 +504,7 @@ func (p *Places) settle(f file) error {
 	p.timeMode = mode
 	p.archiveStart, p.archiveDays, p.timeDeleted, p.timeWeekends, p.keepSizes = start, days, deleted, weekends, keep
 	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off(mode == TimeOn)
-	p.colour = f.Workspace.colour()
+	p.colour, p.theme = f.Workspace.colour(), f.Window.theme()
 	return nil
 }
 

@@ -1,0 +1,52 @@
+# Catppuccin Latte, from palette.json. A label wears its own colour: the
+# fourteen are Catppuccin's names.
+system: "base16"
+name: "Catppuccin Latte"
+author: "Catppuccin (https://github.com/catppuccin/palette)"
+variant: "light"
+palette:
+  base00: "#eff1f5"
+  base01: "#e6e9ef"
+  base02: "#ccd0da"
+  base03: "#bcc0cc"
+  base04: "#acb0be"
+  base05: "#4c4f69"
+  base06: "#dc8a78"
+  base07: "#7287fd"
+  base08: "#d20f39"
+  base09: "#fe640b"
+  base0A: "#df8e1d"
+  base0B: "#40a02b"
+  base0C: "#179299"
+  base0D: "#1e66f5"
+  base0E: "#8839ef"
+  base0F: "#dd7878"
+# What cairn wears beside the palette. Each token below is moved from what
+# the palette gives, the least it takes, until the scheme meets every
+# check cairn holds a scheme to (docs/gui.md, a theme sets tokens).
+cairn:
+  tokens:
+    accent.base: "#1c62eb"
+    ink.faint: "#575a71"
+    line.edge: "#888a96"
+    line.raised: "#bec1ca"
+    line.rule: "#d0d1d6"
+    priority.low: "#a6a8b6"
+    state.late: "#9a3e0b"
+    surface.ground: "#e3e6ea"
+    surface.raised: "#d1d3db"
+  labels:
+    rosewater: "#c87b6e"
+    flamingo: "#d57474"
+    pink: "#d06ab3"
+    mauve: "#8839ef"
+    red: "#d20f39"
+    maroon: "#e64553"
+    peach: "#f9620b"
+    yellow: "#cb7f19"
+    green: "#40a02b"
+    teal: "#179299"
+    sky: "#0499d4"
+    sapphire: "#1f9cb1"
+    blue: "#1e66f5"
+    lavender: "#7084f8"

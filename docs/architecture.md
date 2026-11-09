@@ -42,12 +42,13 @@ all of them.
 | `internal/upgrade` | the newest release of cairn on GitHub, its archive checked against its sum, and its binary put in place of another | nobody of ours |
 | `internal/config` | the file that names cairn's two places, read the way a person wrote it | nobody of ours |
 | `internal/debug` | what debug mode writes down, and the folder it keeps its files in | nobody of ours |
+| `internal/theme` | a colour scheme, a base16 file, read and turned into every colour the window draws with, and the contrasts it is held to | `domain`, `objective` |
 | `internal/task` | the task: its cell, its rules, and its two renderings | `domain` |
 | `internal/objective` | the objective: its cell, its rules, and its two renderings | `domain` |
 | `internal/migration` | a change to the shape of the store, and the list of them | `domain` |
 | `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
 | `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
-| `internal/engine` | every operation and every decision: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `domain`, `config`, the notions, `store` |
+| `internal/engine` | every operation and every decision: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, which scheme a window wears, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `domain`, `config`, `theme`, the notions, `store` |
 | `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
 | `internal/tui` | the board on a terminal | everything below but `cli`, `mcp` and `gui` |

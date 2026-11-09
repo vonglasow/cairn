@@ -1,0 +1,36 @@
+# Gruvbox, medium contrast, from colors/gruvbox.vim: dark0 under light1,
+# the bright accents.
+system: "base16"
+name: "Gruvbox Dark"
+author: "morhetz (https://github.com/morhetz/gruvbox)"
+variant: "dark"
+palette:
+  base00: "#282828"
+  base01: "#3c3836"
+  base02: "#504945"
+  base03: "#665c54"
+  base04: "#bdae93"
+  base05: "#ebdbb2"
+  base06: "#ebdbb2"
+  base07: "#fbf1c7"
+  base08: "#fb4934"
+  base09: "#fe8019"
+  base0A: "#fabd2f"
+  base0B: "#b8bb26"
+  base0C: "#8ec07c"
+  base0D: "#83a598"
+  base0E: "#d3869b"
+  base0F: "#d65d0e"
+# What cairn wears beside the palette. Each token below is moved from what
+# the palette gives, the least it takes, until the scheme meets every
+# check cairn holds a scheme to (docs/gui.md, a theme sets tokens).
+cairn:
+  tokens:
+    line.rule: "#3e3c38"
+    priority.low: "#59554b"
+    priority.normal: "#9bbf62"
+    state.late: "#fe994b"
+  labels:
+    flamingo: "#df7836"
+    pink: "#e76e6e"
+    red: "#fb5a48"

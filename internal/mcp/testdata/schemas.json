@@ -490,10 +490,18 @@
           "properties": {
             "keep_sizes": {
               "type": "boolean"
+            },
+            "theme": {
+              "type": "string"
+            },
+            "unworn": {
+              "type": "string",
+              "description": "why the scheme named cannot be worn; the window then wears default"
             }
           },
           "required": [
-            "keep_sizes"
+            "keep_sizes",
+            "theme"
           ],
           "additionalProperties": false
         },
@@ -549,6 +557,47 @@
             ],
             "additionalProperties": false
           }
+        },
+        "themes": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "from": {
+                "type": "string",
+                "description": "shipped, for a scheme cairn carries, or the file a scheme of one's own is read from"
+              },
+              "in_force": {
+                "type": "boolean"
+              },
+              "problem": {
+                "type": "string",
+                "description": "why the scheme cannot be worn"
+              },
+              "short": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "every contrast the scheme falls short of, the tokens named and the ratio they read at"
+              }
+            },
+            "required": [
+              "slug",
+              "from"
+            ],
+            "additionalProperties": false
+          },
+          "description": "every colour scheme cairn sees, the ones it carries and one's own, sorted by name"
         },
         "problem": {
           "type": "string"

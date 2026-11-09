@@ -1,0 +1,52 @@
+# Solarized, from its author's page: base03 to base3 as the ramp, the eight
+# accents in base08 to base0F.
+system: "base16"
+name: "Solarized Dark"
+author: "Ethan Schoonover (https://ethanschoonover.com/solarized/)"
+variant: "dark"
+palette:
+  base00: "#002b36"
+  base01: "#073642"
+  base02: "#586e75"
+  base03: "#657b83"
+  base04: "#839496"
+  base05: "#93a1a1"
+  base06: "#eee8d5"
+  base07: "#fdf6e3"
+  base08: "#dc322f"
+  base09: "#cb4b16"
+  base0A: "#b58900"
+  base0B: "#859900"
+  base0C: "#2aa198"
+  base0D: "#268bd2"
+  base0E: "#6c71c4"
+  base0F: "#d33682"
+# What cairn wears beside the palette. Each token below is moved from what
+# the palette gives, the least it takes, until the scheme meets every
+# check cairn holds a scheme to (docs/gui.md, a theme sets tokens).
+cairn:
+  tokens:
+    accent.base: "#3693d6"
+    ink.faint: "#97a5a7"
+    ink.low: "#647e83"
+    ink.on_tint: "#79a4bb"
+    ink.text: "#97a5a5"
+    line.edge: "#5b757b"
+    line.raised: "#294d54"
+    line.rule: "#1c424c"
+    priority.low: "#3b5a61"
+    state.late: "#e28d6c"
+    state.wrong: "#be7c7a"
+    surface.ground: "#0b343e"
+  labels:
+    rosewater: "#b87877"
+    flamingo: "#db5593"
+    pink: "#b87393"
+    mauve: "#8185cb"
+    red: "#e4524f"
+    maroon: "#dd5a45"
+    peach: "#d36538"
+    sky: "#2c98b6"
+    sapphire: "#2f95c6"
+    blue: "#3693d6"
+    lavender: "#6391c2"

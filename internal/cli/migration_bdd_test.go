@@ -34,7 +34,7 @@ func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		draft, opened = "", false
 		was := openGui
-		openGui = func(_ engine.Work, _ engine.Pages, kept, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+		openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, kept, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
 			draft, opened = kept, true
 			return nil
 		}

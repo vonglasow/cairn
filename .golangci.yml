@@ -123,6 +123,35 @@ linters:
             - strconv
             - testing
 
+        # The window's colours: a base16 scheme read, and turned into every
+        # colour the window draws with. It knows the carried attributes and an
+        # objective's states, whose names pick a colour, and nobody else of
+        # ours: the engine says which scheme a store wears, and the window draws
+        # what it is handed. An allow-list, like config: it reads files, and
+        # what it may reach is short and named.
+        theme:
+          files: ["**/internal/theme/**"]
+          allow:
+            - embed
+            - errors
+            - fmt
+            - image/color
+            - io/fs
+            - math
+            - os
+            - path/filepath
+            - reflect
+            - regexp
+            - slices
+            - strconv
+            - strings
+            - unicode
+            - go.yaml.in/yaml/v3
+            - cairn/internal/domain
+            - cairn/internal/objective
+            # Only reachable from _test.go, as for domain.
+            - testing
+
         # What debug mode writes down, and where it keeps its files. It knows
         # nobody of ours: the engine says whether it is on and where the folder
         # is, and a surface hands it what it saw. An allow-list, like config.

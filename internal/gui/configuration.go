@@ -120,6 +120,7 @@ func (w Window) configKeys() []ConfigLine {
 		written("time.deleted", c.Time.Deleted),
 		written("time.weekends", c.Time.Weekends),
 		written("window.keep_sizes", strconv.FormatBool(c.Window.KeepSizes)),
+		written("window.theme", c.Window.Theme),
 	)
 	if c.Approach != nil {
 		lines = append(lines, written("approach.label", notSaid(c.Approach.Label)))

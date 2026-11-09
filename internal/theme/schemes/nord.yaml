@@ -1,0 +1,40 @@
+# Nord, from its documentation: nord0 to nord15, nord8 as the accent. It
+# has no light variant.
+system: "base16"
+name: "Nord"
+author: "Arctic Ice Studio (https://www.nordtheme.com/docs/colors-and-palettes)"
+variant: "dark"
+palette:
+  base00: "#2e3440"
+  base01: "#3b4252"
+  base02: "#434c5e"
+  base03: "#4c566a"
+  base04: "#d8dee9"
+  base05: "#e5e9f0"
+  base06: "#eceff4"
+  base07: "#8fbcbb"
+  base08: "#bf616a"
+  base09: "#d08770"
+  base0A: "#ebcb8b"
+  base0B: "#a3be8c"
+  base0C: "#8fbcbb"
+  base0D: "#88c0d0"
+  base0E: "#b48ead"
+  base0F: "#5e81ac"
+# What cairn wears beside the palette. Each token below is moved from what
+# the palette gives, the least it takes, until the scheme meets every
+# check cairn holds a scheme to (docs/gui.md, a theme sets tokens).
+cairn:
+  tokens:
+    ink.faint: "#bfc3cb"
+    line.rule: "#424854"
+    priority.low: "#656a75"
+    priority.normal: "#9fbe95"
+    state.late: "#e7b8ab"
+  labels:
+    flamingo: "#91a8c4"
+    pink: "#c898a8"
+    mauve: "#bc9cb8"
+    red: "#d3959b"
+    maroon: "#d59592"
+    peach: "#d79585"

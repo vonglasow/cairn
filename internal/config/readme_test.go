@@ -35,9 +35,15 @@ func TestTheReadmeShowsTheConfigurationConfigInitWrites(t *testing.T) {
 func TestTheExampleHoldsEveryKeyCairnReads(t *testing.T) {
 	block := Example
 	keys := acceptedKeys()
-	pages := reflect.TypeOf(pages{})
-	for i := range pages.NumField() {
-		keys = append(keys, pages.Field(i).Tag.Get("toml"))
+	tables := reflect.TypeFor[file]()
+	for i := range tables.NumField() {
+		table := tables.Field(i)
+		if table.Type.Kind() != reflect.Pointer || table.Type.Elem().Kind() != reflect.Struct || table.Name == "Workspace" {
+			continue
+		}
+		for j := range table.Type.Elem().NumField() {
+			keys = append(keys, table.Type.Elem().Field(j).Tag.Get("toml")+" = ")
+		}
 	}
 	for _, key := range keys {
 		if !strings.Contains(block, key) {

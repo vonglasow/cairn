@@ -671,6 +671,59 @@ takes them back ([gui.md](gui.md)). Anything but `true` or `false` is refused,
 naming `window.keep_sizes` (`@config-keep-sizes-is-yes-or-no`), and `config
 show` says whether it is on (`@config-show-says-the-window-keeps-its-sizes`).
 
+## The colours the window wears
+
+```toml
+[window]
+theme = "gruvbox-dark"   # a scheme cairn carries, or one of your own
+```
+
+The window wears a colour scheme, named by `theme` under `[window]`:
+`default` — the look it always had — when nothing names one. Nine are
+carried in the binary: `default`, `solarized-dark`, `solarized-light`,
+`gruvbox-dark`, `gruvbox-light`, `catppuccin-mocha`, `catppuccin-latte`,
+`dracula` and `nord`. **One of your own** is a base16 file, as
+tinted-theming writes it, in `~/.config/cairn/themes/<name>.yaml`, beside
+this file; named as one cairn carries, yours is the one worn
+(`@theme-a-scheme-of-my-own-wins-over-a-shipped-one`). What a scheme file
+holds and how it becomes the window's colours is [gui.md](gui.md#the-design-system)'s.
+
+**It belongs to the store**, like every key of `[window]`: a workspace's
+`settings.toml` names its own, so two windows side by side are told apart
+at a glance (`@theme-a-shipped-scheme-colours-its-workspace`). The window
+reads it when it opens; a window opened on another workspace is a cairn of
+its own, which reads that workspace's.
+
+**A scheme that cannot be worn never keeps the window shut.** A name cairn
+sees no scheme by, a file it cannot read, a colour that is not one: the
+window opens in `default`, and `cairn gui` says why on standard error,
+once, as a key passed over is said — `theme: "neon" is not a scheme cairn
+sees; the window wears default`
+(`@theme-an-unknown-scheme-falls-back-and-says-so`,
+`@theme-a-bad-colour-is-said`). A name that is not one — capitals, a `/`,
+a leading `.` — is a scheme nobody has, so a name can never reach outside
+the themes folder. `theme = ""` in the global file is `default`; in a
+store's settings it is refused like any key written empty.
+
+`config show` writes `theme` with where it comes from, says why the scheme
+named cannot be worn, `# theme: …`, and lists **every scheme it sees**, one
+a line, `shipped` or the file of your own it reads, the one in force marked
+(`@theme-config-show-lists-the-schemes`,
+`@theme-config-show-says-what-cannot-be-used`); its JSON carries
+`window.theme`, `window.unworn` and `themes`. A scheme of your own that
+falls short of a contrast the window holds its colours to is worn all the
+same, and `config show` says so, a line for each pair, the two tokens named
+and the ratio they read at: `# dim falls short: ink.text on surface.back
+reads at 1.63, and needs 4.5` (`@theme-a-scheme-hard-to-read-is-said`).
+Every scheme cairn carries meets them all
+(`@theme-every-shipped-scheme-passes-contrast`). The window's configuration
+panel says `window.theme` beside the other keys.
+
+**What it does not do yet.** The terminal board keeps its own colours: moving
+it to the sixteen colours a terminal's own scheme sets is a task of its own.
+A window does not follow the system between light and dark: `theme` is one
+name, and can become a table later without breaking a file that names one.
+
 ## TOML, because a person opens this file
 
 This file is for someone to read and change, so it has to be able to carry a

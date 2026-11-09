@@ -33,6 +33,7 @@ type Config struct {
 	Window      *WindowConfig     `json:"window,omitempty"`
 	Workspace   *WorkspaceConfig  `json:"workspace,omitempty" jsonschema:"what the store's settings say of its workspace; nothing for a store no workspace names and whose settings say no colour"`
 	Workspaces  []Workspace       `json:"workspaces,omitempty"`
+	Themes      []ThemeSeen       `json:"themes,omitempty" jsonschema:"every colour scheme cairn sees, the ones it carries and one's own, sorted by name"`
 	Problem     string            `json:"problem,omitempty"`
 	Settings    string            `json:"settings,omitempty" jsonschema:"the settings beside the store read over the file, when there are any"`
 	Written     []string          `json:"written,omitempty"`
@@ -49,7 +50,7 @@ type WorkspaceConfig struct {
 // NotSaid is how a key with no value, and none by default, is told.
 const NotSaid = "not said"
 
-var quotedKeys = []string{"pages.time", "focus.session", "approach.label", "time.deleted", "time.weekends"}
+var quotedKeys = []string{"pages.time", "focus.session", "approach.label", "time.deleted", "time.weekends", "window.theme"}
 
 func valuesOf(p config.Places) map[string]string {
 	pages := p.Pages()
@@ -65,6 +66,7 @@ func valuesOf(p config.Places) map[string]string {
 		"archive.start": unless(start), "archive.days": strconv.Itoa(days),
 		"focus.session": unless(p.FocusSession()), "approach.label": unless(p.ApproachLabel()),
 		"time.deleted": p.TimeDeleted(), "time.weekends": p.TimeWeekends(), "window.keep_sizes": strconv.FormatBool(p.KeepSizes()),
+		"window.theme": p.Theme(),
 	}
 }
 
@@ -81,9 +83,11 @@ type TimeConfig struct {
 	Weekends string `json:"weekends"`
 }
 
-// WindowConfig is whether the window opens with the sizes it was left with.
+// WindowConfig is whether the window opens with the sizes it was left with, the scheme it is named to wear, and why that scheme cannot be worn when it cannot.
 type WindowConfig struct {
-	KeepSizes bool `json:"keep_sizes"`
+	KeepSizes bool   `json:"keep_sizes"`
+	Theme     string `json:"theme"`
+	Unworn    string `json:"unworn,omitempty" jsonschema:"why the scheme named cannot be worn; the window then wears default"`
 }
 
 // FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it; nothing when it is not said.
@@ -164,7 +168,7 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted(), Weekends: p.TimeWeekends()}
 	g.config.Focus = &FocusConfig{Session: p.FocusSession()}
 	g.config.Approach = &ApproachConfig{Label: p.ApproachLabel()}
-	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes()}
+	g.themes(p)
 	g.config.Written = p.Written()
 	g.config.Settings = p.Settings()
 	g.config.WrittenHere = p.WrittenHere()
@@ -260,7 +264,8 @@ func configText(c Config) string {
 		fmt.Fprintf(&said, "\n[time]\ndeleted = %q%s\nweekends = %q%s\n", c.Time.Deleted, c.from("time.deleted"), c.Time.Weekends, c.from("time.weekends"))
 	}
 	if c.Window != nil {
-		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t%s\n", c.Window.KeepSizes, c.from("window.keep_sizes"))
+		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t%s\ntheme = %q%s\n", c.Window.KeepSizes, c.from("window.keep_sizes"), c.Window.Theme, c.from("window.theme"))
+		said.WriteString(themesText(c))
 	}
 	if c.Workspace != nil {
 		from := "read off the workspace's name"
@@ -270,6 +275,33 @@ func configText(c Config) string {
 		fmt.Fprintf(&said, "\n[workspace]\ncolour = %q   # %s\n", c.Workspace.Colour, from)
 	}
 	said.WriteString(workspacesTable(c.Workspaces))
+	return said.String()
+}
+
+func themesText(c Config) string {
+	var said strings.Builder
+	if c.Window.Unworn != "" {
+		fmt.Fprintf(&said, "# theme: %s\n", c.Window.Unworn)
+	}
+	if len(c.Themes) == 0 {
+		return said.String()
+	}
+	said.WriteString("# the schemes cairn sees, any of them a theme:\n")
+	for _, seen := range c.Themes {
+		fmt.Fprintf(&said, "#   %-18s %s", seen.Slug, seen.From)
+		if seen.InForce {
+			said.WriteString(", in force")
+		}
+		if seen.Problem != "" {
+			said.WriteString(", cannot be worn: " + seen.Problem)
+		}
+		said.WriteString("\n")
+	}
+	for _, seen := range c.Themes {
+		for _, short := range seen.Short {
+			fmt.Fprintf(&said, "# %s falls short: %s\n", seen.Slug, short)
+		}
+	}
 	return said.String()
 }
 

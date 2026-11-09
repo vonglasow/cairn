@@ -3,71 +3,58 @@ package gui
 import (
 	"image/color"
 	"math"
+	"reflect"
 	"testing"
+
+	"cairn/internal/theme"
 )
 
+func TestTheDefaultSchemeIsDarkTokenByToken(t *testing.T) {
+	if !reflect.DeepEqual(Dark().Colour, theme.Default()) {
+		t.Error("the default scheme moves a colour of the window as cairn has always drawn it")
+	}
+}
+
+func TestSkinnedWearsTheColoursGivenAndKeepsEveryOtherToken(t *testing.T) {
+	s, err := theme.Find("", "gruvbox-dark")
+	if err != nil {
+		t.Fatal(err)
+	}
+	skinned, dark := Skinned(s.Colours()), Dark()
+	if !reflect.DeepEqual(skinned.Colour, s.Colours()) {
+		t.Error("the skin does not wear the scheme's colours")
+	}
+	skinned.Colour = dark.Colour
+	if !reflect.DeepEqual(skinned, dark) {
+		t.Error("wearing a scheme moved a token that is not a colour")
+	}
+}
+
 func TestEverySkinCanBeRead(t *testing.T) {
-	for _, skin := range []struct {
-		what string
-		Skin
-	}{{"dark", Dark()}} {
-		ink := []struct {
-			what string
-			on   color.NRGBA
-			said color.NRGBA
-		}{
-			{"ink on a panel", skin.Colour.Surface.Raised, skin.Colour.Ink.Text},
-			{"ink on the board", skin.Colour.Surface.Back, skin.Colour.Ink.Text},
-			{"faint on a panel", skin.Colour.Surface.Raised, skin.Colour.Ink.Faint},
-			{"faint on the board", skin.Colour.Surface.Back, skin.Colour.Ink.Faint},
-			{"ink on a column", skin.Colour.Surface.Ground, skin.Colour.Ink.Text},
-			{"faint on a column", skin.Colour.Surface.Ground, skin.Colour.Ink.Faint},
-			{"an offer on the board", skin.Colour.Surface.Back, skin.Colour.Accent.Base},
-			{"an error on the board", skin.Colour.Surface.Back, skin.Colour.State.Wrong},
-			{"a day gone by, on a panel", skin.Colour.Surface.Raised, skin.Colour.State.Late},
-			{"a day gone by, on the board", skin.Colour.Surface.Back, skin.Colour.State.Late},
+	for _, slug := range theme.Shipped() {
+		s, err := theme.Find("", slug)
+		if err != nil {
+			t.Fatal(err)
 		}
-		for _, c := range ink {
-			if got := Contrast(c.said, c.on); got < 4.5 {
-				t.Errorf("%s: %s reads at %.2f, and text needs 4.5", skin.what, c.what, got)
-			}
+		skin := Skinned(s.Colours())
+		for _, short := range theme.Shortfalls(skin.Colour) {
+			t.Errorf("%s falls short: %s", slug, short)
 		}
-
-		shapes := []struct {
-			what string
-			on   color.NRGBA
-			said color.NRGBA
-			at   float64
-		}{
-			{"an edge against the board", skin.Colour.Surface.Back, skin.Colour.Line.Edge, 3},
-			{"an edge against a panel", skin.Colour.Surface.Raised, skin.Colour.Line.Edge, 2},
-			{"a panel against the board", skin.Colour.Surface.Back, skin.Colour.Surface.Raised, 1.3},
-			{"a column against the board", skin.Colour.Surface.Back, skin.Colour.Surface.Ground, 1.08},
-			{"a panel against a column", skin.Colour.Surface.Ground, skin.Colour.Surface.Raised, 1.15},
-			{"a column's edge against its ground", skin.Colour.Surface.Ground, skin.Colour.Line.Rule, 1.2},
-			{"a rule against a panel", skin.Colour.Surface.Raised, skin.Colour.Line.Raised, 1.2},
-		}
-		for _, c := range shapes {
-			if got := Contrast(c.said, c.on); got < c.at {
-				t.Errorf("%s: %s stands at %.2f, and it needs %.1f", skin.what, c.what, got, c.at)
-			}
-		}
-
 		for name, said := range skin.Colour.Priority {
 			if near(said, skin.Colour.Accent.Base) {
-				t.Errorf("%s: priority %q is the colour of what is chosen", skin.what, name)
+				t.Errorf("%s: priority %q is the colour of what is chosen", slug, name)
 			}
 			if alike(said, skin.Colour.Line.Edge) {
-				t.Errorf("%s: priority %q is the colour of no priority at all", skin.what, name)
+				t.Errorf("%s: priority %q is the colour of no priority at all", slug, name)
 			}
 			for other, also := range skin.Colour.Priority {
 				if other != name && alike(said, also) {
-					t.Errorf("%s: priority %q and %q are the same colour", skin.what, name, other)
+					t.Errorf("%s: priority %q and %q are the same colour", slug, name, other)
 				}
 			}
 		}
 		if near(skin.Colour.State.Wrong, skin.Colour.Priority["critical"]) {
-			t.Errorf("%s: an error is the colour of a critical task", skin.what)
+			t.Errorf("%s: an error is the colour of a critical task", slug)
 		}
 	}
 }
@@ -80,44 +67,8 @@ func howFar(a, b color.NRGBA) float64 {
 	return math.Sqrt(dr*dr + dg*dg + db*db)
 }
 
-func TestContrast_answersTheKnownRatios(t *testing.T) {
-	black := color.NRGBA{A: 255}
-	white := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	if got := Contrast(white, black); math.Abs(got-21) > 0.01 {
-		t.Errorf("white on black is %.2f, want 21", got)
-	}
-	if got := Contrast(black, black); math.Abs(got-1) > 0.01 {
-		t.Errorf("black on black is %.2f, want 1", got)
-	}
-	if Contrast(white, black) != Contrast(black, white) {
-		t.Error("the ratio changed when the two were swapped")
-	}
-}
-
-func TestTheCurveIsStraightenedWhereItChangesShape(t *testing.T) {
-	for _, c := range []struct {
-		v    uint8
-		want float64
-	}{
-		{0, 0},
-		{9, 0.0027317429},
-		{10, 0.0030352698},
-		{11, 0.0033465358},
-		{255, 1},
-	} {
-		if got := straight(c.v); math.Abs(got-c.want) > 0.000000001 {
-			t.Errorf("straight(%d) = %.10f, want %.10f", c.v, got, c.want)
-		}
-	}
-}
-
-func TestContrastIsTwentyOneAtItsWidestAndOneAtItsNarrowest(t *testing.T) {
-	white := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	black := color.NRGBA{A: 255}
-	if got := Contrast(black, white); math.Abs(got-21) > 0.01 {
-		t.Errorf("black on white is %.2f, want 21", got)
-	}
-	if got := Contrast(white, white); math.Abs(got-1) > 0.01 {
-		t.Errorf("white on white is %.2f, want 1", got)
+func TestTheWindowIsHandedTheSkinItWears(t *testing.T) {
+	if opens := reflect.TypeOf(Run); opens.NumIn() < 3 || opens.In(2) != reflect.TypeFor[Skin]() {
+		t.Errorf("the window is opened by %v, handed no skin to wear", opens)
 	}
 }

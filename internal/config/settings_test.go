@@ -80,6 +80,16 @@ func TestWithSettings_theWindowKeepsItsSizesWhenTheySaySo(t *testing.T) {
 	}
 }
 
+func TestWithSettings_theSchemeTheySayWinsOverTheGlobalOne(t *testing.T) {
+	read, _, err := settled(t, "[window]\ntheme = \"nord\"\nkeep_sizes = true\n", "[window]\ntheme = \"dracula\"\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.Theme() != "dracula" || !read.KeepSizes() {
+		t.Errorf("theme %q, keep_sizes %t; want dracula, and the global true", read.Theme(), read.KeepSizes())
+	}
+}
+
 func TestWithSettings_leavesTheGlobalReadingAsItWas(t *testing.T) {
 	home := writtenConfig(t, "[focus]\nsession = \"1h\"\n")
 	read, err := config.Read(home, silentEnv)
