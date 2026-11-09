@@ -66,8 +66,8 @@ type Held struct {
 	Moved  bool
 }
 
-// Grip is how far a pointer travels before a click becomes a drag.
-const Grip = 4
+// Wobble is how far a pointer travels before a click becomes a drag.
+const Wobble = 4
 
 // Window is everything the desktop board is, at one moment.
 type Window struct {

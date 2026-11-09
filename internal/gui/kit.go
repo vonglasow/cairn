@@ -1,7 +1,12 @@
 package gui
 
 import (
+	"image"
+
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/widget/material"
 )
 
@@ -13,6 +18,7 @@ type Kit struct {
 	layer Layer
 	drawn *Drawn
 	in    string
+	ruler Measure
 }
 
 // NewKit is a kit drawing on the board in that skin, recording into drawn.
@@ -28,6 +34,26 @@ func (k Kit) on(layer Layer) Kit {
 func (k Kit) inside(part string) Kit {
 	k.in += part + "/"
 	return k
+}
+
+func (k Kit) measuring(m Measure) Kit {
+	k.ruler = m
+	return k
+}
+
+func (k Kit) measured() Measure {
+	if k.ruler == nil {
+		return Measured(k.th)
+	}
+	return k.ruler
+}
+
+func (k Kit) within(at Box) clip.Stack { return clip.Rect(rect(at)).Push(k.gtx.Ops) }
+
+func (k Kit) faded(by float32) paint.OpacityStack { return paint.PushOpacity(k.gtx.Ops, by) }
+
+func (k Kit) shifted(down int) op.TransformStack {
+	return op.Offset(image.Pt(0, down)).Push(k.gtx.Ops)
 }
 
 func (k Kit) put(part string, at Box) Box {

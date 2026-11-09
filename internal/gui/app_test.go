@@ -59,13 +59,13 @@ func TestWhenTwoPressesAreOneDoubleClick(t *testing.T) {
 	if Twice(now, now.Add(Twin()+time.Millisecond), at, at) {
 		t.Error("two presses too far apart in time were read as one gesture")
 	}
-	if !Twice(now, now.Add(time.Millisecond), at, Point{X: at.X + Grip, Y: at.Y}) {
+	if !Twice(now, now.Add(time.Millisecond), at, Point{X: at.X + Wobble, Y: at.Y}) {
 		t.Error("a hand that moved within the grip is still in the same place")
 	}
-	if Twice(now, now.Add(time.Millisecond), at, Point{X: at.X + Grip + 1, Y: at.Y}) {
+	if Twice(now, now.Add(time.Millisecond), at, Point{X: at.X + Wobble + 1, Y: at.Y}) {
 		t.Error("a press somewhere else was read as a double-click")
 	}
-	if Twice(now, now.Add(time.Millisecond), at, Point{X: at.X, Y: at.Y + Grip + 1}) {
+	if Twice(now, now.Add(time.Millisecond), at, Point{X: at.X, Y: at.Y + Wobble + 1}) {
 		t.Error("a press below the last one was read as a double-click")
 	}
 }
@@ -195,10 +195,10 @@ func TestTheGripOfADoubleClickInBothDirections(t *testing.T) {
 	at := Point{X: 100, Y: 100}
 	soon := now.Add(time.Millisecond)
 
-	if !Twice(now, soon, at, Point{X: at.X, Y: at.Y + Grip}) {
-		t.Errorf("a hand that moved %d down is still in the same place", Grip)
+	if !Twice(now, soon, at, Point{X: at.X, Y: at.Y + Wobble}) {
+		t.Errorf("a hand that moved %d down is still in the same place", Wobble)
 	}
-	if !Twice(now, soon, at, Point{X: at.X + Grip, Y: at.Y + Grip}) {
+	if !Twice(now, soon, at, Point{X: at.X + Wobble, Y: at.Y + Wobble}) {
 		t.Error("a hand that moved the grip in both directions is still in the same place")
 	}
 }
@@ -360,7 +360,7 @@ func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 		t.Error("a press took hold of nothing")
 	}
 	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Drag,
-		Point{X: at.X + Grip + 1, Y: at.Y}, 0); !got.held.Moved {
+		Point{X: at.X + Wobble + 1, Y: at.Y}, 0); !got.held.Moved {
 		t.Error("a drag did not move what the press had taken hold of")
 	}
 	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Release, at, 0); got.Chosen() != 1 {

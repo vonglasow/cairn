@@ -238,6 +238,63 @@ settled on (#230's sheet), and the window changed with it:
 - an empty slot's dashed line rounds at a card's 8, drawn by the same
   `Dashed` as the dashed pill (`@gui-an-empty-slot-is-rounded`).
 
+The controls, the rows and the small parts are components too: `Tabs`,
+`Segmented`, `Row`, `Field`, `Check`, `Tile`, `Progress`, `Spent`, `Ring`,
+`TodayMark`, `DayCell`, `Swatch`, `Bar`, `Hint`, `Head`, `Scrollbar`,
+`WorkspacePill`, `FilterPill`, `InfoBox`, `Backdrop`, `Struck`, `Landing`,
+and the marks — `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`,
+`CopyMark`, `MenuMark`, `Stone`. **No drawing outside a component spells a
+shape out**: `TestNoDrawingOutsideAComponentSpellsAShapeOut` reads every
+function named `draw…` outside `component_*.go` and fails on a call to
+`fill`, `rounded`, `outline`, `framed`, `lining`, `raised`, `disc`,
+`ringed`, or anything of Gio's `clip` and `paint`; what clips, fades or
+lifts a part is the `Kit`'s (`within`, `faded`, `shifted`), and so is the
+window's measure (`measured`), which a component writing a count after a
+word reads. Where the screens disagreed, the sheet of #230 chose again:
+
+- one segmented control (`Segmented`): its track rounds at a control's 7
+  and a hair (`Space.Hair`, 2), its chosen segment inset a hair all round
+  — the week's ranges were inset at the top and foot only, the details'
+  tabs and the time's setting rounded their track at 7; a segment may count
+  what it holds;
+- a row writes its words in the reading ink in every list, the command
+  bar's too, which wrote a line not picked faint; what is secondary — a
+  time, a count — is faint at its right. A key or a pill on a row is
+  grounded by the row (`Row.Chip`, `Row.Pill`), never by a flag set at the
+  call (`@gui-every-line-of-the-command-bar-reads-alike`);
+- one field (`Field`): a field's ground, a rule, rounded at 7, and lit with
+  its halo while written into — the labels' search and their rename gain
+  the halo, the switcher's line too (`@gui-a-label-search-is-lit-with-a-halo`);
+  the square frames of a list's search, the steps, the history and the
+  tasks serving an objective become a field at rest
+  (`@gui-the-steps-stand-in-a-field`);
+- a box before a step or a value (`Check`), rounded at 3: empty, a line of
+  an edge; done, filled faint; taken, filled with the accent. A filter's
+  values and the labels to choose gain the box where a bare `✓` stood
+  (`@gui-a-taken-value-is-a-filled-box`);
+- one track for what is done (`Progress`), 3 high: an objective's form
+  drew it at 4;
+- two rings (`Ring`), always at the element's own radius, never square:
+  what the keyboard is on in `Line.Selected` — a card, a step, a serving
+  task, a month's line — and a target, written into or where a drop lands,
+  in the accent. A step and a serving task the keyboard is on were edged in
+  the accent, square;
+- today is a ring in the accent wherever days are laid out (`TodayMark`),
+  a fill meaning a day picked: the week's head filled today's date, the
+  calendar ringed it in `Line.Selected` (`@gui-today-is-a-ring`);
+- the pill of the workspace is ringed in the accent while its switcher is
+  open (`@gui-the-workspace-pill-is-ringed-while-open`);
+- one head (`Head`): 12, at 500, faint, in sentence case, its count in mono
+  and low at its right — the help's heads were at 600, the command bar's
+  groups in mono capitals and low, the switcher's and the filters' too,
+  and `Details`, `Serving it` and `Progress` were in capitals at 400;
+- a step's line is a tile rounded as a row is (`Tile`), as a serving
+  task's was; a box of facts (`InfoBox`) is a card's ground at a card's 8,
+  where the progress of an objective's form rounded at 10.
+
+The form's section heads, `STATE`, `TIME`, are not a `Head` and stay as
+they were: a scenario names them in capitals.
+
 The design's own mock-up was darker still; `skin_test.go` holds every
 shape to a contrast it can be told apart at (a panel 1.3 against the
 board, an edge 3), so the tones were raised to meet it rather than the
@@ -593,7 +650,7 @@ value walked with `‹ any ›`, and what was in force was a line of text beside
 the tabs; Linear and GitHub show filters in force as pills.
 
 `⇧F`, `+ Filter`, or the menu bar's Filter drops the menu of filters under the
-pill, `FILTER BY` at its head: column, priority, label, objective, and a day
+pill, `Filter by` at its head: column, priority, label, objective, and a day
 the work is due by — today, in a week, in a month — each with what it is on
 after its name and, at its right, the letter that opens it. It is a menu, not
 a panel: no heading of a panel, no cross, no buttons, its keys said in a line
@@ -1273,7 +1330,7 @@ a task a notch, with a bar beside it: it used to cut them off at its foot
 shown follows the period at the left of the strip, `26 Oct – 1 Nov 2026 ·
 34h10m`, and a month's after its year (`TimeSays`, `PeriodAt`); it stood
 left of the ranges, `week 34h10m` in Go Mono, where Today hid it. A day of the week says its date at
-its head, today's on the accent, and its total at the right end of the same
+its head, today's ringed in the accent, and its total at the right end of the same
 line, in Go Mono (`WeekTotalAt`): the total followed the date, set off by
 spaces, and the spaces of a proportional face never matched today's pill, so
 the two were written over each other; put on a line of its own under the
@@ -1568,8 +1625,8 @@ panel still sits whole in the smallest window the layouts are drawn at.
 
 **The calendar is drawn with the window's one button.** Its months and years
 are buttons, the one marked filled; a day is its number in the middle of its
-place, the day held a filled button and today an edged one — the marks a date
-picker usually gives them. Today was a black square, and the twelve cells were
+place, the day held a filled button and today one ringed in the accent, as today is
+in every grid — the marks a date picker usually gives them. Today was a black square, and the twelve cells were
 words in the corner of a frame (`@gui-the-calendar-draws-its-days-and-cells-as-buttons`).
 
 **A form saves itself.** `⌘S` was the only way a change reached the store,
@@ -2048,7 +2105,7 @@ task never had is taken out of the list alone
 a step out until the form was saved, which read as a delete that did not
 happen. Several steps are taken together the way cards
 are, and **what is taken is not what the keyboard is on**: a step taken is
-filled (`Surface.Ghost`), the one the keyboard is on is outlined, and a step can
+filled (`Surface.Ghost`), the one the keyboard is on is ringed, and a step can
 be either or both. A click takes that step alone and puts the keyboard on it;
 `⌘`-click adds one or lets it go, down to none, the keyboard following the
 click (`@gui-a-step-taken-is-let-go-alone`, `@gui-the-last-step-taken-can-be-let-go`);
@@ -2194,10 +2251,10 @@ moves the tabs right of the pill.
 **The switcher drops under the pill.** A click on the pill, `⌘⇧O`, or *Open
 a workspace…* in the File menu (`@gui-workspace-the-menu-offers-the-switcher`)
 opens it: a line to type in, which narrows it
-(`@gui-workspace-the-switcher-narrows`); WORKSPACES, in the order `workspace
+(`@gui-workspace-the-switcher-narrows`); Workspaces, in the order `workspace
 list` gives them, each with its folder and what choosing it does — `this
 window`, `open · brings it forward`, `opens a new window`, `not found`, and
-`default` — and `⌘⇧1`…`⌘⇧9` by its place in that list; RECENT FOLDERS, each
+`default` — and `⌘⇧1`…`⌘⇧9` by its place in that list; Recent folders, each
 with the day it was opened or `not found now`; and at its foot *Open a
 folder…*, *New workspace…* and *Settings of work…* (`⌘,`)
 (`@gui-workspace-the-switcher-lists-them`,

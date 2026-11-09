@@ -65,10 +65,10 @@ type Shadow struct {
 }
 
 // Spaces is every gap the drawing reads that no layout lays out.
-type Spaces struct{ Halo, DashGap int }
+type Spaces struct{ Hair, Halo, DashGap int }
 
 // Radii is every corner the window rounds.
-type Radii struct{ Mark, Stripe, Chip, Today, Row, Control, Card, Ground, Panel int }
+type Radii struct{ Mark, Check, Stripe, Chip, Today, Row, Control, Card, Ground, Panel int }
 
 // Full is the radius that rounds a box's ends into half circles.
 func (Radii) Full(b Box) int { return b.H / 2 }
@@ -154,8 +154,8 @@ func Dark() Skin {
 				{Light: color.NRGBA{R: 140, G: 137, B: 142, A: 255}, Dark: color.NRGBA{R: 100, G: 97, B: 102, A: 255}},
 			},
 		},
-		Space:  Spaces{Halo: 3, DashGap: 3},
-		Radius: Radii{Mark: 2, Stripe: 3, Chip: 4, Today: 5, Row: 6, Control: 7, Card: 8, Ground: 10, Panel: 12},
+		Space:  Spaces{Hair: 2, Halo: 3, DashGap: 3},
+		Radius: Radii{Mark: 2, Check: 3, Stripe: 3, Chip: 4, Today: 5, Row: 6, Control: 7, Card: 8, Ground: 10, Panel: 12},
 		Size:   Extents{Rule: 1, Track: 3, Dash: 4, Stroke: 1.5},
 		Type: Types{
 			Mono:     font.Font{Typeface: MonoFace},

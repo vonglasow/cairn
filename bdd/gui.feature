@@ -5008,6 +5008,55 @@ Feature: The desktop board
       And I rest the pointer on the count of labels of "Write the spec"
       Then the labels are shown in a popover
 
+    @gui-today-is-a-ring
+    Scenario: today's date on the time page is ringed, as today is in every grid, and not filled
+      Given I added a task titled "Write the spec"
+      And today is "2026-09-30"
+      When I open the window
+      And I click the tab "TIME"
+      Then the date of "2026-09-30" is ringed in the accent and not filled
+
+    @gui-a-label-search-is-lit-with-a-halo
+    Scenario: the search of the labels, written into, is lit with the halo of every field written into
+      Given I added a task titled "Write the spec"
+      And I edited task 1 with the labels "doc" and "sp26-20"
+      When I open the window
+      And I press "shift+l"
+      And I press "/"
+      Then the search of the labels is lit with a halo
+
+    @gui-a-taken-value-is-a-filled-box
+    Scenario: a value a filter has taken stands in a box filled with the accent, a value not taken in an empty box
+      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "p"
+      Then the value "high" of the filter stands in a box filled with the accent
+      And the value "low" of the filter stands in an empty box
+
+    @gui-every-line-of-the-command-bar-reads-alike
+    Scenario: every line of the open command bar is written in the reading ink, picked or not, under heads in sentence case
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And I press "cmd+k"
+      Then every line of the command bar is written in the reading ink
+      And the groups of the command bar are headed in sentence case
+
+    @gui-the-workspace-pill-is-ringed-while-open
+    Scenario: the pill of the workspace is ringed while the switcher it opened is open
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      And I click the pill of the workspace
+      Then the pill of the workspace is ringed in the accent
+
+    @gui-the-steps-stand-in-a-field
+    Scenario: the steps of a task stand in a field framed as every field is, not in a square box
+      Given I added a task titled "Ship it" with the state "todo"
+      And I added the step "Write the spec" to task 1
+      When I open the window
+      And I double-click the card "Ship it"
+      Then the steps stand in a field framed as every field is
+
   Rule: Several cards are taken at once
 
     @gui-several-are-gathered-with-cmd

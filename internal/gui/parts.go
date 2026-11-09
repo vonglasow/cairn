@@ -45,7 +45,7 @@ func SubPanel(b Box) Box {
 // SubWriting is where a tile writes what it carries, which is the one line it has.
 func SubWriting(b Box) Box {
 	panel := SubPanel(b)
-	row := Row(panel, panel.Y+(panel.H-lineHigh)/2, lineHigh)
+	row := RowIn(panel, panel.Y+(panel.H-lineHigh)/2, lineHigh)
 	past := checkSide + inset + inset
 	return Box{X: row.X + past, Y: row.Y, W: row.W - past, H: row.H}
 }
@@ -76,8 +76,8 @@ func Over(width, height int) Box {
 
 const overLeast = 530
 
-// Row is one line inside a panel.
-func Row(box Box, at, high int) Box {
+// RowIn is one line inside a panel.
+func RowIn(box Box, at, high int) Box {
 	return Box{X: box.X + padding, Y: at, W: box.W - padding - padding, H: high}
 }
 

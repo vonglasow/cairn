@@ -471,7 +471,7 @@ func (w Window) clickingTime(p Point) Window {
 }
 
 // WeekHeadAt is where a day says which it is and its total, at its top.
-func WeekHeadAt(day Box) Box { return Row(day, day.Y+padding, lineHigh) }
+func WeekHeadAt(day Box) Box { return RowIn(day, day.Y+padding, lineHigh) }
 
 // WeekTotalAt is where a day of the week says how long its work took: on its date's line, from past the date to its right end, written against that end.
 func WeekTotalAt(day Box, m Measure) Box {
@@ -584,10 +584,10 @@ func CellHead(day time.Time, held engine.TimesheetDay) string {
 }
 
 // CellHeadAt is where a day of a month says its number and its total.
-func CellHeadAt(cell Box) Box { return Row(cell, cell.Y+inset, lineHigh) }
+func CellHeadAt(cell Box) Box { return RowIn(cell, cell.Y+inset, lineHigh) }
 
 // CellLineAt is where the j-th line under a day of a month's head goes.
-func CellLineAt(cell Box, j int) Box { return Row(cell, cell.Y+inset+(j+1)*lineHigh, lineHigh) }
+func CellLineAt(cell Box, j int) Box { return RowIn(cell, cell.Y+inset+(j+1)*lineHigh, lineHigh) }
 
 func sameMonth(a, b time.Time) bool { return a.Year() == b.Year() && a.Month() == b.Month() }
 

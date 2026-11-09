@@ -2,7 +2,6 @@ package gui
 
 import (
 	"gioui.org/font"
-	"gioui.org/op/clip"
 	"gioui.org/text"
 )
 
@@ -10,26 +9,20 @@ func drawPlace(k Kit, l Layout, w Window) {
 	if l.Place.W == 0 {
 		return
 	}
-	rounded(k.gtx, l.Place, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-	dot, name, caret := PlaceParts(l.Place)
-	if w.Loose() {
-		Dot{Ring: true}.Draw(k, dot)
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, name, w.PlaceShown(), small, k.skin.Type.Mono, text.Start)
-	} else {
-		Dot{Colour: w.Place().Colour}.Draw(k, dot)
-		sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, name, w.PlaceShown(), reads, font.Medium, 1, text.Start)
+	pill := WorkspacePill{Name: w.PlaceShown(), Loose: w.Loose(), Open: w.Screen() == OnWorkspaces}
+	if !pill.Loose {
+		pill.Colour = w.Place().Colour
 	}
-	drawChevron(k, caret, k.skin.Colour.Ink.Faint)
+	pill.Draw(k, l.Place)
 }
 
 func drawSwitcher(k Kit, w Window) {
 	box := w.SwitcherBox()
 	Popover{}.Draw(k, box)
-	clipped := clip.Rect(rect(box)).Push(k.gtx.Ops)
+	clipped := k.within(box)
 	defer clipped.Pop()
 	m := w.measured()
-	field := w.SwitcherField()
-	framed(k, field, k.skin.Radius.Control, k.skin.Colour.Accent.Base, k.skin.Colour.Surface.Field)
+	field := Field{Lit: true}.Draw(k, w.SwitcherField())
 	line := Inside(field)
 	if asks := w.SwitcherAsks(); asks != "" {
 		said := asks + "  "
@@ -44,7 +37,7 @@ func drawSwitcher(k Kit, w Window) {
 	}
 	heads := []string{WorkspacesHead, RecentHead}
 	for i, head := range w.SwitcherHeads() {
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Inside(head), heads[i], small, k.skin.Type.MonoBold, text.Start)
+		Head{Said: heads[i]}.Draw(k, Inside(head))
 	}
 	for _, one := range w.SwitcherLines() {
 		drawSwitcherLine(k, m, one)
@@ -54,18 +47,19 @@ func drawSwitcher(k Kit, w Window) {
 		Rule{}.Draw(k, Box{X: box.X, Y: acts[0].At.Y - 1, W: box.W})
 	}
 	for _, act := range acts {
-		row := Inside(act.At)
-		say(k.gtx, k.th, k.skin.Colour.Ink.Text, row, act.Said, reads)
+		row := Row{Said: act.Said}
+		row.Draw(k, act.At)
 		if act.Key != "" {
-			KeyChip{Key: w.keyboard.Spelled(act.Key)}.Draw(k, Box{X: row.X + row.W - KeyChipWide(w.keyboard.Spelled(act.Key)), Y: act.At.Y, H: act.At.H})
+			spelled := w.keyboard.Spelled(act.Key)
+			inside := Inside(act.At)
+			row.Chip(k, KeyChip{Key: spelled}, Box{X: inside.X + inside.W - KeyChipWide(spelled), Y: act.At.Y, H: act.At.H})
 		}
 	}
 }
 
 func drawSwitcherLine(k Kit, m Measure, one SwitcherLine) {
-	if one.On {
-		rounded(k.gtx, one.At, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-	}
+	line := Row{Picked: one.On}
+	line.Draw(k, one.At)
 	row := Inside(one.At)
 	dot := Box{X: row.X, Y: row.Y + (row.H-dotSide)/2, W: dotSide, H: dotSide}
 	ink := k.skin.Colour.Ink.Text
@@ -74,7 +68,7 @@ func drawSwitcherLine(k Kit, m Measure, one SwitcherLine) {
 	}
 	right := row.X + row.W
 	if one.Key != "" {
-		chip := KeyChip{Key: one.Key, OnControl: one.On}.Draw(k, Box{X: right - KeyChipWide(one.Key), Y: one.At.Y, H: one.At.H})
+		chip := line.Chip(k, KeyChip{Key: one.Key}, Box{X: right - KeyChipWide(one.Key), Y: one.At.Y, H: one.At.H})
 		right = chip.X - between
 	}
 	tag := ends(m, one.Tag, small)
@@ -98,14 +92,14 @@ func drawTimeSegments(k Kit, w Window) {
 	if !ok {
 		return
 	}
-	first, last := segments[0].At, segments[len(segments)-1].At
-	rounded(k.gtx, Box{X: first.X, Y: first.Y, W: last.X + last.W - first.X, H: first.H}, k.skin.Radius.Control, k.skin.Colour.Surface.Control)
-	for _, segment := range segments {
-		ink := k.skin.Colour.Ink.Faint
+	shown := Segmented{On: -1, Small: true}
+	for i, segment := range segments {
+		shown.Said = append(shown.Said, segment.Said)
+		shown.At = append(shown.At, segment.At)
 		if segment.On {
-			rounded(k.gtx, Box{X: segment.At.X + segmentInset, Y: segment.At.Y + segmentInset, W: segment.At.W - 2*segmentInset, H: segment.At.H - 2*segmentInset}, k.skin.Radius.Control, k.skin.Colour.Surface.ControlLit)
-			ink = k.skin.Colour.Ink.Text
+			shown.On = i
 		}
-		sayStyled(k.gtx, k.th, ink, Box{X: segment.At.X, Y: segment.At.Y + (segment.At.H-lineHigh)/2, W: segment.At.W, H: lineHigh}, segment.Said, small, font.Medium, 1, text.Middle)
 	}
+	first, last := segments[0].At, segments[len(segments)-1].At
+	shown.Draw(k, Box{X: first.X, Y: first.Y, W: last.X + last.W - first.X, H: first.H})
 }

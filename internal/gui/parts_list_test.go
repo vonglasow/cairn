@@ -237,10 +237,10 @@ func TestTicksStartFromTheFirstInSight(t *testing.T) {
 
 func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
 	w := onTheList(t, 800, "A", "B")
-	lit := Dark().Colour.Accent.Base
+	lit, ringed := Dark().Colour.Accent.Base, Dark().Colour.Line.Selected
 	tiles := w.partTiles()
 	shot := drawn(t, w)
-	if painted(shot, Edges(SubPanel(tiles[0]))[0], lit) == 0 || painted(shot, Edges(SubPanel(tiles[1]))[0], lit) != 0 {
+	if painted(shot, Edges(SubPanel(tiles[0]))[0], ringed) == 0 || painted(shot, Edges(SubPanel(tiles[1]))[0], ringed) != 0 {
 		t.Error("the part the keyboard is on is not the one outlined")
 	}
 	adding := w.Key("down").Key("down")
@@ -320,7 +320,7 @@ func TestWhereAPartLandsAtTheEdges(t *testing.T) {
 	w := onTheList(t, 800, "A", "B")
 	tiles := w.partTiles()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
-	pressed := w.PressAt(middle(tiles[0])).MoveTo(Point{X: middle(tiles[0]).X, Y: middle(tiles[0]).Y + Grip + 1})
+	pressed := w.PressAt(middle(tiles[0])).MoveTo(Point{X: middle(tiles[0]).X, Y: middle(tiles[0]).Y + Wobble + 1})
 	adding := tiles[len(tiles)-1]
 	if line, ok := pressed.MoveTo(middle(adding)).PartLanding(); !ok || line.Y != adding.Y || line.X != tiles[0].X {
 		t.Errorf("over the line that adds it lands at %v (%v), want the top of %v", line, ok, adding)
@@ -333,7 +333,7 @@ func TestWhereAPartLandsAtTheEdges(t *testing.T) {
 	}
 	alone := onTheList(t, 800, "Only")
 	one := alone.partTiles()[0]
-	if _, ok := alone.PressAt(middle(one)).MoveTo(Point{X: middle(one).X, Y: middle(one).Y + Grip + 1}).PartGhost(); !ok {
+	if _, ok := alone.PressAt(middle(one)).MoveTo(Point{X: middle(one).X, Y: middle(one).Y + Wobble + 1}).PartGhost(); !ok {
 		t.Error("a part alone in its list is not drawn in hand")
 	}
 }
@@ -351,7 +351,7 @@ func TestAPartLandsInAScrolledList(t *testing.T) {
 		t.Fatalf("this proves nothing: the list shows %d lines from %d", len(tiles), w.partsFrom())
 	}
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
-	held := w.PressAt(middle(tiles[0])).MoveTo(Point{X: middle(tiles[0]).X, Y: middle(tiles[0]).Y + Grip + 1}).MoveTo(middle(tiles[1]))
+	held := w.PressAt(middle(tiles[0])).MoveTo(Point{X: middle(tiles[0]).X, Y: middle(tiles[0]).Y + Wobble + 1}).MoveTo(middle(tiles[1]))
 	if line, ok := held.PartLanding(); !ok || line.Y != tiles[1].Y+tiles[1].H-landingHigh {
 		t.Errorf("carried down onto the second tile in sight, it lands at %v (%v), want the bottom of %v", line, ok, tiles[1])
 	}
@@ -523,7 +523,7 @@ func TestTheStepsTakenAreFilledAndTheOneTheKeyboardIsOnIsOutlined(t *testing.T) 
 		if got := painted(shot, middle, Dark().Colour.Surface.Ghost) != 0; got != want.filled {
 			t.Errorf("step %d is filled: %v, want %v", i, got, want.filled)
 		}
-		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], Dark().Colour.Accent.Base) != 0; got != want.outlined {
+		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], Dark().Colour.Line.Selected) != 0; got != want.outlined {
 			t.Errorf("step %d is outlined: %v, want %v", i, got, want.outlined)
 		}
 	}

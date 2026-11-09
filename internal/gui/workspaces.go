@@ -42,9 +42,9 @@ const (
 	// SwitcherSays is what the switcher's line says before anything is typed in it.
 	SwitcherSays = "Open a workspace or a folder…"
 	// WorkspacesHead and RecentHead head the two groups of the switcher.
-	WorkspacesHead = "WORKSPACES"
+	WorkspacesHead = "Workspaces"
 	// RecentHead heads the stores opened by path that no workspace names.
-	RecentHead  = "RECENT FOLDERS"
+	RecentHead  = "Recent folders"
 	maxPlace    = 9
 	placeWide   = 128
 	placeLeast  = 70

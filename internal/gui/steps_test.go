@@ -1524,7 +1524,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if inside := (Box{X: at.X + Dark().Radius.Control, Y: at.Y + 3, W: at.W - 2*Dark().Radius.Control, H: 2}); painted(shot, inside, Dark().Colour.Surface.Raised) != inside.W*inside.H {
 			return fmt.Errorf("today, at %+v, is filled", at)
 		}
-		if edge := (Box{X: at.X + Dark().Radius.Control, Y: at.Y, W: at.W - 2*Dark().Radius.Control, H: 1}); painted(shot, edge, Dark().Colour.Line.Selected) != edge.W {
+		if edge := (Box{X: at.X + Dark().Radius.Control, Y: at.Y, W: at.W - 2*Dark().Radius.Control, H: 1}); painted(shot, edge, Dark().Colour.Accent.Base) != edge.W {
 			return fmt.Errorf("today, at %+v, is not ringed", at)
 		}
 		return nil
@@ -2334,7 +2334,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 	sc.Then(`^the second tile says what it holds$`, func() error {
 		tile := w.w.ServingCardAt(1)
-		line := Row(Box{X: tile.X, Y: tile.Y, W: tile.W, H: tile.H - between}, tile.Y+inset, lineHigh)
+		line := RowIn(Box{X: tile.X, Y: tile.Y, W: tile.W, H: tile.H - between}, tile.Y+inset, lineHigh)
 		band := Box{X: line.X, Y: line.Y, W: line.W, H: line.H - inset}
 		shot, err := drawnInAStep(w.w)
 		if err != nil {

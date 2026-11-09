@@ -499,7 +499,7 @@ func TestAKeyOnAPickedRowStandsOutFromTheRow(t *testing.T) {
 	shot := drawn(t, w)
 	row := MenuRowAt(w.MenuBox(), w.MenuOn())
 	for _, d := range partsDrawn(w) {
-		if d.Part != "key" || d.At.Y < row.Y || d.At.Y+d.At.H > row.Y+row.H {
+		if d.Part != "row/key" || d.At.Y < row.Y || d.At.Y+d.At.H > row.Y+row.H {
 			continue
 		}
 		chip := pixel(shot, d.At.X+d.At.W/2, d.At.Y+1)

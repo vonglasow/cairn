@@ -38,7 +38,8 @@ func (c Card) Draw(k Kit, at Box) Box {
 	case c.Reference:
 		Dashed{Radius: k.skin.Radius.Card}.Draw(in, parts.Panel)
 	case c.Chosen:
-		framed(k, parts.Panel, k.skin.Radius.Card, k.skin.Colour.Line.Selected, ground)
+		rounded(k.gtx, parts.Panel, k.skin.Radius.Card, ground)
+		Ring{Radius: k.skin.Radius.Card}.Draw(in, parts.Panel)
 	default:
 		rounded(k.gtx, parts.Panel, k.skin.Radius.Card, ground)
 	}
@@ -51,7 +52,7 @@ func (c Card) Draw(k Kit, at Box) Box {
 		sayStyled(k.gtx, k.th, c.writing(k.skin), Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
 	}
 	if mark, ok := FocusMark(c.Face, parts.Title); ok {
-		drawFocusMark(k.gtx, mark, k.skin.Colour.Accent.Base, k.skin.Colour.Accent.Glow)
+		FocusDot{}.Draw(in, mark)
 	}
 
 	mono := k.skin.Type.Mono
@@ -75,7 +76,7 @@ func (c Card) Draw(k Kit, at Box) Box {
 		Pill{Said: laid.Count}.Draw(in, laid.More)
 	}
 	if c.Face.SubTotal > 0 {
-		drawProgress(k, parts.Steps, c.Face.SubDone, c.Face.SubTotal, strconv.Itoa(c.Face.SubDone)+"/"+strconv.Itoa(c.Face.SubTotal))
+		Progress{Done: c.Face.SubDone, Total: c.Face.SubTotal, Said: strconv.Itoa(c.Face.SubDone) + "/" + strconv.Itoa(c.Face.SubTotal)}.Draw(in, parts.Steps)
 	}
 	return parts.Panel
 }

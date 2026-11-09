@@ -540,7 +540,7 @@ func (w Window) PressAt(p Point) Window {
 	return w
 }
 
-// MoveTo follows the pointer, and past Grip says the card is being dragged.
+// MoveTo follows the pointer, and past Wobble says the card is being dragged.
 func (w Window) MoveTo(p Point) Window {
 	if w.widening.On {
 		w.sizes = w.widening.To(p)
@@ -587,7 +587,7 @@ func (w Window) MoveTo(p Point) Window {
 		return w
 	}
 	w.held.At = p
-	if abs(p.X-w.held.From.X) > Grip || abs(p.Y-w.held.From.Y) > Grip {
+	if abs(p.X-w.held.From.X) > Wobble || abs(p.Y-w.held.From.Y) > Wobble {
 		w.held.Moved = true
 	}
 	return w

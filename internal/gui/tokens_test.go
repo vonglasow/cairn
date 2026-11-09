@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -34,6 +35,58 @@ func TestNoDrawingNamesAColourOrARadiusOfItsOwn(t *testing.T) {
 			}
 			return true
 		})
+	}
+}
+
+func TestNoDrawingOutsideAComponentSpellsAShapeOut(t *testing.T) {
+	files, err := filepath.Glob("*.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := token.NewFileSet()
+	for _, name := range files {
+		if strings.HasSuffix(name, "_test.go") || strings.HasPrefix(name, "component_") {
+			continue
+		}
+		file, err := parser.ParseFile(seen, name, nil, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok || !strings.HasPrefix(strings.ToLower(fn.Name.Name), "draw") {
+				continue
+			}
+			ast.Inspect(fn, func(n ast.Node) bool {
+				if call, ok := n.(*ast.CallExpr); ok && byHand(call.Fun) {
+					t.Errorf("%s: %s draws a shape by hand, where a component belongs", seen.Position(call.Pos()), fn.Name.Name)
+				}
+				return true
+			})
+		}
+	}
+}
+
+func byHand(fun ast.Expr) bool {
+	switch f := fun.(type) {
+	case *ast.Ident:
+		return slices.Contains([]string{"fill", "rounded", "outline", "framed", "lining", "raised", "disc", "ringed"}, f.Name)
+	case *ast.SelectorExpr:
+		id, ok := f.X.(*ast.Ident)
+		return ok && (id.Name == "clip" || id.Name == "paint")
+	}
+	return false
+}
+
+func TestTheGuardKnowsAShapeDrawnByHand(t *testing.T) {
+	for source, want := range map[string]bool{"fill(gtx, b, c)": true, "rounded(gtx, b, 3, c)": true, "clip.Rect(r)": true, "paint.FillShape(o, c, s)": true, "say(gtx, th, c, b, s, 12)": false, "k.within(b)": false} {
+		e, err := parser.ParseExpr(source)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := byHand(e.(*ast.CallExpr).Fun); got != want {
+			t.Errorf("%s is drawn by hand: %v", source, got)
+		}
 	}
 }
 

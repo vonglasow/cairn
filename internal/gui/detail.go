@@ -179,6 +179,11 @@ type WorkTile struct {
 	At     Box
 }
 
+func workTileAt(tile WorkTile) Box {
+	panel := SubPanel(tile.At)
+	return Box{X: panel.X + inset, Y: panel.Y + 1, W: panel.W - 2*inset, H: panel.H - 2}
+}
+
 // WorkTiles is the lines of the work an objective's form lists, where each is drawn: the tasks serving it, then the line that adds one.
 func (w Window) WorkTiles() []WorkTile {
 	if !w.besideShown() || !w.form.ForObjective {
@@ -322,7 +327,7 @@ func (w Window) movingForm(p Point) Window {
 	opens := w.formOpensIn()
 	moved := Shifted(opens, Point{X: w.formMoved.X + p.X - w.formGrip.X, Y: w.formMoved.Y + p.Y - w.formGrip.Y}, w.width, w.height)
 	w.formMoved, w.formGrip = Point{X: moved.X - opens.X, Y: moved.Y - opens.Y}, p
-	if abs(p.X-w.held.From.X) > Grip || abs(p.Y-w.held.From.Y) > Grip {
+	if abs(p.X-w.held.From.X) > Wobble || abs(p.Y-w.held.From.Y) > Wobble {
 		w.dragged = true
 	}
 	return w
@@ -449,9 +454,9 @@ func (w Window) hidden(field engine.Field) bool {
 
 // The heads an objective's form writes over its details, its work and its progress.
 const (
-	DetailsHead  = "DETAILS"
-	ServingHead  = "SERVING IT"
-	ProgressHead = "PROGRESS"
+	DetailsHead  = "Details"
+	ServingHead  = "Serving it"
+	ProgressHead = "Progress"
 )
 
 // ProgressBox is where an objective's form says how far it has got: in the column beside, under its details.

@@ -1111,7 +1111,7 @@ func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	w = w.Key("enter")
 
 	box := w.ChoosingBox()
-	value := Row(box, ChoosingFrom(box), lineHigh)
+	value := RowIn(box, ChoosingFrom(box), lineHigh)
 	if painted(drawn(t, w), value, Dark().Colour.Ink.Faint) == 0 {
 		t.Error("the list says nothing where it should say there is nothing to serve")
 	}
@@ -1301,7 +1301,7 @@ func TestAQuestionNamesWhatItAsksAboutByNumberAndTitle(t *testing.T) {
 		t.Errorf("the question says %+v", said)
 	}
 	box := asked.QuestionBox()
-	if lettered(drawn(t, asked), Row(box, FirstRow(box), lineHigh), Dark().Colour.Ink.Low) == 0 {
+	if lettered(drawn(t, asked), RowIn(box, FirstRow(box), lineHigh), Dark().Colour.Ink.Low) == 0 {
 		t.Error("the question's first line is not written")
 	}
 }
@@ -1582,7 +1582,7 @@ func TestALandedStoneIsNotOneFlatColour(t *testing.T) {
 	stone := []Point{{X: 10, Y: 10}, {X: 50, Y: 9}, {X: 90, Y: 10}, {X: 90, Y: 40}, {X: 50, Y: 41}, {X: 10, Y: 40}}
 	shot := drawnOps(t, 100, 50, func(gtx layout.Context) {
 		fill(gtx, Box{W: 100, H: 50}, Dark().Colour.Surface.Back)
-		drawStone(gtx, stone, Dark().stoneOf(1))
+		Stone{Shape: stone, Shade: Dark().stoneOf(1)}.Draw(NewKit(gtx, Theme(), Dark(), &Drawn{}), Box{})
 	})
 	colours := map[color.RGBA]bool{}
 	for y := 14; y < 36; y++ {

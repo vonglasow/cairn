@@ -3,6 +3,8 @@ package gui
 import (
 	"fmt"
 	"image"
+	"slices"
+	"strings"
 	"time"
 
 	"gioui.org/layout"
@@ -36,6 +38,175 @@ func (w *world) componentsSteps(sc *godog.ScenarioContext) {
 		}
 		return w.drawnAsAPopover("the bubble", bubble)
 	})
+	sc.Then(`^the date of "([^"]*)" is ringed in the accent and not filled$`, w.todayRinged)
+	sc.Then(`^the search of the labels is lit with a halo$`, w.labelSearchHaloed)
+	sc.Then(`^the value "([^"]*)" of the filter stands in a box filled with the accent$`, func(value string) error {
+		return w.valueBoxed(value, true)
+	})
+	sc.Then(`^the value "([^"]*)" of the filter stands in an empty box$`, func(value string) error {
+		return w.valueBoxed(value, false)
+	})
+	sc.Then(`^every line of the command bar is written in the reading ink$`, w.paletteLinesRead)
+	sc.Then(`^the groups of the command bar are headed in sentence case$`, w.paletteGroupsInSentenceCase)
+	sc.Then(`^the pill of the workspace is ringed in the accent$`, w.placeRinged)
+	sc.Then(`^the steps stand in a field framed as every field is$`, w.stepsInAField)
+}
+
+func (w *world) todayRinged(date string) error {
+	day, err := time.Parse(time.DateOnly, date)
+	if err != nil {
+		return err
+	}
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	s := Dark()
+	for i, one := range w.w.WeekDays() {
+		if !one.Equal(day) {
+			continue
+		}
+		pill := TodayPill(WeekHeadAt(WeekDayAt(w.w.Layout(), i)), w.w.measured())
+		if got := pixel(shot, pill.X+pill.W/2, pill.Y); got != s.Colour.Accent.Base {
+			return fmt.Errorf("the date of %s is edged in %v, not in the accent", date, got)
+		}
+		if got := pixel(shot, pill.X+2, pill.Y+pill.H/2); got == s.Colour.Accent.Base {
+			return fmt.Errorf("the date of %s is filled with the accent", date)
+		}
+		return nil
+	}
+	return fmt.Errorf("the week shown holds no %s", date)
+}
+
+func (w *world) labelSearchHaloed() error {
+	if !w.w.Seeking() {
+		return fmt.Errorf("the labels are not being searched")
+	}
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	row := w.w.LabelSearchAt()
+	got := pixel(shot, row.X+row.W/2, row.Y+1-Dark().Space.Halo+1)
+	if got == Dark().Colour.Surface.Raised || got.B <= got.R {
+		return fmt.Errorf("the search of the labels has no halo above it: %v", got)
+	}
+	return nil
+}
+
+func (w *world) valueBoxed(value string, taken bool) error {
+	values, open := w.w.FilterList()
+	if !open {
+		return fmt.Errorf("no filter lists its values")
+	}
+	f := w.w.Filters()[w.w.FilterOn()]
+	at := slices.Index(f.Shown, value)
+	if at < 0 || at >= len(values) {
+		return fmt.Errorf("the filter %q lists no %q: %v", f.Name, value, f.Shown)
+	}
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	s := Dark()
+	box := CheckAt(Inside(values[at]))
+	accent := painted(shot, box, s.Colour.Accent.Base)
+	switch {
+	case taken && accent < box.W*box.H/3:
+		return fmt.Errorf("the value %q stands in no box filled with the accent", value)
+	case !taken && (accent != 0 || painted(shot, box, s.Colour.Line.Edge) == 0):
+		return fmt.Errorf("the value %q does not stand in an empty box", value)
+	}
+	return nil
+}
+
+func (w *world) paletteLinesRead() error {
+	shown := w.w
+	shown.palette.opened = shown.now.Add(-time.Hour)
+	shot, err := drawnInAStep(shown)
+	if err != nil {
+		return err
+	}
+	read := 0
+	for _, line := range shown.PaletteLines() {
+		if line.Row < 0 || line.Box.Y+line.Box.H > shown.height {
+			continue
+		}
+		words := Box{X: line.Box.X, Y: line.Box.Y, W: line.Box.W / 3, H: line.Box.H}
+		if lettered(shot, words, Dark().Colour.Ink.Text) == 0 {
+			return fmt.Errorf("the line %q is not written in the reading ink", shown.PaletteRows()[line.Row].Says)
+		}
+		read++
+	}
+	if read < 2 {
+		return fmt.Errorf("the command bar shows %d line", read)
+	}
+	return nil
+}
+
+func (w *world) paletteGroupsInSentenceCase() error {
+	shown := w.w
+	shown.palette.opened = shown.now.Add(-time.Hour)
+	var said []string
+	for _, one := range textDrawn(shown) {
+		said = append(said, one.said)
+	}
+	heads := 0
+	for _, line := range shown.PaletteLines() {
+		if line.Row >= 0 {
+			continue
+		}
+		if !slices.Contains(said, line.Group) || (strings.ToUpper(line.Group) != line.Group && slices.Contains(said, strings.ToUpper(line.Group))) {
+			return fmt.Errorf("the group %q is not headed as it is named: %v", line.Group, said)
+		}
+		heads++
+	}
+	if heads == 0 {
+		return fmt.Errorf("the command bar heads no group")
+	}
+	return nil
+}
+
+func (w *world) placeRinged() error {
+	if w.w.Screen() != OnWorkspaces {
+		return fmt.Errorf("the switcher is not open")
+	}
+	shot, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	place := w.w.Layout().Place
+	if got := pixel(shot, place.X+place.W/2, place.Y); got != Dark().Colour.Accent.Base {
+		return fmt.Errorf("the pill of the workspace is edged in %v", got)
+	}
+	return nil
+}
+
+func (w *world) stepsInAField() error {
+	fields := w.w.Form().Fields()
+	for i, field := range fields {
+		if field.Name != "steps" {
+			continue
+		}
+		_, value, rows := FormPlace(w.w.formBox(), fields, i)
+		frame := Framed(value, rows)
+		shot, err := drawnInAStep(w.w)
+		if err != nil {
+			return err
+		}
+		s := Dark()
+		if got := pixel(shot, frame.X, frame.Y); got == s.Colour.Line.Rule || got == s.Colour.Line.Edge {
+			return fmt.Errorf("the steps stand in a square box")
+		}
+		if got := pixel(shot, frame.X+frame.W/2, frame.Y); got != s.Colour.Line.Rule {
+			return fmt.Errorf("the steps' frame is edged in %v, not a field's rule", got)
+		}
+		if got := pixel(shot, frame.X+4, frame.Y+frame.H-5); got != s.Colour.Surface.Field {
+			return fmt.Errorf("the steps stand on %v, not on a field's ground", got)
+		}
+		return nil
+	}
+	return fmt.Errorf("the form has no steps")
 }
 
 func (w *world) countWithNoRing(title string) error {

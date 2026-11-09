@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -72,12 +71,13 @@ func measuredIn(th *material.Theme, weight font.Weight) Measure {
 
 // Draw puts the whole window on screen.
 func Draw(k Kit, w Window) {
+	k = k.measuring(w.measured())
 	scaled := inDp(k.gtx)
 	defer scaled.Pop()
 
 	k.gtx.Metric = unit.Metric{PxPerDp: 1, PxPerSp: 1}
 
-	fill(k.gtx, Box{W: w.width, H: w.height}, k.skin.Colour.Surface.Back)
+	Backdrop{}.Draw(k, Box{W: w.width, H: w.height})
 	if w.Screen() == TooSmallToDraw {
 		sayCentred(k.gtx, k.th, k.skin.Colour.Ink.Faint, Message(w.width, w.height), w.Says(), reads)
 		return
@@ -89,9 +89,7 @@ func Draw(k Kit, w Window) {
 	drawPlace(k, l, w)
 	drawTabs(k, l, w)
 	if !w.native {
-		for _, stroke := range MenuStrokes(MenuButton(l)) {
-			fill(k.gtx, stroke, k.skin.Colour.Accent.Base)
-		}
+		MenuMark{}.Draw(k, MenuButton(l))
 	}
 	if w.Tab() == Objectives {
 		drawGoals(k, l, w)
@@ -144,7 +142,7 @@ func Draw(k Kit, w Window) {
 		drawSwitcher(popover, w)
 	}
 	for _, mark := range w.CopyMarks() {
-		drawCopyMark(popover, mark.At)
+		mark.Draw(popover, mark.At)
 	}
 	if bubble, said, ok := w.BubbleBox(); ok {
 		Popover{}.Draw(popover, bubble)
@@ -165,7 +163,7 @@ func drawBackups(k Kit, w Window) {
 	Panel{Head: Heads(w)}.Draw(k, box)
 	from := w.BackupsFrom()
 	for i, one := range w.Backups()[from:min(len(w.Backups()), from+w.BackupsRoom())] {
-		drawListRow(k, ListRowAt(box, i), backupSays(one), from+i == w.BackupOn())
+		Row{Said: backupSays(one), Picked: from+i == w.BackupOn()}.Draw(k, ListRowAt(box, i))
 	}
 	drawPanelOffers(k, box, w)
 }
@@ -189,12 +187,7 @@ func drawLabels(k Kit, w Window) {
 }
 
 func drawLabelSearch(k Kit, w Window, m Measure, row Box) {
-	field := Box{X: row.X, Y: row.Y + 1, W: row.W, H: row.H - 2}
-	edge := k.skin.Colour.Line.Rule
-	if w.Seeking() {
-		edge = k.skin.Colour.Accent.Base
-	}
-	framed(k, field, k.skin.Radius.Control, edge, k.skin.Colour.Surface.Field)
+	field := Field{Lit: w.Seeking()}.Draw(k, Box{X: row.X, Y: row.Y + 1, W: row.W, H: row.H - 2})
 	chip := KeyChip{Key: "/", Quiet: true}.Draw(k, Box{X: field.X + inset, Y: field.Y, H: field.H})
 	line := Inside(Box{X: chip.X + chip.W, Y: field.Y, W: field.X + field.W - chip.X - chip.W, H: field.H})
 	if w.Sought().Empty() && !w.Seeking() {
@@ -205,13 +198,10 @@ func drawLabelSearch(k Kit, w Window, m Measure, row Box) {
 }
 
 func drawLabelRow(k Kit, w Window, m Measure, row LabelRow) {
-	if row.On {
-		rounded(k.gtx, row.At, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-	}
+	Row{Picked: row.On}.Draw(k, row.At)
 	line := Inside(row.At)
 	if row.Typing {
-		field := Box{X: line.X, Y: row.At.Y + 2, W: line.W / 2, H: row.At.H - 4}
-		framed(k, field, k.skin.Radius.Control, k.skin.Colour.Accent.Base, k.skin.Colour.Surface.Field)
+		field := Field{Lit: true}.Draw(k, Box{X: line.X, Y: row.At.Y + 2, W: line.W / 2, H: row.At.H - 4})
 		writing(k, m, Inside(field), w.Renamed(), true, reads, 1, Follow)
 		return
 	}
@@ -227,7 +217,7 @@ func drawLabelRow(k Kit, w Window, m Measure, row LabelRow) {
 		if action.Offer == "Delete" {
 			look = buttonDanger
 		}
-		Button{Said: action.Offer, Key: w.OfferKey(action.Offer), Look: look, Keyed: true, Measure: m}.Draw(k, action.At)
+		Button{Said: action.Offer, Key: w.OfferKey(action.Offer), Look: look, Keyed: true}.Draw(k, action.At)
 	}
 }
 
@@ -239,11 +229,7 @@ func drawSwatches(k Kit, w Window) {
 	first, last := swatches[0].At, swatches[len(swatches)-1].At
 	Popover{}.Draw(k, Box{X: first.X - inset*2, Y: first.Y - inset*2, W: last.X + last.W - first.X + inset*4, H: first.H + inset*4})
 	for i, swatch := range swatches {
-		if i == w.ColourPick() {
-			ring := Box{X: swatch.At.X - 2, Y: swatch.At.Y - 2, W: swatch.At.W + 4, H: swatch.At.H + 4}
-			rounded(k.gtx, ring, k.skin.Radius.Full(ring), k.skin.Colour.Ink.Text)
-		}
-		rounded(k.gtx, swatch.At, k.skin.Radius.Full(swatch.At), k.skin.Colour.Labels[swatch.Colour])
+		Swatch{Colour: swatch.Colour, Picked: i == w.ColourPick()}.Draw(k, swatch.At)
 	}
 }
 
@@ -301,16 +287,9 @@ func drawFilters(k Kit, w Window) {
 				continue
 			}
 			taken := w.FilterTaken(i)
-			if taken {
-				rounded(k.gtx, value, k.skin.Radius.Row, k.skin.Colour.Surface.Tint)
-			}
-			if i == w.FilterPick() {
-				rounded(k.gtx, value, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-			}
+			Row{Taken: taken, Picked: i == w.FilterPick()}.Draw(k, value)
 			line := Inside(value)
-			if taken {
-				say(k.gtx, k.th, k.skin.Colour.Accent.Base, line, TickedMark, reads)
-			}
+			Check{Taken: taken}.Draw(k, CheckAt(line))
 			named := Box{X: line.X + tickRoom, Y: line.Y, W: line.W - tickRoom, H: line.H}
 			if f.Arg == "label" {
 				dot := Box{X: named.X, Y: named.Y + (named.H-dotSide)/2, W: dotSide, H: dotSide}
@@ -324,14 +303,11 @@ func drawFilters(k Kit, w Window) {
 		}
 		return
 	}
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, head, FilterMenuSays, small, k.skin.Type.MonoBold, text.Start)
+	Head{Said: FilterMenuSays}.Draw(k, head)
 	for i, f := range w.Filters() {
 		row := w.FilterRowAt(i)
-		if i == w.FilterOn() {
-			rounded(k.gtx, row, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-		}
+		Row{Said: Titled(f.Name), Picked: i == w.FilterOn()}.Draw(k, row)
 		line := Inside(row)
-		say(k.gtx, k.th, k.skin.Colour.Ink.Text, line, Titled(f.Name), reads)
 		if len(f.Taken()) > 0 {
 			at := ends(w.measured(), Titled(f.Name), reads) + between
 			sayIn(k.gtx, k.th, k.skin.Colour.Accent.Base, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - small, H: line.H}, f.TakenSays(), small, font.Font{}, text.Start)
@@ -343,20 +319,15 @@ func drawFilters(k Kit, w Window) {
 func drawWeek(k Kit, l Layout, w Window) {
 	measuring := k.gtx
 	measuring.Constraints.Min = image.Point{}
-	control := RangesControl(l)
-	rounded(k.gtx, control, k.skin.Radius.Control+segmentInset, k.skin.Colour.Surface.Control)
+	ranges := []string{"Day", "Week", "Month"}
+	var segments []Box
+	for _, chip := range ranges {
+		segments = append(segments, TimeChip(l, chip))
+	}
+	Segmented{Said: ranges, At: segments, On: slices.Index(ranges, w.ranging())}.Draw(k, RangesControl(l))
 	for _, chip := range TimeChips {
-		at := TimeChip(l, chip)
-		switch chip {
-		case "Day", "Week", "Month":
-			ink := k.skin.Colour.Ink.Faint
-			if chip == w.ranging() {
-				rounded(k.gtx, Box{X: at.X, Y: at.Y + segmentInset, W: at.W, H: at.H - 2*segmentInset}, k.skin.Radius.Control, k.skin.Colour.Surface.ControlLit)
-				ink = k.skin.Colour.Ink.Text
-			}
-			sayStyled(k.gtx, k.th, ink, ButtonSaid(at), chip, reads, font.Medium, 1, text.Middle)
-		default:
-			Button{Said: chip, Look: buttonPlain}.Draw(k, at)
+		if !slices.Contains(ranges, chip) {
+			Button{Said: chip, Look: buttonPlain}.Draw(k, TimeChip(l, chip))
 		}
 	}
 	if w.Monthly() {
@@ -385,22 +356,21 @@ func drawWeek(k Kit, l Layout, w Window) {
 		head := WeekHeadAt(box)
 		ink := k.skin.Colour.Ink.Faint
 		if day.Equal(w.today()) {
-			rounded(k.gtx, TodayPill(head, w.measured()), k.skin.Radius.Today, k.skin.Colour.Accent.Base)
-			ink = k.skin.Colour.Surface.Back
+			TodayMark{Radius: k.skin.Radius.Today}.Draw(k, TodayPill(head, w.measured()))
+			ink = k.skin.Colour.Ink.Text
 		}
 		say(k.gtx, k.th, ink, head, day.Format(todayFormat), reads)
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, WeekTotalAt(box, w.measured()), w.DayHeld(i).Says(), small, k.skin.Type.Mono, text.End)
-		clipped := clip.Rect(rect(box)).Push(k.gtx.Ops)
+		clipped := k.within(box)
 		for j, one := range w.DayShown(i) {
 			row := WeekRowAt(box, j)
 			w.cardOf(w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, DayCardAt(box, j) == w.pointed).Draw(k, DayCardAt(box, j))
 			say(k.gtx, k.th, k.skin.Colour.Accent.Base, DaySpentAt(row), one.Spent(), small)
-			fill(k.gtx, WeekBar(row, one.Minutes, longest), k.skin.Colour.Accent.Base)
+			Spent{}.Draw(k, WeekBar(row, one.Minutes, longest))
 		}
 		clipped.Pop()
 		if track, more := DayTrack(box, len(w.DayHeld(i).Tasks)); more {
-			fill(k.gtx, track, k.skin.Colour.Surface.Back)
-			fill(k.gtx, Thumb(track, len(w.DayHeld(i).Tasks), DayRoom(box), w.DayFrom(i)), k.skin.Colour.Line.Edge)
+			Scrollbar{Lines: len(w.DayHeld(i).Tasks), Rows: DayRoom(box), At: w.DayFrom(i)}.Draw(k, track)
 		}
 	}
 }
@@ -410,16 +380,15 @@ func drawDayAlone(k Kit, l Layout, w Window, longest int) {
 	held := w.DayHeld(0)
 	Ground{Raised: true}.Draw(k, box)
 	say(k.gtx, k.th, k.skin.Colour.Ink.Faint, WeekHeadAt(box), held.Says(), reads)
-	clipped := clip.Rect(rect(box)).Push(k.gtx.Ops)
+	clipped := k.within(box)
 	for j, one := range w.AloneShown() {
 		w.cardOf(w.DayCard(one), w.Chosen() == one.Number && !w.chosenGoal, AloneCardAt(box, j) == w.pointed).Draw(k, AloneCardAt(box, j))
 		say(k.gtx, k.th, k.skin.Colour.Accent.Base, AloneSpentAt(box, j), one.Spent(), small)
-		fill(k.gtx, AloneBar(box, j, one.Minutes, longest), k.skin.Colour.Accent.Base)
+		Spent{}.Draw(k, AloneBar(box, j, one.Minutes, longest))
 	}
 	clipped.Pop()
 	if track, more := DayTrack(box, len(held.Tasks)); more {
-		fill(k.gtx, track, k.skin.Colour.Surface.Back)
-		fill(k.gtx, Thumb(track, len(held.Tasks), DayRoom(box), w.DayFrom(0)), k.skin.Colour.Line.Edge)
+		Scrollbar{Lines: len(held.Tasks), Rows: DayRoom(box), At: w.DayFrom(0)}.Draw(k, track)
 	}
 }
 
@@ -438,18 +407,14 @@ func drawMonth(k Kit, l Layout, w Window) {
 		if cell == (Box{}) {
 			continue
 		}
-		if day.Equal(w.today()) {
-			framed(k, cell, k.skin.Radius.Control, k.skin.Colour.Accent.Base, k.skin.Colour.Surface.Raised)
-		} else {
-			rounded(k.gtx, cell, k.skin.Radius.Control, k.skin.Colour.Surface.Raised)
-		}
+		DayCell{Today: day.Equal(w.today()), Raised: true}.Draw(k, cell)
 		ink := k.skin.Colour.Ink.Text
 		if !sameMonth(day, w.week) {
 			ink = k.skin.Colour.Ink.Faint
 		}
 		held := w.MonthDay(i)
 		say(k.gtx, k.th, ink, CellHeadAt(cell), CellHead(day, held), reads)
-		clipped := clip.Rect(rect(cell)).Push(k.gtx.Ops)
+		clipped := k.within(cell)
 		shown := cellShown(held.Tasks, CellRoom(cell))
 		for j, line := range CellLines(held.Tasks, CellRoom(cell)) {
 			at := CellLineAt(cell, j)
@@ -457,7 +422,7 @@ func drawMonth(k Kit, l Layout, w Window) {
 				c := w.DayCard(held.Tasks[j])
 				Stripe{Priority: priorityOf(c), Free: true}.Draw(k, Box{X: at.X - inset, Y: at.Y, W: edgeWide, H: at.H})
 				if w.Chosen() == c.Number && !w.chosenGoal {
-					outline(k.gtx, at, k.skin.Colour.Accent.Base)
+					Ring{Radius: k.skin.Radius.Row}.Draw(k, at)
 				}
 				say(k.gtx, k.th, k.skin.Writing(c), Box{X: at.X + edgeWide, Y: at.Y, W: at.W - edgeWide, H: at.H}, line, small)
 				continue
@@ -472,18 +437,12 @@ func drawMenu(k Kit, w Window) {
 	box := w.MenuBox()
 	Popover{}.Draw(k, box)
 	for i, said := range w.Menu() {
-		row := MenuRowAt(box, i)
-		ink := k.skin.Colour.Ink.Text
-		if said == "Delete" {
-			ink = k.skin.Colour.State.Wrong
-		}
-		if i == w.MenuOn() {
-			rounded(k.gtx, row, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-		}
-		say(k.gtx, k.th, ink, Inside(row), said, reads)
+		at := MenuRowAt(box, i)
+		row := Row{Said: said, Danger: said == "Delete", Picked: i == w.MenuOn()}
+		row.Draw(k, at)
 		if key := MenuKey(said); key != "" {
 			spelled := w.keyboard.Spelled(Pretty(key))
-			KeyChip{Key: spelled, OnControl: i == w.MenuOn()}.Draw(k, Box{X: row.X + row.W - KeyChipWide(spelled) - inset*2, Y: row.Y, H: row.H})
+			row.Chip(k, KeyChip{Key: spelled}, Box{X: at.X + at.W - KeyChipWide(spelled) - inset*2, Y: at.Y, H: at.H})
 		}
 	}
 }
@@ -515,35 +474,17 @@ func drawCalendar(k Kit, w Window) {
 	}
 	today := w.today()
 	for i, day := range engine.MonthGrid(w.day) {
-		at, said := DayAt(box, i), strconv.Itoa(day.Day())
-		switch {
-		case day.Equal(w.day):
-			Button{Said: said, Look: buttonOn}.Draw(k, at)
-		case day.Equal(today):
-			framed(k, at, k.skin.Radius.Control, k.skin.Colour.Line.Selected, k.skin.Colour.Surface.Raised)
-			sayCentred(k.gtx, k.th, k.skin.Colour.Ink.Text, ButtonSaid(at), said, reads)
-		default:
-			ink := k.skin.Colour.Ink.Text
-			if w.Faded(day) {
-				ink = k.skin.Colour.Ink.Faint
-			}
-			sayCentred(k.gtx, k.th, ink, ButtonSaid(at), said, reads)
-		}
+		DayCell{Said: strconv.Itoa(day.Day()), Picked: day.Equal(w.day), Today: day.Equal(today), Faded: w.Faded(day)}.Draw(k, DayAt(box, i))
 	}
 	drawPanelOffers(k, box, w)
 }
-
-// TickedMark says an objective is in.
-const TickedMark = "✓"
 
 func drawChoosing(k Kit, w Window) {
 	box := w.ChoosingBox()
 	Panel{}.Draw(k, box)
 
 	if !box.Unsearched {
-		looking := ChoosingLooking(box)
-		fill(k.gtx, looking, k.skin.Colour.Surface.Back)
-		outline(k.gtx, looking, k.skin.Colour.Line.Edge)
+		looking := Field{}.Draw(k, ChoosingLooking(box))
 		typed := Inside(looking)
 		for _, taken := range w.LabelsTaken() {
 			LabelChip{Label: taken.Label, Colour: w.LabelColour(taken.Label), Removable: true}.Draw(k, taken.Pill)
@@ -561,27 +502,23 @@ func drawChoosing(k Kit, w Window) {
 		return
 	}
 	run := ChoosingRun(box)
-	clipped := clip.Rect(rect(run)).Push(k.gtx.Ops)
+	clipped := k.within(run)
 	from := w.ChoosingFromRow()
 	for i := from; i < Lasting(len(offered), from, w.ChoosingRoom()); i++ {
 		one := offered[i]
-		row := ChoosingRow(box, at)
-		if i == w.ChoosingAt() {
-			rounded(k.gtx, row, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-		}
+		row := Row{Picked: i == w.ChoosingAt()}
+		row.Draw(k, ChoosingRow(box, at))
 		line := ChoosingLine(box, at)
 		if one.Creates != "" {
 			said := "Create"
 			say(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, said, reads)
 			from := line.X + ends(w.measured(), said, reads) + pillGap*2
-			Pill{Said: one.Creates, OnControl: i == w.ChoosingAt()}.Draw(k, Box{X: from, Y: line.Y + (line.H-pillHigh)/2, W: ends(w.measured(), one.Creates, small) + 2*pillPad, H: pillHigh})
+			row.Pill(k, Pill{Said: one.Creates}, Box{X: from, Y: line.Y + (line.H-pillHigh)/2, W: ends(w.measured(), one.Creates, small) + 2*pillPad, H: pillHigh})
 			at += apart
 			continue
 		}
 		if w.choosingFor == "label" {
-			if w.Ticked(one.Number) {
-				say(k.gtx, k.th, k.skin.Colour.Accent.Base, line, TickedMark, reads)
-			}
+			Check{Taken: w.Ticked(one.Number)}.Draw(k, CheckAt(line))
 			LabelChip{Label: one.Title, Colour: w.LabelColour(one.Title)}.Draw(k, LabelPillAt(line, ends(w.measured(), one.Title, small)))
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, strconv.Itoa(one.Carried), small, k.skin.Type.Mono, text.End)
 			at += apart
@@ -595,9 +532,7 @@ func drawChoosing(k Kit, w Window) {
 	}
 	clipped.Pop()
 
-	track := ChoosingBar(box)
-	fill(k.gtx, track, k.skin.Colour.Surface.Back)
-	fill(k.gtx, Thumb(track, len(offered), w.ChoosingRoom(), from), k.skin.Colour.Line.Edge)
+	Scrollbar{Lines: len(offered), Rows: w.ChoosingRoom(), At: from}.Draw(k, ChoosingBar(box))
 	drawPanelOffers(k, box, w)
 }
 
@@ -605,7 +540,7 @@ func drawSaid(k Kit, w Window, said []Said, box Box) {
 	Panel{Head: Heads(w)}.Draw(k, box)
 	at := FirstRow(box)
 	for _, line := range said {
-		row := Row(box, at, lineHigh)
+		row := RowIn(box, at, lineHigh)
 		for _, mark := range w.CopyMarks() {
 			if mark.Said == line.Means {
 				row = Box{X: row.X + copyRoom, Y: row.Y, W: row.W - copyRoom, H: row.H}
@@ -622,7 +557,7 @@ func drawHelp(k Kit, w Window) {
 	Panel{Head: Heads(w)}.Draw(k, box)
 	for _, line := range w.HelpLines() {
 		if line.Head != "" {
-			sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Faint, line.At, line.Head, small, font.SemiBold, 1, text.Start)
+			Head{Said: line.Head}.Draw(k, line.At)
 			continue
 		}
 		KeyChip{Key: line.Key}.Draw(k, line.KeyAt)
@@ -632,21 +567,17 @@ func drawHelp(k Kit, w Window) {
 }
 
 func drawTabs(k Kit, l Layout, w Window) {
+	tabs := Tabs{On: -1}
 	for i, page := range w.Shown() {
-		tab := TabAt(l, i)
-		ink := k.skin.Colour.Ink.Faint
+		tabs.Said = append(tabs.Said, Titled(Pages[page]))
+		tabs.Counts = append(tabs.Counts, w.TabCount(page))
+		tabs.At = append(tabs.At, TabAt(l, i))
 		if w.Tab() == page {
-			rounded(k.gtx, tab, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-			ink = k.skin.Colour.Ink.Text
+			tabs.On = i
 		}
-		room, name := TabName(tab), Titled(Pages[page])
-		sayStyled(k.gtx, k.th, ink, room, name, reads, font.Medium, 1, text.Start)
-		counted := ends(w.measured(), name, reads) + countGap
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: room.X + counted, Y: room.Y, W: max(0, room.W-counted), H: room.H}, w.TabCount(page), small, k.skin.Type.Mono, text.Start)
 	}
+	tabs.Draw(k, l.Tabs)
 }
-
-const countGap = 6
 
 func drawColumns(k Kit, l Layout, w Window) {
 	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
@@ -672,8 +603,7 @@ func drawBand(k Kit, l Layout, w Window) {
 }
 
 func drawHead(k Kit, room Box, name string, held int) {
-	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Faint, room, name, small, font.Medium, 1, text.Start)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, room, strconv.Itoa(held), small, k.skin.Type.Mono, text.End)
+	Head{Said: name, Count: strconv.Itoa(held)}.Draw(k, room)
 }
 
 func drawPlaced(k Kit, w Window) {
@@ -686,7 +616,7 @@ func drawPlaced(k Kit, w Window) {
 	}
 	for n, p := range seen {
 		chosen := p.Card.Number == w.Chosen() || w.isTaken(p.Card.Number)
-		clipped := clip.Rect(rect(p.Within)).Push(k.gtx.Ops)
+		clipped := k.within(p.Within)
 		if !building {
 			card := w.cardOf(p.Card, chosen, p.Slot == w.pointed)
 			card.Dimmed = Dimmed(p.Card)
@@ -695,7 +625,7 @@ func drawPlaced(k Kit, w Window) {
 			continue
 		}
 		_, fade := Arriving(progress, n, len(seen))
-		faded := paint.PushOpacity(k.gtx.Ops, float32(fade))
+		faded := k.faded(float32(fade))
 		w.cardOf(p.Card, chosen, p.Slot == w.pointed).Draw(k, p.Slot)
 		faded.Pop()
 		clipped.Pop()
@@ -706,86 +636,12 @@ func drawPlaced(k Kit, w Window) {
 	for n, p := range seen {
 		fall, fade := Arriving(progress, n, len(seen))
 		panel := PartsOf(p.Slot).Panel
-		faded := paint.PushOpacity(k.gtx.Ops, float32(1-fade))
+		faded := k.faded(float32(1 - fade))
 		for i, stone := range StonesOf(panel, p.Card.Number) {
-			drawStone(k.gtx, Fallen(stone, Dropped(panel, fall)), k.skin.stoneOf(i))
+			Stone{Shape: Fallen(stone, Dropped(panel, fall)), Shade: k.skin.stoneOf(i)}.Draw(k, panel)
 		}
 		faded.Pop()
 	}
-}
-
-func drawStone(gtx layout.Context, stone []Point, shade Shade) {
-	var path clip.Path
-	path.Begin(gtx.Ops)
-	top, bottom, left := stone[0].Y, stone[0].Y, stone[0].X
-	for i, p := range stone {
-		at := f32.Pt(float32(p.X), float32(p.Y))
-		top, bottom, left = min(top, p.Y), max(bottom, p.Y), min(left, p.X)
-		if i == 0 {
-			path.MoveTo(at)
-			continue
-		}
-		path.LineTo(at)
-	}
-	path.Close()
-	outlined := clip.Outline{Path: path.End()}.Op().Push(gtx.Ops)
-	paint.LinearGradientOp{
-		Stop1: f32.Pt(0, float32(top)), Color1: shade.Light,
-		Stop2: f32.Pt(0, float32(bottom)), Color2: shade.Dark,
-	}.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	moved := op.Offset(image.Pt(left, top)).Push(gtx.Ops)
-	grainOp().Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	moved.Pop()
-	outlined.Pop()
-}
-
-var grainOp = sync.OnceValue(func() paint.ImageOp { return paint.NewImageOp(StoneGrain()) })
-
-func drawCross(k Kit, cross Box, ink color.NRGBA) {
-	reach := float32(cross.W) / 4
-	x, y := float32(cross.X)+float32(cross.W)/2, float32(cross.Y)+float32(cross.H)/2
-	var strokes clip.Path
-	strokes.Begin(k.gtx.Ops)
-	strokes.MoveTo(f32.Pt(x-reach, y-reach))
-	strokes.LineTo(f32.Pt(x+reach, y+reach))
-	strokes.MoveTo(f32.Pt(x+reach, y-reach))
-	strokes.LineTo(f32.Pt(x-reach, y+reach))
-	paint.FillShape(k.gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: k.skin.Size.Stroke}.Op())
-}
-
-func drawGrip(k Kit, grip Box, ink color.NRGBA) {
-	x, y := float32(grip.X+grip.W), float32(grip.Y+grip.H)
-	var strokes clip.Path
-	strokes.Begin(k.gtx.Ops)
-	for _, reach := range []float32{float32(grip.W), float32(grip.W) / 2} {
-		strokes.MoveTo(f32.Pt(x-reach, y))
-		strokes.LineTo(f32.Pt(x, y-reach))
-	}
-	paint.FillShape(k.gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: k.skin.Size.Stroke}.Op())
-}
-
-func drawChevron(k Kit, mark Box, ink color.NRGBA) {
-	x, y := float32(mark.X), float32(mark.Y)+float32(mark.H)*0.3
-	w, h := float32(mark.W), float32(mark.H)*0.4
-	var strokes clip.Path
-	strokes.Begin(k.gtx.Ops)
-	strokes.MoveTo(f32.Pt(x+1, y))
-	strokes.LineTo(f32.Pt(x+w/2, y+h))
-	strokes.LineTo(f32.Pt(x+w-1, y))
-	paint.FillShape(k.gtx.Ops, ink, clip.Stroke{Path: strokes.End(), Width: k.skin.Size.Stroke}.Op())
-}
-
-func drawCalendarMark(gtx layout.Context, mark Box, ink color.NRGBA) {
-	outline(gtx, Box{X: mark.X, Y: mark.Y + 1, W: mark.W, H: mark.H - 1}, ink)
-	fill(gtx, Box{X: mark.X, Y: mark.Y + 1, W: mark.W, H: 3}, ink)
-}
-
-func drawFocusMark(gtx layout.Context, mark Box, dot, halo color.NRGBA) {
-	glow := GlowOf(mark)
-	disc(gtx, glow.X, glow.Y, glow.Halo, halo)
-	disc(gtx, glow.X, glow.Y, glow.Dot, dot)
 }
 
 func disc(gtx layout.Context, x, y, r float32, ink color.NRGBA) {
@@ -797,18 +653,8 @@ func (w Window) cardOf(c engine.Card, chosen, hovered bool) Card {
 	return Card{Face: c, Chosen: chosen, Hovered: hovered, Pages: w.pages, Colour: w.LabelColour}
 }
 
-func drawProgress(k Kit, at Box, done, total int, said string) {
-	counted := monoWide(said, small)
-	track := Box{X: at.X, Y: at.Y + (at.H-k.skin.Size.Track)/2, W: max(0, at.W-counted-pillGap*2), H: k.skin.Size.Track}
-	rounded(k.gtx, track, k.skin.Size.Track, k.skin.Colour.Surface.Control)
-	if done > 0 {
-		rounded(k.gtx, Box{X: track.X, Y: track.Y, W: max(k.skin.Size.Track, track.W*done/total), H: track.H}, k.skin.Size.Track, k.skin.Colour.State.Done)
-	}
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: at.X + at.W - counted, Y: at.Y + (at.H-lineHigh)/2, W: counted, H: lineHigh}, said, small, k.skin.Type.Mono, text.End)
-}
-
 func drawGoals(k Kit, l Layout, w Window) {
-	clipped := clip.Rect(rect(GoalsRun(l))).Push(k.gtx.Ops)
+	clipped := k.within(GoalsRun(l))
 	defer clipped.Pop()
 	for at, g := range engine.Sorted(w.Showing().Goals) {
 		box := GoalAt(l, at, w.goals)
@@ -817,7 +663,7 @@ func drawGoals(k Kit, l Layout, w Window) {
 		card.Standing = g.State
 		card.Draw(k, box)
 		if g.Total > 0 {
-			drawProgress(k, PartsOf(box).Steps, g.Done, g.Total, Counted(g))
+			Progress{Done: g.Done, Total: g.Total, Said: Counted(g)}.Draw(k, PartsOf(box).Steps)
 		}
 	}
 }
@@ -829,7 +675,7 @@ func goalFace(g engine.Goal) engine.Card {
 
 func drawDragging(k Kit, w Window) {
 	if landing, somewhere := w.Landing(); somewhere {
-		outline(k.gtx, PartsOf(landing).Panel, k.skin.Colour.Accent.Base)
+		Ring{Target: true, Radius: k.skin.Radius.Card}.Draw(k, PartsOf(landing).Panel)
 	}
 	ghost, dragging := w.Ghost()
 	if !dragging {
@@ -846,14 +692,13 @@ func drawDragging(k Kit, w Window) {
 
 func drawBar(k Kit, l Layout, w Window) {
 	if w.Wrong() != nil {
-		fill(k.gtx, WrongBox(l), k.skin.Colour.Surface.Back)
+		Backdrop{}.Draw(k, WrongBox(l))
 		sayOver(k.gtx, k.th, k.skin.Colour.State.Wrong, WrongBox(l), w.Wrong().Error(), reads, 2)
 	} else if w.Note() != "" {
-		fill(k.gtx, WrongBox(l), k.skin.Colour.Surface.Back)
+		Backdrop{}.Draw(k, WrongBox(l))
 		sayOver(k.gtx, k.th, k.skin.Colour.Ink.Text, WrongBox(l), w.Note(), reads, 2)
 	}
-	bar := l.Bar
-	framed(k, bar, k.skin.Radius.Ground, k.skin.Colour.Line.Rule, k.skin.Colour.Surface.Raised)
+	bar := Bar{}.Draw(k, l.Bar)
 	offers, faint := w.Offers(), false
 	if s := w.Screen(); s != OnTheBoard && s != OnSearch {
 		offers, faint = w.BoardOffers(), true
@@ -879,7 +724,7 @@ func drawBar(k Kit, l Layout, w Window) {
 		if !worded {
 			word = ""
 		}
-		drawHint(k, along[i], w.BarKey(offer), word, faint, !faint && w.Lighting(offer))
+		Hint{Key: w.BarKey(offer), Word: word, Faint: faint, Lit: !faint && w.Lighting(offer)}.Draw(k, along[i])
 	}
 }
 
@@ -899,37 +744,13 @@ func inkOf(th *material.Theme, face font.Font, key string) (top, bottom int) {
 	return top, bottom
 }
 
-func drawHint(k Kit, at Box, key, word string, faint, lit bool) {
-	if lit {
-		rounded(k.gtx, Box{X: at.X, Y: at.Y + 3, W: at.W - hintSpace, H: at.H - 6}, k.skin.Radius.Row, k.skin.Colour.Surface.Hover)
-	}
-	chip := KeyChip{Key: key}.Draw(k, Box{X: at.X + hintSpace/2, Y: at.Y, H: at.H})
-	ink := k.skin.Colour.Ink.Text
-	if faint {
-		ink = k.skin.Colour.Ink.Faint
-	}
-	from := chip.X + chip.W + hintSpace
-	sayIn(k.gtx, k.th, ink, Box{X: from, Y: at.Y + (at.H-lineHigh)/2, W: at.X + at.W - from, H: lineHigh}, word, reads, font.Font{}, text.Start)
-}
-
 func drawSub(k Kit, box Box, c engine.Card, line string, on, picked bool, held Written) {
-	panel := SubPanel(box)
-	ground := k.skin.Colour.Surface.Raised
-	if picked {
-		ground = k.skin.Colour.Surface.Ghost
-	}
-	fill(k.gtx, panel, ground)
+	panel := Tile{Picked: picked}.Draw(k, SubPanel(box))
 	if on {
-		outline(k.gtx, panel, k.skin.Colour.Accent.Base)
+		Ring{Radius: k.skin.Radius.Row}.Draw(k, panel)
 	}
-	check := SubCheck(box)
 	done := engine.Finished(c)
-	if done {
-		fill(k.gtx, check, k.skin.Colour.Ink.Faint)
-		say(k.gtx, k.th, k.skin.Colour.Surface.Raised, TickAt(check), TickedMark, small)
-	} else {
-		outline(k.gtx, check, k.skin.Colour.Ink.Text)
-	}
+	Check{Done: done}.Draw(k, SubCheck(box))
 	writ := SubWriting(box)
 	said := fits(k.gtx, k.th, line, writ.W, small)
 	held.Value = said
@@ -937,7 +758,7 @@ func drawSub(k Kit, box Box, c engine.Card, line string, on, picked bool, held W
 	if done {
 		loose := k.gtx
 		loose.Constraints = layout.Constraints{Max: image.Pt(writ.W, lineHigh)}
-		fill(k.gtx, StruckAt(writ, wide(loose, k.th, said, small).Size.X), k.skin.Colour.Ink.Faint)
+		Struck{}.Draw(k, StruckAt(writ, wide(loose, k.th, said, small).Size.X))
 	}
 }
 
@@ -951,15 +772,11 @@ func SubInk(skin Skin, c engine.Card) color.NRGBA {
 
 func drawBesideTabs(k Kit, panel Box, w Window) {
 	tabs, says := BesideTabs(panel), w.BesideTabsSay()
-	rounded(k.gtx, Box{X: tabs[0].X, Y: tabs[0].Y, W: tabs[1].X + tabs[1].W - tabs[0].X, H: tabs[0].H}, k.skin.Radius.Control, k.skin.Colour.Surface.Control)
-	for i, tab := range tabs {
-		ink := k.skin.Colour.Ink.Faint
-		if (i == 1) == w.Tracing() {
-			rounded(k.gtx, Box{X: tab.X + segmentInset, Y: tab.Y + segmentInset, W: tab.W - 2*segmentInset, H: tab.H - 2*segmentInset}, k.skin.Radius.Control, k.skin.Colour.Surface.ControlLit)
-			ink = k.skin.Colour.Ink.Text
-		}
-		sayStyled(k.gtx, k.th, ink, ButtonSaid(tab), says[i], reads, font.Medium, 1, text.Middle)
+	on := 0
+	if w.Tracing() {
+		on = 1
 	}
+	Segmented{Said: says[:], At: tabs[:], On: on}.Draw(k, Box{X: tabs[0].X, Y: tabs[0].Y, W: tabs[1].X + tabs[1].W - tabs[0].X, H: tabs[0].H})
 }
 
 func drawUnder(k Kit, w Window) {
@@ -970,24 +787,18 @@ func drawUnder(k Kit, w Window) {
 			done++
 		}
 	}
-	name := w.WorkName()
-	say(k.gtx, k.th, k.skin.Colour.Ink.Faint, name, ServingHead, small)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, name, fmt.Sprintf("%s · %d done", countOf(len(under), "task"), done), small, k.skin.Type.Mono, text.End)
-	frame := w.workFrame()
-	fill(k.gtx, frame, k.skin.Colour.Surface.Field)
-	clipped := clip.Rect(rect(frame)).Push(k.gtx.Ops)
+	Head{Said: ServingHead, Count: fmt.Sprintf("%s · %d done", countOf(len(under), "task"), done)}.Draw(k, w.WorkName())
+	frame := Field{}.Draw(k, w.workFrame())
+	clipped := k.within(frame)
 	on, walking := w.WorkOn()
 	for _, tile := range w.WorkTiles() {
 		drawWorkTile(k, w, tile)
 		if walking && tile == on {
-			panel := SubPanel(tile.At)
-			outline(k.gtx, Box{X: panel.X + inset, Y: panel.Y + 1, W: panel.W - 2*inset, H: panel.H - 2}, k.skin.Colour.Accent.Base)
+			Ring{Radius: k.skin.Radius.Row}.Draw(k, workTileAt(tile))
 		}
 	}
 	clipped.Pop()
-	track := w.workBar()
-	fill(k.gtx, track, k.skin.Colour.Surface.Back)
-	fill(k.gtx, Thumb(track, (len(under)+1)*SubHeight, frame.H, w.ServingAt()), k.skin.Colour.Line.Edge)
+	Scrollbar{Lines: (len(under) + 1) * SubHeight, Rows: frame.H, At: w.ServingAt()}.Draw(k, w.workBar())
 }
 
 func drawWorkTile(k Kit, w Window, tile WorkTile) {
@@ -996,8 +807,7 @@ func drawWorkTile(k Kit, w Window, tile WorkTile) {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: tile.At.X + padding, Y: line.Y, W: tile.At.W - 2*padding, H: line.H}, tile.Said, small)
 		return
 	}
-	panel := SubPanel(tile.At)
-	rounded(k.gtx, Box{X: panel.X + inset, Y: panel.Y + 1, W: panel.W - 2*inset, H: panel.H - 2}, k.skin.Radius.Row, k.skin.Colour.Surface.Raised)
+	Tile{}.Draw(k, workTileAt(tile))
 	c, _ := w.snap.Card(tile.Number)
 	x := tile.At.X + padding
 	number := "#" + strconv.Itoa(c.Number)
@@ -1022,7 +832,7 @@ func drawWorkTile(k Kit, w Window, tile WorkTile) {
 	if engine.Finished(c) {
 		loose := k.gtx
 		loose.Constraints = layout.Constraints{Max: image.Pt(title.W, lineHigh)}
-		fill(k.gtx, StruckAt(title, wide(loose, k.th, said, small).Size.X), k.skin.Colour.Ink.Faint)
+		Struck{}.Draw(k, StruckAt(title, wide(loose, k.th, said, small).Size.X))
 	}
 }
 
@@ -1032,17 +842,12 @@ func drawProgressBeside(k Kit, w Window) {
 		return
 	}
 	at := w.ProgressBox()
-	say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: at.X, Y: at.Y, W: at.W, H: lineHigh}, ProgressHead, small)
-	card := Box{X: at.X, Y: at.Y + lineHigh + between, W: at.W, H: at.H - lineHigh - between}
-	rounded(k.gtx, card, k.skin.Radius.Ground, k.skin.Colour.Surface.Card)
+	Head{Said: ProgressHead}.Draw(k, Box{X: at.X, Y: at.Y, W: at.W, H: lineHigh})
+	card := InfoBox{}.Draw(k, Box{X: at.X, Y: at.Y + lineHigh + between, W: at.W, H: at.H - lineHigh - between})
 	inside := Box{X: card.X + padding, Y: card.Y + padding/2, W: card.W - 2*padding, H: card.H - padding}
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: inside.X, Y: inside.Y, W: inside.W, H: titleHi + 4}, strconv.Itoa(g.Percent())+"%", k.skin.Type.Figure, font.SemiBold, 1, text.Start)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: inside.X, Y: inside.Y + 4, W: inside.W, H: lineHigh}, fmt.Sprintf("%d of %d tasks done", g.Done, g.Total), reads, font.Font{}, text.End)
-	track := Box{X: inside.X, Y: inside.Y + titleHi + 12, W: inside.W, H: k.skin.Size.Track + 1}
-	rounded(k.gtx, track, k.skin.Size.Track, k.skin.Colour.Surface.Control)
-	if g.Total > 0 && g.Done > 0 {
-		rounded(k.gtx, Box{X: track.X, Y: track.Y, W: max(k.skin.Size.Track, track.W*g.Done/g.Total), H: track.H}, k.skin.Size.Track, k.skin.Colour.State.Done)
-	}
+	track := Progress{Done: g.Done, Total: g.Total}.Draw(k, Box{X: inside.X, Y: inside.Y + titleHi + 12, W: inside.W, H: k.skin.Size.Track + 1})
 	facts := ProgressFacts(g, w.now)
 	third := inside.W / len(facts)
 	for i, fact := range facts {
@@ -1053,21 +858,17 @@ func drawProgressBeside(k Kit, w Window) {
 }
 
 func drawHistory(k Kit, box Box, w Window) {
-	frame := BesideBox(box)
-	fill(k.gtx, frame, k.skin.Colour.Surface.Back)
-	outline(k.gtx, frame, k.skin.Colour.Line.Edge)
+	frame := Field{}.Draw(k, BesideBox(box))
 
 	inside := Inside(frame)
-	clipped := clip.Rect(rect(inside)).Push(k.gtx.Ops)
+	clipped := k.within(inside)
 	told, from, rows := w.traced(), w.History(), w.Rows()
 	for i := from; i < Lasting(len(told.Said), from, rows); i++ {
 		drawTold(k, LineAt(inside, i, from), w.HoldingFrom("trace", told.Said[i], told.From[i]))
 	}
 	clipped.Pop()
 
-	track := BesideBar(box)
-	fill(k.gtx, track, k.skin.Colour.Surface.Back)
-	fill(k.gtx, Thumb(track, len(told.Said), rows, w.History()), k.skin.Colour.Line.Edge)
+	Scrollbar{Lines: len(told.Said), Rows: rows, At: w.History()}.Draw(k, BesideBar(box))
 }
 
 func drawTold(k Kit, box Box, held Written) {
@@ -1082,37 +883,17 @@ func drawTold(k Kit, box Box, held Written) {
 	say(k.gtx, k.th, k.skin.Colour.Ink.Text, PastStamp(box, stamp), rest, small)
 }
 
-func sayHolding(k Kit, ink color.NRGBA, box Box, said Written, size int) {
-	paintHeld(k, box, said, size)
-	say(k.gtx, k.th, ink, box, said.Value, size)
-}
-
-func paintHeld(k Kit, box Box, said Written, size int) {
-	if !said.Holding() {
-		return
-	}
-	kept := []rune(said.Value)
-	from, to := said.Run()
-	from, to = min(from, len(kept)), min(to, len(kept))
-	loose := k.gtx
-	loose.Constraints = layout.Constraints{Max: image.Pt(box.W, box.H)}
-	fill(k.gtx, HeldRun(box, wide(loose, k.th, string(kept[:from]), size).Size.X,
-		wide(loose, k.th, string(kept[from:to]), size).Size.X), k.skin.Colour.Surface.Ghost)
-}
-
 func drawTicked(k Kit, name, frame Box, w Window) {
 	f := w.Form()
 	sayHolding(k, k.skin.Colour.Ink.Faint, name, Written{Value: "steps"}, small)
-	fill(k.gtx, frame, k.skin.Colour.Surface.Back)
-	outline(k.gtx, frame, k.skin.Colour.Line.Edge)
+	Field{}.Draw(k, frame)
 	parts, from := w.PartsTicked(), w.partsFrom()
 	on := f.onParts() && w.screen == OnForm
 	places := w.partTiles()
 	for n, tile := range places[:len(places)-1] {
 		at := from + n
 		if on && f.writingPart && f.partAt == at {
-			fill(k.gtx, SubPanel(tile), k.skin.Colour.Surface.Raised)
-			outline(k.gtx, SubPanel(tile), k.skin.Colour.Accent.Base)
+			Ring{Target: true, Radius: k.skin.Radius.Row}.Draw(k, Tile{}.Draw(k, SubPanel(tile)))
 			writing(k, w.measured(), SubWriting(tile), f.named, true, small, 1, Follow)
 			continue
 		}
@@ -1121,8 +902,7 @@ func drawTicked(k Kit, name, frame Box, w Window) {
 	if field, ok := f.partsField(); ok {
 		_, value, rows := FormPlace(w.formBox(), f.Fields(), field)
 		_, bar := Saying(value, rows)
-		fill(k.gtx, bar, k.skin.Colour.Surface.Back)
-		fill(k.gtx, Thumb(bar, len(parts), w.partsShown(), from), k.skin.Colour.Line.Edge)
+		Scrollbar{Lines: len(parts), Rows: w.partsShown(), At: from}.Draw(k, bar)
 	}
 	adding := places[len(places)-1]
 	onAdding := on && f.partAt == f.lines()-1
@@ -1136,13 +916,12 @@ func drawTicked(k Kit, name, frame Box, w Window) {
 		say(k.gtx, k.th, ink, adding, AddingAPart, small)
 	}
 	if ghost, ok := w.PartGhost(); ok {
-		fill(k.gtx, ghost, k.skin.Colour.Surface.Ghost)
-		outline(k.gtx, ghost, k.skin.Colour.Accent.Base)
+		Ring{Target: true, Radius: k.skin.Radius.Row}.Draw(k, Tile{Picked: true}.Draw(k, ghost))
 		line := SubWriting(ghost)
 		say(k.gtx, k.th, k.skin.Colour.Ink.Text, line, fits(k.gtx, k.th, StepLine(parts[f.carried-1]), line.W, small), small)
 	}
 	if line, ok := w.PartLanding(); ok {
-		fill(k.gtx, line, k.skin.Colour.Accent.Base)
+		Landing{}.Draw(k, line)
 	}
 }
 
@@ -1152,29 +931,26 @@ func drawFieldAt(k Kit, m Measure, name, value Box, rows, size int, long, lit, c
 	if long {
 		frame, bar = Saying(value, rows)
 	}
-	ink, edge := k.skin.Colour.Ink.Low, k.skin.Colour.Line.Rule
+	ink := k.skin.Colour.Ink.Low
 	if lit {
-		ink, edge = k.skin.Colour.Accent.Base, k.skin.Colour.Accent.Base
-		halo := k.skin.Space.Halo
-		rounded(k.gtx, Box{X: frame.X - halo, Y: frame.Y - halo, W: frame.W + 2*halo, H: frame.H + 2*halo}, k.skin.Radius.Control+halo, k.skin.Colour.Accent.Halo)
+		ink = k.skin.Colour.Accent.Base
 	}
+	Field{Lit: lit}.Draw(k, frame)
 	if name.W > 0 {
 		sayHolding(k, ink, name, named, small)
 	}
-	framed(k, frame, k.skin.Radius.Control, edge, k.skin.Colour.Surface.Field)
 	writing(k, m, Inside(frame), said, carets, size, rows, scrolled)
 	if long {
 		lines := wrapIn(m, said.Reads(), Inside(frame), size)
 		line, _ := lines.At(said.At)
-		fill(k.gtx, bar, k.skin.Colour.Surface.Back)
-		fill(k.gtx, Thumb(bar, len(lines.Said), rows, StartsAt(lines, rows, line, scrolled)), k.skin.Colour.Line.Edge)
+		Scrollbar{Lines: len(lines.Said), Rows: rows, At: StartsAt(lines, rows, line, scrolled)}.Draw(k, bar)
 	}
 }
 
 func drawForm(k Kit, w Window) {
 	panel, box := w.formPanel(), w.formBox()
 	Panel{Head: HeadsOn(w, OnForm)}.Draw(k, panel)
-	drawCross(k, FormClose(panel), k.skin.Colour.Ink.Faint)
+	Cross{Ink: k.skin.Colour.Ink.Faint}.Draw(k, FormClose(panel))
 	fields := w.Form().Fields()
 	for i := range fields {
 		if w.hidden(fields[i]) {
@@ -1192,24 +968,26 @@ func drawForm(k Kit, w Window) {
 			drawTicked(k, name, Framed(value, rows), w)
 			continue
 		}
-		drawFieldAt(k, w.measured(), name, value, rows, FormSize(fields[i]), fields[i].Long, on, typed, said, Written{Value: fields[i].Name}, scrolled)
+		labels := strings.FieldsFunc(said.Reads(), func(r rune) bool { return r == ',' || r == ' ' })
+		written := said
+		pilled := fields[i].Arg == "label" && !on && len(labels) > 0
+		if pilled {
+			written = Written{}
+		}
+		drawFieldAt(k, w.measured(), name, value, rows, FormSize(fields[i]), fields[i].Long, on, typed, written, Written{Value: fields[i].Name}, scrolled)
 		frame := Framed(value, rows)
-		switch fields[i].Arg {
-		case "priority":
-			if _, known := k.skin.Colour.Priority[said.Reads()]; known {
-				Stripe{Priority: said.Reads(), Free: true}.Draw(k, Box{X: FieldMark(frame).X - padding/2 - edgeWide, Y: frame.Y + (frame.H-stripeHigh)/2, W: edgeWide, H: stripeHigh})
-			}
-		case "label":
-			if !on {
-				drawFieldPills(k, w, w.measured(), frame, strings.FieldsFunc(said.Reads(), func(r rune) bool { return r == ',' || r == ' ' }))
-			}
+		if _, known := k.skin.Colour.Priority[said.Reads()]; known && fields[i].Arg == "priority" {
+			Stripe{Priority: said.Reads(), Free: true}.Draw(k, Box{X: FieldMark(frame).X - padding/2 - edgeWide, Y: frame.Y + (frame.H-stripeHigh)/2, W: edgeWide, H: stripeHigh})
+		}
+		if pilled {
+			drawFieldPills(k, w, w.measured(), frame, labels)
 		}
 		switch {
 		case on:
 		case chosenOnACalendar(fields[i]):
-			drawCalendarMark(k.gtx, FieldMark(frame), k.skin.Colour.Ink.Low)
+			CalendarMark{Ink: k.skin.Colour.Ink.Low}.Draw(k, FieldMark(frame))
 		case chosenFromAList(fields[i]):
-			drawChevron(k, FieldMark(frame), k.skin.Colour.Ink.Low)
+			Chevron{Ink: k.skin.Colour.Ink.Low}.Draw(k, FieldMark(frame))
 		}
 	}
 	if !w.Tracing() {
@@ -1217,7 +995,7 @@ func drawForm(k Kit, w Window) {
 			say(k.gtx, k.th, k.skin.Colour.Ink.Faint, head.Box, head.Said, head.Size)
 		}
 	}
-	drawGrip(k, FormGrip(panel), k.skin.Colour.Ink.Faint)
+	Grip{Ink: k.skin.Colour.Ink.Faint}.Draw(k, FormGrip(panel))
 	if w.screen == OnForm {
 		drawPanelOffers(k, panel, w)
 		if note := w.FormNote(); note != "" && len(w.ContextSays()) == 0 {
@@ -1238,7 +1016,7 @@ func drawForm(k Kit, w Window) {
 	case w.TabsBeside():
 		drawBesideTabs(k, panel, w)
 	case w.besideShown():
-		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, BesideHead(panel), DetailsHead, small)
+		Head{Said: DetailsHead}.Draw(k, BesideHead(panel))
 		drawUnder(k, w)
 		drawProgressBeside(k, w)
 	}
@@ -1263,7 +1041,7 @@ func drawPanelOffers(k Kit, box Box, w Window) {
 		Button{Said: offer, Key: w.OfferKey(offer), Look: look, Keyed: true}.Draw(k, ButtonIn(along[i]))
 	}
 	if cross, ok := w.PanelClose(); ok && w.screen != OnForm {
-		drawCross(k, cross, k.skin.Colour.Ink.Faint)
+		Cross{Ink: k.skin.Colour.Ink.Faint}.Draw(k, cross)
 	}
 }
 
@@ -1301,49 +1079,57 @@ func lining(k Kit, b Box, radius int, with color.NRGBA) {
 	rounded(k.gtx, Box{X: b.X + r, Y: b.Y + r, W: b.W - 2*r, H: b.H - 2*r}, radius-r, with)
 }
 
-func drawCopyMark(k Kit, at Box) {
-	back := Box{X: at.X + 3, Y: at.Y, W: at.W - 3, H: at.H - 3}
-	front := Box{X: at.X, Y: at.Y + 3, W: at.W - 3, H: at.H - 3}
-	outline(k.gtx, back, k.skin.Colour.Ink.Low)
-	fill(k.gtx, front, k.skin.Colour.Surface.Raised)
-	outline(k.gtx, front, k.skin.Colour.Ink.Low)
+func ringed(k Kit, b Box, radius int, ink color.NRGBA) {
+	line, r := k.skin.Size.Rule, min(radius, b.W/2, b.H/2)
+	for _, edge := range []Box{{X: b.X + r, Y: b.Y, W: b.W - 2*r, H: line}, {X: b.X + r, Y: b.Y + b.H - line, W: b.W - 2*r, H: line}, {X: b.X, Y: b.Y + r, W: line, H: b.H - 2*r}, {X: b.X + b.W - line, Y: b.Y + r, W: line, H: b.H - 2*r}} {
+		fill(k.gtx, edge, ink)
+	}
+	if r == 0 {
+		return
+	}
+	right, foot := b.X+b.W-r, b.Y+b.H-r
+	for _, corner := range []Box{{X: b.X, Y: b.Y, W: r, H: r}, {X: right, Y: b.Y, W: r, H: r}, {X: b.X, Y: foot, W: r, H: r}, {X: right, Y: foot, W: r, H: r}} {
+		var path clip.Path
+		path.Begin(k.gtx.Ops)
+		around(&path, b, float32(r), false)
+		around(&path, Box{X: b.X + line, Y: b.Y + line, W: b.W - 2*line, H: b.H - 2*line}, float32(max(0, r-line)), true)
+		shape := clip.Outline{Path: path.End()}.Op()
+		cut := clip.Rect(rect(corner)).Push(k.gtx.Ops)
+		paint.FillShape(k.gtx.Ops, ink, shape)
+		cut.Pop()
+	}
+}
+
+func around(path *clip.Path, b Box, r float32, backwards bool) {
+	const iq = 1 - 4*(math.Sqrt2-1)/3
+	w, n, e, s := float32(b.X), float32(b.Y), float32(b.X+b.W), float32(b.Y+b.H)
+	path.MoveTo(f32.Pt(w+r, n))
+	if backwards {
+		path.CubeTo(f32.Pt(w+r*iq, n), f32.Pt(w, n+r*iq), f32.Pt(w, n+r))
+		path.LineTo(f32.Pt(w, s-r))
+		path.CubeTo(f32.Pt(w, s-r*iq), f32.Pt(w+r*iq, s), f32.Pt(w+r, s))
+		path.LineTo(f32.Pt(e-r, s))
+		path.CubeTo(f32.Pt(e-r*iq, s), f32.Pt(e, s-r*iq), f32.Pt(e, s-r))
+		path.LineTo(f32.Pt(e, n+r))
+		path.CubeTo(f32.Pt(e, n+r*iq), f32.Pt(e-r*iq, n), f32.Pt(e-r, n))
+		path.Close()
+		return
+	}
+	path.LineTo(f32.Pt(e-r, n))
+	path.CubeTo(f32.Pt(e-r*iq, n), f32.Pt(e, n+r*iq), f32.Pt(e, n+r))
+	path.LineTo(f32.Pt(e, s-r))
+	path.CubeTo(f32.Pt(e, s-r*iq), f32.Pt(e-r*iq, s), f32.Pt(e-r, s))
+	path.LineTo(f32.Pt(w+r, s))
+	path.CubeTo(f32.Pt(w+r*iq, s), f32.Pt(w, s-r*iq), f32.Pt(w, s-r))
+	path.LineTo(f32.Pt(w, n+r))
+	path.CubeTo(f32.Pt(w, n+r*iq), f32.Pt(w+r*iq, n), f32.Pt(w+r, n))
+	path.Close()
 }
 
 func outline(gtx layout.Context, b Box, with color.NRGBA) {
 	for _, edge := range Edges(b) {
 		fill(gtx, edge, with)
 	}
-}
-
-func writing(k Kit, m Measure, b Box, said Written, carets bool, size, rows, scrolled int) {
-	clipped := clip.Rect(rect(b)).Push(k.gtx.Ops)
-	defer clipped.Pop()
-
-	at := said.At
-	lines := wrapIn(m, said.Reads(), b, size)
-	line, column := lines.At(at)
-	from := StartsAt(lines, rows, line, scrolled)
-
-	begins, ends := said.Run()
-	loose := k.gtx
-	loose.Constraints = layout.Constraints{Max: image.Pt(b.W, lineHigh)}
-	for i := from; i < Lasting(len(lines.Said), from, rows); i++ {
-		if a, z, on := HeldOn(lines, begins, ends, i); said.Holding() && on {
-			kept := []rune(lines.Said[i])
-			at := LineAt(b, i, from)
-			left := wide(loose, k.th, string(kept[:a]), size).Size.X
-			fill(k.gtx, Box{X: at.X + left, Y: at.Y, H: at.H,
-				W: wide(loose, k.th, string(kept[a:z]), size).Size.X}, k.skin.Colour.Surface.Ghost)
-		}
-		say(k.gtx, k.th, k.skin.Colour.Ink.Text, LineAt(b, i, from), lines.Said[i], size)
-	}
-	if !carets {
-		return
-	}
-	kept := []rune(lines.Said[line])
-	before := wide(loose, k.th, string(kept[:min(len(kept), column)]), size)
-
-	fill(k.gtx, CaretAt(b, line, from, before.Size.X), k.skin.Colour.Accent.Base)
 }
 
 func fits(gtx layout.Context, th *material.Theme, said string, width, size int) string {
@@ -1430,9 +1216,9 @@ func sayWith(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, sai
 func drawPalette(k Kit, w Window) {
 	Veil{Light: true}.Draw(k, Box{W: w.width, H: w.height})
 	rise, _ := w.PaletteRise()
-	risen := op.Offset(image.Pt(0, -int((1-rise)*paletteRiseBy))).Push(k.gtx.Ops)
+	risen := k.shifted(-int((1 - rise) * paletteRiseBy))
 	defer risen.Pop()
-	faded := paint.PushOpacity(k.gtx.Ops, float32(rise))
+	faded := k.faded(float32(rise))
 	defer faded.Pop()
 	box := w.PaletteBox()
 	Panel{}.Draw(k, box)
@@ -1442,29 +1228,26 @@ func drawPalette(k Kit, w Window) {
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, closeAt, "close", small, font.Font{}, text.End)
 	KeyChip{Key: shut}.Draw(k, Box{X: closeAt.X - hintSpace - KeyChipWide(shut), Y: closeAt.Y, H: lineHigh})
 	Rule{}.Draw(k, Box{X: box.X, Y: box.Y + paletteHead - 1, W: box.W})
-	clipped := clip.Rect(rect(Box{X: box.X, Y: box.Y + paletteHead, W: box.W, H: box.H - paletteHead})).Push(k.gtx.Ops)
+	clipped := k.within(Box{X: box.X, Y: box.Y + paletteHead, W: box.W, H: box.H - paletteHead})
 	defer clipped.Pop()
 	rows := w.PaletteRows()
 	for _, line := range w.PaletteLines() {
 		if line.Row < 0 {
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: line.Box.X, Y: line.Box.Y + line.Box.H - lineHigh, W: line.Box.W, H: lineHigh}, strings.ToUpper(line.Group), small, k.skin.Type.MonoBold, text.Start)
+			Head{Said: line.Group}.Draw(k, Box{X: line.Box.X, Y: line.Box.Y + line.Box.H - lineHigh, W: line.Box.W, H: lineHigh})
 			continue
 		}
-		ink := k.skin.Colour.Ink.Faint
-		if line.Row == w.palette.row {
-			rounded(k.gtx, line.Box, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-			ink = k.skin.Colour.Ink.Text
-		}
-		sayIn(k.gtx, k.th, ink, Box{X: line.Box.X + padding/2, Y: line.Box.Y + (line.Box.H-lineHigh)/2, W: line.Box.W - padding, H: lineHigh}, rows[line.Row].Says, reads, font.Font{}, text.Start)
+		row := Row{Picked: line.Row == w.palette.row}
+		row.Draw(k, line.Box)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: line.Box.X + padding/2, Y: line.Box.Y + (line.Box.H-lineHigh)/2, W: line.Box.W - padding, H: lineHigh}, rows[line.Row].Says, reads, font.Font{}, text.Start)
 		end := line.Box.X + line.Box.W - padding/2
-		if line.Row == w.palette.row {
+		if row.Picked {
 			enter := w.keyboard.Spelled(Pretty("enter"))
-			chip := KeyChip{Key: enter, OnControl: true}.Draw(k, PaletteKeyAt(line.Box, enter))
+			chip := row.Chip(k, KeyChip{Key: enter}, PaletteKeyAt(line.Box, enter))
 			end = chip.X - hintSpace
 		}
 		if key := rows[line.Row].Key; key != "" {
 			spelled := w.keyboard.Spelled(Pretty(key))
-			chip := KeyChip{Key: spelled, Quiet: true, OnControl: line.Row == w.palette.row}.Draw(k, PaletteKeyAt(Box{X: line.Box.X, Y: line.Box.Y, W: end - line.Box.X + padding/2, H: line.Box.H}, spelled))
+			chip := row.Chip(k, KeyChip{Key: spelled, Quiet: true}, PaletteKeyAt(Box{X: line.Box.X, Y: line.Box.Y, W: end - line.Box.X + padding/2, H: line.Box.H}, spelled))
 			end = chip.X - hintSpace
 		}
 		if ago := rows[line.Row].Ago(w.now); ago != "" {
@@ -1475,49 +1258,13 @@ func drawPalette(k Kit, w Window) {
 
 func drawPills(k Kit, w Window) {
 	for _, pill := range w.Pills() {
-		line := Box{X: pill.Box.X, Y: pill.Box.Y + (pill.Box.H-lineHigh)/2, W: pill.Box.W, H: lineHigh}
-		switch pill.Kind {
-		case PillSearch, PillFilter:
-			drawFilterPill(k, w, pill)
-		case PillAdd:
-			Dashed{Radius: k.skin.Radius.Full(pill.Box)}.Draw(k, pill.Box)
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, line, pill.Said, small, font.Font{}, text.Middle)
-		case PillFolded:
-			rounded(k.gtx, pill.Box, k.skin.Radius.Full(pill.Box), k.skin.Colour.Surface.Tint)
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, line, pill.Said, small, font.Font{}, text.Middle)
-		case PillClear:
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, pill.Said, small, font.Font{}, text.Middle)
-		}
+		pill.Draw(k, pill.Box)
 	}
-}
-
-func drawFilterPill(k Kit, w Window, pill FilterPill) {
-	name, value := k.skin.Colour.Ink.Faint, k.skin.Colour.Ink.OnTint
-	if pill.Faint {
-		name, value = k.skin.Colour.Ink.Low, k.skin.Colour.Ink.Faint
-	}
-	rounded(k.gtx, pill.Box, k.skin.Radius.Full(pill.Box), k.skin.Colour.Surface.Tint)
-	line := Box{X: pill.Box.X + pillPad, Y: pill.Box.Y + (pill.Box.H-lineHigh)/2, W: pill.Box.W - pillPad - pillCross, H: lineHigh}
-	sayIn(k.gtx, k.th, name, line, pill.Name, small, font.Font{}, text.Start)
-	at := ends(w.measured(), pill.Name, small) + nameGap
-	sayIn(k.gtx, k.th, value, Box{X: line.X + at, Y: line.Y, W: line.W - at, H: line.H}, strings.TrimPrefix(pill.Said, pill.Name+" "), small, font.Font{Weight: font.Medium}, text.Start)
-	drawCross(k, Box{X: pill.Box.X + pill.Box.W - pillCross, Y: pill.Box.Y + (pill.Box.H-pillCross)/2, W: pillCross - 4, H: pillCross}, name)
-}
-
-func drawListRow(k Kit, row Box, said string, on bool) {
-	if on {
-		rounded(k.gtx, row, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
-	}
-	say(k.gtx, k.th, k.skin.Colour.Ink.Text, Inside(row), said, reads)
 }
 
 func drawFieldPills(k Kit, w Window, m Measure, frame Box, labels []string) {
-	if len(labels) == 0 {
-		return
-	}
 	room := Inside(frame)
 	room.W -= markWide + padding
-	lining(k, frame, k.skin.Radius.Control, k.skin.Colour.Surface.Field)
 	x, top := room.X, frame.Y+(frame.H-pillHigh)/2
 	wide := func(said string) int { return ends(m, said, small) }
 	shown, more := Pills(labels, room.W, wide)

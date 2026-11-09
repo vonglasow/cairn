@@ -32,7 +32,7 @@ func (w Window) CopyMarks() []CopyMark {
 	case w.screen == OnAsking && w.question == aboutCairn:
 		said := AboutSays(build.Read())
 		box := w.QuestionBox()
-		return []CopyMark{markBefore(Row(box, FirstRow(box)+(len(said)-1)*apart, lineHigh), build.Home)}
+		return []CopyMark{markBefore(RowIn(box, FirstRow(box)+(len(said)-1)*apart, lineHigh), build.Home)}
 	case w.Context() != "":
 		path := w.contextPath()
 		return []CopyMark{markBefore(Box{X: path.X - copyRoom, Y: path.Y, H: path.H}, w.Context())}

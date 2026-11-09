@@ -1537,7 +1537,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return err
 		}
 		w.pointer = b
-		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Grip + 1}).MoveTo(b)
+		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Wobble + 1}).MoveTo(b)
 		return nil
 	})
 	sc.Step(`^I drag the step "([^"]*)" onto the step "([^"]*)"$`, func(from, onto string) error {
@@ -1558,7 +1558,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Grip + 1}).MoveTo(b).LetGo(b)
+		w.w = w.w.PressAt(a).MoveTo(Point{X: a.X, Y: a.Y + Wobble + 1}).MoveTo(b).LetGo(b)
 		return nil
 	})
 	sc.Step(`^the keyboard says "([^"]*)" as both a key and as text$`, func(said string) error {

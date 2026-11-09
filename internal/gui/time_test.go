@@ -242,10 +242,10 @@ func TestWhatTheTimePageIsDrawnOn(t *testing.T) {
 		t.Errorf("a day of an hour and a half reads %q", got)
 	}
 	cell := Box{X: 10, Y: 20, W: 100, H: 90}
-	if got := CellHeadAt(cell); got != Row(cell, 20+inset, lineHigh) {
+	if got := CellHeadAt(cell); got != RowIn(cell, 20+inset, lineHigh) {
 		t.Errorf("the head is at %+v", got)
 	}
-	if got := CellLineAt(cell, 1); got != Row(cell, 20+inset+2*lineHigh, lineHigh) {
+	if got := CellLineAt(cell, 1); got != RowIn(cell, 20+inset+2*lineHigh, lineHigh) {
 		t.Errorf("the second line is at %+v", got)
 	}
 	if !sameMonth(dayNamed("2026-10-01"), dayNamed("2026-10-31")) || sameMonth(dayNamed("2026-10-01"), dayNamed("2025-10-01")) || sameMonth(dayNamed("2026-10-01"), dayNamed("2026-11-01")) {
@@ -372,13 +372,13 @@ func TestTheTimePageSaysThePeriodsTotalAfterThePeriod(t *testing.T) {
 	}
 }
 
-func TestTodayIsAnAccentPillAndTheWeeksDaysAreRounded(t *testing.T) {
+func TestTodayIsAnAccentRingAndTheWeeksDaysAreRounded(t *testing.T) {
 	w := Window{work: newFake(), tab: Time, width: 1200, height: 800, now: dayNamed("2026-09-30"), timeState: timeState{week: dayNamed("2026-09-28")}}
 	l := w.Layout()
 	shot := drawn(t, w)
 	today := TodayPill(WeekHeadAt(WeekDayAt(l, 2)), w.measured())
-	if painted(shot, Box{X: today.X + today.W/2, Y: today.Y + 1, W: 1, H: 1}, Dark().Colour.Accent.Base) != 1 {
-		t.Errorf("today's date at %+v is not on the accent", today)
+	if painted(shot, Box{X: today.X + today.W/2, Y: today.Y, W: 1, H: 1}, Dark().Colour.Accent.Base) != 1 || painted(shot, Box{X: today.X + 2, Y: today.Y + today.H/2, W: 1, H: 1}, Dark().Colour.Accent.Base) != 0 {
+		t.Errorf("today's date at %+v is not ringed in the accent, or is filled", today)
 	}
 	day := WeekDayAt(l, 0)
 	if painted(shot, Box{X: day.X, Y: day.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {

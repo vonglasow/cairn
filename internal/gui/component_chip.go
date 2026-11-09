@@ -24,8 +24,7 @@ func (c LabelChip) Draw(k Kit, at Box) Box {
 	said := at
 	if c.Removable {
 		said.W -= crossWide
-		cross := k.inside("label").put("cross", Box{X: at.X + at.W - pillPad/2 - crossWide, Y: at.Y + (at.H-crossWide)/2, W: crossWide, H: crossWide})
-		drawCross(k, cross, ink)
+		Cross{Ink: ink}.Draw(k.inside("label"), Box{X: at.X + at.W - pillPad/2 - crossWide, Y: at.Y + (at.H-crossWide)/2, W: crossWide, H: crossWide})
 	}
 	sayCentred(k.gtx, k.th, ink, pillLine(k.th, said), c.Label, small)
 	return at

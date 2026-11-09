@@ -113,7 +113,7 @@ const (
 )
 
 // FilterMenuSays is what heads the menu of filters.
-const FilterMenuSays = "FILTER BY"
+const FilterMenuSays = "Filter by"
 
 // FilterHint says how the open filter's values are taken: several ticked together, or one at a time.
 func (w Window) FilterHint() string {

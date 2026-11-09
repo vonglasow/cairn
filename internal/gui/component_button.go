@@ -12,7 +12,6 @@ type Button struct {
 	Said, Key string
 	Look      buttonLook
 	Keyed     bool
-	Measure   Measure
 }
 
 // Draw draws the button in at.
@@ -24,11 +23,7 @@ func (b Button) Draw(k Kit, at Box) Box {
 		sayStyled(k.gtx, k.th, ink, ButtonSaid(at), b.Said, reads, font.Medium, 1, text.Middle)
 		return at
 	}
-	m := b.Measure
-	if m == nil {
-		m = Measured(k.th)
-	}
-	said, key := ButtonParts(at, m, b.Said, b.Key)
+	said, key := ButtonParts(at, k.measured(), b.Said, b.Key)
 	sayStyled(k.gtx, k.th, ink, said, b.Said, reads, font.Medium, 1, text.Start)
 	if b.Key != "" {
 		KeyChip{Key: b.Key}.grounded(k.inside("button"), key, chip, ink)

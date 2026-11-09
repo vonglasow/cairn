@@ -118,7 +118,7 @@ func Twice(before, now time.Time, was, at Point) bool {
 	if before.IsZero() || now.Sub(before) > Twin() {
 		return false
 	}
-	return abs(at.X-was.X) <= Grip && abs(at.Y-was.Y) <= Grip
+	return abs(at.X-was.X) <= Wobble && abs(at.Y-was.Y) <= Wobble
 }
 
 // Typed says what a key does.
