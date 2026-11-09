@@ -27,6 +27,25 @@ already said why not.
 | no follow-up day and no person awaited on a task watched | its `because` says who, its deadline says when, and both boards already mark a deadline passed | [blocking.md](blocking.md#three-words-for-stopped-not-one) |
 | no ticket field; a ticket is named in the title or the description | the search reaches both, and a link is between two tasks, never to a place outside cairn | [links.md](links.md) |
 
+## What work is for, and how it is organised
+
+Decided on 2026-11-09, built in #226: until then cairn does none of it.
+
+| decided | why, in one line | where |
+|---|---|---|
+| objectives on two levels, a third refused | two cover every case asked — home automation in parts, a probation objective in key results — and draw on a board; a project beside the objective was three notions and a task counted twice | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| the names stay Objective › Sub-objective; nothing is renamed | Area › Project reads oddly for an objective that ends, Goal › Key result for an enclosure; the word kept keeps every command, tool and the trace | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| a type is a free label, and a label has a scope — tasks, objectives or both | one label system — colours, rename, delete — rather than a set of types beside it; the scope keeps an objective's picker to labels meant for it | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| a task on a sub-objective counts in its parent, worked out, never stored; a parent counts over the union of its subtree, each task once | adding the sub-objectives up counts a task serving two of them twice | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| a task attached to a parent and one of its sub-objectives is refused, and the refusal only refuses | the link adds nothing the parent does not count; moving the task up in the same act writes a set nobody asked for | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| a dependency between objectives is stored, warns and never blocks | read off the tasks' blockers it is not seen at a glance; an objective is not work, and blocking comes the day it proves needed | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| a sub-objective may move to another parent, unless one of its tasks is already attached to the new parent | the move would make the double attachment the rule refuses | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| deleting a parent asks, per sub-objective, delete or keep as level one, and for its tasks, delete or only detach | which work goes with an objective is a deliberate choice; nothing is decided for the person | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| a parent is proposed as reached when every sub-objective is, never put there on its own | its standing is the person's: a parent can hold work of its own beyond its sub-objectives | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| the Objectives tab is a tree beside the chosen objective's detail | a grid of cards cannot show what sits under what | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| a card names, by name, the objective it is directly attached to | a number says nothing to a reader, and the whole path is too long for a card | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+| `--objective N` includes the sub-objectives, `--itself` the parent alone | a parent's tasks are its subtree's, as its numbers count them; a listing saying fewer would disagree | [objectives.md](objectives.md#two-levels--decided-built-in-226) |
+
 ## What is remembered, and what is not
 
 | decided | why, in one line | where |
