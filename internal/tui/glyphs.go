@@ -48,6 +48,7 @@ var nerd = Glyphs{
 	Steps:     "",
 	Label:     "",
 	InTheWay:  "",
+	Archived:  "\U000F003C",
 	Serves:    "◇",
 	Repeats:   "\U000F0456",
 }

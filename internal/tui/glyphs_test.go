@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -67,5 +68,16 @@ func TestParseSet(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "unicode") {
 		t.Fatalf("the refusal does not say what it takes: %v", err)
+	}
+}
+
+func TestEverySetDrawsEveryMark(t *testing.T) {
+	for name, set := range map[string]Glyphs{"nerdfont": nerd, "unicode": plain} {
+		v := reflect.ValueOf(set)
+		for i := range v.NumField() {
+			if v.Field(i).String() == "" {
+				t.Errorf("the %s set draws no %s", name, v.Type().Field(i).Name)
+			}
+		}
 	}
 }
