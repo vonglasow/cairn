@@ -5823,6 +5823,32 @@ Feature: The desktop board
       And I press "right"
       Then the objectives read "Home automation", "Garden", "Tidy the workshop"
 
+    @gui-objective-a-folded-parent-opens-under-a-drag
+    Scenario: a folded parent held under a dragged objective unfolds after a moment, and folds back when the drop lands elsewhere
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden"
+      And I added an objective titled "Tidy the workshop"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I hold the objective "Garden" over "Home automation" for 700 ms
+      Then the objectives read "Home automation", "Firmware", "Garden", "Tidy the workshop"
+      And the landing says "under #1"
+      When I let the objective go below "Tidy the workshop"
+      Then the objectives read "Home automation", "Tidy the workshop", "Garden"
+
+    @gui-objective-x-chooses-the-level-under-a-last-sub-objective
+    Scenario: under a parent's last sub-objective, the pointer left of the sub-objectives drops at level one
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "right"
+      And I hold the objective "Garden" below "Firmware", left of its indent
+      Then the landing says "after #1"
+
     @gui-objective-a-parent-dragged-onto-another-is-refused
     Scenario: a parent dropped onto another objective is refused, and nothing moves
       Given I added an objective titled "Home automation"

@@ -38,6 +38,9 @@ type calendarState struct {
 // At is the window told what moment it is: the day a calendar opens on when the field holds none, and the day it marks as today.
 func (w Window) At(now time.Time) Window {
 	w.now = now
+	if w.GoalDragging() {
+		return w.hoveringGoal(w.held.At)
+	}
 	return w
 }
 

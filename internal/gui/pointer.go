@@ -652,6 +652,9 @@ func (w Window) MoveTo(p Point) Window {
 	if abs(p.X-w.held.From.X) > Wobble || abs(p.Y-w.held.From.Y) > Wobble {
 		w.held.Moved = true
 	}
+	if w.GoalDragging() {
+		return w.hoveringGoal(p)
+	}
 	return w
 }
 

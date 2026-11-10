@@ -742,6 +742,7 @@ Feature: The board
       Then the board says "Tidy the workshop" before "Home automation"
       When I press "K"
       Then the board says "Home automation" before "Tidy the workshop"
+      And the board says "JK order"
 
     @tui-objective-z-on-a-sub-objective-folds-its-parent
     Scenario: z on a sub-objective folds its parent, and the cursor goes up to it

@@ -400,7 +400,7 @@ func (b Board) offers() []string {
 	}
 	if b.tab == Objectives {
 		return []string{
-			b.offer("jk ↓↑", "objectives"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
+			b.offer("jk ↓↑", "objectives"), b.offer("JK", "order"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
 			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("?", "help"),
 			b.offer("N", "under it"), b.offer("z", "fold"), b.offer("/", "search"), b.offer("⇥", "tab"), b.offer(":", "command"), b.roaming(),
 		}

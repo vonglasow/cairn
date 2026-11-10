@@ -1231,6 +1231,48 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.w = w.w.PressAt(from).MoveTo(Point{X: from.X, Y: from.Y + Wobble*3}).MoveTo(to).LetGo(to)
 		return nil
 	})
+	sc.Step(`^I hold the objective "([^"]*)" over "([^"]*)" for (\d+) ms$`, func(title, target string, ms int) error {
+		from, err := w.findGoal(title)
+		if err != nil {
+			return err
+		}
+		box, err := w.goalBox(target)
+		if err != nil {
+			return err
+		}
+		to := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+		w.w = w.w.PressAt(from).MoveTo(Point{X: from.X, Y: from.Y + Wobble*3}).MoveTo(to)
+		w.w = w.w.At(w.w.now.Add(time.Duration(ms) * time.Millisecond))
+		return nil
+	})
+	sc.Step(`^I hold the objective "([^"]*)" below "([^"]*)", left of its indent$`, func(title, target string) error {
+		from, err := w.findGoal(title)
+		if err != nil {
+			return err
+		}
+		box, err := w.goalBox(target)
+		if err != nil {
+			return err
+		}
+		to := Point{X: box.X - 4, Y: box.Y + box.H - 2}
+		w.w = w.w.PressAt(from).MoveTo(Point{X: from.X, Y: from.Y + Wobble*3}).MoveTo(to)
+		return nil
+	})
+	sc.Step(`^I let the objective go below "([^"]*)"$`, func(target string) error {
+		box, err := w.goalBox(target)
+		if err != nil {
+			return err
+		}
+		to := Point{X: box.X + box.W/2, Y: box.Y + box.H - 2}
+		w.w = w.w.MoveTo(to).LetGo(to)
+		return nil
+	})
+	sc.Step(`^the landing says "([^"]*)"$`, func(want string) error {
+		if got := w.w.GoalLandingSays(); got != want {
+			return fmt.Errorf("the landing says %q, want %q", got, want)
+		}
+		return nil
+	})
 	sc.Step(`^I click "([^"]*)"$`, w.clickOffer)
 	sc.Step(`^I right-click the card "([^"]*)"$`, func(title string) error {
 		at, err := w.find(title)

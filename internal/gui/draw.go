@@ -877,6 +877,9 @@ func goalFace(g engine.Goal) engine.Card {
 func drawGoalDragging(k Kit, w Window) {
 	if landing, somewhere := w.GoalLanding(); somewhere {
 		Ring{Target: true, Radius: k.skin.Radius.Card}.Draw(k, landing)
+		said := w.GoalLandingSays()
+		wide := 7*len(said) + 16
+		Pill{Said: said, Tone: ToneHere}.Draw(k, Box{X: landing.X + landing.W - wide - 8, Y: landing.Y - 10, W: wide, H: 20})
 	}
 	if !w.GoalDragging() {
 		return

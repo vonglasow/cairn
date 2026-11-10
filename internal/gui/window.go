@@ -146,6 +146,9 @@ type Window struct {
 
 	held                  Held
 	grabbedGoal           int
+	hoverGoal             int
+	hoverSince            time.Time
+	dragOpened            []int
 	pressed               bool
 	pressedOn             Screen
 	acts                  []string

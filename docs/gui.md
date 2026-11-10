@@ -1279,10 +1279,13 @@ and nothing goes under a sub-objective or a parent under another — the drop
 moves nothing then (`engine.Dropped`,
 `@gui-objective-dragged-reorders-and-changes-parent`,
 `@gui-objective-a-parent-dragged-onto-another-is-refused`). A refusal from
-the store, a task counted twice, is said above the bar. Not built from the
-mockup yet: a folded parent unfolding after 600 ms under the pointer, the
-pointer's x choosing the level under a last sub-objective, and the tag saying
-where the drop lands.
+the store, a task counted twice, is said above the bar. A folded parent
+held under the pointer for 600 ms unfolds, and folds back when the drop
+lands elsewhere (`HoverOpens`, `@gui-objective-a-folded-parent-opens-under-a-drag`);
+under a parent's last sub-objective, the pointer left of the sub-objectives
+lands at level one after the parent
+(`@gui-objective-x-chooses-the-level-under-a-last-sub-objective`); a tag
+beside the landing says where it goes — `under #1`, `after #6`, `first`.
 
 **A search unfolds the parent of what it reaches.** The list narrows in
 place; a parent that does not match but holds a match stays, faint, saying

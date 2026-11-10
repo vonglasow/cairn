@@ -37,4 +37,4 @@
 
 
 
- jk ↓↑ objectives   ⏎ open   t its tasks   a new   e edit   D delete   ? help   N under it   z fold
+ jk ↓↑ objectives   JK order   ⏎ open   t its tasks   a new   e edit   D delete   ? help
