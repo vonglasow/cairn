@@ -179,6 +179,9 @@ func (w Window) Hovering(p Point) Window {
 	if w.resting == nil {
 		w.resting, w.restingAt, w.restingWide = w.untailedAt(p)
 	}
+	if w.resting == nil {
+		w.resting, w.restingAt, w.restingWide = w.hiddenAt(p)
+	}
 	w.pointed = w.slotAt(p)
 	w.bubbled, w.bubbledFrom = w.countAt(p)
 	if w.screen == OnConfiguration {

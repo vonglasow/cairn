@@ -34,6 +34,9 @@ func (w Window) choosingAt(number int) Window {
 	}
 	w.taken = nil
 	w.chosen, w.chosenGoal = number, w.tab == Objectives
+	if w.chosenGoal {
+		return w.openingParentOf(number)
+	}
 	return w
 }
 

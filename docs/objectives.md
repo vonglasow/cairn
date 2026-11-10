@@ -354,7 +354,9 @@ detached, deleted — is traced on the task, as any change to it is.
 The window's Objectives tab is a tree on the left — each level-one objective
 with its sub-objectives indented under it — and the chosen objective on the
 right, its numbers over the union, its sub-objectives as tiles, its tasks on
-it itself apart from those in its sub-objectives. `t` shows its tasks on the
+it itself apart from those in its sub-objectives. A parent starts folded,
+its sub-objectives counted after its title and a chevron to unfold it, and
+says when one it hides is late or waits. `t` shows its tasks on the
 tasks board, with a bar narrowing to each part; a card names what it serves,
 `◇ Firmware`; the deletion is asked row by row; a task's objectives are
 picked from a tree that refuses a double count where it is ticked. See

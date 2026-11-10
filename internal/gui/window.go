@@ -199,6 +199,7 @@ type Window struct {
 	refusedThen           string
 	viewWalked            int
 	fateRow               int
+	opened                []int
 
 	err      error
 	wrongFor int

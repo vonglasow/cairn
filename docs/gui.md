@@ -1245,6 +1245,52 @@ bringing what they reach into sight. The hover is the pointer's on an item, a
 tile and an offer of the detail alike
 (`@gui-objective-the-tree-is-lit-under-the-pointer`).
 
+**A parent starts folded** (#272, the mockup validated on 2026-11-10). Drawn
+unfolded, seventeen objectives of three trees took the whole list and the
+level-one ones were lost among their parts. A parent shows a chevron in a
+gutter of 18 left of its item, outside its ground and its ring, and the
+number of its sub-objectives after its title, `· 3`, folded or not — the
+chevron says which; one with none keeps the gutter empty, so every title
+lines up (`FoldAt`, `@gui-objective-a-parent-starts-folded`). Unfolded, the
+line joining a sub-objective hangs from the chevron's middle and elbows into
+it. Its second line is the roll-up of its whole subtree either way. A click
+on the chevron folds or unfolds and chooses nothing; a click on the title
+chooses and leaves the fold as it was
+(`@gui-objective-the-chevron-folds-and-unfolds`,
+`@gui-objective-the-title-chooses-without-unfolding`). The keys are a macOS
+outline's: `→` unfolds, and on a parent already open goes to its first
+sub-objective; `←` folds, and on a sub-objective climbs to its parent; `z`
+toggles as the terminal's does, and on a sub-objective folds its parent and
+climbs to it; `⌥→` and `⌥←` do every parent; `↑` and `↓` walk the rows
+drawn (`@gui-objective-the-arrows-unfold-and-fold`,
+`@gui-objective-z-and-option-arrows-fold`,
+`@gui-objective-up-and-down-walk-the-rows-drawn`). The folds are the
+window's, for the session: a second window has its own, and nothing is
+written to the store or the settings — a key for a view state can come the
+day somebody asks (`@gui-objective-folds-are-kept-for-the-window`). A
+parent holding what is chosen is drawn open, whatever chose it.
+
+**A search unfolds the parent of what it reaches.** The list narrows in
+place; a parent that does not match but holds a match stays, faint, saying
+`holds a match`, its sub-objectives that match under it and the match marked
+in the title; the head counts `1 of 17`, and the detail shows the first
+match. Cleared, every fold is what it was before — but a parent under which
+the person chose a sub-objective stays open, so what was chosen stays in
+sight (`engine.FoundBranches`, `@gui-objective-a-search-unfolds-the-parent-of-a-match`,
+`@gui-objective-a-match-chosen-keeps-its-parent-open`).
+
+**A folded parent says what it hides that wants seeing**: a sub-objective
+late — its deadline past, not reached — or waiting on one not reached, the
+late first, one named and the rest counted, after a dot in the late ink,
+`#13 Documentation late +1`; at 720 by number alone, `#13 late`, and the
+counts give their time up first (`engine.Snapshot.Hidden`, `CountsIn`,
+`@gui-objective-a-folded-parent-says-what-it-hides`,
+`@gui-objective-a-narrow-window-shortens-what-is-hidden`). The pointer on
+it says the whole of it. On hold and reached stay inside: they need no
+action. Unfolded, the parent drops it, since each row says its own, `31 Oct,
+late` or `waits on Firmware`, and a tile in the detail says `late · its
+deadline was Fri 6 Nov`.
+
 The detail heads the objective with its number, offers *Show its tasks* `t`,
 on one of level one *+ Sub-objective* `⇧N` — the form of a new objective,
 its parent set to this one (`@gui-objective-the-detail-adds-a-sub-objective`);

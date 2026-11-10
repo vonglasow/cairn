@@ -55,7 +55,7 @@ func TestEachObjectiveHasItsSlotDownTheList(t *testing.T) {
 
 func TestTheTreeKeepsEachSubObjectiveUnderItsParent(t *testing.T) {
 	var got []int
-	for _, b := range homeWindow(1200, 800).Tree() {
+	for _, b := range homeWindow(1200, 800).unfolding(1).Tree() {
 		got = append(got, b.Goal.Number)
 	}
 	if !slices.Equal(got, []int{1, 2, 3, 4}) {

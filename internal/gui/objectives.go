@@ -9,9 +9,6 @@ import (
 	"cairn/internal/engine"
 )
 
-// Tree is the objectives shown, in the order the tab lists them: each of level one followed by its sub-objectives.
-func (w Window) Tree() []engine.Branch { return engine.Branches(w.Showing().Goals) }
-
 func depthOf(b engine.Branch) int {
 	if b.Under {
 		return 1
@@ -19,18 +16,20 @@ func depthOf(b engine.Branch) int {
 	return 0
 }
 
-// Detailed is the objective the right of the tab shows: the one chosen, or the first of the tree while none is.
+// Detailed is the objective the right of the tab shows: the one chosen, or the first of the tree while none is, a parent drawn only as what holds a match passed over.
 func (w Window) Detailed() (engine.Goal, bool) {
 	tree := w.Tree()
 	for _, b := range tree {
-		if w.chosenGoal && b.Goal.Number == w.chosen {
+		if w.chosenGoal && b.Goal.Number == w.chosen && !b.Holds {
 			return b.Goal, true
 		}
 	}
-	if len(tree) == 0 {
-		return engine.Goal{}, false
+	for _, b := range tree {
+		if !b.Holds {
+			return b.Goal, true
+		}
 	}
-	return tree[0].Goal, true
+	return engine.Goal{}, false
 }
 
 // TaskLine is one task the detail lists: the task, what among the sub-objectives it serves, and where it stands.
@@ -310,6 +309,9 @@ func (w Window) tileOf(g engine.Goal) GoalTile {
 	if len(waits) > 0 {
 		t.Warn = "waits on " + strings.Join(waits, ", ")
 	}
+	if g.LateOn(w.today()) {
+		t.Warn = "late · its deadline was " + domain.ShortDay(g.Deadline)
+	}
 	return t
 }
 
@@ -404,8 +406,12 @@ func (w Window) clickingDetail(p Point) (Window, bool) {
 	}
 	for _, t := range d.Tiles {
 		if t.At.In(p) {
-			w.chosen, w.chosenGoal = t.Number, true
-			return w, true
+			return w.choosingGoal(t.Number), true
+		}
+	}
+	for at, b := range w.Tree() {
+		if len(b.Goal.Children) > 0 && !b.Under && FoldAt(GoalAt(w.Layout(), at, w.goals)).In(p) && GoalsRun(w.Layout()).In(p) {
+			return w.togglingFold(b.Goal.Number), true
 		}
 	}
 	return w, false

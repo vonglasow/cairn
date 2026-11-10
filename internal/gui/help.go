@@ -50,6 +50,7 @@ func (w Window) helpGroups() []helpGroup {
 			{Key: "drag", Means: "move the card"},
 			{Key: "right click", Means: "its menu"},
 			{Key: "drag a gutter", Means: "resize"},
+			{Key: "→ ← z ⌥", Means: "fold objectives"},
 		}},
 	}
 	if w.pages.Recurs() {

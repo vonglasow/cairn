@@ -58,11 +58,19 @@ func GoalsHead(l Layout) Box {
 	return NameIn(Box{X: list.X, Y: list.Y, W: list.W, H: headHigh})
 }
 
-// GoalAt is where the n-th objective of the tree has its slot, one under the other.
+// GoalAt is where the n-th objective of the tree has its slot, one under the other, right of the gutter its chevron stands in.
 func GoalAt(l Layout, at, scrolled int) Box {
 	run := GoalsRun(l)
-	return Box{X: run.X, Y: run.Y + at*ItemHigh - scrolled, W: run.W, H: ItemHigh}
+	return Box{X: run.X + foldGutter, Y: run.Y + at*ItemHigh - scrolled, W: run.W - foldGutter, H: ItemHigh}
 }
+
+// FoldAt is where a parent's chevron stands: in the gutter left of its slot, level with its first line.
+func FoldAt(slot Box) Box {
+	_, first, _ := ItemLine(ItemOf(slot, 0))
+	return Box{X: slot.X - foldGutter, Y: first.Y + (first.H-foldGutter)/2, W: foldGutter, H: foldGutter}
+}
+
+const foldGutter = 18
 
 // Searching is where what is being looked for is written: the command bar itself, the search being what it turns into after a slash.
 func Searching(l Layout) Box { return l.Bar }

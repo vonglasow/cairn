@@ -5618,6 +5618,7 @@ Feature: The desktop board
       And I added an objective titled "Firmware" under objective 1
       When I open the window
       And I click the tab "OBJECTIVES"
+      And I click the chevron of "Home automation"
       Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
       And the objective "Firmware" is drawn indented under "Home automation" and joined to it
 
@@ -5702,12 +5703,189 @@ Feature: The desktop board
       When I open the window
       And I click the tab "OBJECTIVES"
       And I click the objective "Home automation"
+      And I click the chevron of "Home automation"
       And I rest the pointer on the objective "Enclosure"
       Then the objective "Enclosure" is lit under the pointer
       When I rest the pointer on the tile of "Enclosure"
       Then the tile of "Enclosure" is lit under the pointer
       When I rest the pointer on the detail's offer "Edit"
       Then the detail's offer "Edit" is lit under the pointer
+
+  Rule: A parent of the objectives tab folds its sub-objectives away
+
+    @gui-objective-a-parent-starts-folded
+    Scenario: a parent starts folded, its chevron in the gutter and its sub-objectives counted after its title
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Enclosure" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the objectives read "Home automation", "Tidy the workshop"
+      And the objective "Home automation" is folded, its chevron in the gutter
+      And the objective "Home automation" says "· 2" after its title
+      And the objective "Tidy the workshop" has no chevron
+      And the objectives' head counts "4"
+
+    @gui-objective-the-chevron-folds-and-unfolds
+    Scenario: a click on the chevron unfolds a parent and folds it again, and chooses nothing
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Tidy the workshop"
+      And I click the chevron of "Home automation"
+      Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
+      And the objective "Home automation" is unfolded
+      And the objective "Firmware" is drawn indented under "Home automation" and joined to it
+      And the objective "Tidy the workshop" is chosen
+      When I click the chevron of "Home automation"
+      Then the objectives read "Home automation", "Tidy the workshop"
+
+    @gui-objective-the-title-chooses-without-unfolding
+    Scenario: a click on the title of a parent chooses it and leaves it folded
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      Then the objective "Home automation" is chosen
+      And the detail is headed "Home automation"
+      And the objectives read "Home automation"
+
+    @gui-objective-the-arrows-unfold-and-fold
+    Scenario: right unfolds a parent then goes to its first sub-objective, left climbs to the parent then folds it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Enclosure" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "right"
+      Then the objectives read "Home automation", "Firmware", "Enclosure"
+      And the objective "Home automation" is chosen
+      When I press "right"
+      Then the objective "Firmware" is chosen
+      When I press "down"
+      And I press "left"
+      Then the objective "Home automation" is chosen
+      And the objectives read "Home automation", "Firmware", "Enclosure"
+      When I press "left"
+      Then the objectives read "Home automation"
+      When I press "left"
+      Then the objectives read "Home automation"
+      And the objective "Home automation" is chosen
+
+    @gui-objective-up-and-down-walk-the-rows-drawn
+    Scenario: up and down walk only the rows drawn, past a folded parent's sub-objectives
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "down"
+      Then the objective "Tidy the workshop" is chosen
+
+    @gui-objective-z-and-option-arrows-fold
+    Scenario: z folds and unfolds, on a sub-objective folds its parent and climbs to it, and option with an arrow does every parent
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Health"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Physiotherapy" under objective 2
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "z"
+      Then the objectives read "Home automation", "Firmware", "Health"
+      When I press "down"
+      And I press "z"
+      Then the objectives read "Home automation", "Health"
+      And the objective "Home automation" is chosen
+      When I press "alt+right"
+      Then the objectives read "Home automation", "Firmware", "Health", "Physiotherapy"
+      When I click the objective "Physiotherapy"
+      And I press "alt+left"
+      Then the objectives read "Home automation", "Health"
+      And the objective "Health" is chosen
+
+    @gui-objective-folds-are-kept-for-the-window
+    Scenario: the folds are kept while the window is open, and a window opened again starts folded
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the chevron of "Home automation"
+      And I click the tab "TASKS"
+      And I click the tab "OBJECTIVES"
+      Then the objectives read "Home automation", "Firmware"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the objectives read "Home automation"
+
+    @gui-objective-a-search-unfolds-the-parent-of-a-match
+    Scenario: a search reaching a sub-objective unfolds its parent, drawn faint as what holds the match, and clearing it folds the parent back
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Tidy the workshop"
+      And I press "/"
+      And I type "firm"
+      Then the objectives read "Home automation", "Firmware"
+      And the objective "Home automation" is drawn faint, saying "holds a match"
+      And the objectives' head counts "1 of 3"
+      And the detail is headed "Firmware"
+      When I press "esc"
+      Then the objectives read "Home automation", "Tidy the workshop"
+      And the objective "Tidy the workshop" is chosen
+
+    @gui-objective-a-match-chosen-keeps-its-parent-open
+    Scenario: a sub-objective chosen during a search keeps its parent unfolded once the search is cleared
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I press "/"
+      And I type "firm"
+      And I click the objective "Firmware"
+      And I press "esc"
+      Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
+      And the objective "Firmware" is chosen
+
+    @gui-objective-a-folded-parent-says-what-it-hides
+    Scenario: a folded parent says which hidden sub-objective is late or waits, the late first and the rest counted, and unfolded says nothing of it
+      Given today is "2026-11-10"
+      And I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Documentation" under objective 1
+      And objective 3 waits on objective 2
+      And objective 4 is due "2026-11-06"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      Then the objective "Home automation" ends in the late ink with "#4 Documentation late +1"
+      When I rest the pointer on what "Home automation" hides
+      Then the bubble holds the line "#4 Documentation, its deadline Fri 6 Nov past, not reached."
+      When I click the chevron of "Home automation"
+      Then the objective "Home automation" says nothing in the late ink
+      And the objective "Documentation" ends in the late ink with "6 Nov, late"
+      And the objective "Firmware" ends in the late ink with "waits on Enclosure"
+
+    @gui-objective-a-narrow-window-shortens-what-is-hidden
+    Scenario: at 720 a folded parent says what it hides by number alone
+      Given today is "2026-11-10"
+      And I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And objective 3 waits on objective 2
+      When I open the window
+      And I resize the window to 720 by 560
+      And I click the tab "OBJECTIVES"
+      Then the objective "Home automation" ends in the late ink with "#3 waits"
 
   Rule: Show its tasks narrows the tasks board to a subtree
 
@@ -5838,6 +6016,7 @@ Feature: The desktop board
       And I added a task titled "Buy the relay" serving objective 1
       When I open the window
       And I click the tab "OBJECTIVES"
+      And I click the chevron of "Home automation"
       And I click the objective "Enclosure"
       And I choose "Edit"
       Then the progress says "counted in" "#1 Home automation"

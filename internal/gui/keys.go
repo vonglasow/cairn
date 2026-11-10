@@ -95,6 +95,11 @@ func (w Window) onBoard(name string) Window {
 	if g, ok := w.Detailed(); w.tab == Objectives && name == "shift+n" && ok && g.Parent == 0 {
 		return w.detailing(AddSubSays)
 	}
+	if w.tab == Objectives {
+		if folded, took := w.foldingKey(name); took {
+			return folded
+		}
+	}
 	if w.tab == Tasks && (name == "[" || name == "]") {
 		by := 1
 		if name == "[" {
@@ -484,8 +489,7 @@ func (w Window) walkingGoals(across, down int) Window {
 	} else {
 		at = min(len(here)-1, max(0, at+across+down))
 	}
-	w.chosen, w.chosenGoal = here[at].Goal.Number, true
-	return w.followingGoal(at)
+	return w.choosingGoal(here[at].Goal.Number)
 }
 
 func (w Window) asking(op engine.Operation, in engine.Input) Window {

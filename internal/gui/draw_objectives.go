@@ -14,15 +14,15 @@ func drawGoals(k Kit, l Layout, w Window) {
 	Ground{}.Draw(k, list)
 	on := k.inside("ground")
 	tree := w.Tree()
-	Head{Said: "Objectives", Count: strconv.Itoa(len(tree))}.Draw(on, GoalsHead(l))
+	Head{Said: "Objectives", Count: w.GoalsCount()}.Draw(on, GoalsHead(l))
 	in, clipped := on.within(GoalsRun(l))
 	for at, b := range tree {
-		g := b.Goal
-		item := ListItem{Number: "#" + strconv.Itoa(g.Number), Title: g.Title, Standing: g.State, Priority: g.Priority,
-			Counts: Counted(g), Done: g.Done, Total: g.Total, Depth: depthOf(b), Last: b.Last,
-			Chosen: w.chosenGoal && g.Number == w.Chosen() || w.isTaken(g.Number), Hovered: GoalAt(l, at, w.goals) == w.pointed}
-		if len(g.Labels) > 0 {
-			item.Chip, item.ChipColour = g.Labels[0], w.LabelColour(g.Labels[0])
+		item := w.goalItem(b, GoalAt(l, at, w.goals))
+		if b.Holds {
+			faded := in.faded(0.5)
+			item.Draw(in, GoalAt(l, at, w.goals))
+			faded.Pop()
+			continue
 		}
 		item.Draw(in, GoalAt(l, at, w.goals))
 	}
@@ -30,6 +30,58 @@ func drawGoals(k Kit, l Layout, w Window) {
 	Ground{}.Draw(k, detail)
 	drawDetail(k.inside("ground"), w, w.Detail())
 }
+
+func (w Window) goalItem(b engine.Branch, slot Box) ListItem {
+	g := b.Goal
+	shown, _ := w.Detailed()
+	searching := !w.looking.Empty()
+	item := ListItem{Number: "#" + strconv.Itoa(g.Number), Title: g.Title, Standing: g.State, Priority: g.Priority,
+		Counts: Counted(g), Done: g.Done, Total: g.Total, Depth: depthOf(b), Last: b.Last, Gutter: true,
+		Chosen:  w.chosenGoal && g.Number == w.Chosen() && !searching || searching && g.Number == shown.Number || w.isTaken(g.Number),
+		Hovered: slot == w.pointed}
+	if len(g.Labels) > 0 {
+		item.Chip, item.ChipColour = g.Labels[0], w.LabelColour(g.Labels[0])
+	}
+	if len(g.Children) > 0 && !b.Under {
+		item.Kids, item.Fold = "· "+strconv.Itoa(len(g.Children)), FoldedOpen
+		if w.Folded(g.Number) {
+			item.Fold = FoldedAway
+		}
+	}
+	if searching && !b.Holds {
+		item.Found = w.looking.Reads()
+	}
+	if b.Holds {
+		item.Total, item.Aside = 0, HoldsSays
+		return item
+	}
+	item.Signal, item.Dot = w.SignalOf(b)
+	_, _, second := ItemLine(ItemOf(slot, item.Depth))
+	room := second.W
+	if item.Signal != "" {
+		mark, said := SignalAt(second, item.Signal, item.Dot, w.measured())
+		room = min(mark.X, said.X) - padding - second.X
+	}
+	item.Counts = CountsIn(g, room-leastTrack-2*pillGap-pillPad)
+	return item
+}
+
+const leastTrack = 24
+
+// CountsIn is how much of an objective is done, as much of it as is written in room: its time given up first, then its steps, then its tasks, its share kept last.
+func CountsIn(g engine.Goal, room int) string {
+	share := strconv.Itoa(g.Percent()) + "%"
+	tasks := strconv.Itoa(g.Done-g.Steps.Done) + "/" + strconv.Itoa(g.Total-g.Steps.Total)
+	for _, said := range []string{Counted(g), g.Counted() + " · " + share, tasks + " · " + share, share} {
+		if monoWide(said, small) <= room {
+			return said
+		}
+	}
+	return share
+}
+
+// HoldsSays is what a parent drawn only as what holds a match says on its second line.
+const HoldsSays = "holds a match"
 
 func drawDetail(k Kit, w Window, d Detail) {
 	if len(d.Buttons) == 0 {

@@ -8,11 +8,12 @@ import (
 	"cairn/internal/objective"
 )
 
-// Branch is one objective as a tree draws it: the objective, whether it sits under the one before it, and whether it is the last under its parent.
+// Branch is one objective as a tree draws it: the objective, whether it sits under the one before it, whether it is the last under its parent, and whether it is drawn only as what holds a match.
 type Branch struct {
 	Goal  Goal
 	Under bool
 	Last  bool
+	Holds bool
 }
 
 // Branches lays the objectives out as a tree, in the order a list keeps them: each of level one followed by its sub-objectives, and a sub-objective whose parent is left out standing at level one.

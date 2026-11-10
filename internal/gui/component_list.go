@@ -47,15 +47,43 @@ type ListItem struct {
 	Number, Title, Standing, Priority string
 	Chip, ChipColour, Counts          string
 	Says, Aside, Badge, BadgeStanding string
+	Kids, Signal, Found               string
 	Done, Total, Depth                int
+	Fold                              Fold
 	Last, Chosen, Hovered, Loop       bool
+	Gutter, Dot                       bool
 }
 
-// Draw draws the item in its slot at, the gap under it left empty.
+// Fold is whether an item of a tree holds sub-items, and whether they are put away.
+type Fold int
+
+const (
+	// NoFold is an item holding nothing under it.
+	NoFold Fold = iota
+	// FoldedAway is a parent whose sub-items are put away.
+	FoldedAway
+	// FoldedOpen is a parent whose sub-items are drawn under it.
+	FoldedOpen
+)
+
+// Draw draws the item in its slot at, the gap under it left empty; with a gutter, its chevron stands left of the slot and the line joining it to its parent hangs from the chevron's middle.
 func (i ListItem) Draw(k Kit, at Box) Box {
-	if i.Depth > 0 {
-		_, first, _ := ItemLine(ItemOf(at, 0))
-		Connector{Last: i.Last, Elbow: first.Y + first.H/2 - at.Y}.Draw(k, JoinOf(at, i.Depth))
+	_, top, _ := ItemLine(ItemOf(at, 0))
+	elbow := top.Y + top.H/2 - at.Y
+	if i.Depth > 0 && i.Gutter {
+		from := at.X - foldGutter/2
+		Connector{Last: i.Last, Elbow: elbow}.Draw(k, Box{X: from, Y: at.Y, W: ItemOf(at, i.Depth).X - from, H: at.H})
+	} else if i.Depth > 0 {
+		Connector{Last: i.Last, Elbow: elbow}.Draw(k, JoinOf(at, i.Depth))
+	}
+	if i.Fold != NoFold {
+		chevron := FoldAt(at)
+		side := 1
+		if i.Fold == FoldedOpen {
+			side = 0
+			Connector{Elbow: at.Y + at.H - chevron.Y - chevron.H}.Draw(k, Box{X: chevron.X + chevron.W/2, Y: chevron.Y + chevron.H, H: at.Y + at.H - chevron.Y - chevron.H})
+		}
+		Chevron{Ink: k.skin.Colour.Ink.Faint, Side: side}.Draw(k, ChevronIn(chevron))
 	}
 	item := k.put("item", ItemOf(at, i.Depth))
 	in := k.inside("item")
@@ -91,9 +119,31 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: first.X, Y: first.Y, W: numbered, H: first.H}, i.Number, small, k.skin.Type.Mono, text.Start)
 	}
 	title := Box{X: first.X + numbered + markSpace, Y: first.Y, W: max(0, end-first.X-numbered-markSpace), H: first.H}
-	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, title, fits(k.gtx, k.th, i.Title, title.W, reads), reads, font.Medium, 1, text.Start)
+	kids := 0
+	if i.Kids != "" {
+		kids = ends(m, i.Kids, small) + markSpace
+		title.W = max(0, title.W-kids)
+	}
+	written := fits(k.gtx, k.th, i.Title, title.W, reads)
+	if at, ok := FoundIn(title, written, i.Found, m); ok {
+		rounded(k.gtx, at, k.skin.Radius.Chip, k.skin.Colour.Surface.Tint)
+	}
+	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, title, written, reads, font.Medium, 1, text.Start)
+	if i.Kids != "" {
+		x := title.X + min(title.W, ends(m, written, reads)) + markSpace
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: x, Y: first.Y, W: kids, H: first.H}, i.Kids, small, font.Font{}, text.Start)
+	}
+	counted := second
+	if i.Signal != "" {
+		dot, said := SignalAt(second, i.Signal, i.Dot, m)
+		if i.Dot {
+			Dot{Late: true}.Draw(in, dot)
+		}
+		sayIn(k.gtx, k.th, k.skin.Colour.State.Late, said, i.Signal, small, font.Font{}, text.End)
+		counted.W = max(0, min(dot.X, said.X)-padding-second.X)
+	}
 	if i.Total > 0 {
-		Progress{Done: i.Done, Total: i.Total, Said: i.Counts}.Draw(in, second)
+		Progress{Done: i.Done, Total: i.Total, Said: i.Counts}.Draw(in, counted)
 	}
 	if i.Says != "" || i.Aside != "" {
 		aside := min(second.W, ends(m, i.Aside, small)+2)

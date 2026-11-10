@@ -9,6 +9,7 @@ import (
 )
 
 func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
+	w.foldsSteps(sc)
 	sc.Then(`^the objective "([^"]*)" is drawn indented under "([^"]*)" and joined to it$`, w.drawnUnder)
 	sc.Then(`^the detail is headed "([^"]*)"$`, w.detailHeaded)
 	sc.Then(`^the detail says "([^"]*)"$`, w.detailSays)

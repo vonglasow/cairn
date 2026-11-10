@@ -1,5 +1,7 @@
 package gui
 
+import "strings"
+
 const (
 	// ItemHigh is what one item of a list beside a detail takes: its two lines and the gap under it.
 	ItemHigh = 50
@@ -56,4 +58,35 @@ func SplitOf(l Layout) (list, detail Box) {
 	list = Box{X: run.X, Y: run.Y, W: wide, H: run.H}
 	detail = Box{X: run.X + wide + gap, Y: run.Y, W: run.W - wide - gap, H: run.H}
 	return list, detail
+}
+
+// ChevronIn is the chevron drawn in a parent's gutter, a little smaller than the gutter and in its middle.
+func ChevronIn(gutter Box) Box {
+	side := gutter.W / 2
+	return Box{X: gutter.X + (gutter.W-side)/2, Y: gutter.Y + (gutter.H-side)/2, W: side, H: side}
+}
+
+// SignalAt is where an item's second line writes what wants seeing, against its right end, and the dot before it when it is hidden.
+func SignalAt(second Box, said string, dot bool, m Measure) (dotAt, saidAt Box) {
+	wide := min(second.W, ends(m, said, small)+2)
+	saidAt = Box{X: second.X + second.W - wide, Y: second.Y, W: wide, H: second.H}
+	dotAt = saidAt
+	if dot {
+		dotAt = Box{X: saidAt.X - dotSide - pillGap, Y: second.Y + (second.H-dotSide)/2, W: dotSide, H: dotSide}
+	}
+	return dotAt, saidAt
+}
+
+// FoundIn is where what a search reached is marked in a title written in at, and whether it is written there to be marked.
+func FoundIn(at Box, written, found string, m Measure) (Box, bool) {
+	if found == "" {
+		return Box{}, false
+	}
+	from := strings.Index(strings.ToLower(written), strings.ToLower(found))
+	if from < 0 {
+		return Box{}, false
+	}
+	x := at.X + ends(m, written[:from], reads)
+	wide := min(ends(m, written[from:from+len(found)], reads), at.X+at.W-x)
+	return Box{X: x - 1, Y: at.Y + 2, W: wide + 2, H: at.H - 4}, wide > 0
 }
