@@ -386,3 +386,30 @@ func TestObjectiveDelete_asksWhatBecomesOfTheViewsNamingIt(t *testing.T) {
 	}
 	refusedAs(t, path, ObjectiveDelete, ask("number", "9", "views", "sideways"), "not-one-of")
 }
+
+func TestViewShow_givesEachObjectiveItNamesWithTheStoresFigures(t *testing.T) {
+	path := homeStore(t)
+	did(t, path, TaskEdit, ask("number", "1", "state", "done"))
+	did(t, path, ObjectiveNew, ask("title", "Garden"))
+	did(t, path, ViewNew, ask("name", "Home", "state", "backlog").with("objective", "1", "3"))
+	shown, text := viewed(t, path, ViewShow, ask("view", "home"))
+	if len(shown.Objectives) != 2 {
+		t.Fatalf("the view shown gives the objectives %+v", shown.Objectives)
+	}
+	home := shown.Objectives[0]
+	if home.Number != 1 || home.Title != "Home automation" || home.Progress == nil || home.Progress.Tasks.Done != 1 || home.Progress.Tasks.Total != 2 || home.Progress.Percent != 50 {
+		t.Errorf("the view gives its objective as %+v", home)
+	}
+	if garden := shown.Objectives[1]; garden.Number != 3 || garden.Progress != nil {
+		t.Errorf("the view gives an objective nothing serves as %+v", garden)
+	}
+	for _, said := range []string{"objective #1 Home automation  1/2 · 50% (the store's)\n", "objective #3 Garden  nothing serves it yet\n"} {
+		if !strings.Contains(text, said) {
+			t.Errorf("the view shown reads %q, want %q", text, said)
+		}
+	}
+	kept, _ := viewed(t, path, ViewNew, ask("name", "Other").with("objective", "1"))
+	if len(kept.Objectives) != 0 {
+		t.Errorf("keeping a view gives the objectives %+v, which only showing it gives", kept.Objectives)
+	}
+}

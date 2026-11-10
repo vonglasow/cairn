@@ -8497,6 +8497,89 @@
               "was": {
                 "type": "string",
                 "description": "the name it had before a change renamed it; left out otherwise"
+              },
+              "objectives": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "progress": {
+                      "type": [
+                        "null",
+                        "object"
+                      ],
+                      "properties": {
+                        "tasks": {
+                          "type": [
+                            "null",
+                            "object"
+                          ],
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "done": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "done"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "steps": {
+                          "type": [
+                            "null",
+                            "object"
+                          ],
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "done": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "done"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "percent": {
+                          "type": "integer"
+                        }
+                      },
+                      "description": "how far along it is over its whole subtree, each task once; null when nothing serves it",
+                      "required": [
+                        "percent"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "time_spent": {
+                      "type": "string",
+                      "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "title",
+                    "progress",
+                    "time_spent"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "each objective it holds that is still there, with its figures as the store counts them, whatever the view keeps; left out unless the view is shown"
               }
             },
             "required": [

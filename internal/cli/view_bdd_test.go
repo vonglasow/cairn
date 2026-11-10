@@ -37,6 +37,15 @@ type listedWithAView struct {
 			Of int    `json:"of"`
 		} `json:"why"`
 	} `json:"outside"`
+	Objectives []struct {
+		Number   int `json:"number"`
+		Progress *struct {
+			Tasks *struct {
+				Done  int `json:"done"`
+				Total int `json:"total"`
+			} `json:"tasks"`
+		} `json:"progress"`
+	} `json:"objectives"`
 }
 
 func (w *world) listedWithAView() (listedWithAView, error) {
@@ -73,6 +82,18 @@ func (w *world) registerView(sc *godog.ScenarioContext) {
 			return fmt.Errorf("it lists %d tasks, want none:\n%s", len(listed.Tasks), w.Out.Stdout)
 		}
 		return nil
+	})
+	sc.Step(`^the JSON gives objective (\d+) as (\d+) of (\d+) tasks done, the store's$`, func(n, done, total int) error {
+		listed, err := w.listedWithAView()
+		if err != nil {
+			return err
+		}
+		for _, o := range listed.Objectives {
+			if o.Number == n && o.Progress != nil && o.Progress.Tasks != nil && o.Progress.Tasks.Done == done && o.Progress.Tasks.Total == total {
+				return nil
+			}
+		}
+		return fmt.Errorf("objective %d is not given as %d of %d done:\n%s", n, done, total, w.Out.Stdout)
 	})
 	sc.Step(`^the JSON says the view lost "([^"]*)"$`, func(gone string) error {
 		listed, err := w.listedWithAView()

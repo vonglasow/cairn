@@ -70,6 +70,23 @@ Feature: Views, the filters of a listing kept under a name
       And the answer says "keeps 1 of 2 tasks"
       And the answer says "#2 blocks #1"
 
+    @view-show-gives-the-objectives-figures-the-stores
+    Scenario: showing a view on an objective gives that objective's figures, the store's and not the view's
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Wiring diagram" with the objective "1"
+      And I added a task titled "Read the sensors" with the objective "2"
+      And I edited task 1 with the state "done"
+      And I ran `cairn view new Home --objective 1 --state backlog`
+      When I run `cairn view show Home`
+      Then it succeeds
+      And the answer says "keeps 1 of 2 tasks"
+      And the answer says "objective #1 Home automation  1/2 · 50%"
+      And the answer says "(the store's)"
+      When I run `cairn view show Home --json`
+      Then it succeeds
+      And the JSON gives objective 1 as 1 of 2 tasks done, the store's
+
     @view-unknown-is-refused
     Scenario Outline: a view nobody kept is refused by name
       When I run `<command>`

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -15,15 +16,24 @@ import (
 
 // View is how a view crosses to a machine: its name, its place, what it holds and how many tasks it keeps today.
 type View struct {
-	Name    string    `json:"name"`
-	Place   int       `json:"place" jsonschema:"where it stands among the views, from 1; the first nine are opened by a key"`
-	Holds   Holds     `json:"holds"`
-	Keeps   int       `json:"keeps" jsonschema:"how many tasks it keeps today"`
-	Of      int       `json:"of" jsonschema:"how many tasks are on the board, the archived ones left out"`
-	Done    int       `json:"done" jsonschema:"how many of the tasks it keeps are done"`
-	Gone    []string  `json:"gone" jsonschema:"each condition it holds whose objective or label is gone, which narrows nothing; empty when none is"`
-	Outside []Outside `json:"outside,omitempty" jsonschema:"the tasks outside it that block, wait on or are linked to one it keeps, each once; left out unless the view is shown"`
-	Was     string    `json:"was,omitempty" jsonschema:"the name it had before a change renamed it; left out otherwise"`
+	Name       string          `json:"name"`
+	Place      int             `json:"place" jsonschema:"where it stands among the views, from 1; the first nine are opened by a key"`
+	Holds      Holds           `json:"holds"`
+	Keeps      int             `json:"keeps" jsonschema:"how many tasks it keeps today"`
+	Of         int             `json:"of" jsonschema:"how many tasks are on the board, the archived ones left out"`
+	Done       int             `json:"done" jsonschema:"how many of the tasks it keeps are done"`
+	Gone       []string        `json:"gone" jsonschema:"each condition it holds whose objective or label is gone, which narrows nothing; empty when none is"`
+	Outside    []Outside       `json:"outside,omitempty" jsonschema:"the tasks outside it that block, wait on or are linked to one it keeps, each once; left out unless the view is shown"`
+	Was        string          `json:"was,omitempty" jsonschema:"the name it had before a change renamed it; left out otherwise"`
+	Objectives []ViewObjective `json:"objectives,omitempty" jsonschema:"each objective it holds that is still there, with its figures as the store counts them, whatever the view keeps; left out unless the view is shown"`
+}
+
+// ViewObjective is an objective a view holds, with the store's figures for it: the same in a view and out of one.
+type ViewObjective struct {
+	Number    int                   `json:"number"`
+	Title     string                `json:"title"`
+	Progress  *domain.ProgressShape `json:"progress" jsonschema:"how far along it is over its whole subtree, each task once; null when nothing serves it"`
+	TimeSpent string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
 }
 
 // Holds is what a view holds: the filters task list takes, and a search.
@@ -157,6 +167,9 @@ var ViewShow = Operation{
 			return Answer{}, err
 		}
 		if shown.Outside, err = on.Engine.outside(kept); err != nil {
+			return Answer{}, err
+		}
+		if shown.Objectives, err = on.Engine.viewObjectives(views[at].Objectives); err != nil {
 			return Answer{}, err
 		}
 		return Answer{Viewed: &shown}, nil
@@ -371,6 +384,29 @@ func (e *Engine) viewOf(views []store.View, at int) (View, []task.Task, error) {
 		Holds: Holds{State: v.State, Priority: v.Priority, Label: v.Labels, Objective: v.Objectives, Itself: v.Itself,
 			DueBefore: v.DueBefore, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search},
 	}, kept, nil
+}
+
+func (e *Engine) viewObjectives(numbers []int) ([]ViewObjective, error) {
+	var out []ViewObjective
+	for _, n := range numbers {
+		o, err := e.showObjective(n)
+		if errors.Is(err, ErrNoSuchObjective) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		p, err := e.objectiveProgress(n)
+		if err != nil {
+			return nil, err
+		}
+		under, err := e.tasksUnder(n)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, ViewObjective{Number: n, Title: o.Carried().Title, Progress: domain.OfProgress(p), TimeSpent: domain.FormatDuration(reviewOf(under).Spent)})
+	}
+	return out, nil
 }
 
 type seen struct {
@@ -663,7 +699,28 @@ func viewShownText(v View) string {
 		}
 		lines = append(lines, "outside  "+strings.Join(outside, " · "))
 	}
+	for _, o := range v.Objectives {
+		lines = append(lines, fmt.Sprintf("objective #%d %s  %s", o.Number, o.Title, storeFigures(o)))
+	}
 	return strings.Join(lines, "\n") + "\n"
+}
+
+func storeFigures(o ViewObjective) string {
+	if o.Progress == nil {
+		return "nothing serves it yet"
+	}
+	var said []string
+	if t := o.Progress.Tasks; t != nil {
+		said = append(said, fmt.Sprintf("%d/%d", t.Done, t.Total))
+	}
+	if s := o.Progress.Steps; s != nil {
+		said = append(said, fmt.Sprintf("%d/%d steps", s.Done, s.Total))
+	}
+	said = append(said, fmt.Sprintf("%d%%", o.Progress.Percent))
+	if o.TimeSpent != "" {
+		said = append(said, o.TimeSpent)
+	}
+	return strings.Join(said, " · ") + " (the store's)"
 }
 
 func typedName(name string) string {

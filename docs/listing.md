@@ -636,7 +636,12 @@ own; a listing without a view names nothing outside
 **Changing a view changes no task**, so it writes no trace
 (`@view-change-writes-no-trace`). And no figure about an objective moves with
 a view: an objective's progress and time stay the store's, whatever view is
-open.
+open. `view show` says so for each objective the view holds and still has,
+one line each — `objective #1 Home automation  1/2 · 50% · 1h30m (the
+store's)` — the same figures `objective show` gives, counted over its whole
+subtree and never over what the view keeps; a machine reads them under
+`objectives` (`@view-show-gives-the-objectives-figures-the-stores`). An
+objective gone gives none: its condition already says it is gone.
 
 **An agent reads the views and keeps none.** `view_list` is offered,
 read-only, and `task_list` takes `view` and answers `outside`; `view new`,
