@@ -30,6 +30,8 @@ func RenderText(op Operation, a Answer) string {
 
 func rendered(op Operation, a Answer) string {
 	switch op.Answers.(type) {
+	case ConfigChanged:
+		return configChangedText(*a.ConfigChanged)
 	case Config:
 		return configText(*a.Config)
 	case Workspaces:

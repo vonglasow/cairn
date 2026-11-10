@@ -17,7 +17,8 @@ import (
 
 type workspaces struct {
 	*world
-	held []byte
+	held     []byte
+	settings map[string]string
 }
 
 func initWorkspace(t *testing.T) func(*godog.ScenarioContext) {

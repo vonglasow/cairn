@@ -40,7 +40,29 @@ func (w *workspaces) registerSettings(sc *godog.ScenarioContext) {
 		if err := os.MkdirAll(at, 0o700); err != nil {
 			return err
 		}
+		if w.settings == nil {
+			w.settings = map[string]string{}
+		}
+		w.settings[folder] = said.Content + "\n"
 		return os.WriteFile(filepath.Join(at, "settings.toml"), []byte(said.Content+"\n"), 0o600)
+	})
+	sc.Step(`^the settings in "([^"]*)" read:$`, func(folder string, said *godog.DocString) error {
+		return w.fileReads(filepath.Join(w.expand(folder), "settings.toml"), said.Content+"\n")
+	})
+	sc.Step(`^it says it wrote the settings in "([^"]*)"$`, func(folder string) error {
+		return test.WantContains(w.Out.Stdout, "written in "+filepath.Join(w.expand(folder), "settings.toml"), "the answer")
+	})
+	sc.Step(`^the settings in "([^"]*)" are as they were$`, func(folder string) error {
+		return w.fileReads(filepath.Join(w.expand(folder), "settings.toml"), w.settings[folder])
+	})
+	sc.Step(`^the global configuration reads:$`, func(said *godog.DocString) error {
+		return w.fileReads(w.configPath(), said.Content+"\n")
+	})
+	sc.Step("^the global configuration holds `([^`]*)` right under `([^`]*)`$", func(line, above string) error {
+		return test.WantContains(w.readFile(w.configPath()), above+"\n"+line+"\n", "the global configuration")
+	})
+	sc.Step("^the global configuration holds `([^`]*)`$", func(line string) error {
+		return test.WantContains(w.readFile(w.configPath()), "\n"+line+"\n", "the global configuration")
 	})
 	sc.Step(`^it names the global configuration$`, func() error {
 		return test.WantContains(w.Out.Stderr, w.configPath(), "the reason")
@@ -131,4 +153,20 @@ func (w *workspaces) registerSettings(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+}
+
+func (w *workspaces) readFile(path string) string {
+	data, _ := os.ReadFile(path)
+	return "\n" + string(data)
+}
+
+func (w *workspaces) fileReads(path, want string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if string(data) != want {
+		return fmt.Errorf("%s reads\n%s\nnot\n%s", path, data, want)
+	}
+	return nil
 }

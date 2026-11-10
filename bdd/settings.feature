@@ -234,3 +234,147 @@ Feature: Settings that belong to a store, kept beside it
       Then it succeeds
       When I run `cairn config show --workspace play`
       Then it says "time" is "hidden"
+
+  Rule: A key is set, or taken out, from the command line, the file edited line by line
+
+    The configuration stays one, in one place: the window, the terminal and
+    the command line are several ways in to it, and the engine keeps it. A
+    surface sends what was asked; the engine checks it and writes it, one line
+    of the file and nothing else, every comment kept.
+
+    @config-set-writes-the-settings-of-the-workspace
+    Scenario: a key set is written in the settings of the workspace in use, at the end of its table, every comment kept
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      And the settings in "~/cairn/home" say:
+        """
+        # home: what this board does differently
+        [pages]
+        # no objectives at home
+        objectives = false
+
+        [window]
+        theme = "nord"   # told apart from work at a glance
+        """
+      When I run `cairn config set pages.time hidden`
+      Then it succeeds
+      And it says it wrote the settings in "~/cairn/home"
+      When I run `cairn config set window.theme gruvbox-dark`
+      Then it succeeds
+      And the settings in "~/cairn/home" read:
+        """
+        # home: what this board does differently
+        [pages]
+        # no objectives at home
+        objectives = false
+        time = "hidden"
+
+        [window]
+        theme = "gruvbox-dark"   # told apart from work at a glance
+        """
+      When I run `cairn config show`
+      Then it says "time" is "hidden", set in the store's settings
+
+    @config-set-global-takes-a-key-out-of-its-comment
+    Scenario: --global writes the global configuration, a key written commented taken out of its comment in place
+      Given `cairn config init` wrote the configuration
+      When I run `cairn config set focus.session 45m --global`
+      Then it succeeds
+      And the global configuration holds `session = "45m"` right under `[focus]`
+      When I run `cairn config show`
+      Then it says "session" is "45m"
+
+    @config-unset-takes-the-line-out
+    Scenario: a key taken out loses its line and nothing else, and the value under it answers again
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      And the settings in "~/cairn/home" say:
+        """
+        [pages]
+        # no objectives at home
+        objectives = false
+        """
+      When I run `cairn config unset pages.objectives`
+      Then it succeeds
+      And it says "pages.objectives is no longer said"
+      And it says "true, by default"
+      And the settings in "~/cairn/home" read:
+        """
+        [pages]
+        # no objectives at home
+        """
+
+    @config-unset-refuses-a-key-not-said-there
+    Scenario: a key the file does not say is not taken out of it
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      When I run `cairn config unset pages.time`
+      Then it fails
+      And it says on standard error "pages.time is not said in"
+
+    @config-set-refuses-what-the-key-does-not-take
+    Scenario Outline: a value the key does not take is refused in words naming the key, and nothing is written
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      And the settings in "~/cairn/home" say:
+        """
+        [pages]
+        objectives = false
+        """
+      When I run `cairn config set <key> <value>`
+      Then it fails
+      And it says on standard error "<key>"
+      And it says on standard error "<said>"
+      And the settings in "~/cairn/home" are as they were
+
+      Examples:
+        | key              | value  | said                                             |
+        | pages.time       | hiden  | is not a word pages.time takes (on, hidden, off) |
+        | focus.session    | 1hour  | is not a duration — write 1h, 45m, 1h30m         |
+        | recurrence.on    | yes    | is true or false                                 |
+        | archive.days     | 0      | is not a number of days, one or more             |
+        | archive.start    | monday | is not a day — write 2026-10-21                  |
+        | window.theme     | neon   | is not a scheme cairn sees                       |
+        | workspace.colour | puce   | puce                                             |
+        | pages.tiem       | on     | is not a key cairn sets                          |
+
+    @config-set-a-key-of-the-machine-goes-in-the-global-file
+    Scenario: a key of the machine is written in the global configuration, whatever workspace is in use
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      When I run `cairn config set plugin ~/plugins/cairn`
+      Then it succeeds
+      And the global configuration holds `plugin = "~/plugins/cairn"`
+
+    @config-set-a-key-of-a-store-is-not-global
+    Scenario: the colour a workspace wears is refused in the global configuration
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      When I run `cairn config set workspace.colour green --global`
+      Then it fails
+      And it says on standard error "workspace.colour belongs to a store"
+
+    @config-set-without-a-file-writes-the-table-alone
+    Scenario: with no global file, a key set writes a file holding its table alone
+      Given no configuration file
+      When I run `cairn config set recurrence.on true --global`
+      Then it succeeds
+      And the global configuration reads:
+        """
+        [recurrence]
+        on = true
+        """
+
+    @config-set-a-loose-store-goes-in-the-global-file
+    Scenario: for a store no workspace names and with no settings beside it, a key is set in the global configuration
+      Given no configuration file
+      When I run `cairn config set pages.time off`
+      Then it succeeds
+      And the global configuration holds `time = "off"` right under `[pages]`
+
+    @config-set-refuses-a-file-that-does-not-read
+    Scenario: a file that cannot be read is not written into, and is said
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "home"
+      And the settings in "~/cairn/home" say:
+        """
+        [pages]
+        time = "hiden"
+        """
+      When I run `cairn config set pages.objectives false`
+      Then it fails
+      And it names on standard error the file "~/cairn/home/settings.toml"
+      And the settings in "~/cairn/home" are as they were

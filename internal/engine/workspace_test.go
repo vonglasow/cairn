@@ -419,8 +419,8 @@ func TestWorkspaces_areDescribedForEverySurface(t *testing.T) {
 			t.Errorf("%s is among All(), so offered to an agent", op.Name())
 		}
 	}
-	if typed := ForAPersonOnly(); len(typed) != 7 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() || typed[2].Name() != WorkspaceRemove.Name() || typed[3].Name() != ViewNew.Name() || typed[6].Name() != ViewDelete.Name() {
-		t.Errorf("ForAPersonOnly() = %d operations, want workspace add, use and remove, then the views but their list", len(typed))
+	if typed := ForAPersonOnly(); len(typed) != 9 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() || typed[2].Name() != WorkspaceRemove.Name() || typed[3].Name() != ViewNew.Name() || typed[6].Name() != ViewDelete.Name() || typed[8].Name() != ConfigUnset.Name() {
+		t.Errorf("ForAPersonOnly() = %d operations, want workspace add, use and remove, then the views but their list, then setting a key and taking it out", len(typed))
 	}
 	if WorkspaceList.Level != Read || WorkspaceShow.Level != Read || WorkspaceAdd.Level != Write || WorkspaceUse.Level != Write {
 		t.Error("listing and showing read, adding and using write")

@@ -86,6 +86,7 @@ Decided on 2026-11-09, built in #226: until then cairn does none of it.
 | decided | why, in one line | where |
 |---|---|---|
 | every change goes through the engine; a surface decides nothing | the rules live once | [architecture.md](architecture.md) |
+| the configuration is set from the window, the terminal and the command line, and stays one file in one place | a key is written as one line of text, every comment kept, and only by the engine; the surfaces are several ways in to the same file, so no earlier decision is reversed: the file is never encoded again from a form, and the editor still works | [config.md](config.md#one-configuration-several-ways-in-to-it) |
 | what kind of answer a failure is — refused, not understood, store, unforeseen — is the engine's | a script's exit code and an agent's refusal are read off the same list | `internal/engine/refusal.go` |
 | a refusal quotes what a person typed exactly as typed, with what a terminal would act on written out | what somebody typed is theirs and is never changed — not even its case, which fang's style used to change — and it reaches a screen shown, never obeyed | the command line's `saidToAPerson` |
 | changes to the shape of a store are made in order, and a rollback reads the ledger again inside its transaction | each change was written on the shape the ones before it leave; two rollbacks read before either ran both said they undid the same change | `internal/store/migrate.go` |

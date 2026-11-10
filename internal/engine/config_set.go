@@ -1,0 +1,257 @@
+package engine
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
+	"cairn/internal/config"
+	"cairn/internal/domain"
+	"cairn/internal/theme"
+)
+
+// ConfigChanged is what setting a key or taking it out answers: the key, the value in force now and where it comes from, the file written, whether it was the global configuration, and whether the key was set rather than taken out.
+type ConfigChanged struct {
+	Key    string `json:"key"`
+	Value  string `json:"value" jsonschema:"the value in force now"`
+	From   string `json:"from" jsonschema:"where the value in force comes from: set in the store's settings, from the global configuration, or by default"`
+	File   string `json:"file" jsonschema:"the file written"`
+	Global bool   `json:"global"`
+	Set    bool   `json:"set" jsonschema:"true when the key was set, false when it was taken out"`
+}
+
+var errStoreKey = errors.New("belongs to a store: it is said in the settings beside it, never in the global configuration")
+
+var errEmptyGlobal = errors.New("is said empty only in a store's settings, for no label there: take it out of the global configuration instead")
+
+var configKeyArguments = []Argument{
+	{Name: "key", Kind: Text, Positional: true, Required: true, Means: "the key, dotted under its table: pages.time, window.theme, focus.session"},
+}
+
+var configGlobal = Argument{Name: "global", Kind: Bool, Means: "write the global configuration rather than the settings of the store in use"}
+
+// ConfigSet writes one key of the configuration, in the settings of the store in use or in the global configuration, one line of the file and nothing else.
+var ConfigSet = Operation{
+	Thing:   "config",
+	Verb:    "set",
+	Short:   "Set a key of the configuration, one line of its file",
+	Does:    "Set one key of the configuration to a value it takes, in the settings of the store in use when its workspace or the settings beside it say so, otherwise in the global configuration; --global writes the global one. The file is edited line by line, every comment kept, and nothing is written unless it reads back as meant. A key of the machine goes in the global configuration, the colour a workspace wears in its settings.",
+	Example: "cairn config set pages.time hidden",
+	Level:   Write,
+	Needs:   AConfiguration,
+	Again:   ChangesNothingMore,
+	Answers: ConfigChanged{},
+	Takes: append(append([]Argument{}, configKeyArguments...),
+		Argument{Name: "value", Kind: Text, Positional: true, Required: true, Means: "the value, as the key takes it: a word, true or false, a duration, a day, a number, a path"},
+		configGlobal),
+	Run: func(on On, in Input) (Answer, error) { return changingConfig(on.Home, in, true) },
+}
+
+// ConfigUnset takes one key out of the settings of the store in use or out of the global configuration, its line and nothing else, so the value under it answers again.
+var ConfigUnset = Operation{
+	Thing:   "config",
+	Verb:    "unset",
+	Short:   "Take a key out of the configuration, its line and nothing else",
+	Does:    "Take one key out of the settings of the store in use, or out of the global configuration with --global, so the value under it answers again: the global one, or the default. Its line goes and nothing else; a comment above it stays.",
+	Example: "cairn config unset pages.time",
+	Level:   Write,
+	Needs:   AConfiguration,
+	Again:   ChangesNothingMore,
+	Answers: ConfigChanged{},
+	Takes:   append(append([]Argument{}, configKeyArguments...), configGlobal),
+	Run:     func(on On, in Input) (Answer, error) { return changingConfig(on.Home, in, false) },
+}
+
+func changingConfig(h Home, in Input, set bool) (Answer, error) {
+	key, ok := config.KeyNamed(in.Given["key"])
+	if !ok {
+		return Answer{}, fmt.Errorf("%q %w: %s", in.Given["key"], config.ErrNotAKey, keysSaid())
+	}
+	path, global, err := h.writtenFor(key, in.Yes("global"))
+	if err != nil {
+		return Answer{}, err
+	}
+	change := func(was []byte) ([]byte, error) {
+		said, err := config.WithoutKey(was, key.Name)
+		if errors.Is(err, config.ErrNotSet) {
+			return nil, fmt.Errorf("%s %w %s: there is nothing to take out", key.Name, config.ErrNotSet, path)
+		}
+		return said, err
+	}
+	if set {
+		literal, err := h.literal(key, in.Given["value"], global)
+		if err != nil {
+			return Answer{}, err
+		}
+		change = func(was []byte) ([]byte, error) { return config.WithKey(was, key.Name, literal) }
+	}
+	if err := rewritten(path, h.Dir, !global, change); err != nil {
+		return Answer{}, err
+	}
+	changed := ConfigChanged{Key: key.Name, File: path, Global: global, Set: set}
+	changed.Value, changed.From = h.inForce(key)
+	return Answer{ConfigChanged: &changed}, nil
+}
+
+func keysSaid() string {
+	var names []string
+	for _, key := range config.Keys() {
+		names = append(names, key.Name)
+	}
+	return "cairn sets " + strings.Join(names, ", ")
+}
+
+func (h Home) writtenFor(key config.Key, global bool) (string, bool, error) {
+	file, err := h.file()
+	if err != nil {
+		return "", false, err
+	}
+	if global && key.Store {
+		return "", false, fmt.Errorf("%s %w", key.Name, errStoreKey)
+	}
+	if global || key.Machine {
+		return file, true, nil
+	}
+	settings, named, err := h.settingsHere()
+	if err != nil {
+		return "", false, err
+	}
+	if _, there := os.Stat(settings); key.Store || named || there == nil {
+		return settings, false, nil
+	}
+	return file, true, nil
+}
+
+func (h Home) settingsHere() (string, bool, error) {
+	if k := h.Kept; k != nil {
+		return config.SettingsBeside(k.Store.At), k.Workspace != "", nil
+	}
+	found, err := h.configuration()
+	if err != nil {
+		return "", false, err
+	}
+	a, err := h.answering(found)
+	if err != nil {
+		return "", false, err
+	}
+	return config.SettingsBeside(a.store.At), a.workspace != "", nil
+}
+
+func (h Home) literal(key config.Key, value string, global bool) (string, error) {
+	if global && value == "" && key.Kind == config.KindText {
+		return "", fmt.Errorf("%s %w", key.Name, errEmptyGlobal)
+	}
+	literal, err := key.LiteralHere(value)
+	if err != nil {
+		return "", err
+	}
+	switch key.Kind {
+	case config.KindDuration:
+		if length, err := time.ParseDuration(value); err != nil || length <= 0 {
+			return "", config.Refused("%s: %q is not a duration — write 1h, 45m, 1h30m", key.Name, value)
+		}
+	case config.KindColour:
+		if _, err := domain.ParseColour(value); err != nil {
+			return "", fmt.Errorf("%s %w", key.Name, err)
+		}
+	case config.KindTheme:
+		if _, err := theme.Find(themesIn(h.Dir), value); err != nil {
+			return "", Refusing("config-value", fmt.Sprintf("%s: %v", key.Name, err))
+		}
+	}
+	return literal, nil
+}
+
+func rewritten(path, home string, settings bool, change func([]byte) ([]byte, error)) error {
+	was, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	if len(was) > 0 {
+		if err := config.Readable(was, home, settings); err != nil {
+			return fmt.Errorf("%s cannot be read, and is left for the hand: %w", path, err)
+		}
+	}
+	said, err := change(was)
+	if err != nil {
+		return err
+	}
+	if err := config.Readable(said, home, settings); err != nil {
+		return err
+	}
+	return writtenWhole(path, said)
+}
+
+func writtenWhole(path string, said []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	beside, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(beside.Name()) }()
+	if _, err := beside.Write(said); err != nil {
+		_ = beside.Close()
+		return err
+	}
+	if err := beside.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(beside.Name(), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(beside.Name(), path)
+}
+
+func (h Home) inForce(key config.Key) (string, string) {
+	read, _, err := h.settled()
+	if err != nil {
+		return "", ""
+	}
+	from := whereSaid(read, key.Name)
+	switch key.Name {
+	case "store", "notes", "plugin":
+		return placeOf(read, key.Name), from
+	case "workspace.colour":
+		return read.Colour(), from
+	}
+	value := valuesOf(read)[key.Name]
+	if value == NotSaid {
+		value = ""
+	}
+	return value, from
+}
+
+func placeOf(read config.Places, name string) string {
+	gate := &placesGate{}
+	read.Tell(gate)
+	switch name {
+	case "store":
+		return gate.store.At
+	case "notes":
+		return gate.notes.At
+	}
+	return read.Plugin()
+}
+
+func configChangedText(c ConfigChanged) string {
+	if c.Set {
+		key, _ := config.KeyNamed(c.Key)
+		value := c.Value
+		if key.Kind != config.KindBool && key.Kind != config.KindNumber && key.Kind != config.KindDay {
+			value = strconv.Quote(value)
+		}
+		return fmt.Sprintf("%s = %s, written in %s\n", c.Key, value, c.File)
+	}
+	value := c.Value
+	if value == "" {
+		value = "not said"
+	}
+	return fmt.Sprintf("%s is no longer said in %s: %s, %s\n", c.Key, c.File, value, c.From)
+}

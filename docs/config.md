@@ -653,9 +653,89 @@ still read whole, so time spent on a Saturday stays in any total that counts the
 week, and the hidden days' cards are simply not drawn. Any other value is
 refused naming `time.weekends`
 (`@config-weekends-is-one-of-two`), and `config show` says which it is
-(`@config-weekends-hidden-or-shown`). The window has no toggle for it: the file
-stays the one place a key is set, and `⌘,` shows the configuration in use and
-opens the file from there ([gui.md](gui.md#the-window)).
+(`@config-weekends-hidden-or-shown`). The window's settings set it as a choice
+of two, `shown` or `hidden`, written into the file like any key
+([gui.md](gui.md#settings-changed-in-place)), and the week redraws at once.
+
+## One configuration, several ways in to it
+
+```sh
+cairn config set pages.time hidden           # the settings of the store in use
+cairn config set focus.session 45m --global   # the global configuration
+cairn config unset pages.time                # its line taken out: the value under it answers
+```
+
+**The configuration stays one, in one place.** The global `config.toml` and
+the `settings.toml` beside each store are still the two files, and still the
+truth. The window, the terminal and the command line are several ways in to
+them, each a different picture of the same thing: the window draws a settings
+screen ([gui.md](gui.md#settings-changed-in-place)), the terminal takes `:set`
+and `:unset` on its `:` line ([tui.md](tui.md#help-and-the-command-line)), and
+the command line `config set` and `config unset`. None of them writes the file
+itself: a surface sends the key, the value and the scope it was asked, and the
+engine checks and writes (`engine.ConfigSet`, `engine.ConfigUnset`), so one
+change asked three ways is one change. No decision is reversed by this: the
+file is not encoded again from a form, and a person who prefers an editor
+loses nothing.
+
+**Every key is in one catalogue** (`config.Keys`): its dotted name, its kind —
+`bool`, `words`, `duration`, `day`, `number`, `text`, `path`, `colour`,
+`theme` — the words it takes, whether it belongs to the machine (`store`,
+`notes`, `plugin`) or to a store alone (`workspace.colour`), and the section
+and words a surface names it by. The window's rows, the terminal's completion
+and the writer read it; a test holds it to `config.Example`, key for key
+(`TestTheCatalogueHoldsEveryKeyTheExampleWrites`). `[workspaces]` is not in
+it: `workspace add`, `use` and `remove` write that table.
+
+**Which file is written.** `--global` writes the global configuration.
+Without it, the settings of the store in use, when a workspace names that
+store or settings are already beside it; for a store no workspace names and
+with no settings beside it, the global configuration, so a loose store does not
+grow a file nobody asked for (`@config-set-writes-the-settings-of-the-workspace`,
+`@config-set-a-loose-store-goes-in-the-global-file`). A key of the machine
+always goes in the global file (`@config-set-a-key-of-the-machine-goes-in-the-global-file`),
+and the colour a workspace wears never does
+(`@config-set-a-key-of-a-store-is-not-global`). The engine decides this, not
+the surface: the window offers the store's scope exactly when the engine would
+write it.
+
+**Edited as text, line by line**, as `config.WithWorkspace` does
+(`config.WithKey`, `config.WithoutKey`). A value changed keeps its line and the
+comment after it; a key added joins the end of its table, or a table of its
+own at the end of the file; a key `config init` wrote commented
+(`# session = "1h"`) is taken out of its comment where it stands, so its
+explanation stays above it (`@config-set-global-takes-a-key-out-of-its-comment`);
+a key taken out loses its line and nothing else — the comment above it stays,
+since it may say why, and a person removes it (`@config-unset-takes-the-line-out`).
+With no file, the file written holds that table and key alone, as `workspace
+add` writes one, not the whole example
+(`@config-set-without-a-file-writes-the-table-alone`). A key the file does not
+say is not taken out of it (`@config-unset-refuses-a-key-not-said-there`).
+
+**Nothing is written that does not read back.** Every write reads the file
+first, edits that, then decodes the result twice: as TOML, every key but the
+one changed compared with what it was, and with the whole reader
+(`config.Readable`), the settings' rules included. A shape the editor does not
+know — an inline table, a string over several lines — is left for the hand, as
+`workspace add` leaves one. A value the key does not take is refused in words
+naming the key — `"hiden" is not a word pages.time takes (on, hidden, off)`,
+`focus.session: "1 hour" is not a duration — write 1h, 45m, 1h30m` — and
+nothing is written (`@config-set-refuses-what-the-key-does-not-take`). A file
+that cannot be read is not written into: writing a key into a file that does
+not read would be guessing, so it is refused naming the file
+(`@config-set-refuses-a-file-that-does-not-read`). The file is written beside
+itself and renamed over, so a reader never sees half of it.
+
+**Read again without reopening cairn.** The command line and the MCP server
+read the configuration at every use. A board, which stays open while the file
+changes, reads it again on the beat it already has — the window's
+([gui.md](gui.md#settings-changed-in-place)) and the terminal's
+([tui.md](tui.md#staying-true-while-the-store-changes)) — and a file that
+cannot be read meanwhile leaves the last good one in force, said.
+
+**A person's, not an agent's.** `config set` and `config unset` are
+`engine.ForAPersonOnly`: turning a page off, or the time, is the person's to
+decide, like `workspace use` (`@config-an-agent-cannot-set-a-key`).
 
 ## The environment names the same two places, or a workspace
 
@@ -785,9 +865,9 @@ not TOML: those are settings that would do something else than what was meant.
 
 Cairn does not write this file on its own. Nothing has to exist for it to work —
 no file is the ordinary case — but nothing leaves one behind either: a person
-who wants one writes it, or asks for it: `config init` writes it whole, and
-`workspace add` and `workspace use` write `[workspaces]` into it, leaving the
-rest as it was. `workspace add` also writes the settings of the workspace's
+who wants one writes it, or asks for it: `config init` writes it whole,
+`workspace add` and `workspace use` write `[workspaces]` into it, and `config
+set`, from any surface, writes one key, leaving the rest as it was. `workspace add` also writes the settings of the workspace's
 store, which say nothing yet.
 
 Posing it at the first run is specified in `bdd/config.feature` — once, never
@@ -841,8 +921,6 @@ agent needs when everything else has started saying no.
 
 ## Deliberately not there yet
 
-- **A command to write the file.** It is posed, and after that it is edited the
-  way any file is. A `config set` would be a second way of doing one thing.
 - **Saying what the file named when the environment replaced it.** `config show`
   says what won and who named it, never what lost. It was sketched and left out:
   no scenario observes it, and a capability nothing observes is either specified

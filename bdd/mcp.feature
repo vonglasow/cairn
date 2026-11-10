@@ -106,6 +106,14 @@ Feature: Answering a machine over MCP
       When I ask it what it can do
       Then it does not offer `workspace_remove`
 
+    @config-an-agent-cannot-set-a-key
+    Scenario: an agent can read the configuration, and neither set a key nor take one out
+      Given a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it offers `config_show`
+      And it does not offer `config_set`
+      And it does not offer `config_unset`
+
   Rule: A tool says what calling it would cost
 
     @mcp-marks-what-loses-work

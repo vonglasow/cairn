@@ -486,7 +486,14 @@ replaces the answer rather than queueing behind it, and writes nothing down.
 
 ```sh
 cairn config show                # which places cairn will use, and what named each
+cairn config set pages.time off  # one key, in the settings of the store in use
+cairn config set recurrence.on true --global   # one key, in the global file
+cairn config unset pages.time    # its line taken out; the value under it answers
 ```
+
+A key set keeps every comment of the file and is refused unless the file reads
+back as meant; the window's settings (`⌘,`) and the terminal's `:set` do the
+same through the same engine ([config.md](config.md#one-configuration-several-ways-in-to-it)).
 
 A workspace keeps a store and its notes together in one folder, under a name:
 

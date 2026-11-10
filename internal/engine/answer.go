@@ -212,6 +212,8 @@ type Applied struct {
 // Of turns what an operation answered into the shape a machine reads — the shape the operation declared it answers, and no other.
 func Of(op Operation, a Answer) any {
 	switch op.Answers.(type) {
+	case ConfigChanged:
+		return *a.ConfigChanged
 	case Config:
 		return *a.Config
 	case Workspaces:
