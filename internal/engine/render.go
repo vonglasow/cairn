@@ -52,7 +52,7 @@ func rendered(op Operation, a Answer) string {
 		if a.Task != nil {
 			return cardText(a) + warningsText(a.Warnings)
 		}
-		return heldText(a.Held, a)
+		return heldText(a.Held, a) + sessionAsksText(a.Sessions)
 	case Task:
 		if op.Verb == TaskSkip.Verb {
 			return fmt.Sprintf("#%d skipped\n", factsOf(*a.Task).Number)
@@ -184,6 +184,16 @@ func heldText(held []task.Task, a Answer) string {
 		return "nothing is in focus\n"
 	}
 	return task.Lines(held, marksOf(a))
+}
+
+func sessionAsksText(sessions []FocusSession) string {
+	var b strings.Builder
+	for _, s := range sessions {
+		if s.Ask != "" {
+			b.WriteString(s.Ask + "\n")
+		}
+	}
+	return b.String()
 }
 
 func tasksText(tasks []task.Task, a Answer) string {

@@ -381,6 +381,15 @@ func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
 	}
 }
 
+func TestRenderText_saysWhatASessionPastItsLengthAsks(t *testing.T) {
+	first := builtTask(t, 1, "First")
+	ask := "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
+	got := RenderText(TaskFocus, Answer{Held: []task.Task{first}, InFocus: list(1), Sessions: []FocusSession{{Task: 1, Ask: ask}}})
+	if !strings.Contains(got, ask) {
+		t.Errorf("the answer does not ask to renew the session:\n%s", got)
+	}
+}
+
 func TestOfAnswer_carriesTheStepsOfATaskShown(t *testing.T) {
 	var a task.AsTold
 	a.Numbered(1)

@@ -426,6 +426,15 @@ Feature: Ordering
       And I run `cairn task focus --json`
       Then the focus session of task 1 asks "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
 
+    @focus-session-asks-in-text-too
+    Scenario: the focus in text asks too, past a session's length
+      Given focus sessions last "1h"
+      And I added a task titled "Ship it"
+      And I put task 1 in focus
+      When it is 2 hours later
+      And I run `cairn task focus`
+      Then the answer says "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
+
     @focus-session-within-its-length-asks-nothing
     Scenario: a focus session within its length asks nothing
       Given focus sessions last "1h"
