@@ -89,13 +89,17 @@ func BoardFilters(s Snapshot, today time.Time) Filters {
 	for _, in := range dueIn {
 		days = append(days, domain.FormatDay(today.AddDate(0, 0, in)))
 	}
-	return Filters{
+	fs := Filters{
 		offered("column", "state", States(), nil),
 		offered("priority", "priority", Priorities(), nil),
 		several(offered("label", "label", labels, nil)),
 		objectives,
 		offered("due by", "due-before", days, nil),
 	}
+	if len(s.Series) > 0 {
+		fs = append(fs, offered("repeats", "repeats", []string{"true"}, []string{"yes"}))
+	}
+	return fs
 }
 
 func several(f Filter) Filter {
@@ -278,6 +282,7 @@ func (fs Filters) keepsGoal(g Goal) bool {
 func (fs Filters) Kept(cards []Card) ([]Card, error) {
 	in := Input{Given: map[string]string{}, Listed: map[string][]string{}}
 	var serving [][]int
+	repeats := false
 	for _, f := range fs {
 		taken := f.Taken()
 		if len(taken) == 0 {
@@ -293,6 +298,10 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 			in.Listed[f.Arg] = taken
 			continue
 		}
+		if f.Arg == "repeats" {
+			repeats = true
+			continue
+		}
 		in.Given[f.Arg] = taken[0]
 	}
 	kept, err := keeping(in, TaskList.Takes, nil)
@@ -306,7 +315,7 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 		for _, reached := range serving {
 			judged.Serving(reached)
 		}
-		if judged.kept {
+		if judged.kept && (!repeats || c.Series != nil) {
 			out = append(out, c)
 		}
 	}

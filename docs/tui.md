@@ -1069,7 +1069,9 @@ them would have changed where every `⇥` lands. **The list is on the left, the
 series chosen on the right**, as the objectives' tab and the window lay it
 out (`@tui-series-the-tab-lists-them`): the active ones, then the stopped
 ones, each in two rows — its number `↻1`, its title and its next day, or the
-day it was stopped; then its rule and what it did so far. On the right, its
+day it was stopped; then its rule as a row writes it, `every weekday ·
+10:30`, and the counts that are not nothing
+(`@tui-series-the-tab-says-it-as-drawn`). On the right, its
 rule in words, its next days, the template the next occurrence is made from,
 what it did so far, the task open now, and every occurrence it made or missed,
 archived ones included.
@@ -1111,7 +1113,11 @@ once it has passed; its weekday and date within a week; counted down in red once
 passed; nothing further off, as the study's answers chose. The engine says
 which, `engine.OccurrenceDay`, so the window says the same. Its detail's
 trace says where it came from: `made from series  ↻1`, the act the engine
-writes on a task its series made (`@tui-series-the-trace-says-made-from-series`).
+writes on a task its series made (`@tui-series-the-trace-says-made-from-series`),
+after what its series did before it, faint under *in the series, before this
+one* (`@tui-series-the-trace-goes-on-with-the-series-before-it`). The filters
+end with `repeats`, while there is a series
+(`@tui-series-the-board-narrows-to-what-comes-back`).
 
 **A task becomes a series in its form.** A task that is no occurrence carries
 a `repeats` field: a rule typed there makes it the first occurrence of a new

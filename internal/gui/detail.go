@@ -46,7 +46,29 @@ func (w Window) Lines() []string {
 	if w.chosenGoal {
 		return wrap("an objective has no trace of its own").Said
 	}
-	return Told(w.acts, wrap)
+	lines := Told(w.acts, wrap)
+	if before := w.seriesBefore(); len(before) > 0 && len(w.acts) > 0 {
+		lines = append(lines, wrap(BeforeThisOneSays).Said...)
+		for _, said := range before {
+			lines = append(lines, wrap(said).Said...)
+		}
+	}
+	return lines
+}
+
+// BeforeThisOneSays is what heads, in the history of an occurrence, what its series did before it.
+const BeforeThisOneSays = "in the series, before this one"
+
+func (w Window) seriesBefore() []string {
+	c, found := w.snap.Card(w.chosen)
+	if !found || c.Series == nil || w.chosenGoal {
+		return nil
+	}
+	s, found := w.snap.SeriesOf(c.Series.Series)
+	if !found {
+		return nil
+	}
+	return engine.BeforeIn(s, c.Number)
 }
 
 // ServingSays is what that box reads when there is no card to draw in it.

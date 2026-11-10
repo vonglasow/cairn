@@ -1091,8 +1091,19 @@ func drawFieldAt(k Kit, m Measure, name, value Box, rows, size int, long, lit, c
 
 func drawForm(k Kit, w Window) {
 	panel, box := w.formPanel(), w.formBox()
-	Panel{Head: HeadsOn(w, OnForm)}.Draw(k, panel)
+	head, occurs := w.OccurrenceHeading()
+	if occurs {
+		Panel{}.Draw(k, panel)
+	} else {
+		Panel{Head: HeadsOn(w, OnForm)}.Draw(k, panel)
+	}
 	k = k.inside("panel")
+	if occurs {
+		loop, title, under := OccurrenceHeadAt(FormHeading(panel))
+		LoopMark{Ink: k.skin.Colour.Ink.Text}.Draw(k, loop)
+		Heading{Said: head.Title, Number: head.Number}.Draw(k, title)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, under, fits(k.gtx, k.th, head.Under, under.W, small), small, font.Font{}, text.End)
+	}
 	Cross{Ink: k.skin.Colour.Ink.Faint}.Draw(k, FormClose(panel))
 	fields := w.Form().Fields()
 	for i := range fields {

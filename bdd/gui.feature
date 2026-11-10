@@ -5998,6 +5998,93 @@ Feature: The desktop board
       And I press "cmd+t"
       Then the trace says "made from series  ↻1"
 
+    @gui-series-the-form-of-an-occurrence-heads-with-its-loop
+    Scenario: the form of an occurrence carries the loop in its heading and says which series it is one of
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I double-click the card "Stand-up"
+      Then the form's heading carries the loop
+      And the form's heading says "one of the series every day"
+
+    @gui-series-the-form-of-an-occurrence-names-the-days-missed
+    Scenario: the series box of an occurrence names the days missed, what it counts from, and leads to the series
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day" from "2026-11-01"
+      And task 1 was skipped
+      When I open the window
+      And I double-click the card "Stand-up"
+      Then the form says of its series "nobody was there; not made up"
+      And the form says of its series "On the calendar"
+      And the form says of its series "ends never"
+      When I click "Edit the series…"
+      Then the series shown is series 1
+
+    @gui-series-the-history-of-an-occurrence-goes-on-with-its-series
+    Scenario: the history of an occurrence goes on with what its series did before it
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      And task 1 was skipped
+      When I open the window
+      And I double-click the card "Stand-up"
+      And I press "cmd+t"
+      Then the trace says "in the series, before this one"
+      And the trace says "skipped #1"
+
+    @gui-series-the-board-narrows-to-what-comes-back
+    Scenario: the repeats filter keeps the tasks that come back
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      And I added a task titled "Write the spec"
+      When I open the window
+      And I set the filter "repeats" to "yes"
+      Then "todo" carries "Stand-up"
+      And "backlog" does not carry "Write the spec"
+
+    @gui-series-the-tab-narrows-to-a-state
+    Scenario: the series tab narrows to a state, and says so on a pill
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      And I added a task titled "Expense report" coming back "every 4 weeks on monday"
+      And I stopped series 2
+      When I open the window
+      And I click the tab "SERIES"
+      And I set the series' state to "stopped"
+      Then the series listed are "Expense report"
+      And the board shows the pill "state: stopped"
+      When I set the series' state to "all"
+      Then the series listed are "Stand-up", "Expense report"
+
+    @gui-series-the-tab-says-it-as-drawn
+    Scenario: the series tab says each series the way the mockup wrote it
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every weekday 10:30"
+      When I open the window
+      And I click the tab "SERIES"
+      Then the series tab says "every weekday · 10:30"
+      And the series tab says "1 · made"
+      And the series tab says "on the board"
+      And the bar offers "Open the occurrence"
+
+    @gui-series-the-picker-sets-the-day-it-counts-from
+    Scenario: the picker sets the day a new series counts from
+      Given recurrence is on in the window
+      And today is "2026-11-09"
+      When I open the window
+      And I press "cmd+n"
+      And I click the field "repeats"
+      And I click the next of "from" in the rule's picker
+      Then the field "from" reads "2026-11-10"
+
+    @gui-series-the-bar-offers-the-r-keys-as-drawn
+    Scenario: a chosen occurrence's bar offers to open its series, to skip it, and to stop or resume its series
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the card "Stand-up"
+      Then the bar offers "Open its series" under "r e"
+      And the bar offers "Stop it" under "r x"
+
     @gui-series-the-help-says-the-r-keys
     Scenario: the help says what the r keys do while a task may come back, and nothing of them otherwise
       Given recurrence is on in the window

@@ -1,9 +1,11 @@
 package gui
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -12,6 +14,7 @@ type seriesState struct {
 	seriesFate  int
 	fateOf      int
 	seriesChord bool
+	seriesIn    int
 }
 
 // The offers of a series shown, and what the bar offers on its tab.
@@ -22,11 +25,21 @@ const (
 	ResumeSeriesSays = "Resume"
 	DeleteSeriesSays = "Delete…"
 	NewSeriesSays    = "New series"
+	OpenOccurrence   = "Open the occurrence"
+	EditTheSeries    = "Edit the series…"
 )
 
-// SeriesListed is the series the tab lists for what is searched: the active ones, then the stopped ones.
+// SeriesListed is the series the tab lists for what is searched and the state it is narrowed to: the active ones, then the stopped ones.
 func (w Window) SeriesListed() []engine.Series {
-	return engine.ShownSeries(w.snap.Series, w.looking.Reads())
+	return engine.InState(engine.ShownSeries(w.snap.Series, w.looking.Reads()), w.SeriesState())
+}
+
+// SeriesState is the state the series' tab is narrowed to: all, active or stopped.
+func (w Window) SeriesState() string { return engine.SeriesStates[w.seriesIn] }
+
+func (w Window) walkingSeriesState() Window {
+	w.seriesIn = (w.seriesIn + 1) % len(engine.SeriesStates)
+	return w
 }
 
 // SeriesShown is the series the right of the tab shows: the one chosen, or the first listed while none is.
@@ -81,10 +94,7 @@ func (w Window) SeriesWhen(s engine.Series) string {
 	if s.State == "stopped" {
 		return "since " + engine.DaySaid(s.Stopped, w.now)
 	}
-	if len(s.Next) == 0 {
-		return ""
-	}
-	return engine.DaySaid(s.Next[0], w.now)
+	return engine.NextDaySaid(s, w.now)
 }
 
 // StandingOfSeries is the standing a series' state is drawn in: an active one as an active objective, a stopped one as one on hold.
@@ -198,7 +208,7 @@ func (w Window) SeriesDetail() SeriesDetail {
 		y += seriesBoxHigh + padding
 	}
 	d.OccurrencesSaid = "Occurrences · " + strconv.Itoa(len(s.Occurrences))
-	d.OccurrencesAside = "archived ones included · a click opens the task"
+	d.OccurrencesAside = OccurrencesAside(s)
 	d.OccurrencesHead = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 	y += lineHigh + inset
 	for _, o := range s.Occurrences {
@@ -229,12 +239,39 @@ func SoFarSays(s engine.Series) string {
 	return said
 }
 
-// FootSaid is what the foot of the detail says of a series beside its offers: when it was stopped, or how many occurrences it made.
+// FootSaid is what the foot of the detail says of a series beside its offers: who stopped it and when, or its number — written after the loop the foot draws — the day it was made and how many occurrences it made.
 func FootSaid(s engine.Series) string {
 	if s.State == "stopped" {
-		return "stopped " + s.Stopped
+		said := "stopped"
+		for _, a := range s.Acts {
+			if a.Did == "stopped" && a.By != "" {
+				said = "stopped by " + a.By
+			}
+		}
+		if day, err := domain.ParseDeadline(s.Stopped); err == nil && !day.IsZero() {
+			said += " · " + day.Format("2 Jan")
+		}
+		return said
 	}
-	return strconv.Itoa(len(s.Occurrences)) + " occurrences"
+	made := ""
+	if day, err := domain.ParseDeadline(s.From); err == nil && !day.IsZero() {
+		made = " · made " + day.Format("2 Jan")
+	}
+	return strconv.Itoa(s.Number) + made + " · " + strconv.Itoa(len(s.Occurrences)) + " occurrences"
+}
+
+// OccurrencesAside is what the head of the occurrences says at its right: that every one is kept when all are archived, else that archived ones are there and how one is opened.
+func OccurrencesAside(s engine.Series) string {
+	archived := 0
+	for _, o := range s.Occurrences {
+		if o.Archived || o.Task == 0 {
+			archived++
+		}
+	}
+	if len(s.Occurrences) > 0 && archived == len(s.Occurrences) {
+		return "all archived, all kept"
+	}
+	return "archived ones included · ⏎ opens the task"
 }
 
 func templateFacts(t engine.Template) Facts {
@@ -287,6 +324,9 @@ func (w Window) OccurrenceSays(o engine.Occurrence) (day, number, title, is, spe
 	is = o.Is
 	if o.Archived {
 		is += " · archived"
+	}
+	if !o.Archived && o.Task != 0 && slices.Contains(engine.States(), o.Is) && o.Is != "done" {
+		is = "on the board"
 	}
 	spent = o.TimeSpent
 	if spent == "" {
@@ -430,7 +470,7 @@ func (w Window) startingSeries() Window {
 }
 
 func (w Window) clickingSeries(p Point) (Window, bool) {
-	if w.screen != OnTheBoard || w.tab != Series {
+	if w.screen != OnTheBoard || w.tab != Series || w.Layout().Bar.In(p) {
 		return w, false
 	}
 	for _, row := range w.SeriesRows() {
@@ -525,6 +565,15 @@ func (w Window) choosingOnSeries(name string) (Window, bool) {
 		return w, true
 	case name == NewSeriesSays:
 		return w.startingSeries(), true
+	case w.screen == OnTheBoard && w.tab == Series && name == OpenOccurrence:
+		return w.openingOccurrence(), true
+	case w.screen == OnTheBoard && w.tab == Series && slices.Contains([]string{"Edit", "Skip", StopSeriesSays, ResumeSeriesSays}, name):
+		return w.seriesActing(name), true
+	case w.screen == OnForm && name == EditTheSeries:
+		if c, found := w.snap.Card(w.form.Number); found && c.Series != nil {
+			w.screen, w.form = OnTheBoard, Form{}
+			return w.onSeries(c.Series.Series), true
+		}
 	}
 	return w.actingOnOccurrence(name)
 }
@@ -548,7 +597,9 @@ func (w Window) seriesChipAt(p Point) (int, bool) {
 // The offers a chosen occurrence and the form of one add, and what they answer to.
 const (
 	SkipItSays      = "Skip it"
-	ItsSeriesSays   = "Its series"
+	ItsSeriesSays   = "Open its series"
+	StopItSays      = "Stop it"
+	ResumeItSays    = "Resume it"
 	SkipThisOneSays = "Skip this one"
 	StopTheSeries   = "Stop the series"
 	ResumeTheSeries = "Resume the series"
@@ -608,6 +659,10 @@ func (w Window) actingOnOccurrence(offer string) (Window, bool) {
 		return leaving(w).asking(engine.TaskSkip, engine.Numbered(c.Number)), true
 	case StopTheSeries:
 		return leaving(w).asking(engine.SeriesStop, engine.Numbered(c.Series.Series)), true
+	case StopItSays:
+		return w.asking(engine.SeriesStop, engine.Numbered(c.Series.Series)), true
+	case ResumeItSays:
+		return w.asking(engine.SeriesResume, engine.Numbered(c.Series.Series)), true
 	case ResumeTheSeries:
 		return leaving(w).asking(engine.SeriesResume, engine.Numbered(c.Series.Series)), true
 	case ItsSeriesSays:
@@ -632,11 +687,23 @@ func (w Window) OccurrenceBox() (Box, bool) {
 		bottom = max(bottom, frame.Y+frame.H)
 	}
 	right := FormBeside(w.formPanel())
-	box := Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: 2*padding + 2*lineHigh + between + w.occurrenceFacts().High()}
+	box := Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: 2*padding + occurrenceHeadHigh + 2*between + lineHigh + w.occurrenceFacts().High()}
 	if box.Y+box.H > FormRule(w.formPanel()).Y-padding {
 		return Box{}, false
 	}
 	return box, true
+}
+
+const occurrenceHeadHigh = 24
+
+// OccurrenceEdit is the button at the head of the box saying an occurrence's series, which opens the series in its tab.
+func (w Window) OccurrenceEdit() (Box, bool) {
+	box, ok := w.OccurrenceBox()
+	if !ok {
+		return Box{}, false
+	}
+	wide := buttonWordWide(w.measured(), EditTheSeries) + KeyChipWide("r e") + hintSpace + 2*padding
+	return Box{X: box.X + box.W - padding - wide, Y: box.Y + padding, W: wide, H: occurrenceHeadHigh}, true
 }
 
 func (w Window) occurrenceFacts() Facts {
@@ -645,15 +712,57 @@ func (w Window) occurrenceFacts() Facts {
 		return Facts{}
 	}
 	s, _ := w.snap.SeriesOf(c.Series.Series)
+	rule, _ := domain.ParseRule(c.Series.Rule)
+	anchored := "On the calendar"
+	if rule.AfterDone() {
+		anchored = "After the last is done"
+	}
 	next := engine.ShortDays(c.Series.Then[:min(1, len(c.Series.Then))])
+	if next != "" && rule.At() != "" {
+		next += ", " + rule.At()
+	}
 	if c.Series.Stopped {
 		next = "none, the series is stopped"
 	}
-	return Facts{Lines: []Fact{
-		{Name: "this one", Value: engine.ShortDays([]string{c.Series.Day})},
-		{Name: "next", Value: domainOrNothing(next), Aside: "made when this one is done or skipped"},
-		{Name: "so far", Value: strconv.Itoa(s.Done) + " done · " + strconv.Itoa(s.Skipped) + " skipped · " + strconv.Itoa(s.Missed) + " missed"},
-	}}
+	since := domainOrNothing(engine.ShortDays([]string{s.From})) + " · ends " + endsSaid(rule.Parts())
+	lines := []Fact{
+		{Name: "anchored", Value: anchored},
+		{Name: "next", Value: domainOrNothing(next)},
+		{Name: "since", Value: since},
+		{Name: "so far", Value: strconv.Itoa(s.Done) + " done · " + strconv.Itoa(s.Skipped) + " skipped"},
+	}
+	if missed := engine.MissedDays(s); len(missed) > 0 {
+		lines = append(lines, Fact{Name: "missed", Value: strconv.Itoa(len(missed)) + " · " + strings.Join(missed, ", "), Aside: "nobody was there; not made up", Late: true})
+	}
+	return Facts{Lines: lines}
+}
+
+func endsSaid(p domain.RuleParts) string {
+	switch {
+	case p.Times == 1:
+		return "after once"
+	case p.Times > 1:
+		return "after " + strconv.Itoa(p.Times) + " times"
+	case !p.Until.IsZero():
+		return "on " + domain.ShortDay(p.Until)
+	}
+	return "never"
+}
+
+// OccurrenceHead is how the form of an occurrence is headed: its title behind the loop, its number, and the series it is one of with the day it is for.
+type OccurrenceHead struct{ Title, Number, Under string }
+
+// OccurrenceHeading is the heading of the form open on an occurrence, and whether the form is open on one.
+func (w Window) OccurrenceHeading() (OccurrenceHead, bool) {
+	if !formShown(w.screen) || w.form.Adding || w.form.ForSeries || w.form.ForObjective || w.form.Number == 0 || !w.pages.Recurs() {
+		return OccurrenceHead{}, false
+	}
+	c, found := w.snap.Card(w.form.Number)
+	if !found || c.Series == nil {
+		return OccurrenceHead{}, false
+	}
+	return OccurrenceHead{Title: c.Title, Number: "#" + strconv.Itoa(c.Number),
+		Under: "one of the series " + c.Series.Often + " · this one is " + engine.ShortDays([]string{c.Series.Day})}, true
 }
 
 func drawOccurrenceBeside(k Kit, w Window) {
@@ -665,11 +774,13 @@ func drawOccurrenceBeside(k Kit, w Window) {
 	card := InfoBox{}.Draw(k, at)
 	in := k.inside("info")
 	inside := Box{X: card.X + padding, Y: card.Y + padding, W: card.W - 2*padding, H: card.H - 2*padding}
-	wide := SeriesNumberWide(c.Series.Series, small)
-	Head{Said: SeriesHead}.Draw(in, Box{X: inside.X, Y: inside.Y, W: inside.W - wide - gap, H: lineHigh})
-	SeriesNumber{Number: c.Series.Series, Ink: in.skin.Colour.Accent.Base}.Draw(in, Box{X: inside.X + inside.W - wide, Y: inside.Y, W: wide, H: lineHigh})
-	says := Box{X: inside.X, Y: inside.Y + lineHigh + between, W: inside.W, H: lineHigh}
-	say(in.gtx, in.th, in.skin.Colour.Ink.OnTint, says, fits(in.gtx, in.th, c.Series.Says, says.W, reads), reads)
+	edit, _ := w.OccurrenceEdit()
+	Head{Said: SeriesHead}.Draw(in, Box{X: inside.X, Y: inside.Y + (occurrenceHeadHigh-lineHigh)/2, W: edit.X - inside.X - gap, H: lineHigh})
+	Button{Said: EditTheSeries, Key: "r e", Keyed: true}.Draw(in, edit)
+	says := Box{X: inside.X, Y: inside.Y + occurrenceHeadHigh + between, W: inside.W, H: lineHigh}
+	LoopMark{Ink: in.skin.Colour.Ink.OnTint}.Draw(in, Box{X: says.X, Y: says.Y + (lineHigh-loopSide)/2, W: loopSide, H: loopSide})
+	often := Box{X: says.X + loopSide + inset, Y: says.Y, W: says.W - loopSide - inset, H: lineHigh}
+	say(in.gtx, in.th, in.skin.Colour.Ink.OnTint, often, fits(in.gtx, in.th, c.Series.Says, often.W, reads), reads)
 	facts := w.occurrenceFacts()
 	facts.Draw(in, Box{X: inside.X, Y: says.Y + lineHigh + between, W: inside.W, H: facts.High()})
 }

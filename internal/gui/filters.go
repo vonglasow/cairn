@@ -294,6 +294,8 @@ const (
 	PillFolded
 	// PillView is the view in force, standing for every filter it holds, its cross leaving it.
 	PillView
+	// PillState is the state the series' tab is narrowed to, walked by a click, its cross listing them all again.
+	PillState
 )
 
 // FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, whether it is faint for meaning nothing on the page in sight, for a view whether a filter or a search stands on top of it, and what it says faint after its value.
@@ -311,7 +313,7 @@ type FilterPill struct {
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
 func (p FilterPill) Cross() (Box, bool) {
-	if p.Kind != PillSearch && p.Kind != PillFilter && p.Kind != PillView {
+	if p.Kind != PillSearch && p.Kind != PillFilter && p.Kind != PillView && p.Kind != PillState {
 		return Box{}, false
 	}
 	return Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
@@ -339,6 +341,11 @@ func (w Window) Pills() []FilterPill {
 		row = append(row, FilterPill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
 	}
 	taken, viewed := 0, 0
+	if w.tab == Series {
+		plain(AddFilterSays, PillAdd)
+		crossed(StateSays, w.SeriesState(), PillState, -1)
+		return placedPills(row, start, end, y, high)
+	}
 	if v, in := w.inView(); in {
 		crossed("view", v.Name, PillView, -1)
 		row[0].Changed = w.ViewChanged()
@@ -384,6 +391,13 @@ func (w Window) Pills() []FilterPill {
 		}
 		plain(FoldedSays(taken+viewed), PillFolded)
 	}
+	return placedPills(row, start, end, y, high)
+}
+
+// StateSays is what the pill narrowing the series' tab to a state is named.
+const StateSays = "state:"
+
+func placedPills(row []FilterPill, start, end, y, high int) []FilterPill {
 	var pills []FilterPill
 	x := max(start, end-widthOf(row))
 	for _, pill := range row {
@@ -429,7 +443,11 @@ func FoldedSays(n int) string { return "Filters · " + strconv.Itoa(n) }
 // TabCount is what a page's tab counts: what it shows, and of how many when the search or the filters narrow it.
 func (w Window) TabCount(page Tab) string {
 	shown := strconv.Itoa(w.Holds(page))
-	if page == Time || (w.looking.Empty() && !w.filters.Narrows() && w.viewing == "") {
+	if page == Series && (w.seriesIn != 0 || !w.looking.Empty()) {
+		return shown + "/" + strconv.Itoa(len(w.snap.Series))
+	}
+	if page == Series ||
+		page == Time || (w.looking.Empty() && !w.filters.Narrows() && w.viewing == "") {
 		return shown
 	}
 	if page == Objectives {
@@ -466,8 +484,15 @@ func (w Window) clickingPill(pill FilterPill, p Point) Window {
 			return w
 		case PillView:
 			return w.leavingView()
+		case PillState:
+			w.seriesIn = 0
+			return w
 		}
 		return w.takingOff(pill.At)
+	}
+	switch {
+	case pill.Kind == PillState, pill.Kind == PillAdd && w.tab == Series:
+		return w.walkingSeriesState()
 	}
 	switch pill.Kind {
 	case PillView:

@@ -202,10 +202,16 @@ func Shortcut(offer string) string {
 		return "backspace"
 	case strings.ToLower(NewSeriesSays):
 		return "n"
+	case strings.ToLower(OpenOccurrence):
+		return "enter"
 	case strings.ToLower(SkipItSays):
 		return "r s"
 	case strings.ToLower(ItsSeriesSays):
 		return "r e"
+	case strings.ToLower(StopItSays):
+		return "r x"
+	case strings.ToLower(ResumeItSays):
+		return "r r"
 	case strings.ToLower(DeleteTheSeriesSays), strings.ToLower(ThisOneOnlySays):
 		return "enter"
 	case "recover":
@@ -407,6 +413,15 @@ func (w Window) BoardOffers() []string {
 	}
 	if w.tab == Series {
 		offers = []string{NewSeriesSays, "Search", "Help"}
+		if shown, found := w.SeriesShown(); found {
+			acts := []string{OpenOccurrence, "Edit", "Skip", StopSeriesSays}
+			if shown.State == "stopped" {
+				acts = []string{OpenOccurrence, "Edit", ResumeSeriesSays}
+			} else if len(shown.Open) == 0 {
+				acts = []string{"Edit", StopSeriesSays}
+			}
+			offers = append(acts, offers...)
+		}
 		if !w.looking.Empty() {
 			offers = append(offers, "Clear")
 		}
@@ -422,8 +437,12 @@ func (w Window) BoardOffers() []string {
 		card, _ := w.snap.Card(w.chosen)
 		offers = append(offers, "Edit", engine.AwayOp(card).Offered(), "Delete")
 	}
-	if _, ok := w.occurrenceChosen(); ok {
-		offers = append(offers, SkipItSays, ItsSeriesSays)
+	if c, ok := w.occurrenceChosen(); ok {
+		stop := StopItSays
+		if c.Series.Stopped {
+			stop = ResumeItSays
+		}
+		offers = append(offers, ItsSeriesSays, SkipItSays, stop)
 	}
 	return offers
 }
@@ -448,7 +467,9 @@ func (w Window) clickingList(p Point) Window {
 	return w
 }
 
-func chosenOnACalendar(field engine.Field) bool { return field.Arg == "deadline" }
+func chosenOnACalendar(field engine.Field) bool {
+	return field.Arg == "deadline" || field.Arg == engine.FromField().Arg
+}
 
 func chosenFromRules(field engine.Field) bool { return field.Arg == engine.RepeatsField().Arg }
 

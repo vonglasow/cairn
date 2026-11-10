@@ -236,6 +236,68 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the form's heading carries the loop$`, func() error {
+		if _, ok := w.w.OccurrenceHeading(); !ok {
+			return fmt.Errorf("the form's heading is %q, with no loop", HeadsOn(w.w, OnForm))
+		}
+		return nil
+	})
+	sc.Then(`^the form's heading says "([^"]*)"$`, func(want string) error {
+		head, _ := w.w.OccurrenceHeading()
+		if !strings.Contains(head.Title+" "+head.Number+" "+head.Under, want) {
+			return fmt.Errorf("the form's heading says %+v, not %q", head, want)
+		}
+		return nil
+	})
+	sc.Step(`^I set the series' state to "([^"]*)"$`, func(state string) error {
+		for range 4 {
+			if w.w.SeriesState() == state {
+				return nil
+			}
+			for _, pill := range w.w.Pills() {
+				if pill.Kind == PillState {
+					w.w = w.w.clicked(Point{X: pill.Box.X + inset, Y: pill.Box.Y + pill.Box.H/2})
+				}
+			}
+		}
+		return fmt.Errorf("the series' state never reached %q: %q", state, w.w.SeriesState())
+	})
+	sc.Then(`^the series listed are (.+)$`, func(list string) error {
+		var got []string
+		for _, s := range w.w.SeriesListed() {
+			got = append(got, strconv.Quote(s.Title))
+		}
+		if strings.Join(got, ", ") != list {
+			return fmt.Errorf("the series listed are %s, not %s", strings.Join(got, ", "), list)
+		}
+		return nil
+	})
+	sc.Then(`^the board shows the pill "([^"]*)"$`, func(said string) error {
+		var all []string
+		for _, pill := range w.w.Pills() {
+			all = append(all, pill.Said)
+			if pill.Said == said {
+				return nil
+			}
+		}
+		return fmt.Errorf("the pills read %q, with no %q", all, said)
+	})
+	sc.Then(`^the series tab says "([^"]*)"$`, func(want string) error {
+		var all []string
+		for _, one := range textDrawn(w.w) {
+			all = append(all, one.said)
+		}
+		if !strings.Contains(strings.Join(all, " "), want) {
+			return fmt.Errorf("the series tab says %q, and nothing of %q", all, want)
+		}
+		return nil
+	})
+	sc.Then(`^the bar offers "([^"]*)"$`, func(offer string) error {
+		if !slices.Contains(w.w.Offers(), offer) {
+			return fmt.Errorf("the bar offers %q, not %q", w.w.Offers(), offer)
+		}
+		return nil
+	})
 	sc.Then(`^the form offers "([^"]*)"$`, func(offer string) error {
 		if w.w.Screen() != OnForm || !slices.Contains(w.w.Offers(), offer) {
 			return fmt.Errorf("the window is on %v and offers %q", w.w.Screen(), w.w.Offers())

@@ -245,3 +245,84 @@ func TestRuleReadBack_saysTheRuleAndItsNextDaysOrWhyItCannot(t *testing.T) {
 		t.Errorf("nothing typed reads back %+v", read)
 	}
 }
+
+func TestInState_narrowsTheSeriesToAState(t *testing.T) {
+	all := []Series{{Number: 1, State: "active"}, {Number: 2, State: "stopped"}}
+	if got := InState(all, "stopped"); len(got) != 1 || got[0].Number != 2 {
+		t.Errorf("stopped keeps %+v", got)
+	}
+	if got := InState(all, "all"); len(got) != 2 {
+		t.Errorf("all keeps %+v", got)
+	}
+	if !slices.Equal(SeriesStates, []string{"all", "active", "stopped"}) {
+		t.Errorf("the states offered are %v", SeriesStates)
+	}
+}
+
+func TestSeriesSaid_theMissedDaysWhatCameBeforeAndEach(t *testing.T) {
+	s := Series{
+		Rule: "every weekday 10:30", Done: 2, TimeSpent: "30m",
+		Occurrences: []Occurrence{{Day: "2026-11-06", Task: 3}, {Day: "2026-11-05", Is: "missed"}, {Day: "2026-11-04", Is: "missed"}, {Day: "2026-11-03", Task: 1}},
+		Acts: []SeriesAct{
+			{Did: "made", Task: 1, Day: "2026-11-03", At: "2026-11-03T08:00:00Z"},
+			{Did: "skipped", Task: 1, Day: "2026-11-03", At: "2026-11-05T09:00:00Z"},
+			{Did: "made", Task: 3, Day: "2026-11-06", At: "2026-11-05T09:00:00Z"},
+		},
+	}
+	if got := MissedDays(s); !slices.Equal(got, []string{"Thu 5 Nov", "Wed 4 Nov"}) {
+		t.Errorf("the days missed are %v", got)
+	}
+	before := BeforeIn(s, 3)
+	if len(before) != 2 || !strings.Contains(before[0], "skipped #1") || !strings.Contains(before[1], "made #1") {
+		t.Errorf("before #3 the series did %q", before)
+	}
+	if got := BeforeIn(s, 1); len(got) != 0 {
+		t.Errorf("before the first the series did %q", got)
+	}
+	if got := EachSaid(s); got != "15m each" {
+		t.Errorf("each reads %q", got)
+	}
+	if got := EachSaid(Series{}); got != "" {
+		t.Errorf("each with nothing done reads %q", got)
+	}
+	if got := RuleListed(s.Rule); got != "every weekday · 10:30" {
+		t.Errorf("the rule is listed %q", got)
+	}
+	if got := RuleListed("every blue moon"); got != "every blue moon" {
+		t.Errorf("a rule it cannot read is listed %q", got)
+	}
+	if f := FromField(); f.Name != "from" || f.Arg != "from" {
+		t.Errorf("the field the first day is given in is %+v", f)
+	}
+}
+
+func TestBoardFilters_offerWhatComesBackWhileThereAreSeries(t *testing.T) {
+	cards := []Card{{Number: 1, Series: &Occurs{Series: 1}}, {Number: 2}}
+	plain := BoardFilters(Snapshot{Cards: cards}, time.Now())
+	for _, f := range plain {
+		if f.Arg == "repeats" {
+			t.Fatal("a store with no series is offered a repeats filter")
+		}
+	}
+	fs := BoardFilters(Snapshot{Cards: cards, Series: []Series{{Number: 1}}}, time.Now()).On("repeats", "true")
+	kept, err := fs.Kept(cards)
+	if err != nil || len(kept) != 1 || kept[0].Number != 1 {
+		t.Errorf("the repeats filter kept %+v (%v)", kept, err)
+	}
+	if fs.Said() != "repeats yes" {
+		t.Errorf("the filters say %q", fs.Said())
+	}
+}
+
+func TestNextDaySaid_isTheNextDayAndItsTimeToday(t *testing.T) {
+	now := time.Date(2026, 11, 9, 9, 0, 0, 0, time.Local)
+	if got := NextDaySaid(Series{Rule: "every weekday 10:30", Next: []string{"2026-11-09"}}, now); got != "today 10:30" {
+		t.Errorf("today reads %q", got)
+	}
+	if got := NextDaySaid(Series{Rule: "every friday", Next: []string{"2026-11-13"}}, now); got != "Fri 13" {
+		t.Errorf("friday reads %q", got)
+	}
+	if got := NextDaySaid(Series{Rule: "every day"}, now); got != "" {
+		t.Errorf("no next day reads %q", got)
+	}
+}

@@ -1686,6 +1686,36 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And I press "l", "i", "enter"
     Then the board says "made from series  ↻1"
 
+  @tui-series-the-trace-goes-on-with-the-series-before-it
+  Scenario: the trace of an occurrence goes on with what its series did before it
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    And task 1 was skipped
+    And a window of 140 by 44
+    When I open the board
+    And I press "l", "i", "enter"
+    Then the board says "in the series, before this one"
+    And the board says "skipped #1"
+
+  @tui-series-the-tab-says-it-as-drawn
+  Scenario: the series tab writes a rule the way the mockup wrote it
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every weekday 10:30"
+    When I open the board
+    And I press "tab", "tab", "tab"
+    Then the board says "every weekday · 10:30"
+
+  @tui-series-the-board-narrows-to-what-comes-back
+  Scenario: the repeats filter keeps the tasks that come back
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    And I added a task titled "Write the spec"
+    When I open the board
+    And I press "shift+f", "l", "l", "l", "l", "l", "j"
+    Then the board says "repeats yes"
+    And the board says "Stand-up"
+    And the board says nothing of "Write the spec"
+
   @tui-series-r-s-skips
   Scenario: r s skips the occurrence under the cursor, and its series makes the next
     Given recurrence is on on the board

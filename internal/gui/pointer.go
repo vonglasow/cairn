@@ -107,6 +107,9 @@ func (w Window) Click(p Point) Window {
 		w, _ = w.dayClicked(p)
 		return w
 	}
+	if edit, ok := w.OccurrenceEdit(); ok && w.screen == OnForm && edit.In(p) {
+		return w.Choose(EditTheSeries)
+	}
 	if at, on := w.fieldAt(p); on {
 		reached := w.reaching(at, p)
 		w.form = w.form.onto(at)

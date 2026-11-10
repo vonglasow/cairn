@@ -127,6 +127,15 @@ func FormClose(box Box) Box {
 	return Box{X: head.X + head.W - closeWide, Y: head.Y + (head.H-closeWide)/2, W: closeWide, H: closeWide}
 }
 
+// OccurrenceHeadAt shares out the heading of an occurrence's form: the loop, then its title and number over the larger part, then the series it is one of.
+func OccurrenceHeadAt(head Box) (loop, title, under Box) {
+	loop = Box{X: head.X, Y: head.Y + (head.H-loopSide)/2, W: loopSide, H: loopSide}
+	title = Box{X: loop.X + loopSide + inset, Y: head.Y, W: head.W*11/20 - loopSide - inset, H: head.H}
+	from := title.X + title.W + padding
+	under = Box{X: from, Y: head.Y, W: max(0, head.X+head.W-from), H: head.H}
+	return loop, title, under
+}
+
 // FormHeading is a form's heading less the box that closes it, so its words never run under the cross.
 func FormHeading(box Box) Box {
 	head := HeadingAt(box)

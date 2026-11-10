@@ -658,7 +658,10 @@ every listing; a number no series carries is refused. With recurrence on, a
 row says how often an occurrence comes back, `· ↻3 every weekday at 10:30`,
 and an agent reads its series' number under `series`, 0 for any other task;
 with recurrence off neither is said, and neither filter is offered
-(`bdd/series.feature`, `@series-list-repeats`). The narrowing is the engine's,
+(`bdd/series.feature`, `@series-list-repeats`). Both boards offer the same as
+a filter, `repeats` on `yes`, last of their filters and only while there is
+a series (`engine.BoardFilters`, `@gui-series-the-board-narrows-to-what-comes-back`,
+`@tui-series-the-board-narrows-to-what-comes-back`). The narrowing is the engine's,
 over what the store already handed back, like a view's search — see
 [series.md](series.md).
 

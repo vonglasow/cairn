@@ -223,13 +223,21 @@ func (b Board) seriesList(width int) ([]string, int) {
 		if s.Number == on.Number {
 			edge, chosen = b.skin.Title.Render("┃ "), len(out)
 		}
-		when := b.whenSaid(s.Next[:min(1, len(s.Next))]...)
+		when := engine.NextDaySaid(s, b.now())
 		if s.State == "stopped" {
 			when = "stopped since " + b.whenSaid(s.Stopped)
 		}
 		head := b.skin.Faint.Render("↻"+strconv.Itoa(s.Number)) + "  " + b.skin.Bright.Render(s.Title)
 		out = append(out, edge+Spread(head, b.skin.Says.Render(when), width-2))
-		so := s.Rule + " · " + strconv.Itoa(s.Done) + " done · " + strconv.Itoa(s.Skipped) + " skipped · " + strconv.Itoa(s.Missed) + " missed"
+		so := engine.RuleListed(s.Rule)
+		for _, count := range []struct {
+			n    int
+			said string
+		}{{s.Done, " done"}, {s.Skipped, " skipped"}, {s.Missed, " missed"}} {
+			if count.n > 0 {
+				so += " · " + strconv.Itoa(count.n) + count.said
+			}
+		}
 		out = append(out, edge+"    "+b.skin.Faint.Render(so))
 	}
 	return out, chosen

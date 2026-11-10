@@ -142,7 +142,9 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int, Box
 			readHigh = readBackHigh
 		}
 	}
+	readable := readHigh > 0
 	if sectionTop >= 0 {
+		readable = readable && sectionTop+lines*apart+readHigh <= FormRule(over).Y-between
 		lines, readHigh = 0, 0
 	}
 	wanted := make(map[int]int, len(long))
@@ -203,11 +205,11 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int, Box
 			}
 			if at%wide == wide-1 || at == len(row)-1 {
 				sy += apart
+				if line := row[at-at%wide : at+1]; readable && readsBack(line, fields) {
+					read = Box{X: sectionLeft, Y: sy - between, W: sectionFull, H: readBackHigh}
+					sy += readBackHigh
+				}
 			}
-		}
-		if readsBack(row, fields) {
-			read = Box{X: sectionLeft, Y: sy - between, W: sectionFull, H: readBackHigh}
-			sy += readBackHigh
 		}
 	}
 	if sectionTop < 0 {

@@ -40,6 +40,9 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		w.w = w.w.Key("enter")
 		want := slices.Index(w.w.Filters()[at].Values, value)
 		if want < 0 {
+			want = slices.Index(w.w.Filters()[at].Shown, value)
+		}
+		if want < 0 {
 			return fmt.Errorf("the filter %q offers no %q: %v", name, value, w.w.Filters()[at].Values)
 		}
 		for w.w.FilterPick() < want {

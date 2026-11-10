@@ -126,7 +126,7 @@ func withRepeats(fields []engine.Field) []engine.Field {
 	if at > 0 && fields[at-1].Long {
 		at--
 	}
-	return slices.Insert(slices.Clone(fields), at, engine.RepeatsField())
+	return slices.Insert(slices.Clone(fields), at, engine.RepeatsField(), engine.FromField())
 }
 
 func (w Window) freshened() Window {

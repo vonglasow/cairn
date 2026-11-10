@@ -420,6 +420,10 @@ func (w *world) clickOffer(name string) error {
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()
 	}
+	if edit, ok := w.w.OccurrenceEdit(); ok && name == EditTheSeries {
+		w.w = w.w.clicked(Point{X: edit.X + edit.W/2, Y: edit.Y + edit.H/2})
+		return w.w.Wrong()
+	}
 	if d := w.w.SeriesDetail(); w.w.Tab() == Series && w.w.Screen() == OnTheBoard {
 		for i, offer := range d.Offers {
 			if offer == name {

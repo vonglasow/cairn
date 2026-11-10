@@ -190,6 +190,7 @@ func seriesScreens(w Window) []struct {
 	}{
 		{"the series", tab},
 		{"a stopped series", stopped},
+		{"the series narrowed to a state", stopped.walkingSeriesState().walkingSeriesState()},
 		{"the series walked down", tab.Key("down")},
 		{"a series' form", tab.Key("e")},
 		{"a series' deletion asked", tab.Key("backspace")},

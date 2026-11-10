@@ -360,6 +360,13 @@ func (b Board) history(number, width, rows int) []string {
 		return []string{b.skin.Wrong.Render(b.heard.Err.Error())}
 	}
 	drawn := make([]string, 0, len(b.heard.Acts))
+	if before := b.seriesBefore(number); len(before) > 0 {
+		drawn = append(drawn, b.skin.Faint.Render(beforeThisOne))
+		for i := len(before) - 1; i >= 0; i-- {
+			drawn = append(drawn, Clip(b.skin.Faint.Render(before[i]), width))
+		}
+		drawn = append(drawn, "")
+	}
 	for _, act := range b.heard.Acts {
 		drawn = append(drawn, Clip(b.line(act), width))
 	}
@@ -370,6 +377,20 @@ func (b Board) history(number, width, rows int) []string {
 	pane.SetContent(strings.Join(drawn, "\n"))
 	pane.GotoBottom()
 	return strings.Split(pane.View(), "\n")
+}
+
+const beforeThisOne = "in the series, before this one"
+
+func (b Board) seriesBefore(number int) []string {
+	c, found := b.snap.Card(number)
+	if !found || c.Series == nil {
+		return nil
+	}
+	s, found := b.snap.SeriesOf(c.Series.Series)
+	if !found {
+		return nil
+	}
+	return engine.BeforeIn(s, number)
 }
 
 func (b Board) hearing(number int) tea.Cmd {

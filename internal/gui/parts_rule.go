@@ -20,48 +20,54 @@ type RulePicker struct {
 }
 
 const (
-	ruleWide    = 380
-	ruleControl = 28
-	ruleBlock   = lineHigh + inset + ruleControl + between
-	ruleBlocks  = 5
-	ruleValue   = 64
-	ruleDate    = 92
-	ruleEndsAt  = 200
+	ruleWide     = 400
+	ruleControl  = 26
+	ruleRow      = ruleControl + between
+	ruleCaption  = 48
+	ruleValue    = 40
+	ruleTime     = 56
+	ruleDate     = 88
+	ruleFromSaid = 40
+	ruleEndsWide = 180
 )
 
-var ruleCaptions = []string{"every", "", "on", "at", "ends", "", "the next one comes"}
+var ruleCaptions = []string{"every", "", "on", "at", "from", "ends", "", "the next one comes"}
 
-// RulePickerHigh is how high the picker stands: its five blocks of a caption over its controls, then its offers.
-func RulePickerHigh() int { return padding + ruleBlocks*ruleBlock + padding + barHigh + padding }
+// RulePickerHigh is how high the picker stands: four lines with their caption beside them, the last under its own, then its offers.
+func RulePickerHigh() int {
+	return padding + 4*ruleRow + lineHigh + inset + ruleControl + between + padding + barHigh + padding
+}
 
-// RulePickerFor lays the picker out at a corner: the number and the unit side by side, the days, the time, the end and how far, and what it counts from.
+// RulePickerFor lays the picker out at a corner: the number and the unit side by side, the days, the time and the first day, the end and how far, and what it counts from under its caption.
 func RulePickerFor(at Point, lines []RuleLine) RulePicker {
 	box := Box{X: at.X, Y: at.Y, W: ruleWide, H: RulePickerHigh()}
 	left, full := box.X+padding, ruleWide-padding-padding
-	block := func(n int) (caption, control Box) {
-		y := box.Y + padding + n*ruleBlock
-		return Box{X: left, Y: y, W: full, H: lineHigh}, Box{X: left, Y: y + lineHigh + inset, W: full, H: ruleControl}
+	row := func(n int) (caption, control Box) {
+		y := box.Y + padding + n*ruleRow
+		return Box{X: left, Y: y + (ruleControl-lineHigh)/2, W: ruleCaption, H: lineHigh}, Box{X: left + ruleCaption, Y: y, W: full - ruleCaption, H: ruleControl}
 	}
 	for i := range lines {
 		lines[i].Said = ruleCaptions[i]
 	}
-	caption, control := block(0)
+	caption, control := row(0)
 	stepper(&lines[ruleEvery], caption, control, ruleValue)
 	after := lines[ruleEvery].Track.X + lines[ruleEvery].Track.W + padding
 	spread(&lines[ruleUnit], Box{X: after, Y: control.Y, W: control.X + control.W - after, H: ruleControl})
-	caption, control = block(1)
+	caption, control = row(1)
 	lines[ruleOn].Caption = caption
 	spread(&lines[ruleOn], control)
-	caption, control = block(2)
-	stepper(&lines[ruleAt], caption, control, ruleValue)
-	caption, control = block(3)
+	caption, control = row(2)
+	stepper(&lines[ruleAt], caption, control, ruleTime)
+	from := lines[ruleAt].Track.X + lines[ruleAt].Track.W + padding
+	stepper(&lines[ruleFrom], Box{X: from, Y: caption.Y, W: ruleFromSaid, H: lineHigh}, Box{X: from + ruleFromSaid, Y: control.Y, W: control.X + control.W - from - ruleFromSaid, H: ruleControl}, ruleDate)
+	caption, control = row(3)
 	lines[ruleEnds].Caption = caption
-	spread(&lines[ruleEnds], Box{X: control.X, Y: control.Y, W: ruleEndsAt, H: ruleControl})
-	from := control.X + ruleEndsAt + padding
-	stepper(&lines[ruleEnd], Box{}, Box{X: from, Y: control.Y, W: control.X + control.W - from, H: ruleControl}, ruleDate)
-	caption, control = block(4)
-	lines[ruleComes].Caption = caption
-	spread(&lines[ruleComes], control)
+	spread(&lines[ruleEnds], Box{X: control.X, Y: control.Y, W: ruleEndsWide, H: ruleControl})
+	end := control.X + ruleEndsWide + padding
+	stepper(&lines[ruleEnd], Box{}, Box{X: end, Y: control.Y, W: control.X + control.W - end, H: ruleControl}, ruleDate)
+	top := box.Y + padding + 4*ruleRow
+	lines[ruleComes].Caption = Box{X: left, Y: top, W: full, H: lineHigh}
+	spread(&lines[ruleComes], Box{X: left, Y: top + lineHigh + inset, W: full, H: ruleControl})
 	return RulePicker{Box: box, Lines: lines}
 }
 

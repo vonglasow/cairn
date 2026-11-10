@@ -258,6 +258,30 @@ func (r Rule) Often() string {
 	return said
 }
 
+// Listed is how a row of a list writes the rule, the way a person reads it at a glance: every weekday · 10:30, every 4 weeks · monday, every 3 days, after the last is done.
+func (r Rule) Listed() string {
+	names := make([]string, 0, len(r.days))
+	for _, d := range r.days {
+		names = append(names, strings.ToLower(d.String()))
+	}
+	said := "every " + r.howOften()
+	switch {
+	case r.weekdaysOnly():
+		said = "every weekday"
+	case len(r.days) > 0 && r.every == 1:
+		said = "every " + strings.Join(names, ", ")
+	case len(r.days) > 0:
+		said += " · " + strings.Join(names, ", ")
+	}
+	if r.at != "" {
+		said += " · " + r.at
+	}
+	if r.afterDone {
+		said += ", after the last is done"
+	}
+	return said
+}
+
 func andJoined(names []string) string {
 	if len(names) == 1 {
 		return names[0]

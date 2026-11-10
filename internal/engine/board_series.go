@@ -111,6 +111,83 @@ func RuleReadBack(typed string, today time.Time) RuleRead {
 	return RuleRead{Says: rule.Said(), Next: strings.Join(days, " · ")}
 }
 
+// SeriesStates are the states the series' tab narrows to, every series first.
+var SeriesStates = []string{"all", "active", "stopped"}
+
+// InState is the series in that state; all of them for "all".
+func InState(all []Series, state string) []Series {
+	if state == SeriesStates[0] {
+		return all
+	}
+	var out []Series
+	for _, s := range all {
+		if s.State == state {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// MissedDays is every day a series missed, the latest first, written the short way.
+func MissedDays(s Series) []string {
+	var out []string
+	for _, o := range s.Occurrences {
+		if o.Is == "missed" {
+			out = append(out, ShortDays([]string{o.Day}))
+		}
+	}
+	return out
+}
+
+// BeforeIn is what a series did before it made a task, the latest first, each on a line the way its trace writes it.
+func BeforeIn(s Series, task int) []string {
+	var out []string
+	for _, a := range s.Acts {
+		if a.Did == "made" && a.Task == task {
+			slices.Reverse(out)
+			return out
+		}
+		at, _ := time.Parse(time.RFC3339, a.At)
+		out = append(out, domain.FormatMoment(at)+"  "+actSaid(a))
+	}
+	return nil
+}
+
+// EachSaid is how long one occurrence took, on average over the ones done; nothing before one is.
+func EachSaid(s Series) string {
+	spent, err := domain.ParseEstimate(s.TimeSpent)
+	if err != nil || s.Done == 0 || spent == 0 {
+		return ""
+	}
+	return domain.FormatDuration((spent / time.Duration(s.Done)).Round(time.Minute)) + " each"
+}
+
+// RuleListed is a rule the way a row of a list writes it; the words as they are when they are no rule.
+func RuleListed(words string) string {
+	rule, err := domain.ParseRule(words)
+	if err != nil {
+		return words
+	}
+	return rule.Listed()
+}
+
+// NextDaySaid is how a list writes the next day of a series: as a board writes its day, with its time when that day is today; nothing when there is none.
+func NextDaySaid(s Series, now time.Time) string {
+	if len(s.Next) == 0 {
+		return ""
+	}
+	said := DaySaid(s.Next[0], now)
+	if rule, err := domain.ParseRule(s.Rule); err == nil && said == "today" && rule.At() != "" {
+		said += " " + rule.At()
+	}
+	return said
+}
+
+// FromField is the field the day a new series counts from is given in, beside its rule.
+func FromField() Field {
+	return Field{Name: "from", Arg: "from", Means: meaning(TaskNew, "from")}
+}
+
 // RepeatsField is the field a task is given a rule in, in plain words, to become the first occurrence of a new series.
 func RepeatsField() Field {
 	return Field{Name: "repeats", Arg: "every", Means: meaning(TaskNew, "every"), Example: "every weekday 10:30"}

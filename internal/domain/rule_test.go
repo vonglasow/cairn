@@ -279,3 +279,22 @@ func TestRuleSaidLeavesTheStartOut(t *testing.T) {
 		}
 	}
 }
+
+func TestRuleListedIsHowARowWritesIt(t *testing.T) {
+	for typed, want := range map[string]string{
+		"every weekday 10:30":     "every weekday · 10:30",
+		"every friday 16:00":      "every friday · 16:00",
+		"every 3 days after done": "every 3 days, after the last is done",
+		"every 4 weeks on monday": "every 4 weeks · monday",
+		"every mon, thu":          "every monday, thursday",
+		"every day":               "every day",
+	} {
+		rule, err := ParseRule(typed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := rule.Listed(); got != want {
+			t.Errorf("%q is listed %q, want %q", typed, got, want)
+		}
+	}
+}

@@ -172,7 +172,7 @@ func (p FilterPill) Draw(k Kit, at Box) Box {
 	in := k.inside("filter")
 	line := Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}
 	switch p.Kind {
-	case PillSearch, PillFilter, PillView:
+	case PillSearch, PillFilter, PillView, PillState:
 		p.inForce(k, in, at)
 	case PillAdd:
 		Dashed{Radius: k.skin.Radius.Full(at)}.Draw(in, at)

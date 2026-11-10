@@ -2567,13 +2567,18 @@ told otherwise has it off, as the configuration does, so `New` opens with
 recurrence off and `Paged` gives it the store's. **The tab is a split, the
 objectives' own** (`SplitOf`): the list on the left, the active series under
 one head and the stopped under another, each an item of two lines — its
-number `↻3`, its title and its state on a pill, then its rule and its next
-day, or the day it was stopped; on the right the series chosen — the first
+number `↻3`, its title and its state on a pill, then its rule as a row writes
+it — `every weekday · 10:30`, `every 4 weeks · monday` (`engine.RuleListed`)
+— and its next day, `today 10:30` on its day (`engine.NextDaySaid`), or the
+day it was stopped; on the right the series chosen — the first
 while none is (`SeriesShown`). Its heading, its state, its rule read back as a
 sentence with its next days — or the days resuming it today would make — then
 three boxes: the template the next one is made from, what it did so far, the
 missed in the late ink, and the task open now; then every occurrence, archived
-ones included, a line each, a missed day in the late ink with no task. A click
+ones included, a line each, a missed day in the late ink with no task, the
+open one *on the board*; what it did so far says how long each took on
+average, `14m each` (`engine.EachSaid`); the head of the occurrences says
+*all archived, all kept* once none is left on the board. A click
 on an occurrence opens its task's form, an archived one too, which nothing
 else on the board reaches (`@gui-series-the-tab-reaches-an-archived-occurrence`).
 Where the detail is too narrow for three boxes — at 720 — the template and
@@ -2581,13 +2586,23 @@ what it did so far are a line each; where its offers do not fit, *Edit the
 series* and *Skip the next* say *Edit* and *Skip*, and the buttons give up the
 least room they can.
 
+**The tab narrows to a state** by the pill at the right of the tabs,
+`state: all`, `active` or `stopped`, each click walking to the next and its
+cross listing them all again, the tab then counting `1/2`
+(`engine.InState`, `@gui-series-the-tab-narrows-to-a-state`); *+ Filter* on
+this tab walks the same pill. The foot says, beside the offers, the series'
+number after the loop, the day it was made and how many occurrences it made
+— `↻3 · made 2 Sep · 52 occurrences` — or who stopped it and when, `stopped
+by me · 12 Oct` (`@gui-series-the-tab-says-it-as-drawn`).
+
 **Its foot offers what the command line does**: *Edit the series* (`e`),
 *Skip the next* (`s`) while one is open, *Stop* (`x`) or *Resume* (`r`), and
 *Delete…* (`⌫`), the keys working from the tab as the buttons do
 (`@gui-series-the-tab-skips-stops-and-resumes`); `↑↓` walk the list, `⏎` opens
-the occurrence open. The bar offers *New series* (`n`), the search — which
-narrows the list by title, rule or number, as `series list --search` does —
-and the help. `n` opens a task's form in todo with the keyboard already on
+the occurrence open. The bar offers *Open the occurrence* (`⏎`), *Edit*
+(`e`), *Skip* (`s`), *Stop* (`x`) or *Resume* (`r`), *New series* (`n`), the
+search — which narrows the list by title, rule or number, as `series list
+--search` does — and the help. `n` opens a task's form in todo with the keyboard already on
 its `repeats` field (`@gui-series-n-makes-a-new-one`); *Edit the series* opens
 the series' own form — title, priority, labels, estimate, objectives, steps,
 its rule and the day it counts from, with no trace beside it — and saving it
@@ -2617,12 +2632,23 @@ the day is the same. No face the window carries has `↻`, so the loop is drawn
 `r x` stops its series, `r r` resumes it and `r e` opens its series
 (`@gui-series-r-s-skips-the-chosen-occurrence`,
 `@gui-series-r-x-stops-and-r-r-resumes`, `@gui-series-r-e-opens-its-series`);
-the bar offers *Skip it* and *Its series* then, and the help says the keys
+the bar offers *Open its series*, *Skip it* and *Stop it* — or *Resume it* —
+then (`@gui-series-the-bar-offers-the-r-keys-as-drawn`): not *skip*, *stop*
+and *resume* alone, which the bar already answers with `s`, `x` and `r` on the
+series' tab, and the help says the keys
 while recurrence is on (`@gui-series-the-help-says-the-r-keys`).
 
-**The form of an occurrence says its series** under its details: the rule
-read back, the day it was made for, the next one, and what the series did so
-far, the number of the series at its head; its foot offers *Skip this one* and
+**The form of an occurrence says its series.** Its heading is the loop, its
+title and its number, then, faint at the right, the series it is one of and
+the day it is for — `one of the series every weekday at 10:30 · this one is
+Mon 9 Nov` (`OccurrenceHeading`,
+`@gui-series-the-form-of-an-occurrence-heads-with-its-loop`). Under its
+details a box headed *Series*, with *Edit the series…* (`r e`) at its right,
+which opens the series in its tab, says the rule read back, then what it is
+anchored on, the next day and its time, the day it counts from and when it
+ends, what it did so far, and the days it missed, in the late ink, "nobody
+was there; not made up"
+(`@gui-series-the-form-of-an-occurrence-names-the-days-missed`); its foot offers *Skip this one* and
 *Stop the series* — or *Resume the series* — beside *Save*
 (`@gui-series-the-form-of-an-occurrence-says-its-series`). A task that is no
 occurrence carries a `repeats` field, in a section of its own: a rule typed
@@ -2653,8 +2679,13 @@ read when it opened (`@gui-series-the-repeats-picker-cancelled-leaves-the-words`
 A day of the week counted after done is a rule cairn refuses, so ticking a
 day counts on the calendar, and choosing after done lets the days go; an end
 is a number of times or a day, never both, and the picker offers one at a
-time. The day a series counts from is not among its parts: on a task, its
-deadline is its first day. **Saving a change to what
+time. The picker sets **the day a series counts from** too, a stepper a day
+at a time from today, written in the form's `from` field, beside `repeats`
+in the *Series* section and chosen on a calendar as a deadline is
+(`engine.FromField`, `@gui-series-the-picker-sets-the-day-it-counts-from`).
+The picker hangs under the field where the window has room — at 1200 by 800
+it does, standing past the form's foot — and over it where it has not, as at
+720 by 560. **Saving a change to what
 the next one is made from asks once** — title, priority, labels, estimate,
 steps or objectives (`engine.ChangesTheSeries`): *This one only*, `⏎` and the
 default, or *The whole series*, `s`
@@ -2672,7 +2703,15 @@ nothing, which reads as a command that does not exist.
 
 **An occurrence's history says where it came from**: `made from series ↻1`,
 the act the engine writes on a task its series made, beside its first
-attributes (`@gui-series-the-history-of-an-occurrence-says-its-series`).
+attributes (`@gui-series-the-history-of-an-occurrence-says-its-series`), and
+then, under *in the series, before this one*, what its series did before it
+made it — made, skipped, missed — read from the series' own acts, which stay
+in their own table: only the history joins them
+(`engine.BeforeIn`, `@gui-series-the-history-of-an-occurrence-goes-on-with-its-series`).
+
+**The board narrows to what comes back** by a filter of its own, `repeats`,
+offered while there is a series, as `task list --repeats` narrows a listing
+(`@gui-series-the-board-narrows-to-what-comes-back`).
 
 ## Several at once
 

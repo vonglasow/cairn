@@ -167,7 +167,10 @@ func (s ServesMark) Draw(k Kit, at Box) Box {
 }
 
 // Fact is one name and its value, with a faint line under the value when there is more to say.
-type Fact struct{ Name, Value, Aside string }
+type Fact struct {
+	Name, Value, Aside string
+	Late               bool
+}
 
 // Facts is a list of names and their values: the name faint in a column of its own, the value in the ink beside it.
 type Facts struct{ Lines []Fact }
@@ -191,7 +194,11 @@ func (f Facts) Draw(k Kit, at Box) Box {
 	for _, one := range f.Lines {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: at.X, Y: y, W: factName, H: lineHigh}, one.Name, small)
 		value := Box{X: at.X + factName, Y: y, W: max(0, at.W-factName), H: lineHigh}
-		say(k.gtx, k.th, k.skin.Colour.Ink.Text, value, fits(k.gtx, k.th, one.Value, value.W, reads), reads)
+		ink := k.skin.Colour.Ink.Text
+		if one.Late {
+			ink = k.skin.Colour.State.Late
+		}
+		say(k.gtx, k.th, ink, value, fits(k.gtx, k.th, one.Value, value.W, reads), reads)
 		y += lineHigh
 		if one.Aside != "" {
 			say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: value.X, Y: y, W: value.W, H: lineHigh}, fits(k.gtx, k.th, one.Aside, value.W, small), small)

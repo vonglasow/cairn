@@ -22,6 +22,9 @@ func (g Givens) registerSeries(sc *godog.ScenarioContext) {
 	sc.Given(`^I added a task titled "([^"]*)" coming back "([^"]*)"$`, func(title, every string) error {
 		return g.addTask(title, map[string]string{"every": every})
 	})
+	sc.Given(`^I added a task titled "([^"]*)" coming back "([^"]*)" from "([^"]*)"$`, func(title, every, from string) error {
+		return g.addTask(title, map[string]string{"every": every, "from": from})
+	})
 	sc.Given(`^I stopped series (\d+)$`, func(n int) error {
 		_, err := g.ask(engine.SeriesStop, map[string]string{"number": fmt.Sprint(n)}, nil)
 		return err

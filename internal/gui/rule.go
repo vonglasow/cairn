@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/engine"
 )
 
 type ruleState struct {
@@ -13,6 +14,8 @@ type ruleState struct {
 	line  int
 	day   int
 	was   string
+	from  string
+	since string
 }
 
 const (
@@ -20,6 +23,7 @@ const (
 	ruleUnit
 	ruleOn
 	ruleAt
+	ruleFrom
 	ruleEnds
 	ruleEnd
 	ruleComes
@@ -35,13 +39,20 @@ const (
 	ruleTimesFirst = 10
 	ruleWeeksAhead = 104
 	ruleUntilFirst = 4
+	ruleDaysAhead  = 366
 	ruleAnyTime    = "any time"
 	ruleNoEnd      = "—"
 )
 
 func (w Window) openingRule() Window {
 	field := w.form.Fields()[w.form.On()]
-	w.ruling = ruleState{parts: domain.RuleParts{Every: 1, Unit: "days"}, was: field.Value}
+	from := ""
+	for _, f := range w.form.Fields() {
+		if f.Name == engine.FromField().Name {
+			from = f.Value
+		}
+	}
+	w.ruling = ruleState{parts: domain.RuleParts{Every: 1, Unit: "days"}, was: field.Value, from: from, since: from}
 	if rule, err := domain.ParseRule(field.Value); err == nil {
 		w.ruling.parts = rule.Parts()
 	}
@@ -52,13 +63,39 @@ func (w Window) openingRule() Window {
 func (w Window) closingRule(keep bool) Window {
 	if !keep {
 		w.form = w.form.Writes(Ending(w.ruling.was))
+		w = w.fromSet(w.ruling.since)
 	}
 	w.screen = OnForm
 	return w
 }
 
-func ruleChoices(line int, p domain.RuleParts, today time.Time) []string {
+func (w Window) fromSet(day string) Window {
+	if !slices.ContainsFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == engine.FromField().Name }) {
+		return w
+	}
+	at := w.form.at
+	w.form = w.form.Set(engine.FromField().Name, day)
+	w.form.at = at
+	return w
+}
+
+func fromDays(held string, today time.Time) []string {
+	out := make([]string, 0, ruleDaysAhead+1)
+	for n := range ruleDaysAhead {
+		out = append(out, domain.FormatDay(domain.DayOf(today).AddDate(0, 0, n)))
+	}
+	if held != "" && !slices.Contains(out, held) {
+		out = append(out, held)
+		slices.Sort(out)
+	}
+	return out
+}
+
+func ruleChoices(line int, r ruleState, today time.Time) []string {
+	p := r.parts
 	switch line {
+	case ruleFrom:
+		return fromDays(r.from, today)
 	case ruleEvery:
 		return counted(1, ruleMost, "")
 	case ruleUnit:
@@ -117,8 +154,11 @@ func untilDays(held, today time.Time) []string {
 	return out
 }
 
-func ruleOnOf(line int, p domain.RuleParts, today time.Time) int {
+func ruleOnOf(line int, r ruleState, today time.Time) int {
+	p := r.parts
 	switch line {
+	case ruleFrom:
+		return max(0, slices.Index(fromDays(r.from, today), r.from))
 	case ruleEvery:
 		return p.Every - 1
 	case ruleUnit:
@@ -165,7 +205,7 @@ func ticked(p domain.RuleParts) []bool {
 }
 
 func (w Window) ruled(line, at int) Window {
-	choices := ruleChoices(line, w.ruling.parts, w.today())
+	choices := ruleChoices(line, w.ruling, w.today())
 	if at < 0 || at >= len(choices) {
 		return w
 	}
@@ -183,6 +223,9 @@ func (w Window) ruled(line, at int) Window {
 		if at == 0 {
 			p.At = ""
 		}
+	case ruleFrom:
+		w.ruling.from, w.ruling.line = choices[at], line
+		return w.fromSet(choices[at])
 	case ruleEnds:
 		p.Times, p.Until = 0, time.Time{}
 		if at == 1 {
@@ -245,7 +288,7 @@ func (w Window) onRule(name string) Window {
 			w.ruling.day = (w.ruling.day + by + len(Weekdays)) % len(Weekdays)
 			return w
 		}
-		return w.ruled(line, ruleOnOf(line, w.ruling.parts, w.today())+by)
+		return w.ruled(line, ruleOnOf(line, w.ruling, w.today())+by)
 	case "space":
 		if line == ruleOn {
 			return w.ruled(ruleOn, w.ruling.day)
@@ -277,13 +320,13 @@ func (w Window) clickingRule(p Point) Window {
 
 // RulePicked is the picker as it stands: each part's choices and the one chosen, laid out under what the field reads back.
 func (w Window) RulePicked() RulePicker {
-	p, today := w.ruling.parts, w.today()
+	today := w.today()
 	lines := make([]RuleLine, ruleComes+1)
 	for i := range lines {
-		lines[i].Choices = ruleChoices(i, p, today)
-		lines[i].On = ruleOnOf(i, p, today)
+		lines[i].Choices = ruleChoices(i, w.ruling, today)
+		lines[i].On = ruleOnOf(i, w.ruling, today)
 	}
-	lines[ruleOn].Ticked = ticked(p)
+	lines[ruleOn].Ticked = ticked(w.ruling.parts)
 	return RulePickerFor(w.ruleHung(), lines)
 }
 
@@ -292,5 +335,5 @@ func (w Window) ruleHung() Point {
 	if read, ok := RepeatsReadAt(w.formBox(), w.form.Fields()); ok && read.Y > field.Y {
 		field.H = read.Y + read.H - field.Y
 	}
-	return Hung(field, Over(w.width, w.height), ruleWide, RulePickerHigh())
+	return Hung(field, Box{X: margin, Y: margin, W: w.width - 2*margin, H: w.height - 2*margin}, ruleWide, RulePickerHigh())
 }

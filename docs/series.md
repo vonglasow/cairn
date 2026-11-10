@@ -219,4 +219,8 @@ writes a series' day, and `RuleReadBack` reads back a rule as it is typed —
 how often, what it counts from, when it ends, then the days it comes on, or
 why it is no rule. A picker builds a rule from its parts with
 `domain.RuleParts`, the rule taken apart and written back in the words the
-field reads.
+field reads. `RuleListed` and `NextDaySaid` are how a list writes a series'
+rule and next day, `EachSaid` how long each occurrence took, `MissedDays` the
+days it missed, `BeforeIn` what it did before it made a task — what a task's
+history shows under it, its acts staying in their own table — `InState` the
+series of a state, and `FromField` the field its first day is given in.

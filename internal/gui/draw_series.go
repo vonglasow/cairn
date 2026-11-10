@@ -22,7 +22,7 @@ func drawSeries(k Kit, l Layout, w Window) {
 		}
 		s := row.Series
 		ListItem{Number: strconv.Itoa(s.Number), Loop: true, Title: s.Title, Priority: s.Template.Priority,
-			Says: s.Rule, Aside: w.SeriesWhen(s), Badge: s.State, BadgeStanding: StandingOfSeries(s),
+			Says: engine.RuleListed(s.Rule), Aside: w.SeriesWhen(s), Badge: s.State, BadgeStanding: StandingOfSeries(s),
 			Chosen: s.Number == shown.Number, Hovered: row.At == w.pointed}.Draw(in, row.At)
 	}
 	clipped.Pop()
@@ -57,6 +57,9 @@ func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 			Figures{Said: d.Figures}.Draw(in, Box{X: room.X, Y: room.Y, W: room.W, H: FiguresHigh})
 			if s.TimeSpent != "" {
 				said := s.TimeSpent + " over its occurrences"
+				if each := engine.EachSaid(s); each != "" {
+					said += " · " + each
+				}
 				say(in.gtx, in.th, in.skin.Colour.Ink.Faint, Box{X: room.X, Y: room.Y + FiguresHigh + inset, W: room.W, H: lineHigh}, fits(in.gtx, in.th, said, room.W, small), small)
 			}
 		})
@@ -80,7 +83,12 @@ func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 	}
 	Rule{}.Draw(k, d.Foot)
 	if d.FootSays != "" {
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, d.FootSaid, fits(k.gtx, k.th, d.FootSays, d.FootSaid.W, small), small, k.skin.Type.Mono, text.Start)
+		said := d.FootSaid
+		if s.State == "active" {
+			LoopMark{Ink: k.skin.Colour.Ink.Faint}.Draw(k, Box{X: said.X, Y: said.Y + (said.H-loopSide)/2, W: loopSide, H: loopSide})
+			said.X, said.W = said.X+loopSide+1, said.W-loopSide-1
+		}
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, said, fits(k.gtx, k.th, d.FootSays, said.W, small), small, k.skin.Type.Mono, text.Start)
 	}
 	for i, offer := range d.Offers {
 		look := buttonPlain
