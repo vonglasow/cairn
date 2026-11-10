@@ -11,8 +11,8 @@ func factsOf(m Migration) Carried {
 }
 
 func TestKnown_namesEveryChangeCairnKnows(t *testing.T) {
-	if len(Known) != 21 {
-		t.Fatalf("len(Known) = %d, want 21", len(Known))
+	if len(Known) != 22 {
+		t.Fatalf("len(Known) = %d, want 22", len(Known))
 	}
 	for i, m := range Known {
 		f := factsOf(m)
@@ -93,6 +93,21 @@ func TestKnown_keepsViews(t *testing.T) {
 		}
 	}
 	if !strings.Contains(f.Loses, "every view") {
+		t.Errorf("rolling it back loses %q", f.Loses)
+	}
+}
+
+func TestKnown_keepsSeries(t *testing.T) {
+	f := factsOf(Known[21])
+	if f.Name != "a task can come back, as a series" {
+		t.Fatalf("the change is %+v", f)
+	}
+	for _, table := range []string{"series", "series_labels", "series_objectives", "series_acts"} {
+		if !strings.Contains(f.Does, "CREATE TABLE IF NOT EXISTS "+table+" ") || !strings.Contains(f.Undoes, "DROP TABLE IF EXISTS "+table+";") {
+			t.Errorf("the change does %q and undoes %q, want the table %s made and dropped", f.Does, f.Undoes, table)
+		}
+	}
+	if !strings.Contains(f.Loses, "every series") || !strings.Contains(f.Loses, "every task") {
 		t.Errorf("rolling it back loses %q", f.Loses)
 	}
 }

@@ -197,6 +197,33 @@ them and is refused until you say what goes with it: `--sub-objectives
 keep|delete` (or one by one, `--keep 5,7 --delete 6`) and `--tasks
 detach|delete`. See [docs/objectives.md](objectives.md#two-levels).
 
+## Tasks that come back
+
+Off until a store's `settings.toml`, or the configuration, says
+`[recurrence] on = true`. Then a task made with a rule is the first occurrence
+of a series, and the next is made when it is done or skipped:
+
+```sh
+cairn task new "Team stand-up" --every "every weekday 10:30" --label work
+cairn task new Retrospective --every "every other thursday 14:00" --from 2026-11-19
+cairn task new "Water the plants" --every "every 3 days" --after-done
+cairn task edit 12 --every "every monday"    # an ordinary task becomes the first
+cairn task skip 14                           # archived, written skipped, the next made
+cairn task edit 14 --title Stand-up --series # this one, and the ones to come
+cairn task list --repeats                    # only the occurrences; --series 3 for one series
+cairn series list --state stopped --search expense
+cairn series show 3                          # rule, next days, template, occurrences, trace
+cairn series edit 3 --every "every tuesday 10:00"
+cairn series stop 3                          # the open one stays an ordinary task
+cairn series resume 3                        # from today, nothing caught up
+cairn series delete 3 --keep-tasks --yes     # or --delete-open, or --delete-tasks
+```
+
+One occurrence is open at a time; days that passed while it stayed open are
+written missed and never made. Each occurrence is a task of its own, with its
+number, notes and time. Stopping a series, or turning recurrence off, never
+takes a task away. See [docs/series.md](series.md).
+
 ## What happened, and how the day went
 
 ```sh

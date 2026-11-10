@@ -131,6 +131,9 @@ func (s *Store) DeleteObjective(number int) error {
 	if _, err := s.on.Exec(`DELETE FROM objective_waits WHERE objective_number = ? OR waits_on = ?`, number, number); err != nil {
 		return fmt.Errorf("deleting what objective %d waits on: %w", number, err)
 	}
+	if err := s.letSeriesGoOf(number); err != nil {
+		return err
+	}
 	return s.clearLabels(objectiveLabels, number)
 }
 

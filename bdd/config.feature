@@ -405,9 +405,24 @@ Feature: Where cairn looks for its own places
         | time    | deleted = "kept"    |
         | time    | weekends = "shown"  |
         | window  | keep_sizes = false  |
+        | recurrence | on = false       |
       And it says nothing is archived on its own
       And it says a focus session is never asked to be renewed
       And it says no label asks for the approach to be agreed first
+
+    @series-config-recurrence-is-said
+    Scenario: recurrence is off unless it is said, and config show says it on once it is
+      Given a configuration that says "on" is "true" under "[recurrence]"
+      When I run `cairn config show`
+      Then it succeeds
+      And it says "on" is "true"
+
+    @series-config-recurrence-is-on-or-off
+    Scenario: recurrence that is neither true nor false is refused
+      Given a configuration that says "on" is "3" under "[recurrence]"
+      When I run `cairn task list`
+      Then it fails
+      And it names "recurrence.on"
 
     @config-show-reads-as-a-configuration
     Scenario: what config show says is a configuration cairn reads as the same

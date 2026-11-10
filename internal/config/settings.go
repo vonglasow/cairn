@@ -16,7 +16,8 @@ const SettingsFile = "settings.toml"
 
 // SettingsHeader is what cairn workspace add writes in a workspace's settings: nothing set, and what the file is for.
 const SettingsHeader = `# The settings of the store beside this file, written as in the global
-# configuration: [pages], [archive], [focus], [approach], [time], [window].
+# configuration: [pages], [archive], [focus], [approach], [time], [window],
+# [recurrence].
 # A key said here is used for this store instead of the global one. One table
 # is this file's alone: [workspace], whose colour = "green" is the colour its
 # workspace wears, one of the label colours. store,

@@ -16,7 +16,14 @@ already said why not.
 | decided | why, in one line | where |
 |---|---|---|
 | no urgency field | it says what the priority and the column already say | [ordering.md](ordering.md#weighed-and-left-out) |
-| no recurrence, no work that never finishes | cairn models work that reaches `done`; turning a real problem into a mechanism was not asked for, and a meeting that comes back belongs to the calendar | [ordering.md](ordering.md#weighed-and-left-out) |
+| a task that comes back is an occurrence of a series, made one at a time; still no work that never finishes | left out until #247, when the same work every day copied by hand was the mechanism nobody wanted; each occurrence reaches `done` like any task, and a meeting with no work in it still belongs to the calendar | [series.md](series.md) |
+| a series has its own numbers, `↻3`, and every occurrence a new task number, notes and time of its own | a series is named even once its tasks are archived; a task shared by its occurrences would be a task that never reaches `done` | [series.md](series.md#a-notion-of-its-own) |
+| one occurrence open at a time; an act that leaves none open makes the next at once, and cairn on its own makes one only on its day, never ahead | made ahead, occurrences flood the board, the way Taskwarrior's do; a day passed meanwhile is written missed, never caught up | [series.md](series.md#one-open-at-a-time-and-when-the-next-is-made) |
+| stopping a series or turning recurrence off never removes a task it made; deleting one asks what becomes of its tasks | which work goes is a deliberate choice, as when an objective is deleted | [series.md](series.md#a-series-never-takes-back-what-it-made) |
+| recurrence is off unless a store's settings or the file turn it on | a mechanism nobody asked for in a board stays out of its way; dormant series wake up as they were | [config.md](config.md#tasks-that-come-back-turned-on-per-store) |
+| the rule grammar is written by hand, rrule-go is not added | the words typed are not RRULE, the subset is small, the library has not moved since 2023 | [dependencies.md](dependencies.md#weighed-and-not-added) |
+| a series' trace is a table of its own, `series_acts` | a missed day or a stop names no task, and every reader of the tasks' trace reads it by task number | [trace.md](trace.md#a-series-keeps-a-trace-of-its-own) |
+| an agent handles a series at its access level: lists and shows reading, edits, stops, resumes and skips writing, deletes at `full` | a series is work, and an agent may already make one with `task_new`; a view, by contrast, is how the person looks | [mcp.md](mcp.md#what-an-agent-may-do-is-settled-when-the-server-starts) |
 | no precedence between two tasks | measured: it constrains without ordering | [ordering.md](ordering.md#weighed-and-left-out) |
 | how long a task has sat in its column is read off the trace, never stored | the one date nothing else implies, and the trace already holds it | [ordering.md](ordering.md#what-the-store-gains) |
 | no `unblock` verb | `--blocker -3` does it, and returning to `todo` belongs to the edit | [blocking.md](blocking.md#deliberately-not-there-yet) |

@@ -25,9 +25,9 @@ cairn task new "Write the spec" --desc - < notes.md`,
 	Needs:   AStore,
 	Again:   DoesItAgain,
 	Answers: Task{},
-	Takes: append(append([]Argument{
+	Takes: append(append(append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the task is called"},
-	}, taskAttributes...), stepsArgument),
+	}, taskAttributes...), stepsArgument), everyArguments...),
 	Run: func(on On, in Input) (Answer, error) {
 		title := ""
 		if given := in.Change("title"); given != nil {
@@ -37,16 +37,30 @@ cairn task new "Write the spec" --desc - < notes.md`,
 		if err != nil {
 			return Answer{}, err
 		}
+		begun, err := on.Engine.beginning(in, &changes)
+		if err != nil {
+			return Answer{}, err
+		}
 		added, err := on.Engine.add(title, changes)
 		if err != nil {
 			return Answer{}, withTypedTitle(err, title)
 		}
-		p, err := on.Engine.taskProgress(factsOf(added).Number)
+		n := factsOf(added).Number
+		if begun != nil {
+			if err := on.Engine.beginSeries(added, begun.rule, begun.from, begun.day); err != nil {
+				return Answer{}, err
+			}
+		}
+		p, err := on.Engine.taskProgress(n)
 		if err != nil {
 			return Answer{}, err
 		}
-		warnings, err := on.Engine.unmet(factsOf(added).Number, "")
-		return Answer{Task: &added, Progress: p, Warnings: warnings}, err
+		warnings, err := on.Engine.unmet(n, "")
+		if err != nil {
+			return Answer{}, err
+		}
+		occurring, err := on.Engine.occurring([]int{n})
+		return Answer{Task: &added, Progress: p, Warnings: warnings, Occurring: occurring}, err
 	},
 }
 
@@ -65,7 +79,7 @@ cairn task list --count state`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes:   append(append(slices.Clone(taskNarrowing), viewArgument, numbersArgument, fieldsArgument, countArgument), pageArguments...),
+	Takes:   append(append(slices.Clone(taskNarrowing), viewArgument, numbersArgument, fieldsArgument, countArgument, repeatsArgument, inSeriesArgument), pageArguments...),
 	Run:     listing,
 }
 
@@ -124,7 +138,8 @@ var TaskShow = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		return Answer{Task: &shown, Progress: p, Context: on.contextOf(n), StoodSince: since}, nil
+		occurring, err := on.Engine.occurring([]int{n})
+		return Answer{Task: &shown, Progress: p, Context: on.contextOf(n), StoodSince: since, Occurring: occurring}, err
 	},
 }
 
@@ -276,10 +291,10 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 	Again:      ChangesNothingMore,
 	Overwrites: true,
 	Answers:    Task{},
-	Takes: append(append([]Argument{
+	Takes: append(append(append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
-	}, taskAttributes...), append([]Argument{stepsArgument}, replaceArguments...)...),
+	}, taskAttributes...), append([]Argument{stepsArgument}, replaceArguments...)...), append(slices.Clone(everyArguments), seriesTooArgument)...),
 	Run: func(on On, in Input) (Answer, error) {
 		n, _ := in.Whole("number")
 		changes, err := taskChanges(in)
@@ -289,17 +304,40 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		changes.Replace, changes.By = in.Change("replace"), in.Change("by")
 		changes.Title = in.Change("title")
 		changes.Finishing = in.Confirmed
-		was, _ := on.Engine.show(n)
-		edited, err := on.Engine.edit(n, changes)
+		every, err := on.Engine.repeating(n, in)
 		if err != nil {
-			return Answer{}, editReason(err)
+			return Answer{}, err
+		}
+		was, _ := on.Engine.show(n)
+		if changes.named() || !every {
+			if _, err := on.Engine.edit(n, changes); err != nil {
+				return Answer{}, editReason(err)
+			}
+		}
+		if every {
+			if err := on.Engine.everyGiven(n, in); err != nil {
+				return Answer{}, err
+			}
+		}
+		if in.Yes("series") {
+			if err := on.Engine.seriesFollowsTask(n, in); err != nil {
+				return Answer{}, err
+			}
+		}
+		edited, err := on.Engine.show(n)
+		if err != nil {
+			return Answer{}, err
 		}
 		p, err := on.Engine.taskProgress(n)
 		if err != nil {
 			return Answer{}, err
 		}
 		warnings, err := on.Engine.unmet(n, factsOf(was).State)
-		return Answer{Task: &edited, Progress: p, Moved: movedOf(was, edited), Warnings: warnings}, err
+		if err != nil {
+			return Answer{}, err
+		}
+		occurring, err := on.Engine.occurring([]int{n})
+		return Answer{Task: &edited, Progress: p, Moved: movedOf(was, edited), Warnings: warnings, Occurring: occurring}, err
 	},
 }
 
@@ -541,6 +579,10 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
+	occurrences, err := on.Engine.occurrencesIn(in)
+	if err != nil {
+		return Answer{}, err
+	}
 	tasks, err := on.Engine.narrowed(kept)
 	if err != nil {
 		return Answer{}, err
@@ -548,6 +590,7 @@ func listing(on On, in Input) (Answer, error) {
 	if seen != nil {
 		tasks = seen.kept(tasks)
 	}
+	tasks = occurrences.kept(tasks)
 	var unknown []int
 	if numbers != nil {
 		if tasks, unknown, err = on.Engine.numbered(tasks, numbers); err != nil {
@@ -569,7 +612,7 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	narrows := kept.Narrows() || numbers != nil || seen != nil
+	narrows := kept.Narrows() || numbers != nil || seen != nil || occurrences.of != nil
 	along, _, err := on.Engine.alongEvery(tasks, !narrows && !cut.asked)
 	if err != nil {
 		return Answer{}, err
@@ -579,7 +622,15 @@ func listing(on On, in Input) (Answer, error) {
 		n := factsOf(t).Number
 		contexts[n] = on.contextOf(n)
 	}
-	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown, Counts: counts, Offset: cut.offset}
+	shown := make([]int, 0, len(tasks))
+	for _, t := range tasks {
+		shown = append(shown, factsOf(t).Number)
+	}
+	occurring, err := on.Engine.occurring(shown)
+	if err != nil {
+		return Answer{}, err
+	}
+	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown, Counts: counts, Offset: cut.offset, Occurring: occurring}
 	if counting != "" || cut.asked {
 		answer.Total = &total
 	}

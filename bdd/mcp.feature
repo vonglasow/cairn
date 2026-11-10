@@ -766,6 +766,56 @@ Feature: Answering a machine over MCP
       Then it answers that it failed
       And it says the refusal is "refused", because "no-such-view"
 
+  Rule: An agent handles a series the way a person does, at the level it was given
+
+    @series-mcp-offers-the-series
+    Scenario: with recurrence on, an agent is offered the series at its level
+      Given recurrence is on for this store
+      And a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it offers `series_list`
+      And `series_list` is marked as read-only
+      And it offers `series_show`
+      And it offers `series_edit`
+      And it offers `series_stop`
+      And it offers `series_resume`
+      And it offers `task_skip`
+      And `series_delete` is marked as losing work
+
+    @series-mcp-reads-only-at-read
+    Scenario: an agent that may only look lists and shows the series, and stops none
+      Given recurrence is on for this store
+      And a cairn server started with `--access read`
+      When I ask it what it can do
+      Then it offers `series_show`
+      And it does not offer `series_stop`
+      And it does not offer `task_skip`
+
+    @series-mcp-makes-a-series
+    Scenario: an agent makes a series with task_new, lists its occurrences and shows it
+      Given recurrence is on for this store
+      And today is "2026-11-09"
+      And a cairn server started with `--access write`
+      When I call `task_new` with {"title": "Team stand-up", "every": "every weekday 10:30"}
+      Then it answers without an error
+      And its answer holds to the shape the tool described
+      When I call `task_list` with {"repeats": true}
+      Then it answers with the task 1
+      And its answer holds to the shape the tool described
+      When I call `series_show` with {"number": 1}
+      Then it answers without an error
+      And its answer holds to the shape the tool described
+      And the answer says every weekday at 10:30
+
+    @series-mcp-off-offers-none
+    Scenario: with recurrence off, no series tool and no rule are offered
+      Given a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it does not offer `series_list`
+      And it does not offer `task_skip`
+      When I call `task_new` with {"title": "Team stand-up", "every": "every weekday"}
+      Then it answers that it failed
+
   Rule: A refusal is a refusal, not a broken tool
 
     @mcp-refusal-is-answered

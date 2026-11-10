@@ -298,7 +298,7 @@ switching workspace switches them with the store (`bdd/settings.feature`,
   reads the settings beside it as well (`@settings-beside-a-store-named`), so
   a store moved by hand takes its settings with it.
 - **What it may say**: every table but the machine's — `[pages]`, `[archive]`,
-  `[focus]`, `[approach]`, `[time]`, `[window]` — and one table of its own,
+  `[focus]`, `[approach]`, `[time]`, `[window]`, `[recurrence]` — and one table of its own,
   `[workspace]`, the colour it wears (above). A key it says wins
   (`@settings-the-store-wins`); a key it leaves out is the global file's, or
   the default (`@settings-a-key-not-said-comes-from-the-global-file`); each
@@ -541,6 +541,26 @@ Today is the day the clock says, unless `CAIRN_TODAY` names another, written
 archived then. A scenario cannot move the trace back — it asks the engine,
 which only writes the present, and never opens the store — so it moves today
 forward instead. A day it cannot read is taken as no day named.
+
+## Tasks that come back, turned on per store
+
+```toml
+[recurrence]
+on = false   # true lets a task come back as a series
+```
+
+Off unless it says `true`, in the file or in a store's `settings.toml`, so one
+workspace has series and another none. Off, every surface offers none of it:
+`--every`, `--repeats` and `task edit --series` are no flags, `series` and
+`task skip` no commands, and their tools are not offered to an agent — the
+engine refuses them anyway, `recurrence-off`, to whatever reaches it another
+way. Nothing is made, the series stay dormant as they were, and an occurrence
+open is an ordinary task (`bdd/series.feature`, `@series-off-offers-nothing`).
+Turned back on, every series is there again and makes nothing it missed; an MCP
+server running sees it at its next call, its tools' shapes included. Anything
+but `true` or `false` is refused naming `recurrence.on`
+(`@series-config-recurrence-is-on-or-off`), and `config show` says it
+(`@series-config-recurrence-is-said`). What a series is: [series.md](series.md).
 
 ## A focus session that asks to be renewed
 

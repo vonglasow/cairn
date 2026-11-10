@@ -251,3 +251,12 @@ func TestText_saysWhatBlocksTheTaskAndWhy(t *testing.T) {
 		t.Errorf("blocked by line = %q, want the blocker alone, no empty reason after it", got)
 	}
 }
+
+func TestLines_saysHowOftenAnOccurrenceComesBack(t *testing.T) {
+	tasks := []Task{Made(Carried{Number: 1, Title: "Stand-up", State: "todo", Priority: "normal"}), Made(Carried{Number: 2, Title: "Spec", State: "todo", Priority: "normal"})}
+	got := Lines(tasks, Marks{InFocus: []int{1}, Repeats: map[int]string{1: "↻3 every weekday"}})
+	want := "#1  Stand-up  · todo  · normal  · ↻3 every weekday" + InFocusMark + "\n#2  Spec  · todo  · normal\n"
+	if got != want {
+		t.Errorf("Lines = %q, want %q", got, want)
+	}
+}

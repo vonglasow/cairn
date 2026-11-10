@@ -141,6 +141,14 @@ objective a task served beyond the first`. Losing them all would break the tasks
 that were fine before — most of them serve one — and picking "the first named"
 is not a thing the store knows, since a set has no order but its numbers.
 
+## A series serves what its template serves
+
+The template of a series may serve objectives; each occurrence it makes serves
+them, and its time and progress count there as any task's do — the series adds
+nothing up of its own (`@series-an-occurrence-serves-the-objectives`). An
+objective deleted is let go of by the templates serving it. See
+[series.md](series.md).
+
 ## Deliberately not there yet
 
 - **Weighting.** "This task is mostly for objective 1" — there is no honest

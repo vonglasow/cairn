@@ -15,6 +15,8 @@ const (
 	scopeLabel      = `INSERT INTO label_scopes (label, scope) VALUES (?, ?) ON CONFLICT (label) DO UPDATE SET scope = excluded.scope`
 	unscopeLabel    = `DELETE FROM label_scopes WHERE label = ?`
 	renameScope     = `UPDATE OR REPLACE label_scopes SET label = ? WHERE label = ?`
+	forgetOnSeries  = `DELETE FROM series_labels WHERE label = ?`
+	renameOnSeries  = `UPDATE OR REPLACE series_labels SET label = ? WHERE label = ?`
 )
 
 // KeptLabels is every label made on its own, whatever carries it or not, in alphabetical order.
@@ -34,9 +36,9 @@ func (s *Store) KeepLabel(label string) error {
 	return nil
 }
 
-// ForgetLabel lets a kept label go, and the colour and scope chosen for it; one never kept is let go of without a word.
+// ForgetLabel lets a kept label go, and the colour and scope chosen for it, and takes it off every series; one never kept is let go of without a word.
 func (s *Store) ForgetLabel(label string) error {
-	for _, forget := range []string{forgetLabel, forgetColour, unscopeLabel} {
+	for _, forget := range []string{forgetLabel, forgetColour, unscopeLabel, forgetOnSeries} {
 		if _, err := s.on.Exec(forget, label); err != nil {
 			return fmt.Errorf("letting the label %q go: %w", label, err)
 		}
@@ -44,9 +46,9 @@ func (s *Store) ForgetLabel(label string) error {
 	return nil
 }
 
-// RenameKeptLabel writes another name for a kept label and for the colour and scope chosen for it; renamed onto one already kept, the two are one.
+// RenameKeptLabel writes another name for a kept label, for the colour and scope chosen for it and on every series carrying it; renamed onto one already kept, the two are one.
 func (s *Store) RenameKeptLabel(from, to string) error {
-	for _, rename := range []string{renameKeptLabel, renameColour, renameScope} {
+	for _, rename := range []string{renameKeptLabel, renameColour, renameScope, renameOnSeries} {
 		if _, err := s.on.Exec(rename, to, from); err != nil {
 			return fmt.Errorf("renaming the label %q: %w", from, err)
 		}

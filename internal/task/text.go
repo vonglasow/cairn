@@ -69,10 +69,11 @@ const InFocusMark = "  (in focus)"
 // NothingBlocksMark is what sets apart a blocked task whose every named blocker is done — the one thing a listing says about blocking, because it is the one thing that needs acting on.
 const NothingBlocksMark = "  (nothing blocks it)"
 
-// Marks are what a listing says about a task that the task does not carry itself: which one is being worked on, and which ones are waiting on nothing any more.
+// Marks are what a listing says about a task that the task does not carry itself: which one is being worked on, which ones are waiting on nothing any more, and how often an occurrence of a series comes back.
 type Marks struct {
 	InFocus       []int
 	NothingBlocks []int
+	Repeats       map[int]string
 }
 
 // Lines renders a listing flat, one task per line, marking what a listing marks.
@@ -88,6 +89,9 @@ func Lines(tasks []Task, marks Marks) string {
 func marked(t Task, marks Marks) string {
 	line := Line(t)
 	number := t.number
+	if repeats, ok := marks.Repeats[number]; ok {
+		line += "  · " + repeats
+	}
 	if slices.Contains(marks.InFocus, number) {
 		line += InFocusMark
 	}

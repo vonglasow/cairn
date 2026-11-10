@@ -114,7 +114,7 @@ func TestTaskList_refusesAnEmptyListOfFields(t *testing.T) {
 
 func TestRowFields_areWhatARowCarries(t *testing.T) {
 	want := []string{"number", "title", "state", "archived", "priority", "labels", "blocked_by", "linked",
-		"because", "deadline", "estimate", "time_spent", "objectives", "described"}
+		"because", "deadline", "estimate", "time_spent", "objectives", "described", "series"}
 	if got := rowFields(); !slices.Equal(got, want) {
 		t.Errorf("rowFields() = %v, want %v", got, want)
 	}

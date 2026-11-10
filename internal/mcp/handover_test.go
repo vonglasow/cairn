@@ -276,7 +276,7 @@ func handedOver(t *testing.T, tools []string) {
 func offeredNames(t *testing.T) []string {
 	t.Helper()
 	var names []string
-	for _, op := range offered(engine.Read, engine.Pages{}) {
+	for _, op := range offered(engine.Read, engine.PagesFrom(engine.Home{Dir: t.TempDir(), Lookup: os.LookupEnv})) {
 		names = append(names, toolFor(op).Name)
 	}
 	return names

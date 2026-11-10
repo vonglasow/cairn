@@ -212,7 +212,22 @@ One flag, three levels, `read` by default:
 |---|---|
 | `read` | listing and showing, nothing else |
 | `write` | also adding, changing, `task_export`, `task_import`, `backup_new`, `migration_apply` |
-| `full` | also `task_delete`, `objective_delete`, `backup_delete`, `backup_restore`, `migration_rollback` |
+| `full` | also `task_delete`, `objective_delete`, `backup_delete`, `backup_restore`, `migration_rollback`, `series_delete` |
+
+**A series is handled at the same levels, once recurrence is on**
+([series.md](series.md)): `series_list` and `series_show` read; `task_new`
+and `task_edit` take `every` (and `after-done`, `from`, `series`), and
+`series_edit`, `series_stop`, `series_resume` and `task_skip` write;
+`series_delete` sits in `full`, with `keep-tasks`, `delete-open` or
+`delete-tasks` said. `task_list` takes `repeats` and `series`. Unlike a view,
+which is how the person looks at their work and which an agent only reads, a
+series is work, and an agent that may make tasks may already make one with
+`task_new`; stopping it loses nothing, and deleting one is `full` because it
+can take tasks with it (`bdd/mcp.feature`, `@series-mcp-offers-the-series`,
+`@series-mcp-reads-only-at-read`, `@series-mcp-makes-a-series`). With
+recurrence off, none of them is offered and `task_new` takes no `every`
+(`@series-mcp-off-offers-none`); turned on or off while a server runs, the
+tools change at its next call, their shapes included.
 
 The line between `write` and `full` is not "destructive" in the technical sense
 — it is **what can lose work already done**. Adding a backup loses nothing, so

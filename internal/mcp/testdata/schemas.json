@@ -545,6 +545,21 @@
           ],
           "additionalProperties": false
         },
+        "recurrence": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "on": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "on"
+          ],
+          "additionalProperties": false
+        },
         "workspace": {
           "type": [
             "null",
@@ -3705,6 +3720,1362 @@
       "additionalProperties": false
     }
   },
+  "series_delete": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Delete a series, saying what becomes of its tasks"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "delete-open": {
+          "description": "delete the occurrence open, and keep the others",
+          "type": "boolean"
+        },
+        "delete-tasks": {
+          "description": "delete every task it made as well",
+          "type": "boolean"
+        },
+        "keep-tasks": {
+          "description": "keep every task it made, as an ordinary task",
+          "type": "boolean"
+        },
+        "number": {
+          "description": "the number of the series, as 3 or ↻3, to delete",
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 3,
+    "output": {
+      "type": "object",
+      "properties": {
+        "deleted": {
+          "type": "integer"
+        },
+        "kept": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks it made that stay, ordinary tasks now"
+        },
+        "tasks_deleted": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the tasks it made that were deleted with it"
+        }
+      },
+      "required": [
+        "deleted",
+        "kept",
+        "tasks_deleted"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "series_edit": {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Change a series, for the ones to come"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "after-done": {
+          "description": "count the rule from the day the last one is done, rather than on the calendar",
+          "type": "boolean"
+        },
+        "estimate": {
+          "description": "how long each occurrence should take",
+          "type": "string"
+        },
+        "every": {
+          "description": "a rule it comes back by, in plain words: every weekday 10:30, every other thursday 14:00, every 3 days after done, every monday 10 times, every day until 2026-12-31; the task is its first occurrence",
+          "type": "string"
+        },
+        "from": {
+          "description": "the day the rule counts from; today when it is not said",
+          "type": "string"
+        },
+        "label": {
+          "description": "a label its occurrences carry; x or +x adds one, -x takes one off, =x replaces them all",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "number": {
+          "description": "the number of the series, as 3 or ↻3, to change",
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "objective": {
+          "description": "the number of an objective its occurrences serve; 4 or +4 adds one, -1 takes one away, =4 replaces them all",
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "type": "array"
+        },
+        "priority": {
+          "description": "the priority its occurrences carry",
+          "enum": [
+            "low",
+            "normal",
+            "high",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "steps": {
+          "description": "its steps, one a line: \"[x] its title\" for one done, \"[ ] its title\" for one not; they replace the steps it had",
+          "type": "string"
+        },
+        "title": {
+          "description": "what its occurrences are called",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "active, or stopped"
+        },
+        "stopped": {
+          "type": "string",
+          "description": "the day it was stopped; left out while it is active"
+        },
+        "rule": {
+          "type": "string",
+          "description": "how often it comes back, in the words cairn reads back"
+        },
+        "says": {
+          "type": "string",
+          "description": "the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends"
+        },
+        "from": {
+          "type": "string",
+          "description": "the day it counts from"
+        },
+        "next": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the days of its next occurrences, the open one first, or the ones it would make if resumed today; empty once it has ended"
+        },
+        "ended": {
+          "type": "boolean",
+          "description": "true once its end is reached: it makes nothing more"
+        },
+        "template": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string"
+            },
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "steps": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "estimate": {
+              "type": "string"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "required": [
+            "title",
+            "priority",
+            "labels",
+            "steps",
+            "estimate",
+            "objectives"
+          ],
+          "additionalProperties": false
+        },
+        "open": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of its occurrences neither done nor archived"
+        },
+        "done": {
+          "type": "integer"
+        },
+        "skipped": {
+          "type": "integer"
+        },
+        "missed": {
+          "type": "integer"
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long was spent over its occurrences, as 1h30m; empty when nothing was"
+        },
+        "occurrences": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "task": {
+                "type": "integer",
+                "description": "the number of the task made for that day; 0 when none was"
+              },
+              "is": {
+                "type": "string",
+                "description": "the column the task stands in, or skipped, missed or deleted"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "time_spent": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "day",
+              "task",
+              "is",
+              "archived",
+              "time_spent"
+            ],
+            "additionalProperties": false
+          },
+          "description": "every day it made a task for or missed, the latest first, archived ones included; left out unless it is shown"
+        },
+        "acts": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "did": {
+                "type": "string",
+                "description": "made, missed, skipped, changed, stopped, resumed or deleted"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "was": {
+                "type": "string"
+              },
+              "became": {
+                "type": "string"
+              },
+              "through": {
+                "type": "string"
+              },
+              "by": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "did",
+              "at"
+            ],
+            "additionalProperties": false
+          },
+          "description": "its trace: everything that happened to it, oldest first; left out unless it is shown"
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "rule",
+        "says",
+        "from",
+        "next",
+        "ended",
+        "template",
+        "open",
+        "done",
+        "skipped",
+        "missed",
+        "time_spent"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "series_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List the series"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "search": {
+          "description": "keep only the series carrying every word of it in their title or their rule",
+          "type": "string"
+        },
+        "state": {
+          "description": "keep only the series in this state",
+          "enum": [
+            "active",
+            "stopped"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "series": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string",
+                "description": "active, or stopped"
+              },
+              "stopped": {
+                "type": "string",
+                "description": "the day it was stopped; left out while it is active"
+              },
+              "rule": {
+                "type": "string",
+                "description": "how often it comes back, in the words cairn reads back"
+              },
+              "says": {
+                "type": "string",
+                "description": "the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends"
+              },
+              "from": {
+                "type": "string",
+                "description": "the day it counts from"
+              },
+              "next": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "the days of its next occurrences, the open one first, or the ones it would make if resumed today; empty once it has ended"
+              },
+              "ended": {
+                "type": "boolean",
+                "description": "true once its end is reached: it makes nothing more"
+              },
+              "template": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "priority": {
+                    "type": "string"
+                  },
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "steps": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "estimate": {
+                    "type": "string"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "required": [
+                  "title",
+                  "priority",
+                  "labels",
+                  "steps",
+                  "estimate",
+                  "objectives"
+                ],
+                "additionalProperties": false
+              },
+              "open": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of its occurrences neither done nor archived"
+              },
+              "done": {
+                "type": "integer"
+              },
+              "skipped": {
+                "type": "integer"
+              },
+              "missed": {
+                "type": "integer"
+              },
+              "time_spent": {
+                "type": "string",
+                "description": "how long was spent over its occurrences, as 1h30m; empty when nothing was"
+              },
+              "occurrences": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "day": {
+                      "type": "string"
+                    },
+                    "task": {
+                      "type": "integer",
+                      "description": "the number of the task made for that day; 0 when none was"
+                    },
+                    "is": {
+                      "type": "string",
+                      "description": "the column the task stands in, or skipped, missed or deleted"
+                    },
+                    "archived": {
+                      "type": "boolean"
+                    },
+                    "time_spent": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "day",
+                    "task",
+                    "is",
+                    "archived",
+                    "time_spent"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "every day it made a task for or missed, the latest first, archived ones included; left out unless it is shown"
+              },
+              "acts": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "did": {
+                      "type": "string",
+                      "description": "made, missed, skipped, changed, stopped, resumed or deleted"
+                    },
+                    "task": {
+                      "type": "integer"
+                    },
+                    "day": {
+                      "type": "string"
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "was": {
+                      "type": "string"
+                    },
+                    "became": {
+                      "type": "string"
+                    },
+                    "through": {
+                      "type": "string"
+                    },
+                    "by": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "did",
+                    "at"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "its trace: everything that happened to it, oldest first; left out unless it is shown"
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state",
+              "rule",
+              "says",
+              "from",
+              "next",
+              "ended",
+              "template",
+              "open",
+              "done",
+              "skipped",
+              "missed",
+              "time_spent"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "series"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "series_resume": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Resume a stopped series"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the series, as 3 or ↻3, to resume",
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "active, or stopped"
+        },
+        "stopped": {
+          "type": "string",
+          "description": "the day it was stopped; left out while it is active"
+        },
+        "rule": {
+          "type": "string",
+          "description": "how often it comes back, in the words cairn reads back"
+        },
+        "says": {
+          "type": "string",
+          "description": "the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends"
+        },
+        "from": {
+          "type": "string",
+          "description": "the day it counts from"
+        },
+        "next": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the days of its next occurrences, the open one first, or the ones it would make if resumed today; empty once it has ended"
+        },
+        "ended": {
+          "type": "boolean",
+          "description": "true once its end is reached: it makes nothing more"
+        },
+        "template": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string"
+            },
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "steps": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "estimate": {
+              "type": "string"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "required": [
+            "title",
+            "priority",
+            "labels",
+            "steps",
+            "estimate",
+            "objectives"
+          ],
+          "additionalProperties": false
+        },
+        "open": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of its occurrences neither done nor archived"
+        },
+        "done": {
+          "type": "integer"
+        },
+        "skipped": {
+          "type": "integer"
+        },
+        "missed": {
+          "type": "integer"
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long was spent over its occurrences, as 1h30m; empty when nothing was"
+        },
+        "occurrences": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "task": {
+                "type": "integer",
+                "description": "the number of the task made for that day; 0 when none was"
+              },
+              "is": {
+                "type": "string",
+                "description": "the column the task stands in, or skipped, missed or deleted"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "time_spent": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "day",
+              "task",
+              "is",
+              "archived",
+              "time_spent"
+            ],
+            "additionalProperties": false
+          },
+          "description": "every day it made a task for or missed, the latest first, archived ones included; left out unless it is shown"
+        },
+        "acts": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "did": {
+                "type": "string",
+                "description": "made, missed, skipped, changed, stopped, resumed or deleted"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "was": {
+                "type": "string"
+              },
+              "became": {
+                "type": "string"
+              },
+              "through": {
+                "type": "string"
+              },
+              "by": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "did",
+              "at"
+            ],
+            "additionalProperties": false
+          },
+          "description": "its trace: everything that happened to it, oldest first; left out unless it is shown"
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "rule",
+        "says",
+        "from",
+        "next",
+        "ended",
+        "template",
+        "open",
+        "done",
+        "skipped",
+        "missed",
+        "time_spent"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "series_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Show a series, its occurrences and what happened to it"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the series, as 3 or ↻3, to show",
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "active, or stopped"
+        },
+        "stopped": {
+          "type": "string",
+          "description": "the day it was stopped; left out while it is active"
+        },
+        "rule": {
+          "type": "string",
+          "description": "how often it comes back, in the words cairn reads back"
+        },
+        "says": {
+          "type": "string",
+          "description": "the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends"
+        },
+        "from": {
+          "type": "string",
+          "description": "the day it counts from"
+        },
+        "next": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the days of its next occurrences, the open one first, or the ones it would make if resumed today; empty once it has ended"
+        },
+        "ended": {
+          "type": "boolean",
+          "description": "true once its end is reached: it makes nothing more"
+        },
+        "template": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string"
+            },
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "steps": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "estimate": {
+              "type": "string"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "required": [
+            "title",
+            "priority",
+            "labels",
+            "steps",
+            "estimate",
+            "objectives"
+          ],
+          "additionalProperties": false
+        },
+        "open": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of its occurrences neither done nor archived"
+        },
+        "done": {
+          "type": "integer"
+        },
+        "skipped": {
+          "type": "integer"
+        },
+        "missed": {
+          "type": "integer"
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long was spent over its occurrences, as 1h30m; empty when nothing was"
+        },
+        "occurrences": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "task": {
+                "type": "integer",
+                "description": "the number of the task made for that day; 0 when none was"
+              },
+              "is": {
+                "type": "string",
+                "description": "the column the task stands in, or skipped, missed or deleted"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "time_spent": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "day",
+              "task",
+              "is",
+              "archived",
+              "time_spent"
+            ],
+            "additionalProperties": false
+          },
+          "description": "every day it made a task for or missed, the latest first, archived ones included; left out unless it is shown"
+        },
+        "acts": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "did": {
+                "type": "string",
+                "description": "made, missed, skipped, changed, stopped, resumed or deleted"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "was": {
+                "type": "string"
+              },
+              "became": {
+                "type": "string"
+              },
+              "through": {
+                "type": "string"
+              },
+              "by": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "did",
+              "at"
+            ],
+            "additionalProperties": false
+          },
+          "description": "its trace: everything that happened to it, oldest first; left out unless it is shown"
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "rule",
+        "says",
+        "from",
+        "next",
+        "ended",
+        "template",
+        "open",
+        "done",
+        "skipped",
+        "missed",
+        "time_spent"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "series_stop": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Stop a series"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the series, as 3 or ↻3, to stop",
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "description": "active, or stopped"
+        },
+        "stopped": {
+          "type": "string",
+          "description": "the day it was stopped; left out while it is active"
+        },
+        "rule": {
+          "type": "string",
+          "description": "how often it comes back, in the words cairn reads back"
+        },
+        "says": {
+          "type": "string",
+          "description": "the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends"
+        },
+        "from": {
+          "type": "string",
+          "description": "the day it counts from"
+        },
+        "next": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the days of its next occurrences, the open one first, or the ones it would make if resumed today; empty once it has ended"
+        },
+        "ended": {
+          "type": "boolean",
+          "description": "true once its end is reached: it makes nothing more"
+        },
+        "template": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string"
+            },
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "steps": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "estimate": {
+              "type": "string"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          "required": [
+            "title",
+            "priority",
+            "labels",
+            "steps",
+            "estimate",
+            "objectives"
+          ],
+          "additionalProperties": false
+        },
+        "open": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of its occurrences neither done nor archived"
+        },
+        "done": {
+          "type": "integer"
+        },
+        "skipped": {
+          "type": "integer"
+        },
+        "missed": {
+          "type": "integer"
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long was spent over its occurrences, as 1h30m; empty when nothing was"
+        },
+        "occurrences": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "task": {
+                "type": "integer",
+                "description": "the number of the task made for that day; 0 when none was"
+              },
+              "is": {
+                "type": "string",
+                "description": "the column the task stands in, or skipped, missed or deleted"
+              },
+              "archived": {
+                "type": "boolean"
+              },
+              "time_spent": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "day",
+              "task",
+              "is",
+              "archived",
+              "time_spent"
+            ],
+            "additionalProperties": false
+          },
+          "description": "every day it made a task for or missed, the latest first, archived ones included; left out unless it is shown"
+        },
+        "acts": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "did": {
+                "type": "string",
+                "description": "made, missed, skipped, changed, stopped, resumed or deleted"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "was": {
+                "type": "string"
+              },
+              "became": {
+                "type": "string"
+              },
+              "through": {
+                "type": "string"
+              },
+              "by": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "did",
+              "at"
+            ],
+            "additionalProperties": false
+          },
+          "description": "its trace: everything that happened to it, oldest first; left out unless it is shown"
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "rule",
+        "says",
+        "from",
+        "next",
+        "ended",
+        "template",
+        "open",
+        "done",
+        "skipped",
+        "missed",
+        "time_spent"
+      ],
+      "additionalProperties": false
+    }
+  },
   "step_delete": {
     "annotations": {
       "destructiveHint": false,
@@ -4358,6 +5729,97 @@
                 "type": "string"
               },
               "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+            },
+            "series": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "series": {
+                  "type": "integer"
+                },
+                "rule": {
+                  "type": "string",
+                  "description": "how often it comes back, in the words cairn reads back"
+                },
+                "often": {
+                  "type": "string",
+                  "description": "how often it comes back, the way a person reads it"
+                },
+                "says": {
+                  "type": "string",
+                  "description": "the whole rule the way a person reads it"
+                },
+                "day": {
+                  "type": "string",
+                  "description": "the day the series made it for"
+                },
+                "at": {
+                  "type": "string",
+                  "description": "the time of day it is for, as 10:30; left out when the rule names none"
+                },
+                "then": {
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+                },
+                "stopped": {
+                  "type": "boolean"
+                }
+              },
+              "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+              "required": [
+                "series",
+                "rule",
+                "often",
+                "says",
+                "day",
+                "then",
+                "stopped"
+              ],
+              "additionalProperties": false
+            },
+            "made": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "integer"
+                  },
+                  "task": {
+                    "type": "integer"
+                  },
+                  "day": {
+                    "type": "string"
+                  },
+                  "missed": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "series",
+                  "task",
+                  "day"
+                ],
+                "additionalProperties": false
+              },
+              "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
             }
           },
           "required": [
@@ -4501,6 +5963,10 @@
     "input": {
       "additionalProperties": false,
       "properties": {
+        "after-done": {
+          "description": "count the rule from the day the last one is done, rather than on the calendar",
+          "type": "boolean"
+        },
         "because": {
           "description": "what is in its way and is not a task cairn holds",
           "type": "string"
@@ -4529,6 +5995,14 @@
         },
         "estimate": {
           "description": "how long it should take",
+          "type": "string"
+        },
+        "every": {
+          "description": "a rule it comes back by, in plain words: every weekday 10:30, every other thursday 14:00, every 3 days after done, every monday 10 times, every day until 2026-12-31; the task is its first occurrence",
+          "type": "string"
+        },
+        "from": {
+          "description": "the day the rule counts from; today when it is not said",
           "type": "string"
         },
         "label": {
@@ -4575,6 +6049,10 @@
         "replace": {
           "description": "a piece of the description to change, there exactly once; --by says what goes in its place",
           "type": "string"
+        },
+        "series": {
+          "description": "change the series it is an occurrence of as well, for the ones to come: whatever of its title, priority, labels, estimate, steps and objectives is named",
+          "type": "boolean"
         },
         "spent": {
           "description": "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back",
@@ -4887,6 +6365,97 @@
             "type": "string"
           },
           "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+        },
+        "series": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "series": {
+              "type": "integer"
+            },
+            "rule": {
+              "type": "string",
+              "description": "how often it comes back, in the words cairn reads back"
+            },
+            "often": {
+              "type": "string",
+              "description": "how often it comes back, the way a person reads it"
+            },
+            "says": {
+              "type": "string",
+              "description": "the whole rule the way a person reads it"
+            },
+            "day": {
+              "type": "string",
+              "description": "the day the series made it for"
+            },
+            "at": {
+              "type": "string",
+              "description": "the time of day it is for, as 10:30; left out when the rule names none"
+            },
+            "then": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+            },
+            "stopped": {
+              "type": "boolean"
+            }
+          },
+          "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+          "required": [
+            "series",
+            "rule",
+            "often",
+            "says",
+            "day",
+            "then",
+            "stopped"
+          ],
+          "additionalProperties": false
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
         }
       },
       "required": [
@@ -5272,6 +6841,97 @@
                   "type": "string"
                 },
                 "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+              },
+              "series": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "series": {
+                    "type": "integer"
+                  },
+                  "rule": {
+                    "type": "string",
+                    "description": "how often it comes back, in the words cairn reads back"
+                  },
+                  "often": {
+                    "type": "string",
+                    "description": "how often it comes back, the way a person reads it"
+                  },
+                  "says": {
+                    "type": "string",
+                    "description": "the whole rule the way a person reads it"
+                  },
+                  "day": {
+                    "type": "string",
+                    "description": "the day the series made it for"
+                  },
+                  "at": {
+                    "type": "string",
+                    "description": "the time of day it is for, as 10:30; left out when the rule names none"
+                  },
+                  "then": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+                  },
+                  "stopped": {
+                    "type": "boolean"
+                  }
+                },
+                "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+                "required": [
+                  "series",
+                  "rule",
+                  "often",
+                  "says",
+                  "day",
+                  "then",
+                  "stopped"
+                ],
+                "additionalProperties": false
+              },
+              "made": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "series": {
+                      "type": "integer"
+                    },
+                    "task": {
+                      "type": "integer"
+                    },
+                    "day": {
+                      "type": "string"
+                    },
+                    "missed": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "series",
+                    "task",
+                    "day"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
               }
             },
             "required": [
@@ -5526,7 +7186,7 @@
           "type": "string"
         },
         "fields": {
-          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described; every one when it is not named",
+          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described, series; every one when it is not named",
           "items": {
             "enum": [
               "number",
@@ -5542,7 +7202,8 @@
               "estimate",
               "time_spent",
               "objectives",
-              "described"
+              "described",
+              "series"
             ],
             "type": "string"
           },
@@ -5596,6 +7257,14 @@
             "critical"
           ],
           "type": "string"
+        },
+        "repeats": {
+          "description": "keep only the occurrences of a series",
+          "type": "boolean"
+        },
+        "series": {
+          "description": "keep only the occurrences of this series, by its number",
+          "type": "integer"
         },
         "state": {
           "description": "keep only the tasks sitting in this column",
@@ -5712,6 +7381,10 @@
               },
               "described": {
                 "type": "boolean"
+              },
+              "series": {
+                "type": "integer",
+                "description": "the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"
               }
             },
             "additionalProperties": false
@@ -5868,6 +7541,42 @@
             "additionalProperties": false
           },
           "description": "the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
         }
       },
       "required": [
@@ -6023,6 +7732,10 @@
               },
               "described": {
                 "type": "boolean"
+              },
+              "series": {
+                "type": "integer",
+                "description": "the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"
               }
             },
             "additionalProperties": false
@@ -6179,6 +7892,42 @@
             "additionalProperties": false
           },
           "description": "the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
         }
       },
       "required": [
@@ -6199,6 +7948,10 @@
     "input": {
       "additionalProperties": false,
       "properties": {
+        "after-done": {
+          "description": "count the rule from the day the last one is done, rather than on the calendar",
+          "type": "boolean"
+        },
         "because": {
           "description": "what is in its way and is not a task cairn holds",
           "type": "string"
@@ -6223,6 +7976,14 @@
         },
         "estimate": {
           "description": "how long it should take",
+          "type": "string"
+        },
+        "every": {
+          "description": "a rule it comes back by, in plain words: every weekday 10:30, every other thursday 14:00, every 3 days after done, every monday 10 times, every day until 2026-12-31; the task is its first occurrence",
+          "type": "string"
+        },
+        "from": {
+          "description": "the day the rule counts from; today when it is not said",
           "type": "string"
         },
         "label": {
@@ -6573,6 +8334,97 @@
             "type": "string"
           },
           "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+        },
+        "series": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "series": {
+              "type": "integer"
+            },
+            "rule": {
+              "type": "string",
+              "description": "how often it comes back, in the words cairn reads back"
+            },
+            "often": {
+              "type": "string",
+              "description": "how often it comes back, the way a person reads it"
+            },
+            "says": {
+              "type": "string",
+              "description": "the whole rule the way a person reads it"
+            },
+            "day": {
+              "type": "string",
+              "description": "the day the series made it for"
+            },
+            "at": {
+              "type": "string",
+              "description": "the time of day it is for, as 10:30; left out when the rule names none"
+            },
+            "then": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+            },
+            "stopped": {
+              "type": "boolean"
+            }
+          },
+          "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+          "required": [
+            "series",
+            "rule",
+            "often",
+            "says",
+            "day",
+            "then",
+            "stopped"
+          ],
+          "additionalProperties": false
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
         }
       },
       "required": [
@@ -6620,7 +8472,7 @@
           "type": "string"
         },
         "fields": {
-          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described; every one when it is not named",
+          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described, series; every one when it is not named",
           "items": {
             "enum": [
               "number",
@@ -6636,7 +8488,8 @@
               "estimate",
               "time_spent",
               "objectives",
-              "described"
+              "described",
+              "series"
             ],
             "type": "string"
           },
@@ -6801,6 +8654,10 @@
               },
               "described": {
                 "type": "boolean"
+              },
+              "series": {
+                "type": "integer",
+                "description": "the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"
               }
             },
             "additionalProperties": false
@@ -6957,6 +8814,42 @@
             "additionalProperties": false
           },
           "description": "the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
         }
       },
       "required": [
@@ -7267,6 +9160,512 @@
             "type": "string"
           },
           "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+        },
+        "series": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "series": {
+              "type": "integer"
+            },
+            "rule": {
+              "type": "string",
+              "description": "how often it comes back, in the words cairn reads back"
+            },
+            "often": {
+              "type": "string",
+              "description": "how often it comes back, the way a person reads it"
+            },
+            "says": {
+              "type": "string",
+              "description": "the whole rule the way a person reads it"
+            },
+            "day": {
+              "type": "string",
+              "description": "the day the series made it for"
+            },
+            "at": {
+              "type": "string",
+              "description": "the time of day it is for, as 10:30; left out when the rule names none"
+            },
+            "then": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+            },
+            "stopped": {
+              "type": "boolean"
+            }
+          },
+          "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+          "required": [
+            "series",
+            "rule",
+            "often",
+            "says",
+            "day",
+            "then",
+            "stopped"
+          ],
+          "additionalProperties": false
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
+        }
+      },
+      "required": [
+        "number",
+        "title",
+        "state",
+        "archived",
+        "priority",
+        "labels",
+        "blocked_by",
+        "linked",
+        "because",
+        "deadline",
+        "estimate",
+        "time_spent",
+        "objectives",
+        "description",
+        "steps",
+        "progress"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "task_skip": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Skip an occurrence of a series"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "description": "the number of the occurrence",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "the task's number, never handed out twice"
+        },
+        "title": {
+          "type": "string",
+          "description": "what the task is called"
+        },
+        "state": {
+          "type": "string",
+          "description": "the column it stands in: backlog, todo, current, blocked, watching, paused or done"
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "true when it was archived: kept, and off the columns"
+        },
+        "priority": {
+          "type": "string",
+          "description": "low, normal, high or critical"
+        },
+        "labels": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
+        },
+        "blocked_by": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks in its way; empty or null when none is"
+        },
+        "linked": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the tasks it is linked to; empty or null when none is"
+        },
+        "because": {
+          "type": "string",
+          "description": "what is in its way that is not a task cairn holds; empty when nothing is said"
+        },
+        "deadline": {
+          "type": "string",
+          "description": "the last day it may be done, as 2026-09-01; empty when it has none"
+        },
+        "estimate": {
+          "type": "string",
+          "description": "how long it was expected to take, as 1h30m; empty when nobody said"
+        },
+        "time_spent": {
+          "type": "string",
+          "description": "how long has been spent on it, as 1h30m; empty when nothing has"
+        },
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the objectives it serves; empty or null when it serves none"
+        },
+        "description": {
+          "type": "string",
+          "description": "what is written about the task; empty when nothing is"
+        },
+        "steps": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "what the step is called"
+              },
+              "done": {
+                "type": "boolean",
+                "description": "true once the step is done"
+              }
+            },
+            "required": [
+              "title",
+              "done"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the smaller pieces the task is split into, in their order, each done or not; empty when it has none"
+        },
+        "progress": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "tasks": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "steps": {
+              "type": [
+                "null",
+                "object"
+              ],
+              "properties": {
+                "total": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "total",
+                "done"
+              ],
+              "additionalProperties": false
+            },
+            "percent": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "percent"
+          ],
+          "additionalProperties": false
+        },
+        "context": {
+          "type": "string"
+        },
+        "in_column_since": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "added": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change put on it; left out when it put nothing",
+          "additionalProperties": false
+        },
+        "taken_off": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "labels": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the labels, lower case"
+            },
+            "blockers": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks in its way"
+            },
+            "links": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the tasks it is linked to"
+            },
+            "objectives": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the objectives it serves"
+            }
+          },
+          "description": "what the change took off it; left out when it took nothing",
+          "additionalProperties": false
+        },
+        "warnings": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+        },
+        "series": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "series": {
+              "type": "integer"
+            },
+            "rule": {
+              "type": "string",
+              "description": "how often it comes back, in the words cairn reads back"
+            },
+            "often": {
+              "type": "string",
+              "description": "how often it comes back, the way a person reads it"
+            },
+            "says": {
+              "type": "string",
+              "description": "the whole rule the way a person reads it"
+            },
+            "day": {
+              "type": "string",
+              "description": "the day the series made it for"
+            },
+            "at": {
+              "type": "string",
+              "description": "the time of day it is for, as 10:30; left out when the rule names none"
+            },
+            "then": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+            },
+            "stopped": {
+              "type": "boolean"
+            }
+          },
+          "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+          "required": [
+            "series",
+            "rule",
+            "often",
+            "says",
+            "day",
+            "then",
+            "stopped"
+          ],
+          "additionalProperties": false
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
         }
       },
       "required": [
@@ -7591,6 +9990,97 @@
             "type": "string"
           },
           "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+        },
+        "series": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "series": {
+              "type": "integer"
+            },
+            "rule": {
+              "type": "string",
+              "description": "how often it comes back, in the words cairn reads back"
+            },
+            "often": {
+              "type": "string",
+              "description": "how often it comes back, the way a person reads it"
+            },
+            "says": {
+              "type": "string",
+              "description": "the whole rule the way a person reads it"
+            },
+            "day": {
+              "type": "string",
+              "description": "the day the series made it for"
+            },
+            "at": {
+              "type": "string",
+              "description": "the time of day it is for, as 10:30; left out when the rule names none"
+            },
+            "then": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
+              "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+            },
+            "stopped": {
+              "type": "boolean"
+            }
+          },
+          "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+          "required": [
+            "series",
+            "rule",
+            "often",
+            "says",
+            "day",
+            "then",
+            "stopped"
+          ],
+          "additionalProperties": false
+        },
+        "made": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "series": {
+                "type": "integer"
+              },
+              "task": {
+                "type": "integer"
+              },
+              "day": {
+                "type": "string"
+              },
+              "missed": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "series",
+              "task",
+              "day"
+            ],
+            "additionalProperties": false
+          },
+          "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
         }
       },
       "required": [
@@ -7921,6 +10411,97 @@
                   "type": "string"
                 },
                 "description": "what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"
+              },
+              "series": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "series": {
+                    "type": "integer"
+                  },
+                  "rule": {
+                    "type": "string",
+                    "description": "how often it comes back, in the words cairn reads back"
+                  },
+                  "often": {
+                    "type": "string",
+                    "description": "how often it comes back, the way a person reads it"
+                  },
+                  "says": {
+                    "type": "string",
+                    "description": "the whole rule the way a person reads it"
+                  },
+                  "day": {
+                    "type": "string",
+                    "description": "the day the series made it for"
+                  },
+                  "at": {
+                    "type": "string",
+                    "description": "the time of day it is for, as 10:30; left out when the rule names none"
+                  },
+                  "then": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"
+                  },
+                  "stopped": {
+                    "type": "boolean"
+                  }
+                },
+                "description": "the series it is an occurrence of, while recurrence is on; left out otherwise",
+                "required": [
+                  "series",
+                  "rule",
+                  "often",
+                  "says",
+                  "day",
+                  "then",
+                  "stopped"
+                ],
+                "additionalProperties": false
+              },
+              "made": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "series": {
+                      "type": "integer"
+                    },
+                    "task": {
+                      "type": "integer"
+                    },
+                    "day": {
+                      "type": "string"
+                    },
+                    "missed": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "series",
+                    "task",
+                    "day"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"
               }
             },
             "required": [

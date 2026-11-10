@@ -834,3 +834,36 @@ func TestRead_refusesATimeThatIsNotOneOfTheThreeWords(t *testing.T) {
 		t.Errorf("ErrTimeMode says %q, want the three words", config.ErrTimeMode)
 	}
 }
+
+func TestRead_saysWhetherTasksComeBack(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[recurrence]\non = true\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !read.Recurrence() {
+		t.Error("on = true does not turn recurrence on")
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if none.Recurrence() {
+		t.Error("with no file, recurrence is on")
+	}
+	_, err = config.Read(writtenConfig(t, "[recurrence]\non = 3\n"), silentEnv)
+	if !errors.Is(err, config.ErrRecurrence) || !strings.Contains(err.Error(), "recurrence.on") {
+		t.Errorf("err = %v, want ErrRecurrence naming recurrence.on", err)
+	}
+}
+
+func TestRead_aStoreTurnsRecurrenceOnForItself(t *testing.T) {
+	read, err := config.Read(t.TempDir(), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	settings := filepath.Join(t.TempDir(), "settings.toml")
+	if err := os.WriteFile(settings, []byte("[recurrence]\non = true\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	here, err := read.WithSettings(settings)
+	if err != nil || !here.Recurrence() {
+		t.Errorf("the store's settings turn recurrence on: %v, %v", here.Recurrence(), err)
+	}
+}

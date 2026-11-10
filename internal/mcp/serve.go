@@ -82,17 +82,22 @@ type offering struct {
 	home       engine.Home
 	registered []string
 	told       []string
+	recurs     *bool
 }
 
 func (o *offering) refresh() {
 	o.mu.Lock()
 	defer o.mu.Unlock()
-	ops := offered(o.access, engine.PagesFrom(o.home))
+	pages := engine.PagesFrom(o.home)
+	ops := offered(o.access, pages)
 	var names, gone []string
 	for _, op := range ops {
 		names = append(names, op.Name())
 	}
-	if slices.Equal(names, o.registered) {
+	recurs := pages.Recurs()
+	same := slices.Equal(names, o.registered) && (o.recurs == nil || *o.recurs == recurs)
+	o.recurs = &recurs
+	if same {
 		return
 	}
 	for _, op := range engine.All() {

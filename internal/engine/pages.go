@@ -15,6 +15,7 @@ const (
 
 var pagesOf = map[string][]string{
 	"task":      {PageTasks},
+	"series":    {PageTasks},
 	"step":      {PageTasks},
 	"objective": {PageObjectives},
 	"label":     {PageTasks, PageObjectives},
@@ -23,8 +24,9 @@ var pagesOf = map[string][]string{
 
 // Pages is which of the three pages are shown, every one unless the configuration turned it off, and how many days a week of the time page shows.
 type Pages struct {
-	off       []string
-	noWeekend bool
+	off          []string
+	noWeekend    bool
+	noRecurrence bool
 }
 
 // PagesOff is the pages shown when the ones named are turned off.
@@ -39,7 +41,7 @@ func PagesFrom(h Home) Pages {
 	if err != nil {
 		return Pages{}
 	}
-	return Pages{off: read.PagesOff(), noWeekend: read.TimeWeekends() == config.WeekendsHidden}
+	return Pages{off: read.PagesOff(), noWeekend: read.TimeWeekends() == config.WeekendsHidden, noRecurrence: !read.Recurrence()}
 }
 
 // WeekDays is how many days a week of the time page shows, counted from Monday: seven, or five once the configuration hides the weekends.
@@ -66,8 +68,23 @@ func (p Pages) None() bool {
 
 // Offers says whether an act is offered: one that belongs to pages is offered only while one of them is shown — a step with the tasks, a label while there is a task or an objective to label — and the rest always. Every surface asks it: the command line, the MCP server, the boards' tabs, menus and command lines.
 func (p Pages) Offers(op Operation) bool {
+	if op.Repeats && p.noRecurrence {
+		return false
+	}
 	pages, belongs := pagesOf[op.Thing]
 	return !belongs || slices.ContainsFunc(pages, p.Shows)
+}
+
+// Recurs says whether a task may come back as a series: the series' acts and a rule given to a task are offered only then.
+func (p Pages) Recurs() bool { return !p.noRecurrence }
+
+// Shaped is an act as it is offered: without what belongs to the series while recurrence is off.
+func (p Pages) Shaped(op Operation) Operation {
+	if !p.noRecurrence {
+		return op
+	}
+	op.Takes = slices.DeleteFunc(slices.Clone(op.Takes), func(a Argument) bool { return a.Repeats })
+	return op
 }
 
 // Called is the act a thing and a verb name, when there is one and it is offered.

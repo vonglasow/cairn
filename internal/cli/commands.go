@@ -27,6 +27,7 @@ var groupShort = map[string]string{
 	"plugin":    "Write the Claude Code plugin this cairn carries",
 	"app":       "Install cairn as an application, on a Mac or a Linux desktop",
 	"view":      "Keep the filters of a listing under a name, and list, show, change and delete them",
+	"series":    "List, show, change, stop, resume and delete the series, the tasks that come back",
 }
 
 func home() engine.Home {
@@ -82,7 +83,7 @@ func newActionGroups(pages engine.Pages) []*cobra.Command {
 			byThing[op.Thing] = group
 			groups = append(groups, group)
 		}
-		group.AddCommand(newActionCmd(op))
+		group.AddCommand(newActionCmd(pages.Shaped(op)))
 	}
 	return groups
 }

@@ -330,3 +330,23 @@ func TestSchemaFor_aTextNamingAnObjectiveTakesAWholeNumberToo(t *testing.T) {
 		t.Errorf("parent is typed %v, want a whole number or text", parent["type"])
 	}
 }
+
+func TestOffered_takesNoRuleWhileRecurrenceIsOff(t *testing.T) {
+	takes := func(pages engine.Pages, tool, argument string) bool {
+		for _, op := range offered(engine.Full, pages) {
+			if op.Name() != tool {
+				continue
+			}
+			_, named := schemaFor(op)["properties"].(map[string]any)[argument]
+			return named
+		}
+		return false
+	}
+	off := engine.PagesFrom(engine.Home{Dir: t.TempDir(), Lookup: func(string) (string, bool) { return "", false }})
+	if takes(off, "task_new", "every") || takes(off, "task_list", "repeats") {
+		t.Error("with recurrence off, a tool takes a rule")
+	}
+	if !takes(engine.Pages{}, "task_new", "every") || !takes(engine.Pages{}, "task_edit", "series") {
+		t.Error("with recurrence on, a tool takes no rule")
+	}
+}

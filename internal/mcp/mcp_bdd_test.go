@@ -1068,7 +1068,11 @@ func (w *world) itDoesNotOffer(name string) error {
 }
 
 func (w *world) itOffersAToolForEveryCommand() error {
+	has := engine.PagesFrom(engine.Home{Dir: w.Defaults, Lookup: os.LookupEnv})
 	for _, op := range engine.All() {
+		if !has.Offers(op) {
+			continue
+		}
 		if w.tool(op.Name()) == nil {
 			return fmt.Errorf("no tool offered for command %q", op.Line())
 		}

@@ -32,6 +32,9 @@ func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
 		if err := e.timerKept(); err != nil {
 			return Answer{}, Told(storeProblem(err))
 		}
+		if err := e.seriesDue(); err != nil {
+			return Answer{}, Told(storeProblem(err))
+		}
 	}
 	return e.run(op, in)
 }
@@ -42,8 +45,16 @@ func (e *Engine) run(op Operation, in Input) (Answer, error) {
 	}
 	var answer Answer
 	err := e.store.Within(func(kept *store.Store) error {
-		var err error
-		answer, err = op.Run(e.keptBy(kept).on(), in)
+		held := e.keptBy(kept)
+		before, err := held.openSeries()
+		if err != nil {
+			return err
+		}
+		if answer, err = op.Run(held.on(), in); err != nil {
+			return err
+		}
+		made, err := held.madeAfter(before)
+		answer.Followed = append(answer.Followed, made...)
 		return err
 	})
 	return answer, err

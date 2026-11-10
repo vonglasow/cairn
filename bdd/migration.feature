@@ -376,3 +376,21 @@ Feature: Changes to the shape of the store
       When I run `cairn migration show 21`
       Then it succeeds
       And the answer says "every view"
+
+  Rule: The series are kept in the store, and rolling that back keeps every task they made
+
+    @series-migration-rollback-keeps-the-tasks
+    Scenario: rolled back, the series are gone and every task they made stays
+      Given recurrence is on for this store
+      And I ran `cairn task new "Team stand-up" --every "every weekday"`
+      And I rolled back the change named "a task can come back, as a series"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And `cairn series list` says "there is no series"
+      And `cairn task list` lists 1 task
+
+    @series-migration-says-what-rolling-back-loses
+    Scenario: what rolling the series back loses is said before it is applied
+      When I run `cairn migration show 22`
+      Then it succeeds
+      And the answer says "every series"

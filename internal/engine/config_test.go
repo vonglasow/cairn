@@ -208,3 +208,13 @@ func TestConfigText_writesTheTimeAsItsWord(t *testing.T) {
 		t.Errorf("config show does not write time = \"off\":\n%s", said)
 	}
 }
+
+func TestConfigShow_saysWhetherTasksComeBack(t *testing.T) {
+	if c := shownWith(t, ""); c.Recurrence == nil || c.Recurrence.On {
+		t.Errorf("Recurrence = %+v, want it off", c.Recurrence)
+	}
+	c := shownWith(t, "[recurrence]\non = true\n")
+	if c.Recurrence == nil || !c.Recurrence.On || !strings.Contains(configText(c), "\n[recurrence]\non = true\n") {
+		t.Errorf("Recurrence = %+v:\n%s", c.Recurrence, configText(c))
+	}
+}

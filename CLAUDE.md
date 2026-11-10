@@ -57,6 +57,7 @@ calls it, and prints — it decides nothing.
 | touching a task's steps, or what a task is split into | [docs/steps.md](docs/steps.md) |
 | touching what links two tasks, or how a defect found in a task done is opened | [docs/links.md](docs/links.md) |
 | touching what a task serves, or how an objective is counted | [docs/objectives.md](docs/objectives.md) |
+| touching a series, a rule, or what is made when a task comes back | [docs/series.md](docs/series.md) |
 | touching what showing a task says about its outside context, or where that context is looked for | [docs/context.md](docs/context.md) |
 | adding a key to the configuration, or changing how a place is addressed | [docs/config.md](docs/config.md) |
 | adding anything that changes a task, or touching what is recorded about it | [docs/trace.md](docs/trace.md) |

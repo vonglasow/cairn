@@ -22,6 +22,9 @@ calls the same engine, so each one behaves the same way.
   levels deep, and counts over its whole tree.
 - **Views**: the filters of a listing kept under a name, opened again in one
   act, with the tasks outside them that touch what they keep named apart.
+- **Series**: a task that comes back — every weekday at 10:30, every other
+  Thursday, three days after it was last done — one occurrence at a time,
+  each a task of its own. Off until a store's settings turn it on.
 - **Time from focus**: the task in focus counts its time. `timesheet` reads it
   back by day, and you can add time spent away from the board.
 - **Built for agents**: an MCP server and a Claude Code plugin. An agent keeps
@@ -207,6 +210,12 @@ weekends = "shown"
 [window]
 keep_sizes = false
 theme = "default"
+
+# Whether a task may come back as a series: made with a rule, every weekday
+# 10:30, and made again when it is done or skipped. Off unless it says true;
+# turned off, no series makes anything and every task one made stays.
+[recurrence]
+on = false
 
 # Workspaces: each a name, and the folder holding its own store and notes
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names

@@ -33,7 +33,7 @@ all of them.
 
 | package | holds | knows about |
 |---|---|---|
-| `internal/domain` | what is **carried**: columns, priorities, labels, days, durations, progress, the title rule, what an absence looks like, the set grammar, a narrowing | nobody |
+| `internal/domain` | what is **carried**: columns, priorities, labels, days, durations, progress, the title rule, what an absence looks like, the set grammar, a narrowing, the rule a series comes back by | nobody |
 | `internal/build` | which build this is, and which file it runs from | nobody |
 | `plugin/claude` | the Claude Code plugin's files, carried in the binary, and how they are written out as a marketplace — outside `internal/` because Go embeds only what lies under the package, and the files are read from there by a clone too | nobody |
 | `internal/logo` | cairn's logo, drawn at every size a system asks for | nobody |

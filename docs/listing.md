@@ -650,6 +650,18 @@ read-only, and `task_list` takes `view` and answers `outside`; `view new`,
 the flags. No view opens on its own when a board opens, and an objective's
 "show its tasks" is the same narrowing, a view without a name.
 
+## A listing can keep the occurrences of a series
+
+`task list --repeats` keeps only the tasks a series made, and `--series 3`
+only those of series ↻3, archived ones too once `--with-archived` is said, as
+every listing; a number no series carries is refused. With recurrence on, a
+row says how often an occurrence comes back, `· ↻3 every weekday at 10:30`,
+and an agent reads its series' number under `series`, 0 for any other task;
+with recurrence off neither is said, and neither filter is offered
+(`bdd/series.feature`, `@series-list-repeats`). The narrowing is the engine's,
+over what the store already handed back, like a view's search — see
+[series.md](series.md).
+
 ## Where the narrowing happens
 
 In SQL, in `internal/store/narrowing.go`, not by reading everything and

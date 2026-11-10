@@ -31,6 +31,7 @@ type Config struct {
 	Approach    *ApproachConfig   `json:"approach,omitempty"`
 	Time        *TimeConfig       `json:"time,omitempty"`
 	Window      *WindowConfig     `json:"window,omitempty"`
+	Recurrence  *RecurrenceConfig `json:"recurrence,omitempty"`
 	Workspace   *WorkspaceConfig  `json:"workspace,omitempty" jsonschema:"what the store's settings say of its workspace; nothing for a store no workspace names and whose settings say no colour"`
 	Workspaces  []Workspace       `json:"workspaces,omitempty"`
 	Themes      []ThemeSeen       `json:"themes,omitempty" jsonschema:"every colour scheme cairn sees, the ones it carries and one's own, sorted by name"`
@@ -66,7 +67,7 @@ func valuesOf(p config.Places) map[string]string {
 		"archive.start": unless(start), "archive.days": strconv.Itoa(days),
 		"focus.session": unless(p.FocusSession()), "approach.label": unless(p.ApproachLabel()),
 		"time.deleted": p.TimeDeleted(), "time.weekends": p.TimeWeekends(), "window.keep_sizes": strconv.FormatBool(p.KeepSizes()),
-		"window.theme": p.Theme(),
+		"window.theme": p.Theme(), "recurrence.on": strconv.FormatBool(p.Recurrence()),
 	}
 }
 
@@ -88,6 +89,11 @@ type WindowConfig struct {
 	KeepSizes bool   `json:"keep_sizes"`
 	Theme     string `json:"theme"`
 	Unworn    string `json:"unworn,omitempty" jsonschema:"why the scheme named cannot be worn; the window then wears default"`
+}
+
+// RecurrenceConfig is whether a task may come back as a series.
+type RecurrenceConfig struct {
+	On bool `json:"on"`
 }
 
 // FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it; nothing when it is not said.
@@ -168,6 +174,7 @@ func (g *readingGate) Resolved(p config.Places) {
 	g.config.Time = &TimeConfig{Deleted: p.TimeDeleted(), Weekends: p.TimeWeekends()}
 	g.config.Focus = &FocusConfig{Session: p.FocusSession()}
 	g.config.Approach = &ApproachConfig{Label: p.ApproachLabel()}
+	g.config.Recurrence = &RecurrenceConfig{On: p.Recurrence()}
 	g.themes(p)
 	g.config.Written = p.Written()
 	g.config.Settings = p.Settings()
@@ -266,6 +273,9 @@ func configText(c Config) string {
 	if c.Window != nil {
 		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t%s\ntheme = %q%s\n", c.Window.KeepSizes, c.from("window.keep_sizes"), c.Window.Theme, c.from("window.theme"))
 		said.WriteString(themesText(c))
+	}
+	if c.Recurrence != nil {
+		fmt.Fprintf(&said, "\n[recurrence]\non = %t%s\n", c.Recurrence.On, c.from("recurrence.on"))
 	}
 	if c.Workspace != nil {
 		from := "read off the workspace's name"

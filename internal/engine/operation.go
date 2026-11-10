@@ -99,6 +99,7 @@ type Argument struct {
 	Outside    error
 	Means      string
 	Of         string
+	Repeats    bool
 }
 
 // Answered is the one shape an operation's answer takes — an empty value of it, carried so a surface can read the shape off the type.
@@ -167,6 +168,7 @@ type Operation struct {
 	Answers    Answered
 	Sweeps     func(Input) bool
 	Finishes   bool
+	Repeats    bool
 }
 
 // Agreed is what was given, said yes to: what a surface hands over once the person it asked has agreed.
@@ -227,13 +229,14 @@ func All() []Operation {
 	return []Operation{
 		TaskNew, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
 		TaskArchive, TaskUnarchive, TaskLabel,
-		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport,
+		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport, TaskSkip,
 		StepNew, StepList, StepEdit, StepDelete,
 		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveReport, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
 		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		LabelList, LabelNew, LabelColour, LabelScope, LabelDelete, LabelRename,
 		ViewList,
+		SeriesList, SeriesShow, SeriesEdit, SeriesStop, SeriesResume, SeriesDelete,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, DebugReport,
@@ -376,6 +379,11 @@ type Answer struct {
 	Lost              []string
 	KeepsNothing      bool
 	Outside           []Outside
+	Occurring         map[int]Occurs
+	Followed          []MadeNext
+	SeriesShown       *Series
+	SeriesKept        *SeriesListed
+	SeriesGone        *SeriesDeleted
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.
@@ -447,6 +455,9 @@ func doWith(
 	}
 	if op.Needs == AStore {
 		if err := eng.timerKept(); err != nil {
+			return Answer{}, storeProblem(err)
+		}
+		if err := eng.seriesDue(); err != nil {
 			return Answer{}, storeProblem(err)
 		}
 	}

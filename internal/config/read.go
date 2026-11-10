@@ -69,6 +69,9 @@ const (
 // ErrKeepSizes is returned when the file says whether the window keeps its sizes with something that is neither true nor false.
 var ErrKeepSizes = errors.New("the window keeps its sizes or not: true or false")
 
+// ErrRecurrence is returned when the file says whether tasks come back with something that is neither true nor false.
+var ErrRecurrence = errors.New("recurrence is on or not: true or false")
+
 // ErrFocus is returned when the file says a focus session lasts something that is not a duration.
 var ErrFocus = errors.New("a focus session lasts a duration, written 1h")
 
@@ -102,6 +105,7 @@ type Places struct {
 	timeDeleted      string
 	timeWeekends     string
 	keepSizes        bool
+	recurrence       bool
 	theme            string
 	written          []string
 	ignored          []string
@@ -124,6 +128,7 @@ type file struct {
 	Approach   *approach         `toml:"approach"`
 	Time       *timed            `toml:"time"`
 	Window     *window           `toml:"window"`
+	Recurrence *recurrence       `toml:"recurrence"`
 	Workspace  *workspace        `toml:"workspace"`
 	Workspaces map[string]string `toml:"workspaces"`
 }
@@ -163,6 +168,21 @@ func (w *window) keepSizes() (bool, error) {
 		return false, fmt.Errorf("window.keep_sizes %v: %w", w.KeepSizes, ErrKeepSizes)
 	}
 	return keep, nil
+}
+
+type recurrence struct {
+	On any `toml:"on"`
+}
+
+func (r *recurrence) on() (bool, error) {
+	if r == nil || r.On == nil {
+		return false, nil
+	}
+	on, ok := r.On.(bool)
+	if !ok {
+		return false, fmt.Errorf("recurrence.on %v: %w", r.On, ErrRecurrence)
+	}
+	return on, nil
 }
 
 type timed struct {
@@ -294,6 +314,9 @@ func (p Places) Colour() string { return p.colour }
 
 // KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
 func (p Places) KeepSizes() bool { return p.keepSizes }
+
+// Recurrence says whether a task may come back as a series: false unless the file says true.
+func (p Places) Recurrence() bool { return p.recurrence }
 
 // Theme is the name of the scheme the window wears, exactly as the file wrote it; DefaultTheme when it names none.
 func (p Places) Theme() string { return p.theme }
@@ -501,7 +524,11 @@ func (p *Places) settle(f file) error {
 	if err != nil {
 		return err
 	}
-	p.timeMode = mode
+	recurring, err := f.Recurrence.on()
+	if err != nil {
+		return err
+	}
+	p.timeMode, p.recurrence = mode, recurring
 	p.archiveStart, p.archiveDays, p.timeDeleted, p.timeWeekends, p.keepSizes = start, days, deleted, weekends, keep
 	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off(mode == TimeOn)
 	p.colour, p.theme = f.Workspace.colour(), f.Window.theme()

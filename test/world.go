@@ -257,6 +257,15 @@ func (w *World) FocusSessionsLast(length string) error {
 	return w.WriteConfig(fmt.Sprintf("[focus]\nsession = %q\n", length))
 }
 
+// Recurrence turns recurrence on or off in the settings beside the store, the way a person would write them — never through cairn.
+func (w *World) Recurrence(said string) error {
+	path := config.SettingsBeside(w.StorePath)
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(path, fmt.Appendf(nil, "[recurrence]\non = %t\n", said == "on"), 0o600)
+}
+
 // ItIsLater moves the moment cairn takes for now that far ahead of the clock.
 func (w *World) ItIsLater(count int, unit string) error {
 	later := time.Duration(count) * time.Minute
@@ -306,6 +315,11 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 		return w.WriteConfig(fmt.Sprintf("[time]\nweekends = %q\n", said))
 	})
 	sc.Step(`^it is (\d+) (minutes|hours) later$`, w.ItIsLater)
+	sc.Step(`^recurrence is (on|off) for this store$`, w.Recurrence)
+	sc.Step(`^today is "(\d{4}-\d{2}-\d{2})"$`, func(day string) error {
+		w.Setenv(engine.TodayVariable, day)
+		return nil
+	})
 	sc.Step(`^it is (\d+) days from now$`, func(days int) error {
 		w.Setenv("CAIRN_TODAY", time.Now().AddDate(0, 0, days).Format(time.DateOnly))
 		return nil

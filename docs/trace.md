@@ -356,6 +356,22 @@ backups is fifty times that. It is also answered by keeping fewer backups.
 - **Putting a task back to how it was.** The history makes it possible to work
   out; nothing here does it. Reading and undoing are two different asks.
 
+## A series keeps a trace of its own
+
+What happens to a series is written down in `series_acts`, beside the trace and
+not in it: `made` (a task, for a day), `missed` (a day, no task), `skipped`,
+`changed` (a field, from, to), `stopped`, `resumed`, `deleted` (and what became
+of its tasks), each with who acted, through what, and when. `series show` reads
+it back, under `trace`, and an agent under `acts`.
+
+Not in the trace, because every reader of the trace reads it by task number —
+the timesheet, how long a task sat in its column, the timer — and a missed day
+or a stop names no task; it would have taken a number no task has, which each
+of them would have had to learn to step over. What happens to an occurrence
+itself stays in its own trace, as for any task: made with its first attributes,
+archived when skipped, put in done. A deleted series keeps its trace, as a
+deleted task does. See [series.md](series.md#its-trace-a-table-of-its-own).
+
 ## How long a task has sat where it is
 
 The one date nothing a task carries implies is read from here, not kept beside

@@ -8,6 +8,7 @@ import (
 	"cairn/internal/linuxapp"
 	"cairn/internal/macapp"
 	"cairn/internal/objective"
+	"cairn/internal/store"
 	"cairn/internal/task"
 	"cairn/internal/upgrade"
 )
@@ -80,10 +81,12 @@ var reasons = []reason{
 	{objective.ErrNotAnObjectiveState, KindRefused, "not-an-objective-state"},
 	{domain.ErrNotAPriority, KindRefused, "not-a-priority"},
 	{domain.ErrNotADay, KindRefused, "not-a-day"},
+	{domain.ErrNotARule, KindRefused, "not-a-rule"},
 	{domain.ErrNotADuration, KindRefused, "not-a-duration"},
 	{domain.ErrNegativeAmount, KindRefused, "negative-amount"},
 	{domain.ErrFinerThanASecond, KindRefused, "finer-than-a-second"},
 	{ErrNoSuchTask, KindRefused, "no-such-task"},
+	{store.ErrNoSuchSeries, KindRefused, "no-such-series"},
 	{ErrNothingToChange, KindRefused, "nothing-to-change"},
 	{ErrLabelSignAtCreation, KindRefused, "label-sign-at-creation"},
 	{ErrNoSuchObjective, KindRefused, "no-such-objective"},
@@ -145,6 +148,7 @@ var reasons = []reason{
 	{config.ErrWeekends, KindRefused, "config-weekends"},
 	{config.ErrTimeMode, KindRefused, "config-time-mode"},
 	{config.ErrKeepSizes, KindRefused, "config-window"},
+	{config.ErrRecurrence, KindRefused, "config-recurrence"},
 	{config.ErrNotWritten, KindRefused, "config-not-written"},
 	{config.ErrMachineKey, KindRefused, "config-machine-key"},
 	{config.ErrEmpty, KindRefused, "config-empty"},

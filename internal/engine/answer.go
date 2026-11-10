@@ -19,6 +19,8 @@ type Task struct {
 	Added      *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
 	TakenOff   *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 	Warnings   []string              `json:"warnings,omitempty" jsonschema:"what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"`
+	Series     *Occurs               `json:"series,omitempty" jsonschema:"the series it is an occurrence of, while recurrence is on; left out otherwise"`
+	Made       []MadeNext            `json:"made,omitempty" jsonschema:"each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"`
 }
 
 // OfTask turns a task and how far along it is into what crosses to a machine.
@@ -30,6 +32,7 @@ func OfTask(t task.Task, p domain.Progress) Task {
 type Row struct {
 	task.Facts
 	Described bool `json:"described"`
+	Series    int  `json:"series" jsonschema:"the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"`
 	kept      []string
 }
 
@@ -51,6 +54,7 @@ type Tasks struct {
 	View     string           `json:"view,omitempty" jsonschema:"the view whose filters kept the tasks; left out unless one was named"`
 	Gone     []string         `json:"gone,omitempty" jsonschema:"each condition of the view whose objective or label is gone, which narrows nothing; when every one is, the view keeps nothing; left out when none is"`
 	Outside  []Outside        `json:"outside,omitempty" jsonschema:"the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"`
+	Made     []MadeNext       `json:"made,omitempty" jsonschema:"each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"`
 }
 
 // Timesheet is how long the work took, as it crosses to a machine: every day something was done on, in order, with each task's minutes — a minute begun counted whole — and the day's, the sum of those.
@@ -242,6 +246,10 @@ func Of(op Operation, a Answer) any {
 		}
 		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
 		said.Warnings = a.Warnings
+		if o, is := a.Occurring[said.Number]; is {
+			said.Series = &o
+		}
+		said.Made = a.Followed
 		return said
 	case Swept:
 		swept := Swept{Archived: *a.Archived}
@@ -261,6 +269,10 @@ func Of(op Operation, a Answer) any {
 		}
 		said.Total, said.Counts, said.Warnings = a.Total, ofCounts(a.Counts), a.Warnings
 		said.View, said.Gone, said.Outside = a.InView, a.Lost, a.Outside
+		for i, row := range said.Tasks {
+			said.Tasks[i].Series = a.Occurring[row.Number].Series
+		}
+		said.Made = a.Followed
 		return said
 	case Objective:
 		said := seated(OfObjective(*a.Objective, a.Under, a.Progress), *a.Objective, a)
@@ -292,6 +304,12 @@ func Of(op Operation, a Answer) any {
 		return *a.ViewsKept
 	case ViewDeleted:
 		return ViewDeleted{Deleted: *a.ViewGone}
+	case Series:
+		return *a.SeriesShown
+	case SeriesListed:
+		return *a.SeriesKept
+	case SeriesDeleted:
+		return *a.SeriesGone
 	case ConfigWritten:
 		return ConfigWritten{Written: *a.Written}
 	case DebugReported:

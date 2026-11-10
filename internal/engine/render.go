@@ -22,7 +22,10 @@ func contextText(at string) string {
 
 // RenderText turns an answer into what a person reads: the rendering of the shape the operation declared it answers, the way Of builds the JSON.
 func RenderText(op Operation, a Answer) string {
-	return domain.Shown(rendered(op, a))
+	if _, isSeries := op.Answers.(Series); isSeries {
+		return domain.Shown(rendered(op, a))
+	}
+	return domain.Shown(rendered(op, a) + followedText(a.Followed))
 }
 
 func rendered(op Operation, a Answer) string {
@@ -49,6 +52,9 @@ func rendered(op Operation, a Answer) string {
 		}
 		return heldText(a.Held, a)
 	case Task:
+		if op.Verb == TaskSkip.Verb {
+			return fmt.Sprintf("#%d skipped\n", factsOf(*a.Task).Number)
+		}
 		return cardText(a) + movedText(a.Moved) + warningsText(a.Warnings)
 	case Swept:
 		if a.Task != nil {
@@ -91,6 +97,12 @@ func rendered(op Operation, a Answer) string {
 		return viewKeptText(*a.Viewed, map[bool]string{true: "kept view ", false: "changed view "}[op.Verb == "new"]+a.Viewed.Name)
 	case Views:
 		return viewsText(a.ViewsKept.Views)
+	case Series:
+		return seriesActedText(op.Verb, a)
+	case SeriesListed:
+		return seriesListText(a.SeriesKept.Series)
+	case SeriesDeleted:
+		return seriesDeletedText(*a.SeriesGone)
 	case ViewDeleted:
 		return "deleted view " + *a.ViewGone + " · no task changed\n"
 	case ConfigWritten:
@@ -130,7 +142,11 @@ func rendered(op Operation, a Answer) string {
 }
 
 func cardText(a Answer) string {
-	return task.Text(*a.Task, a.Progress) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
+	said := task.Text(*a.Task, a.Progress) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
+	if o, is := a.Occurring[factsOf(*a.Task).Number]; is {
+		said += occursText(o)
+	}
+	return said
 }
 
 func stoodText(t task.Task, since time.Time) string {
@@ -183,7 +199,7 @@ func foundText(tasks []task.Task, a Answer) string {
 }
 
 func marksOf(a Answer) task.Marks {
-	return task.Marks{InFocus: heldOr(a.InFocus), NothingBlocks: a.NothingBlocks}
+	return task.Marks{InFocus: heldOr(a.InFocus), NothingBlocks: a.NothingBlocks, Repeats: repeatsOf(a.Occurring)}
 }
 
 func linesOf(tasks []task.Task) []string {

@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -28,8 +29,20 @@ func TestConfigShow_isNotStoppedByAStoreItCannotResolve(t *testing.T) {
 	}
 }
 
+func recurringRoot(t *testing.T) *cobra.Command {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".config", "cairn"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".config", "cairn", "config.toml"), []byte("[recurrence]\non = true\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return newRootCmdFor(engine.Home{Dir: dir, Lookup: func(string) (string, bool) { return "", false }})
+}
+
 func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
-	root := NewRootCmd()
+	root := recurringRoot(t)
 
 	groups := map[string]*cobra.Command{}
 	for _, g := range root.Commands() {
@@ -112,7 +125,7 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 
 func TestEveryExampleIsACommandTheTreeReads(t *testing.T) {
 	for _, op := range engine.All() {
-		cmd, _, err := NewRootCmd().Find([]string{op.Thing, op.Verb})
+		cmd, _, err := recurringRoot(t).Find([]string{op.Thing, op.Verb})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -124,7 +137,7 @@ func TestEveryExampleIsACommandTheTreeReads(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%q: %v", line, err)
 			}
-			root := NewRootCmd()
+			root := recurringRoot(t)
 			found, rest, err := root.Find(words[1:])
 			if err != nil {
 				t.Errorf("%q: %v", line, err)

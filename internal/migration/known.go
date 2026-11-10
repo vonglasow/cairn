@@ -364,4 +364,49 @@ DROP TABLE IF EXISTS view_objectives;
 DROP TABLE IF EXISTS views;`,
 		loses: "every view and the filters it held; every task, objective and label stays as it was",
 	},
+	{
+		name: "a task can come back, as a series",
+		does: `
+CREATE TABLE IF NOT EXISTS series (
+	number   INTEGER PRIMARY KEY AUTOINCREMENT,
+	rule     TEXT    NOT NULL,
+	start    TEXT    NOT NULL,
+	stopped  TEXT    NOT NULL DEFAULT '',
+	title    TEXT    NOT NULL,
+	priority TEXT    NOT NULL,
+	estimate INTEGER NOT NULL DEFAULT 0,
+	steps    TEXT    NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS series_labels (
+	series_number INTEGER NOT NULL,
+	label         TEXT    NOT NULL,
+	PRIMARY KEY (series_number, label)
+);
+CREATE TABLE IF NOT EXISTS series_objectives (
+	series_number    INTEGER NOT NULL,
+	objective_number INTEGER NOT NULL,
+	PRIMARY KEY (series_number, objective_number)
+);
+CREATE TABLE IF NOT EXISTS series_acts (
+	id            INTEGER PRIMARY KEY AUTOINCREMENT,
+	series_number INTEGER NOT NULL,
+	did           TEXT    NOT NULL,
+	task_number   INTEGER NOT NULL DEFAULT 0,
+	day           TEXT    NOT NULL DEFAULT '',
+	field         TEXT    NOT NULL DEFAULT '',
+	was           TEXT    NOT NULL DEFAULT '',
+	became        TEXT    NOT NULL DEFAULT '',
+	through       TEXT    NOT NULL DEFAULT '',
+	author        TEXT    NOT NULL DEFAULT '',
+	at            TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS series_acts_by_task ON series_acts (task_number);`,
+		undoes: `
+DROP INDEX IF EXISTS series_acts_by_task;
+DROP TABLE IF EXISTS series_acts;
+DROP TABLE IF EXISTS series_objectives;
+DROP TABLE IF EXISTS series_labels;
+DROP TABLE IF EXISTS series;`,
+		loses: "every series, its rule, what it makes the next from and its trace; every task it made stays, an ordinary task with its notes, time and trace",
+	},
 }

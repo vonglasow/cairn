@@ -28,6 +28,12 @@ reason no longer holds is a dependency to take out.
 | Figtree (`internal/gui/fonts`, SIL OFL 1.1) | the face the window writes its words in | Go's own faces read as a developer's tool, and the window is meant to be wanted; one family at three weights (400, 500, 600), 170 KB carried in the binary, its licence beside it and in the notices. Figures, counts and keys stay in Go Mono, which gofont already brings |
 | `github.com/cucumber/godog` | running the scenarios | every `.feature` under `bdd/` is executed as Go tests by it — the scenarios are the contract, see [workflow.md](workflow.md) |
 
+## Weighed and not added
+
+| dependency | what it would have been for | why not |
+|---|---|---|
+| `github.com/teambition/rrule-go` | the days a series falls on, read off RFC 5545's RRULE | the subset asked for — days, weeks and months, days of the week, an interval, an end — is some two hundred lines with their reading, in `internal/domain/rule.go`; the words a person types are not RRULE, so a reader of plain words was owed either way; and it has had no release since 2023 — see [series.md](series.md#hand-written-not-rrule-go) |
+
 Two tools draw the logo, and only when it changes, never in a build:
 `rsvg-convert` (librsvg) draws its PNGs from the SVG, and
 `github.com/tc-hib/go-winres`, run by `go run` at a pinned version and so in no

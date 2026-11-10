@@ -61,6 +61,12 @@ weekends = "shown"
 keep_sizes = false
 theme = "default"
 
+# Whether a task may come back as a series: made with a rule, every weekday
+# 10:30, and made again when it is done or skipped. Off unless it says true;
+# turned off, no series makes anything and every task one made stays.
+[recurrence]
+on = false
+
 # Workspaces: each a name, and the folder holding its own store and notes
 # (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
 # the one used when nothing else says; it comes before store and notes above,

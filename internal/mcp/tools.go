@@ -14,7 +14,7 @@ func offered(access engine.Level, pages engine.Pages) []engine.Operation {
 	var ops []engine.Operation
 	for _, op := range engine.All() {
 		if op.Level <= access && pages.Offers(op) {
-			ops = append(ops, op)
+			ops = append(ops, pages.Shaped(op))
 		}
 	}
 	return ops
