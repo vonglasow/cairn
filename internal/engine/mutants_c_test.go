@@ -59,6 +59,14 @@ func TestBlockingC_aBlockerFurtherAlongTheChainMakesACycle(t *testing.T) {
 	}
 }
 
+func TestBlockingC_aCycleNamesTheBlockerThatClosesIt(t *testing.T) {
+	further := map[int][]int{4: {1}}
+	err := mayBlock(1, []int{4}, func(one int) ([]int, error) { return further[one], nil })
+	if err == nil || !strings.Contains(err.Error(), "task 1 and task 4") {
+		t.Errorf("err = %v, want it to name task 1 and task 4", err)
+	}
+}
+
 func TestBlockingC_anEditClosingACycleIsRefused(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")

@@ -1031,6 +1031,15 @@ Feature: Tasks
       Then it fails
       And it says nothing would ever be able to start
 
+    @task-blocker-a-cycle-names-both
+    Scenario: the refusal of a cycle names the two tasks it would join
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      When I run `cairn task edit 1 --blocker 2 --json`
+      Then it exits with code 1
+      And the answer says "task 1 and task 2"
+
     @task-blocker-a-longer-cycle
     Scenario: a cycle is refused however long the way round
       Given I added a task titled "First"

@@ -28,17 +28,29 @@ func mayBlock(number int, blockers []int, blocking func(int) ([]int, error)) err
 		return fmt.Errorf("task %d: %w", number, ErrBlockedByItself)
 	}
 	seen := map[int]bool{number: true}
+	via := map[int]int{}
+	for _, b := range blockers {
+		via[b] = b
+	}
 	waiting := slices.Clone(blockers)
 	for len(waiting) > 0 {
 		one := waiting[0]
 		waiting = waiting[1:]
 		if seen[one] {
-			return fmt.Errorf("task %d and task %d: %w", number, one, ErrBlockingCycle)
+			if one != number {
+				continue
+			}
+			return fmt.Errorf("task %d and task %d: %w", number, via[one], ErrBlockingCycle)
 		}
 		seen[one] = true
 		further, err := blocking(one)
 		if err != nil {
 			return err
+		}
+		for _, f := range further {
+			if _, known := via[f]; !known || f == number {
+				via[f] = via[one]
+			}
 		}
 		waiting = append(waiting, further...)
 	}
