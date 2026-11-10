@@ -93,6 +93,7 @@ type Board struct {
 
 	column   int
 	inBand   bool
+	leftFrom landing
 	cameFrom int
 
 	task int

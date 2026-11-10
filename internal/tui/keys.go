@@ -106,7 +106,8 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 			held := *b.agreeing
 			b.agreeing = nil
 			if !agreed {
-				return b, b.look()
+				b.column, b.inBand = b.leftFrom.column, b.leftFrom.inBand
+				return b.follow(), b.look()
 			}
 			return b, b.carry(held.Op, held.In)
 		}

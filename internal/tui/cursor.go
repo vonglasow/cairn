@@ -351,7 +351,13 @@ func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
 	return b.land(state, engine.IndexOf(state), false)
 }
 
+type landing struct {
+	column int
+	inBand bool
+}
+
 func (b Board) land(state string, column int, inBand bool) (tea.Model, tea.Cmd) {
+	b.leftFrom = landing{column: b.column, inBand: b.inBand}
 	b.column, b.inBand = column, inBand
 	return b, b.setState(state)
 }

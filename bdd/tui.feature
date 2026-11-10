@@ -253,6 +253,18 @@ Feature: The board
       And I press "esc"
       Then task 1 is in the column "current"
 
+    @tui-done-asked-about-keeps-the-cursor
+    Scenario: saying no puts the cursor back on the task, where it still is
+      Given I added a task titled "Ship it" with the state "current"
+      And I added the step "Write the spec" to task 1
+      When I open the board
+      And I press "l", "l", "i", "shift+l"
+      And the board looks again
+      And I press "esc"
+      And the board looks again
+      Then the cursor is on the column "current"
+      And the cursor is on the task "Ship it"
+
     @tui-moving-a-task-down-a-place
     Scenario: pushing a task down puts it one place lower, and leaves its column
       Given I added a task titled "First" with the state "todo"
