@@ -2,6 +2,7 @@ package engine
 
 import (
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -222,5 +223,25 @@ func TestDaySaid_writesACloseDayAsACardDoesAndAFarOneAsItsDate(t *testing.T) {
 		if got := DaySaid(day, now); got != want {
 			t.Errorf("%q is said %q, want %q", day, got, want)
 		}
+	}
+}
+
+func TestRuleReadBack_saysTheRuleAndItsNextDaysOrWhyItCannot(t *testing.T) {
+	today := time.Date(2026, 11, 9, 9, 12, 0, 0, time.UTC)
+	read := RuleReadBack("every other thursday 14:00", today)
+	if read.Says != "every 2 weeks on Thursday at 14:00, on the calendar" || read.Next != "Thu 12 Nov · Thu 26 Nov · Thu 10 Dec" || read.Wrong != "" {
+		t.Errorf("read back %+v", read)
+	}
+	if read := RuleReadBack("every 3 days after done 4 times", today); read.Says != "every 3 days, after the last is done, 4 times" || read.Next != "Mon 9 Nov, then 3 days after it is done" {
+		t.Errorf("after done read back %+v", read)
+	}
+	if read := RuleReadBack("every day until 2026-11-10", today); read.Says != "every day, on the calendar, until Tue 10 Nov 2026" || read.Next != "Mon 9 Nov · Tue 10 Nov" {
+		t.Errorf("an end on a day read back %+v", read)
+	}
+	if read := RuleReadBack("every blue moon", today); read.Says != "" || !strings.Contains(read.Wrong, "blue") {
+		t.Errorf("a rule it cannot read reads back %+v", read)
+	}
+	if read := RuleReadBack("  ", today); read != (RuleRead{}) {
+		t.Errorf("nothing typed reads back %+v", read)
 	}
 }

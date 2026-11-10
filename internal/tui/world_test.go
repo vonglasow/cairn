@@ -33,7 +33,6 @@ type world struct {
 	width  int
 	high   int
 	asked  bool
-	formAt int
 	opened bool
 	left   bool
 	spaces *test.Spaces
@@ -64,7 +63,6 @@ func (w *world) reset() {
 	w.other = other
 	w.b = Board{}
 	w.asked = false
-	w.formAt = 0
 	w.left = false
 	*w.spaces = test.Spaces{Made: w.t.TempDir, Writing: w.storeAt, Now: func() time.Time { return stood }}
 	w.pages = engine.Pages{}
@@ -203,6 +201,15 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step(`^I type "([^"]*)"$`, w.typeIn)
 	sc.Step(`^I choose "([^"]*)"$`, w.choose)
 	sc.Step(`^I set the field "([^"]*)" to "([^"]*)"$`, w.setField)
+	sc.Then(`^the cursor is on the field "([^"]*)"$`, func(name string) error {
+		if w.b.form.asked == nil {
+			return fmt.Errorf("no form is open")
+		}
+		if got := w.b.form.asked.GetFocusedField().GetKey(); got != name {
+			return fmt.Errorf("the cursor is on %q, not on %q", got, name)
+		}
+		return nil
+	})
 	sc.Step(`^I save the form$`, w.saveForm)
 	sc.Step(`^the board looks again$`, w.lookAgain)
 	sc.Given(`^a store from an older cairn, holding a task titled "([^"]*)"$`, w.aStoreFromAnOlderCairn)
@@ -439,10 +446,12 @@ func (w *world) setField(name, value string) error {
 	if at < 0 {
 		return fmt.Errorf("no field called %q", name)
 	}
-	for range at - w.formAt {
+	for from := w.fieldAt(); from < at; from++ {
 		w.press("tab")
 	}
-	w.formAt = at
+	for from := w.fieldAt(); from > at; from-- {
+		w.press("shift+tab")
+	}
 	for range len([]rune(w.b.form.valueOf(name))) {
 		if w.b.form.valueOf(name) == "" {
 			break
@@ -459,8 +468,18 @@ func (w *world) setField(name, value string) error {
 	return nil
 }
 
+func (w *world) fieldAt() int {
+	focused := w.b.form.asked.GetFocusedField().GetKey()
+	for i, field := range w.b.form.fields {
+		if field.Name == focused {
+			return i
+		}
+	}
+	return len(w.b.form.fields)
+}
+
 func (w *world) saveForm() error {
-	for range len(w.b.form.fields) - w.formAt {
+	for range len(w.b.form.fields) - w.fieldAt() {
 		w.press("tab")
 	}
 	w.press("enter")

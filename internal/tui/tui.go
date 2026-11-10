@@ -231,9 +231,9 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		b = b.took(m)
 		if b.screen == OnDetail {
-			return b, b.hearing(b.task)
+			return b, tea.Batch(b.hearing(b.task), b.readingWeek())
 		}
-		return b, nil
+		return b, b.readingWeek()
 	case engine.Agreeing:
 		b.asking, b.agreeing = true, &m
 		return b, nil
@@ -248,7 +248,10 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Switched:
 		return b.switched(m)
 	case Sheeted:
-		b.sheet, b.err = m.Sheet, m.Err
+		b.sheet = m.Sheet
+		if m.Err != nil {
+			b.err = m.Err
+		}
 		return b, nil
 	case Answered:
 		b = b.took(m.Looked)

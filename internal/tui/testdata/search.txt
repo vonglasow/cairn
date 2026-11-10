@@ -1,4 +1,4 @@
-  TASKS   objectives   time                                                                 SEARCH
+  TASKS 2/11   objectives 0/2   time 0                                                      SEARCH
 
  ▌BACKLOG               0│TODO                   1│CURRENT                1│DONE                   0
  ━━━━━━━━━━━━━━━━━━━━━━━━│────────────────────────│────────────────────────│────────────────────────

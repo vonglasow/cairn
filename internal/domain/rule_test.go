@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -233,5 +234,48 @@ func TestRuleNeverFallsBeforeItsStart(t *testing.T) {
 	}
 	if _, err := ParseRule("every day after blue"); !errors.Is(err, ErrNotARule) {
 		t.Errorf("after followed by another word: %v", err)
+	}
+}
+
+func TestRuleTakenApartIsWrittenBackAsTheSameRule(t *testing.T) {
+	for _, typed := range []string{"every weekday 10:30", "every 2 weeks on thu 14:00", "every 3 days after done", "every month 5 times", "every day until 2026-12-31"} {
+		rule, err := ParseRule(typed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := rule.Parts().Words(); got != rule.Words() {
+			t.Errorf("%q taken apart is written %q, want %q", typed, got, rule.Words())
+		}
+	}
+	parts, _ := ParseRule("every other thursday 14:00 3 times")
+	if p := parts.Parts(); p.Every != 2 || p.Unit != "weeks" || !slices.Equal(p.Days, []time.Weekday{time.Thursday}) || p.At != "14:00" || p.Times != 3 || p.AfterDone {
+		t.Errorf("the parts read %+v", p)
+	}
+	built := RuleParts{Every: 1, Unit: "days", Days: []time.Weekday{time.Monday}, AfterDone: true, Times: 4, Until: time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)}
+	if got := built.Words(); got != "every day after done 4 times" {
+		t.Errorf("days on a rule counted in days, or an end said twice, are written %q", got)
+	}
+	weekly := RuleParts{Every: 1, Unit: "weeks", Days: []time.Weekday{time.Friday, time.Monday}, AfterDone: true, Until: time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)}
+	if got := weekly.Words(); got != "every week on mon fri until 2026-12-01" {
+		t.Errorf("weekdays and after done are written %q", got)
+	}
+	if got := (RuleParts{}).Words(); got != "every day" {
+		t.Errorf("nothing chosen is written %q", got)
+	}
+}
+
+func TestRuleSaidLeavesTheStartOut(t *testing.T) {
+	for typed, want := range map[string]string{
+		"every weekday 10:30":            "every weekday at 10:30, on the calendar",
+		"every 3 days after done 1 time": "every 3 days, after the last is done, once",
+		"every day until 2026-12-31":     "every day, on the calendar, until Thu 31 Dec 2026",
+	} {
+		rule, err := ParseRule(typed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := rule.Said(); got != want {
+			t.Errorf("%q is said %q, want %q", typed, got, want)
+		}
 	}
 }

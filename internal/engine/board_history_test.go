@@ -30,4 +30,8 @@ func TestSaid_isOneLineOfAHistoryTheWayAPersonReadsIt(t *testing.T) {
 	if want := domain.FormatMoment(at) + "  created"; created.Line() != want {
 		t.Errorf("Line = %q, want %q", created.Line(), want)
 	}
+	made := SaidOf(act(MadeFromSeries, "", "", "↻3", "", at))
+	if want := domain.FormatMoment(at) + "  made from series  ↻3"; made.Line() != want {
+		t.Errorf("Line = %q, want %q", made.Line(), want)
+	}
 }

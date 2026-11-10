@@ -141,13 +141,7 @@ func (w Window) Holds(tab Tab) int {
 		return len(w.SeriesListed())
 	}
 	if tab == Time {
-		worked := map[int]bool{}
-		for _, d := range w.sheet.Days {
-			for _, one := range d.Tasks {
-				worked[one.Number] = true
-			}
-		}
-		return len(worked)
+		return w.sheet.Worked()
 	}
 	return len(engine.OnTheBoard(w.Showing().Cards, w.archived))
 }

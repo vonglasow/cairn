@@ -127,6 +127,9 @@ func Draw(k Kit, w Window) {
 	if w.Screen() == OnCalendar {
 		drawCalendar(popover, w)
 	}
+	if w.Screen() == OnRule {
+		drawRule(popover, w)
+	}
 	if w.Screen() == OnMenu {
 		drawMenu(popover, w)
 	}
@@ -1134,6 +1137,7 @@ func drawForm(k Kit, w Window) {
 		for _, head := range FormHeads(box, fields) {
 			say(k.gtx, k.th, k.skin.Colour.Ink.Faint, head.Box, head.Said, head.Size)
 		}
+		drawReadBack(k, w)
 	}
 	Grip{Ink: k.skin.Colour.Ink.Faint}.Draw(k, FormGrip(panel))
 	if w.screen == OnForm {

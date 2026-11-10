@@ -282,6 +282,8 @@ func (w Window) panel() Box {
 		return w.HelpBox()
 	case OnCalendar:
 		return w.CalendarBox()
+	case OnRule:
+		return w.RulePicked().Box
 	case OnMenu:
 		return w.MenuBox()
 	case OnBackups:

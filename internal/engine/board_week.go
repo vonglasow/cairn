@@ -84,6 +84,17 @@ func (s Timesheet) Longest() int {
 	return most
 }
 
+// Worked is how many tasks the sheet holds time for, each counted once however many days it was worked on.
+func (s Timesheet) Worked() int {
+	worked := map[int]bool{}
+	for _, d := range s.Days {
+		for _, one := range d.Tasks {
+			worked[one.Number] = true
+		}
+	}
+	return len(worked)
+}
+
 // Says is a day's total, as a duration is written.
 func (d TimesheetDay) Says() string {
 	return domain.FormatDuration(time.Duration(d.Minutes) * time.Minute)

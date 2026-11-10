@@ -12,6 +12,8 @@ func (b Board) line(act trace.Act) string {
 		out += "  " + b.skin.Says.Render(said.Field) + "  " +
 			b.skin.Faint.Render(written(said.Was)) + b.skin.Says.Render(" → ") +
 			b.skin.Bright.Render(written(said.Became))
+	} else if said.Became != "" {
+		out += "  " + b.skin.Says.Render(said.Became)
 	}
 	if said.Through != "" {
 		out += "  " + b.skin.Faint.Render("("+said.Through+")")

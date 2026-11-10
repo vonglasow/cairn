@@ -43,7 +43,11 @@ func (b Board) walkingWeeks(key string) (Board, bool) {
 }
 
 func (b Board) readingWeek() tea.Cmd {
-	since, until, today := b.week, b.week.AddDate(0, 0, 6), engine.DayOf(b.clock())
+	week := b.week
+	if week.IsZero() {
+		week = engine.Monday(b.clock())
+	}
+	since, until, today := week, week.AddDate(0, 0, 6), engine.DayOf(b.clock())
 	return func() tea.Msg {
 		sheet, err := engine.ReadPeriod(b.work, since, until, today)
 		return Sheeted{Sheet: sheet, Err: err}

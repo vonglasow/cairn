@@ -83,6 +83,34 @@ func OccurrenceDay(c Card, now time.Time) (text string, show, late, passed bool)
 	return "", false, false, false
 }
 
+// RuleRead is a rule typed in a field read back: how often, what it counts from and when it ends, then the days it comes on; or why it is no rule.
+type RuleRead struct{ Says, Next, Wrong string }
+
+// RuleReadBack reads back a rule typed, counted from today, the way a form shows it under its field: nothing for nothing typed.
+func RuleReadBack(typed string, today time.Time) RuleRead {
+	if strings.TrimSpace(typed) == "" {
+		return RuleRead{}
+	}
+	rule, err := domain.ParseRule(typed)
+	if err != nil {
+		wrong, _, _ := strings.Cut(err.Error(), " — ")
+		return RuleRead{Wrong: wrong}
+	}
+	from := domain.DayOf(today)
+	first, ok := rule.First(from)
+	if !ok {
+		return RuleRead{Says: rule.Said()}
+	}
+	if rule.AfterDone() {
+		return RuleRead{Says: rule.Said(), Next: domain.ShortDay(first) + ", then " + rule.Then()}
+	}
+	days := []string{domain.ShortDay(first)}
+	for _, d := range rule.Dates(first, from, 2) {
+		days = append(days, domain.ShortDay(d))
+	}
+	return RuleRead{Says: rule.Said(), Next: strings.Join(days, " · ")}
+}
+
 // RepeatsField is the field a task is given a rule in, in plain words, to become the first occurrence of a new series.
 func RepeatsField() Field {
 	return Field{Name: "repeats", Arg: "every", Means: meaning(TaskNew, "every"), Example: "every weekday 10:30"}

@@ -1,4 +1,4 @@
-  TASKS   objectives   time                                       HELP
+  TASKS 11   objectives 2   time 0                                HELP
 
  ╭───────────────────────────────╮ ╭───────────────────────────────╮
  │ KEYS                          │ │ LEGEND                        │

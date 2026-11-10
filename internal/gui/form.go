@@ -408,7 +408,9 @@ func (w Window) readingActs() Window {
 // Form is what the modal holds, for whoever draws it.
 func (w Window) Form() Form { return w.form }
 
-func formShown(s Screen) bool { return s == OnForm || s == OnChoosing || s == OnCalendar }
+func formShown(s Screen) bool {
+	return s == OnForm || s == OnChoosing || s == OnCalendar || s == OnRule
+}
 
 func (w Window) formUnder() bool {
 	if w.pickingLabels && w.screen == OnChoosing {
@@ -587,6 +589,9 @@ func (w Window) Choose(name string) Window {
 	case "cmd+enter":
 		return w.Save()
 	case "choose":
+		if w.screen == OnRule {
+			return w.closingRule(true)
+		}
 		if w.screen == OnChoosing {
 			return w.taking()
 		}
@@ -598,6 +603,9 @@ func (w Window) Choose(name string) Window {
 		}
 		if chosenOnACalendar(w.form.Fields()[w.form.On()]) {
 			return w.openingCalendar()
+		}
+		if chosenFromRules(w.form.Fields()[w.form.On()]) {
+			return w.openingRule()
 		}
 		return w.choosingList()
 	case "no day":
@@ -617,6 +625,9 @@ func (w Window) Choose(name string) Window {
 		if w.screen == OnCalendar {
 			w.screen = OnForm
 			return w
+		}
+		if w.screen == OnRule {
+			return w.closingRule(false)
 		}
 		if w.screen == OnChoosing {
 			return w.leaving()
@@ -884,7 +895,7 @@ func (w Window) FieldSays(field engine.Field) string { return w.snap.Named(field
 
 func (w Window) choosingList() Window {
 	on := w.form.Fields()[w.form.On()]
-	if !chosenFromAList(on) && !chosenFromRules(on) {
+	if !chosenFromAList(on) {
 		return w
 	}
 	w.ticked, w.choosing, w.choosingFrom, w.refusedChoice = map[int]bool{}, 0, 0, ""
@@ -1022,18 +1033,7 @@ func (w Window) closedSet() []string {
 	return w.setOf(w.form.Fields()[w.form.On()])
 }
 
-func (w Window) setOf(field engine.Field) []string {
-	if chosenFromRules(field) {
-		return RulesOffered
-	}
-	return field.Choices
-}
-
-// RulesOffered is what the list beside the repeats field offers, each written as the field reads it.
-var RulesOffered = []string{
-	"every day", "every weekday", "every week", "every other week", "every month",
-	"every monday", "every friday", "every 3 days after done", "every week after done",
-}
+func (w Window) setOf(field engine.Field) []string { return field.Choices }
 
 func (w Window) inChoosing(name string) Window {
 	offered := w.Choosing()

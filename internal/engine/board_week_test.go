@@ -87,3 +87,13 @@ func TestTimesheetTask_spentIsHowLongItTookThatDay(t *testing.T) {
 		t.Errorf("Spent = %q, want 1h30m", got)
 	}
 }
+
+func TestTimesheet_worked_countsEachTaskOnce(t *testing.T) {
+	sheet := Timesheet{Days: []TimesheetDay{
+		{Day: "2026-11-09", Tasks: []TimesheetTask{{Number: 1}, {Number: 2}}},
+		{Day: "2026-11-10", Tasks: []TimesheetTask{{Number: 2}, {Number: 3}}},
+	}}
+	if got := sheet.Worked(); got != 3 {
+		t.Errorf("Worked = %d, want 3", got)
+	}
+}

@@ -195,7 +195,13 @@ func seriesScreens(w Window) []struct {
 		{"a series' deletion asked", tab.Key("backspace")},
 		{"every task of a series' deletion asked", tab.Key("backspace").Key("down").Key("down").Key("enter")},
 		{"a new series", tab.Key("n")},
-		{"the rules offered", tab.Key("n").choosingList()},
+		{"the rules offered", tab.Key("n").openingRule()},
+		{"a rule built by its parts", tab.Key("n").openingRule().ruled(ruleUnit, 1).ruled(ruleOn, 3).ruled(ruleEnds, 2).Key("down")},
+		{"a rule read back", func() Window {
+			n := tab.Key("n")
+			n.form = n.form.Writes(Ending("every other thursday 14:00"))
+			return n
+		}()},
 		{"the board marking its series", r},
 		{"a chosen occurrence", occurrence},
 		{"the help, with the series", func() Window { h := r; h.screen = OnHelp; return h }()},

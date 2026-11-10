@@ -424,10 +424,12 @@ func (b Board) taskFields(c engine.Card) []engine.Field {
 }
 
 func (b Board) newSeriesForm() (Board, tea.Cmd) {
-	b.form = asking(append(engine.AddingFields(engine.StateAt(1)), engine.RepeatsField()), b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
+	fields := append(engine.AddingFields(engine.StateAt(1)), engine.RepeatsField())
+	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
 	b.screen = OnForm
-	return b.started()
+	b, cmd := b.started()
+	return b.focusingOn(engine.RepeatsField().Name, len(fields)), cmd
 }
 
 func (b Board) seriesForm(s engine.Series) (Board, tea.Cmd) {

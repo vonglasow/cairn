@@ -159,7 +159,12 @@ read by task number everywhere — the timesheet, how long a task sat in its
 column, the timer — and a missed day or a stop names no task: it would have
 needed a number no task has, which every reader would then have to learn to
 step over. What happens to an occurrence itself — made, archived when skipped,
-done — is still in its own trace, as for any task. See
+done — is still in its own trace, as for any task, and an occurrence its
+series made says so there: `made from series ↻1`, written when it is made
+(`@series-an-occurrence-says-it-was-made-from-its-series`). The task a series
+began from was made before its series, and says nothing of it; an occurrence
+brought by `task import` has its trace started afresh, as every imported task
+has. See
 [trace.md](trace.md#a-series-keeps-a-trace-of-its-own).
 
 Which series a task belongs to is read off that trace, never stored twice: an
@@ -209,5 +214,9 @@ of, and `OccurrenceDay`, `SeriesFields` and `RepeatsField` say the day, the
 form and the field; `Pages.Recurring` takes every series and every mark off
 what a board shows while recurrence is off, `ShownSeries` lists them active
 then stopped, `SeriesFates` and `MadeStill` are what deleting one offers and
-counts, `ChangesTheSeries` says when saving an occurrence asks, and `DaySaid`
-writes a series' day.
+counts, `ChangesTheSeries` says when saving an occurrence asks, `DaySaid`
+writes a series' day, and `RuleReadBack` reads back a rule as it is typed —
+how often, what it counts from, when it ends, then the days it comes on, or
+why it is no rule. A picker builds a rule from its parts with
+`domain.RuleParts`, the rule taken apart and written back in the words the
+field reads.

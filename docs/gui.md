@@ -398,7 +398,8 @@ top, its popover, one being kept, the views, one gone and one renamed, a
 sub-objective added under its parent, a part walked to, the views walked to
 and a view narrowed to a part, then, recurrence on, the series, a stopped
 one, one walked to, its form, its deletion asked and asked again, a new one,
-the rules offered, the board marking them, an occurrence chosen and its form,
+the rules offered, a rule built by its parts, a rule read back, the board
+marking them, an occurrence chosen and its form,
 saving one asked, the help with the series, and the command bar answering a
 series with recurrence off — the
 fixtures holding three views, one of them gone, and two series — at the two sizes the layout is pinned at, 720 by
@@ -2626,11 +2627,34 @@ far, the number of the series at its head; its foot offers *Skip this one* and
 (`@gui-series-the-form-of-an-occurrence-says-its-series`). A task that is no
 occurrence carries a `repeats` field, in a section of its own: a rule typed
 there makes it the first occurrence of a new series
-(`@gui-series-a-task-given-a-rule-becomes-the-first`). The field is typed into,
-and a click on it drops a list of rules beside it, each written in the words
-the field reads — every day, every weekday, every other week, three days
-after done — the one taken written into the field
-(`@gui-series-the-repeats-picker-writes-the-words`). **Saving a change to what
+(`@gui-series-a-task-given-a-rule-becomes-the-first`). The field is typed into, and
+**reads the rule back under it as it is typed**: how often, what it counts
+from and when it ends, after the loop, then the next three days it comes on —
+or, counted after done, its first and how long after — or why it is no rule,
+in the wrong ink (`engine.RuleReadBack`,
+`@gui-series-the-repeats-field-reads-the-rule-back`). A misread rule shows
+before anything is saved. **A click on the field opens the picker** the
+study drew, hung under what it reads back (`OnRule`, `RulePicked`): every so
+many — a stepper, the chevrons walking 1 to 99 — and days, weeks or months;
+the seven days of the week, each ticked or not, which counts in weeks; the
+time, any or a half hour, a time typed kept among them; the end — never,
+after so many times, ten at first, or on a day, four weeks off at first, and
+how many or which day beside it; and whether the next comes on the calendar
+or after the last is done. Each part chosen writes the field at once, in
+the words it reads (`domain.RuleParts`), so the read-back follows
+(`@gui-series-the-repeats-picker-builds-the-rule-by-its-parts`,
+`@gui-series-the-repeats-picker-ends-and-counts-after-done`,
+`@gui-series-the-repeats-picker-writes-the-words`). `↑↓` walk its lines and
+`←→` change the one the keyboard is on, ringed, its caption in the accent;
+on the days `←→` walk them and `space` ticks one
+(`@gui-series-the-repeats-picker-walked-by-the-keyboard`). *Choose* (`⏎`)
+keeps the words; *Cancel* (`esc`) or a click off it puts back what the field
+read when it opened (`@gui-series-the-repeats-picker-cancelled-leaves-the-words`).
+A day of the week counted after done is a rule cairn refuses, so ticking a
+day counts on the calendar, and choosing after done lets the days go; an end
+is a number of times or a day, never both, and the picker offers one at a
+time. The day a series counts from is not among its parts: on a task, its
+deadline is its first day. **Saving a change to what
 the next one is made from asks once** — title, priority, labels, estimate,
 steps or objectives (`engine.ChangesTheSeries`): *This one only*, `⏎` and the
 default, or *The whole series*, `s`
@@ -2646,12 +2670,9 @@ banner saying recurrence is off and how to turn it on, the engine's own
 refusal (`@gui-series-off-says-why-in-the-command-bar`), rather than by
 nothing, which reads as a command that does not exist.
 
-What the mockups drew and the window does not do yet: the picker writing a
-rule from its parts — every N days, weeks or months, the weekdays, the time,
-the day it counts from, the end and what it counts from — rather than a list
-of rules; the rule read back with its next three days under the field as it
-is typed; and `made from series` in an occurrence's own history, which the
-engine does not write in a task's trace.
+**An occurrence's history says where it came from**: `made from series ↻1`,
+the act the engine writes on a task its series made, beside its first
+attributes (`@gui-series-the-history-of-an-occurrence-says-its-series`).
 
 ## Several at once
 

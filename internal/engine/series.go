@@ -604,8 +604,14 @@ func (e *Engine) occur(s aSeries, day time.Time) (int, error) {
 		return 0, err
 	}
 	n := factsOf(made).Number
+	if err := e.record(n, MadeFromSeries, "", "", "↻"+strconv.Itoa(s.kept.Number)); err != nil {
+		return 0, err
+	}
 	return n, e.recordSeries(store.SeriesAct{Series: s.kept.Number, Did: "made", Task: n, Day: deadline})
 }
+
+// MadeFromSeries is the act written in the trace of a task a series made, naming the series.
+const MadeFromSeries = "made from series"
 
 func (e *Engine) openSeries() (map[int]bool, error) {
 	if !e.recurring() {

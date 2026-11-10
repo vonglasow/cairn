@@ -5988,6 +5988,16 @@ Feature: The desktop board
       Then task 1 is archived
       And the window is on the board
 
+    @gui-series-the-history-of-an-occurrence-says-its-series
+    Scenario: the history of an occurrence its series made says the series
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      And task 1 was skipped
+      When I open the window
+      And I double-click the card "Stand-up"
+      And I press "cmd+t"
+      Then the trace says "made from series  ↻1"
+
     @gui-series-the-help-says-the-r-keys
     Scenario: the help says what the r keys do while a task may come back, and nothing of them otherwise
       Given recurrence is on in the window
@@ -6137,6 +6147,65 @@ Feature: The desktop board
       And I click the field "repeats"
       And I choose the rule "every weekday"
       Then the field "repeats" reads "every weekday"
+
+    @gui-series-the-repeats-picker-builds-the-rule-by-its-parts
+    Scenario: the picker under the repeats field builds the rule from its parts, written in the words the field reads
+      Given recurrence is on in the window
+      When I open the window
+      And I press "cmd+n"
+      And I click the field "repeats"
+      Then the rule's picker offers "every", "on", "at", "ends" and "the next one comes"
+      When I click "weeks" in the rule's picker
+      And I click "Th" in the rule's picker
+      And I click the next of "every" in the rule's picker
+      Then the field "repeats" reads "every 2 weeks on thu"
+      When I press "enter"
+      Then the rule's picker is closed
+      And the field "repeats" reads "every 2 weeks on thu"
+
+    @gui-series-the-repeats-picker-ends-and-counts-after-done
+    Scenario: the picker ends a rule after so many times, and counts it from the last one done
+      Given recurrence is on in the window
+      When I open the window
+      And I press "cmd+n"
+      And I click the field "repeats"
+      And I click "after the last is done" in the rule's picker
+      And I click "after" in the rule's picker
+      Then the field "repeats" reads "every day after done 10 times"
+
+    @gui-series-the-repeats-picker-walked-by-the-keyboard
+    Scenario: the picker is walked by the keyboard, a part a line
+      Given recurrence is on in the window
+      When I open the window
+      And I press "cmd+n"
+      And I click the field "repeats"
+      And I press "right"
+      And I press "down"
+      And I press "right"
+      Then the field "repeats" reads "every 2 weeks"
+
+    @gui-series-the-repeats-picker-cancelled-leaves-the-words
+    Scenario: the picker cancelled leaves the field as it was before it opened
+      Given recurrence is on in the window
+      When I open the window
+      And I press "cmd+n"
+      And I set the field "repeats" to "every monday"
+      And I click the field "repeats"
+      And I click "months" in the rule's picker
+      And I press "esc"
+      Then the rule's picker is closed
+      And the field "repeats" reads "every monday"
+
+    @gui-series-the-repeats-field-reads-the-rule-back
+    Scenario: a rule typed is read back under its field with the days it comes on, before anything is saved
+      Given recurrence is on in the window
+      When I open the window
+      And I press "cmd+n"
+      And I set the field "repeats" to "every other thursday 14:00"
+      Then under the field "repeats" the window reads "every 2 weeks on Thursday at 14:00, on the calendar"
+      And under the field "repeats" the window reads the next three days
+      When I set the field "repeats" to "every blue moon"
+      Then under the field "repeats" the window reads "not a rule cairn reads"
 
     @gui-series-saving-an-occurrence-asks-this-one-or-all
     Scenario: changing the title of an occurrence asks whether the series changes too

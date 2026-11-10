@@ -1,4 +1,4 @@
-  tasks   OBJECTIVES   time                                                                 NORMAL
+  tasks 20   OBJECTIVES 10   time 0                                                         NORMAL
 
  OBJECTIVES                                                                                      10
  ──────────────────────────────────────────────────────────────────────────────────────────────────

@@ -509,3 +509,16 @@ func TestSeries_anOccurrenceSaysWhatComesAfterIt(t *testing.T) {
 		t.Errorf("resumed, counted after done, it made %+v", answer.Followed)
 	}
 }
+
+func TestSeries_anOccurrenceMadeSaysItsSeriesInItsTrace(t *testing.T) {
+	path := seriesStore(t)
+	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
+	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
+	made := RenderText(TraceShow, doneOn(t, path, "2026-11-09", TraceShow, ask("number", "2")))
+	if !strings.Contains(made, "made from series") || !strings.Contains(made, "↻1") {
+		t.Errorf("the trace of the occurrence made reads:\n%s", made)
+	}
+	if first := RenderText(TraceShow, doneOn(t, path, "2026-11-09", TraceShow, ask("number", "1"))); strings.Contains(first, "made from series") {
+		t.Errorf("the task the series began from says it was made from it:\n%s", first)
+	}
+}

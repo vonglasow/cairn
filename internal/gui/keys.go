@@ -65,6 +65,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnWorkspaces:    Window.onWorkspaces,
 	OnFates:         Window.onFates,
 	OnSeriesFates:   Window.onSeriesFates,
+	OnRule:          Window.onRule,
 	OnKeeping:       Window.onKeeping,
 	OnViews:         Window.onViews,
 }

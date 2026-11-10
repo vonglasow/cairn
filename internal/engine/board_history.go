@@ -24,6 +24,8 @@ func (s Said) Line() string {
 	out := s.When + "  " + s.Did
 	if s.Field != "" {
 		out += "  " + s.Field + "  " + domain.OrNothing(s.Was) + " → " + domain.OrNothing(s.Became)
+	} else if s.Became != "" {
+		out += "  " + s.Became
 	}
 	return out + trace.Credited(s.By, s.Through)
 }

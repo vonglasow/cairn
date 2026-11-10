@@ -275,20 +275,39 @@ func (r Rule) Short() string {
 
 // Sentence is the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends.
 func (r Rule) Sentence(from time.Time) string {
-	anchor := "on the calendar"
-	if r.afterDone {
-		anchor = "after the last is done"
+	end := r.end()
+	if end == "" {
+		end = "never ending"
 	}
-	end := "never ending"
+	return fmt.Sprintf("%s, %s, from %s, %s", r.Often(), r.anchor(), LongDay(from), end)
+}
+
+// Said is the rule read back before it has a day to count from: how often, what it counts from, and when it ends if it does.
+func (r Rule) Said() string {
+	said := r.Often() + ", " + r.anchor()
+	if end := r.end(); end != "" {
+		said += ", " + end
+	}
+	return said
+}
+
+func (r Rule) anchor() string {
+	if r.afterDone {
+		return "after the last is done"
+	}
+	return "on the calendar"
+}
+
+func (r Rule) end() string {
 	switch {
 	case r.times == 1:
-		end = "once"
+		return "once"
 	case r.times > 1:
-		end = fmt.Sprintf("%d times", r.times)
+		return fmt.Sprintf("%d times", r.times)
 	case !r.until.IsZero():
-		end = "until " + LongDay(r.until)
+		return "until " + LongDay(r.until)
 	}
-	return fmt.Sprintf("%s, %s, from %s, %s", r.Often(), anchor, LongDay(from), end)
+	return ""
 }
 
 // Then is what comes after an occurrence of a rule counted from the day the last is done: so long after it is done.
@@ -301,6 +320,45 @@ func (r Rule) howOftenCounted() string {
 		return "1 " + unitNames[r.unit][0]
 	}
 	return fmt.Sprintf("%d %s", r.every, unitNames[r.unit][1])
+}
+
+// RuleParts is a rule taken apart the way a picker builds it: every so many days, weeks or months, the days of the week, the time, what it counts from and when it ends.
+type RuleParts struct {
+	Every     int
+	Unit      string
+	Days      []time.Weekday
+	At        string
+	AfterDone bool
+	Times     int
+	Until     time.Time
+}
+
+// RuleUnits are the units a rule counts in, as a picker offers them.
+var RuleUnits = []string{"days", "weeks", "months"}
+
+// Parts is the rule taken apart.
+func (r Rule) Parts() RuleParts {
+	return RuleParts{Every: r.every, Unit: unitNames[r.unit][1], Days: slices.Clone(r.days), At: r.at, AfterDone: r.afterDone, Times: r.times, Until: r.until}
+}
+
+// Words is the rule the parts make, written as cairn keeps it: days of the week only counted in weeks and on the calendar, a number of times rather than a day when both are said.
+func (p RuleParts) Words() string {
+	r := Rule{every: max(1, p.Every), unit: inDays, at: p.At, times: p.Times, until: p.Until, afterDone: p.AfterDone}
+	for u, names := range unitNames {
+		if names[1] == p.Unit {
+			r.unit = u
+		}
+	}
+	if r.unit == inWeeks && len(p.Days) > 0 {
+		r.days, r.afterDone = slices.Clone(p.Days), false
+	}
+	if r.times > 0 {
+		r.until = time.Time{}
+	}
+	if checked, err := r.checked(); err == nil {
+		r = checked
+	}
+	return r.Words()
 }
 
 // AfterDone says the rule counts from the day the last one was done, rather than on the calendar.

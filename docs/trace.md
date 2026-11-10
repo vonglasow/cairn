@@ -369,7 +369,10 @@ the timesheet, how long a task sat in its column, the timer — and a missed day
 or a stop names no task; it would have taken a number no task has, which each
 of them would have had to learn to step over. What happens to an occurrence
 itself stays in its own trace, as for any task: made with its first attributes,
-archived when skipped, put in done. A deleted series keeps its trace, as a
+archived when skipped, put in done — and one act more, `made from series`, its
+value the series' number `↻1`, so the task says where it came from without a
+reader of the trace having to look anywhere else. A board writes it as it
+writes any act with no field: `made from series  ↻1`. A deleted series keeps its trace, as a
 deleted task does. See [series.md](series.md#its-trace-a-table-of-its-own).
 
 ## How long a task has sat where it is

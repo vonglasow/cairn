@@ -94,6 +94,9 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnChoosing {
 		return w.clickingList(p)
 	}
+	if w.screen == OnRule {
+		return w.clickingRule(p)
+	}
 	if w.screen == OnCalendar && !w.CalendarBox().In(p) {
 		return w.clickedOff(p)
 	}
@@ -114,7 +117,7 @@ func (w Window) Click(p Point) Window {
 			return w.openingCalendar()
 		}
 		if chosenFromRules(w.form.Fields()[at]) {
-			return w.choosingList()
+			return w.openingRule()
 		}
 		return w.CaretInto(reached)
 	}
@@ -891,8 +894,8 @@ func (w Window) clickedOff(p Point) Window {
 	if w.pickingLabels && w.screen == OnChoosing {
 		return w.leavingThePicker()
 	}
-	overForm := w.screen == OnChoosing || w.screen == OnCalendar
-	if w.screen == OnCalendar {
+	overForm := w.screen == OnChoosing || w.screen == OnCalendar || w.screen == OnRule
+	if w.screen == OnCalendar || w.screen == OnRule {
 		w.screen = OnForm
 	} else if w.screen == OnChoosing {
 		w = w.Choose("Cancel")

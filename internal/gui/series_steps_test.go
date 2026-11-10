@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/cucumber/godog"
 
 	"cairn/internal/config"
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -28,6 +30,12 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 			}
 		}
 		return fmt.Errorf("the card %q does not write its rule %q", title, rule)
+	})
+	sc.Then(`^the trace says "([^"]*)"$`, func(want string) error {
+		if !strings.Contains(strings.Join(w.w.Lines(), "\n"), want) {
+			return fmt.Errorf("the trace reads %q, with no %q", w.w.Lines(), want)
+		}
+		return nil
 	})
 	sc.Then(`^the card "([^"]*)" leads to series (\d+)$`, func(title string, n int) error {
 		row, err := w.rowOf(title)
@@ -144,14 +152,67 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		return fmt.Errorf("no choice says %q", said)
 	})
 	sc.Step(`^I choose the rule "([^"]*)"$`, func(rule string) error {
-		for i, one := range w.w.Choosing() {
-			if one.Title == rule {
-				w.w.choosing = i
-				w.w = w.w.Choose("Choose")
-				return w.w.Wrong()
+		wanted, err := domain.ParseRule(rule)
+		if err != nil {
+			return err
+		}
+		parts := wanted.Parts()
+		if err := w.walkRuleTo("every", strconv.Itoa(parts.Every)); err != nil {
+			return err
+		}
+		if err := w.clickInRulePicker(parts.Unit); err != nil {
+			return err
+		}
+		for _, day := range parts.Days {
+			if err := w.clickInRulePicker(Weekdays[(int(day)+6)%7]); err != nil {
+				return err
 			}
 		}
-		return fmt.Errorf("the list offers no rule %q", rule)
+		if w.w.Form().Fields()[w.w.Form().On()].Value != rule {
+			return fmt.Errorf("the picker wrote %q, not %q", w.w.Form().Fields()[w.w.Form().On()].Value, rule)
+		}
+		w.w = w.w.Choose("Choose")
+		return w.w.Wrong()
+	})
+	sc.Then(`^the rule's picker offers "([^"]*)", "([^"]*)", "([^"]*)", "([^"]*)" and "([^"]*)"$`, func(a, b, c, d, e string) error {
+		var said []string
+		for _, line := range w.w.RulePicked().Lines {
+			said = append(said, line.Said)
+		}
+		for _, want := range []string{a, b, c, d, e} {
+			if !slices.Contains(said, want) {
+				return fmt.Errorf("the rule's picker offers %q, with no %q", said, want)
+			}
+		}
+		return nil
+	})
+	sc.Step(`^I click "([^"]*)" in the rule's picker$`, w.clickInRulePicker)
+	sc.Step(`^I click the next of "([^"]*)" in the rule's picker$`, func(said string) error {
+		for _, line := range w.w.RulePicked().Lines {
+			if line.Said == said && line.Next.W > 0 {
+				w.w = w.w.clicked(Point{X: line.Next.X + line.Next.W/2, Y: line.Next.Y + line.Next.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the rule's picker walks no %q on", said)
+	})
+	sc.Then(`^the rule's picker is closed$`, func() error {
+		if w.w.Screen() == OnRule {
+			return fmt.Errorf("the rule's picker is still open")
+		}
+		return nil
+	})
+	sc.Then(`^under the field "([^"]*)" the window reads "([^"]*)"$`, func(_, want string) error {
+		if said := w.readBack(); !strings.Contains(said, want) {
+			return fmt.Errorf("under the field the window reads %q, not %q", said, want)
+		}
+		return nil
+	})
+	sc.Then(`^under the field "([^"]*)" the window reads the next three days$`, func(string) error {
+		if said := w.readBack(); strings.Count(said, " · ") != 2 {
+			return fmt.Errorf("under the field the window reads %q, not three days", said)
+		}
+		return nil
 	})
 	sc.Then(`^the form has no field "([^"]*)"$`, func(name string) error {
 		if err := w.detailShowsField(name); err == nil {
@@ -215,4 +276,46 @@ func (w *world) rowOf(title string) (CardRow, error) {
 		return CardRow{}, err
 	}
 	return CardRowOf(c, PartsOf(slot).Number, w.w.measured(), moment, w.w.pages), nil
+}
+
+func (w *world) clickInRulePicker(said string) error {
+	for _, line := range w.w.RulePicked().Lines {
+		for i, choice := range line.Choices {
+			if choice == said && i < len(line.Picks) {
+				pick := line.Picks[i]
+				w.w = w.w.clicked(Point{X: pick.X + pick.W/2, Y: pick.Y + pick.H/2})
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("the rule's picker offers no %q", said)
+}
+
+func (w *world) walkRuleTo(said, choice string) error {
+	for range 100 {
+		for _, line := range w.w.RulePicked().Lines {
+			if line.Said != said {
+				continue
+			}
+			if line.On >= 0 && line.Choices[line.On] == choice {
+				return nil
+			}
+			w.w = w.w.clicked(Point{X: line.Next.X + line.Next.W/2, Y: line.Next.Y + line.Next.H/2})
+		}
+	}
+	return fmt.Errorf("the rule's picker never walks %q to %q", said, choice)
+}
+
+func (w *world) readBack() string {
+	box, ok := RepeatsReadAt(w.w.formBox(), w.w.Form().Fields())
+	if !ok {
+		return ""
+	}
+	var said []string
+	for _, one := range textDrawn(w.w) {
+		if box.In(Point{X: one.box.X, Y: one.box.Y}) {
+			said = append(said, one.said)
+		}
+	}
+	return strings.Join(said, " ")
 }

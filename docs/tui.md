@@ -76,6 +76,14 @@ are only not drawn (see [config.md](config.md#the-weekends-of-a-week)).
 **series** — the tasks that come back, a fourth tab after the time, there only
 while `[recurrence] on` is true; see [below](#series).
 
+**Each tab counts what it holds**, as the window's tabs do: the tasks the board
+shows, the objectives listed, the tasks the week shown was worked on
+(`Timesheet.Worked`, the window's count too), read again each time the board
+is, so the count is there before the tab is ever opened
+(`@tui-the-time-tab-counts-before-it-is-opened`), and the series listed —
+`shown/all` while a search, a filter or a view narrows a list
+(`@tui-series-the-tabs-count-what-they-hold`).
+
 A page the configuration turns off has no tab, and `⇥` walks the others; the
 board opens on the first left. With all three off the screen is empty and only
 `ctrl+c` does anything (`@tui-a-page-off-has-no-tab`,
@@ -1033,7 +1041,7 @@ asked about at the foot, as a task is.
 ## Series
 
 ```
- tasks   objectives   time   SERIES                                          NORMAL
+ tasks 38   objectives 5   time 3   SERIES 4                                 NORMAL
 
  Active                                2 │↻1  Team stand-up                         active
  ┃ ↻1  Team stand-up                today│every weekday at 10:30, on the calendar, from…
@@ -1074,9 +1082,9 @@ resumes it (`@tui-series-the-tab-skips-stops-and-resumes`); `e` opens its form
 — title, priority, labels, estimate, objectives, steps, its rule as `repeats`
 and the day it counts from — and saving changes what the next ones are made
 from, never one already made (`@tui-series-the-form-changes-the-series`). `n`
-opens a task's form in todo with its `repeats` field to fill in, and saving it
-makes the task the first occurrence of a new series
-(`@tui-series-n-makes-a-new-one`). `/` narrows the list by its title, its rule
+opens a task's form in todo with the cursor on its `repeats` field
+(`@tui-series-n-lands-on-the-rule`), and saving it makes the task the first
+occurrence of a new series (`@tui-series-n-makes-a-new-one`). `/` narrows the list by its title, its rule
 or its number, as `series list --search` does.
 
 **Deleting asks what becomes of its tasks, as the command line does.** `⌫` or
@@ -1101,7 +1109,9 @@ boards.
 day it was made for — the time on its day, in the yellow of what is stalled
 once it has passed; its weekday and date within a week; counted down in red once
 passed; nothing further off, as the study's answers chose. The engine says
-which, `engine.OccurrenceDay`, so the window says the same.
+which, `engine.OccurrenceDay`, so the window says the same. Its detail's
+trace says where it came from: `made from series  ↻1`, the act the engine
+writes on a task its series made (`@tui-series-the-trace-says-made-from-series`).
 
 **A task becomes a series in its form.** A task that is no occurrence carries
 a `repeats` field: a rule typed there makes it the first occurrence of a new

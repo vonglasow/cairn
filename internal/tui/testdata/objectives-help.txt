@@ -1,4 +1,4 @@
-  tasks   OBJECTIVES   time                                                                   HELP
+  tasks 11   OBJECTIVES 2   time 0                                                            HELP
 
  ╭─────────────────────────────────────────────╮ ╭─────────────────────────────────────────────╮
  │ KEYS                                        │ │ LEGEND                                      │

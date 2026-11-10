@@ -348,8 +348,12 @@ func (b Board) freshened() Board {
 	for _, field := range b.freshOpened() {
 		b.form.opened[field.Name] = field.Value
 	}
-	for range 2 * len(fresh) {
-		if b.form.asked.GetFocusedField().GetKey() == focused {
+	return b.focusingOn(focused, len(fresh))
+}
+
+func (b Board) focusingOn(key string, fields int) Board {
+	for range 2 * fields {
+		if b.form.asked.GetFocusedField().GetKey() == key {
 			break
 		}
 		before := b.form.asked.GetFocusedField().GetKey()

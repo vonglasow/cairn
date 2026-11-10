@@ -303,6 +303,8 @@ func (w Window) Offers() []string {
 		return []string{"Done", "Choose", "Cancel"}
 	case OnCalendar:
 		return []string{"Take", "No day", "Cancel"}
+	case OnRule:
+		return []string{"Choose", "Cancel"}
 	case OnBackups:
 		return []string{"Restore", "Close"}
 	case OnFiltering:

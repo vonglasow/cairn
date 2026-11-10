@@ -1,4 +1,4 @@
-  TASKS   objectives   time   ▸ 1                                                           INSERT
+  TASKS 12/20   objectives 10   time 0   ▸ 1                                                INSERT
 
  1   Objective 1                                                                           ▶ active
  ███░░░░░░░░░░░░░░░░░░░░░░░░░  1/9

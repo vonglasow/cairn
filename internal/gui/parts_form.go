@@ -31,15 +31,32 @@ const (
 
 // FormPlace is where one field of a form is drawn: the name it is written under, the line its value starts on, and how many rows it is given.
 func FormPlace(over Box, fields []engine.Field, at int) (name, value Box, rows int) {
-	places, _, _ := formLayout(over, fields)
+	places, _, _, _ := formLayout(over, fields)
 	p := places[at]
 	return p.name, p.value, p.rows
 }
 
 // FormHeads are the heads of the sections a form groups its short fields in, each where it is written: a section none of the form's fields belong to has no head.
 func FormHeads(over Box, fields []engine.Field) []Readable {
-	_, heads, _ := formLayout(over, fields)
+	_, heads, _, _ := formLayout(over, fields)
 	return heads
+}
+
+// RepeatsReadAt is where a form reads back the rule typed in its repeats field: two lines under the line the field stands on, and nothing for a form with no such field.
+func RepeatsReadAt(over Box, fields []engine.Field) (Box, bool) {
+	_, _, _, read := formLayout(over, fields)
+	return read, read.H > 0
+}
+
+const readBackHigh = 2 * lineHigh
+
+func readsBack(row []int, fields []engine.Field) bool {
+	for _, i := range row {
+		if fields[i].Arg == engine.RepeatsField().Arg {
+			return true
+		}
+	}
+	return false
 }
 
 // FormSize is the size a field of a form is written at: the title as large as a panel's heading, since it is what the task is called and the first thing read; everything else at the size the board reads at.
@@ -94,7 +111,7 @@ func Shifted(b Box, by Point, width, height int) Box {
 	return b
 }
 
-func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
+func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int, Box) {
 	places := make([]placed, len(fields))
 	left, full := over.X+padding, over.W-padding-padding
 	top := FirstRow(over)
@@ -118,17 +135,21 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 	}
 	across := fieldsAcross(sectionFull)
 	lines := 0
+	readHigh := 0
 	for _, row := range rows {
 		lines += (len(row) + across - 1) / across
+		if readsBack(row, fields) {
+			readHigh = readBackHigh
+		}
 	}
 	if sectionTop >= 0 {
-		lines = 0
+		lines, readHigh = 0, 0
 	}
 	wanted := make(map[int]int, len(long))
 	for _, i := range long {
 		wanted[i] = rowsWanted(fields[i], full)
 	}
-	fixed := len(alone)*apart + lines*apart + between + len(long)*longHigh
+	fixed := len(alone)*apart + lines*apart + readHigh + between + len(long)*longHigh
 	room := (FormRule(over).Y - top - fixed) / lineHigh
 	given := shared(long, wanted, room)
 	if sectionTop >= 0 && len(long) == 2 {
@@ -155,6 +176,7 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 		placeLong(long[0])
 	}
 	var heads []Readable
+	var read Box
 	sy := y
 	if sectionTop >= 0 {
 		sy = sectionTop
@@ -183,6 +205,10 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 				sy += apart
 			}
 		}
+		if readsBack(row, fields) {
+			read = Box{X: sectionLeft, Y: sy - between, W: sectionFull, H: readBackHigh}
+			sy += readBackHigh
+		}
 	}
 	if sectionTop < 0 {
 		y = sy
@@ -191,7 +217,7 @@ func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int) {
 	for _, i := range long[min(1, len(long)):] {
 		placeLong(i)
 	}
-	return places, heads, y
+	return places, heads, y, read
 }
 
 func fieldsAcross(full int) int {

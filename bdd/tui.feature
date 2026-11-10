@@ -1676,6 +1676,16 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And the board says "0 done · 0 skipped · 0 missed"
     And the bar offers "skip"
 
+  @tui-series-the-trace-says-made-from-series
+  Scenario: an occurrence its series made says so in its trace
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    And task 1 was skipped
+    And a window of 140 by 44
+    When I open the board
+    And I press "l", "i", "enter"
+    Then the board says "made from series  ↻1"
+
   @tui-series-r-s-skips
   Scenario: r s skips the occurrence under the cursor, and its series makes the next
     Given recurrence is on on the board
@@ -1713,6 +1723,25 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     When I open the board
     And I press "i"
     Then the bar does not offer "skip"
+
+  @tui-series-the-tabs-count-what-they-hold
+  Scenario: each tab counts what it holds, as the window's tabs do
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    And I added a task titled "Write the spec"
+    And I added an objective titled "Ship the board"
+    When I open the board
+    Then the board says "TASKS 2"
+    And the board says "objectives 1"
+    And the board says "time 0"
+    And the board says "series 1"
+
+  @tui-the-time-tab-counts-before-it-is-opened
+  Scenario: the time tab counts the tasks worked on this week before it is ever opened
+    Given I added a task titled "Write the spec"
+    And I spent "1h" on task 1 on "2026-09-01"
+    When I open the board
+    Then the board says "time 1"
 
   @tui-series-the-tab-lists-them
   Scenario: the series tab lists the active series apart from the stopped ones
@@ -1808,6 +1837,13 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And I save the form
     Then series 1 is titled "Water the plants"
     And task 1 is an occurrence of series 1
+
+  @tui-series-n-lands-on-the-rule
+  Scenario: n in the tab opens a task's form with the cursor on its rule
+    Given recurrence is on on the board
+    When I open the board
+    And I press "tab", "tab", "tab", "n"
+    Then the cursor is on the field "repeats"
 
   @tui-series-a-task-given-a-rule-becomes-the-first
   Scenario: a task given a rule in its form becomes the first occurrence of a new series

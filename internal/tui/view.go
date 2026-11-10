@@ -74,9 +74,9 @@ func (b Board) tabs() string {
 	names := map[Tab]string{Tasks: "tasks", Objectives: "objectives", Series: "series", Time: "time"}
 	left := " " + b.placeMark()
 	for _, tab := range b.shown() {
-		name := b.skin.TabOff.Render(names[tab])
+		name := b.skin.TabOff.Render(names[tab] + " " + b.counted(tab))
 		if tab == b.tab {
-			name = b.skin.TabOn.Render(strings.ToUpper(names[tab]))
+			name = b.skin.TabOn.Render(strings.ToUpper(names[tab]) + " " + b.counted(tab))
 		}
 		left += name + " "
 	}
@@ -85,6 +85,25 @@ func (b Board) tabs() string {
 		left += "  " + b.skin.Crumb.Render("▸ "+strconv.Itoa(b.inside))
 	}
 	return Spread(left, b.skin.Mode.Render(b.modeName())+" ", b.width)
+}
+
+func (b Board) counted(tab Tab) string {
+	switch tab {
+	case Objectives:
+		return countOf(len(b.goals()), len(b.snap.Goals))
+	case Time:
+		return strconv.Itoa(b.sheet.Worked())
+	case Series:
+		return countOf(len(b.allSeries()), len(b.snap.Series))
+	}
+	return countOf(len(engine.OnTheBoard(b.cards(), b.archived)), len(engine.OnTheBoard(b.snap.Cards, b.archived)))
+}
+
+func countOf(shown, all int) string {
+	if shown == all {
+		return strconv.Itoa(shown)
+	}
+	return strconv.Itoa(shown) + "/" + strconv.Itoa(all)
 }
 
 func (b Board) modeName() string {

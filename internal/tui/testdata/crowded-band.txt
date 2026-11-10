@@ -1,4 +1,4 @@
-  TASKS   objectives   time                                                                 INSERT
+  TASKS 20   objectives 10   time 0                                                         INSERT
 
  BACKLOG                0│TODO                  12│CURRENT                0│DONE                   0
  ────────────────────────│────────────────────────│────────────────────────│────────────────────────

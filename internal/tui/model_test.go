@@ -930,13 +930,24 @@ func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
 	}
 }
 
+func TestAHistoryLineSaysTheSeriesAnOccurrenceWasMadeFrom(t *testing.T) {
+	b := standing(newFake())
+	if got := strip(b.line(anAct(engine.MadeFromSeries, "↻3"))); !strings.Contains(got, "made from series  ↻3") {
+		t.Errorf("an occurrence made reads %q", got)
+	}
+}
+
 func TestReadingTheBoardAgainReadsTheOpenHistoryAgain(t *testing.T) {
 	f := twoTasks()
 	b := hit(standing(f), "l", "i", "enter")
 	if _, cmd := b.Update(Looked{Snapshot: b.snap}); cmd == nil {
 		t.Fatal("reading the board again with a task open read nothing more")
 	}
-	if _, cmd := standing(f).Update(Looked{Snapshot: b.snap}); cmd != nil {
-		t.Error("reading the board again with no task open asked for more")
+	_, cmd := standing(f).Update(Looked{Snapshot: b.snap})
+	if cmd == nil {
+		t.Fatal("reading the board again did not read the week its time tab counts")
+	}
+	if _, heard := cmd().(Heard); heard {
+		t.Error("reading the board again with no task open read a history")
 	}
 }

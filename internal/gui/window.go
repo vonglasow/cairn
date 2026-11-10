@@ -50,6 +50,8 @@ const (
 	OnViews
 	// OnSeriesFates is what deleting a series asks before anything goes: what becomes of the tasks it made.
 	OnSeriesFates
+	// OnRule is the picker a rule is built in by its parts, over the form, under its repeats field.
+	OnRule
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -105,6 +107,7 @@ type Window struct {
 	toldFor                                  int
 	native                                   bool
 	calendarState
+	ruling ruleState
 	menuState
 	backupsState
 	labelsState

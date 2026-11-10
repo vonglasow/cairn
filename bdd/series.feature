@@ -69,6 +69,15 @@ Feature: A series, the tasks that come back
       And `cairn task show 2` says "deadline     2026-11-10"
       And `cairn task list --series 1` lists 2 tasks
 
+    @series-an-occurrence-says-it-was-made-from-its-series
+    Scenario: an occurrence its series made says so in its own trace
+      Given I ran `cairn task new "Team stand-up" --every "every weekday 10:30"`
+      And I ran `cairn task edit 1 --state done`
+      When I run `cairn trace show 2`
+      Then it succeeds
+      And the answer says "made from series"
+      And the answer says "↻1"
+
     @series-one-open-at-a-time
     Scenario: nothing more is made while one is open
       Given I ran `cairn task new "Team stand-up" --every "every weekday 10:30"`
