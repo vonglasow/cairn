@@ -150,3 +150,27 @@ func TestTaskImport_aFileOfVersion8IsRefused(t *testing.T) {
 		t.Errorf("a file of version 8 reads %v", err)
 	}
 }
+
+func TestTaskImport_aFileHoldingNothingToAddIsRefused(t *testing.T) {
+	from := filepath.Join(t.TempDir(), "empty.json")
+	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 7, "tasks": []}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readExport(from); !errors.Is(err, ErrNotAnExport) {
+		t.Errorf("a file holding nothing reads %v", err)
+	}
+	for what, held := range map[string]string{
+		"an objective": `"objectives": [{"number": 1, "title": "Someday", "state": "active", "priority": "normal"}]`,
+		"a label":      `"labels": [{"label": "release"}]`,
+		"a series":     `"series": [{"number": 1, "rule": "every day", "from": "2026-11-09", "template": {"title": "x", "priority": "normal"}}]`,
+		"a view":       `"views": [{"name": "Home", "state": "todo"}]`,
+	} {
+		from := filepath.Join(t.TempDir(), "one.json")
+		if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 7, "tasks": [], `+held+`}`), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := readExport(from); err != nil {
+			t.Errorf("a file holding %s alone reads %v", what, err)
+		}
+	}
+}

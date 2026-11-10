@@ -109,6 +109,17 @@ Feature: Tasks carried from one store to another
       Then it fails
       And `cairn task list` lists 1 task
 
+    @exchange-import-objectives-without-tasks
+    Scenario: a file that holds objectives and no task adds its objectives
+      Given a file of my own exported from a store where these were run:
+        """
+        cairn objective new "Someday"
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And it says 0 tasks and 1 objective were added
+      And `cairn objective show 1` says "Someday"
+
     @exchange-import-broken-link
     Scenario: a file whose tasks point outside it is refused before anything is added
       Given I added a task titled "Already here"

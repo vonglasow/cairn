@@ -103,7 +103,7 @@ var TaskImport = Operation{
 	Thing:   "task",
 	Verb:    "import",
 	Short:   "Add the tasks of a file written by task export",
-	Does:    "Add the tasks of a file written by task export, as new tasks numbered after the ones already here, with the objectives they serve as new objectives and the views after the ones here. Nothing already here is replaced or merged, so a file read twice is added twice, and a view whose name one here has is left out. A file that is not one, or whose tasks point outside it, is refused before anything is added.",
+	Does:    "Add the tasks of a file written by task export, as new tasks numbered after the ones already here, with the objectives they serve as new objectives and the views after the ones here. Nothing already here is replaced or merged, so a file read twice is added twice, and a view whose name one here has is left out. A file that is not one, that holds nothing to add, or whose tasks point outside it, is refused before anything is added.",
 	Example: "cairn task import ~/Downloads/tasks.json",
 	Level:   Write,
 	Needs:   AStore,
@@ -202,6 +202,9 @@ func readExport(from string) (exchanged, error) {
 	}
 	if read.Version < beforeSteps || read.Version > exchangeVersion {
 		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d to %d", ErrNotAnExport, read.Version, beforeSteps, exchangeVersion)
+	}
+	if len(read.Tasks)+len(read.Objectives)+len(read.Labels)+len(read.Series)+len(read.Views) == 0 {
+		return exchanged{}, fmt.Errorf("%w: it holds nothing to add", ErrNotAnExport)
 	}
 	return read, nil
 }

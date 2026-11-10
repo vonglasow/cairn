@@ -330,8 +330,12 @@ else (`@objective-waits-on-migration-rollback`).
 **A task file carries the tree.** `task export` writes every objective, a
 task serving it or not, each with its `parent` and its `waits_on` — it once
 wrote only those its tasks served and what they reached, and an objective
-nothing served was lost on the way (`@exchange-an-objective-nothing-serves`); `task import` brings them in under the same
-parents, waiting on the same objectives, at their new numbers
+nothing served was lost on the way (`@exchange-an-objective-nothing-serves`).
+A file holding objectives and no task is read like any other
+(`@exchange-import-objectives-without-tasks`); one holding nothing at all to
+add — no task, objective, label, series or view — is refused
+(`@exchange-import-not-an-export`). `task import` brings them in under the
+same parents, waiting on the same objectives, at their new numbers
 (`@exchange-objectives-come-with-their-tree-and-what-they-wait-on`). A file
 whose objective sits under or waits on one it does not hold is refused before
 anything is added (`@exchange-a-parent-outside-the-file`,

@@ -40,7 +40,7 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^a file of my own that holds no tasks$`, func() error {
-		w.file, w.was = filepath.Join(w.T.TempDir(), "notes.json"), []byte("not tasks\n")
+		w.file, w.was = filepath.Join(w.T.TempDir(), "notes.json"), []byte(`{"cairn":"tasks","version":7,"tasks":[]}`+"\n")
 		return os.WriteFile(w.file, w.was, 0o600)
 	})
 	sc.Step(`^a file of my own exported from a store where these were run:$`, func(run *godog.DocString) error {
