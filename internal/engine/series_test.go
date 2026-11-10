@@ -470,6 +470,16 @@ func TestSeries_aRuleIsRefusedWhatItCannotDo(t *testing.T) {
 	}
 }
 
+func TestSeries_anEmptyDayAndAfterDoneFalseNameNoRule(t *testing.T) {
+	path := seriesStore(t)
+	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Spec", "from", "", "after-done", "false"))
+	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "title", "Spec it", "from", "", "after-done", "false"))
+	if got := occurrencesListed(t, path, "2026-11-09", ask("repeats", "true", "with-archived", "true")); len(got) != 0 {
+		t.Errorf("an empty day made %v", got)
+	}
+	refusedOn(t, path, "2026-11-09", TaskNew, ask("title", "x", "from", "2026-11-12"), "every-required")
+}
+
 func TestSeries_editingItsStartAndItsRuleIsWrittenDown(t *testing.T) {
 	path := seriesStore(t)
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Review", "every", "every week"))

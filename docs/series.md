@@ -70,6 +70,12 @@ refused saying why (`@series-grammar-refuses-two-ends`,
 written one way, `every 2 weeks on thu 14:00`, which reads back as the same
 rule.
 
+`--from` and `--after-done` go with `--every` and are refused without it; an
+empty `--from` or `--after-done=false` names nothing and is not refused, and a
+form whose rule is left empty sends neither
+(`@series-an-empty-day-names-no-rule`,
+`@gui-series-a-new-task-with-only-a-title-is-made`).
+
 "Every month on the 1st" was not asked for (answer 11 of the study) and is not
 there: a month counts from the day the series starts.
 

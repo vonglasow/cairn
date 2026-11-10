@@ -543,7 +543,7 @@ func (e *Engine) fromOf(in Input) (time.Time, error) {
 
 func everyNamed(in Input) (bool, error) {
 	named := in.Named("every")
-	if !named && (in.Named("after-done") || in.Named("from")) {
+	if !named && (in.Yes("after-done") || in.Given["from"] != "") {
 		return false, Refusing("every-required", "--after-done and --from go with --every, the rule they belong to")
 	}
 	return named, nil

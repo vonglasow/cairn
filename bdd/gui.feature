@@ -6264,6 +6264,16 @@ Feature: The desktop board
       And I click the next of "from" in the rule's picker
       Then the field "from" reads "2026-11-10"
 
+    @gui-series-a-new-task-with-only-a-title-is-made
+    Scenario: a new task given only a title is made while a task may come back
+      Given recurrence is on in the window
+      When I open the window
+      And I press "cmd+n"
+      And I set the field "title" to "Write the spec"
+      And I choose "Save"
+      Then "BACKLOG" carries "Write the spec"
+      And there is no series 1
+
     @gui-series-the-bar-offers-the-r-keys-as-drawn
     Scenario: a chosen occurrence's bar offers to open its series, to skip it, and to stop or resume its series
       Given recurrence is on in the window

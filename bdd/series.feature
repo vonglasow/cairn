@@ -39,6 +39,15 @@ Feature: A series, the tasks that come back
       Then it succeeds
       And the answer says "day      Fri 20 Nov"
 
+    @series-an-empty-day-names-no-rule
+    Scenario: a day left empty and after-done said false name nothing, and a plain task is made
+      When I run `cairn task new Spec --from "" --after-done=false`
+      Then it succeeds
+      And `cairn series list` says "there is no series"
+      When I run `cairn task new Review --from 2026-11-20`
+      Then it fails
+      And it says on standard error "--after-done and --from go with --every"
+
     @series-grammar-ends
     Scenario: a rule may end after so many times
       When I run `cairn task new Course --every "every monday 3 times"`

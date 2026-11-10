@@ -78,8 +78,10 @@ func Saved(fields []Field, adding bool, number int, add, edit Operation) (Operat
 	if !adding {
 		asked.Given["number"] = strconv.Itoa(number)
 	}
-	if every, named := asked.Given["every"]; named && strings.TrimSpace(every) == "" {
+	if rule, _ := valueOf(fields, RepeatsField().Name); strings.TrimSpace(rule) == "" {
 		delete(asked.Given, "every")
+		delete(asked.Given, "from")
+		delete(asked.Given, "after-done")
 	}
 	return op, asked
 }

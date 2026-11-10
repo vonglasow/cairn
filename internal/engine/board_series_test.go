@@ -127,6 +127,36 @@ func TestSaved_sendsNoRuleLeftEmpty(t *testing.T) {
 	}
 }
 
+func TestSaved_sendsNoSeriesFieldWithoutARule(t *testing.T) {
+	fields := withDay(append(AddingFields("todo"), RepeatsField(), FromField()), "Water", "2026-11-10")
+	_, in := Saved(fields, true, 0, TaskNew, TaskEdit)
+	for _, name := range []string{"every", "from"} {
+		if _, named := in.Given[name]; named {
+			t.Errorf("%s was sent with no rule: %v", name, in.Given)
+		}
+	}
+	fields = withDay(append(EditFields(Card{Number: 4, Title: "Water", State: "todo", Priority: "normal"}), RepeatsField(), FromField()), "Water", "2026-11-10")
+	if _, in := Saved(fields, false, 4, TaskNew, TaskEdit); len(in.Given) != 2 {
+		t.Errorf("an edit with no rule sent %v", in.Given)
+	}
+	fields[len(fields)-2].Value = "every 3 days"
+	if _, in := Saved(fields, false, 4, TaskNew, TaskEdit); in.Given["from"] != "2026-11-10" || in.Given["every"] != "every 3 days" {
+		t.Errorf("the day typed beside a rule was not sent: %v", in.Given)
+	}
+}
+
+func withDay(fields []Field, title, day string) []Field {
+	for i := range fields {
+		switch fields[i].Name {
+		case "title":
+			fields[i].Value = title
+		case FromField().Name:
+			fields[i].Value = day
+		}
+	}
+	return fields
+}
+
 func TestFoundSeries_keepsWhatCarriesEveryWord(t *testing.T) {
 	all := []Series{{Number: 1, Title: "Stand-up", Rule: "every day"}, {Number: 2, Title: "Expense report", Rule: "every 4 weeks on mon"}}
 	if got := FoundSeries(all, "expense"); len(got) != 1 || got[0].Number != 2 {
