@@ -207,10 +207,14 @@ weekends = "shown"
 # default, solarized-dark, solarized-light, gruvbox-dark, gruvbox-light,
 # catppuccin-mocha, catppuccin-latte, dracula, nord — or a base16 file of
 # your own, ~/.config/cairn/themes/<name>.yaml. A store's settings.toml can
-# name its own, so each workspace wears one.
+# name its own, so each workspace wears one. Last, how the board arrives
+# when the window opens: ripple, deck, spring, accordion, sweep, flap, pull,
+# particles, dolly, blueprint or stones. None when the system asks for less
+# motion.
 [window]
 keep_sizes = false
 theme = "default"
+intro = "ripple"
 
 # Whether a task may come back as a series: made with a rule, every weekday
 # 10:30, and made again when it is done or skipped. Off unless it says true;

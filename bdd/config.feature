@@ -388,6 +388,26 @@ Feature: Where cairn looks for its own places
       Then it fails
       And it names "window.keep_sizes"
 
+  Rule: The window's board arrives by the intro the configuration names
+
+    @config-the-intro-is-ripple-unless-said
+    Scenario: the board arrives by a ripple from the focus unless the configuration names another intro
+      When I run `cairn config show`
+      Then it says "intro" is "ripple"
+
+    @config-the-intro-is-said
+    Scenario: config show says the intro the configuration names
+      Given the board arrives by "deck"
+      When I run `cairn config show`
+      Then it says "intro" is "deck"
+
+    @config-an-unknown-intro-is-refused
+    Scenario: an intro cairn does not have is refused, naming the key
+      Given the board arrives by "confetti"
+      When I run `cairn task list`
+      Then it fails
+      And it names "window.intro"
+
   Rule: Showing the configuration says what cairn will use, and where it got it
 
     @config-show-says-every-key

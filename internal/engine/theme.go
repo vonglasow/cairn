@@ -48,7 +48,7 @@ func SchemeOf(seen ThemeSeen) (theme.Scheme, error) {
 
 func (g *readingGate) themes(p config.Places) {
 	folder, worn := themesIn(g.home.Dir), p.Theme()
-	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes(), Theme: p.Theme()}
+	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes(), Theme: p.Theme(), Intro: p.Intro()}
 	if _, err := theme.Find(folder, p.Theme()); err != nil {
 		g.config.Window.Unworn, worn = unworn(err), theme.DefaultSlug
 	}

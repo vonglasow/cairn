@@ -51,7 +51,7 @@ type WorkspaceConfig struct {
 // NotSaid is how a key with no value, and none by default, is told.
 const NotSaid = "not said"
 
-var quotedKeys = []string{"pages.time", "focus.session", "approach.label", "time.deleted", "time.weekends", "window.theme"}
+var quotedKeys = []string{"pages.time", "focus.session", "approach.label", "time.deleted", "time.weekends", "window.theme", "window.intro"}
 
 func valuesOf(p config.Places) map[string]string {
 	pages := p.Pages()
@@ -67,7 +67,7 @@ func valuesOf(p config.Places) map[string]string {
 		"archive.start": unless(start), "archive.days": strconv.Itoa(days),
 		"focus.session": unless(p.FocusSession()), "approach.label": unless(p.ApproachLabel()),
 		"time.deleted": p.TimeDeleted(), "time.weekends": p.TimeWeekends(), "window.keep_sizes": strconv.FormatBool(p.KeepSizes()),
-		"window.theme": p.Theme(), "recurrence.on": strconv.FormatBool(p.Recurrence()),
+		"window.theme": p.Theme(), "window.intro": p.Intro(), "recurrence.on": strconv.FormatBool(p.Recurrence()),
 	}
 }
 
@@ -88,6 +88,7 @@ type TimeConfig struct {
 type WindowConfig struct {
 	KeepSizes bool   `json:"keep_sizes"`
 	Theme     string `json:"theme"`
+	Intro     string `json:"intro" jsonschema:"how the board arrives when the window opens"`
 	Unworn    string `json:"unworn,omitempty" jsonschema:"why the scheme named cannot be worn; the window then wears default"`
 }
 
@@ -273,6 +274,7 @@ func configText(c Config) string {
 	if c.Window != nil {
 		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t%s\ntheme = %q%s\n", c.Window.KeepSizes, c.from("window.keep_sizes"), c.Window.Theme, c.from("window.theme"))
 		said.WriteString(themesText(c))
+		fmt.Fprintf(&said, "intro = %q%s\n", c.Window.Intro, c.from("window.intro"))
 	}
 	if c.Recurrence != nil {
 		fmt.Fprintf(&said, "\n[recurrence]\non = %t%s\n", c.Recurrence.On, c.from("recurrence.on"))

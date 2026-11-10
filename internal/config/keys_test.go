@@ -74,6 +74,7 @@ func TestAValueIsWrittenAsTheKeyTakesIt(t *testing.T) {
 		{"approach.label", "discuss", `"discuss"`},
 		{"plugin", "~/plugins", `"~/plugins"`},
 		{"window.theme", "nord", `"nord"`},
+		{"window.intro", "flap", `"flap"`},
 		{"workspace.colour", "green", `"green"`},
 	} {
 		key, _ := KeyNamed(c.key)
@@ -93,6 +94,7 @@ func TestAValueTheKeyDoesNotTakeIsRefusedNamingIt(t *testing.T) {
 		{"archive.start", "monday", `archive.start: "monday" is not a day`},
 		{"plugin", "plugins", `"plugins"`},
 		{"approach.label", "", "approach.label"},
+		{"window.intro", "confetti", `"confetti" is not a word window.intro takes`},
 	} {
 		key, _ := KeyNamed(c.key)
 		_, err := key.Literal(c.value)

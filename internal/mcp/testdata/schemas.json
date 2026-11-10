@@ -534,6 +534,10 @@
             "theme": {
               "type": "string"
             },
+            "intro": {
+              "type": "string",
+              "description": "how the board arrives when the window opens"
+            },
             "unworn": {
               "type": "string",
               "description": "why the scheme named cannot be worn; the window then wears default"
@@ -541,7 +545,8 @@
           },
           "required": [
             "keep_sizes",
-            "theme"
+            "theme",
+            "intro"
           ],
           "additionalProperties": false
         },

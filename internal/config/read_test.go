@@ -763,6 +763,26 @@ func TestRead_saysWhetherTheWeekendsAreShown(t *testing.T) {
 	}
 }
 
+func TestRead_saysWhichIntroTheBoardArrivesBy(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[window]\nintro = \"deck\"\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.Intro(); got != config.IntroDeck {
+		t.Errorf("the intro is %q, want deck", got)
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if got := none.Intro(); got != config.IntroRipple {
+		t.Errorf("with no file, the intro is %q, want ripple", got)
+	}
+	if _, err := config.Read(writtenConfig(t, "[window]\nintro = \"confetti\"\n"), silentEnv); !errors.Is(err, config.ErrIntro) || !strings.Contains(err.Error(), "window.intro") {
+		t.Errorf("err = %v, want ErrIntro naming window.intro", err)
+	}
+	if len(config.Intros()) != 11 {
+		t.Errorf("the intros are %v, want eleven", config.Intros())
+	}
+}
+
 func TestRead_saysWhichKeysTheFileWrote(t *testing.T) {
 	home := t.TempDir()
 	dir := filepath.Join(home, ".config", "cairn")

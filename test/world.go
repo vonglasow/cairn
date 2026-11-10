@@ -305,6 +305,9 @@ func (w *World) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^the window's keep_sizes is "([^"]*)"$`, func(said string) error {
 		return w.WriteConfig(fmt.Sprintf("[window]\nkeep_sizes = %q\n", said))
 	})
+	sc.Step(`^the board arrives by "([^"]*)"$`, func(said string) error {
+		return w.WriteConfig(fmt.Sprintf("[window]\nintro = %q\n", said))
+	})
 	sc.Step(`^a deleted task takes its time with it$`, func() error { return w.WriteConfig("[time]\ndeleted = \"taken\"\n") })
 	sc.Step(`^the time of a deleted task is "([^"]*)"$`, func(said string) error {
 		return w.WriteConfig(fmt.Sprintf("[time]\ndeleted = %q\n", said))

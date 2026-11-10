@@ -66,6 +66,32 @@ const (
 	TimeOff    = "off"
 )
 
+// ErrIntro is returned when the file names an intro the window does not have.
+var ErrIntro = errors.New("is not an intro the window has")
+
+// The intros the board may arrive by when the window opens.
+const (
+	IntroSpring    = "spring"
+	IntroDeck      = "deck"
+	IntroAccordion = "accordion"
+	IntroSweep     = "sweep"
+	IntroFlap      = "flap"
+	IntroPull      = "pull"
+	IntroRipple    = "ripple"
+	IntroParticles = "particles"
+	IntroDolly     = "dolly"
+	IntroBlueprint = "blueprint"
+	IntroStones    = "stones"
+)
+
+// DefaultIntro is the intro the board arrives by when the file names none.
+const DefaultIntro = IntroRipple
+
+// Intros is every intro the board may arrive by, in the order they are offered.
+func Intros() []string {
+	return []string{IntroRipple, IntroDeck, IntroSpring, IntroAccordion, IntroSweep, IntroFlap, IntroPull, IntroParticles, IntroDolly, IntroBlueprint, IntroStones}
+}
+
 // ErrKeepSizes is returned when the file says whether the window keeps its sizes with something that is neither true nor false.
 var ErrKeepSizes = errors.New("the window keeps its sizes or not: true or false")
 
@@ -107,6 +133,7 @@ type Places struct {
 	keepSizes        bool
 	recurrence       bool
 	theme            string
+	intro            string
 	written          []string
 	ignored          []string
 	workspaces       []Workspace
@@ -147,6 +174,17 @@ func (w *workspace) colour() string {
 type window struct {
 	KeepSizes any     `toml:"keep_sizes"`
 	Theme     *string `toml:"theme"`
+	Intro     *string `toml:"intro"`
+}
+
+func (w *window) intro() (string, error) {
+	if w == nil || w.Intro == nil || *w.Intro == "" {
+		return DefaultIntro, nil
+	}
+	if !slices.Contains(Intros(), *w.Intro) {
+		return "", fmt.Errorf("window.intro %q %w", *w.Intro, ErrIntro)
+	}
+	return *w.Intro, nil
 }
 
 // DefaultTheme is the scheme the window wears when the file names none.
@@ -320,6 +358,9 @@ func (p Places) Recurrence() bool { return p.recurrence }
 
 // Theme is the name of the scheme the window wears, exactly as the file wrote it; DefaultTheme when it names none.
 func (p Places) Theme() string { return p.theme }
+
+// Intro is the intro the board arrives by when the window opens: DefaultIntro unless the file names another.
+func (p Places) Intro() string { return p.intro }
 
 // Written is every key the file writes, dotted under its table and sorted: what is not among them holds its default, or what the environment says.
 func (p Places) Written() []string { return p.written }
@@ -520,6 +561,11 @@ func (p *Places) settle(f file) error {
 	if err != nil {
 		return err
 	}
+	intro, err := f.Window.intro()
+	if err != nil {
+		return err
+	}
+	p.intro = intro
 	mode, err := f.Pages.time()
 	if err != nil {
 		return err

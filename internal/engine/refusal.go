@@ -148,6 +148,7 @@ var reasons = []reason{
 	{config.ErrWeekends, KindRefused, "config-weekends"},
 	{config.ErrTimeMode, KindRefused, "config-time-mode"},
 	{config.ErrKeepSizes, KindRefused, "config-window"},
+	{config.ErrIntro, KindRefused, "config-intro"},
 	{config.ErrRecurrence, KindRefused, "config-recurrence"},
 	{config.ErrNotWritten, KindRefused, "config-not-written"},
 	{config.ErrMachineKey, KindRefused, "config-machine-key"},

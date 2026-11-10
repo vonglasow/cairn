@@ -24,6 +24,7 @@ const (
 	KindPath     Kind = "path"
 	KindColour   Kind = "colour"
 	KindTheme    Kind = "theme"
+	KindIntro    Kind = "intro"
 )
 
 // Key is one key of the configuration as a person sets it: its dotted name, the kind of value it takes and the words it takes when it takes words, whether it belongs to the machine or to a store alone, and the section and words a surface names it by.
@@ -55,6 +56,7 @@ func Sections() []string {
 
 var keys = []Key{
 	{Name: "window.theme", Kind: KindTheme, Section: SectionAppearance, Says: "Theme"},
+	{Name: "window.intro", Kind: KindIntro, Words: Intros(), Section: SectionAppearance, Says: "Intro"},
 	{Name: "workspace.colour", Kind: KindColour, Store: true, Section: SectionAppearance, Says: "Colour"},
 	{Name: "window.keep_sizes", Kind: KindBool, Section: SectionAppearance, Says: "Keep column sizes"},
 	{Name: "pages.tasks", Kind: KindBool, Section: SectionPages, Says: "Tasks"},
@@ -109,7 +111,7 @@ func (k Key) Literal(value string) (string, error) {
 			return "", Refused("%s: %q is true or false", k.Name, value)
 		}
 		return value, nil
-	case KindWords:
+	case KindWords, KindIntro:
 		if !slices.Contains(k.Words, value) {
 			return "", Refused("%q is not a word %s takes (%s)", value, k.Name, strings.Join(k.Words, ", "))
 		}

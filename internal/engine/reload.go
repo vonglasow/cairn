@@ -55,7 +55,7 @@ func valuesIn(c Config) map[string]string {
 		values["time.deleted"], values["time.weekends"] = c.Time.Deleted, c.Time.Weekends
 	}
 	if c.Window != nil {
-		values["window.keep_sizes"], values["window.theme"] = strconv.FormatBool(c.Window.KeepSizes), c.Window.Theme
+		values["window.keep_sizes"], values["window.theme"], values["window.intro"] = strconv.FormatBool(c.Window.KeepSizes), c.Window.Theme, c.Window.Intro
 	}
 	if c.Recurrence != nil {
 		values["recurrence.on"] = strconv.FormatBool(c.Recurrence.On)

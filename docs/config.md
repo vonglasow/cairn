@@ -771,6 +771,25 @@ takes them back ([gui.md](gui.md)). Anything but `true` or `false` is refused,
 naming `window.keep_sizes` (`@config-keep-sizes-is-yes-or-no`), and `config
 show` says whether it is on (`@config-show-says-the-window-keeps-its-sizes`).
 
+## How the board arrives
+
+```toml
+[window]
+intro = "ripple"   # ripple, deck, spring, accordion, sweep, flap, pull,
+                   # particles, dolly, blueprint or stones
+```
+
+When the window opens, its board arrives by an intro, a breath long, which
+`intro` names: `ripple` — the board born from the card in focus — unless it
+names another (`@config-the-intro-is-ripple-unless-said`,
+`@config-the-intro-is-said`). What each one does is
+[gui.md](gui.md#the-board-arrives-by-an-intro)'s. A name that is none of
+them is refused, naming `window.intro`
+(`@config-an-unknown-intro-is-refused`); a system that asks for less motion
+gets none, whatever the file says. It belongs to the store, like every key
+of `[window]`, and the window's settings offer it as a choice played on the
+board behind before it is kept.
+
 ## The colours the window wears
 
 ```toml

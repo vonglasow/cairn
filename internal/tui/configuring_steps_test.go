@@ -53,7 +53,7 @@ func TestABoardWithNoConfigurationReadReadsNoneAgain(t *testing.T) {
 func TestAKeyIsCompletedOnlyAfterSetOrUnset(t *testing.T) {
 	b := New(newFake(), GlyphsFor(Unicode), time.Now, 100, 40)
 	b.prompt = Commanding
-	for typed, want := range map[string]int{"set pages.t": 2, "unset pages.t": 2, "set ": 5, "task edit": 0, "set pages.time ": 0, "set " + "--" + "global win": 2} {
+	for typed, want := range map[string]int{"set pages.t": 2, "unset pages.t": 2, "set ": 5, "task edit": 0, "set pages.time ": 0, "set " + "--" + "global win": 3} {
 		b.typed = typed
 		if got := len(b.completions()); got != want {
 			t.Errorf("%q completes %d keys, want %d", typed, got, want)
