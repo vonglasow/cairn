@@ -5356,6 +5356,18 @@ Feature: The desktop board
       And the settings of the workspace "home" say `theme = "gruvbox-dark"`
       And the configuration reads "window.theme" set here
 
+    @gui-settings-the-intro-chooser-shows-the-tasks-board
+    Scenario: opened from another tab, the intro chooser shows the board of tasks behind it, and leaving it brings the tab back
+      Given the workspace "home", the default
+      And the workspace "home" holds a task titled "Write the spec"
+      When I open the window on the workspace "home"
+      And I click the tab "OBJECTIVES"
+      And I press "cmd+,"
+      And I click the control of "window.intro"
+      Then the tab is "TASKS"
+      When I press "esc"
+      Then the tab is "OBJECTIVES"
+
     @gui-settings-the-intro-is-played-then-kept
     Scenario: the intro chooser plays each intro on the board behind as the keyboard walks it, replays it, keeps one on enter, and esc goes back
       Given the workspace "home", the default

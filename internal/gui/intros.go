@@ -34,6 +34,7 @@ func IntrosBox(width, height int) Box {
 
 func (w Window) openingIntros() Window {
 	w.introsOpen, w.settingsAt = true, 0
+	w.introFrom, w.tab = w.tab, Tasks
 	w.introOn = max(0, slices.Index(config.Intros(), w.IntroShown()))
 	return w.replaying()
 }
@@ -81,6 +82,7 @@ func (w Window) keepingIntro() Window {
 
 func (w Window) leavingIntros() Window {
 	w.introsOpen, w.settingsAt = false, 0
+	w.tab = w.introFrom
 	return w.interrupted()
 }
 

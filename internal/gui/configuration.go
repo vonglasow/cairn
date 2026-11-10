@@ -62,6 +62,7 @@ type configurationState struct {
 	refusedSay  string
 	chooserOpen bool
 	introsOpen  bool
+	introFrom   Tab
 	introOn     int
 	tileOn      int
 	previewing  string

@@ -2851,7 +2851,10 @@ is a picker; it opens a narrow chooser against the right of the window, the
 board left undimmed beside it. Walking the list, or clicking an intro, plays
 it on the board; `r` or Replay plays it again; `⏎`, Keep, or a second click
 writes it; `esc` goes back with nothing written
-(`@gui-settings-the-intro-is-played-then-kept`).
+(`@gui-settings-the-intro-is-played-then-kept`). An intro plays on the board
+of tasks, so opened from another tab the chooser shows that board behind it,
+and leaving it brings the tab back
+(`@gui-settings-the-intro-chooser-shows-the-tasks-board`).
 
 ## Settings changed in place
 
