@@ -11,6 +11,36 @@ import (
 // Standings are the four an objective can be in, in the order a list keeps them: what is being worked towards first, what was finished with last.
 var Standings = []string{string(objective.Active), string(objective.OnHold), string(objective.Reached), string(objective.Dropped)}
 
+// Stepped is what moves an objective one place up or down among its siblings, a parent with its sub-objectives; false at the first or the last, since crossing to another parent is a deliberate act.
+func Stepped(goals []Goal, n int, up bool) (Input, bool) {
+	parent := -1
+	for _, g := range goals {
+		if g.Number == n {
+			parent = g.Parent
+		}
+	}
+	var siblings []int
+	for _, g := range goals {
+		if g.Parent == parent {
+			siblings = append(siblings, g.Number)
+		}
+	}
+	at := slices.Index(siblings, n)
+	if at < 0 || (up && at == 0) || (!up && at == len(siblings)-1) {
+		return Input{}, false
+	}
+	given := map[string]string{"number": strconv.Itoa(n)}
+	switch {
+	case up && at == 1:
+		given["first"] = "true"
+	case up:
+		given["after"] = strconv.Itoa(siblings[at-2])
+	default:
+		given["after"] = strconv.Itoa(siblings[at+1])
+	}
+	return Input{Given: given}, true
+}
+
 // Sorted puts the objectives in the order a list draws them: the order a person gave them, as the store keeps it.
 func Sorted(goals []Goal) []Goal {
 	return slices.Clone(goals)

@@ -325,6 +325,14 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		if b.tab == Objectives {
 			return b.folding(), nil
 		}
+	case "J", "shift+j", "K", "shift+k":
+		if b.tab == Objectives && b.goal != 0 {
+			in, moves := engine.Stepped(b.snap.Goals, b.goal, key == "K" || key == "shift+k")
+			if !moves {
+				return b, nil
+			}
+			return b, b.carry(engine.ObjectiveMove, in)
+		}
 	case "[":
 		return b.walkingSegments(-1), nil
 	case "]":

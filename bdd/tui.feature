@@ -733,6 +733,16 @@ Feature: The board
       When I press "z"
       Then the board says "Enclosure"
 
+    @tui-objective-shift-jk-reorders
+    Scenario: shift with j or k moves the objective under the cursor among its siblings
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      When I open the board
+      And I press "tab", "J"
+      Then the board says "Tidy the workshop" before "Home automation"
+      When I press "K"
+      Then the board says "Home automation" before "Tidy the workshop"
+
     @tui-objective-z-on-a-sub-objective-folds-its-parent
     Scenario: z on a sub-objective folds its parent, and the cursor goes up to it
       Given I added an objective titled "Home automation"

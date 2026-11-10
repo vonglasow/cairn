@@ -285,6 +285,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the card for task (\d+) is marked as archived$`, w.cardArchived)
 	sc.Then(`^the card for task (\d+) is drawn as the one in focus$`, w.cardInFocus)
 	sc.Then(`^the board says "([^"]*)"$`, w.boardSays)
+	sc.Then(`^the board says "([^"]*)" before "([^"]*)"$`, w.boardSaysBefore)
 	sc.Then(`^the board says "([^"]*)" once$`, w.boardSaysOnce)
 	sc.Given(`^the weekends are hidden$`, func() error {
 		w.pages = w.pages.WithoutWeekends()

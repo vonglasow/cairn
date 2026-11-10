@@ -5788,6 +5788,25 @@ Feature: The desktop board
       And I press "down"
       Then the objective "Tidy the workshop" is chosen
 
+    @gui-objective-shift-arrows-reorder
+    Scenario: shift with up or down moves the chosen objective among its siblings, a parent with its sub-objectives, and stops at the ends
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "shift+down"
+      Then the objectives read "Tidy the workshop", "Home automation"
+      And the objective "Home automation" is chosen
+      When I press "right"
+      Then the objectives read "Tidy the workshop", "Home automation", "Firmware"
+      When I press "shift+down"
+      Then the objectives read "Tidy the workshop", "Home automation", "Firmware"
+      When I press "shift+up"
+      And I press "shift+up"
+      Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
+
     @gui-objective-z-and-option-arrows-fold
     Scenario: z folds and unfolds, on a sub-objective folds its parent and climbs to it, and option with an arrow does every parent
       Given I added an objective titled "Home automation"

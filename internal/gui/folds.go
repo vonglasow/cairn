@@ -118,6 +118,12 @@ func (w Window) foldingKey(name string) (Window, bool) {
 			return w.choosingGoal(g.Number).togglingFold(g.Number), true
 		}
 		return w, true
+	case "shift+up", "shift+down":
+		in, moves := engine.Stepped(w.Showing().Goals, g.Number, name == "shift+up")
+		if !moves {
+			return w, true
+		}
+		return w.asking(engine.ObjectiveMove, in).choosingGoal(g.Number), true
 	case "alt+right":
 		for _, b := range engine.Branches(w.Showing().Goals) {
 			if len(b.Goal.Children) > 0 {

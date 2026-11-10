@@ -9,7 +9,7 @@ func (w Window) helpGroups() []helpGroup {
 	groups := []helpGroup{
 		{"Board", []Said{
 			{Key: "↑↓←→", Means: "walk the board"},
-			{Key: "⇧←→↑↓", Means: "move the card"},
+			{Key: "⇧←→↑↓", Means: "move it"},
 			{Key: "⏎", Means: "open"},
 			{Key: "e", Means: "edit"},
 			{Key: "f", Means: "focus"},

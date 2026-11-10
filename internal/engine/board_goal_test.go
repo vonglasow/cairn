@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"maps"
 	"testing"
 	"time"
 
@@ -104,5 +105,33 @@ func TestAGoalCountsTheStepsOfItsTasksApart(t *testing.T) {
 	}
 	if got := (Goal{Done: 1, Total: 2}).Counted(); got != "1/2" {
 		t.Errorf("Counted with no step = %q, want 1/2", got)
+	}
+}
+
+func TestStepped_movesAnObjectiveAmongItsSiblingsAndStopsAtTheEnds(t *testing.T) {
+	goals := []Goal{{Number: 1}, {Number: 4, Parent: 1}, {Number: 5, Parent: 1}, {Number: 6, Parent: 1}, {Number: 2}, {Number: 3}}
+	for _, tc := range []struct {
+		n    int
+		up   bool
+		want map[string]string
+	}{
+		{5, true, map[string]string{"number": "5", "first": "true"}},
+		{6, true, map[string]string{"number": "6", "after": "4"}},
+		{4, false, map[string]string{"number": "4", "after": "5"}},
+		{2, true, map[string]string{"number": "2", "first": "true"}},
+		{1, false, map[string]string{"number": "1", "after": "2"}},
+	} {
+		in, ok := Stepped(goals, tc.n, tc.up)
+		if !ok || !maps.Equal(in.Given, tc.want) {
+			t.Errorf("Stepped(%d, up %v) = %v %v, want %v", tc.n, tc.up, in.Given, ok, tc.want)
+		}
+	}
+	for _, tc := range []struct {
+		n  int
+		up bool
+	}{{4, true}, {6, false}, {1, true}, {3, false}} {
+		if _, ok := Stepped(goals, tc.n, tc.up); ok {
+			t.Errorf("Stepped(%d, up %v) moved, want it to stop at the end", tc.n, tc.up)
+		}
 	}
 }

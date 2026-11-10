@@ -264,6 +264,15 @@ func (w *world) cardInFocus(number int) error {
 
 func (w *world) boardSays(text string) error { return w.mustSay(text) }
 
+func (w *world) boardSaysBefore(first, second string) error {
+	screen := w.screen()
+	a, b := strings.Index(screen, first), strings.Index(screen, second)
+	if a < 0 || b < 0 || a > b {
+		return fmt.Errorf("the board does not say %q before %q:\n%s", first, second, screen)
+	}
+	return nil
+}
+
 func (w *world) boardSaysOnce(text string) error {
 	if got := strings.Count(w.screen(), text); got != 1 {
 		return fmt.Errorf("the board says %q %d times, not once:\n%s", text, got, w.screen())
