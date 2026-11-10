@@ -301,7 +301,7 @@ cairn backup show 2              # when it was made, and what it holds
 cairn backup delete 2 --yes
 cairn backup restore 2 --yes     # restore one; without a number, the most recent
 
-cairn task export ~/tasks.json   # every task and what it serves, never over a file
+cairn task export ~/tasks.json   # every task and objective, never over a file
 cairn task import ~/tasks.json   # add the tasks of such a file, as new tasks
 
 cairn migration list             # every change, applied or waiting

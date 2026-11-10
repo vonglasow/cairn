@@ -1830,7 +1830,7 @@ dialog.** `⌘E` and `⌘O`, on the bar of a board with nothing chosen and on a
 right click on the board, open the system's own file dialog (AppKit's panels
 on macOS, `gioui.org/x/explorer` elsewhere, see
 [dependencies.md](dependencies.md)): the engine writes every task out, with
-the objectives they serve (`task export`), and the file is saved where the
+every objective (`task export`), and the file is saved where the
 dialog says; or a file chosen there is copied aside and the engine adds its
 tasks as new ones (`task import`). Nothing on the board is replaced, so
 nothing is asked first. An earlier version carried the whole store and put

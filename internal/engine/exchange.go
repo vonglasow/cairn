@@ -70,12 +70,12 @@ type Imported struct {
 	Added    domain.Held `json:"added"`
 }
 
-// TaskExport writes every task to a file, with the objectives they serve.
+// TaskExport writes every task to a file, with every objective.
 var TaskExport = Operation{
 	Thing:   "task",
 	Verb:    "export",
-	Short:   "Write every task to a file, with the objectives they serve",
-	Does:    "Write every task, archived ones included, to a JSON file of your choosing, with the objectives they serve and the views, for task import to read into another store. A file already there is never written over.",
+	Short:   "Write every task to a file, with every objective",
+	Does:    "Write every task, archived ones included, to a JSON file of your choosing, with every objective, served by a task or not, and the views, for task import to read into another store. A file already there is never written over.",
 	Example: "cairn task export ~/Desktop/tasks.json",
 	Level:   Write,
 	Needs:   AStore,
@@ -153,49 +153,26 @@ func (e *Engine) exporting() (exchanged, error) {
 		}
 		out.Labels = append(out.Labels, filed)
 	}
-	served := map[int]bool{}
 	for _, t := range tasks {
 		shape := task.OfTask(t)
 		out.Tasks = append(out.Tasks, filed{Shape: shape, Spent: spent[shape.Number], Focused: slices.Contains(held, shape.Number)})
-		for _, o := range shape.Objectives {
-			served[o] = true
-		}
 	}
 	slices.SortFunc(out.Tasks, func(a, b filed) int { return a.Number - b.Number })
-	if out.Series, err = e.seriesWritten(served); err != nil {
+	if out.Series, err = e.seriesWritten(); err != nil {
 		return exchanged{}, err
 	}
 	t, err := e.tree()
 	if err != nil {
 		return exchanged{}, err
 	}
-	if out.Views, err = e.viewsWritten(served, t); err != nil {
+	if out.Views, err = e.viewsWritten(t); err != nil {
 		return exchanged{}, err
 	}
-	for _, n := range slices.Sorted(maps.Keys(reachedFrom(served, t))) {
+	for _, n := range slices.Sorted(maps.Keys(t.by)) {
 		c := t.by[n].Carried()
 		out.Objectives = append(out.Objectives, objectiveFiled{Shape: objective.OfObjective(t.by[n]), Parent: c.Parent, WaitsOn: c.WaitsOn})
 	}
 	return out, nil
-}
-
-func reachedFrom(served map[int]bool, t tree) map[int]bool {
-	reached := map[int]bool{}
-	next := slices.Collect(maps.Keys(served))
-	for len(next) > 0 {
-		n := next[0]
-		next = next[1:]
-		if reached[n] {
-			continue
-		}
-		reached[n] = true
-		c := t.by[n].Carried()
-		if c.Parent != 0 {
-			next = append(next, c.Parent)
-		}
-		next = append(next, c.WaitsOn...)
-	}
-	return reached
 }
 
 func writeNew(to string, out exchanged) error {

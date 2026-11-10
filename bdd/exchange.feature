@@ -15,6 +15,19 @@ Feature: Tasks carried from one store to another
       Then it succeeds
       And it says the file written holds 2 tasks and 1 objective
 
+    @exchange-an-objective-nothing-serves
+    Scenario: an objective no task serves is written too, and comes back
+      Given a file of my own exported from a store where these were run:
+        """
+        cairn objective new "Release 1.0"
+        cairn objective new "Someday"
+        cairn task new "Ship it" --objective 1
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And it says 1 task and 2 objectives were added
+      And `cairn objective show 2` says "Someday"
+
     @exchange-export-never-overwrites
     Scenario: exporting onto a file that is already there is refused
       Given I added a task titled "Write the spec"

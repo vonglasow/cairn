@@ -41,6 +41,10 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	ran(t, path,
 		asked(ObjectiveNew, "title", "Release 1.0"),
 		asked(ObjectiveNew, "title", "Served by nothing"),
+		asked(ObjectiveNew, "title", "Gone"),
+		func() (Operation, Input) {
+			return ObjectiveDelete, Input{Confirmed: true, Given: map[string]string{"number": "3"}}
+		},
 		asked(TaskNew, "title", "Write the spec", "objective", "1"),
 		asked(TaskNew, "title", "Old idea"),
 		asked(TaskArchive, "number", "2"),
@@ -50,7 +54,7 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if got := RenderText(TaskExport, answer); got != to+" holds 2 task(s) and 1 objective(s)\n" {
+	if got := RenderText(TaskExport, answer); got != to+" holds 2 task(s) and 2 objective(s)\n" {
 		t.Errorf("it says %q", got)
 	}
 	if shape, ok := Of(TaskExport, answer).(Exported); !ok || shape.Exported != to || shape.Holds.Tasks != 2 {
@@ -60,13 +64,13 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"cairn": "tasks"`, `"version": 7`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`} {
+	for _, want := range []string{`"cairn": "tasks"`, `"version": 7`, `"Write the spec"`, `"Old idea"`, `"archived": true`, `"Release 1.0"`, `"Served by nothing"`} {
 		if !strings.Contains(string(written), want) {
 			t.Errorf("the file holds no %s:\n%s", want, written)
 		}
 	}
-	if strings.Contains(string(written), "Served by nothing") {
-		t.Error("an objective no task serves was written out")
+	if strings.Contains(string(written), `"Gone"`) {
+		t.Error("an objective deleted was written out")
 	}
 	if _, err := Do(TaskExport, path, Input{Given: map[string]string{"to": to}}); !errors.Is(err, os.ErrExist) {
 		t.Errorf("exporting onto it again answered %v", err)

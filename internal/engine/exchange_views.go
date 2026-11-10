@@ -14,7 +14,7 @@ type viewFiled struct {
 	Holds
 }
 
-func (e *Engine) viewsWritten(served map[int]bool, t tree) ([]viewFiled, error) {
+func (e *Engine) viewsWritten(t tree) ([]viewFiled, error) {
 	views, err := e.store.Views()
 	if err != nil {
 		return nil, err
@@ -24,9 +24,6 @@ func (e *Engine) viewsWritten(served map[int]bool, t tree) ([]viewFiled, error) 
 		v.Objectives = slices.DeleteFunc(slices.Clone(v.Objectives), func(n int) bool { _, there := t.by[n]; return !there })
 		if !narrowsAnything(v) {
 			continue
-		}
-		for _, n := range v.Objectives {
-			served[n] = true
 		}
 		out = append(out, viewFiled{Name: v.Name, Holds: Holds{State: v.State, Priority: v.Priority, Label: v.Labels, Objective: v.Objectives,
 			Itself: v.Itself, DueBefore: v.DueBefore, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search}})

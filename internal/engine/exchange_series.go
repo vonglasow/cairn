@@ -21,7 +21,7 @@ type seriesFiled struct {
 
 var seriesDid = []string{"made", "missed", "skipped", "changed", "stopped", "resumed", "deleted"}
 
-func (e *Engine) seriesWritten(served map[int]bool) ([]seriesFiled, error) {
+func (e *Engine) seriesWritten() ([]seriesFiled, error) {
 	every, err := e.store.EverySeries()
 	if err != nil {
 		return nil, err
@@ -31,9 +31,6 @@ func (e *Engine) seriesWritten(served map[int]bool) ([]seriesFiled, error) {
 		s, err := e.aSeries(kept)
 		if err != nil {
 			return nil, err
-		}
-		for _, o := range kept.Objectives {
-			served[o] = true
 		}
 		out = append(out, seriesFiled{Number: kept.Number, Rule: kept.Rule, From: kept.Start, Stopped: kept.Stopped,
 			Template: Template{Title: kept.Title, Priority: kept.Priority, Labels: listed(kept.Labels), Steps: listed(kept.Steps),

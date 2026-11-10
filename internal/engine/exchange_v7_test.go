@@ -36,8 +36,8 @@ func TestTaskExport_writesTheViewsAndTheObjectivesTheyName(t *testing.T) {
 	if attic.Name != "Attic" || !attic.Archived {
 		t.Errorf("the third view reads %+v", attic)
 	}
-	if len(read.Objectives) != 1 || read.Objectives[0].Title != "Named by a view alone" {
-		t.Errorf("the objectives written are %+v, want the one the view names", read.Objectives)
+	if len(read.Objectives) != 2 || read.Objectives[0].Title != "Named by a view alone" || read.Objectives[1].Title != "Served by nothing" {
+		t.Errorf("the objectives written are %+v, want the one the view names and the one nothing names", read.Objectives)
 	}
 }
 

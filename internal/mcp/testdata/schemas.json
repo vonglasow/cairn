@@ -6490,7 +6490,7 @@
       "idempotentHint": true,
       "openWorldHint": false,
       "readOnlyHint": false,
-      "title": "Write every task to a file, with the objectives they serve"
+      "title": "Write every task to a file, with every objective"
     },
     "input": {
       "additionalProperties": false,

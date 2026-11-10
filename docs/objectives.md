@@ -327,9 +327,10 @@ Migration #20, `an objective can wait on another`, adds a table of its own,
 `objective_waits`; rolling it back loses which waits on which and nothing
 else (`@objective-waits-on-migration-rollback`).
 
-**A task file carries the tree.** `task export` writes the objectives its
-tasks serve, the parents of those and what they wait on, each with its
-`parent` and its `waits_on`; `task import` brings them in under the same
+**A task file carries the tree.** `task export` writes every objective, a
+task serving it or not, each with its `parent` and its `waits_on` — it once
+wrote only those its tasks served and what they reached, and an objective
+nothing served was lost on the way (`@exchange-an-objective-nothing-serves`); `task import` brings them in under the same
 parents, waiting on the same objectives, at their new numbers
 (`@exchange-objectives-come-with-their-tree-and-what-they-wait-on`). A file
 whose objective sits under or waits on one it does not hold is refused before

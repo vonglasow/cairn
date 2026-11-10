@@ -22,10 +22,10 @@ func TestTaskExport_writesTheTreeWhatWaitsAndTheScopes(t *testing.T) {
 	for _, o := range read.Objectives {
 		numbers = append(numbers, o.Number)
 	}
-	if !slices.Equal(numbers, []int{2, 3, 4}) {
-		t.Fatalf("the file holds objectives %v, want what the task serves, its parent and what it waits on", numbers)
+	if !slices.Equal(numbers, []int{1, 2, 3, 4}) {
+		t.Fatalf("the file holds objectives %v, want every one, served or not", numbers)
 	}
-	if read.Objectives[0].Parent != 0 || read.Objectives[1].Parent != 2 || read.Objectives[2].Parent != 2 || !slices.Equal(read.Objectives[2].WaitsOn, []int{3}) {
+	if read.Objectives[1].Parent != 0 || read.Objectives[2].Parent != 2 || read.Objectives[3].Parent != 2 || !slices.Equal(read.Objectives[3].WaitsOn, []int{3}) {
 		t.Errorf("the objectives read %+v", read.Objectives)
 	}
 	if !slices.ContainsFunc(read.Labels, func(l labelFiled) bool { return l.Label == "area" && l.Scope == "objectives" }) {
