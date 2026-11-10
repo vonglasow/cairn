@@ -145,6 +145,7 @@ type Window struct {
 	draggingBar                     bool
 
 	held                  Held
+	grabbedGoal           int
 	pressed               bool
 	pressedOn             Screen
 	acts                  []string

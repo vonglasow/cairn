@@ -368,6 +368,15 @@ func (w *world) findGoal(title string) (Point, error) {
 	return Point{}, fmt.Errorf("no objective titled %q is on screen", title)
 }
 
+func (w *world) goalBox(title string) (Box, error) {
+	for i, b := range w.w.Tree() {
+		if b.Goal.Title == title {
+			return ItemOf(GoalAt(w.w.Layout(), i, w.w.goals), depthOf(b)), nil
+		}
+	}
+	return Box{}, fmt.Errorf("no objective titled %q is on screen", title)
+}
+
 func (w *world) clickGoal(title string) error {
 	at, err := w.findGoal(title)
 	if err != nil {
@@ -1201,6 +1210,25 @@ func (w *world) register(sc *godog.ScenarioContext) {
 				w.was = i
 			}
 		}
+		return nil
+	})
+	sc.Step(`^I drag the objective "([^"]*)" (onto|above|below) "([^"]*)"$`, func(title, how, target string) error {
+		from, err := w.findGoal(title)
+		if err != nil {
+			return err
+		}
+		box, err := w.goalBox(target)
+		if err != nil {
+			return err
+		}
+		to := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+		switch how {
+		case "above":
+			to.Y = box.Y + 2
+		case "below":
+			to.Y = box.Y + box.H - 2
+		}
+		w.w = w.w.PressAt(from).MoveTo(Point{X: from.X, Y: from.Y + Wobble*3}).MoveTo(to).LetGo(to)
 		return nil
 	})
 	sc.Step(`^I click "([^"]*)"$`, w.clickOffer)

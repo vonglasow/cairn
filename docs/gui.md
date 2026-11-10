@@ -1270,6 +1270,20 @@ written to the store or the settings — a key for a view state can come the
 day somebody asks (`@gui-objective-folds-are-kept-for-the-window`). A
 parent holding what is chosen is drawn open, whatever chose it.
 
+**The order is moved by hand** (#277). `⇧↑` and `⇧↓` move the chosen
+objective among its siblings, a parent with its sub-objectives, and stop at
+either end (`@gui-objective-shift-arrows-reorder`). An objective dragged is
+let go over a row in its top quarter (before it), its middle half (under it,
+last) or its bottom quarter (after it); a parent goes by the level-one row,
+and nothing goes under a sub-objective or a parent under another — the drop
+moves nothing then (`engine.Dropped`,
+`@gui-objective-dragged-reorders-and-changes-parent`,
+`@gui-objective-a-parent-dragged-onto-another-is-refused`). A refusal from
+the store, a task counted twice, is said above the bar. Not built from the
+mockup yet: a folded parent unfolding after 600 ms under the pointer, the
+pointer's x choosing the level under a last sub-objective, and the tag saying
+where the drop lands.
+
 **A search unfolds the parent of what it reaches.** The list narrows in
 place; a parent that does not match but holds a match stays, faint, saying
 `holds a match`, its sub-objectives that match under it and the match marked

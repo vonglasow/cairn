@@ -5807,6 +5807,32 @@ Feature: The desktop board
       And I press "shift+up"
       Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
 
+    @gui-objective-dragged-reorders-and-changes-parent
+    Scenario: an objective dragged above or below another takes that place, and dropped onto a parent goes under it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Tidy the workshop"
+      And I added an objective titled "Garden"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I drag the objective "Garden" above "Home automation"
+      Then the objectives read "Garden", "Home automation", "Tidy the workshop"
+      When I drag the objective "Garden" below "Tidy the workshop"
+      Then the objectives read "Home automation", "Tidy the workshop", "Garden"
+      When I drag the objective "Garden" onto "Home automation"
+      And I click the objective "Home automation"
+      And I press "right"
+      Then the objectives read "Home automation", "Garden", "Tidy the workshop"
+
+    @gui-objective-a-parent-dragged-onto-another-is-refused
+    Scenario: a parent dropped onto another objective is refused, and nothing moves
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I drag the objective "Home automation" onto "Garden"
+      Then the objectives read "Home automation", "Garden"
+
     @gui-objective-z-and-option-arrows-fold
     Scenario: z folds and unfolds, on a sub-objective folds its parent and climbs to it, and option with an arrow does every parent
       Given I added an objective titled "Home automation"

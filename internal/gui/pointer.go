@@ -589,6 +589,9 @@ func (w Window) PressAt(p Point) Window {
 		return w
 	}
 	if w.tab == Objectives {
+		if n := w.goalAt(p); n != 0 {
+			w.grabbedGoal, w.held = n, Held{From: p, At: p}
+		}
 		return w
 	}
 	if widening, on := gutterAt(w.Layout(), w.sizes, p); on && w.tab == Tasks {
@@ -642,7 +645,7 @@ func (w Window) MoveTo(p Point) Window {
 		w.serving = w.settledServing(Reached(w.workBar(), len(w.Under())+1, room, p) * SubHeight)
 		return w
 	}
-	if w.held.Number == 0 && w.form.carried == 0 {
+	if w.held.Number == 0 && w.form.carried == 0 && w.grabbedGoal == 0 {
 		return w
 	}
 	w.held.At = p
@@ -687,8 +690,11 @@ func (w Window) LetGo(p Point) Window {
 	waiting, was := w.pressed, w.pressedOn
 	w.pressed = false
 	if !waiting || was != w.screen {
-		w.held = Held{}
+		w.held, w.grabbedGoal = Held{}, 0
 		return w
+	}
+	if w.grabbedGoal != 0 {
+		return w.lettingGoOfAGoal(p)
 	}
 	if w.form.carried != 0 {
 		return w.lettingGoOfAPart(p)

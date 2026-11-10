@@ -135,3 +135,38 @@ func TestStepped_movesAnObjectiveAmongItsSiblingsAndStopsAtTheEnds(t *testing.T)
 		}
 	}
 }
+
+func TestDropped_saysWhereAnObjectiveLetGoOverARowGoes(t *testing.T) {
+	goals := []Goal{{Number: 1, Children: []int{4, 5}}, {Number: 4, Parent: 1}, {Number: 5, Parent: 1}, {Number: 2}, {Number: 3}}
+	at := func(n int) int { return n }
+	for _, tc := range []struct {
+		name    string
+		dragged int
+		over    int
+		zone    DropZone
+		want    map[string]string
+	}{
+		{"before the first level one", 3, at(1), DropBefore, map[string]string{"number": "3", "parent": "none", "first": "true"}},
+		{"after a level one", 1, at(2), DropAfter, map[string]string{"number": "1", "after": "2"}},
+		{"before a sibling", 3, at(2), DropBefore, map[string]string{"number": "3", "after": "1"}},
+		{"into a parent", 2, at(1), DropInto, map[string]string{"number": "2", "parent": "1", "last": "true"}},
+		{"before a sub-objective", 2, at(5), DropBefore, map[string]string{"number": "2", "after": "4"}},
+		{"a parent over a sub-objective goes by its parent", 1, at(5), DropAfter, map[string]string{"number": "1", "after": "1"}},
+		{"into a sub-objective is after it", 2, at(4), DropInto, map[string]string{"number": "2", "after": "4"}},
+		{"below every row is last at level one", 4, 0, DropAfter, map[string]string{"number": "4", "parent": "none", "last": "true"}},
+	} {
+		if _, ok := Dropped(goals, 1, 3, DropInto); ok {
+			t.Errorf("a parent dropped into another moved, want nothing to move: two levels at most")
+		}
+		in, ok := Dropped(goals, tc.dragged, tc.over, tc.zone)
+		if tc.name == "a parent over a sub-objective goes by its parent" {
+			if ok {
+				t.Errorf("%s: moved %v, want nothing since it lands where it is", tc.name, in.Given)
+			}
+			continue
+		}
+		if !ok || !maps.Equal(in.Given, tc.want) {
+			t.Errorf("%s: Dropped = %v %v, want %v", tc.name, in.Given, ok, tc.want)
+		}
+	}
+}

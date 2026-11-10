@@ -98,6 +98,7 @@ func Draw(k Kit, w Window) {
 	top()
 	if w.Tab() == Objectives {
 		drawGoals(k, l, w)
+		drawGoalDragging(k.on(LayerDrag), w)
 	} else if w.Tab() == Time {
 		drawWeek(k, l, w)
 	} else if w.Tab() == Series {
@@ -871,6 +872,22 @@ func (w Window) cardOf(c engine.Card, chosen, hovered bool) Card {
 func goalFace(g engine.Goal) engine.Card {
 	return engine.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g),
 		Deadline: g.Deadline}
+}
+
+func drawGoalDragging(k Kit, w Window) {
+	if landing, somewhere := w.GoalLanding(); somewhere {
+		Ring{Target: true, Radius: k.skin.Radius.Card}.Draw(k, landing)
+	}
+	if !w.GoalDragging() {
+		return
+	}
+	g, found := w.snap.Goal(w.grabbedGoal)
+	if !found {
+		return
+	}
+	wide := GoalsRun(w.Layout()).W
+	ghost := Box{X: w.held.At.X - wide/2, Y: w.held.At.Y - CardHeight/2, W: wide, H: CardHeight}
+	Card{Dragged: true, Face: goalFace(g)}.Draw(k, ghost)
 }
 
 func drawDragging(k Kit, w Window) {
