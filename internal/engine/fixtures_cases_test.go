@@ -137,6 +137,10 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 	if !coloured || !idle || !scoped {
 		t.Errorf("labels: a colour chosen %v, one nothing carries %v, one for objectives only %v", coloured, idle, scoped)
 	}
+	namingAnObjective := slices.ContainsFunc(read.Views, func(v viewFiled) bool { return len(v.Objective) > 0 })
+	if len(read.Views) < 2 || !namingAnObjective {
+		t.Errorf("views: %d, one naming an objective %v; want two at least, one naming an objective", len(read.Views), namingAnObjective)
+	}
 }
 
 func slicesOf(m map[string]int) []int {

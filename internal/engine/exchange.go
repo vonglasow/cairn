@@ -19,7 +19,7 @@ import (
 
 const (
 	exchangeKind    = "tasks"
-	exchangeVersion = 6
+	exchangeVersion = 7
 	beforeSteps     = 1
 )
 
@@ -36,6 +36,7 @@ type exchanged struct {
 	Labels     []labelFiled     `json:"labels,omitempty"`
 	Tasks      []filed          `json:"tasks"`
 	Series     []seriesFiled    `json:"series,omitempty"`
+	Views      []viewFiled      `json:"views,omitempty"`
 }
 
 type labelFiled struct {
@@ -74,7 +75,7 @@ var TaskExport = Operation{
 	Thing:   "task",
 	Verb:    "export",
 	Short:   "Write every task to a file, with the objectives they serve",
-	Does:    "Write every task, archived ones included, to a JSON file of your choosing, with the objectives they serve, for task import to read into another store. A file already there is never written over.",
+	Does:    "Write every task, archived ones included, to a JSON file of your choosing, with the objectives they serve and the views, for task import to read into another store. A file already there is never written over.",
 	Example: "cairn task export ~/Desktop/tasks.json",
 	Level:   Write,
 	Needs:   AStore,
@@ -102,7 +103,7 @@ var TaskImport = Operation{
 	Thing:   "task",
 	Verb:    "import",
 	Short:   "Add the tasks of a file written by task export",
-	Does:    "Add the tasks of a file written by task export, as new tasks numbered after the ones already here, with the objectives they serve as new objectives. Nothing already here is replaced or merged, so a file read twice is added twice. A file that is not one, or whose tasks point outside it, is refused before anything is added.",
+	Does:    "Add the tasks of a file written by task export, as new tasks numbered after the ones already here, with the objectives they serve as new objectives and the views after the ones here. Nothing already here is replaced or merged, so a file read twice is added twice, and a view whose name one here has is left out. A file that is not one, or whose tasks point outside it, is refused before anything is added.",
 	Example: "cairn task import ~/Downloads/tasks.json",
 	Level:   Write,
 	Needs:   AStore,
@@ -166,6 +167,9 @@ func (e *Engine) exporting() (exchanged, error) {
 	}
 	t, err := e.tree()
 	if err != nil {
+		return exchanged{}, err
+	}
+	if out.Views, err = e.viewsWritten(served, t); err != nil {
 		return exchanged{}, err
 	}
 	for _, n := range slices.Sorted(maps.Keys(reachedFrom(served, t))) {
@@ -309,6 +313,9 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 	if err := e.seriesFiled(read.Series, tasks, objectives); err != nil {
 		return domain.Held{}, err
 	}
+	if err := e.viewsFiled(read.Views, objectives); err != nil {
+		return domain.Held{}, err
+	}
 	return domain.Held{Tasks: len(order), Objectives: len(read.Objectives)}, nil
 }
 
@@ -401,6 +408,9 @@ func checked(read exchanged) ([]filed, error) {
 		}
 	}
 	if err := checkedSeries(read.Series, objectives); err != nil {
+		return nil, err
+	}
+	if err := checkedViews(read.Views, objectives); err != nil {
 		return nil, err
 	}
 	byNumber := map[int]filed{}

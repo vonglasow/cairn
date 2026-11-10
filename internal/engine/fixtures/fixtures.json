@@ -1,6 +1,6 @@
 {
   "cairn": "tasks",
-  "version": 6,
+  "version": 7,
   "objectives": [
     {
       "number": 1,
@@ -912,6 +912,21 @@
         {
           "did": "stopped"
         }
+      ]
+    }
+  ],
+  "views": [
+    {
+      "name": "Home automation",
+      "objective": [
+        8
+      ]
+    },
+    {
+      "name": "Backend, due soon",
+      "priority": "high",
+      "label": [
+        "backend"
       ]
     }
   ]

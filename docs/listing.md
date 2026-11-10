@@ -593,8 +593,21 @@ looked for the way `task search` looks, every word held
 `view_objectives`, `view_labels` — beside the work it narrows, carried by a
 backup and a restore with it, never in `settings.toml`, which says how cairn
 behaves and not what the work holds. Rolling the change back drops the three
-and loses the views alone (`@view-migration-rollback-loses-the-views`). An export (`task export`) does not carry them yet: a file carries the work,
-and the views of the store it lands in are that store's.
+and loses the views alone (`@view-migration-rollback-loses-the-views`).
+
+**An export carries them.** `task export` writes every view in its place, its
+name and its filters, and the objectives it names with the rest, even one no
+task serves; `task import` adds each after the views already here, naming its
+objectives at their new numbers (`@exchange-views-come-with-their-filters`). A
+view whose name one here already has, folded the same way, is left out and the
+one here stays as it was, as a label already here does
+(`@exchange-a-view-named-here-stays-as-it-is`). A view that names an objective
+the file does not hold, or that cannot be read — a name missing, a filter
+outside what `view new` takes, nothing held — refuses the whole file before
+anything is added (`@exchange-a-view-outside-the-file`,
+`@exchange-a-view-that-cannot-be-read`). An objective gone is not written: it
+narrows nothing already, and a view it leaves holding nothing is left out of
+the file rather than come back as the whole board under a name.
 
 **A name is one no view has**, whatever its case or its accents, folded the
 way a label is (`@view-new-refuses-a-name-taken`), and a view holds at least

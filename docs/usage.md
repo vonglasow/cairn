@@ -323,13 +323,14 @@ picking the wrong one costs a command rather than the work it overwrote.
 A backup is read in the shape it was written, never today's: one taken before
 objectives existed says it holds none, rather than refusing to be read at all.
 
-An export is a file of version 6. Beside each task and the objectives it
+An export is a file of version 7. Beside each task and the objectives it
 serves, it carries the time spent day by day (`"spent": {"2026-10-01": "2h"}`),
 whether the task is in focus (`"focused": true`), every label with its
 colour and, when it is not for both, its scope (`"scope": "objectives"`),
 labels nothing carries included, and each objective's `parent` and
 `waits_on`, the objectives they name written with it, and every series, its
-rule, template, state and trace (see [series.md](series.md#carried-in-a-file)). All of it is optional, so a file
+rule, template, state and trace (see [series.md](series.md#carried-in-a-file)), and every
+view, its name and its filters (see [listing.md](listing.md#a-view-keeps-the-filters-under-a-name)). All of it is optional, so a file
 written by hand — fixtures, a board to show — says only what it needs, and may
 count its days from the day it is read: `"deadline": "+3d"`, `"-1d"`, `"+2w"`,
 the same in the keys of `spent` (`@exchange-a-day-counted-from-today`). An
@@ -341,8 +342,8 @@ where it was spent (`@exchange-time-comes-day-by-day`). A file of version 3
 carries the total alone, and it is added on the day the file is read
 (`@exchange-a-total-of-time-from-version-3`) — it used to be dropped. A task in
 focus comes back in focus, which puts it under way as focusing does. A label
-already in the store keeps its colour and its scope: nothing here is
-replaced.
+already in the store keeps its colour and its scope, and a view already named
+here keeps its filters: nothing here is replaced.
 
 ## The board
 

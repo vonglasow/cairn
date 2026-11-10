@@ -21,8 +21,8 @@ func TestTaskExport_writesTheSeriesTheirTemplateAndTheirTrace(t *testing.T) {
 		asked(TaskNew, "title", "Expense report", "every", "every 4 weeks on monday"),
 		asked(SeriesStop, "number", "2"),
 	)
-	if read.Version != 6 {
-		t.Errorf("version %d, want 6", read.Version)
+	if read.Version != 7 {
+		t.Errorf("version %d, want 7", read.Version)
 	}
 	if len(read.Series) != 2 {
 		t.Fatalf("the file holds %d series, want 2", len(read.Series))
@@ -141,12 +141,12 @@ func TestTaskImport_refusesASeriesItCannotRead(t *testing.T) {
 	}
 }
 
-func TestTaskImport_aFileOfVersion6IsRead(t *testing.T) {
+func TestTaskImport_aFileOfVersion8IsRefused(t *testing.T) {
 	from := filepath.Join(t.TempDir(), "held.json")
-	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 7, "objectives": [], "tasks": []}`), 0o600); err != nil {
+	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 8, "objectives": [], "tasks": []}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := readExport(from); !errors.Is(err, ErrNotAnExport) {
-		t.Errorf("a file of version 7 reads %v", err)
+		t.Errorf("a file of version 8 reads %v", err)
 	}
 }

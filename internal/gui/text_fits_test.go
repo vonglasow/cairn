@@ -41,8 +41,6 @@ func onTheFixtures(t *testing.T) engine.Work {
 		op engine.Operation
 		in engine.Input
 	}{
-		{engine.ViewNew, engine.Input{Given: map[string]string{"name": "Home automation"}, Listed: map[string][]string{"objective": {"8"}}}},
-		{engine.ViewNew, engine.Input{Given: map[string]string{"name": "Backend, due soon", "priority": "high"}, Listed: map[string][]string{"label": {"backend"}}}},
 		{engine.ViewNew, engine.Input{Given: map[string]string{"name": "Gone"}, Listed: map[string][]string{"label": {"long-gone"}}}},
 		{engine.LabelDelete, engine.Input{Given: map[string]string{"label": "long-gone"}, Confirmed: true}},
 	} {

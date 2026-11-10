@@ -40,8 +40,8 @@ func TestTaskExport_writesTheTimeDayByDayTheFocusAndTheLabels(t *testing.T) {
 		func() (Operation, Input) { return LabelNew, given("label", "release") },
 		func() (Operation, Input) { return LabelColour, given("label", "release", "colour", "teal") },
 	)
-	if read.Version != 6 {
-		t.Errorf("version %d, want 6", read.Version)
+	if read.Version != 7 {
+		t.Errorf("version %d, want 7", read.Version)
 	}
 	if got := read.Tasks[0].Spent; got["2026-10-01"] != "2h" || got["2026-10-02"] != "45m" || len(got) != 2 {
 		t.Errorf("task 1 spent %v, want 2h on the 1st and 45m on the 2nd", got)
@@ -116,7 +116,7 @@ func TestTaskImport_refusesWhatVersion4CannotRead(t *testing.T) {
 		`{"cairn": "tasks", "version": 4, "objectives": [], "tasks": [{"number": 1, "title": "x", "state": "todo", "priority": "normal", "spent": {"-1d": "ages"}}]}`,
 		`{"cairn": "tasks", "version": 4, "objectives": [], "labels": [{"label": "x", "colour": "plaid"}], "tasks": []}`,
 		`{"cairn": "tasks", "version": 4, "objectives": [], "labels": [{"label": "a:b"}], "tasks": []}`,
-		`{"cairn": "tasks", "version": 7, "objectives": [], "tasks": []}`,
+		`{"cairn": "tasks", "version": 8, "objectives": [], "tasks": []}`,
 	} {
 		from := filepath.Join(t.TempDir(), "held.json")
 		if err := os.WriteFile(from, []byte(file), 0o600); err != nil {

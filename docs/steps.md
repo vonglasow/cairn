@@ -116,7 +116,8 @@ in [ordering.md](ordering.md#a-task-is-not-done-while-one-of-its-steps-is-open).
   [links.md](links.md); version 4 the time day by day, the focus and the
   labels, see [usage.md](usage.md); version 5 the objectives' tree and what
   they wait on, and the labels' scope, see [objectives.md](objectives.md#two-levels);
-  version 6 the series, see [series.md](series.md#carried-in-a-file)). Import still reads a version 1 file, and its
+  version 6 the series, see [series.md](series.md#carried-in-a-file); version 7
+  the views, see [listing.md](listing.md#a-view-keeps-the-filters-under-a-name)). Import still reads a version 1 file, and its
   sub-tasks come in as steps of their parent, those left first, then those done
   (`@exchange-import-reads-sub-tasks-as-steps`).
 - **The boards**: neither draws a step as a card

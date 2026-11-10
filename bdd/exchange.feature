@@ -324,3 +324,59 @@ Feature: Tasks carried from one store to another
       When I import the tasks of that file
       Then it fails
       And `cairn task list` lists 0 tasks
+
+  Rule: A file carries the views, and an import gives them back naming the objectives at their new numbers
+
+    @exchange-views-come-with-their-filters
+    Scenario: a view comes back with its filters, naming its objective at its new number
+      Given I added an objective titled "Already here"
+      And a file of my own exported from a store where these were run:
+        """
+        cairn objective new "Home automation"
+        cairn view new Home --objective 1 --state todo
+        cairn view new Shopping --label shopping --search milk
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And `cairn view show Home` says "objective 2 · state todo"
+      And `cairn view show Shopping` says "label shopping · search"
+      And `cairn objective show 2` says "Home automation"
+
+    @exchange-a-view-named-here-stays-as-it-is
+    Scenario: a view whose name a view here already has is left out, and the one here stays as it was
+      Given I run `cairn view new home --state current`
+      And a file of my own exported from a store where these were run:
+        """
+        cairn view new Home --state todo
+        cairn view new Errands --state blocked
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And `cairn view show Home` says "state current"
+      And `cairn view show Errands` says "state blocked"
+
+    @exchange-a-view-outside-the-file
+    Scenario: a file whose view names an objective it does not hold is refused before anything is added
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 7, "objectives": [],
+         "tasks": [{"number": 1, "title": "Ship it", "state": "todo", "priority": "normal"}],
+         "views": [{"name": "Home", "objective": [9]}]}
+        """
+      When I import the tasks of that file
+      Then it fails
+      And it says objective 9 is not in the file
+      And `cairn task list` lists 0 tasks
+      And `cairn view list` says "there is no view"
+
+    @exchange-a-view-that-cannot-be-read
+    Scenario: a file whose view holds no filter is refused before anything is added
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 7, "objectives": [],
+         "tasks": [{"number": 1, "title": "Ship it", "state": "todo", "priority": "normal"}],
+         "views": [{"name": "Everything"}]}
+        """
+      When I import the tasks of that file
+      Then it fails
+      And `cairn task list` lists 0 tasks
