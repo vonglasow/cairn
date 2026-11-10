@@ -25,7 +25,8 @@ type LabelCarried struct {
 
 // Labels is how the labels answer: every one, in alphabetical order, with what carries it.
 type Labels struct {
-	Labels []LabelCarried `json:"labels"`
+	Labels   []LabelCarried `json:"labels"`
+	Warnings []string       `json:"warnings,omitempty" jsonschema:"what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"`
 }
 
 type carriers struct {
@@ -240,7 +241,15 @@ var LabelDelete = Operation{
 		if err := on.Engine.store.ForgetLabel(label); err != nil {
 			return Answer{}, err
 		}
-		return listedLabels(on)
+		held, err := on.Engine.viewsHolding(label)
+		if err != nil {
+			return Answer{}, err
+		}
+		answer, err := listedLabels(on)
+		if held > 0 {
+			answer.Warnings = []string{fmt.Sprintf("%s the label %s; it narrows nothing there now", manyOf(held, "view holds", "views hold"), label)}
+		}
+		return answer, err
 	},
 }
 
@@ -273,6 +282,9 @@ var LabelRename = Operation{
 				return Answer{}, err
 			}
 			if err := on.Engine.store.RenameKeptLabel(label, to); err != nil {
+				return Answer{}, err
+			}
+			if err := on.Engine.relabelViews(label, to); err != nil {
 				return Answer{}, err
 			}
 		}

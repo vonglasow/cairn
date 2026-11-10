@@ -333,4 +333,35 @@ CREATE TABLE IF NOT EXISTS objective_waits (
 DROP TABLE IF EXISTS objective_waits;`,
 		loses: "which objective waits on which; every objective and every task stays as it was",
 	},
+	{
+		name: "a view keeps the filters under a name",
+		does: `
+CREATE TABLE IF NOT EXISTS views (
+	id            INTEGER PRIMARY KEY,
+	name          TEXT    NOT NULL UNIQUE,
+	place         INTEGER NOT NULL,
+	state         TEXT    NOT NULL DEFAULT '',
+	priority      TEXT    NOT NULL DEFAULT '',
+	due_before    TEXT    NOT NULL DEFAULT '',
+	itself        INTEGER NOT NULL DEFAULT 0,
+	archived      INTEGER NOT NULL DEFAULT 0,
+	with_archived INTEGER NOT NULL DEFAULT 0,
+	search        TEXT    NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS view_objectives (
+	view_id          INTEGER NOT NULL,
+	objective_number INTEGER NOT NULL,
+	PRIMARY KEY (view_id, objective_number)
+);
+CREATE TABLE IF NOT EXISTS view_labels (
+	view_id INTEGER NOT NULL,
+	label   TEXT    NOT NULL,
+	PRIMARY KEY (view_id, label)
+);`,
+		undoes: `
+DROP TABLE IF EXISTS view_labels;
+DROP TABLE IF EXISTS view_objectives;
+DROP TABLE IF EXISTS views;`,
+		loses: "every view and the filters it held; every task, objective and label stays as it was",
+	},
 }

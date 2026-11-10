@@ -220,6 +220,7 @@ type Went struct {
 }
 
 var deletionChoices = []Argument{
+	{Name: "views", Kind: Text, OneOf: []string{"off", "delete"}, Means: "what becomes of the views naming what is deleted: the objective taken off them, a view holding nothing else keeping it gone, or the views deleted"},
 	{Name: "sub-objectives", Kind: Text, OneOf: []string{"keep", "delete"}, Means: "what becomes of its sub-objectives: kept, each standing on its own, or deleted"},
 	{Name: "keep", Kind: List, Of: "an objective", Means: "a sub-objective kept, standing on its own, whatever sub-objectives says"},
 	{Name: "delete", Kind: List, Of: "an objective", Means: "a sub-objective deleted, whatever sub-objectives says"},
@@ -228,6 +229,7 @@ var deletionChoices = []Argument{
 
 type deletion struct {
 	subs, tasks  string
+	views        string
 	keep, delete []int
 }
 
@@ -237,7 +239,7 @@ func deletionOf(in Input) (deletion, error) {
 			return deletion{}, err
 		}
 	}
-	d := deletion{subs: in.Given["sub-objectives"], tasks: in.Given["tasks"]}
+	d := deletion{subs: in.Given["sub-objectives"], tasks: in.Given["tasks"], views: in.Given["views"]}
 	for name, into := range map[string]*[]int{"keep": &d.keep, "delete": &d.delete} {
 		for _, raw := range in.Listed[name] {
 			n, err := strconv.Atoi(strings.TrimSpace(raw))
@@ -284,10 +286,21 @@ func (e *Engine) deleteObjectives(numbers []int, d deletion) (Went, error) {
 	if err != nil {
 		return Went{}, err
 	}
-	if len(undecided) > 0 || len(touched) > 0 && d.tasks == "" {
-		return Went{}, e.asking(numbers, undecided, touched, d)
+	views, err := e.store.Views()
+	if err != nil {
+		return Went{}, err
 	}
-	return went, e.carryOut(goners, went.Kept, touched, d.tasks, &went)
+	naming := viewsNaming(views, goners)
+	if len(undecided) > 0 || len(touched) > 0 && d.tasks == "" || len(naming) > 0 && d.views == "" {
+		return Went{}, e.asking(numbers, undecided, touched, naming, d)
+	}
+	if err := e.carryOut(goners, went.Kept, touched, d.tasks, &went); err != nil {
+		return Went{}, err
+	}
+	if len(naming) == 0 {
+		return went, nil
+	}
+	return went, e.unview(goners, d.views)
 }
 
 func (d deletion) namesOnly(numbers []int, t tree) error {
@@ -347,18 +360,21 @@ func (e *Engine) carryOut(goners, kept []int, touched []task.Task, tasks string,
 }
 
 type askingWhatGoes struct {
-	said           string
-	carries, holds bool
+	said                  string
+	carries, holds, named bool
 }
 
 func (a *askingWhatGoes) Error() string { return a.said }
 
 func (a *askingWhatGoes) Is(target error) bool {
-	return target == ErrObjectiveCarriesTasks && a.carries || target == ErrObjectiveHoldsSubObjectives && a.holds
+	return target == ErrObjectiveCarriesTasks && a.carries || target == ErrObjectiveHoldsSubObjectives && a.holds || target == ErrObjectiveNamedByAView && a.named
 }
 
-func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched []task.Task, d deletion) error {
-	a := &askingWhatGoes{holds: len(undecided) > 0, carries: len(touched) > 0}
+// ErrObjectiveNamedByAView is why an objective a view names is not deleted until it is said what becomes of the view.
+var ErrObjectiveNamedByAView = errors.New("a view names it")
+
+func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched []task.Task, naming []string, d deletion) error {
+	a := &askingWhatGoes{holds: len(undecided) > 0, carries: len(touched) > 0, named: len(naming) > 0 && d.views == ""}
 	var lines []string
 	for _, c := range undecided {
 		cn := c.Carried()
@@ -377,6 +393,9 @@ func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched 
 		f := factsOf(one)
 		lines = append(lines, fmt.Sprintf("  task #%d  %s", f.Number, f.Title))
 	}
+	if !a.holds && d.tasks != "" {
+		a.carries = false
+	}
 	what := ErrObjectiveHoldsSubObjectives.Error()
 	if a.carries {
 		what = ErrObjectiveCarriesTasks.Error()
@@ -390,6 +409,16 @@ func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched 
 	}
 	if a.carries && d.tasks == "" {
 		flags = append(flags, "--tasks detach|delete")
+	}
+	if a.named {
+		for _, name := range naming {
+			lines = append(lines, "  view "+name)
+		}
+		what += " and " + ErrObjectiveNamedByAView.Error()
+		if !a.holds && !a.carries {
+			what = ErrObjectiveNamedByAView.Error()
+		}
+		flags = append(flags, "--views off|delete")
 	}
 	a.said = fmt.Sprintf("objective %d: %s, and deleting it asks what goes with them:\n%s\nsay it with %s",
 		numbers[0], what, strings.Join(lines, "\n"), strings.Join(flags, "; and "))

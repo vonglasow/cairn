@@ -233,6 +233,7 @@ func All() []Operation {
 		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		LabelList, LabelNew, LabelColour, LabelScope, LabelDelete, LabelRename,
+		ViewList,
 		TraceShow, TraceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, DebugReport,
@@ -241,9 +242,9 @@ func All() []Operation {
 	}
 }
 
-// ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes.
+// ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes; a view is how the person looks at their work, so an agent reads the views and keeps, changes or deletes none.
 func ForAPersonOnly() []Operation {
-	return []Operation{WorkspaceAdd, WorkspaceUse, WorkspaceRemove}
+	return []Operation{WorkspaceAdd, WorkspaceUse, WorkspaceRemove, ViewNew, ViewShow, ViewEdit, ViewDelete}
 }
 
 // Check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
@@ -368,6 +369,13 @@ type Answer struct {
 	WorkspaceUsed     *WorkspaceUsed
 	WorkspaceRemoved  *WorkspaceRemoved
 	WorkspaceShown    *WorkspaceShown
+	Viewed            *View
+	ViewsKept         *Views
+	ViewGone          *string
+	InView            string
+	Lost              []string
+	KeepsNothing      bool
+	Outside           []Outside
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.

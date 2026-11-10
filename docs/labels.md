@@ -213,6 +213,16 @@ and `project` are the ones suggested, and nothing makes them: `label new area
 --scope objectives` and `label new project --scope objectives` do, when they
 are wanted.
 
+## A view holds a label by its name
+
+A view ([listing.md](listing.md#a-view-keeps-the-filters-under-a-name)) holds
+the labels it narrows by, and a label it names is kept as a label made on its
+own, so it stays a label until it is deleted rather than vanishing the day
+nothing carries it. `label rename` renames it in every view holding it
+(`@view-follows-a-label-renamed`). `label delete` says how many views held it,
+where it is a condition gone that narrows nothing
+(`@view-label-deleted-is-gone`).
+
 ## The Claude Code plugin
 
 A task's Azure DevOps work items are its labels made only of digits, on a task

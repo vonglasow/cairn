@@ -284,3 +284,12 @@ func TestParseLabels_readsOnPastALabelNamedAsNothing(t *testing.T) {
 		t.Errorf("Apply = %v, want [spec]: the change after the empty piece was dropped", got)
 	}
 }
+
+func TestFolded_readsANameWhateverItsCaseAndAccents(t *testing.T) {
+	if Folded(" Grocéries ") != Folded("groceries") || Folded("Home automation") != "home-automation" {
+		t.Errorf("folded: %q, %q", Folded(" Grocéries "), Folded("Home automation"))
+	}
+	if Folded("Groceries") == Folded("Grocery") {
+		t.Errorf("two names folded the same")
+	}
+}

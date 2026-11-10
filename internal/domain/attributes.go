@@ -100,12 +100,16 @@ func ParseLabels(given []string) ([]string, error) {
 	return slices.Compact(kept), nil
 }
 
+// Folded is a name read the way a label is written — lower case, no accent, words joined by a dash — so two names a person would read as one compare equal.
+func Folded(name string) string {
+	return dashed(unaccented(strings.ToLower(strings.TrimSpace(name))))
+}
+
 func labelNamed(raw string) (string, error) {
-	name := strings.ToLower(strings.TrimSpace(raw))
-	if strings.ContainsFunc(name, breaksALine) {
+	if strings.ContainsFunc(strings.TrimSpace(raw), breaksALine) {
 		return "", fmt.Errorf("%q: %w", raw, ErrLabelNotOneLine)
 	}
-	name = dashed(unaccented(name))
+	name := Folded(raw)
 	if name == "" {
 		return "", ErrLabelRequired
 	}

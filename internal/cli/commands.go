@@ -26,6 +26,7 @@ var groupShort = map[string]string{
 	"timesheet": "Say how long the work took, day by day, and add what was done without focus",
 	"plugin":    "Write the Claude Code plugin this cairn carries",
 	"app":       "Install cairn as an application, on a Mac or a Linux desktop",
+	"view":      "Keep the filters of a listing under a name, and list, show, change and delete them",
 }
 
 func home() engine.Home {

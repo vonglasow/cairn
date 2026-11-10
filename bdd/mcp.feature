@@ -725,6 +725,47 @@ Feature: Answering a machine over MCP
       And the answer says #2 Features waits on #1 Firmware, not reached
       And its answer holds to the shape the tool described
 
+  Rule: An agent reads the views, and keeps, changes or deletes none
+
+    @view-mcp-only-reads-the-views
+    Scenario: an agent is offered the views to read, and nothing that changes one
+      Given a cairn server started with `--access full`
+      When I ask it what it can do
+      Then it offers `view_list`
+      And `view_list` is marked as read-only
+      And it does not offer `view_new`
+      And it does not offer `view_edit`
+      And it does not offer `view_delete`
+
+    @view-mcp-lists-the-views
+    Scenario: an agent lists the views, with what each holds and keeps
+      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
+      And a cairn server started with `--access read`
+      When I run `cairn view new Docs --label doc`
+      And I call `view_list`
+      Then it answers without an error
+      And its answer holds to the shape the tool described
+      And it lists the view "Docs" in place 1, keeping 1
+
+    @view-mcp-task-list-answers-what-lies-outside
+    Scenario: an agent lists a view's tasks, and is told what lies outside it
+      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
+      And I added a task titled "Upgrade the printer"
+      And a cairn server started with `--access read`
+      When I run `cairn task edit 1 --blocker 2`
+      And I run `cairn view new Docs --label doc`
+      And I call `task_list` with {"view": "Docs"}
+      Then it answers with the task 1
+      And its answer holds to the shape the tool described
+      And it names task 2 outside, because it "blocks" task 1
+
+    @view-mcp-unknown-is-refused
+    Scenario: an agent naming a view nobody kept is refused
+      Given a cairn server started with `--access read`
+      When I call `task_list` with {"view": "Gardn"}
+      Then it answers that it failed
+      And it says the refusal is "refused", because "no-such-view"
+
   Rule: A refusal is a refusal, not a broken tool
 
     @mcp-refusal-is-answered

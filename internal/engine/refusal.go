@@ -119,6 +119,7 @@ var reasons = []reason{
 	{ErrDoneAndNotDone, KindRefused, "done-and-not-done"},
 	{ErrObjectiveCarriesTasks, KindRefused, "objective-carries-tasks"},
 	{ErrObjectiveHoldsSubObjectives, KindRefused, "objective-holds-sub-objectives"},
+	{ErrObjectiveNamedByAView, KindRefused, "objective-named-by-a-view"},
 	{ErrNotASubObjective, KindRefused, "not-a-sub-objective"},
 	{objective.ErrTooDeep, KindRefused, "objective-too-deep"},
 	{objective.ErrUnderItself, KindRefused, "objective-under-itself"},

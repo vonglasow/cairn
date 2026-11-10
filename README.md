@@ -20,6 +20,8 @@ calls the same engine, so each one behaves the same way.
 - **Objectives**: a task serves objectives, and an objective adds up the
   progress and time of its tasks. An objective may hold sub-objectives, two
   levels deep, and counts over its whole tree.
+- **Views**: the filters of a listing kept under a name, opened again in one
+  act, with the tasks outside them that touch what they keep named apart.
 - **Time from focus**: the task in focus counts its time. `timesheet` reads it
   back by day, and you can add time spent away from the board.
 - **Built for agents**: an MCP server and a Claude Code plugin. An agent keeps

@@ -133,6 +133,10 @@ deleted before the key was set keeps its time. Taking the time back with one
 `time added` of less than nothing per day was weighed and left: as many acts
 as days, and a row at nothing left behind.
 
+A view is not a task, and keeping, changing or deleting one writes no act
+(`@view-change-writes-no-trace`): it changes how a person looks at the work,
+not the work. Neither does a label made on its own, nor a colour.
+
 ## What it replaces
 
 | what stops needing its own place | where it comes from instead |

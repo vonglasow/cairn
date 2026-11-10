@@ -43,6 +43,7 @@ cairn task list      # each row says its column, priority, deadline and labels
 cairn task list --state todo --priority high   # only what carries all of it
 cairn task list --label team --label urgent    # both labels, not either
 cairn task list --objective 1                  # only what serves it
+cairn task list --view Home                    # what a view keeps, and what lies outside it
 cairn task search spec    # looks in the title, description, steps, deadline,
                           # estimate, time spent — not in what --state and friends narrow by
 cairn task show 1
@@ -224,6 +225,21 @@ cairn label scope release-train tasks             # put on tasks only, refused w
 cairn label list --for objectives                 # only those that may be put on objectives
 cairn label rename sp26-20 sprint-20              # on every task and objective; onto one there, the two become one
 cairn label delete sp26-20 --yes                  # off every task and objective
+```
+
+A view keeps the filters of a listing under a name — the flags `task list`
+takes, and a search — and opens them again in one act. Keeping, changing and
+deleting one changes no task and writes no trace:
+
+```sh
+cairn view new Home --objective 1                 # kept in place 1, the window's ⌘1
+cairn view new Shopping --label shopping --state todo
+cairn view new Spec --search spec                 # a search, looked for the way task search looks
+cairn view list                                   # in their places, with what each holds and keeps
+cairn view show Home                              # and the tasks outside it touching one it keeps
+cairn task list --view Home --state current       # a flag beside it narrows further
+cairn view edit Shopping --name Groceries --place 1 --state ""   # renamed, moved, a filter taken away
+cairn view delete Groceries                       # the view alone; nothing else changes
 ```
 
 How long the work took is the timesheet's to say:

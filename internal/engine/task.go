@@ -65,7 +65,7 @@ cairn task list --count state`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes:   append(append(slices.Clone(taskNarrowing), numbersArgument, fieldsArgument, countArgument), pageArguments...),
+	Takes:   append(append(slices.Clone(taskNarrowing), viewArgument, numbersArgument, fieldsArgument, countArgument), pageArguments...),
 	Run:     listing,
 }
 
@@ -537,9 +537,16 @@ func listing(on On, in Input) (Answer, error) {
 	if numbers != nil && !in.Yes("archived") && !in.Yes("with-archived") {
 		kept.WithArchived()
 	}
+	seen, err := on.Engine.inView(in, kept)
+	if err != nil {
+		return Answer{}, err
+	}
 	tasks, err := on.Engine.narrowed(kept)
 	if err != nil {
 		return Answer{}, err
+	}
+	if seen != nil {
+		tasks = seen.kept(tasks)
 	}
 	var unknown []int
 	if numbers != nil {
@@ -562,7 +569,7 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	narrows := kept.Narrows() || numbers != nil
+	narrows := kept.Narrows() || numbers != nil || seen != nil
 	along, _, err := on.Engine.alongEvery(tasks, !narrows && !cut.asked)
 	if err != nil {
 		return Answer{}, err
@@ -575,6 +582,14 @@ func listing(on On, in Input) (Answer, error) {
 	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown, Counts: counts, Offset: cut.offset}
 	if counting != "" || cut.asked {
 		answer.Total = &total
+	}
+	if seen != nil {
+		answer.InView, answer.Lost, answer.KeepsNothing = seen.name, seen.lost, seen.nothing
+		if counting == "" {
+			if answer.Outside, err = on.Engine.outside(tasks); err != nil {
+				return Answer{}, err
+			}
+		}
 	}
 	if narrows {
 		answer.Matched = tasks

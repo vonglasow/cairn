@@ -248,7 +248,17 @@ A kept sub-objective stands on its own with its tasks. A task detached loses
 the objectives deleted and keeps any other, its trace saying so; a task deleted
 goes the way `task delete` takes it. Naming a number that is no sub-objective
 of what is deleted is refused (`@objective-sub-delete-a-sub-objective-it-does-not-hold`).
-An agent passes the same as `sub-objectives`, `keep`, `delete` and `tasks`.
+A view naming whatever is deleted is listed too, with `--views off|delete`:
+the objective taken off those views, or the views deleted
+(`@view-objective-delete-lists-the-views`,
+`@view-objective-delete-takes-it-off-the-views`,
+`@view-objective-delete-deletes-the-views`). A view that held nothing but the
+objective keeps it, gone, and keeps nothing rather than the whole board under
+a name that says otherwise
+(`@view-objective-delete-keeps-a-view-holding-nothing-else`); see
+[listing.md](listing.md#a-view-keeps-the-filters-under-a-name).
+An agent passes the same as `sub-objectives`, `keep`, `delete`, `tasks` and
+`views`.
 Which work goes with an objective is a deliberate choice, and nothing is
 decided for the person — which is why an objective with tasks and no
 sub-objective, refused outright before, now asks the same way

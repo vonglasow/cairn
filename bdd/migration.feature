@@ -358,3 +358,21 @@ Feature: Changes to the shape of the store
       When I run `cairn migration show 20`
       Then it succeeds
       And the answer says "which objective waits on which"
+
+  Rule: The views are kept in the store, and rolling that back loses them alone
+
+    @view-migration-rollback-loses-the-views
+    Scenario: rolled back, the views are gone and every task stays
+      Given I added a task titled "Write the spec"
+      And I ran `cairn view new Next --state backlog`
+      And I rolled back the change named "a view keeps the filters under a name"
+      When I run `cairn migration apply`
+      Then it succeeds
+      And `cairn view list` says "there is no view"
+      And `cairn task list` lists 1 task
+
+    @view-migration-says-what-rolling-back-loses
+    Scenario: what rolling the views back loses is said before it is applied
+      When I run `cairn migration show 21`
+      Then it succeeds
+      And the answer says "every view"

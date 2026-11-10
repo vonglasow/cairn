@@ -60,9 +60,9 @@ func rendered(op Operation, a Answer) string {
 			return countsText(a.Counts, *a.Total)
 		}
 		if a.Matched != nil {
-			return foundText(a.Matched, a) + pageText(a, len(a.Matched))
+			return lostText(a) + foundText(a.Matched, a) + pageText(a, len(a.Matched)) + outsideText(a.Outside)
 		}
-		return crossedText(a.Crossed) + warningsText(a.Warnings) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks))
+		return lostText(a) + crossedText(a.Crossed) + warningsText(a.Warnings) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks)) + outsideText(a.Outside)
 	case Objective:
 		return objectiveText(a) + movedText(a.Moved)
 	case Objectives:
@@ -83,7 +83,16 @@ func rendered(op Operation, a Answer) string {
 	case Labelled:
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
 	case Labels:
-		return labelsText(*a.Labels)
+		return labelsText(*a.Labels) + warningsText(a.Warnings)
+	case View:
+		if a.Viewed.Outside != nil {
+			return viewShownText(*a.Viewed)
+		}
+		return viewKeptText(*a.Viewed, map[bool]string{true: "kept view ", false: "changed view "}[op.Verb == "new"]+a.Viewed.Name)
+	case Views:
+		return viewsText(a.ViewsKept.Views)
+	case ViewDeleted:
+		return "deleted view " + *a.ViewGone + " · no task changed\n"
 	case ConfigWritten:
 		return configWrittenText(*a.Written)
 	case DebugReported:

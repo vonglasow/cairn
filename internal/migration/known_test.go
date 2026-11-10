@@ -11,8 +11,8 @@ func factsOf(m Migration) Carried {
 }
 
 func TestKnown_namesEveryChangeCairnKnows(t *testing.T) {
-	if len(Known) != 20 {
-		t.Fatalf("len(Known) = %d, want 20", len(Known))
+	if len(Known) != 21 {
+		t.Fatalf("len(Known) = %d, want 21", len(Known))
 	}
 	for i, m := range Known {
 		f := factsOf(m)
@@ -78,6 +78,21 @@ func TestKnown_letsAnObjectiveWaitOnAnother(t *testing.T) {
 		t.Errorf("the change does %q and undoes %q", f.Does, f.Undoes)
 	}
 	if !strings.Contains(f.Loses, "which objective waits on which") {
+		t.Errorf("rolling it back loses %q", f.Loses)
+	}
+}
+
+func TestKnown_keepsViews(t *testing.T) {
+	f := factsOf(Known[20])
+	if f.Name != "a view keeps the filters under a name" {
+		t.Fatalf("the change is %+v", f)
+	}
+	for _, table := range []string{"views", "view_objectives", "view_labels"} {
+		if !strings.Contains(f.Does, "CREATE TABLE IF NOT EXISTS "+table+" ") || !strings.Contains(f.Undoes, "DROP TABLE IF EXISTS "+table+";") {
+			t.Errorf("the change does %q and undoes %q, want the table %s made and dropped", f.Does, f.Undoes, table)
+		}
+	}
+	if !strings.Contains(f.Loses, "every view") {
 		t.Errorf("rolling it back loses %q", f.Loses)
 	}
 }

@@ -793,6 +793,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "warnings": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"
         }
       },
       "required": [
@@ -860,6 +870,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "warnings": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"
         }
       },
       "required": [
@@ -929,6 +949,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "warnings": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"
         }
       },
       "required": [
@@ -1005,6 +1035,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "warnings": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"
         }
       },
       "required": [
@@ -1077,6 +1117,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "warnings": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"
         }
       },
       "required": [
@@ -1154,6 +1204,16 @@
             ],
             "additionalProperties": false
           }
+        },
+        "warnings": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"
         }
       },
       "required": [
@@ -1410,6 +1470,14 @@
           "description": "what becomes of the tasks attached to what is deleted: detached from it, or deleted",
           "enum": [
             "detach",
+            "delete"
+          ],
+          "type": "string"
+        },
+        "views": {
+          "description": "what becomes of the views naming what is deleted: the objective taken off them, a view holding nothing else keeping it gone, or the views deleted",
+          "enum": [
+            "off",
             "delete"
           ],
           "type": "string"
@@ -5542,6 +5610,10 @@
           ],
           "type": "string"
         },
+        "view": {
+          "description": "the name of a view, whose filters keep the tasks first; any filter beside it narrows further, and the tasks outside it touching one it keeps are named under outside",
+          "type": "string"
+        },
         "with-archived": {
           "description": "keep both the tasks on the board and the ones taken off it",
           "type": "boolean"
@@ -5730,6 +5802,72 @@
             "type": "string"
           },
           "description": "what the move did and should be known: each objective a task moved into current counts in, waiting on one not reached; left out when there is nothing to say"
+        },
+        "view": {
+          "type": "string",
+          "description": "the view whose filters kept the tasks; left out unless one was named"
+        },
+        "gone": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "each condition of the view whose objective or label is gone, which narrows nothing; when every one is, the view keeps nothing; left out when none is"
+        },
+        "outside": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "why": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "is": {
+                      "type": "string",
+                      "description": "blocks, waits on or linked to"
+                    },
+                    "of": {
+                      "type": "integer",
+                      "description": "the number of the task inside the view"
+                    }
+                  },
+                  "required": [
+                    "is",
+                    "of"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state",
+              "why"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"
         }
       },
       "required": [
@@ -5975,6 +6113,72 @@
             "type": "string"
           },
           "description": "what the move did and should be known: each objective a task moved into current counts in, waiting on one not reached; left out when there is nothing to say"
+        },
+        "view": {
+          "type": "string",
+          "description": "the view whose filters kept the tasks; left out unless one was named"
+        },
+        "gone": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "each condition of the view whose objective or label is gone, which narrows nothing; when every one is, the view keeps nothing; left out when none is"
+        },
+        "outside": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "why": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "is": {
+                      "type": "string",
+                      "description": "blocks, waits on or linked to"
+                    },
+                    "of": {
+                      "type": "integer",
+                      "description": "the number of the task inside the view"
+                    }
+                  },
+                  "required": [
+                    "is",
+                    "of"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state",
+              "why"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"
         }
       },
       "required": [
@@ -6687,6 +6891,72 @@
             "type": "string"
           },
           "description": "what the move did and should be known: each objective a task moved into current counts in, waiting on one not reached; left out when there is nothing to say"
+        },
+        "view": {
+          "type": "string",
+          "description": "the view whose filters kept the tasks; left out unless one was named"
+        },
+        "gone": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "each condition of the view whose objective or label is gone, which narrows nothing; when every one is, the view keeps nothing; left out when none is"
+        },
+        "outside": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "why": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "is": {
+                      "type": "string",
+                      "description": "blocks, waits on or linked to"
+                    },
+                    "of": {
+                      "type": "integer",
+                      "description": "the number of the task inside the view"
+                    }
+                  },
+                  "required": [
+                    "is",
+                    "of"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state",
+              "why"
+            ],
+            "additionalProperties": false
+          },
+          "description": "the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"
         }
       },
       "required": [
@@ -8067,6 +8337,183 @@
       },
       "required": [
         "acts"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "view_list": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "List the views"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "views": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "place": {
+                "type": "integer",
+                "description": "where it stands among the views, from 1; the first nine are opened by a key"
+              },
+              "holds": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string"
+                  },
+                  "priority": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "objective": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "itself": {
+                    "type": "boolean",
+                    "description": "the objectives themselves, leaving out their sub-objectives"
+                  },
+                  "due_before": {
+                    "type": "string"
+                  },
+                  "archived": {
+                    "type": "boolean"
+                  },
+                  "with_archived": {
+                    "type": "boolean"
+                  },
+                  "search": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "keeps": {
+                "type": "integer",
+                "description": "how many tasks it keeps today"
+              },
+              "of": {
+                "type": "integer",
+                "description": "how many tasks are on the board, the archived ones left out"
+              },
+              "done": {
+                "type": "integer",
+                "description": "how many of the tasks it keeps are done"
+              },
+              "gone": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "each condition it holds whose objective or label is gone, which narrows nothing; empty when none is"
+              },
+              "outside": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "why": {
+                      "type": [
+                        "null",
+                        "array"
+                      ],
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "is": {
+                            "type": "string",
+                            "description": "blocks, waits on or linked to"
+                          },
+                          "of": {
+                            "type": "integer",
+                            "description": "the number of the task inside the view"
+                          }
+                        },
+                        "required": [
+                          "is",
+                          "of"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "title",
+                    "state",
+                    "why"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "the tasks outside it that block, wait on or are linked to one it keeps, each once; left out unless the view is shown"
+              },
+              "was": {
+                "type": "string",
+                "description": "the name it had before a change renamed it; left out otherwise"
+              }
+            },
+            "required": [
+              "name",
+              "place",
+              "holds",
+              "keeps",
+              "of",
+              "done",
+              "gone"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "views"
       ],
       "additionalProperties": false
     }

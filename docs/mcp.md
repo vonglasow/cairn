@@ -409,6 +409,19 @@ folders too, and each workspace's colour: reading them changes nothing, and a
 server opening its store never adds to them — only a board does
 ([config.md](config.md#recent-folders-remembered-and-never-configured)).
 
+`view new`, `view show`, `view edit` and `view delete` sit there too. A view
+is how the person looks at their work, so an agent reads the views and keeps,
+changes or deletes none (`@view-mcp-only-reads-the-views`). `view_list` is a
+tool, read-only, each view with what it holds, how many tasks it keeps and
+what of it is gone (`@view-mcp-lists-the-views`); `task_list` takes `view`, and
+answers `view`, `gone` and `outside` — the tasks outside it blocking, waiting
+on or linked to one listed, each once, never counted
+(`@view-mcp-task-list-answers-what-lies-outside`). A view nobody kept is
+refused as `no-such-view` (`@view-mcp-unknown-is-refused`). An agent that
+needs a narrowing passes the flags; `view_new` can come later, if asked, at
+the edit level. `objective_delete` takes `views`, `off` or `delete`, for the
+views naming what it deletes ([listing.md](listing.md#a-view-keeps-the-filters-under-a-name)).
+
 ## Each tool says what shape its answer takes, and that shape is an object
 
 A tool describes its arguments and used to say nothing about its answer, so a

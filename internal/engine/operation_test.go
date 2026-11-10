@@ -278,6 +278,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"label_scope":        {{Labels: &[]LabelCarried{}}},
 		"label_delete":       {{Labels: &[]LabelCarried{}}},
 		"label_rename":       {{Labels: &[]LabelCarried{}}},
+		"view_list":          {{ViewsKept: &Views{}}},
 		"step_new":           {{Task: of(task.Task{})}},
 		"step_list":          {{Task: of(task.Task{})}},
 		"step_edit":          {{Task: of(task.Task{})}},

@@ -1325,6 +1325,8 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 			return nil
 		})
 		sc.Step(`^the call itself fails$`, w.theCallItselfFails)
+		sc.Step(`^it lists the view "([^"]*)" in place (\d+), keeping (\d+)$`, w.itListsTheView)
+		sc.Step(`^it names task (\d+) outside, because it "([^"]*)" task (\d+)$`, w.itNamesOutside)
 		sc.Step(`^a store from an older cairn, holding a task titled "([^"]*)"$`,
 			w.AStoreFromAnOlderCairn)
 	}
@@ -1401,4 +1403,33 @@ func (w *world) itAnswersObjectiveUnder(n int, under, holding string) error {
 		return nil
 	}
 	return fmt.Errorf("objective %d is not in the answer: %v", n, doc)
+}
+
+func (w *world) itListsTheView(name string, place, keeps int) error {
+	var listed engine.Views
+	if err := remarshalTo(w.result.StructuredContent, &listed); err != nil {
+		return err
+	}
+	for _, v := range listed.Views {
+		if v.Name == name {
+			if v.Place != place || v.Keeps != keeps {
+				return fmt.Errorf("the view %q stands in place %d keeping %d", name, v.Place, v.Keeps)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("no view %q is listed: %+v", name, listed)
+}
+
+func (w *world) itNamesOutside(n int, is string, of int) error {
+	var listed engine.Tasks
+	if err := remarshalTo(w.result.StructuredContent, &listed); err != nil {
+		return err
+	}
+	for _, o := range listed.Outside {
+		if o.Number == n && len(o.Why) == 1 && o.Why[0] == (engine.Touch{Is: is, Of: of}) {
+			return nil
+		}
+	}
+	return fmt.Errorf("task %d is not outside because it %s task %d: %+v", n, is, of, listed.Outside)
 }

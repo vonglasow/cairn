@@ -576,6 +576,75 @@ what an objective carries itself — its labels, its priority — or by which on
 it is (`KeptGoals`), the rule `objective list` follows; a column or a day due
 by means nothing to an objective and keeps every one (`ReachesGoals`).
 
+## A view keeps the filters under a name
+
+A view is the flags `task list` narrows by — a column, a priority, labels,
+objectives with or without their sub-objectives, a day due by, the archived —
+and a search, kept under a name and opened again in one act: `task list --view
+<name>`, `view list`, `view show`. It holds nothing about layout: which tab,
+which column the cursor is on, a sort. It is one narrowing, the engine's, and
+no second language: a view held is told to the same `domain.Narrowing` the
+flags are, and a flag given beside it narrows further, as two flags do
+(`@view-new-keeps-the-filters`, `@view-flags-narrow-further`). Its search is
+looked for the way `task search` looks, every word held
+(`@view-new-holds-a-search`).
+
+**It is kept in the store**, in three tables migration #21 adds — `views`,
+`view_objectives`, `view_labels` — beside the work it narrows, carried by a
+backup and a restore with it, never in `settings.toml`, which says how cairn
+behaves and not what the work holds. Rolling the change back drops the three
+and loses the views alone (`@view-migration-rollback-loses-the-views`). An export (`task export`) does not carry them yet: a file carries the work,
+and the views of the store it lands in are that store's.
+
+**A name is one no view has**, whatever its case or its accents, folded the
+way a label is (`@view-new-refuses-a-name-taken`), and a view holds at least
+one filter or a search: one holding nothing would be the whole board under a
+name (`@view-new-refuses-no-filter`). Its place, from 1, is the key that opens
+it on a board — ⌘1…⌘9 in the window, `v` and a figure in the terminal; `view
+edit --place` moves it and the others move along, and a deletion closes the
+gap (`@view-edit-moves-its-place`, `@view-delete-touches-no-task`). `view
+edit` takes the filters it holds one by one: a filter named takes the place of
+the one held, named empty it goes, and one not named stays.
+
+**It holds an objective by its number and a label by its name**, so a label
+renamed is renamed in it, and an objective's tree is walked the day the view
+is opened, reaching whatever sits under it then (`@view-follows-a-label-renamed`,
+`@view-follows-the-tree`). A label a view names is kept as a label made on its
+own, so it does not vanish the day nothing carries it.
+
+**What it names may be gone.** A label deleted, an objective deleted and the
+view kept, is a condition kept and marked gone: it narrows nothing, and every
+answer says so, naming the commands that mend it (`@view-label-deleted-is-gone`).
+Narrowing nothing rather than keeping nothing is deliberate: an empty board
+reads as "no work", which is worse than a wider one said out loud. The one
+exception is a view whose every condition is gone: narrowing nothing there
+would show the whole board under a name that says otherwise, so it keeps
+nothing and says why (`@view-every-condition-gone-keeps-nothing`). `label
+delete` says how many views held the label; `objective delete` lists the views
+naming it and asks what becomes of them ([objectives.md](objectives.md)).
+
+**What lies outside is named apart, and never counted.** For the tasks a view
+keeps, a task outside it that blocks one of them, waits on one of them or is
+linked to one is named under `outside`, once, with every way it touches
+them, after the rows and marked as outside
+(`@view-outside-named-once-with-every-why`, `@view-outside-waits-on`). One
+step only: two would bring the whole store back through the side door. It is
+no row, so a listing stays flat and its counts and its pages are the view's
+own; a listing without a view names nothing outside
+(`@view-outside-not-without-a-view`).
+
+**Changing a view changes no task**, so it writes no trace
+(`@view-change-writes-no-trace`). And no figure about an objective moves with
+a view: an objective's progress and time stay the store's, whatever view is
+open.
+
+**An agent reads the views and keeps none.** `view_list` is offered,
+read-only, and `task_list` takes `view` and answers `outside`; `view new`,
+`edit`, `show` and `delete` are the person's alone, beside `workspace add`
+(`@view-mcp-only-reads-the-views`). An agent that needs a narrowing passes
+the flags. No view opens on its own when a board opens, and an objective's
+"show its tasks" is the same narrowing, a view without a name.
+
 ## Where the narrowing happens
 
 In SQL, in `internal/store/narrowing.go`, not by reading everything and
