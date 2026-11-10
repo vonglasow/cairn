@@ -116,7 +116,7 @@ func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 }
 
 func TestAddingOnTheObjectivesTabAsksAnObjectivesQuestions(t *testing.T) {
-	form := adding(Objectives, "")
+	form := Window{}.adding(Objectives, "")
 	if !form.ForObjective {
 		t.Fatal("adding on the objectives tab opened a task's form")
 	}

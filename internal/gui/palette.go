@@ -209,6 +209,15 @@ func (w Window) actionRows() []PaletteRow {
 		action(focus, "f", pressing("f"))
 		action("Archive "+n, "x", func(w Window) Window { return w.Choose("Archive") })
 		action("Delete "+n, "cmd+backspace", func(w Window) Window { return w.Choose("Delete") })
+		if c.Series != nil && w.pages.Recurs() {
+			series := c.Series.Series
+			action("Skip "+n, "", func(w Window) Window { return w.asking(engine.TaskSkip, engine.Numbered(c.Number)) })
+			action("Open the series of "+n, "", func(w Window) Window { return w.onSeries(series) })
+		}
+	}
+	if w.pages.Recurs() {
+		action("Series", "", func(w Window) Window { return w.onPage(Series) })
+		action(NewSeriesSays, "", func(w Window) Window { return w.startingSeries() })
 	}
 	for _, general := range []struct{ says, key string }{
 		{"New task", "cmd+n"}, {"Search", "/"}, {"Filters", "shift+f"}, {"Labels", "shift+l"},
@@ -344,7 +353,10 @@ func (w Window) PaletteBox() Box {
 	l := w.Layout()
 	wide := min(w.width-2*margin, max(paletteLeast, w.width/2))
 	high := paletteHead + padding
-	for _, line := range w.paletteLines(Box{}) {
+	if banner, ok := w.paletteBannerIn(Box{W: wide}); ok {
+		high = max(high, banner.Y+banner.H+padding)
+	}
+	for _, line := range w.paletteLines(Box{W: wide}) {
 		high = max(high, line.Box.Y+line.Box.H+padding)
 	}
 	top := l.Tabs.Y + l.Tabs.H
@@ -358,6 +370,9 @@ func (w Window) PaletteLines() []PaletteLine { return w.paletteLines(w.PaletteBo
 func (w Window) paletteLines(box Box) []PaletteLine {
 	var lines []PaletteLine
 	y, group := box.Y+paletteHead, ""
+	if banner, ok := w.paletteBannerIn(box); ok {
+		y = banner.Y + banner.H + padding
+	}
 	for i, row := range w.PaletteRows() {
 		if row.Group != group {
 			group = row.Group
@@ -429,4 +444,33 @@ func (w Window) PaletteRise() (float64, bool) {
 		return 1, false
 	}
 	return 1 - (1-share)*(1-share), true
+}
+
+// PaletteBanner is what the open command bar says over its rows when what is typed reaches for what is turned off — a series while recurrence is off — and whether it says anything.
+func (w Window) PaletteBanner() (string, bool) {
+	typed := strings.TrimSpace(w.palette.typed.Reads())
+	if w.pages.Recurs() || typed == "" || !engine.Reaches([]string{paletteOffWords}, typed) {
+		return "", false
+	}
+	return engine.ErrRecurrenceOff.Error(), true
+}
+
+const paletteOffWords = "series recurrence repeats every skip"
+
+func paletteBannerSaid(said string) (string, string) {
+	first, then, _ := strings.Cut(said, ": ")
+	return first, then
+}
+
+// PaletteBannerAt is where the open command bar draws what it says over its rows.
+func (w Window) PaletteBannerAt() (Box, bool) { return w.paletteBannerIn(w.PaletteBox()) }
+
+func (w Window) paletteBannerIn(box Box) (Box, bool) {
+	said, ok := w.PaletteBanner()
+	if !ok {
+		return Box{}, false
+	}
+	first, then := paletteBannerSaid(said)
+	wide := box.W - 2*padding
+	return Box{X: box.X + padding, Y: box.Y + paletteHead + padding, W: wide, H: BannerHigh(w.measured(), first, then, wide)}, true
 }

@@ -30,6 +30,10 @@ func (w Window) Key(name string) Window {
 	if w.screen == OnPalette {
 		return w.onPalette(name)
 	}
+	if w.seriesChord {
+		w.seriesChord = false
+		return w.chording(name)
+	}
 	if w.screen == OnTheBoard && w.going {
 		w.going = false
 		if page, ok := goingTo[name]; ok && w.now.Sub(w.goneAt) <= time.Second {
@@ -60,6 +64,7 @@ var screens = map[Screen]func(Window, string) Window{
 	OnConfiguration: Window.onConfiguration,
 	OnWorkspaces:    Window.onWorkspaces,
 	OnFates:         Window.onFates,
+	OnSeriesFates:   Window.onSeriesFates,
 	OnKeeping:       Window.onKeeping,
 	OnViews:         Window.onViews,
 }
@@ -72,6 +77,11 @@ func (w Window) onBoard(name string) Window {
 		}
 		if !shared {
 			return w
+		}
+	}
+	if w.tab == Series {
+		if done, took := w.seriesKey(name); took {
+			return done
 		}
 	}
 	if name == "esc" && w.chosen != 0 {
@@ -101,6 +111,9 @@ func (w Window) onBoard(name string) Window {
 			return w.labellingChosen()
 		case "t":
 			return w.datingChosen()
+		case "r":
+			_, w.seriesChord = w.occurrenceChosen()
+			return w
 		}
 	}
 	if figure, ok := strings.CutPrefix(name, "cmd+shift+"); ok && aFigure(figure) {

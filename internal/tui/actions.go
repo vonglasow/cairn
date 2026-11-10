@@ -84,7 +84,7 @@ var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageO
 // Paged answers the board showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
 func (b Board) Paged(p engine.Pages) Board {
 	b.pages = p
-	b.snap = b.recurring(b.snap)
+	b.snap = b.pages.Recurring(b.snap)
 	if shown := b.shown(); len(shown) > 0 && !slices.Contains(shown, b.tab) {
 		return b.onTab(shown[0])
 	}

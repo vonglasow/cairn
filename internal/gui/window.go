@@ -48,6 +48,8 @@ const (
 	OnKeeping
 	// OnViews is the panel of the views: renamed, moved, deleted, or opened on the board.
 	OnViews
+	// OnSeriesFates is what deleting a series asks before anything goes: what becomes of the tasks it made.
+	OnSeriesFates
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -62,6 +64,8 @@ const (
 	Objectives
 	// Time is how long the work took, a week at a time: see week.go.
 	Time
+	// Series is the tasks that come back, each series beside the one chosen: see series.go.
+	Series
 )
 
 // Held is a card being dragged: which task, where it was picked up, and where the pointer is now.
@@ -108,6 +112,7 @@ type Window struct {
 	configurationState
 	timeState
 	viewsState
+	seriesState
 	palette  paletteState
 	switcher switcherState
 	going    bool
@@ -197,9 +202,9 @@ type Window struct {
 // Lingers is how many beats what went wrong stays: long enough to read two lines, and gone before it is mistaken for something still true.
 func Lingers() int { return 4 }
 
-// New builds a window over whatever holds the work.
+// New builds a window over whatever holds the work, recurrence off until its pages say otherwise, as the configuration has it by default.
 func New(work engine.Work, width, height int) Window {
-	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}, kept: noSizes{}}
+	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}, kept: noSizes{}, pages: engine.Pages{}.WithoutRecurrence()}
 	return w.sized()
 }
 
@@ -251,7 +256,7 @@ func (w Window) Tab() Tab { return w.tab }
 
 // Context is where what was written about the task a form is open on lives elsewhere, or nothing: no form, a new task, an objective, or a window not told where the notes are.
 func (w Window) Context() string {
-	if w.screen != OnForm || w.form.Adding || w.form.ForObjective {
+	if w.screen != OnForm || w.form.Adding || w.form.ForObjective || w.form.ForSeries {
 		return ""
 	}
 	c, _ := w.snap.Card(w.form.Number)
@@ -261,7 +266,7 @@ func (w Window) Context() string {
 // ContextSays is what the foot of an open task writes about where its context lives: its name and the place, or nothing when there is no place to say.
 func (w Window) ContextSays() []Readable {
 	at := w.Context()
-	if at == "" {
+	if at == "" || w.contextPath().W == 0 {
 		return nil
 	}
 	return []Readable{one("name:context", ContextName(w.formPanel()), "context", small),
@@ -356,7 +361,7 @@ func (w Window) Look() Window {
 		return w.failing(err)
 	}
 	w = w.readingPlace()
-	w.snap, w.version, w.err, w.lookedAt = found, found.Version, nil, w.now
+	w.snap, w.version, w.err, w.lookedAt = w.pages.Recurring(found), found.Version, nil, w.now
 	for i := range engine.Columns {
 		w.scroll[i] = w.settled(i, w.scroll[i])
 	}

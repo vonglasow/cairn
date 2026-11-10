@@ -145,3 +145,82 @@ func TestPages_withoutRecurrenceOffersNoSeries(t *testing.T) {
 		t.Error("recurrence turned off still offers the series")
 	}
 }
+
+func TestRecurring_leavesNoSeriesWhileRecurrenceIsOff(t *testing.T) {
+	s := Snapshot{Series: []Series{{Number: 1}}, Cards: []Card{{Number: 1, Series: &Occurs{Series: 1}}, {Number: 2}}}
+	if on := (Pages{}).Recurring(s); len(on.Series) != 1 || on.Cards[0].Series == nil {
+		t.Errorf("with recurrence on, the board shows %+v", on)
+	}
+	off := Pages{}.WithoutRecurrence().Recurring(s)
+	if len(off.Series) != 0 || off.Cards[0].Series != nil || len(off.Cards) != 2 {
+		t.Errorf("with recurrence off, the board shows %+v", off)
+	}
+	if s.Cards[0].Series == nil {
+		t.Error("taking the series off a board took them off the snapshot it was handed")
+	}
+}
+
+func TestShownSeries_listsTheActiveOnesBeforeTheStopped(t *testing.T) {
+	all := []Series{
+		{Number: 1, Title: "Report", State: "stopped"},
+		{Number: 2, Title: "Stand-up", State: "active"},
+		{Number: 3, Title: "Review", State: "active", Rule: "every friday"},
+	}
+	var got []int
+	for _, s := range ShownSeries(all, "") {
+		got = append(got, s.Number)
+	}
+	if !slices.Equal(got, []int{2, 3, 1}) {
+		t.Errorf("the series are listed %v", got)
+	}
+	if found := ShownSeries(all, "friday"); len(found) != 1 || found[0].Number != 3 {
+		t.Errorf("a search for friday lists %+v", found)
+	}
+}
+
+func TestMadeStill_isEveryTaskTheSeriesMadeThatIsThere(t *testing.T) {
+	s := Series{Occurrences: []Occurrence{{Task: 4, Is: "todo"}, {Task: 0, Is: "missed"}, {Task: 3, Is: "deleted"}, {Task: 2, Is: "done", Archived: true}}}
+	if got := MadeStill(s); !slices.Equal(got, []int{4, 2}) {
+		t.Errorf("the tasks still there are %v", got)
+	}
+	if !slices.Equal(SeriesFates, []string{"keep-tasks", "delete-open", "delete-tasks"}) {
+		t.Errorf("the fates offered are %v", SeriesFates)
+	}
+}
+
+func TestChangesTheSeries_onlyWhatTheNextIsMadeFrom(t *testing.T) {
+	occurrence := Card{Series: &Occurs{Series: 1}}
+	changed := func(arg string) []Field { return []Field{{Arg: arg, Value: "new", Was: "old"}} }
+	for _, arg := range []string{"title", "priority", "label", "estimate", "steps", "objective"} {
+		if !ChangesTheSeries(occurrence, changed(arg)) {
+			t.Errorf("changing %s does not ask about the series", arg)
+		}
+	}
+	for _, arg := range []string{"state", "desc", "deadline", "spent"} {
+		if ChangesTheSeries(occurrence, changed(arg)) {
+			t.Errorf("changing %s asks about the series", arg)
+		}
+	}
+	if ChangesTheSeries(occurrence, []Field{{Arg: "title", Value: "same", Was: "same"}}) {
+		t.Error("a title left as it was asks about the series")
+	}
+	if ChangesTheSeries(Card{}, changed("title")) {
+		t.Error("a task that is no occurrence asks about a series")
+	}
+}
+
+func TestDaySaid_writesACloseDayAsACardDoesAndAFarOneAsItsDate(t *testing.T) {
+	now := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
+	for day, want := range map[string]string{
+		"2026-11-10": "today",
+		"2026-11-12": "Thu 12",
+		"2026-12-25": "25 Dec",
+		"2026-11-01": "1 Nov",
+		"":           "",
+		"not a day":  "",
+	} {
+		if got := DaySaid(day, now); got != want {
+			t.Errorf("%q is said %q, want %q", day, got, want)
+		}
+	}
+}

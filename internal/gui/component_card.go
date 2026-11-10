@@ -61,8 +61,16 @@ func (c Card) Draw(k Kit, at Box) Box {
 	m := Measured(k.th)
 	wideAt := func(size int) func(string) int { return func(said string) int { return ends(m, said, size) } }
 	first, rest := TitleRoom(c.Face, parts.Title)
-	for i, line := range TitleLines(c.Face.Title, first, rest, wideAt(reads)) {
-		sayStyled(k.gtx, k.th, c.writing(k.skin), Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
+	if rule := RuleOf(c.Face); rule != "" {
+		LoopMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in, Box{X: parts.Title.X, Y: parts.Title.Y + (lineHigh-loopSide)/2, W: loopSide, H: loopSide})
+		title := Box{X: parts.Title.X + loopSide + markSpace, Y: parts.Title.Y, W: max(0, first-loopSide-markSpace), H: lineHigh}
+		sayStyled(k.gtx, k.th, c.writing(k.skin), title, fits(k.gtx, k.th, c.Face.Title, title.W, reads), reads, font.Medium, 1, text.Start)
+		said := Box{X: parts.Title.X, Y: parts.Title.Y + lineHigh, W: parts.Title.W, H: lineHigh}
+		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, said, fits(k.gtx, k.th, rule, said.W, small), small)
+	} else {
+		for i, line := range TitleLines(c.Face.Title, first, rest, wideAt(reads)) {
+			sayStyled(k.gtx, k.th, c.writing(k.skin), Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
+		}
 	}
 	if mark, ok := FocusMark(c.Face, parts.Title); ok {
 		FocusDot{}.Draw(in, mark)
@@ -72,6 +80,9 @@ func (c Card) Draw(k Kit, at Box) Box {
 	laid := CardRowOf(c.Face, parts.Number, m, k.gtx.Now, c.Pages)
 	in.put("number", laid.NumberAt)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, parts.Number, laid.Number, small, mono, text.Start)
+	if laid.Series != 0 {
+		SeriesNumber{Number: laid.Series, Ink: k.skin.Colour.Accent.Base}.Draw(in, laid.SeriesAt)
+	}
 	if c.Reference && c.Why != "" {
 		laid.Facts, laid.Late, laid.FactsAt = c.Why, true, FactsAt(parts.Number, ends(m, c.Why, small))
 	}

@@ -363,6 +363,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I edited task (\d+) with the objective "([^"]*)"$`, g.IEditedTaskWithTheObjective)
 	sc.Step(`^I deleted task (\d+)$`, g.IDeletedTask)
 	sc.Step(`^I put task (\d+) in focus$`, g.IPutTaskInFocus)
+	g.registerSeries(sc)
 }
 
 func (g Givens) registerTree(sc *godog.ScenarioContext) {

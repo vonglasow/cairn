@@ -14,6 +14,7 @@ var formSections = []struct {
 	{"TIME", []string{"deadline", "estimate", "spent"}},
 	{"BLOCKED", []string{"blocker", "because"}},
 	{"LINKS", []string{"link", "objective"}},
+	{"SERIES", []string{"every", "from"}},
 }
 
 const (

@@ -25,7 +25,7 @@ func (w Window) Showing() engine.Snapshot {
 // Searched is the search as a written text, caret and all.
 func (w Window) Searched() Written { return w.looking }
 
-var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Time: engine.PageTime}
+var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Time: engine.PageTime, Series: engine.PageTasks}
 
 // Paged answers the window showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
 func (w Window) Paged(p engine.Pages) Window {
@@ -40,6 +40,9 @@ func (w Window) Paged(p engine.Pages) Window {
 func (w Window) Shown() []Tab {
 	var shown []Tab
 	for tab := range Pages {
+		if Tab(tab) == Series && !w.pages.Recurs() {
+			continue
+		}
 		if w.pages.Shows(pageOfTab[Tab(tab)]) {
 			shown = append(shown, Tab(tab))
 		}
@@ -96,7 +99,7 @@ func (w Window) other(by int) Window {
 }
 
 func (w Window) onPage(tab Tab) Window {
-	if !w.pages.Shows(pageOfTab[tab]) {
+	if !slices.Contains(w.Shown(), tab) {
 		return w
 	}
 	w.tab = tab
@@ -133,6 +136,9 @@ func (w Window) LaneSays(kind string) string {
 func (w Window) Holds(tab Tab) int {
 	if tab == Objectives {
 		return len(w.Showing().Goals)
+	}
+	if tab == Series {
+		return len(w.SeriesListed())
 	}
 	if tab == Time {
 		worked := map[int]bool{}

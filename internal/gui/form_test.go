@@ -150,7 +150,7 @@ func TestASaveTheStoreRefusesKeepsTheForm(t *testing.T) {
 }
 
 func TestWalkingTheFieldsStopsAtBothEnds(t *testing.T) {
-	form := adding(Tasks, "backlog")
+	form := Window{}.adding(Tasks, "backlog")
 	if got := form.Walk(-1).On(); got != 0 {
 		t.Errorf("walking up from the first field landed on %d", got)
 	}
@@ -164,7 +164,7 @@ func TestWalkingTheFieldsStopsAtBothEnds(t *testing.T) {
 }
 
 func TestSettingAFieldMovesTheKeyboardToIt(t *testing.T) {
-	form := adding(Tasks, "backlog").Set("priority", "high")
+	form := Window{}.adding(Tasks, "backlog").Set("priority", "high")
 	if got := form.ValueOf("priority"); got != "high" {
 		t.Fatalf("the field reads %q", got)
 	}
@@ -404,7 +404,7 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 }
 
 func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
-	form := adding(Tasks, "backlog")
+	form := Window{}.adding(Tasks, "backlog")
 	last := len(form.Fields()) - 1
 	if got := form.onto(-5).On(); got != 0 {
 		t.Errorf("before the first field is %d", got)
@@ -851,21 +851,21 @@ func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "In todo", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
-	form := adding(Tasks, w.addingOn())
+	form := Window{}.adding(Tasks, w.addingOn())
 	if got := form.ValueOf("column"); got != "todo" {
 		t.Errorf("a task added on todo starts in %q", got)
 	}
 	if got := form.ValueOf("priority"); got != "normal" {
 		t.Errorf("a new task starts at %q, want normal", got)
 	}
-	if got := adding(Tasks, holding(newFake()).addingOn()).ValueOf("column"); got != "backlog" {
+	if got := (Window{}).adding(Tasks, holding(newFake()).addingOn()).ValueOf("column"); got != "backlog" {
 		t.Errorf("a task added with nothing chosen starts in %q, want backlog", got)
 	}
 	band := holding(newFake(),
 		engine.Card{Number: 1, Title: "In todo", State: "todo"},
 		engine.Card{Number: 2, Title: "Blocked", State: "blocked"})
 	band = band.clicked(middleOf(band, 1, 0)).Key("down")
-	if got := adding(Tasks, band.addingOn()).ValueOf("column"); got != "blocked" {
+	if got := (Window{}).adding(Tasks, band.addingOn()).ValueOf("column"); got != "blocked" {
 		t.Errorf("a task added on the band starts in %q, want the first stopped state", got)
 	}
 }
@@ -1041,7 +1041,7 @@ func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
 }
 
 func TestAFieldsNameExplainsTheFieldUnderThePointer(t *testing.T) {
-	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: editing(engine.Card{Number: 1, Title: "Ship it"})}
+	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: (Window{}).editing(engine.Card{Number: 1, Title: "Ship it"})}
 	at := slices.IndexFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == "estimate" })
 	name, value, _ := FormPlace(w.formBox(), w.form.Fields(), at)
 	if got := w.Hovering(Point{X: name.X + 1, Y: name.Y + 1}).Explains(); got != "how long it should take" {
@@ -1228,7 +1228,7 @@ func TestALabelToChooseIsAPillAfterItsTick(t *testing.T) {
 }
 
 func TestAFieldsExplanationIsABubbleWrappedEvenly(t *testing.T) {
-	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: editing(engine.Card{Number: 1, Title: "Ship it"})}
+	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: (Window{}).editing(engine.Card{Number: 1, Title: "Ship it"})}
 	at := slices.IndexFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == "time spent" })
 	name, _, _ := FormPlace(w.formBox(), w.form.Fields(), at)
 	w = w.Hovering(Point{X: name.X + 1, Y: name.Y + 1})
@@ -1253,7 +1253,7 @@ func TestAFieldsExplanationIsABubbleWrappedEvenly(t *testing.T) {
 
 func TestAFieldsValueCutShort(t *testing.T) {
 	long := "the time we spent getting the whole board ready before anybody used it"
-	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: editing(engine.Card{Number: 1, Title: "Ship it", Because: long})}
+	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: (Window{}).editing(engine.Card{Number: 1, Title: "Ship it", Because: long})}
 	at := slices.IndexFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == "because" })
 	_, value, _ := FormPlace(w.formBox(), w.form.Fields(), at)
 	if got := w.Hovering(Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != long {

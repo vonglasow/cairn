@@ -2,6 +2,7 @@ package gui
 
 import (
 	"image/color"
+	"strconv"
 
 	"gioui.org/text"
 )
@@ -33,8 +34,11 @@ func (p Panel) Draw(k Kit, at Box) Box {
 	return at
 }
 
-// Heading is the title of what a panel or a detail shows, and the number of what it shows beside it when it has one.
-type Heading struct{ Said, Number string }
+// Heading is the title of what a panel or a detail shows, and the number of what it shows beside it when it has one: a series' behind its loop.
+type Heading struct {
+	Said, Number string
+	Loop         bool
+}
 
 // Draw writes the heading in at.
 func (h Heading) Draw(k Kit, at Box) Box {
@@ -44,11 +48,19 @@ func (h Heading) Draw(k Kit, at Box) Box {
 		return at
 	}
 	numbered := monoWide(h.Number, reads)
+	if h.Loop {
+		numbered = loopSide + 1 + numbered
+	}
 	room := max(0, at.W-numbered-markSpace)
 	said := fits(k.gtx, k.th, h.Said, room, HeadingSize)
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: at.X, Y: at.Y, W: room, H: at.H}, said, HeadingSize, HeadingWeight, 1, text.Start)
 	x := at.X + min(room, ends(measuredIn(k.th, HeadingWeight), said, HeadingSize)) + markSpace
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: x, Y: at.Y + (at.H-lineHigh)/2 + 1, W: numbered, H: lineHigh}, h.Number, reads, k.skin.Type.Mono, text.Start)
+	number := Box{X: x, Y: at.Y + (at.H-lineHigh)/2 + 1, W: numbered, H: lineHigh}
+	if n, err := strconv.Atoi(h.Number); h.Loop && err == nil {
+		SeriesNumber{Number: n, Ink: k.skin.Colour.Accent.Base, Size: reads}.Draw(k.inside("heading"), number)
+		return at
+	}
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, number, h.Number, reads, k.skin.Type.Mono, text.Start)
 	return at
 }
 

@@ -5,8 +5,8 @@ type helpGroup struct {
 	lines []Said
 }
 
-func helpGroups() []helpGroup {
-	return []helpGroup{
+func (w Window) helpGroups() []helpGroup {
+	groups := []helpGroup{
 		{"Board", []Said{
 			{Key: "↑↓←→", Means: "walk the board"},
 			{Key: "⇧←→↑↓", Means: "move the card"},
@@ -52,12 +52,17 @@ func helpGroups() []helpGroup {
 			{Key: "drag a gutter", Means: "resize"},
 		}},
 	}
+	if w.pages.Recurs() {
+		board := &groups[0]
+		board.lines = append(board.lines[:len(board.lines)-1], Said{Key: "r s · r e", Means: "skip · its series; r x stops"}, board.lines[len(board.lines)-1])
+	}
+	return groups
 }
 
 // Helping is what every key does, as a person reads it, spelled for this keyboard.
 func (w Window) Helping() []Said {
 	var lines []Said
-	for _, group := range helpGroups() {
+	for _, group := range w.helpGroups() {
 		for _, line := range group.lines {
 			lines = append(lines, Said{Key: w.keyboard.Spelled(line.Key), Means: w.keyboard.Spelled(line.Means)})
 		}
@@ -106,7 +111,7 @@ func (w Window) HelpLines() []HelpLine {
 }
 
 func (w Window) helpSplit() [][]helpGroup {
-	groups := helpGroups()
+	groups := w.helpGroups()
 	if w.helpColumns() == 1 {
 		return [][]helpGroup{groups}
 	}

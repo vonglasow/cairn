@@ -5928,3 +5928,255 @@ Feature: The desktop board
       And I press "shift+f"
       And I press "v"
       Then the name proposed for the view is "Home automation"
+
+  Rule: A task that comes back is told from another at a glance, and its series has a tab of its own
+
+    @gui-series-a-card-carries-the-loop-and-the-rule
+    Scenario: a recurring card carries the loop, its rule under the title and its series' number
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every weekday 10:30"
+      When I open the window
+      Then the card "Stand-up" says its rule "every weekday 10:30"
+      And the card "Stand-up" leads to series 1
+
+    @gui-series-r-s-skips-the-chosen-occurrence
+    Scenario: r then s skips the occurrence chosen on the board, and its series makes the next
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the card "Stand-up"
+      Then the bar offers "Skip it" under "r s"
+      When I press "r"
+      And I press "s"
+      Then task 1 is archived
+      And task 2 is in the column "todo"
+
+    @gui-series-r-x-stops-and-r-r-resumes
+    Scenario: r then x stops the series of the occurrence chosen, leaving it on the board, and r then r resumes it
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the card "Stand-up"
+      And I press "r"
+      And I press "x"
+      Then series 1 is stopped
+      And task 1 is in the column "todo"
+      When I press "r"
+      And I press "r"
+      Then series 1 is active
+
+    @gui-series-r-e-opens-its-series
+    Scenario: r then e opens the series of the occurrence chosen in its tab
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the card "Stand-up"
+      And I press "r"
+      And I press "e"
+      Then the tab is "SERIES"
+      And the series shown is series 1
+
+    @gui-series-the-form-of-an-occurrence-says-its-series
+    Scenario: the form of an occurrence says its series beside its fields, and offers to skip it
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I double-click the card "Stand-up"
+      Then the form says of its series "every day, on the calendar"
+      And the form offers "Skip this one"
+      When I click "Skip this one"
+      Then task 1 is archived
+      And the window is on the board
+
+    @gui-series-the-help-says-the-r-keys
+    Scenario: the help says what the r keys do while a task may come back, and nothing of them otherwise
+      Given recurrence is on in the window
+      When I open the window
+      And I press "?"
+      Then the help says what "r s" does
+      And the help says what "r e" does
+
+    @gui-series-the-help-says-nothing-of-them-when-off
+    Scenario: with recurrence off, the help says nothing of the r keys
+      Given recurrence is off in the window
+      When I open the window
+      And I press "?"
+      Then the help says nothing of "r s"
+
+    @gui-series-the-chip-opens-its-series
+    Scenario: a click on the series' number of a card opens the series in its tab
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the series of the card "Stand-up"
+      Then the tab is "SERIES"
+      And the series shown is series 1
+
+    @gui-series-the-tab-lists-them
+    Scenario: the series tab lists the active series apart from the stopped ones, the chosen one beside them
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      And I added a task titled "Expense report" coming back "every 4 weeks on monday"
+      And I stopped series 2
+      When I open the window
+      And I click the tab "SERIES"
+      Then the tab "SERIES" says it holds 2
+      And the list of series reads "Active", "Stand-up", "Stopped", "Expense report"
+      And the series shown says "Template — what the next one is made from"
+      When I click the series "Expense report"
+      Then the series shown is series 2
+      And the series shown offers "Resume"
+
+    @gui-series-the-tab-skips-stops-and-resumes
+    Scenario: in the tab, s skips the open occurrence, x stops the series and r resumes it
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the tab "SERIES"
+      And I press "s"
+      Then task 1 is archived
+      And task 2 is in the column "todo"
+      When I click "Stop"
+      Then series 1 is stopped
+      And task 2 is in the column "todo"
+      When I press "r"
+      Then series 1 is active
+
+    @gui-series-the-tab-reaches-an-archived-occurrence
+    Scenario: an occurrence archived long ago is reached from its series
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      And task 1 was skipped
+      When I open the window
+      And I click the tab "SERIES"
+      And I click the occurrence of task 1
+      Then the form is open on task 1
+
+    @gui-series-deleting-keeps-the-tasks-unless-told
+    Scenario: deleting a series asks what becomes of its tasks, keeping them unless told
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the tab "SERIES"
+      And I click "Delete…"
+      Then the window asks what becomes of the tasks of series 1
+      And the choice taken is "Keep its tasks, as ordinary tasks"
+      When I press "enter"
+      Then there is no series 1
+      And task 1 is in the column "todo"
+
+    @gui-series-deleting-the-open-one
+    Scenario: deleting a series may delete the one open and keep the rest
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the tab "SERIES"
+      And I press "backspace"
+      And I press "down"
+      And I press "enter"
+      Then there is no series 1
+      And there is no task 1
+
+    @gui-series-deleting-every-task-asks-once-more
+    Scenario: deleting a series with every task it made asks once more, naming the count
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      And task 1 was skipped
+      When I open the window
+      And I click the tab "SERIES"
+      And I press "backspace"
+      And I click the choice "Delete all 2 tasks too"
+      And I press "enter"
+      Then the window asks "Delete all 2 tasks too?"
+      And series 1 is active
+      When I press "enter"
+      Then there is no series 1
+      And there is no task 1
+      And there is no task 2
+
+    @gui-series-the-form-changes-the-series
+    Scenario: e in the tab opens the series' form, and saving changes what comes next
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the tab "SERIES"
+      And I press "e"
+      And I set the field "title" to "Daily stand-up"
+      And I press "cmd+enter"
+      Then series 1 is titled "Daily stand-up"
+      And task 1 is titled "Stand-up"
+
+    @gui-series-n-makes-a-new-one
+    Scenario: n in the tab opens a task's form with the keyboard on its rule
+      Given recurrence is on in the window
+      When I open the window
+      And I click the tab "SERIES"
+      And I press "n"
+      Then the keyboard is on "repeats"
+      When I set the field "title" to "Water the plants"
+      And I set the field "repeats" to "every 3 days after done"
+      And I press "cmd+enter"
+      Then series 1 is titled "Water the plants"
+      And task 1 is an occurrence of series 1
+
+    @gui-series-a-task-given-a-rule-becomes-the-first
+    Scenario: a task given a rule in its form becomes the first occurrence of a new series
+      Given recurrence is on in the window
+      And I added a task titled "Water the plants"
+      When I open the window
+      And I double-click the card "Water the plants"
+      And I set the field "repeats" to "every 3 days"
+      And I press "cmd+enter"
+      Then task 1 is an occurrence of series 1
+
+    @gui-series-the-repeats-picker-writes-the-words
+    Scenario: the picker beside the repeats field writes a rule in the words the field reads
+      Given recurrence is on in the window
+      When I open the window
+      And I press "cmd+n"
+      And I click the field "repeats"
+      And I choose the rule "every weekday"
+      Then the field "repeats" reads "every weekday"
+
+    @gui-series-saving-an-occurrence-asks-this-one-or-all
+    Scenario: changing the title of an occurrence asks whether the series changes too
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I double-click the card "Stand-up"
+      And I set the field "title" to "Daily stand-up"
+      And I press "cmd+enter"
+      Then the window asks "Change Stand-up?"
+      When I click "The whole series"
+      Then task 1 is titled "Daily stand-up"
+      And series 1 is titled "Daily stand-up"
+
+    @gui-series-saving-this-one-only-leaves-the-series
+    Scenario: saving an occurrence for this one only leaves its series as it was
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I double-click the card "Stand-up"
+      And I set the field "title" to "Daily stand-up"
+      And I press "cmd+enter"
+      And I press "enter"
+      Then task 1 is titled "Daily stand-up"
+      And series 1 is titled "Stand-up"
+
+    @gui-series-off-shows-nothing
+    Scenario: with recurrence off, there is no loop, no rule, no repeats field and no series tab
+      Given recurrence is off in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      Then the tabs read "TASKS", "OBJECTIVES", "TIME"
+      And the card "Stand-up" says nothing of a series
+      When I double-click the card "Stand-up"
+      Then the form has no field "repeats"
+
+    @gui-series-off-says-why-in-the-command-bar
+    Scenario: with recurrence off, a series asked for in the command bar is answered by a banner saying how to turn it on
+      Given recurrence is off in the window
+      When I open the window
+      And I press "cmd+k"
+      And I type "series"
+      Then the command bar says "recurrence is off"

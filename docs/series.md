@@ -200,11 +200,14 @@ recurrence on in the settings of the store it makes.
 
 ## On a board
 
-The terminal board has them: the series tab, the `↻` and the rule on a card,
-the `r` keys, the question asked on saving an occurrence, and deleting with
-its three choices — see [tui.md](tui.md#series). What a board reads of a
-series comes from the engine: `Look` reads every series whole, a card carries
-the series it is an occurrence of, and `OccurrenceDay`, `SeriesFields` and
-`RepeatsField` say the day, the form and the field, so the window will read
-the same. The window is still to build, from the mockups in
-`.cairn/notes/247/`.
+Both boards have them: the series tab, the `↻` and the rule on a card, the
+`r` keys, the question asked on saving an occurrence, and deleting with its
+three choices — see [tui.md](tui.md#series) and [gui.md](gui.md#series). What
+a board reads of a series comes from the engine, written once for both:
+`Look` reads every series whole, a card carries the series it is an occurrence
+of, and `OccurrenceDay`, `SeriesFields` and `RepeatsField` say the day, the
+form and the field; `Pages.Recurring` takes every series and every mark off
+what a board shows while recurrence is off, `ShownSeries` lists them active
+then stopped, `SeriesFates` and `MadeStill` are what deleting one offers and
+counts, `ChangesTheSeries` says when saving an occurrence asks, and `DaySaid`
+writes a series' day.

@@ -331,7 +331,7 @@ func (b Board) took(l Looked) Board {
 	}
 	was := b.task
 	stood := b.at(b.here())
-	b.snap = b.recurring(l.Snapshot)
+	b.snap = b.pages.Recurring(l.Snapshot)
 	b.err = nil
 	b.warned = l.Warned
 	if b.form.asked != nil {

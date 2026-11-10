@@ -10,8 +10,8 @@ import (
 	"cairn/internal/engine"
 )
 
-// Pages is what the two tabs are called, in the order they are drawn.
-var Pages = []string{"TASKS", "OBJECTIVES", "TIME"}
+// Pages is what the tabs are called, in the order they are drawn.
+var Pages = []string{"TASKS", "OBJECTIVES", "TIME", "SERIES"}
 
 // Heads is what the panel that is open says it is, written across its top.
 func Heads(w Window) string { return HeadsOn(w, w.screen) }
@@ -37,6 +37,9 @@ func HeadsOn(w Window, screen Screen) string {
 		return "Configuration"
 	case OnHelp:
 		return "What everything does"
+	case OnSeriesFates:
+		s, _ := w.snap.SeriesOf(w.fateOf)
+		return "Delete the series " + s.Title + "?"
 	case OnAsking:
 		if w.question == aboutLeaving {
 			return "Throw away what you typed?"
@@ -77,6 +80,12 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.question == aboutNewer {
 			return "This store comes from a newer cairn"
 		}
+		if w.question == aboutSeriesSave {
+			return "Change " + w.savedTitle() + "?"
+		}
+		if w.question == aboutDeletingSeriesTasks {
+			return w.deletingAllSays()
+		}
 		return "Delete " + w.kind() + " " + strconv.Itoa(w.chosen) + "?"
 	case OnForm:
 		if w.form.Adding {
@@ -101,6 +110,9 @@ func (w Window) kind() string {
 func (w Window) formKind() string {
 	if w.form.ForObjective {
 		return "objective"
+	}
+	if w.form.ForSeries {
+		return "series"
 	}
 	return "task"
 }
@@ -178,6 +190,24 @@ func Shortcut(offer string) string {
 		return "enter"
 	case "skip flagged":
 		return "s"
+	case strings.ToLower(EditSeriesSays):
+		return "e"
+	case strings.ToLower(SkipNextSays), strings.ToLower(WholeSeriesSays), "skip":
+		return "s"
+	case strings.ToLower(StopSeriesSays):
+		return "x"
+	case strings.ToLower(ResumeSeriesSays):
+		return "r"
+	case strings.ToLower(DeleteSeriesSays):
+		return "backspace"
+	case strings.ToLower(NewSeriesSays):
+		return "n"
+	case strings.ToLower(SkipItSays):
+		return "r s"
+	case strings.ToLower(ItsSeriesSays):
+		return "r e"
+	case strings.ToLower(DeleteTheSeriesSays), strings.ToLower(ThisOneOnlySays):
+		return "enter"
 	case "recover":
 		return "cmd+z"
 	case "no day":
@@ -195,6 +225,8 @@ func Pretty(key string) string {
 		return "⌘⌫"
 	case "enter":
 		return "⏎"
+	case "backspace":
+		return "⌫"
 	}
 	if letter, ok := strings.CutPrefix(key, "cmd+shift+"); ok {
 		return "⌘⇧" + strings.ToUpper(letter)
@@ -238,7 +270,7 @@ func (w Window) OfferLook(i int, offer string) buttonLook {
 		return buttonFaint
 	case w.screen == OnFates && strings.HasPrefix(offer, "Delete"):
 		return buttonDanger
-	case offer == "Delete" || offer == "Throw away" || (i == 0 && w.screen == OnAsking && w.destroys()):
+	case offer == "Delete" || offer == "Throw away" || offer == DeleteTheSeriesSays || offer == StopTheSeries || (i == 0 && w.screen == OnAsking && w.destroys()):
 		return buttonDanger
 	case i == 0 && !leaving[offer]:
 		return buttonOn
@@ -250,7 +282,7 @@ var leaving = map[string]bool{"Cancel": true, "Close": true, "Back": true, "Keep
 
 func (w Window) destroys() bool {
 	switch w.question {
-	case aboutDeleting, aboutDeletingSeveral, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts, aboutLeaving:
+	case aboutDeleting, aboutDeletingSeveral, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts, aboutLeaving, aboutDeletingSeriesTasks:
 		return true
 	}
 	return false
@@ -323,7 +355,7 @@ func (w Window) Offers() []string {
 		if w.recoverable() {
 			offers = append(offers, "Recover")
 		}
-		return offers
+		return append(offers, w.occurrenceOffers()...)
 	case OnAsking:
 		if w.question == aboutLeaving {
 			return []string{"Throw away", "Keep editing"}
@@ -340,6 +372,9 @@ func (w Window) Offers() []string {
 		if w.question == aboutNewer {
 			return []string{"Quit"}
 		}
+		if w.question == aboutSeriesSave {
+			return []string{ThisOneOnlySays, WholeSeriesSays, "Cancel"}
+		}
 		if w.asksAboutSeveral() {
 			return w.severalOffers()
 		}
@@ -348,6 +383,8 @@ func (w Window) Offers() []string {
 		return []string{"Close"}
 	case OnFates:
 		return []string{w.DeletesSays(), "Cancel"}
+	case OnSeriesFates:
+		return []string{DeleteTheSeriesSays, "Cancel"}
 	case OnSearch:
 		return []string{"Keep search", "Close"}
 	}
@@ -366,6 +403,13 @@ func (w Window) BoardOffers() []string {
 		}
 		return append(offers, "Archive", "Delete")
 	}
+	if w.tab == Series {
+		offers = []string{NewSeriesSays, "Search", "Help"}
+		if !w.looking.Empty() {
+			offers = append(offers, "Clear")
+		}
+		return offers
+	}
 	if w.chosen == 0 {
 		return append(offers, "Export", "Import")
 	}
@@ -375,6 +419,9 @@ func (w Window) BoardOffers() []string {
 	{
 		card, _ := w.snap.Card(w.chosen)
 		offers = append(offers, "Edit", engine.AwayOp(card).Offered(), "Delete")
+	}
+	if _, ok := w.occurrenceChosen(); ok {
+		offers = append(offers, SkipItSays, ItsSeriesSays)
 	}
 	return offers
 }
@@ -400,6 +447,8 @@ func (w Window) clickingList(p Point) Window {
 }
 
 func chosenOnACalendar(field engine.Field) bool { return field.Arg == "deadline" }
+
+func chosenFromRules(field engine.Field) bool { return field.Arg == engine.RepeatsField().Arg }
 
 func chosenFromAList(field engine.Field) bool {
 	return field.Arg == "objective" || field.Arg == "label" || field.Arg == "parent" || len(field.Choices) > 0
@@ -515,7 +564,7 @@ func (w Window) shortcut(offer string) string {
 
 func (w Window) agreeingVerb() string {
 	switch w.question {
-	case aboutDeleting, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts, aboutDeletingSeveral:
+	case aboutDeleting, aboutDeletingLabel, aboutDeletingPart, aboutDeletingParts, aboutDeletingSeveral, aboutDeletingSeriesTasks:
 		return "Delete"
 	case aboutSweeping, aboutArchivingSeveral:
 		return "Archive"
@@ -584,6 +633,10 @@ func (w Window) savedTitle() string {
 	if w.form.ForObjective {
 		g, _ := w.snap.Goal(w.form.Number)
 		return g.Title
+	}
+	if w.form.ForSeries {
+		s, _ := w.snap.SeriesOf(w.form.Number)
+		return s.Title
 	}
 	c, _ := w.snap.Card(w.form.Number)
 	return c.Title
@@ -654,6 +707,16 @@ func (w Window) Asks() []Said {
 			{Means: "Close this window and open cairn again: it is the newer one that can read it."},
 		}
 	}
+	if w.question == aboutSeriesSave {
+		return []Said{
+			{Means: "You changed its " + w.changedOfTheSeries() + "."},
+			{Means: "For this one only, or for this one and every one to come?"},
+			{Means: "The ones already made keep what they had."},
+		}
+	}
+	if w.question == aboutDeletingSeriesTasks {
+		return []Said{{Means: "Their notes and time go with them."}}
+	}
 	what := "task"
 	if w.ChosenGoal() {
 		what = "objective"
@@ -719,6 +782,8 @@ const (
 	aboutDeletingParts
 	aboutApplying
 	aboutNewer
+	aboutSeriesSave
+	aboutDeletingSeriesTasks
 )
 
 func (w Window) sweeps() string {

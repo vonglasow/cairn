@@ -2,6 +2,7 @@ package gui
 
 import (
 	"image/color"
+	"strconv"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -41,12 +42,13 @@ func (c Connector) Draw(k Kit, at Box) Box {
 	return at
 }
 
-// ListItem is one objective in the list beside a detail: two lines, its standing's mark, its number, its title and its type on the first, its progress and its counts on the second; moved right and joined to its parent below level one; no ground at rest, the hover's under the pointer, a card's and a ring when chosen.
+// ListItem is one objective or one series in the list beside a detail: two lines, its standing's mark, its number — a series' behind its loop — its title and its type or its state on the first, its progress and its counts, or what it says and a word at the right, on the second; moved right and joined to its parent below level one; no ground at rest, the hover's under the pointer, a card's and a ring when chosen.
 type ListItem struct {
 	Number, Title, Standing, Priority string
 	Chip, ChipColour, Counts          string
+	Says, Aside, Badge, BadgeStanding string
 	Done, Total, Depth                int
-	Last, Chosen, Hovered             bool
+	Last, Chosen, Hovered, Loop       bool
 }
 
 // Draw draws the item in its slot at, the gap under it left empty.
@@ -76,12 +78,28 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 		LabelChip{Label: i.Chip, Colour: i.ChipColour}.Draw(in, chip)
 		end = chip.X - pillGap
 	}
+	if i.Badge != "" {
+		pill := Box{X: end - ends(m, i.Badge, small) - 2*pillPad, Y: first.Y + (first.H-pillHigh)/2, W: ends(m, i.Badge, small) + 2*pillPad, H: pillHigh}
+		Pill{Said: i.Badge, Tone: ToneStanding, Standing: i.BadgeStanding}.Draw(in, pill)
+		end = pill.X - pillGap
+	}
 	numbered := monoWide(i.Number, small)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: first.X, Y: first.Y, W: numbered, H: first.H}, i.Number, small, k.skin.Type.Mono, text.Start)
+	if n, err := strconv.Atoi(i.Number); i.Loop && err == nil {
+		numbered = SeriesNumberWide(n, small)
+		SeriesNumber{Number: n, Ink: k.skin.Colour.Accent.Base}.Draw(in, Box{X: first.X, Y: first.Y, W: numbered, H: first.H})
+	} else {
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: first.X, Y: first.Y, W: numbered, H: first.H}, i.Number, small, k.skin.Type.Mono, text.Start)
+	}
 	title := Box{X: first.X + numbered + markSpace, Y: first.Y, W: max(0, end-first.X-numbered-markSpace), H: first.H}
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, title, fits(k.gtx, k.th, i.Title, title.W, reads), reads, font.Medium, 1, text.Start)
 	if i.Total > 0 {
 		Progress{Done: i.Done, Total: i.Total, Said: i.Counts}.Draw(in, second)
+	}
+	if i.Says != "" || i.Aside != "" {
+		aside := min(second.W, ends(m, i.Aside, small)+2)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: second.X + second.W - aside, Y: second.Y, W: aside, H: second.H}, i.Aside, small, font.Font{}, text.End)
+		says := Box{X: second.X, Y: second.Y, W: max(0, second.W-aside-padding), H: second.H}
+		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, says, fits(k.gtx, k.th, i.Says, says.W, small), small)
 	}
 	return item
 }

@@ -801,6 +801,9 @@ func TestTheBarSaysWhatToPress(t *testing.T) {
 	if got := Pretty("esc"); got != "esc" {
 		t.Errorf("the bar writes esc as %q", got)
 	}
+	if got := Pretty("backspace"); got != "⌫" {
+		t.Errorf("the bar writes backspace as %q", got)
+	}
 	if got := New(newFake(), 1200, 800).OnSystem("darwin").Said("New"); !strings.Contains(got, "⌘N") || !strings.Contains(got, "New") {
 		t.Errorf("the bar writes New as %q", got)
 	}

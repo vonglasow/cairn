@@ -106,6 +106,8 @@ type CardRow struct {
 	ServesAt Box
 	MarkAt   Box
 	Late     bool
+	Series   int
+	SeriesAt Box
 }
 
 // CardRowOf lays a card's row out in row, measuring its words with m and its figures in Go Mono.
@@ -116,6 +118,11 @@ func CardRowOf(c engine.Card, row Box, m Measure, now time.Time, pages engine.Pa
 	}
 	out.NumberAt = Box{X: row.X, Y: row.Y, W: monoWide(out.Number, small), H: row.H}
 	x := row.X + out.NumberAt.W + 2*pillGap
+	if c.Series != nil {
+		out.Series = c.Series.Series
+		out.SeriesAt = Box{X: x, Y: row.Y, W: SeriesNumberWide(out.Series, small), H: row.H}
+		x += out.SeriesAt.W + 2*pillGap
+	}
 	end := row.X + row.W
 	pieces := factsOf(c, now, pages)
 	serves := Serves(c)
@@ -192,6 +199,14 @@ type Glow struct{ X, Y, Dot, Halo float32 }
 func GlowOf(mark Box) Glow {
 	scale := float32(mark.W) / 14
 	return Glow{X: float32(mark.X) + 7*scale, Y: float32(mark.Y) + 7*scale, Dot: 3.4 * scale, Halo: 6 * scale}
+}
+
+// RuleOf is what a card that comes back says under its title: its series' rule; nothing for any other.
+func RuleOf(c engine.Card) string {
+	if c.Series == nil {
+		return ""
+	}
+	return c.Series.Rule
 }
 
 // TitleRoom is how wide a card's title may run on its first line and on its second: the first less the glowing dot's room when the card is in focus.
@@ -306,7 +321,9 @@ func factsOf(c engine.Card, now time.Time, pages engine.Pages) []fact {
 		return []fact{{said: FreedMark, warn: true}}
 	}
 	var pieces []fact
-	if due, late := Due(c, now); due != "" {
+	if text, show, late, passed := engine.OccurrenceDay(c, now); show {
+		pieces = append(pieces, fact{said: text, warn: late || passed})
+	} else if due, late := Due(c, now); due != "" && c.Series == nil {
 		pieces = append(pieces, fact{said: due, warn: late})
 	}
 	if spent, over := pages.Cost(c); spent != "" {

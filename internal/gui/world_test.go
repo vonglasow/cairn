@@ -37,6 +37,7 @@ type world struct {
 	w      Window
 	opened Box
 	pages  engine.Pages
+	recurs bool
 
 	width, high  int
 	today        time.Time
@@ -80,6 +81,7 @@ func (w *world) reset() {
 	w.w = Window{}
 	w.width, w.high = 1200, 800
 	w.keepSizes = false
+	w.recurs = false
 	w.system = "darwin"
 	w.today = moment
 	w.scrolled = [engine.Columns]int{}
@@ -267,7 +269,7 @@ func (w *world) storeRefuses() error {
 }
 
 func (w *world) open() error {
-	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today).Paged(w.pages).
+	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today).Paged(w.shownPages()).
 		Drafting(DraftsAt(engine.Places{Store: w.path}.Draft()))
 	if w.keepSizes {
 		w.w = w.w.KeepingSizes(SizesAt(engine.Places{Store: w.path}.Sizes()))
@@ -417,6 +419,14 @@ func (w *world) clickOffer(name string) error {
 		}
 		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()
+	}
+	if d := w.w.SeriesDetail(); w.w.Tab() == Series && w.w.Screen() == OnTheBoard {
+		for i, offer := range d.Offers {
+			if offer == name {
+				w.w = w.w.clicked(Point{X: d.Buttons[i].X + d.Buttons[i].W/2, Y: d.Buttons[i].Y + d.Buttons[i].H/2})
+				return w.w.Wrong()
+			}
+		}
 	}
 	return fmt.Errorf("the bar offers %v, and none of them is %q", w.w.Offers(), name)
 }
@@ -747,6 +757,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	w.givens().Register(sc)
+	w.registerSeries(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 	sc.Step(`^the store refuses what it is asked to change$`, w.storeRefuses)
 	sc.Step(`^the store refuses to add a step$`, func() error {

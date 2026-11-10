@@ -110,7 +110,7 @@ func everyScreen(w Window) []struct {
 	card := w.clicked(middleOf(w, 1, 0))
 	parent, sub, refused := objectiveScreens(w)
 	viewed, changed, keeping := viewScreens(w)
-	return []struct {
+	return append([]struct {
 		name string
 		w    Window
 	}{
@@ -158,6 +158,50 @@ func everyScreen(w Window) []struct {
 		{"a narrowed part walked to", parent.Key("t").Key("]").Key("]")},
 		{"the views walked to", w.filteringBoard().Key("up")},
 		{"a view narrowed to a part", viewed.Key("]")},
+	}, seriesScreens(w)...)
+}
+
+func seriesScreens(w Window) []struct {
+	name string
+	w    Window
+} {
+	r := w.Paged(engine.Pages{}).Look()
+	tab := r.onPage(Series)
+	stopped := tab
+	for _, s := range tab.SeriesListed() {
+		if s.State == "stopped" {
+			stopped.seriesOn = s.Number
+		}
+	}
+	occurrence := r
+	for _, c := range r.snap.Cards {
+		if c.Series != nil && !c.Archived && occurrence.chosen == 0 {
+			occurrence.chosen = c.Number
+		}
+	}
+	asked := occurrence.Edit()
+	asked.form = asked.form.Set("title", "Daily stand-up, again")
+	asked = asked.Save()
+	off := w.openingPalette()
+	off.palette.typed, off.palette.opened = Written{Value: "series", At: 6}, off.now.Add(-time.Second)
+	return []struct {
+		name string
+		w    Window
+	}{
+		{"the series", tab},
+		{"a stopped series", stopped},
+		{"the series walked down", tab.Key("down")},
+		{"a series' form", tab.Key("e")},
+		{"a series' deletion asked", tab.Key("backspace")},
+		{"every task of a series' deletion asked", tab.Key("backspace").Key("down").Key("down").Key("enter")},
+		{"a new series", tab.Key("n")},
+		{"the rules offered", tab.Key("n").choosingList()},
+		{"the board marking its series", r},
+		{"a chosen occurrence", occurrence},
+		{"the help, with the series", func() Window { h := r; h.screen = OnHelp; return h }()},
+		{"an occurrence's form", occurrence.Edit()},
+		{"saving an occurrence asked", asked},
+		{"the command bar, recurrence off", off},
 	}
 }
 

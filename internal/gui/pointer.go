@@ -49,6 +49,9 @@ func (w Window) Click(p Point) Window {
 	if clicked, on := w.clickingDetail(p); on {
 		return clicked
 	}
+	if clicked, on := w.clickingSeries(p); on {
+		return clicked
+	}
 	if cross, ok := w.PanelClose(); ok && cross.In(p) {
 		return w.Choose(w.leavingOffer())
 	}
@@ -85,6 +88,9 @@ func (w Window) Click(p Point) Window {
 	if w.screen == OnFates {
 		return w.clickingFates(p)
 	}
+	if w.screen == OnSeriesFates {
+		return w.clickingSeriesFates(p)
+	}
 	if w.screen == OnChoosing {
 		return w.clickingList(p)
 	}
@@ -107,6 +113,9 @@ func (w Window) Click(p Point) Window {
 		if chosenOnACalendar(w.form.Fields()[at]) {
 			return w.openingCalendar()
 		}
+		if chosenFromRules(w.form.Fields()[at]) {
+			return w.choosingList()
+		}
 		return w.CaretInto(reached)
 	}
 	if w.closesOnAClickOff() && !w.panel().In(p) {
@@ -124,6 +133,9 @@ func (w Window) Click(p Point) Window {
 	}
 	if w.tab == Time {
 		return w.clickingTime(p)
+	}
+	if n, on := w.seriesChipAt(p); on {
+		return w.onSeries(n)
 	}
 	return w.aiming(p).choosingAt(w.at(p))
 }
@@ -284,6 +296,9 @@ const labelsBubbleWide = 180
 func (w Window) slotAt(p Point) Box {
 	if w.screen == OnTheBoard && w.tab == Objectives {
 		return w.goalSlotAt(p)
+	}
+	if w.screen == OnTheBoard && w.tab == Series {
+		return w.seriesSlotAt(p)
 	}
 	if w.screen != OnTheBoard || w.tab != Tasks {
 		return Box{}

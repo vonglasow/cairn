@@ -15,7 +15,10 @@ import (
 type Form struct {
 	Adding       bool
 	ForObjective bool
+	ForSeries    bool
 	Number       int
+	whole        bool
+	answered     bool
 
 	fields      []engine.Field
 	at          int
@@ -95,19 +98,39 @@ func (f Form) onto(at int) Form {
 	return f
 }
 
-func adding(tab Tab, state string) Form {
+func (w Window) adding(tab Tab, state string) Form {
 	if tab == Objectives {
 		return asOpened(Form{Adding: true, ForObjective: true, fields: engine.NewGoalFields()})
 	}
-	return asOpened(Form{Adding: true, fields: engine.AddingFields(state)})
+	fields := engine.AddingFields(state)
+	if w.pages.Recurs() {
+		fields = withRepeats(fields)
+	}
+	return asOpened(Form{Adding: true, fields: fields})
 }
 
-func editing(c engine.Card) Form {
-	return asOpened(Form{Number: c.Number, fields: engine.EditFields(c)})
+func (w Window) editing(c engine.Card) Form {
+	return asOpened(Form{Number: c.Number, fields: w.taskFields(c)})
+}
+
+func (w Window) taskFields(c engine.Card) []engine.Field {
+	fields := engine.EditFields(c)
+	if c.Series == nil && w.pages.Recurs() {
+		fields = withRepeats(fields)
+	}
+	return fields
+}
+
+func withRepeats(fields []engine.Field) []engine.Field {
+	at := len(fields)
+	if at > 0 && fields[at-1].Long {
+		at--
+	}
+	return slices.Insert(slices.Clone(fields), at, engine.RepeatsField())
 }
 
 func (w Window) freshened() Window {
-	if w.form.Adding || w.form.Number == 0 || len(w.form.opened) != len(w.form.fields) {
+	if w.form.Adding || w.form.ForSeries || w.form.Number == 0 || len(w.form.opened) != len(w.form.fields) {
 		return w
 	}
 	var fresh []engine.Field
@@ -122,7 +145,7 @@ func (w Window) freshened() Window {
 		if !found {
 			return w
 		}
-		fresh = engine.EditFields(c)
+		fresh = w.taskFields(c)
 	}
 	if len(fresh) != len(w.form.fields) {
 		return w
@@ -355,7 +378,7 @@ func (w Window) Edit() Window {
 		return w.beside()
 	}
 	if c, found := w.snap.Card(w.chosen); found {
-		w.form, w.screen, w.formMoved = editing(c), OnForm, Point{}
+		w.form, w.screen, w.formMoved = w.editing(c), OnForm, Point{}
 	}
 	return w.beside()
 }
@@ -369,7 +392,7 @@ func (w Window) beside() Window {
 
 func (w Window) readingActs() Window {
 	w.acts = nil
-	if w.chosenGoal || w.screen != OnForm || w.form.Adding {
+	if w.chosenGoal || w.screen != OnForm || w.form.Adding || w.form.ForSeries {
 		return w
 	}
 	shown, err := w.work.Ask(engine.TraceShow, engine.Numbered(w.chosen))
@@ -424,6 +447,10 @@ func (w Window) Save() Window {
 	if w.form.writingPart {
 		w.form = w.form.committing()
 		w.form.writingPart = false
+	}
+	if w.asksWhole() {
+		w.screen, w.question = OnAsking, aboutSeriesSave
+		return w
 	}
 	w, _, err := w.stored()
 	if err != nil {
@@ -536,6 +563,9 @@ func (w Window) Choose(name string) Window {
 		}
 		w.screen = OnTheBoard
 		return w
+	}
+	if answered, took := w.choosingOnSeries(name); took {
+		return answered
 	}
 	switch strings.ToLower(name) {
 	case "quit":
@@ -780,7 +810,14 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 	if w.form.ForObjective {
 		adding, editing = engine.ObjectiveNew, engine.ObjectiveEdit
 	}
-	return engine.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
+	if w.form.ForSeries {
+		editing = engine.SeriesEdit
+	}
+	op, asked := engine.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
+	if w.form.whole {
+		asked.Given["series"] = "true"
+	}
+	return op, asked
 }
 
 func (w Window) addingOn() string {
@@ -847,7 +884,7 @@ func (w Window) FieldSays(field engine.Field) string { return w.snap.Named(field
 
 func (w Window) choosingList() Window {
 	on := w.form.Fields()[w.form.On()]
-	if !chosenFromAList(on) {
+	if !chosenFromAList(on) && !chosenFromRules(on) {
 		return w
 	}
 	w.ticked, w.choosing, w.choosingFrom, w.refusedChoice = map[int]bool{}, 0, 0, ""
@@ -862,9 +899,9 @@ func (w Window) choosingList() Window {
 			w.ticked[0] = true
 		}
 	}
-	if len(on.Choices) > 0 {
+	if set := w.setOf(on); len(set) > 0 {
 		w.ticked = map[int]bool{}
-		for i, choice := range on.Choices {
+		for i, choice := range set {
 			if choice == on.Value {
 				w.ticked[i+1] = true
 			}
@@ -982,7 +1019,20 @@ func (w Window) closedSet() []string {
 	if w.screen != OnChoosing {
 		return nil
 	}
-	return w.form.Fields()[w.form.On()].Choices
+	return w.setOf(w.form.Fields()[w.form.On()])
+}
+
+func (w Window) setOf(field engine.Field) []string {
+	if chosenFromRules(field) {
+		return RulesOffered
+	}
+	return field.Choices
+}
+
+// RulesOffered is what the list beside the repeats field offers, each written as the field reads it.
+var RulesOffered = []string{
+	"every day", "every weekday", "every week", "every other week", "every month",
+	"every monday", "every friday", "every 3 days after done", "every week after done",
 }
 
 func (w Window) inChoosing(name string) Window {

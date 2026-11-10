@@ -141,7 +141,9 @@ func (w Window) ServingCardAt(at int) Box {
 }
 
 // TabsBeside says whether the column beside the form is split in two tabs: a task's, whose history is behind one; an objective's holds its details alone.
-func (w Window) TabsBeside() bool { return w.besideShown() && !w.form.ForObjective }
+func (w Window) TabsBeside() bool {
+	return w.besideShown() && !w.form.ForObjective && !w.form.ForSeries
+}
 
 func (w Window) descriptionFrame() Box {
 	fields := w.form.Fields()
@@ -274,6 +276,8 @@ func (w Window) panel() Box {
 		return w.QuestionBox()
 	case OnFates:
 		return w.FatesAsked().Box
+	case OnSeriesFates:
+		return w.SeriesFatesAsked().Box
 	case OnHelp:
 		return w.HelpBox()
 	case OnCalendar:

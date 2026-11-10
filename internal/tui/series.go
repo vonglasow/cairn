@@ -12,32 +12,7 @@ import (
 	"cairn/internal/engine"
 )
 
-func (b Board) recurring(s engine.Snapshot) engine.Snapshot {
-	if b.pages.Recurs() {
-		return s
-	}
-	s.Series = nil
-	cards := make([]engine.Card, len(s.Cards))
-	for i, c := range s.Cards {
-		c.Series = nil
-		cards[i] = c
-	}
-	s.Cards = cards
-	return s
-}
-
-func (b Board) allSeries() []engine.Series {
-	found := engine.FoundSeries(b.snap.Series, b.query)
-	out := make([]engine.Series, 0, len(found))
-	for _, state := range []string{"active", "stopped"} {
-		for _, s := range found {
-			if s.State == state {
-				out = append(out, s)
-			}
-		}
-	}
-	return out
-}
+func (b Board) allSeries() []engine.Series { return engine.ShownSeries(b.snap.Series, b.query) }
 
 func (b Board) chosenSeries() (engine.Series, bool) {
 	all := b.allSeries()
@@ -304,14 +279,7 @@ func (b Board) whenSaid(days ...string) string {
 	if len(days) == 0 {
 		return ""
 	}
-	day, err := domain.ParseDeadline(days[0])
-	if err != nil || day.IsZero() {
-		return ""
-	}
-	if text, show, _, _ := engine.OccurrenceDay(engine.Card{Series: &engine.Occurs{Day: days[0]}}, b.now()); show && !strings.HasPrefix(text, "−") {
-		return text
-	}
-	return day.Format("2 Jan")
+	return engine.DaySaid(days[0], b.now())
 }
 
 func spentSaid(spent string) string {
@@ -353,8 +321,6 @@ type seriesGoing struct {
 	again  bool
 }
 
-var seriesFates = []string{"keep-tasks", "delete-open", "delete-tasks"}
-
 func (b Board) choosingSeriesFate(key string) (tea.Model, tea.Cmd) {
 	going := *b.seriesGoing
 	s, found := b.snap.SeriesOf(going.number)
@@ -372,36 +338,26 @@ func (b Board) choosingSeriesFate(key string) (tea.Model, tea.Cmd) {
 		b.seriesGoing = nil
 		return b, nil
 	case "enter", "return":
-		if seriesFates[going.choice] == "delete-tasks" && !going.again {
+		if engine.SeriesFates[going.choice] == "delete-tasks" && !going.again {
 			going.again = true
 			b.seriesGoing = &going
 			return b, nil
 		}
 		b.seriesGoing = nil
 		in := engine.Agreed(engine.Numbered(s.Number))
-		in.Given[seriesFates[going.choice]] = "true"
+		in.Given[engine.SeriesFates[going.choice]] = "true"
 		return b, b.carry(engine.SeriesDelete, in)
 	}
 	if way, ok := direction(key); ok && !going.again {
 		switch way {
 		case goDown:
-			going.choice = min(len(seriesFates)-1, going.choice+1)
+			going.choice = min(len(engine.SeriesFates)-1, going.choice+1)
 		case goUp:
 			going.choice = max(0, going.choice-1)
 		}
 		b.seriesGoing = &going
 	}
 	return b, nil
-}
-
-func madeStill(s engine.Series) []int {
-	var out []int
-	for _, o := range s.Occurrences {
-		if o.Task != 0 && o.Is != "deleted" {
-			out = append(out, o.Task)
-		}
-	}
-	return out
 }
 
 func (b Board) drawSeriesGoing() string {
@@ -414,7 +370,7 @@ func (b Board) drawSeriesGoing() string {
 func (b Board) seriesGoingBox() string {
 	going := *b.seriesGoing
 	s, _ := b.snap.SeriesOf(going.number)
-	made := madeStill(s)
+	made := engine.MadeStill(s)
 	wide := min(switcherWide, b.width-margin-2)
 	inner := wide - 2
 	edge := b.skin.Rule
@@ -452,7 +408,7 @@ func (b Board) seriesGoingFoot() string {
 	going := *b.seriesGoing
 	s, _ := b.snap.SeriesOf(going.number)
 	if going.again {
-		return " " + b.skin.Title.Render("delete all "+strconv.Itoa(len(madeStill(s)))+" tasks too?") + "  " +
+		return " " + b.skin.Title.Render("delete all "+strconv.Itoa(len(engine.MadeStill(s)))+" tasks too?") + "  " +
 			b.bar(b.offer("⏎", "delete them all"), b.offer("esc", "choose again"))
 	}
 	return " " + b.skin.Title.Render("delete the series ↻"+strconv.Itoa(s.Number)+" "+s.Title+"?") + "  " +
@@ -481,22 +437,12 @@ func (b Board) seriesForm(s engine.Series) (Board, tea.Cmd) {
 	return b.started()
 }
 
-var templateFields = []string{"title", "priority", "labels", "estimate", "steps", "objectives"}
-
 func (b Board) asksWhole(form Form) bool {
-	if form.Adding || form.ForObjective || form.ForSeries {
+	if form.Adding || form.ForObjective || form.ForSeries || !b.pages.Recurs() {
 		return false
 	}
 	c, found := b.snap.Card(form.Number)
-	if !found || c.Series == nil || !b.pages.Recurs() {
-		return false
-	}
-	for _, f := range form.typed() {
-		if f.Value != f.Was && slices.Contains(templateFields, f.Name) {
-			return true
-		}
-	}
-	return false
+	return found && engine.ChangesTheSeries(c, form.typed())
 }
 
 func (b Board) answeringWhole(key string) (tea.Model, tea.Cmd) {

@@ -44,6 +44,7 @@ afternoon to spend:
 - [The mouse](#the-mouse)
 - [The form](#the-form)
 - [An open task](#an-open-task)
+- [Series](#series)
 - [Several at once](#several-at-once)
 - [Workspaces, a window each](#workspaces-a-window-each)
 - [How it is tested](#how-it-is-tested)
@@ -342,12 +343,12 @@ label is looked up in — then `Space`, `Radius`, `Size`, `Type` and the
 |---|---|
 | `Backdrop` | the window's own back, under everything |
 | `Ground` | what a column, a lane or a day stands on, raised for a day |
-| `Panel`, `Heading` | a raised box over the board, and its title, with the number of what it shows beside it when it has one |
+| `Panel`, `Heading` | a raised box over the board, and its title, with the number of what it shows beside it when it has one — a series' behind its loop (`Loop`) |
 | `Popover` | a small raised box dropped over the rest: a menu, a bubble, a tip, the swatches, the switcher |
 | `Veil` | what dims the board under a question or the command bar |
 | `Rule` | a line between what something shows and what it offers |
 | `Card`, `Stripe` | a task's card in each of its states — a reference saying why it is there (`Why`) among them — a sub-objective's in tile layout (`GoalTile`), and a priority's edge |
-| `ListItem`, `Connector` | an objective of the list beside a detail, two lines, moved right and joined to its parent below level one; the line that joins, also in a list's row (`Row.Connector`) |
+| `ListItem`, `Connector` | an objective or a series of the list beside a detail, two lines, moved right and joined to its parent below level one, a series' state on a pill and its rule and day on the second line; the line that joins, also in a list's row (`Row.Connector`) |
 | `Facts`, `Figures`, `Banner` | names and their values; a row of numbers at the figures' size; a short message boxed in a panel, refused or warned |
 | `LabelChip`, `Pill`, `KeyChip`, `Dot` | a label, a word on a rounded ground, a key on its chip, a colour beside its name, or the late ink's |
 | `Button`, `Tabs`, `Segmented` | a word to click, the window's tabs, one choice among a few |
@@ -358,7 +359,7 @@ label is looked up in — then `Space`, `Radius`, `Size`, `Type` and the
 | `Bar`, `Hint` | the command bar and one of its offers |
 | `WorkspacePill`, `FilterPill`, `InfoBox` | the workspace, a filter or a view in force — a view changed on top marked by a late dot — a box of facts |
 | `Empty`, `Dashed`, `Struck`, `Landing` | an empty slot, a dashed line, the line through what is done, where a drop lands |
-| `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`, `CopyMark`, `MenuMark`, `Stone`, `StandingMark`, `ServesMark` | the marks; where an objective stands and what a task serves are drawn, not written, since neither face carries `▶ ‖ ◇` |
+| `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`, `CopyMark`, `MenuMark`, `Stone`, `StandingMark`, `ServesMark`, `LoopMark`, `SeriesNumber` | the marks; where an objective stands, what a task serves and what comes back are drawn, not written, since no face carries `▶ ‖ ◇ ↻`; a series' number is the loop and its figures |
 
 **The `Kit` is what every drawing is handed**: Gio's context, the theme,
 the skin, the layer it draws on, the clip it draws within, and the record
@@ -395,8 +396,12 @@ and narrowed, its deletion asked, a sub-objective's form, the parents
 offered and what a task serves refused, a view in force, one changed on
 top, its popover, one being kept, the views, one gone and one renamed, a
 sub-objective added under its parent, a part walked to, the views walked to
-and a view narrowed to a part — the
-fixtures holding three views, one of them gone — at the two sizes the layout is pinned at, 720 by
+and a view narrowed to a part, then, recurrence on, the series, a stopped
+one, one walked to, its form, its deletion asked and asked again, a new one,
+the rules offered, the board marking them, an occurrence chosen and its form,
+saving one asked, the help with the series, and the command bar answering a
+series with recurrence off — the
+fixtures holding three views, one of them gone, and two series — at the two sizes the layout is pinned at, 720 by
 560 and 1200 by 800, and fails on any overlap. A card records where it
 writes its number and its facts, so what it writes is judged too. What it
 found when it was written, and what was done:
@@ -538,7 +543,8 @@ number, count and key hint on a card is that much brighter.
 
 The terminal's shape, larger. Four columns — backlog, todo, current, done —
 the backlog full height, the stalled band across the last three. Three tabs:
-tasks, objectives, and the time spent.
+tasks, objectives, and the time spent — and a fourth, the series, while
+recurrence is on ([series](#series)).
 
 **Each column and the band stand on a ground of their own.** A region reads as
 a group when it has a ground or an edge of its own (common region, Nielsen
@@ -2536,6 +2542,116 @@ Editing in place on the card was the alternative, and is what a mouse invites.
 It was turned down for the trace: with no single moment of saving, every field
 touched is its own `task edit`, and twelve fields touched is twelve lines of
 trace for one sitting.
+
+## Series
+
+```
+ Tasks 38   Objectives 5   Time 3   Series 4
+┌ Active                       3 ┐ ┌ Team stand-up ↻3                      active ┐
+│ ↻3 Team stand-up        active │ │ every weekday at 10:30, on the calendar, …    │
+│    every weekday 10:30   today │ │ Next: today · Tue 10 Nov · Wed 11 Nov         │
+│ ↻1 Weekly review        active │ │ ┌Template──┐ ┌So far──────┐ ┌On the board now┐ │
+│ Stopped                      1 │ │ └──────────┘ └────────────┘ └────────────────┘ │
+│ ↻2 Monthly report      stopped │ │ Occurrences · 52     archived ones included   │
+│    every 4 weeks … since 12 Oct │ │ today  #312  Team stand-up   todo             │
+└────────────────────────────────┘ │ ─────────────────────────────────────────────  │
+                                   │ 52 occurrences  Edit e  Skip s  Stop x  Delete ⌫│
+                                   └────────────────────────────────────────────────┘
+```
+
+A series ([series.md](series.md)) is the window's fourth tab, after the time,
+as the terminal has it (`@gui-series-the-tab-lists-them`) — `⇥` keeps the
+order it had. It is there only while `[recurrence] on` is true; a window not
+told otherwise has it off, as the configuration does, so `New` opens with
+recurrence off and `Paged` gives it the store's. **The tab is a split, the
+objectives' own** (`SplitOf`): the list on the left, the active series under
+one head and the stopped under another, each an item of two lines — its
+number `↻3`, its title and its state on a pill, then its rule and its next
+day, or the day it was stopped; on the right the series chosen — the first
+while none is (`SeriesShown`). Its heading, its state, its rule read back as a
+sentence with its next days — or the days resuming it today would make — then
+three boxes: the template the next one is made from, what it did so far, the
+missed in the late ink, and the task open now; then every occurrence, archived
+ones included, a line each, a missed day in the late ink with no task. A click
+on an occurrence opens its task's form, an archived one too, which nothing
+else on the board reaches (`@gui-series-the-tab-reaches-an-archived-occurrence`).
+Where the detail is too narrow for three boxes — at 720 — the template and
+what it did so far are a line each; where its offers do not fit, *Edit the
+series* and *Skip the next* say *Edit* and *Skip*, and the buttons give up the
+least room they can.
+
+**Its foot offers what the command line does**: *Edit the series* (`e`),
+*Skip the next* (`s`) while one is open, *Stop* (`x`) or *Resume* (`r`), and
+*Delete…* (`⌫`), the keys working from the tab as the buttons do
+(`@gui-series-the-tab-skips-stops-and-resumes`); `↑↓` walk the list, `⏎` opens
+the occurrence open. The bar offers *New series* (`n`), the search — which
+narrows the list by title, rule or number, as `series list --search` does —
+and the help. `n` opens a task's form in todo with the keyboard already on
+its `repeats` field (`@gui-series-n-makes-a-new-one`); *Edit the series* opens
+the series' own form — title, priority, labels, estimate, objectives, steps,
+its rule and the day it counts from, with no trace beside it — and saving it
+changes what comes next, never one made (`@gui-series-the-form-changes-the-series`).
+
+**Deleting a series asks what becomes of its tasks**, three rows checked one
+at a time, the first — keep every task as an ordinary task — chosen
+(`OnSeriesFates`, `@gui-series-deleting-keeps-the-tasks-unless-told`):
+keep them, delete the one open and keep the rest
+(`@gui-series-deleting-the-open-one`), or delete them all, which asks once
+more, naming how many (`@gui-series-deleting-every-task-asks-once-more`). It
+is the question deleting an objective asks, row by row, for the same reason:
+what is lost is said before it goes.
+
+**A card that comes back is told at a glance**, marker A of the study: the
+loop before its title, its title on one line and its rule on the line under
+it in the faint ink, and on its row the series' number after its own, in the
+accent (`@gui-series-a-card-carries-the-loop-and-the-rule`). A click on that
+number opens the series in its tab (`@gui-series-the-chip-opens-its-series`).
+At the right of the row is the day it was made for, as the engine says it
+(`OccurrenceDay`): the time on its day, late once passed, its weekday within
+a week, counted down once its day is gone — its deadline left unsaid, since
+the day is the same. No face the window carries has `↻`, so the loop is drawn
+(`LoopMark`), as the standing marks are.
+
+**On a card chosen, `r` is a prefix**, as in the terminal: `r s` skips it,
+`r x` stops its series, `r r` resumes it and `r e` opens its series
+(`@gui-series-r-s-skips-the-chosen-occurrence`,
+`@gui-series-r-x-stops-and-r-r-resumes`, `@gui-series-r-e-opens-its-series`);
+the bar offers *Skip it* and *Its series* then, and the help says the keys
+while recurrence is on (`@gui-series-the-help-says-the-r-keys`).
+
+**The form of an occurrence says its series** under its details: the rule
+read back, the day it was made for, the next one, and what the series did so
+far, the number of the series at its head; its foot offers *Skip this one* and
+*Stop the series* — or *Resume the series* — beside *Save*
+(`@gui-series-the-form-of-an-occurrence-says-its-series`). A task that is no
+occurrence carries a `repeats` field, in a section of its own: a rule typed
+there makes it the first occurrence of a new series
+(`@gui-series-a-task-given-a-rule-becomes-the-first`). The field is typed into,
+and a click on it drops a list of rules beside it, each written in the words
+the field reads — every day, every weekday, every other week, three days
+after done — the one taken written into the field
+(`@gui-series-the-repeats-picker-writes-the-words`). **Saving a change to what
+the next one is made from asks once** — title, priority, labels, estimate,
+steps or objectives (`engine.ChangesTheSeries`): *This one only*, `⏎` and the
+default, or *The whole series*, `s`
+(`@gui-series-saving-an-occurrence-asks-this-one-or-all`,
+`@gui-series-saving-this-one-only-leaves-the-series`).
+
+**With recurrence off, nothing of a series shows**: no tab, no loop, no rule,
+no series number, no `repeats` field, no `r` key and no offer
+(`@gui-series-off-shows-nothing`) — the engine's `Pages.Recurring` takes them
+off the snapshot the window reads, the one the terminal reads too. The one
+place left is the command bar: a series asked for there is answered by a
+banner saying recurrence is off and how to turn it on, the engine's own
+refusal (`@gui-series-off-says-why-in-the-command-bar`), rather than by
+nothing, which reads as a command that does not exist.
+
+What the mockups drew and the window does not do yet: the picker writing a
+rule from its parts — every N days, weeks or months, the weekdays, the time,
+the day it counts from, the end and what it counts from — rather than a list
+of rules; the rule read back with its next three days under the field as it
+is typed; and `made from series` in an occurrence's own history, which the
+engine does not write in a task's trace.
 
 ## Several at once
 

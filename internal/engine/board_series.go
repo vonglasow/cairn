@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -109,4 +110,74 @@ func SeriesFields(s Series) []Field {
 		}
 	}
 	return fields
+}
+
+// Recurring is what a board shows of a snapshot: the whole of it while a task may come back, and no series and no occurrence marked as one while recurrence is off.
+func (p Pages) Recurring(s Snapshot) Snapshot {
+	if p.Recurs() {
+		return s
+	}
+	s.Series = nil
+	cards := make([]Card, len(s.Cards))
+	for i, c := range s.Cards {
+		c.Series = nil
+		cards[i] = c
+	}
+	s.Cards = cards
+	return s
+}
+
+// ShownSeries is the series a board lists for what is typed: the active ones, then the stopped ones.
+func ShownSeries(all []Series, query string) []Series {
+	found := FoundSeries(all, query)
+	out := make([]Series, 0, len(found))
+	for _, state := range []string{"active", "stopped"} {
+		for _, s := range found {
+			if s.State == state {
+				out = append(out, s)
+			}
+		}
+	}
+	return out
+}
+
+// SeriesFates is what may become of the tasks of a series deleted, in the order a board offers them: kept, the open one deleted, all deleted.
+var SeriesFates = []string{"keep-tasks", "delete-open", "delete-tasks"}
+
+// MadeStill is every task a series made that is still there.
+func MadeStill(s Series) []int {
+	var out []int
+	for _, o := range s.Occurrences {
+		if o.Task != 0 && o.Is != "deleted" {
+			out = append(out, o.Task)
+		}
+	}
+	return out
+}
+
+var templateArgs = []string{"title", "priority", "label", "estimate", "steps", "objective"}
+
+// ChangesTheSeries says whether saving a form on a card asks if its series changes too: the card is an occurrence, and what its series makes the next one from was changed.
+func ChangesTheSeries(c Card, fields []Field) bool {
+	if c.Series == nil {
+		return false
+	}
+	for _, f := range fields {
+		if f.Value != f.Was && slices.Contains(templateArgs, f.Arg) {
+			return true
+		}
+	}
+	return false
+}
+
+// DaySaid is how a board writes a day of a series: as a card says its occurrence day while that is close and not passed, as its date otherwise; nothing for no day.
+func DaySaid(day string, now time.Time) string {
+	parsed, err := domain.ParseDeadline(day)
+	if err != nil || parsed.IsZero() {
+		return ""
+	}
+	if text, show, _, _ := OccurrenceDay(Card{Series: &Occurs{Day: day}}, now); show && !strings.HasPrefix(text, "−") {
+		return text
+	}
+	return parsed.Format("2 Jan")
 }

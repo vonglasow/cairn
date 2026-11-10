@@ -95,6 +95,8 @@ func Draw(k Kit, w Window) {
 		drawGoals(k, l, w)
 	} else if w.Tab() == Time {
 		drawWeek(k, l, w)
+	} else if w.Tab() == Series {
+		drawSeries(k, l, w)
 	} else {
 		drawColumns(k, l, w)
 		drawBand(k, l, w)
@@ -118,6 +120,9 @@ func Draw(k Kit, w Window) {
 	}
 	if w.Screen() == OnFates {
 		drawFates(panel, w)
+	}
+	if w.Screen() == OnSeriesFates {
+		drawSeriesFates(panel, w)
 	}
 	if w.Screen() == OnCalendar {
 		drawCalendar(popover, w)
@@ -1121,7 +1126,7 @@ func drawForm(k Kit, w Window) {
 		case on:
 		case chosenOnACalendar(fields[i]):
 			CalendarMark{Ink: k.skin.Colour.Ink.Low}.Draw(k.inside("field"), FieldMark(frame))
-		case chosenFromAList(fields[i]):
+		case chosenFromAList(fields[i]), chosenFromRules(fields[i]):
 			Chevron{Ink: k.skin.Colour.Ink.Low}.Draw(k.inside("field"), FieldMark(frame))
 		}
 	}
@@ -1150,6 +1155,8 @@ func drawForm(k Kit, w Window) {
 	switch {
 	case w.TabsBeside():
 		drawBesideTabs(k, panel, w)
+	case w.form.ForSeries:
+		Head{Said: DetailsHead}.Draw(k, BesideHead(panel))
 	case w.besideShown():
 		Head{Said: DetailsHead}.Draw(k, BesideHead(panel))
 		drawUnder(k, w)
@@ -1158,6 +1165,7 @@ func drawForm(k Kit, w Window) {
 	if w.Tracing() {
 		drawHistory(k, panel, w)
 	}
+	drawOccurrenceBeside(k, w)
 	for _, r := range w.ContextSays() {
 		sayHolding(k, k.skin.Colour.Ink.Faint, r.Box, w.Holding(r.Key, r.Said), r.Size)
 	}
@@ -1367,6 +1375,11 @@ func drawPalette(k Kit, w Window) {
 	Rule{}.Draw(k, Box{X: box.X, Y: box.Y + paletteHead - 1, W: box.W})
 	in, clipped := k.within(Box{X: box.X, Y: box.Y + paletteHead, W: box.W, H: box.H - paletteHead})
 	defer clipped.Pop()
+	if at, ok := w.PaletteBannerAt(); ok {
+		said, _ := w.PaletteBanner()
+		first, then := paletteBannerSaid(said)
+		Banner{Said: first, Then: then, Warn: true}.Draw(in, at)
+	}
 	rows := w.PaletteRows()
 	for _, line := range w.PaletteLines() {
 		if line.Row < 0 {

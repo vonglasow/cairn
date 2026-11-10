@@ -95,7 +95,7 @@ func (w Window) droppingDraft() Window {
 }
 
 func (w Window) startingNew() Window {
-	w.form, w.formMoved = adding(w.tab, w.addingOn()), Point{}
+	w.form, w.formMoved = w.adding(w.tab, w.addingOn()), Point{}
 	w = w.beside()
 	if w.form.ForObjective {
 		w.screen = OnForm

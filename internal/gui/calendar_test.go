@@ -74,7 +74,7 @@ func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
 
 func TestThePointerWalksTheMonths(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
 	box := w.CalendarBox()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	if got := domain.FormatDay(w.Click(middle(MonthAfter(box))).day); got != "2026-02-28" {
@@ -127,7 +127,7 @@ func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 
 func TestTheCalendarIsDrawn(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "Write the spec"})
+	w.form = Window{}.editing(engine.Card{Number: 1, Title: "Write the spec"})
 	shot := drawn(t, w)
 	for i, day := range engine.MonthGrid(w.day) {
 		edge := Edges(DayAt(w.CalendarBox(), i))[0]
@@ -231,7 +231,7 @@ func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
 
 func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
 	shot, skin := drawn(t, w), Dark()
 	box := w.CalendarBox()
 	for _, chip := range []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)} {
@@ -292,7 +292,7 @@ func TestACalendarOverATaskWithStepsIsDrawn(t *testing.T) {
 
 func TestTheCalendarsDaysHaveRoomAndItStaysInTheSmallestWindow(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1024, height: 640, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
 	box := w.CalendarBox()
 	day, next := DayAt(box, 0), DayAt(box, 1)
 	if day.H < 32 {
@@ -308,7 +308,7 @@ func TestTheCalendarsDaysHaveRoomAndItStaysInTheSmallestWindow(t *testing.T) {
 
 func TestTheCalendarsGridsAreWalkedAndLeftByTheKeyboard(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	months := w.Key("m")
 	if got := months.CalendarCells(); len(got) != 12 || got[0] != "Jan" {
