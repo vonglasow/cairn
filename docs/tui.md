@@ -884,6 +884,41 @@ made a bar offering `:` an offer of almost nothing.
 Everything `task` and `objective` do also has a key. The prompt is the way in
 for the arguments no key can carry, not a second way of doing what a key does.
 
+```
+ :set pages.ti▏
+    pages.time           hidden         from global
+    pages.tasks          true           default
+```
+
+**`:set` and `:unset` set a key of the configuration** without leaving the
+board: `:set pages.time off`, `:set --global focus.session 45m`, `:unset
+recurrence.on`. They are not a second editor: they call `engine.ConfigSet` and
+`engine.ConfigUnset`, the operations `cairn config set` and `unset` and the
+window's settings call, so the same file is written the same way — one line,
+every comment kept, and nothing written that does not read back
+([config.md](config.md#one-configuration-several-ways-in-to-it)). Without
+`--global`, the engine writes the settings of the store the board holds
+when a workspace names it or settings are beside it. The board wears what was
+written at once — a tab goes or comes, the week loses its weekend — and the
+message line says only what the engine wrote, `pages.time = "off", written in
+…/settings.toml`; the beat that follows says nothing more, since the board
+stamped the file after its own write (`@tui-set-a-key-from-the-command-line`,
+`@tui-set-a-key-in-the-global-configuration`, `@tui-unset-a-key`). A value the
+key does not take is said in the reader's words and nothing is written
+(`@tui-set-refuses-what-the-key-does-not-take`). They are typed rather than
+read off `engine.All()`: they are a person's (`engine.ForAPersonOnly`), and
+the prompt otherwise offers what an agent may do too.
+
+**The keys are completed from the catalogue** (`config.Keys`): after `:set ` or
+`:unset `, the lines above the prompt list the keys starting with what is
+typed, five at most, each with its value in force and where it comes from —
+`set here ← global: on`, `from global`, or `default`, as the window's rows say
+it — and `⇥` completes the first of them (`@tui-set-completes-the-keys`). There
+is no settings screen: it would draw a second editor of the same keys for a
+board that has the window beside it, and the terminal does not wear the
+window's theme, which it leaves to the terminal's own colours. That is to be
+asked again if somebody uses the terminal with no window.
+
 ## Objectives
 
 ```
@@ -1251,6 +1286,30 @@ in the data, and a gesture names a number rather than a row.
 | the task under it is deleted elsewhere | the next task in the same column |
 | there is no next one | the previous one |
 | the column empties | back to normal mode, on that column |
+
+**The configuration is read again on the same beat.** The board keeps the
+configuration it read (`engine.ConfigShow`) and a stamp of the files it came
+from — the global `config.toml`, the `settings.toml` beside the store, and a
+scheme of one's own worn (`engine.StampOf`). At each beat it looks at their size
+and time, and only when one moved, at what it holds: a save with nothing
+changed does nothing. When a file says something else, the board reads the
+configuration again through the engine, wears it — the pages, the weekends, the
+series — and says on its message line which keys changed and from what,
+`settings.toml read again: pages.time on → off`, until the next key
+(`engine.ConfigChanges`, `@tui-config-read-again-says-what-changed`). A theme
+changed reaches it as nothing: the terminal draws in its own sixteen colours.
+
+**A file that cannot be read leaves the board as it was.** The board does not
+fall back to the defaults, which would bring a page back or take one away under
+the person's eyes: it keeps the last configuration that read, and says where
+and why on its message line — the file, the line the key at fault is written
+on, and the reader's own words, `settings.toml:2 pages.time "hiden": …` — with,
+in the bar's place, `the board keeps what it read at 10:42 until the file
+reads again` (`engine.TroubleIn`,
+`@tui-config-a-file-that-cannot-be-read-keeps-what-it-had`). Both stay until
+the file reads; then the change is worn and said as any other. At open, a
+configuration that cannot be read stops the board as it always did: there is
+nothing good to keep yet.
 
 `PRAGMA data_version` was measured on `modernc.org/sqlite` rather than assumed:
 it moves when a second connection commits and stays put when nothing happens.

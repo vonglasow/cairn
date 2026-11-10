@@ -3,8 +3,11 @@ package test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/cucumber/godog"
@@ -101,6 +104,17 @@ func (s *Spaces) RecentFolder(folder, how string) error {
 	return os.WriteFile(path, said, 0o600)
 }
 
+func saying(path, line string, wanted bool) error {
+	data, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if said := slices.Contains(strings.Split(string(data), "\n"), line); said != wanted {
+		return fmt.Errorf("%s says, wanting %q %v:\n%s", path, line, wanted, data)
+	}
+	return nil
+}
+
 func (s *Spaces) settings(name, said string) error {
 	return os.WriteFile(filepath.Join(s.FolderOf(name), "settings.toml"), []byte(said), 0o600)
 }
@@ -120,6 +134,15 @@ func (s *Spaces) Register(sc *godog.ScenarioContext) {
 	})
 	sc.Given(`^the settings of the workspace "([^"]*)" say its colour is "([^"]*)"$`, func(name, colour string) error {
 		return s.settings(name, "[workspace]\ncolour = \""+colour+"\"\n")
+	})
+	sc.Step(`^the settings of the workspace "([^"]*)" are written by hand:$`, func(name string, said *godog.DocString) error {
+		return s.settings(name, said.Content+"\n")
+	})
+	sc.Then(`^the settings of the workspace "([^"]*)" (say|do not say) `+"`([^`]*)`"+`$`, func(name, says, line string) error {
+		return saying(filepath.Join(s.FolderOf(name), "settings.toml"), line, says == "say")
+	})
+	sc.Then(`^the global configuration (says|does not say) `+"`([^`]*)`"+`$`, func(says, line string) error {
+		return saying(filepath.Join(s.Dir, ".config", "cairn", "config.toml"), line, says == "says")
 	})
 	sc.Given(`^the recent folder "([^"]*)", (opened yesterday|whose store is gone)$`, s.RecentFolder)
 	sc.Given(`^the folder "([^"]*)" holds a task titled "([^"]*)"$`, func(folder, title string) error {

@@ -81,6 +81,9 @@ func (w *world) open() {
 	w.opened = true
 	w.refresh()
 	if w.spaces.Dir != "" {
+		w.settle(w.b.readingConfig())
+	}
+	if w.spaces.Dir != "" {
 		held := w.held
 		w.b = w.b.Switching(func(to engine.Elsewhere) (engine.Pages, error) { return engine.Switch(held, to) })
 		w.settle(w.b.placing())
@@ -178,6 +181,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.registerWorkspaces(sc)
 	w.registerColours(sc)
 	w.registerTree(sc)
+	w.registerConfiguring(sc)
 	w.registerSeries(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 

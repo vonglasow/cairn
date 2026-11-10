@@ -67,7 +67,13 @@ func (b Board) drawBoard() string {
 	default:
 		out = append(out, b.tasksBoard(l)...)
 	}
-	return strings.Join(append(out, b.titleLine(), b.foot()), "\n")
+	completing := b.completionLines()
+	if len(completing) == 0 {
+		return strings.Join(append(out, b.titleLine(), b.foot()), "\n")
+	}
+	lines := strings.Split(strings.Join(out, "\n"), "\n")
+	lines = lines[:max(0, len(lines)-len(completing)+1)]
+	return strings.Join(slices.Concat(lines, completing, []string{b.foot()}), "\n")
 }
 
 func (b Board) tabs() string {
@@ -374,6 +380,9 @@ func (b Board) foot() string {
 	if b.prompt != NoPrompt {
 		return b.promptLine()
 	}
+	if b.configured.trouble != nil {
+		return b.keptFoot()
+	}
 	return b.bar(b.offers()...)
 }
 
@@ -486,6 +495,12 @@ func (b Board) kindPopup() string {
 }
 
 func (b Board) titleLine() string {
+	if b.configured.trouble != nil {
+		return b.troubleLine()
+	}
+	if b.configured.notice != "" {
+		return " " + b.skin.Faint.Render(Clip(b.configured.notice, b.width-margin-margin))
+	}
 	if len(b.warned) > 0 {
 		return " " + b.skin.Band.Render(Clip(strings.Join(b.warned, " · "), b.width-margin-margin))
 	}

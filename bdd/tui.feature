@@ -1929,3 +1929,103 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Then the tab is "TIME"
     When I press "tab", "l", "i"
     Then the bar does not offer "skip"
+
+  Rule: The configuration is read again on the board's beat, and a key is set from the : line
+
+    @tui-config-read-again-says-what-changed
+    Scenario: settings changed by hand are read again at the next beat, applied, and what changed is said
+      Given the workspace "home", the default
+      When I open the board
+      Then the board says "time 0"
+      When the settings of the workspace "home" are written by hand:
+        """
+        [pages]
+        time = "off"
+        """
+      And the beat comes
+      Then the board says "settings.toml read again: pages.time on → off"
+      And the board does not say "time 0"
+
+    @tui-config-a-file-that-cannot-be-read-keeps-what-it-had
+    Scenario: settings that cannot be read leave the board as it was, and say where and why until they read
+      Given the workspace "home", the default
+      When I open the board
+      And the settings of the workspace "home" are written by hand:
+        """
+        [pages]
+        time = "hiden"
+        """
+      And the beat comes
+      Then the board says "settings.toml:2"
+      And the board says "hiden"
+      And the board says "the board keeps what it read at 10:00"
+      And the board says "time 0"
+      When I press "l"
+      Then the board says "the board keeps what it read at 10:00"
+      When the settings of the workspace "home" are written by hand:
+        """
+        [pages]
+        time = "off"
+        """
+      And the beat comes
+      Then the board does not say "the board keeps what it read"
+      And the board does not say "time 0"
+
+    @tui-set-a-key-from-the-command-line
+    Scenario: :set writes a key in the settings of the workspace, and the board wears it at once, saying only what it wrote
+      Given the workspace "home", the default
+      When I open the board
+      And I press ":"
+      And I type "set pages.time off"
+      And I press "enter"
+      Then the board says "written in"
+      And the board does not say "time 0"
+      And the settings of the workspace "home" say `time = "off"`
+      When the beat comes
+      Then the board does not say "read again"
+
+    @tui-set-a-key-in-the-global-configuration
+    Scenario: :set --global writes the global configuration
+      Given the workspace "home", the default
+      When I open the board
+      And I press ":"
+      And I type "set --global focus.session 45m"
+      And I press "enter"
+      Then the global configuration says `session = "45m"`
+
+    @tui-set-refuses-what-the-key-does-not-take
+    Scenario: a value the key does not take is said, and nothing is written
+      Given the workspace "home", the default
+      When I open the board
+      And I press ":"
+      And I type "set pages.time hiden"
+      And I press "enter"
+      Then the board says "is not a word pages.time takes (on, hidden, off)"
+      And the board says "time 0"
+
+    @tui-unset-a-key
+    Scenario: :unset takes the key's line out, and the value under it answers again
+      Given the workspace "home", the default
+      And the settings of the workspace "home" turn the time off
+      When I open the board
+      And I press ":"
+      And I type "unset pages.time"
+      And I press "enter"
+      Then the board says "pages.time is no longer said"
+      And the board says "time 0"
+
+    @tui-set-completes-the-keys
+    Scenario: the keys are completed from the catalogue, each with its value and where it comes from
+      Given the workspace "home", the default
+      And the settings of the workspace "home" turn the time off
+      When I open the board
+      And I press ":"
+      And I type "set pages.t"
+      Then the board says "pages.time"
+      And the board says "pages.tasks"
+      And the board says "set here ← global: on"
+      And the board says "default"
+      And the board does not say "window.theme"
+      When I type "i"
+      And I press "tab"
+      Then the command line reads "set pages.time "

@@ -403,6 +403,8 @@ func (b Board) typing(key string) (tea.Model, tea.Cmd) {
 		return b, nil
 	case "enter":
 		return b.accept()
+	case "tab":
+		return b.completed(), nil
 	case "backspace":
 		b.typed = trimLast(b.typed)
 		return b.afterTyping(), nil

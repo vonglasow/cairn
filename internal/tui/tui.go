@@ -166,6 +166,8 @@ type Board struct {
 	deleteRow int
 	refusing  string
 
+	configured configHeld
+
 	err   error
 	noted *debug.Log
 }
@@ -184,7 +186,7 @@ func New(w engine.Work, glyphs Glyphs, clock func() time.Time, width, height int
 
 // Init asks for the first reading and starts the beat.
 func (b Board) Init() tea.Cmd {
-	return tea.Batch(b.look(), tick(), b.placing())
+	return tea.Batch(b.look(), tick(), b.readingConfig(), b.placing())
 }
 
 func (b Board) look() tea.Cmd {
@@ -264,10 +266,14 @@ func (b Board) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if aged {
 			b.lookedAt = time.Time(m)
 		}
-		return b, tea.Batch(b.wonder(aged), tick())
+		return b, tea.Batch(b.wonder(aged), b.rereading(), tick())
+	case Reread:
+		return b.reread(m), nil
+	case Configured:
+		return b.configuredBy(m), nil
 	case tea.KeyPressMsg:
 		key := keyName(m)
-		b.err, b.opened, b.warned = nil, "", nil
+		b.err, b.opened, b.warned, b.configured.notice = nil, "", nil, ""
 		if b.asking {
 			return b.pressed(key)
 		}

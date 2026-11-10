@@ -268,6 +268,9 @@ func (b Board) run(line string) (tea.Model, tea.Cmd) {
 		b.err = unknown(line)
 		return b, nil
 	}
+	if words[0] == "set" || words[0] == "unset" {
+		return b.settingKey(line, words)
+	}
 	if model, cmd, took := b.viewCommand(words); took {
 		return model, cmd
 	}
