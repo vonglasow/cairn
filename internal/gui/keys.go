@@ -81,6 +81,9 @@ func (w Window) onBoard(name string) Window {
 	if w.tab == Objectives && name == "t" {
 		return w.detailing(ShowItsTasks)
 	}
+	if g, ok := w.Detailed(); w.tab == Objectives && name == "shift+n" && ok && g.Parent == 0 {
+		return w.detailing(AddSubSays)
+	}
 	if w.tab == Tasks && (name == "[" || name == "]") {
 		by := 1
 		if name == "[" {

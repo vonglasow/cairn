@@ -227,3 +227,8 @@ func FieldMark(frame Box) Box {
 }
 
 const markWide = 10
+
+// WalkMark is where a chevron walking back or on is drawn, in the middle of the room it is clicked in.
+func WalkMark(walk Box) Box {
+	return Box{X: walk.X + (walk.W-markWide)/2, Y: walk.Y + (walk.H-markWide)/2, W: markWide, H: markWide}
+}

@@ -186,6 +186,8 @@ type Window struct {
 	choosing              int
 	fates                 engine.Deleting
 	refusedChoice         string
+	refusedThen           string
+	viewWalked            int
 	fateRow               int
 
 	err      error

@@ -154,6 +154,10 @@ func everyScreen(w Window) []struct {
 		{"the views", w.listingViews()},
 		{"a view gone", w.listingViews().Key("down").Key("down")},
 		{"a view renamed", w.listingViews().Choose("Rename")},
+		{"a sub-objective added under it", parent.Key("shift+n")},
+		{"a narrowed part walked to", parent.Key("t").Key("]").Key("]")},
+		{"the views walked to", w.filteringBoard().Key("up")},
+		{"a view narrowed to a part", viewed.Key("]")},
 	}
 }
 

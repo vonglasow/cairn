@@ -48,6 +48,80 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the narrowing bar has no segment %q", name)
 	})
+	sc.Then(`^the narrowing bar shows only "([^"]*)"$`, func(want string) error {
+		n := w.w.Narrowing()
+		if !n.Compact {
+			return fmt.Errorf("the narrowing bar is not compact: %+v", n)
+		}
+		if got := fmt.Sprintf("%s %d", n.Segments[n.On].Name, n.Segments[n.On].Count); got != want {
+			return fmt.Errorf("the narrowing bar shows %q", got)
+		}
+		return w.drawnSomewhere(n.Said)
+	})
+	sc.When(`^I click the narrowing bar's (next|previous)$`, func(which string) error {
+		n := w.w.Narrowing()
+		at := n.Next
+		if which == "previous" {
+			at = n.Back
+		}
+		if at.W == 0 {
+			return fmt.Errorf("the narrowing bar has no chevron %s: %+v", which, n)
+		}
+		w.clickAt(at)
+		return nil
+	})
+	sc.When(`^I click the detail's offer "([^"]*)"$`, func(offer string) error {
+		at, err := w.detailOffer(offer)
+		if err != nil {
+			return err
+		}
+		w.clickAt(at)
+		return nil
+	})
+	sc.When(`^I rest the pointer on the detail's offer "([^"]*)"$`, func(offer string) error {
+		at, err := w.detailOffer(offer)
+		w.w = w.w.Hovering(Point{X: at.X + 2, Y: at.Y + 2})
+		return err
+	})
+	sc.Then(`^the detail's offer "([^"]*)" is lit under the pointer$`, func(offer string) error {
+		at, err := w.detailOffer(offer)
+		if err != nil {
+			return err
+		}
+		return w.litUnderThePointer(at, at)
+	})
+	sc.When(`^I rest the pointer on the objective "([^"]*)"$`, func(title string) error {
+		at, err := w.findGoal(title)
+		w.w = w.w.Hovering(at)
+		return err
+	})
+	sc.Then(`^the objective "([^"]*)" is lit under the pointer$`, func(title string) error {
+		for i, b := range w.w.Tree() {
+			if b.Goal.Title == title {
+				slot := GoalAt(w.w.Layout(), i, w.w.goals)
+				return w.litUnderThePointer(slot, ItemOf(slot, depthOf(b)))
+			}
+		}
+		return fmt.Errorf("no objective titled %q is on screen", title)
+	})
+	sc.When(`^I rest the pointer on the tile of "([^"]*)"$`, func(title string) error {
+		at, err := w.tileOf(title)
+		w.w = w.w.Hovering(Point{X: at.X + 2, Y: at.Y + 2})
+		return err
+	})
+	sc.Then(`^the tile of "([^"]*)" is lit under the pointer$`, func(title string) error {
+		at, err := w.tileOf(title)
+		if err != nil {
+			return err
+		}
+		return w.litUnderThePointer(at, at)
+	})
+	sc.Then(`^the list says under it "([^"]*)"$`, func(said string) error {
+		if got := w.w.ChoosingThen(); got != said {
+			return fmt.Errorf("the list says under it %q", got)
+		}
+		return w.drawnSomewhere(strings.Fields(said)[0])
+	})
 	sc.Then(`^the card "([^"]*)" says it serves "([^"]*)"$`, w.cardServes)
 	sc.Then(`^the progress says "([^"]*)" "([^"]*)"$`, func(name, value string) error {
 		g, _ := w.w.snap.Goal(w.w.form.Number)
@@ -302,4 +376,42 @@ func (w *world) drawnSomewhere(said string) error {
 		}
 	}
 	return fmt.Errorf("nothing on screen says %q", said)
+}
+
+func (w *world) detailOffer(offer string) (Box, error) {
+	d := w.w.Detail()
+	for i, one := range d.Offers {
+		if one == offer && i < len(d.Buttons) {
+			return d.Buttons[i], nil
+		}
+	}
+	return Box{}, fmt.Errorf("the detail offers %v, not %q", d.Offers, offer)
+}
+
+func (w *world) tileOf(title string) (Box, error) {
+	for _, t := range w.w.Detail().Tiles {
+		if t.Tile.Title == title {
+			return t.At, nil
+		}
+	}
+	return Box{}, fmt.Errorf("the detail has no tile %q", title)
+}
+
+func (w *world) litUnderThePointer(slot, drawn Box) error {
+	if w.w.pointed != slot {
+		return fmt.Errorf("the pointer lights %+v, not %+v", w.w.pointed, slot)
+	}
+	lit, err := drawnInAStep(w.w)
+	if err != nil {
+		return err
+	}
+	away, err := drawnInAStep(w.w.Away())
+	if err != nil {
+		return err
+	}
+	x, y := drawn.X+drawn.W/2, drawn.Y+4
+	if pixel(lit, x, y) == pixel(away, x, y) {
+		return fmt.Errorf("%+v is drawn the same under the pointer and away from it", drawn)
+	}
+	return nil
 }

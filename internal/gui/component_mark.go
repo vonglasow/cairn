@@ -33,16 +33,31 @@ func (c Cross) Draw(k Kit, at Box) Box {
 	return at
 }
 
-// Chevron is the stroked mark of what opens a list under it.
-type Chevron struct{ Ink color.NRGBA }
+// Chevron is the stroked mark of what opens a list under it, or, turned to a side, of what walks back (-1) or on (1).
+type Chevron struct {
+	Ink  color.NRGBA
+	Side int
+}
 
 // Draw draws the chevron in at.
 func (c Chevron) Draw(k Kit, at Box) Box {
 	k.put("chevron", at)
-	x, y := float32(at.X), float32(at.Y)+float32(at.H)*0.3
-	w, h := float32(at.W), float32(at.H)*0.4
 	var strokes clip.Path
 	strokes.Begin(k.gtx.Ops)
+	if c.Side != 0 {
+		x, y := float32(at.X)+float32(at.W)*0.3, float32(at.Y)
+		w, h := float32(at.W)*0.4, float32(at.H)
+		if c.Side < 0 {
+			x, w = x+w, -w
+		}
+		strokes.MoveTo(f32.Pt(x, y+1))
+		strokes.LineTo(f32.Pt(x+w, y+h/2))
+		strokes.LineTo(f32.Pt(x, y+h-1))
+		paint.FillShape(k.gtx.Ops, c.Ink, clip.Stroke{Path: strokes.End(), Width: k.skin.Size.Stroke}.Op())
+		return at
+	}
+	x, y := float32(at.X), float32(at.Y)+float32(at.H)*0.3
+	w, h := float32(at.W), float32(at.H)*0.4
 	strokes.MoveTo(f32.Pt(x+1, y))
 	strokes.LineTo(f32.Pt(x+w/2, y+h))
 	strokes.LineTo(f32.Pt(x+w-1, y))
@@ -188,6 +203,11 @@ func (p FilterPill) inForce(k, in Kit, at Box) {
 		line.W -= dotSide + between
 		Dot{Late: true}.Draw(in, Box{X: line.X + line.W + between, Y: at.Y + (at.H-dotSide)/2, W: dotSide, H: dotSide})
 	}
-	sayIn(k.gtx, k.th, value, Box{X: line.X + said, Y: line.Y, W: line.W - said, H: line.H}, strings.TrimPrefix(p.Said, p.Name+" "), small, font.Font{Weight: font.Medium}, text.Start)
+	valued := strings.TrimSuffix(strings.TrimPrefix(p.Said, p.Name+" "), " "+p.Tail)
+	sayIn(k.gtx, k.th, value, Box{X: line.X + said, Y: line.Y, W: line.W - said, H: line.H}, valued, small, font.Font{Weight: font.Medium}, text.Start)
+	if p.Tail != "" {
+		after := said + ends(k.measured(), valued, small) + nameGap
+		sayIn(k.gtx, k.th, name, Box{X: line.X + after, Y: line.Y, W: max(0, line.W-after), H: line.H}, p.Tail, small, font.Font{}, text.Start)
+	}
 	Cross{Ink: name}.Draw(in, Box{X: at.X + at.W - pillCross, Y: at.Y + (at.H-pillCross)/2, W: pillCross - 4, H: pillCross})
 }

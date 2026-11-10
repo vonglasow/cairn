@@ -34,12 +34,13 @@ func (t Tabs) Draw(k Kit, at Box) Box {
 
 const countGap = 6
 
-// Segmented is one choice among a few, side by side on one track, the chosen one lit inside it; a segment may count what it holds.
+// Segmented is one choice among a few, side by side on one track, the chosen one lit inside it; a segment may count what it holds. Compact, it holds the chosen one alone between two chevrons, Back and Next, that walk the others.
 type Segmented struct {
 	Said, Counts []string
 	At           []Box
 	On           int
 	Small        bool
+	Back, Next   Box
 }
 
 // Draw draws the track over at and every segment in its own box.
@@ -69,6 +70,11 @@ func (s Segmented) Draw(k Kit, at Box) Box {
 		x := segment.X + (segment.W-said-countGap-counted)/2
 		sayStyled(k.gtx, k.th, ink, Box{X: x, Y: line.Y, W: said + countGap, H: line.H}, s.Said[i], size, font.Medium, 1, text.Start)
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: x + said + countGap, Y: line.Y, W: counted, H: line.H}, s.Counts[i], small, k.skin.Type.Mono, text.Start)
+	}
+	for i, walk := range []Box{s.Back, s.Next} {
+		if walk.W > 0 {
+			Chevron{Ink: k.skin.Colour.Ink.Faint, Side: 2*i - 1}.Draw(in, WalkMark(walk))
+		}
 	}
 	return at
 }

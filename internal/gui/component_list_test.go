@@ -1,9 +1,17 @@
 package gui
 
 import (
+	"image"
 	"slices"
 	"strings"
 	"testing"
+
+	"gioui.org/font"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/text"
+	"gioui.org/unit"
+	"gioui.org/widget/material"
 
 	"cairn/internal/engine"
 )
@@ -210,5 +218,26 @@ func TestAReferenceCardSaysWhyItIsThereInTheLateInk(t *testing.T) {
 	})
 	if lettered(shot, PartsOf(slot).Number, s.Colour.State.Late) == 0 {
 		t.Error("a reference does not say why it is there, in the late ink")
+	}
+}
+
+func TestFiguresGiveEachFigureTheRoomItsWeightTakes(t *testing.T) {
+	th, s := Theme(), Dark()
+	boxes := map[string]Box{}
+	was := noteSaid
+	noteSaid = func(_ layout.Context, _ *material.Theme, b Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
+		boxes[said] = b
+	}
+	defer func() { noteSaid = was }()
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(600, 100)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	Figures{Said: []Figure{{Figure: "—", Word: "spent"}, {Figure: "3", Word: "left"}, {Figure: "14h50m", Word: "spent"}}}.Draw(NewKit(gtx, th, s, &Drawn{}), Box{X: 0, Y: 0, W: 600, H: FiguresHigh})
+	for _, figure := range []string{"—", "3", "14h50m"} {
+		label := material.Label(th, unit.Sp(float32(s.Type.Figure)), figure)
+		label.Font.Weight = font.SemiBold
+		laid := label.Layout(layout.Context{Ops: new(op.Ops), Constraints: layout.Constraints{Max: image.Pt(1<<20, 1<<20)}, Metric: gtx.Metric}).Size
+		if got, ok := boxes[figure]; !ok || got.W < laid.X {
+			t.Errorf("the figure %q is written in %+v, %d wide whole", figure, got, laid.X)
+		}
 	}
 }

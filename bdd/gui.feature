@@ -5495,6 +5495,32 @@ Feature: The desktop board
       Then the detail says "every sub-objective is reached: it may be put reached too"
       And objective 1 stands "active"
 
+    @gui-objective-the-detail-adds-a-sub-objective
+    Scenario: the detail of an objective adds a sub-objective under it
+      Given I added an objective titled "Home automation"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I click the detail's offer "+ Sub-objective"
+      Then the field "parent" reads "1"
+      When I set the field "title" to "Firmware"
+      And I choose "Save"
+      Then objective 2 sits under objective 1
+
+    @gui-objective-the-tree-is-lit-under-the-pointer
+    Scenario: an objective of the tree, a tile and an offer of the detail are lit under the pointer
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I rest the pointer on the objective "Enclosure"
+      Then the objective "Enclosure" is lit under the pointer
+      When I rest the pointer on the tile of "Enclosure"
+      Then the tile of "Enclosure" is lit under the pointer
+      When I rest the pointer on the detail's offer "Edit"
+      Then the detail's offer "Edit" is lit under the pointer
+
   Rule: Show its tasks narrows the tasks board to a subtree
 
     @gui-objective-t-shows-its-tasks
@@ -5531,6 +5557,37 @@ Feature: The desktop board
       When I click the segment "itself"
       Then "BACKLOG" carries "Buy the relay"
       And "BACKLOG" does not carry "Vent slots"
+
+    @gui-objective-the-pill-says-with-its-sub-objectives
+    Scenario: the pill of an objective shown with its sub-objectives says so
+      Given a window of 1200 by 800
+      And I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "t"
+      Then the pills after the tabs read "#1 Home automation with its sub-objectives"
+
+    @gui-objective-a-narrow-window-narrows-too
+    Scenario: a window too narrow for the whole bar shows the part in force, walked one way or the other
+      Given a window of 720 by 560
+      And I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "t"
+      Then the narrowing bar shows only "all 2"
+      When I click the narrowing bar's next
+      Then the narrowing bar shows only "Enclosure 1"
+      And "BACKLOG" carries "Vent slots"
+      And "BACKLOG" does not carry "Buy the relay"
+      When I click the narrowing bar's previous
+      Then the narrowing bar shows only "all 2"
 
     @gui-objective-a-card-names-what-it-serves
     Scenario: a card names the objective it serves, after a mark drawn rather than written
@@ -5598,6 +5655,17 @@ Feature: The desktop board
       Then the progress says "counted in" "#1 Home automation"
       And the progress says "done" "0 of 1 tasks"
 
+    @gui-objective-the-form-says-the-days-to-the-deadline
+    Scenario: the progress of an objective says how many days are left to its deadline
+      Given today is "2026-11-09"
+      And I added an objective titled "Home automation"
+      And objective 1 is due "2026-11-19"
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I choose "Edit"
+      Then the progress says "deadline" "2026-11-19, in 10 days"
+
   Rule: A task's objectives are a tree, and counting one twice is refused where it is chosen
 
     @gui-objective-the-task-form-draws-the-tree
@@ -5628,8 +5696,24 @@ Feature: The desktop board
       And I press "up"
       And I press "enter"
       Then the list says "#1 is already counted in #1 Home automation through #2 Enclosure and #3 Firmware"
+      And the list says under it "Untick Enclosure and Firmware to put it on Home automation itself. Nothing was changed."
       And objective 1 is not ticked
       And objective 2 is ticked
+
+    @gui-objective-the-refusal-says-the-parent-to-untick
+    Scenario: ticking a sub-objective of a parent ticked is refused, saying the parent to untick
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Pin map" serving objective 1
+      When I open the window
+      And I click the card "Pin map"
+      And I choose "Edit"
+      And I put the keyboard on "objectives"
+      And I press "enter"
+      And I press "down"
+      And I press "enter"
+      Then the list says under it "Untick Home automation to put it on Enclosure. Nothing was changed."
+      And objective 2 is not ticked
 
   Rule: Deleting an objective asks what goes with it, and decides nothing
 
@@ -5801,6 +5885,37 @@ Feature: The desktop board
       When I open the window
       And I pick "Views…" in the menu bar
       Then the views panel warns "label sprint is gone and narrows nothing"
+
+    @gui-view-the-keyboard-walks-the-views
+    Scenario: the arrows walk up from the filters into the views, and enter opens the one walked to
+      Given I kept the view "Sprint" holding the label "sprint"
+      And I kept the view "High" holding the priority "high"
+      When I open the window
+      And I press "shift+f"
+      And I press "up"
+      Then the keyboard is on the view "High"
+      When I press "up"
+      Then the keyboard is on the view "Sprint"
+      When I press "enter"
+      Then "current" carries "Ship it"
+      And "todo" does not carry "Write the spec"
+
+    @gui-view-naming-an-objective-narrows-by-its-parts
+    Scenario: a view naming an objective holding sub-objectives draws the bar narrowing to each part
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I edited task 1 with the objective "2"
+      And I edited task 2 with the objective "1"
+      And I kept the view "Home" holding the objective "1"
+      When I open the window
+      And I press "cmd+1"
+      Then the narrowing bar reads "all 2", "Enclosure 1", "itself 1"
+      When I click the segment "Enclosure"
+      Then "todo" carries "Write the spec"
+      And "todo" does not carry "Review the plan"
+      When I click the segment "all"
+      Then "todo" carries "Review the plan"
+      And the pill of the view is not marked changed
 
     @gui-view-shown-tasks-kept-under-the-objective
     Scenario: an objective's tasks shown are kept as a view proposed under the objective's name

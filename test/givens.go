@@ -145,6 +145,12 @@ func (g Givens) ObjectiveIsReached(number int) error {
 	return err
 }
 
+// ObjectiveIsDue puts a deadline on an objective.
+func (g Givens) ObjectiveIsDue(number int, day string) error {
+	_, err := g.ask(engine.ObjectiveEdit, map[string]string{"number": strconv.Itoa(number), "deadline": day}, nil)
+	return err
+}
+
 // IMadeTheLabelFor makes a label meant for tasks only, or for objectives only.
 func (g Givens) IMadeTheLabelFor(label, scope string) error {
 	_, err := g.ask(engine.LabelNew, map[string]string{"label": label, "scope": scope}, nil)
@@ -200,6 +206,11 @@ func (g Givens) IMadeTheLabel(label string) error {
 func (g Givens) IColouredTheLabel(label, colour string) error {
 	_, err := g.ask(engine.LabelColour, map[string]string{"label": label, "colour": colour}, nil)
 	return err
+}
+
+// IEditedTaskWithTheObjective sets the objectives a task serves.
+func (g Givens) IEditedTaskWithTheObjective(number int, objective string) error {
+	return g.editTask(number, nil, map[string][]string{"objective": {objective}})
 }
 
 // IEditedTaskWithTheDeadline gives a task a day it is due.
@@ -338,6 +349,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^objective (\d+) waits on objective (\d+)$`, g.ObjectiveWaitsOn)
 	sc.Step(`^I made the label "([^"]*)" for (tasks|objectives)$`, g.IMadeTheLabelFor)
 	sc.Step(`^objective (\d+) is reached$`, g.ObjectiveIsReached)
+	sc.Step(`^objective (\d+) is due "([^"]*)"$`, g.ObjectiveIsDue)
 	g.registerTree(sc)
 	g.registerViews(sc)
 	sc.Step(`^I archived task (\d+)$`, g.IArchivedTask)
@@ -348,6 +360,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^the fixtures$`, g.TheFixtures)
 	sc.Step(`^I coloured the label "([^"]*)" "([^"]*)"$`, g.IColouredTheLabel)
 	sc.Step(`^I edited task (\d+) with the deadline "([^"]*)"$`, g.IEditedTaskWithTheDeadline)
+	sc.Step(`^I edited task (\d+) with the objective "([^"]*)"$`, g.IEditedTaskWithTheObjective)
 	sc.Step(`^I deleted task (\d+)$`, g.IDeletedTask)
 	sc.Step(`^I put task (\d+) in focus$`, g.IPutTaskInFocus)
 }

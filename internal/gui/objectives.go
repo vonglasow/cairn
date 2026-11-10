@@ -66,11 +66,19 @@ type Detail struct {
 	Counted, ProposedSays, NoteSays       string
 }
 
-// DetailOffers is what the detail of an objective offers beside its heading.
-var DetailOffers = []string{ShowItsTasks, "Edit"}
+// DetailOffers is what the detail of an objective offers beside its heading; one of level one offers a sub-objective under it too.
+func DetailOffers(g engine.Goal) []string {
+	if g.Parent == 0 {
+		return []string{ShowItsTasks, AddSubSays, "Edit"}
+	}
+	return []string{ShowItsTasks, "Edit"}
+}
 
 // ShowItsTasks is the offer that opens the tasks board on an objective's subtree.
 const ShowItsTasks = "Show its tasks"
+
+// AddSubSays is the offer that opens the form of a new objective under the one shown.
+const AddSubSays = "+ Sub-objective"
 
 const (
 	detailPad = 20
@@ -81,14 +89,17 @@ const (
 func (w Window) Detail() Detail {
 	_, box := SplitOf(w.Layout())
 	g, ok := w.Detailed()
-	d := Detail{Box: box, Goal: g, Offers: DetailOffers}
+	d := Detail{Box: box, Goal: g, Offers: DetailOffers(g)}
 	if !ok {
 		return d
 	}
 	inside := Box{X: box.X + detailPad, Y: box.Y + detailPad, W: box.W - 2*detailPad, H: box.H - 2*detailPad}
 	m := w.measured()
+	if w.widthsWide(d.Offers)+len(d.Offers)*gap > inside.W-headingLeast {
+		d.Offers = slices.DeleteFunc(d.Offers, func(o string) bool { return o == AddSubSays })
+	}
 	end := inside.X + inside.W
-	widths := w.widthsOf(DetailOffers)
+	widths := w.widthsOf(d.Offers)
 	for i := len(widths) - 1; i >= 0; i-- {
 		end -= widths[i]
 		d.Buttons = append([]Box{{X: end, Y: inside.Y, W: widths[i], H: buttonHigh}}, d.Buttons...)
@@ -193,6 +204,16 @@ func (w Window) Detail() Detail {
 }
 
 const buttonHigh = 30
+
+const headingLeast = 140
+
+func (w Window) widthsWide(offers []string) int {
+	wide := 0
+	for _, one := range w.widthsOf(offers) {
+		wide += one
+	}
+	return wide
+}
 
 func ranked(cards []engine.Card) []engine.Card {
 	out := slices.Clone(cards)
@@ -312,10 +333,23 @@ func (w Window) detailing(offer string) Window {
 		return w
 	}
 	w.chosen, w.chosenGoal = g.Number, true
-	if offer == ShowItsTasks {
+	switch offer {
+	case ShowItsTasks:
 		return w.showingItsTasks()
+	case AddSubSays:
+		return w.addingUnder(g)
 	}
 	return w.Edit()
+}
+
+func (w Window) addingUnder(g engine.Goal) Window {
+	if g.Parent != 0 {
+		return w
+	}
+	w.form, w.formMoved = asOpened(Form{Adding: true, ForObjective: true, fields: engine.NewSubGoalFields(g.Number)}), Point{}
+	w = w.beside()
+	w.screen = OnForm
+	return w
 }
 
 func (w Window) buttonLook(offer string, at Box) buttonLook {
@@ -323,6 +357,32 @@ func (w Window) buttonLook(offer string, at Box) buttonLook {
 		return litLook(buttonPlain)
 	}
 	return buttonPlain
+}
+
+func (w Window) goalSlotAt(p Point) Box {
+	l := w.Layout()
+	if GoalsRun(l).In(p) {
+		for at := range w.Tree() {
+			if item := GoalAt(l, at, w.goals); item.In(p) {
+				return item
+			}
+		}
+	}
+	d := w.Detail()
+	for _, at := range append(slices.Clone(d.Buttons), tilesOf(d)...) {
+		if at.In(p) {
+			return at
+		}
+	}
+	return Box{}
+}
+
+func tilesOf(d Detail) []Box {
+	var out []Box
+	for _, t := range d.Tiles {
+		out = append(out, t.At)
+	}
+	return out
 }
 
 func (w Window) clickingDetail(p Point) (Window, bool) {

@@ -160,6 +160,8 @@ func Shortcut(offer string) string {
 		return "e"
 	case "show its tasks":
 		return "t"
+	case strings.ToLower(AddSubSays):
+		return "shift+n"
 	case "delete":
 		return "cmd+backspace"
 	case "quit":

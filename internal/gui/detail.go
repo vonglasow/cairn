@@ -5,6 +5,7 @@ import (
 	"cairn/internal/engine"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 // Ghost is the card in mid-air under the pointer, and whether there is one.
@@ -481,7 +482,7 @@ func (w Window) ProgressBox() Box {
 	return Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: high}
 }
 
-// GoalProgress is what an objective's form says of how far it has got: what is done, the time spent against the estimate, what is left, and where else it is counted.
+// GoalProgress is what an objective's form says of how far it has got: what is done, the time spent against the estimate, what is left, where else it is counted, and the days to its deadline.
 func (w Window) GoalProgress(g engine.Goal) Facts {
 	spent := "—"
 	if g.Spent > 0 {
@@ -500,5 +501,19 @@ func (w Window) GoalProgress(g engine.Goal) Facts {
 		f.Lines = append(f.Lines, Fact{Name: "counted in", Value: "#" + strconv.Itoa(parent.Number) + " " + parent.Title,
 			Aside: strconv.Itoa(parent.Done) + " of " + strconv.Itoa(parent.Total) + " there, each task once"})
 	}
+	if !g.Deadline.IsZero() {
+		f.Lines = append(f.Lines, Fact{Name: "deadline", Value: domain.FormatDay(g.Deadline) + ", " + daysTo(engine.DayOf(g.Deadline), w.today())})
+	}
 	return f
+}
+
+func daysTo(day, today time.Time) string {
+	days := int(day.Sub(today).Hours() / 24)
+	switch {
+	case days == 0:
+		return "today"
+	case days < 0:
+		return strconv.Itoa(-days) + " day" + plural(-days) + " past"
+	}
+	return "in " + strconv.Itoa(days) + " day" + plural(days)
 }

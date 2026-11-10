@@ -149,6 +149,9 @@ func (w Window) Hovering(p Point) Window {
 	if w.resting == nil {
 		w.resting, w.restingAt, w.restingWide = w.cutValueAt(p)
 	}
+	if w.resting == nil {
+		w.resting, w.restingAt, w.restingWide = w.untailedAt(p)
+	}
 	w.pointed = w.slotAt(p)
 	w.bubbled, w.bubbledFrom = w.countAt(p)
 	return w
@@ -279,6 +282,9 @@ func (w Window) LabelsBubbleBox() (Box, []Box, bool) {
 const labelsBubbleWide = 180
 
 func (w Window) slotAt(p Point) Box {
+	if w.screen == OnTheBoard && w.tab == Objectives {
+		return w.goalSlotAt(p)
+	}
 	if w.screen != OnTheBoard || w.tab != Tasks {
 		return Box{}
 	}

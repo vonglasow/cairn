@@ -545,6 +545,8 @@ func (w Window) Choose(name string) Window {
 		return w.Edit()
 	case "show its tasks":
 		return w.detailing(ShowItsTasks)
+	case strings.ToLower(AddSubSays):
+		return w.detailing(AddSubSays)
 	case "new linked task":
 		return w.startingLinked()
 	case "save":
@@ -1033,6 +1035,7 @@ func (w Window) taking() Window {
 		}
 		if err := w.snap.CountedOnce(w.form.Number, numbers); err != nil {
 			w.refusedChoice, _, _ = strings.Cut(err.Error(), "; ")
+			w.refusedThen = w.untickSays(number)
 			return w
 		}
 	}
@@ -1090,8 +1093,32 @@ func (w Window) keeping() Window {
 // ChoosingSearched says whether the open list has a line to type into: only the labels', a label being written as often as picked.
 func (w Window) ChoosingSearched() bool { return w.choosingFor == "label" }
 
-// NothingChanged is what a refusal at the foot of a list says under it.
-const NothingChanged = "Untick what is below it to count it on the parent itself. Nothing was changed."
+// NothingChanged is how a refusal at the foot of a list ends.
+const NothingChanged = "Nothing was changed."
+
+// ChoosingThen is what a refusal at the foot of the open list says under it: what to untick to put the task where it was ticked, and that nothing was changed.
+func (w Window) ChoosingThen() string {
+	if w.refusedChoice == "" {
+		return ""
+	}
+	return w.refusedThen
+}
+
+func (w Window) untickSays(number int) string {
+	g, _ := w.snap.Goal(number)
+	if g.Parent != 0 {
+		parent, _ := w.snap.Goal(g.Parent)
+		return "Untick " + parent.Title + " to put it on " + g.Title + ". " + NothingChanged
+	}
+	var below []string
+	for _, c := range g.Children {
+		if w.ticked[c] {
+			sub, _ := w.snap.Goal(c)
+			below = append(below, sub.Title)
+		}
+	}
+	return "Untick " + engine.InWords(below) + " to put it on " + g.Title + " itself. " + NothingChanged
+}
 
 // RefusalBox is where the open list says what it refused: under it, or above it when there is no room below.
 func (w Window) RefusalBox() (string, Box, bool) {
@@ -1100,7 +1127,7 @@ func (w Window) RefusalBox() (string, Box, bool) {
 		return "", Box{}, false
 	}
 	box := w.ChoosingBox()
-	high := BannerHigh(w.measured(), refused, NothingChanged, box.W)
+	high := BannerHigh(w.measured(), refused, w.ChoosingThen(), box.W)
 	at := Box{X: box.X, Y: box.Y + box.H + between, W: box.W, H: high}
 	if at.Y+at.H > w.height-margin {
 		at.Y = box.Y - between - high

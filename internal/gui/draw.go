@@ -395,7 +395,7 @@ func drawFilters(k Kit, w Window) {
 	Head{Said: FilterMenuSays}.Draw(k, head)
 	for i, f := range w.Filters() {
 		row := w.FilterRowAt(i)
-		Row{Said: Titled(f.Name), Picked: i == w.FilterOn()}.Draw(k, row)
+		Row{Said: Titled(f.Name), Picked: i == w.FilterOn() && w.ViewWalked() == 0}.Draw(k, row)
 		line := Inside(row)
 		if len(f.Taken()) == 0 && viewed && v.Holds.Narrows(f.Arg) {
 			at := ends(w.measured(), Titled(f.Name), reads) + between
@@ -646,7 +646,7 @@ func drawChoosing(k Kit, w Window) {
 	Scrollbar{Lines: len(offered), Rows: w.ChoosingRoom(), At: from}.Draw(k, ChoosingBar(box))
 	drawPanelOffers(k, box, w)
 	if refused, at, ok := w.RefusalBox(); ok {
-		Banner{Said: refused, Then: NothingChanged}.Draw(k.on(LayerPopover), at)
+		Banner{Said: refused, Then: w.ChoosingThen()}.Draw(k.on(LayerPopover), at)
 	}
 }
 

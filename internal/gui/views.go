@@ -262,7 +262,7 @@ func (w Window) ViewRows() []ViewRow {
 	var rows []ViewRow
 	for i, v := range w.snap.Views {
 		row := rowOf(v)
-		row.At, row.Taken = DropRowAt(box, i), v.Name == w.viewing
+		row.At, row.Taken, row.On = DropRowAt(box, i), v.Name == w.viewing, i+1 == w.viewWalked
 		rows = append(rows, row)
 	}
 	return rows

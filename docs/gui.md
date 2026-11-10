@@ -393,7 +393,9 @@ switcher, the objectives, the week, the week before, a day, a month, its
 months and its years, an objective holding sub-objectives, its tasks shown
 and narrowed, its deletion asked, a sub-objective's form, the parents
 offered and what a task serves refused, a view in force, one changed on
-top, its popover, one being kept, the views, one gone and one renamed — the
+top, its popover, one being kept, the views, one gone and one renamed, a
+sub-objective added under its parent, a part walked to, the views walked to
+and a view narrowed to a part — the
 fixtures holding three views, one of them gone — at the two sizes the layout is pinned at, 720 by
 560 and 1200 by 800, and fails on any overlap. A card records where it
 writes its number and its facts, so what it writes is judged too. What it
@@ -1080,7 +1082,11 @@ its right. Ticking it anyway is refused where it is ticked, in a `Banner` at
 the list's foot — `#44 is already counted in #4 Home automation through #5
 Enclosure and #6 Firmware` — and nothing changes; saving would be refused the
 same way, the rule being the engine's (`Snapshot.CountedOnce`,
-`@gui-objective-the-task-form-refuses-a-double-count`). Two sub-objectives of
+`@gui-objective-the-task-form-refuses-a-double-count`). Its second line says
+what to untick: `Untick Enclosure and Firmware to put it on Home automation
+itself. Nothing was changed.`, or, a sub-objective ticked under a parent
+already ticked, `Untick Home automation to put it on Enclosure.`
+(`ChoosingThen`, `@gui-objective-the-refusal-says-the-parent-to-untick`). Two sub-objectives of
 one parent, or two trees, are ticked as any two objectives.
 
 `enter` never saves a form: it opens the list a field answers with, and it
@@ -1213,10 +1219,15 @@ by 24 and joined to it by a line (`Connector`,
 `@gui-objective-sub-objectives-sit-under-their-parent`). An item has no
 ground at rest, the hover's under the pointer, a card's and a ring when
 chosen. The list scrolls on a number of its own, and the arrows walk it,
-bringing what they reach into sight.
+bringing what they reach into sight. The hover is the pointer's on an item, a
+tile and an offer of the detail alike
+(`@gui-objective-the-tree-is-lit-under-the-pointer`).
 
-The detail heads the objective with its number, offers *Show its tasks* `t`
-and *Edit* `e` beside it, and writes its standing, its labels, and where it
+The detail heads the objective with its number, offers *Show its tasks* `t`,
+on one of level one *+ Sub-objective* `⇧N` — the form of a new objective,
+its parent set to this one (`@gui-objective-the-detail-adds-a-sub-objective`);
+at 720, where the heading would lose its room, the button gives way and `⇧N`
+stays — and *Edit* `e` beside it, and writes its standing, its labels, and where it
 sits on the line under (`Detail`,
 `@gui-objective-the-detail-shows-the-objective-chosen`). Its progress, the
 time spent and what is left are counted over its subtree, each task once —
@@ -1236,13 +1247,21 @@ left where it stands: its standing is the person's
 
 **`t` shows its tasks** on the tasks board, the objective filter put on it,
 which reaches its sub-objectives (`@gui-objective-t-shows-its-tasks`). Beside
-the pill, which then names the objective after a drawn `◇`, a bar of segments
-counts all of it, each sub-objective, and the objective itself, and narrows
-to the one clicked, or walked to with `[` and `]` (`Narrowing`,
-`@gui-objective-the-narrowing-bar-counts-each-part`); the pill gives up its
-name and the pills clearing and adding filters give up their room for it, and
-where even then it has none, at 720, the bar is left out and the brackets
-still walk. A task outside the objective that blocks one in it stays in
+the pill, which then names the objective after a drawn `◇` and says `with its
+sub-objectives` faint after it where there is room
+(`@gui-objective-the-pill-says-with-its-sub-objectives`) — under the pointer
+where there is none, as at 1200 beside the workspace and four segments — a
+bar of segments counts all of it, each sub-objective, and the objective
+itself, and narrows to the one clicked, or walked to with `[` and `]`
+(`Narrowing`, `@gui-objective-the-narrowing-bar-counts-each-part`); the pill
+gives up its name and the pills clearing and adding filters give up their
+room for it. Where even then the whole bar has none, at 720, it goes compact:
+the part in force alone, counted, between two chevrons walking the others
+(`Segmented` with `Back` and `Next`,
+`@gui-objective-a-narrow-window-narrows-too`), and the pills keep what room
+is left. A view naming one objective holding sub-objectives draws the same
+bar; a part chosen is a filter on top of the view, and *all* takes it off
+again (`@gui-view-naming-an-objective-narrows-by-its-parts`). A task outside the objective that blocks one in it stays in
 sight as a reference, dashed and faint, saying `outside this view · blocks
 #2` in the late ink, at the foot of its column, and never counted
 (`References`, `@gui-objective-a-blocker-outside-is-a-reference`). A card
@@ -1270,8 +1289,11 @@ and under `⌘⇧` a workspace (`@gui-view-opened-by-its-key`). No key used them
 before. The filter menu lists the views at its head, under *Views*, each with
 how many tasks it keeps and its key, the one in force taken, and *Edit the
 views…* under them; a filter the view holds says *in the view* in the faint
-ink (`ViewRows`, `@gui-view-listed-at-the-head-of-the-filters`). A tenth view
-has no key and is opened from the menu. No view opens with the window.
+ink (`ViewRows`, `@gui-view-listed-at-the-head-of-the-filters`). The arrows
+walk up from the first filter into the views and down out of the last, and
+`⏎` opens the one walked to (`ViewWalked`,
+`@gui-view-the-keyboard-walks-the-views`). A tenth view has no key and is
+opened from the menu. No view opens with the window.
 
 **The view in force is one pill**, `view Home automation`, standing first,
 where the filters it holds would stand — a view of four filters takes the
@@ -2342,8 +2364,10 @@ labels among those meant for objectives
 (`@gui-objective-the-form-offers-labels-for-objectives`; a task's form offers
 those meant for tasks) — then *Progress*, an `InfoBox`: the share done, its
 bar, and as `Facts` what is done, the time spent against the estimate, what is
-left, and, for a sub-objective, the parent it is counted in too
-(`GoalProgress`, `@gui-objective-the-form-says-where-it-is-counted`). The work stood in the column beside, behind a
+left, for a sub-objective the parent it is counted in too
+(`GoalProgress`, `@gui-objective-the-form-says-where-it-is-counted`), and the
+days to its deadline, `2026-11-19, in 10 days`
+(`@gui-objective-the-form-says-the-days-to-the-deadline`). The work stood in the column beside, behind a
 tab, and the room under the description was empty.
 
 **Two columns and not one above the other.** The fields take the left five
@@ -2702,11 +2726,8 @@ would become the one the gates cannot reach.
 
 - **A task open beside the board for good**, which the extra room would allow
   and which would stop this being the same board.
-- **Walking the views of the filter menu with the keyboard.** The arrows walk
-  the filters, as they did; a view is opened by its key or a click, and the
-  rows above the filters wait for a reason to be reached otherwise.
-- **The narrowing bar under a view naming an objective.** The bar of `t`
-  stands beside the objective filter; a view holds its objective in the
-  engine, so a view on a parent does not draw the bar yet.
-- **`⌘Z` bringing a view deleted back.** Deleting a view touches no task, and
-  the panel's undo was left for the day a second deletion wants one.
+- **`⌘Z` bringing a view deleted back.** The window has no undo for a
+  deletion — not a task's, a label's or a backup's; `⌘Z` only recovers what a
+  form threw away. A view's would be the first, and an undo for one kind of
+  deletion is a rule nobody can guess; it waits for an undo the window has
+  for every deletion.

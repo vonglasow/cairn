@@ -11,11 +11,11 @@ import (
 	"cairn/internal/engine"
 )
 
-// IKeptTheViewHolding keeps a view holding one filter: a label or a priority.
+// IKeptTheViewHolding keeps a view holding one filter: a label, an objective or a priority.
 func (g Givens) IKeptTheViewHolding(name, filter, value string) error {
 	given, listed := map[string]string{"name": name}, map[string][]string{}
-	if filter == "label" {
-		listed["label"] = []string{value}
+	if filter == "label" || filter == "objective" {
+		listed[filter] = []string{value}
 	} else {
 		given[filter] = value
 	}
@@ -111,7 +111,7 @@ func (g Givens) ViewsRead(list string) error {
 }
 
 func (g Givens) registerViews(sc *godog.ScenarioContext) {
-	sc.Step(`^I kept the view "([^"]*)" holding the (label|priority) "([^"]*)"$`, g.IKeptTheViewHolding)
+	sc.Step(`^I kept the view "([^"]*)" holding the (label|objective|priority) "([^"]*)"$`, g.IKeptTheViewHolding)
 	sc.Step(`^I linked task (\d+) to task (\d+)$`, g.ILinkedTaskTo)
 	sc.Step(`^I deleted the label "([^"]*)"$`, g.IDeletedTheLabel)
 	sc.Then(`^the view "([^"]*)" holds the (label|priority) "([^"]*)"$`, g.ViewHolds)

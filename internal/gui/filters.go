@@ -3,6 +3,7 @@ package gui
 import (
 	"slices"
 	"strconv"
+	"strings"
 
 	"cairn/internal/engine"
 )
@@ -21,7 +22,28 @@ func (w Window) FilteredBy() string { return w.filters.Said() }
 
 func (w Window) filteringBoard() Window {
 	w.filters = engine.BoardFilters(w.snap, w.today()).Keeping(w.filters)
-	w.screen, w.filterOpen, w.filterFromPill = OnFiltering, false, false
+	w.screen, w.filterOpen, w.filterFromPill, w.viewWalked = OnFiltering, false, false, 0
+	return w
+}
+
+// ViewWalked is the view of the filter menu the keyboard is on, from 1; 0 while it is on the filters.
+func (w Window) ViewWalked() int { return w.viewWalked }
+
+func (w Window) walkingTheMenu(by int) Window {
+	views := len(w.snap.Views)
+	if w.viewsAbove() == 0 {
+		views = 0
+	}
+	switch {
+	case w.viewWalked > 0 && by > 0 && w.viewWalked == views:
+		w.viewWalked, w.filterOn = 0, 0
+	case w.viewWalked > 0:
+		w.viewWalked = max(1, w.viewWalked+by)
+	case by < 0 && w.filterOn == 0 && views > 0:
+		w.viewWalked = views
+	default:
+		w.filterOn = min(len(w.filters)-1, max(0, w.filterOn+by))
+	}
 	return w
 }
 
@@ -42,10 +64,13 @@ func (w Window) onFilters(name string) Window {
 	case "v":
 		return w.startingKeep()
 	case "down", "j":
-		w.filterOn = min(len(w.filters)-1, w.filterOn+1)
+		return w.walkingTheMenu(1)
 	case "up", "k":
-		w.filterOn = max(0, w.filterOn-1)
+		return w.walkingTheMenu(-1)
 	case "enter", "space":
+		if w.viewWalked > 0 {
+			return w.openingView(w.snap.Views[w.viewWalked-1].Place)
+		}
 		return w.openingFilter(w.filterOn)
 	}
 	for i, f := range w.filters {
@@ -60,7 +85,7 @@ func (w Window) onFilters(name string) Window {
 func FilterKey(f engine.Filter) string { return f.Name[:1] }
 
 func (w Window) openingFilter(at int) Window {
-	w.filterOn, w.filterOpen, w.filterPick = at, true, max(1, w.filters[at].At)
+	w.filterOn, w.filterOpen, w.filterPick, w.viewWalked = at, true, max(1, w.filters[at].At), 0
 	return w
 }
 
@@ -271,7 +296,7 @@ const (
 	PillView
 )
 
-// FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, whether it is faint for meaning nothing on the page in sight, and for a view whether a filter or a search stands on top of it.
+// FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, whether it is faint for meaning nothing on the page in sight, for a view whether a filter or a search stands on top of it, and what it says faint after its value.
 type FilterPill struct {
 	Box     Box
 	Said    string
@@ -281,6 +306,7 @@ type FilterPill struct {
 	Faint   bool
 	Serves  bool
 	Changed bool
+	Tail    string
 }
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
@@ -331,8 +357,11 @@ func (w Window) Pills() []FilterPill {
 		if len(f.Taken()) > 0 && narrowed && f.Arg == "objective" {
 			root, _ := w.snap.Goal(bar.Root)
 			crossed("", "#"+strconv.Itoa(root.Number)+" "+root.Title, PillFilter, i)
-			row[len(row)-1].Serves = true
-			row[len(row)-1].Box.W += servesSide + servesGap
+			pill := &row[len(row)-1]
+			pill.Said, pill.Serves, pill.Box.W = strings.TrimSpace(pill.Said), true, pill.Box.W+servesSide+servesGap
+			if tailed := pill.Box.W + nameGap + ends(m, WithItsSubsSays, small); widthOf(row)-pill.Box.W+tailed <= end-start {
+				pill.Said, pill.Tail, pill.Box.W = pill.Said+" "+WithItsSubsSays, WithItsSubsSays, tailed
+			}
 			taken++
 			continue
 		}
@@ -350,7 +379,9 @@ func (w Window) Pills() []FilterPill {
 	}
 	if widthOf(row) > end-start && taken+viewed > 0 {
 		row = nil
-		plain(ClearSays, PillClear)
+		if !narrowed {
+			plain(ClearSays, PillClear)
+		}
 		plain(FoldedSays(taken+viewed), PillFolded)
 	}
 	var pills []FilterPill
@@ -364,6 +395,15 @@ func (w Window) Pills() []FilterPill {
 		x += pill.Box.W + pillGap
 	}
 	return pills
+}
+
+func (w Window) untailedAt(p Point) ([]string, Box, int) {
+	for _, pill := range w.Pills() {
+		if pill.Serves && pill.Tail == "" && pill.Box.In(p) {
+			return []string{pill.Said + ", " + WithItsSubsSays}, pill.Box, pill.Box.W
+		}
+	}
+	return nil, Box{}, 0
 }
 
 func widthOf(row []FilterPill) int {
@@ -393,7 +433,10 @@ func (w Window) TabCount(page Tab) string {
 		return shown
 	}
 	if page == Objectives {
-		return shown + "/" + strconv.Itoa(len(w.Reading().Goals))
+		if all := len(w.Reading().Goals); w.Holds(page) != all {
+			return shown + "/" + strconv.Itoa(all)
+		}
+		return shown
 	}
 	return shown + "/" + strconv.Itoa(len(engine.OnTheBoard(w.Reading().Cards, w.archived)))
 }

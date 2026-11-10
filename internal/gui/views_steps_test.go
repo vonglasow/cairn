@@ -28,6 +28,17 @@ func (w *world) viewsSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the keyboard is on the view "([^"]*)"$`, func(name string) error {
+		for _, row := range w.w.ViewRows() {
+			if row.On {
+				if row.Name != name {
+					return fmt.Errorf("the keyboard is on the view %q", row.Name)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("the keyboard is on no view: %+v", w.w.ViewRows())
+	})
 	sc.When(`^I click the view "([^"]*)"$`, func(name string) error {
 		for _, row := range w.w.ViewRows() {
 			if row.Name == name {

@@ -354,7 +354,7 @@ func (w Why) said() string {
 		for i, one := range w.Over {
 			over[i] = one.Rung + " (" + one.Names + ")"
 		}
-		said += " — over " + inWords(over)
+		said += " — over " + InWords(over)
 	}
 	if w.Started {
 		said = "when this server started, " + said
@@ -372,7 +372,8 @@ func unsaidAs(rung string) string {
 	return rung
 }
 
-func inWords(items []string) string {
+// InWords joins the items given as a sentence lists them: commas, and a last "and".
+func InWords(items []string) string {
 	if len(items) < 2 {
 		return strings.Join(items, "")
 	}
@@ -648,7 +649,7 @@ func workspaceShownText(shown WorkspaceShown) string {
 		fmt.Fprintf(&said, "time       %s, %s\n", shown.Time, shown.TimeFrom)
 	}
 	if shown.PagesFrom != "" {
-		pages := inWords(shown.Pages)
+		pages := InWords(shown.Pages)
 		if pages == "" {
 			pages = "none"
 		}

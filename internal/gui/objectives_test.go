@@ -316,3 +316,141 @@ func TestDeletingAnObjectiveAsksRowByRowAndNamesWhatGoes(t *testing.T) {
 		t.Error("an objective holding nothing is not asked about plainly")
 	}
 }
+
+func TestThePillOfAnObjectiveShownWithItsSubObjectivesSaysSo(t *testing.T) {
+	w := homeWindow(1200, 800).At(time.Now()).Key("t")
+	pills := w.Pills()
+	if len(pills) != 1 || pills[0].Said != "#1 Home automation with its sub-objectives" || pills[0].Tail != WithItsSubsSays {
+		t.Errorf("the pills are %+v", pills)
+	}
+}
+
+func TestANarrowWindowShowsThePartInForceBetweenTwoChevrons(t *testing.T) {
+	w := homeWindow(Narrowest, Shortest).At(time.Now()).Key("t")
+	n := w.Narrowing()
+	if !n.Compact || n.Back.W == 0 || n.Next.W == 0 || n.At[n.On].W == 0 {
+		t.Fatalf("at %d the bar is %+v", Narrowest, n)
+	}
+	if n.Back.X+n.Back.W > n.At[n.On].X || n.Next.X < n.At[n.On].X+n.At[n.On].W || n.Box.X+n.Box.W > w.width-margin {
+		t.Errorf("the chevrons %+v %+v do not stand either side of %+v inside %+v", n.Back, n.Next, n.At[n.On], n.Box)
+	}
+	next := w.clicked(Point{X: n.Next.X + n.Next.W/2, Y: n.Next.Y + n.Next.H/2})
+	if taken, _ := next.objectiveTaken(); taken != "2" {
+		t.Errorf("the next chevron narrowed to %q", taken)
+	}
+	n = next.Narrowing()
+	back := next.clicked(Point{X: n.Back.X + n.Back.W/2, Y: n.Back.Y + n.Back.H/2})
+	if taken, _ := back.objectiveTaken(); taken != "1" {
+		t.Errorf("the chevron back narrowed to %q", taken)
+	}
+	for _, p := range next.Pills() {
+		if p.Box.X+p.Box.W > n.Box.X {
+			t.Errorf("the pill %+v runs into the bar %+v", p, n.Box)
+		}
+	}
+	if wide := homeWindow(1200, 800).At(time.Now()).Key("t").Narrowing(); wide.Compact {
+		t.Error("a wide window draws the bar compact")
+	}
+}
+
+func TestTheDetailOfALevelOneOffersASubObjectiveUnderIt(t *testing.T) {
+	w := homeWindow(1200, 800)
+	w.chosen, w.chosenGoal = 1, true
+	d := w.Detail()
+	at := slices.Index(d.Offers, AddSubSays)
+	if at < 0 || len(d.Buttons) != len(d.Offers) {
+		t.Fatalf("the detail offers %v at %v", d.Offers, d.Buttons)
+	}
+	b := d.Buttons[at]
+	opened := w.clicked(Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
+	if opened.Screen() != OnForm || !opened.form.Adding || !opened.form.ForObjective || opened.form.ValueOf("parent") != "1" {
+		t.Errorf("the offer opened %v adding %v with the parent %q", opened.Screen(), opened.form.Adding, opened.form.ValueOf("parent"))
+	}
+	if keyed := w.Key("shift+n"); keyed.form.ValueOf("parent") != "1" || keyed.Screen() != OnForm {
+		t.Errorf("⇧N opened %v with the parent %q", keyed.Screen(), keyed.form.ValueOf("parent"))
+	}
+	w.chosen = 2
+	if slices.Contains(w.Detail().Offers, AddSubSays) {
+		t.Error("a sub-objective offers a sub-objective under it")
+	}
+	if keyed := w.Key("shift+n"); keyed.Screen() == OnForm {
+		t.Error("⇧N on a sub-objective opened a form")
+	}
+	for _, size := range pinnedSizes {
+		w := homeWindow(size.X, size.Y)
+		w.chosen, w.chosenGoal = 1, true
+		d := w.Detail()
+		if len(d.Buttons) == 0 || d.Heading.W == 0 || d.Buttons[0].X < d.Heading.X+d.Heading.W {
+			t.Errorf("at %v the offers %+v leave the heading %+v", size, d.Buttons, d.Heading)
+		}
+	}
+}
+
+func TestTheTreeTheTilesAndTheOffersAreLitUnderThePointer(t *testing.T) {
+	w := homeWindow(1200, 800)
+	w.chosen, w.chosenGoal = 1, true
+	l := w.Layout()
+	item := GoalAt(l, 1, 0)
+	if got := w.Hovering(Point{X: item.X + 4, Y: item.Y + 4}).pointed; got != item {
+		t.Errorf("over the second objective the pointer lights %+v", got)
+	}
+	d := w.Detail()
+	tile := d.Tiles[0].At
+	if got := w.Hovering(Point{X: tile.X + 4, Y: tile.Y + 4}).pointed; got != tile {
+		t.Errorf("over a tile the pointer lights %+v", got)
+	}
+	button := d.Buttons[0]
+	if got := w.Hovering(Point{X: button.X + 4, Y: button.Y + 4}).pointed; got != button {
+		t.Errorf("over an offer the pointer lights %+v", got)
+	}
+	if got := w.Hovering(Point{X: 1, Y: 1}).pointed; got != (Box{}) {
+		t.Errorf("over nothing the pointer lights %+v", got)
+	}
+}
+
+func TestTheRefusalOfADoubleCountSaysWhatToUntick(t *testing.T) {
+	w := homeWindow(1200, 800)
+	w.tab, w.chosen = Tasks, 1
+	w = onField(w.Edit(), "objective")
+	w.choosing = 0
+	if got := w.taking().ChoosingThen(); got != "Untick Enclosure and Firmware to put it on Home automation itself. Nothing was changed." {
+		t.Errorf("ticking the parent says %q", got)
+	}
+	w.chosen = 3
+	w = onField(w.Edit(), "objective")
+	w.choosing = 1
+	if got := w.taking().ChoosingThen(); got != "Untick Home automation to put it on Enclosure. Nothing was changed." {
+		t.Errorf("ticking a sub-objective says %q", got)
+	}
+}
+
+func TestTheProgressSaysTheDaysToTheDeadline(t *testing.T) {
+	w := homeWindow(1200, 800).At(time.Date(2026, 11, 9, 10, 0, 0, 0, time.Local))
+	g := w.snap.Goals[0]
+	for day, want := range map[int]string{19: "2026-11-19, in 10 days", 10: "2026-11-10, in 1 day", 9: "2026-11-09, today", 6: "2026-11-06, 3 days past"} {
+		g.Deadline = time.Date(2026, 11, day, 0, 0, 0, 0, time.Local)
+		lines := w.GoalProgress(g).Lines
+		if got := lines[len(lines)-1]; got != (Fact{Name: "deadline", Value: want}) {
+			t.Errorf("due on the %d the progress says %+v", day, got)
+		}
+	}
+	g.Deadline = time.Time{}
+	for _, f := range w.GoalProgress(g).Lines {
+		if f.Name == "deadline" {
+			t.Errorf("with no deadline the progress says %+v", f)
+		}
+	}
+}
+
+func TestAPillWithNoRoomForItsTailSaysItUnderThePointer(t *testing.T) {
+	w := homeWindow(1200, 800).At(time.Now())
+	w.snap.Goals[0].Title = "Home automation of the house"
+	w = w.Key("t")
+	pill := w.Pills()[0]
+	if pill.Tail != "" || !pill.Serves {
+		t.Fatalf("the pill %+v kept its tail", pill)
+	}
+	if got := w.Hovering(Point{X: pill.Box.X + 4, Y: pill.Box.Y + 4}).Bubble(); got != pill.Said+", "+WithItsSubsSays {
+		t.Errorf("under the pointer the pill says %q", got)
+	}
+}
