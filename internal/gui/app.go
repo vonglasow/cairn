@@ -294,7 +294,7 @@ func loop(window *app.Window, work engine.Work, pages engine.Pages, skin Skin, d
 	if sizes != nil {
 		board = board.KeepingSizes(sizes)
 	}
-	board = board.At(time.Now()).Look().ReadingConfiguration().Wearing(skin)
+	board = board.At(time.Now()).Look().ReadingConfiguration().Wearing(skin).LessMotion(lessMotion())
 	window.Option(app.Title(board.Title()), app.Size(unit.Dp(width), unit.Dp(height)), app.MinSize(unit.Dp(Narrowest), unit.Dp(Shortest)))
 	if data, starts, ok := desktopHome(); ok {
 		board = board.Settling(data, starts)

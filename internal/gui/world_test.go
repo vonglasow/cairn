@@ -50,6 +50,7 @@ type world struct {
 	pointer      Point
 	theme        *material.Theme
 	keepSizes    bool
+	lessMotion   bool
 	spaces       *test.Spaces
 	apart        elsewhere
 }
@@ -274,7 +275,7 @@ func (w *world) open() error {
 	if w.keepSizes {
 		w.w = w.w.KeepingSizes(SizesAt(engine.Places{Store: w.path}.Sizes()))
 	}
-	w.w = w.w.Look().ReadingConfiguration()
+	w.w = w.w.Look().ReadingConfiguration().LessMotion(w.lessMotion)
 	return w.w.Wrong()
 }
 

@@ -17,6 +17,8 @@ import (
 type Card struct {
 	Face                                        engine.Card
 	Chosen, Hovered, Dimmed, Dragged, Reference bool
+	Undotted                                    bool
+	Draft                                       *Draft
 	Standing, Why                               string
 	Pages                                       engine.Pages
 	Colour                                      func(label string) string
@@ -53,10 +55,21 @@ func (c Card) Draw(k Kit, at Box) Box {
 	case c.Chosen:
 		rounded(k.gtx, parts.Panel, k.skin.Radius.Card, ground)
 		Ring{Radius: k.skin.Radius.Card}.Draw(in, parts.Panel)
+	case c.Draft != nil:
+		filled := paint.PushOpacity(k.gtx.Ops, float32(c.Draft.Fill))
+		rounded(k.gtx, parts.Panel, k.skin.Radius.Card, ground)
+		filled.Pop()
+		Drafted{By: 1 - c.Draft.Fill}.Draw(in, parts.Panel)
 	default:
 		rounded(k.gtx, parts.Panel, k.skin.Radius.Card, ground)
 	}
-	Stripe{Priority: priorityOf(c.Face)}.Draw(in, parts.Edge)
+	edge := parts.Edge
+	if c.Draft != nil {
+		edge.H = int(float64(edge.H) * c.Draft.Stripe)
+	}
+	if edge.H > 0 {
+		Stripe{Priority: priorityOf(c.Face)}.Draw(in, edge)
+	}
 
 	m := Measured(k.th)
 	wideAt := func(size int) func(string) int { return func(said string) int { return ends(m, said, size) } }
@@ -72,8 +85,12 @@ func (c Card) Draw(k Kit, at Box) Box {
 			sayStyled(k.gtx, k.th, c.writing(k.skin), Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
 		}
 	}
-	if mark, ok := FocusMark(c.Face, parts.Title); ok {
+	if mark, ok := FocusMark(c.Face, parts.Title); ok && !c.Undotted {
 		FocusDot{}.Draw(in, mark)
+	}
+	if c.Draft != nil {
+		facts := paint.PushOpacity(k.gtx.Ops, float32(c.Draft.Facts))
+		defer facts.Pop()
 	}
 
 	mono := k.skin.Type.Mono

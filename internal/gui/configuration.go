@@ -61,6 +61,8 @@ type configurationState struct {
 	refusedKey  string
 	refusedSay  string
 	chooserOpen bool
+	introsOpen  bool
+	introOn     int
 	tileOn      int
 	previewing  string
 	tiles       []schemeOffered
@@ -88,6 +90,7 @@ func (w Window) openingConfiguration() Window {
 	w.configHere = missing == nil
 	w.global = !w.HereOffered()
 	w.screen, w.rowOn, w.settingsAt, w.chooserOpen, w.keyWriting, w.refusedKey = OnConfiguration, -1, 0, false, "", ""
+	w.introsOpen = false
 	return w
 }
 
@@ -297,6 +300,9 @@ func SettingsBox(width, height int) Box {
 
 // SettingsBox is the panel of the settings in this window.
 func (w Window) SettingsBox() Box {
+	if w.introsOpen {
+		return IntrosBox(w.width, w.height)
+	}
 	if w.chooserOpen {
 		return ChooserBox(w.width, w.height)
 	}
@@ -462,6 +468,8 @@ func (w Window) controlWide(row SettingRow) int {
 		return wide
 	case config.KindTheme:
 		return PickerWide(m, row.Value, false, true)
+	case config.KindIntro:
+		return PickerWide(m, row.Value, false, false)
 	case config.KindColour:
 		return PickerWide(m, row.Value, true, false)
 	}
@@ -520,6 +528,8 @@ const smallButton = 22
 // SettingsFootSays is what the foot of the settings says at its left.
 func (w Window) SettingsFootSays() string {
 	switch {
+	case w.introsOpen:
+		return ""
 	case w.chooserOpen:
 		return w.shortSaid()
 	case w.trouble != nil && w.trouble.File == w.scopeFile():
@@ -548,6 +558,9 @@ func itoa(n int) string {
 }
 
 func (w Window) onConfiguration(name string) Window {
+	if w.introsOpen {
+		return w.inIntros(name)
+	}
 	if w.chooserOpen {
 		return w.inChooser(name)
 	}
@@ -644,6 +657,8 @@ func (w Window) acting(row SettingRow, word int) Window {
 		return w.setting(row.Key.Name, row.Words[word])
 	case config.KindTheme:
 		return w.openingChooser()
+	case config.KindIntro:
+		return w.openingIntros()
 	case config.KindColour:
 		return w.setting(row.Key.Name, nextColour(row.Value))
 	}
@@ -702,6 +717,9 @@ func nextColour(now string) string {
 }
 
 func (w Window) clickingSettings(p Point) Window {
+	if w.introsOpen {
+		return w.clickingIntros(p)
+	}
 	if w.chooserOpen {
 		return w.clickingChooser(p)
 	}
@@ -777,7 +795,7 @@ func (w Window) toSection(section SettingSection) Window {
 
 func (w Window) hoveringSettings(p Point) Window {
 	w.hoverKey = ""
-	if w.chooserOpen || !SettingsRows(w.SettingsBox()).In(p) {
+	if w.chooserOpen || w.introsOpen || !SettingsRows(w.SettingsBox()).In(p) {
 		return w
 	}
 	for _, row := range w.SettingRows() {
@@ -797,6 +815,9 @@ func (w Window) scrollingSettings(by int) Window {
 func (w Window) choosingOnSettings(name string) (Window, bool) {
 	if w.screen != OnConfiguration {
 		return w, false
+	}
+	if w.introsOpen {
+		return w.choosingOnIntros(name)
 	}
 	switch {
 	case name == OpenSettings:
@@ -818,6 +839,9 @@ func (w Window) choosingOnSettings(name string) (Window, bool) {
 }
 
 func (w Window) settingsOffers() []string {
+	if w.introsOpen {
+		return w.introsOffers()
+	}
 	if w.chooserOpen {
 		return []string{"Wear " + w.previewing, "Cancel", OpenThemes}
 	}
@@ -833,6 +857,8 @@ func (w Window) settingsOffers() []string {
 
 func (w Window) settingsShortcut(offer string) string {
 	switch {
+	case w.introsOpen:
+		return w.introsShortcut(offer)
 	case w.keyWriting != "":
 		return ""
 	case w.chooserOpen && strings.HasPrefix(offer, "Wear "):

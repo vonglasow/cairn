@@ -124,6 +124,8 @@ type Window struct {
 	savedAt                         time.Time
 	born                            time.Time
 	introOver                       bool
+	lessMotion                      bool
+	introPlayed                     string
 	paused                          []string
 	refused                         []string
 	growing                         Unit

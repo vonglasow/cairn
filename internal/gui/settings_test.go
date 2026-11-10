@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cairn/internal/config"
 	"cairn/internal/engine"
 )
 
@@ -104,6 +105,8 @@ func settingsScreens(size [2]int) []struct {
 		{"a value refused", refused},
 		{"a field written", writing},
 		{"the theme chooser", open.openingChooser().Key("right")},
+		{"the intro chooser", open.openingIntros().Key("down").Key("down")},
+		{"the intro chooser walked down", open.openingIntros().Key("up").onIntro(len(config.Intros()) - 1)},
 		{"the board told of a change", told},
 		{"the board with a file it cannot read", troubled},
 		{"the settings it cannot read", troubledPanel},

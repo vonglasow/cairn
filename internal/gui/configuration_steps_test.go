@@ -195,6 +195,27 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the chooser never reached %q: it is on %q", slug, w.w.WornScheme())
 	})
+	sc.When(`^I walk the intro chooser to "([^"]*)"$`, func(name string) error {
+		for range 20 {
+			if w.w.IntroShown() == name {
+				return nil
+			}
+			if err := w.press("down"); err != nil {
+				return err
+			}
+		}
+		return fmt.Errorf("the intro chooser never reached %q: it is on %q", name, w.w.IntroShown())
+	})
+	sc.Then(`^the board is arriving by "([^"]*)"$`, func(name string) error {
+		if _, on := w.w.Intro(); !on || w.w.IntroShown() != name {
+			return fmt.Errorf("the board is arriving by %q: %v", w.w.IntroShown(), on)
+		}
+		return nil
+	})
+	sc.Given(`^the system asks for less motion$`, func() error {
+		w.lessMotion = true
+		return nil
+	})
 	sc.Then(`^the window wears "([^"]*)"$`, func(slug string) error {
 		scheme, err := theme.Find("", slug)
 		if err != nil {

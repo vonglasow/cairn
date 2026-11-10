@@ -2,8 +2,10 @@ package gui
 
 import (
 	"image"
+	"math"
 	"strings"
 
+	"gioui.org/f32"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -62,6 +64,26 @@ func (k Kit) faded(by float32) paint.OpacityStack { return paint.PushOpacity(k.g
 
 func (k Kit) shifted(down int) op.TransformStack {
 	return op.Offset(image.Pt(0, down)).Push(k.gtx.Ops)
+}
+
+func (k Kit) posed(p Pose, about Box) func() {
+	var undo []func()
+	if p.Seen < 1 {
+		undo = append(undo, paint.PushOpacity(k.gtx.Ops, float32(max(0, p.Seen))).Pop)
+	}
+	if p.DX != 0 || p.DY != 0 || p.Grow != 1 || p.Wide != 1 || p.High != 1 || p.Turn != 0 {
+		pivot := f32.Pt(float32(float64(about.X)+p.PivotX*float64(about.W)), float32(float64(about.Y)+p.PivotY*float64(about.H)))
+		moved := f32.Affine2D{}.Offset(pivot.Mul(-1)).
+			Scale(f32.Point{}, f32.Pt(float32(p.Grow*p.Wide), float32(p.Grow*p.High))).
+			Rotate(f32.Point{}, float32(p.Turn*math.Pi/180)).
+			Offset(pivot.Add(f32.Pt(float32(p.DX), float32(p.DY))))
+		undo = append(undo, op.Affine(moved).Push(k.gtx.Ops).Pop)
+	}
+	return func() {
+		for i := len(undo) - 1; i >= 0; i-- {
+			undo[i]()
+		}
+	}
 }
 
 func (k Kit) put(part string, at Box) Box {

@@ -20,7 +20,7 @@ func markBefore(line Box, said string) CopyMark {
 // CopyMarks is every path the open panel shows with a mark before it to copy it: the places and the file of the configuration, where an open task's context lives, and where cairn is kept.
 func (w Window) CopyMarks() []CopyMark {
 	switch {
-	case w.screen == OnConfiguration && !w.chooserOpen:
+	case w.screen == OnConfiguration && !w.chooserOpen && !w.introsOpen:
 		var marks []CopyMark
 		region := SettingsRows(w.SettingsBox())
 		for _, row := range w.SettingRows() {

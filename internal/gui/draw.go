@@ -86,11 +86,16 @@ func Draw(k Kit, w Window) {
 		return
 	}
 	l := w.Layout()
+	scene, _ := w.Scene()
+	window := Box{W: w.width, H: w.height}
+	filmed := k.posed(scene.Camera, window)
+	top := k.posed(scene.Top, window)
 	drawPlace(k, l, w)
 	drawTabs(k, l, w)
 	if !w.native {
 		MenuMark{}.Draw(k.inside("tabs"), MenuButton(l))
 	}
+	top()
 	if w.Tab() == Objectives {
 		drawGoals(k, l, w)
 	} else if w.Tab() == Time {
@@ -98,12 +103,16 @@ func Draw(k Kit, w Window) {
 	} else if w.Tab() == Series {
 		drawSeries(k, l, w)
 	} else {
-		drawColumns(k, l, w)
-		drawBand(k, l, w)
+		drawColumns(k, l, w, scene)
+		drawBand(k, l, w, scene)
+		drawArrivals(k.on(LayerDrag), w, scene)
 		drawDragging(k.on(LayerDrag), w)
 	}
+	bar := k.posed(scene.Bar, window)
 	drawBar(k.on(LayerBar), l, w)
 	drawPills(k.on(LayerBar), w)
+	bar()
+	filmed()
 	drawBoardBanners(k.on(LayerBar), w)
 	panel, popover := k.on(LayerPanel), k.on(LayerPopover)
 	if w.formUnder() {
@@ -673,18 +682,50 @@ func drawTabs(k Kit, l Layout, w Window) {
 	tabs.Draw(k, l.Tabs)
 }
 
-func drawColumns(k Kit, l Layout, w Window) {
+func drawColumns(k Kit, l Layout, w Window, scene Scene) {
 	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
-		Ground{}.Draw(k, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
+		ground := Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H}
+		pose := scene.ground(i)
+		done := k.posed(pose, ground)
+		drawGround(k, ground, pose)
 		on := k.inside("ground")
 		drawHead(on, NameIn(l.Head[i]), Titled(column.Name), len(column.Cards))
 		if said := w.EmptySays(i); said != "" {
 			Empty{Said: said}.Draw(on, EmptyAt(l.CardAt(i, 0, 0)))
 		}
-		drawPlaced(on, w, l.Column[i])
+		drawPlaced(on, w, l.Column[i], scene)
 		drawReferences(on, w, l.Column[i])
+		if pose.Shade > 0 {
+			Wash{Dark: true, Ground: true, By: pose.Shade}.Draw(on, ground)
+		}
+		done()
 	}
+}
+
+func drawGround(k Kit, at Box, pose Pose) {
+	if pose.Draft == nil {
+		Ground{}.Draw(k, at)
+		return
+	}
+	filled := k.faded(float32(pose.Draft.Fill))
+	Ground{}.Draw(k, at)
+	filled.Pop()
+	Drafted{Ground: true, By: 1 - pose.Draft.Fill}.Draw(k, at)
+}
+
+func (sc Scene) ground(i int) Pose {
+	if i < len(sc.Grounds) {
+		return sc.Grounds[i]
+	}
+	return AtRest()
+}
+
+func (sc Scene) card(n int) Pose {
+	if n < len(sc.Cards) {
+		return sc.Cards[n]
+	}
+	return AtRest()
 }
 
 // InTheViewSays is what a filter of the menu says when the view in force holds it.
@@ -703,45 +744,91 @@ func drawReferences(k Kit, w Window, within Box) {
 	}
 }
 
-func drawBand(k Kit, l Layout, w Window) {
+func drawBand(k Kit, l Layout, w Window, scene Scene) {
 	for lane, kind := range engine.Stalled {
-		Ground{}.Draw(k, LaneGround(l, lane))
+		ground := LaneGround(l, lane)
+		pose := scene.ground(len(l.Column) + lane)
+		done := k.posed(pose, ground)
+		drawGround(k, ground, pose)
 		on := k.inside("ground")
 		held := len(w.inLane(lane))
 		drawHead(on, LaneName(l, lane), Titled(kind), held)
 		if held == 0 {
 			Empty{Said: nothingHere}.Draw(on, EmptyAt(l.LaneCardAt(lane, 0, 0)))
 		}
-		drawPlaced(on, w, l.Lane[lane])
+		drawPlaced(on, w, l.Lane[lane], scene)
+		if pose.Shade > 0 {
+			Wash{Dark: true, Ground: true, By: pose.Shade}.Draw(on, ground)
+		}
+		done()
 	}
-	drawArriving(k, w)
+	drawArriving(k, w, scene)
 }
 
 func drawHead(k Kit, room Box, name string, held int) {
 	Head{Said: name, Count: strconv.Itoa(held)}.Draw(k, room)
 }
 
-func drawPlaced(k Kit, w Window, within Box) {
-	progress, building := w.Intro()
-	seen := w.seenPlaced()
-	for n, p := range seen {
-		if p.Within != within {
+func drawPlaced(k Kit, w Window, within Box, scene Scene) {
+	for n, p := range w.seenPlaced() {
+		pose := scene.card(n)
+		if p.Within != within || pose.Free {
 			continue
 		}
-		chosen := p.Card.Number == w.Chosen() || w.isTaken(p.Card.Number)
 		in, clipped := k.within(p.Within)
-		if !building {
-			card := w.cardOf(p.Card, chosen, p.Slot == w.pointed)
-			card.Dimmed = Dimmed(p.Card)
-			card.Draw(in, p.Slot)
-			clipped.Pop()
-			continue
-		}
-		_, fade := Arriving(progress, n, len(seen))
-		faded := k.faded(float32(fade))
-		w.cardOf(p.Card, chosen, p.Slot == w.pointed).Draw(in, p.Slot)
-		faded.Pop()
+		drawPosed(in, w, p, pose, scene.Beat != nil)
 		clipped.Pop()
+	}
+}
+
+func drawPosed(k Kit, w Window, p Placed, pose Pose, beating bool) {
+	chosen := p.Card.Number == w.Chosen() || w.isTaken(p.Card.Number)
+	card := w.cardOf(p.Card, chosen, p.Slot == w.pointed)
+	card.Dimmed, card.Undotted, card.Draft = Dimmed(p.Card), beating && p.Card.InFocus, pose.Draft
+	if pose.Draft != nil && pose.Draft.Typed >= 0 {
+		card.Face.Title = string([]rune(card.Face.Title)[:min(pose.Draft.Typed, len([]rune(card.Face.Title)))])
+	}
+	panel := PartsOf(p.Slot).Panel
+	done := k.posed(pose, panel)
+	defer done()
+	if pose.Lift > 0 {
+		Lifted{By: pose.Lift}.Draw(k, panel)
+	}
+	if pose.Soft > 0 {
+		for _, by := range [][2]float64{{-1, -1}, {1, -1}, {-1, 1}, {1, 1}} {
+			ghost := k.posed(Pose{Seen: 0.3, DX: by[0] * pose.Soft / 2, DY: by[1] * pose.Soft / 2, Grow: 1, Wide: 1, High: 1}, panel)
+			card.Draw(k, p.Slot)
+			ghost()
+		}
+	}
+	card.Draw(k, p.Slot)
+	if pose.Glare > 0 {
+		Wash{By: pose.Glare}.Draw(k, panel)
+	}
+	if pose.Shade > 0 {
+		Wash{Dark: true, By: pose.Shade}.Draw(k, panel)
+	}
+}
+
+func drawArrivals(k Kit, w Window, scene Scene) {
+	seen := w.seenPlaced()
+	for _, n := range scene.Order {
+		if n < len(seen) {
+			drawPosed(k, w, seen[n], scene.card(n), scene.Beat != nil)
+		}
+	}
+	window := Box{W: w.width, H: w.height}
+	if scene.Wave != nil {
+		scene.Wave.Draw(k, window)
+	}
+	if scene.Sweep != nil {
+		scene.Sweep.Draw(k, window)
+	}
+	if len(scene.Grains) > 0 {
+		scene.Grains.Draw(k, window)
+	}
+	if scene.Beat != nil {
+		scene.Beat.Draw(k, scene.Beat.Mark)
 	}
 }
 
@@ -755,11 +842,11 @@ func (w Window) seenPlaced() []Placed {
 	return seen
 }
 
-func drawArriving(k Kit, w Window) {
-	progress, building := w.Intro()
-	if !building {
+func drawArriving(k Kit, w Window, scene Scene) {
+	if !scene.Stones {
 		return
 	}
+	progress := scene.Progress
 	seen := w.seenPlaced()
 	for n, p := range seen {
 		fall, fade := Arriving(progress, n, len(seen))

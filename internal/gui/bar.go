@@ -34,6 +34,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.chooserOpen {
 			return "Theme of " + w.hereName()
 		}
+		if w.introsOpen {
+			return "Intro of " + w.hereName()
+		}
 		if name := w.switcher.place.Workspace; name != "" {
 			return "Settings of " + name
 		}
@@ -279,7 +282,7 @@ func (w Window) OfferLook(i int, offer string) buttonLook {
 		return buttonFaint
 	case w.screen == OnFates && strings.HasPrefix(offer, "Delete"):
 		return buttonDanger
-	case w.screen == OnConfiguration && !strings.HasPrefix(offer, "Wear "):
+	case w.screen == OnConfiguration && !strings.HasPrefix(offer, "Wear ") && !strings.HasPrefix(offer, KeepIntro):
 		return buttonPlain
 	case offer == "Delete" || offer == "Throw away" || offer == DeleteTheSeriesSays || offer == StopTheSeries || (i == 0 && w.screen == OnAsking && w.destroys()):
 		return buttonDanger

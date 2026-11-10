@@ -12,12 +12,16 @@ import (
 )
 
 func drawConfiguration(k Kit, w Window) {
-	Veil{}.Draw(k, Box{W: w.width, H: w.height})
-	k = k.inside("veil")
+	if !w.introsOpen {
+		Veil{}.Draw(k, Box{W: w.width, H: w.height})
+		k = k.inside("veil")
+	}
 	box := w.SettingsBox()
 	Panel{Head: Heads(w)}.Draw(k, box)
 	in := k.inside("panel")
-	if w.chooserOpen {
+	if w.introsOpen {
+		drawIntros(in, w, box)
+	} else if w.chooserOpen {
 		drawChooser(in, w, box)
 	} else {
 		drawSettings(in, w, box)
@@ -125,6 +129,8 @@ func drawControl(k Kit, w Window, row SettingRow) {
 		Segmented{Said: row.Words, At: row.Parts, On: slices.Index(row.Words, row.Value), Small: true}.Draw(k, row.Control)
 	case row.Key.Kind == config.KindTheme:
 		Picker{Said: row.Value, Strip: w.stripOf(row.Value)}.Draw(k, row.Control)
+	case row.Key.Kind == config.KindIntro:
+		Picker{Said: row.Value}.Draw(k, row.Control)
 	case row.Key.Kind == config.KindColour:
 		Picker{Said: row.Value, Dot: row.Value}.Draw(k, row.Control)
 	case row.Fixed:
@@ -237,6 +243,37 @@ func drawChooser(k Kit, w Window, box Box) {
 	}
 	Scrollbar{Lines: length, Rows: region.H, At: w.settingsAt}.Draw(k, Box{X: region.X + region.W + rowsPad - 2*sbarWide, Y: region.Y, W: sbarWide, H: region.H})
 }
+
+func drawIntros(k Kit, w Window, box Box) {
+	scope := ScopeAt(box)
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, IntrosSays, small, font.Font{}, text.Start)
+	body := SettingsBody(box)
+	Rule{}.Draw(k, Box{X: box.X, Y: body.Y - 1, W: box.W})
+	region := w.introsRegion()
+	rows, cut := k.within(region)
+	all := w.IntroRows()
+	for i, row := range all {
+		Row{Picked: i == w.introOn}.Draw(rows, row.At)
+		line := Inside(row.At)
+		name := Box{X: line.X + between, Y: row.At.Y + (row.At.H-2*lineHigh)/2, W: line.W - 2*between, H: lineHigh}
+		sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, name, row.Says, reads, font.Medium, 1, text.Start)
+		said := row.Name + " · " + row.Lasts
+		if row.InForce {
+			said += " · in use"
+		}
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, said, small, k.skin.Type.Mono, text.Start)
+	}
+	cut.Pop()
+	length := 0
+	if len(all) > 0 {
+		last := all[len(all)-1].At
+		length = last.Y + last.H + w.settingsAt - region.Y + padding
+	}
+	Scrollbar{Lines: length, Rows: region.H, At: w.settingsAt}.Draw(k, Box{X: region.X + region.W + padding/2, Y: region.Y, W: sbarWide, H: region.H})
+}
+
+// IntrosSays is what the intro chooser says over its list.
+const IntrosSays = "Played on the board · r again · ⏎ keeps it"
 
 func (w Window) inForce() string {
 	for _, seen := range w.configured.Themes {

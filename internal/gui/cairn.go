@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/config"
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"image"
 	"sync"
@@ -16,10 +18,7 @@ const (
 	stoneLeast  = 40
 )
 
-// IntroLasts is how long the board takes to build.
-func IntroLasts() time.Duration { return 1800 * time.Millisecond }
-
-// Born is the window told the moment of its first frame, which is when the board starts building.
+// Born is the window told the moment of its first frame, which is when the board starts arriving.
 func (w Window) Born(at time.Time) Window {
 	if w.born.IsZero() {
 		w.born, w.now = at, at
@@ -27,21 +26,110 @@ func (w Window) Born(at time.Time) Window {
 	return w
 }
 
-// Intro is how far the board is built, from nought to one, and whether it is being built at all: not before the first frame, not once built, not once anything was pressed, and not on a board holding no task.
+// LessMotion is the window told whether the system asks for less motion, in which case the board arrives at once.
+func (w Window) LessMotion(asked bool) Window {
+	w.lessMotion = asked
+	return w
+}
+
+// Introducing is the window playing the intro named, as the intro chooser plays the one it is on.
+func (w Window) Introducing(name string) Window {
+	w.introPlayed = name
+	return w
+}
+
+// IntroShown is the intro the board arrives by: the one the intro chooser is on, the one played, the one the configuration names, or the default.
+func (w Window) IntroShown() string {
+	switch {
+	case w.screen == OnConfiguration && w.introsOpen:
+		return config.Intros()[w.introOn]
+	case w.introPlayed != "":
+		return w.introPlayed
+	case w.configured.Window != nil && w.configured.Window.Intro != "":
+		return w.configured.Window.Intro
+	}
+	return config.DefaultIntro
+}
+
+// Intro is how far the board has arrived, from nought to one, and whether it is arriving at all: not before the first frame, not once arrived, not once anything was pressed, not when the system asks for less motion, and not on a board holding no task.
 func (w Window) Intro() (float64, bool) {
-	if w.born.IsZero() || w.introOver || len(w.Showing().Cards) == 0 {
+	if w.born.IsZero() || w.introOver || w.lessMotion || len(w.Showing().Cards) == 0 {
 		return 0, false
 	}
-	progress := float64(w.now.Sub(w.born)) / float64(IntroLasts())
+	progress := float64(w.now.Sub(w.born)) / float64(IntroLasts(w.IntroShown(), w.Stage()))
 	if progress >= 1 {
 		return 1, false
 	}
 	return max(0, progress), true
 }
 
+// Scene is the board at this instant of its intro, and whether one is playing; the still board when none is.
+func (w Window) Scene() (Scene, bool) {
+	if _, on := w.Intro(); !on || w.Tab() != Tasks {
+		return blank(Stage{}), false
+	}
+	return Staging(w.IntroShown(), w.now.Sub(w.born), w.Stage()), true
+}
+
 func (w Window) interrupted() Window {
 	w.introOver = true
 	return w
+}
+
+func (w Window) replaying() Window {
+	w.born, w.introOver = w.now, false
+	return w
+}
+
+// Stage is the board an intro is played on: its columns' and lanes' grounds, every card seen on them in the order the board draws them, the card in focus — or the first in progress, or the first — to start from, and its focus mark.
+func (w Window) Stage() Stage {
+	l := w.Layout()
+	s := Stage{Wide: w.width, High: w.height, Lead: -1}
+	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	current := -1
+	for i, column := range dealt {
+		s.Grounds = append(s.Grounds, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
+		if column.Name == string(domain.Current) {
+			current = len(s.Grounds) - 1
+		}
+	}
+	for lane := range engine.Stalled {
+		s.Grounds = append(s.Grounds, LaneGround(l, lane))
+	}
+	rows := map[int]int{}
+	for _, p := range w.seenPlaced() {
+		ground := w.groundOf(l, p.Within)
+		staged := Staged{Slot: p.Slot, Ground: ground, Row: rows[ground], Priority: priorityOf(p.Card), Focus: p.Card.InFocus, Letters: len([]rune(p.Card.Title))}
+		rows[ground]++
+		if staged.Focus && s.Lead < 0 {
+			s.Lead = len(s.Cards)
+			s.Mark, _ = FocusMark(p.Card, PartsOf(p.Slot).Title)
+		}
+		s.Cards = append(s.Cards, staged)
+	}
+	for i, c := range s.Cards {
+		if s.Lead < 0 && c.Ground == current {
+			s.Lead = i
+		}
+	}
+	if s.Lead < 0 && len(s.Cards) > 0 {
+		s.Lead = 0
+	}
+	return s
+}
+
+func (w Window) groundOf(l Layout, within Box) int {
+	for i, column := range l.Column {
+		if column == within {
+			return i
+		}
+	}
+	for lane := range engine.Stalled {
+		if l.Lane[lane] == within {
+			return len(l.Column) + lane
+		}
+	}
+	return 0
 }
 
 // Arriving is how far the k-th of n cards has come at a share of the breath: how far its stones have fallen, slowing as they land, and how far they have given way to the card since.

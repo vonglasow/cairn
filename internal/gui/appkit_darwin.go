@@ -143,6 +143,12 @@ int cairn_icon_waits(void) {
 	return cairnLaunched != nil;
 }
 
+// cairn_less_motion says whether the system asks for less motion: Reduce
+// motion, in the accessibility settings.
+int cairn_less_motion(void) {
+	return [[NSWorkspace sharedWorkspace] accessibilityDisplayShouldReduceMotion] ? 1 : 0;
+}
+
 // Nothing else of the window is said to AppKit.
 */
 import "C"

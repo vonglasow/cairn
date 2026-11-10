@@ -46,6 +46,7 @@ afternoon to spend:
 - [An open task](#an-open-task)
 - [Series](#series)
 - [Several at once](#several-at-once)
+- [The board arrives by an intro](#the-board-arrives-by-an-intro)
 - [Settings changed in place](#settings-changed-in-place)
 - [Workspaces, a window each](#workspaces-a-window-each)
 - [How it is tested](#how-it-is-tested)
@@ -1662,15 +1663,16 @@ as Homebrew's link, which an upgrade keeps
 (`@gui-an-entry-starts-cairn-by-the-path-it-is-found-at`); otherwise it names
 the cairn running (`@gui-an-entry-starts-a-cairn-off-the-path-where-it-is`).
 
-**The window opens on its board being built of stones.** The content is what
-is built: each card arrives
+**One intro builds the board of stones** (`stones`, one of the eleven
+[intros](#the-board-arrives-by-an-intro); the only one until #255). The
+content is what is built: each card arrives
 as stones — courses of them, each stone cut irregular and fitted to its
 neighbours like an old dry-stone wall, never bricks — falling from above the
 window into its place, one card after another, then giving way to the card
 (`StonesOf`, `Arriving`; `cairn.go`). The same card is built of the same
 stones on every run, from a generator of its own seeded by the card's number.
 A board with no task opens on nothing being built
-(`@gui-no-task-no-cairn`). It lasts a breath (`IntroLasts`, 1.8 s), starts on
+(`@gui-no-task-no-cairn`). It lasts 1.8 s, starts on
 the first frame a screen draws (`Born`), which no scenario draws, and the
 first key or press ends it and still does what it does — it is never in the
 way. Drawn rather than shaded: Gio runs no shader of a program's own, so a
@@ -2727,6 +2729,59 @@ possible*, which named no act; *Skip flagged* (`s`) leaves out everything
 named; *Cancel* (`esc`) takes nothing.
 *Skip flagged* is offered only when something named could go all the same —
 otherwise it is the first answer again.
+
+## The board arrives by an intro
+
+When the window opens, its board arrives by one of eleven intros, which
+`window.intro` names ([config.md](config.md#how-the-board-arrives)); ten
+were proposed and all ten kept (#255), and the stones that came before
+them stay as the eleventh. Each ends on the exact still board, a key or a
+press ends it at once and still does what it does, it starts on the first
+frame drawn (`Born`), and a system asking for less motion gets none
+(`@gui-less-motion-no-intro`) — macOS's Reduce motion, GNOME's animations
+turned off, Windows' client-area animations off (`motion_*.go`).
+
+| name | called | what it does |
+|---|---|---|
+| `ripple` | Ripple from the focus — the default | the card in focus pops on a snappy spring, its dot lights, a ring in the accent spreads from it, and every other card grows outward from it as the ring reaches it, nearest first |
+| `deck` | Dealt from the deck | the cards wait as a deck above the bar and are dealt round by round, a card to each column, each flying on an arc with a deeper shadow and its rotation unwinding |
+| `spring` | Spring cascade | cards rise on a soft spring in a diagonal wave from the top left |
+| `accordion` | Accordion columns | each column unfolds from its left edge, dark while folded, and its cards slide in from the fold |
+| `sweep` | Light sweep | a tilted band of light crosses the window; each card it passes is revealed over-exposed, then cools to its colours |
+| `flap` | Split-flap board | each card drops on its top hinge, overshoots and settles, row by row, as a station's board |
+| `pull` | Focus pull | the board starts soft and a little too close; the card in focus sharpens first, then the rest by distance |
+| `particles` | Particles assemble | a dust in the cards' own colours streams in and condenses into each card |
+| `dolly` | Camera dolly | the camera opens close on the card in focus and cranes back to the whole board |
+| `blueprint` | Blueprint, then ink | outlines first, then the fills, the stripes drawn down and each title typed out |
+| `stones` | Falling stones | each card built of dry stones falling into place |
+
+**Every frame is a function of the time since the first one**
+(`Staging`, `intro.go`): it takes the intro, the time, and the board as it
+stands (`Stage` — its grounds, its cards in the order they are drawn, the
+card in focus or the first in progress to start from), and says how far each
+thing has come (`Pose`: seen, moved, grown, stretched, turned about a pivot,
+lit, shaded, lifted, blurred, drafted) and what is laid over the board
+(`Wave`, `Sweep`, `Grains`, `Pulse` — the focus dot's beat). So a test draws
+any instant of any intro, and its last one is the still board, pixel for
+pixel. A busier board plays faster rather than longer: an intro lasts as long
+as its last card takes to land, never more than a fifth over what it takes
+on a few cards (`IntroLasts`). The `Kit` lays a pose over what it draws
+(`posed`), and the marks are components (`component_intro.go`), so the two
+guards hold.
+
+**Gio is not a browser, so some of the page is faked.** A blur is the card
+drawn four times a little apart, faint, under itself; the light sweep's screen
+blend is a band of the accent's lit ink at low alpha; a split flap is a scale
+on the card's height about its top, with no perspective; the blueprint types
+each title but does not flash each new letter in the accent. The terminal
+board has no intro: its cells redraw whole, and none was trivial.
+
+**The settings offer it as a choice played on the board behind.** Its row
+is a picker; it opens a narrow chooser against the right of the window, the
+board left undimmed beside it. Walking the list, or clicking an intro, plays
+it on the board; `r` or Replay plays it again; `⏎`, Keep, or a second click
+writes it; `esc` goes back with nothing written
+(`@gui-settings-the-intro-is-played-then-kept`).
 
 ## Settings changed in place
 

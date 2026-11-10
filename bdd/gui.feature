@@ -1634,6 +1634,38 @@ Feature: The desktop board
       And the window draws a frame 2 seconds later
       Then no cairn is being built
 
+  Rule: The board arrives by the intro its settings name, and none when the system asks for less motion
+
+    @gui-the-board-arrives-by-the-intro-named
+    Scenario: the window opens on its board arriving by the intro its settings name, over a breath later
+      Given the workspace "home", the default
+      And the workspace "home" holds a task titled "Write the spec"
+      And the settings of the workspace "home" are written by hand:
+        """
+        [window]
+        intro = "deck"
+        """
+      When I open the window on the workspace "home"
+      And the window draws its first frame
+      Then the board is arriving by "deck"
+      When the window draws a frame 2 seconds later
+      Then no cairn is being built
+
+    @gui-the-board-arrives-by-a-ripple-unless-said
+    Scenario: with no intro named, the board arrives by a ripple from the focus
+      Given I added a task titled "Write the spec"
+      When I open the window
+      And the window draws its first frame
+      Then the board is arriving by "ripple"
+
+    @gui-less-motion-no-intro
+    Scenario: a system asking for less motion opens on the board at once
+      Given the system asks for less motion
+      And I added a task titled "Write the spec"
+      When I open the window
+      And the window draws its first frame
+      Then no cairn is being built
+
   Rule: The window carries cairn's logo
 
     @gui-the-window-carries-the-logo
@@ -5323,6 +5355,30 @@ Feature: The desktop board
       Then the window wears "gruvbox-dark"
       And the settings of the workspace "home" say `theme = "gruvbox-dark"`
       And the configuration reads "window.theme" set here
+
+    @gui-settings-the-intro-is-played-then-kept
+    Scenario: the intro chooser plays each intro on the board behind as the keyboard walks it, replays it, keeps one on enter, and esc goes back
+      Given the workspace "home", the default
+      And the workspace "home" holds a task titled "Write the spec"
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I click the control of "window.intro"
+      Then the panel is headed "Intro of home"
+      When I walk the intro chooser to "deck"
+      Then the board is arriving by "deck"
+      When the window draws a frame 2 seconds later
+      Then no cairn is being built
+      When I press "r"
+      Then the board is arriving by "deck"
+      When I press "esc"
+      Then the panel is headed "Settings of home"
+      And no cairn is being built
+      And the settings of the workspace "home" do not say `intro = "deck"`
+      When I click the control of "window.intro"
+      And I walk the intro chooser to "flap"
+      And I press "enter"
+      Then the settings of the workspace "home" say `intro = "flap"`
+      And the configuration reads "window.intro" set here
 
     @gui-settings-an-edit-by-hand-is-read-again
     Scenario: settings written by hand are read again on the beat, applied, and said
