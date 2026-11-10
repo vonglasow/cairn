@@ -6124,6 +6124,30 @@ Feature: The desktop board
       Then the series shown is series 2
       And the series shown offers "Resume"
 
+    @gui-series-every-tab-is-reached-by-a-click-from-every-other
+    Scenario Outline: a click on a tab changes to it, whichever tab the window is on
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I click the tab "<from>"
+      And I click the tab "<to>"
+      Then the tab is "<to>"
+
+      Examples:
+        | from       | to         |
+        | TASKS      | OBJECTIVES |
+        | TASKS      | TIME       |
+        | TASKS      | SERIES     |
+        | OBJECTIVES | TASKS      |
+        | OBJECTIVES | TIME       |
+        | OBJECTIVES | SERIES     |
+        | TIME       | TASKS      |
+        | TIME       | OBJECTIVES |
+        | TIME       | SERIES     |
+        | SERIES     | TASKS      |
+        | SERIES     | OBJECTIVES |
+        | SERIES     | TIME       |
+
     @gui-series-the-tab-skips-stops-and-resumes
     Scenario: in the tab, s skips the open occurrence, x stops the series and r resumes it
       Given recurrence is on in the window

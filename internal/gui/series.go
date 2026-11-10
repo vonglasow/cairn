@@ -470,7 +470,11 @@ func (w Window) startingSeries() Window {
 }
 
 func (w Window) clickingSeries(p Point) (Window, bool) {
-	if w.screen != OnTheBoard || w.tab != Series || w.Layout().Bar.In(p) {
+	if w.screen != OnTheBoard || w.tab != Series {
+		return w, false
+	}
+	list, detail := SplitOf(w.Layout())
+	if page := (Box{X: list.X, Y: list.Y, W: detail.X + detail.W - list.X, H: list.H}); !page.In(p) {
 		return w, false
 	}
 	for _, row := range w.SeriesRows() {

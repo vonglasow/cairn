@@ -2576,7 +2576,10 @@ number `↻3`, its title and its state on a pill, then its rule as a row writes
 it — `every weekday · 10:30`, `every 4 weeks · monday` (`engine.RuleListed`)
 — and its next day, `today 10:30` on its day (`engine.NextDaySaid`), or the
 day it was stopped; on the right the series chosen — the first
-while none is (`SeriesShown`). Its heading, its state, its rule read back as a
+while none is (`SeriesShown`). The split keeps the clicks that land on it and
+no others: the tabs above it and the bar under it answer as on every other tab
+(`@gui-series-every-tab-is-reached-by-a-click-from-every-other`), where the
+page once kept every click but the bar's, and no tab could be reached from it. Its heading, its state, its rule read back as a
 sentence with its next days — or the days resuming it today would make — then
 three boxes: the template the next one is made from, what it did so far, the
 missed in the late ink, and the task open now; then every occurrence, archived
