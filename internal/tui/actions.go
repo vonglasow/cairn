@@ -79,11 +79,12 @@ func (b Board) removeGoal() tea.Cmd {
 	return b.carry(engine.ObjectiveDelete, engine.Agreed(engine.Numbered(b.goal)))
 }
 
-var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Time: engine.PageTime}
+var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Series: engine.PageTasks, Time: engine.PageTime}
 
 // Paged answers the board showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
 func (b Board) Paged(p engine.Pages) Board {
 	b.pages = p
+	b.snap = b.recurring(b.snap)
 	if shown := b.shown(); len(shown) > 0 && !slices.Contains(shown, b.tab) {
 		return b.onTab(shown[0])
 	}
@@ -92,7 +93,10 @@ func (b Board) Paged(p engine.Pages) Board {
 
 func (b Board) shown() []Tab {
 	var shown []Tab
-	for _, tab := range []Tab{Tasks, Objectives, Time} {
+	for _, tab := range []Tab{Tasks, Objectives, Time, Series} {
+		if tab == Series && !b.pages.Recurs() {
+			continue
+		}
 		if b.pages.Shows(pageOfTab[tab]) {
 			shown = append(shown, tab)
 		}
@@ -122,6 +126,8 @@ func (b Board) onTab(tab Tab) Board {
 			b.week = engine.Monday(b.clock())
 		}
 		return b
+	case Series:
+		return b.onSeries(b.seriesOn)
 	}
 	b.tab = Tasks
 	return b

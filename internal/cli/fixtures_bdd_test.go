@@ -183,6 +183,35 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("no objective waits on another:\n%s", w.Out.Stdout)
 	})
+	sc.Step(`^the store it made has a series with an occurrence open and a day missed$`, func() error {
+		if err := inTheStore("cairn series list --state active --json"); err != nil {
+			return err
+		}
+		var listed struct {
+			Series []struct {
+				Open   []int `json:"open"`
+				Missed int   `json:"missed"`
+			} `json:"series"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &listed); err != nil {
+			return err
+		}
+		for _, s := range listed.Series {
+			if len(s.Open) > 0 && s.Missed > 0 {
+				return nil
+			}
+		}
+		return fmt.Errorf("no active series with an occurrence open and a day missed:\n%s", w.Out.Stdout)
+	})
+	sc.Step(`^the store it made has a series stopped$`, func() error {
+		if err := inTheStore("cairn series list --state stopped"); err != nil {
+			return err
+		}
+		if !strings.Contains(w.Out.Stdout, "stopped since") {
+			return fmt.Errorf("no series stopped:\n%s", w.Out.Stdout)
+		}
+		return nil
+	})
 	sc.Step(`^the window was opened on the store it made$`, func() error {
 		if openedOn == "" {
 			return fmt.Errorf("the window was never opened")

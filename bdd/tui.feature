@@ -1655,3 +1655,211 @@ Feature: The board
       And I type "view new"
       And I press "enter"
       Then the view "Home automation" holds objective 1
+
+Rule: A task that comes back is told from another at a glance, and its series has a tab of its own
+
+  @tui-series-a-card-carries-the-loop-and-the-rule
+  Scenario: a recurring card carries ↻ and its rule on the line its title leaves free
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every weekday 10:30"
+    When I open the board
+    Then the card for task 1 says "↻"
+    And the card for task 1 says "every weekday 10:30"
+
+  @tui-series-the-detail-says-the-rule
+  Scenario: an open occurrence says its series, its rule and what it did so far
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "l", "i", "enter"
+    Then the board says "↻1 every day, on the calendar"
+    And the board says "0 done · 0 skipped · 0 missed"
+    And the bar offers "skip"
+
+  @tui-series-r-s-skips
+  Scenario: r s skips the occurrence under the cursor, and its series makes the next
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "l", "i", "r", "s"
+    Then task 1 is archived
+    And task 2 is titled "Stand-up"
+    And task 2 is in the column "todo"
+
+  @tui-series-r-x-stops-and-r-r-resumes
+  Scenario: r x stops the series, leaving the task on the board, and r r resumes it
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "l", "i", "r", "x"
+    Then series 1 is stopped
+    And task 1 is in the column "todo"
+    When I press "r", "r"
+    Then series 1 is active
+
+  @tui-series-r-e-opens-its-series
+  Scenario: r e opens the series of the occurrence in its tab
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "l", "i", "r", "e"
+    Then the tab is "SERIES"
+    And the board says "TEMPLATE"
+
+  @tui-series-r-is-offered-only-on-a-recurring-card
+  Scenario: the r keys are on the bar only while the card under the cursor comes back
+    Given recurrence is on on the board
+    And I added a task titled "Write the spec"
+    When I open the board
+    And I press "i"
+    Then the bar does not offer "skip"
+
+  @tui-series-the-tab-lists-them
+  Scenario: the series tab lists the active series apart from the stopped ones
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    And I added a task titled "Expense report" coming back "every 4 weeks on monday"
+    And I stopped series 2
+    When I open the board
+    And I press "tab", "tab", "tab"
+    Then the tab is "SERIES"
+    And the board says "Active"
+    And the board says "Stopped"
+    And the board says "↻1"
+    And the board says "↻2"
+    And the board says "stopped since"
+
+  @tui-series-the-tab-reaches-an-archived-occurrence
+  Scenario: an occurrence archived long ago is reached from its series
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    And task 1 was skipped
+    When I open the board
+    And I press "tab", "tab", "tab", "enter", "j", "enter"
+    Then the mode is "DETAIL"
+    And the open task is task 1
+
+  @tui-series-the-tab-skips-stops-and-resumes
+  Scenario: in the tab, s skips the open occurrence, x stops the series and r resumes it
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "tab", "tab", "tab", "s"
+    Then task 1 is archived
+    When I press "x"
+    Then series 1 is stopped
+    And task 2 is in the column "todo"
+    When I press "r"
+    Then series 1 is active
+
+  @tui-series-deleting-keeps-the-tasks-unless-told
+  Scenario: deleting a series asks what becomes of its tasks, keeping them unless told
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "tab", "tab", "tab", "D"
+    Then the board says "delete the series ↻1 Stand-up?"
+    And the board says "keep its tasks, as ordinary tasks"
+    When I press "enter"
+    Then there is no series 1
+    And task 1 is in the column "todo"
+
+  @tui-series-deleting-the-open-one
+  Scenario: deleting a series may delete the one open and keep the rest
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "tab", "tab", "tab", "D", "j", "enter"
+    Then there is no series 1
+    And there is no task 1
+
+  @tui-series-deleting-every-task-asks-once-more
+  Scenario: deleting a series with every task it made asks once more, naming the count
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    And task 1 was skipped
+    When I open the board
+    And I press "tab", "tab", "tab", "D", "j", "j", "enter"
+    Then the board says "delete all 2 tasks too?"
+    And series 1 is active
+    When I press "enter"
+    Then there is no series 1
+    And there is no task 1
+    And there is no task 2
+
+  @tui-series-the-form-changes-the-series
+  Scenario: e in the tab opens the series' form, and saving changes what comes next
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "tab", "tab", "tab", "e"
+    And I set the field "title" to "Daily stand-up"
+    And I save the form
+    Then series 1 is titled "Daily stand-up"
+    And task 1 is titled "Stand-up"
+
+  @tui-series-n-makes-a-new-one
+  Scenario: n in the tab opens a task's form with the rule to fill in
+    Given recurrence is on on the board
+    When I open the board
+    And I press "tab", "tab", "tab", "n"
+    And I set the field "title" to "Water the plants"
+    And I set the field "repeats" to "every 3 days after done"
+    And I save the form
+    Then series 1 is titled "Water the plants"
+    And task 1 is an occurrence of series 1
+
+  @tui-series-a-task-given-a-rule-becomes-the-first
+  Scenario: a task given a rule in its form becomes the first occurrence of a new series
+    Given recurrence is on on the board
+    And I added a task titled "Water the plants"
+    When I open the board
+    And I press "i", "e"
+    And I set the field "repeats" to "every 3 days"
+    And I save the form
+    Then task 1 is an occurrence of series 1
+
+  @tui-series-saving-an-occurrence-asks-this-one-or-all
+  Scenario: changing the title of an occurrence asks whether the series changes too
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "l", "i", "e"
+    And I set the field "title" to "Daily stand-up"
+    And I press "ctrl+s"
+    Then the board says "this one only"
+    When I press "s"
+    Then task 1 is titled "Daily stand-up"
+    And series 1 is titled "Daily stand-up"
+
+  @tui-series-saving-this-one-only-leaves-the-series
+  Scenario: saving an occurrence for this one only leaves its series as it was
+    Given recurrence is on on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    And I press "l", "i", "e"
+    And I set the field "title" to "Daily stand-up"
+    And I press "ctrl+s"
+    And I press "enter"
+    Then task 1 is titled "Daily stand-up"
+    And series 1 is titled "Stand-up"
+
+  @tui-series-the-fixtures-fit
+  Scenario: on the fixtures, the series tab and its form run past no terminal
+    Given recurrence is on on the board
+    And the fixtures
+    And a window of 80 by 26
+    When I open the board
+    Then no screen runs past the terminal
+
+  @tui-series-off-shows-nothing
+  Scenario: with recurrence off, there is no ↻, no rule, no r key and no series tab
+    Given recurrence is off on the board
+    And I added a task titled "Stand-up" coming back "every day"
+    When I open the board
+    Then the board does not say "↻"
+    And the board does not say "every day"
+    When I press "tab", "tab"
+    Then the tab is "TIME"
+    When I press "tab", "l", "i"
+    Then the bar does not offer "skip"

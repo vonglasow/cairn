@@ -62,3 +62,9 @@ Feature: A store full of believable work, from the binary alone
       When I make the fixtures in a folder of my own
       Then the store it made has a task in every column
       And the store it made has tasks in focus and tasks archived
+
+    @fixtures-series
+    Scenario: a series comes back, another is stopped, and recurrence is on in their store
+      When I make the fixtures in a folder of my own
+      Then the store it made has a series with an occurrence open and a day missed
+      And the store it made has a series stopped

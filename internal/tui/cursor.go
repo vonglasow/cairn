@@ -16,6 +16,9 @@ func (b Board) moveCursor(way string) Board {
 	if b.tab == Objectives {
 		return b.walkGoals(way)
 	}
+	if b.tab == Series {
+		return b.walkSeries(way)
+	}
 	switch way {
 	case goLeft:
 		return b.toColumn(b.column - 1)
@@ -270,6 +273,9 @@ func (b Board) at(here []engine.Card) int {
 }
 
 func (b Board) held() (engine.Card, bool) {
+	if b.tab == Series {
+		return b.snap.Card(b.task)
+	}
 	for _, c := range b.cards() {
 		if c.Number == b.task {
 			return c, true

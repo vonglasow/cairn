@@ -33,6 +33,7 @@ type Glyphs struct {
 	InTheWay  string
 	Archived  string
 	Serves    string
+	Repeats   string
 }
 
 var nerd = Glyphs{
@@ -48,6 +49,7 @@ var nerd = Glyphs{
 	Label:     "",
 	InTheWay:  "",
 	Serves:    "◇",
+	Repeats:   "\U000F0456",
 }
 
 var plain = Glyphs{
@@ -64,6 +66,7 @@ var plain = Glyphs{
 	InTheWay:  "↳",
 	Archived:  "▭",
 	Serves:    "◇",
+	Repeats:   "↻",
 }
 
 // ErrNotASet is returned when a set is asked for by a name that is not one of the two.

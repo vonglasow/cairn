@@ -103,6 +103,24 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 	if under < 2 || !waiting {
 		t.Errorf("%d sub-objectives and one waiting on another %v; want a parent holding several, one of them waiting on another", under, waiting)
 	}
+	byNumber := map[int]filed{}
+	for _, f := range read.Tasks {
+		byNumber[f.Number] = f
+	}
+	openWithMissed, stopped := false, false
+	for _, s := range read.Series {
+		stopped = stopped || s.Stopped != ""
+		missed, open := false, false
+		for _, a := range s.Acts {
+			missed = missed || a.Did == "missed"
+			f, made := byNumber[a.Task]
+			open = open || a.Did == "made" && made && f.State != string(domain.Done) && !f.Archived
+		}
+		openWithMissed = openWithMissed || s.Stopped == "" && missed && open
+	}
+	if !openWithMissed || !stopped {
+		t.Errorf("series: one with an occurrence open and a day missed %v, one stopped %v", openWithMissed, stopped)
+	}
 	coloured, idle := false, false
 	carried := map[string]bool{}
 	for _, f := range read.Tasks {

@@ -62,6 +62,12 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	if b.deleting != nil {
 		return b.choosingFates(key)
 	}
+	if b.seriesGoing != nil {
+		return b.choosingSeriesFate(key)
+	}
+	if b.wholeSave != nil {
+		return b.answeringWhole(key)
+	}
 	if key == "?" {
 		return b.help(), nil
 	}
@@ -218,8 +224,17 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 			return b.walkingSteps(way), nil
 		}
 	}
+	if b.screen == OnDetail && b.setting == "series" {
+		b.setting = ""
+		return b.seriesAct(key)
+	}
 	if b.screen == OnDetail {
 		switch key {
+		case "r":
+			if b.heldRecurs() {
+				b.setting = "series"
+			}
+			return b, nil
 		case "e":
 			return b.editForm()
 		case "backspace", "delete":
@@ -236,6 +251,11 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 }
 
 func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
+	if b.tab == Series {
+		if model, cmd, took := b.inSeries(key); took {
+			return model, cmd
+		}
+	}
 	if b.tab == Time {
 		if walked, ok := b.walkingWeeks(key); ok {
 			return walked, walked.readingWeek()
@@ -351,6 +371,11 @@ func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
 			b.setting = "priority"
 		}
 		return b, nil
+	case "r":
+		if b.heldRecurs() {
+			b.setting = "series"
+		}
+		return b, nil
 	case "x":
 		return b, b.puttingAway()
 	case "shift+a":
@@ -420,6 +445,9 @@ func trimLast(s string) string {
 func (b Board) settingByLetter(key string) (tea.Model, tea.Cmd) {
 	field := b.setting
 	b.setting = ""
+	if field == "series" {
+		return b.seriesAct(key)
+	}
 	values := engine.States()
 	if field == "priority" {
 		values = engine.Priorities()

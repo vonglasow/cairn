@@ -19,7 +19,7 @@ import (
 
 const (
 	exchangeKind    = "tasks"
-	exchangeVersion = 5
+	exchangeVersion = 6
 	beforeSteps     = 1
 )
 
@@ -35,6 +35,7 @@ type exchanged struct {
 	Objectives []objectiveFiled `json:"objectives"`
 	Labels     []labelFiled     `json:"labels,omitempty"`
 	Tasks      []filed          `json:"tasks"`
+	Series     []seriesFiled    `json:"series,omitempty"`
 }
 
 type labelFiled struct {
@@ -160,6 +161,9 @@ func (e *Engine) exporting() (exchanged, error) {
 		}
 	}
 	slices.SortFunc(out.Tasks, func(a, b filed) int { return a.Number - b.Number })
+	if out.Series, err = e.seriesWritten(served); err != nil {
+		return exchanged{}, err
+	}
 	t, err := e.tree()
 	if err != nil {
 		return exchanged{}, err
@@ -302,6 +306,9 @@ func (e *Engine) importing(read exchanged) (domain.Held, error) {
 			}
 		}
 	}
+	if err := e.seriesFiled(read.Series, tasks, objectives); err != nil {
+		return domain.Held{}, err
+	}
 	return domain.Held{Tasks: len(order), Objectives: len(read.Objectives)}, nil
 }
 
@@ -392,6 +399,9 @@ func checked(read exchanged) ([]filed, error) {
 				return nil, fmt.Errorf("%w: objective %d names objective %d — objective %d is not in the file", ErrExportPointsOutside, o.Number, n, n)
 			}
 		}
+	}
+	if err := checkedSeries(read.Series, objectives); err != nil {
+		return nil, err
 	}
 	byNumber := map[int]filed{}
 	for _, t := range read.Tasks {

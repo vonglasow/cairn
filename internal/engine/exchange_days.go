@@ -37,7 +37,9 @@ func countedFromToday(read exchanged, today time.Time) (exchanged, error) {
 		}
 		read.Tasks[i].Spent = spent
 	}
-	return read, nil
+	series, err := seriesFromToday(read.Series, today)
+	read.Series = series
+	return read, err
 }
 
 func (e *Engine) spentOnDays(number int, spent map[string]string) error {

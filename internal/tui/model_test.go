@@ -870,7 +870,7 @@ func TestAStepTheStoreRefusesIsSaid(t *testing.T) {
 			}
 			b.form = b.form.typedInto("steps", "[ ] Rédiger la section Flux")
 			f.refuseVerb = verb
-			cmd := b.saveTask(b.form)
+			cmd := b.saveTask(b.form, false)
 			if cmd == nil {
 				t.Fatal("saving asked for nothing")
 			}

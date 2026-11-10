@@ -42,6 +42,7 @@ type Card struct {
 	Freed       bool
 	Context     string
 	Said        []string
+	Series      *Occurs
 }
 
 // Described says whether anything is written about the task.
@@ -80,6 +81,7 @@ type Snapshot struct {
 	Colours map[string]string
 	Scopes  map[string]string
 	Views   []Viewing
+	Series  []Series
 	Version int64
 }
 
@@ -103,6 +105,10 @@ func Look(w Work) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
+	series, err := lookAtSeries(w)
+	if err != nil {
+		return Snapshot{}, err
+	}
 	version, err := w.Version()
 	if err != nil {
 		return Snapshot{}, err
@@ -111,7 +117,7 @@ func Look(w Work) (Snapshot, error) {
 	if listed.InFocus != nil {
 		held = *listed.InFocus
 	}
-	found := Snapshot{Focus: held, Views: views, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
+	found := Snapshot{Focus: held, Views: views, Series: series, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
 	if labels.Labels != nil {
 		for _, one := range *labels.Labels {
 			found.Colours[one.Label] = one.Colour
@@ -122,6 +128,9 @@ func Look(w Work) (Snapshot, error) {
 		card, err := cardOf(t, held, listed.NothingBlocks, listed.Along, listed.Contexts)
 		if err != nil {
 			return Snapshot{}, err
+		}
+		if o, is := listed.Occurring[card.Number]; is {
+			card.Series = &o
 		}
 		found.Cards = append(found.Cards, card)
 	}

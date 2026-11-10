@@ -78,6 +78,9 @@ func Saved(fields []Field, adding bool, number int, add, edit Operation) (Operat
 	if !adding {
 		asked.Given["number"] = strconv.Itoa(number)
 	}
+	if every, named := asked.Given["every"]; named && strings.TrimSpace(every) == "" {
+		delete(asked.Given, "every")
+	}
 	return op, asked
 }
 

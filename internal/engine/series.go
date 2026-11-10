@@ -1100,7 +1100,8 @@ func deletionAsked(n int, there, open []int) string {
 		n, manyOf(len(there), "task", "tasks"), len(there), openSaid, len(there))
 }
 
-func shortDays(days []string) string {
+// ShortDays writes days the short way, Mon 9 Nov, one after another.
+func ShortDays(days []string) string {
 	said := make([]string, 0, len(days))
 	for _, one := range days {
 		if d, err := domain.ParseDeadline(one); err == nil {
@@ -1114,21 +1115,21 @@ func followedText(made []MadeNext) string {
 	var out strings.Builder
 	for _, m := range made {
 		if len(m.Missed) > 0 {
-			fmt.Fprintf(&out, "↻%d missed %s\n", m.Series, strings.ReplaceAll(shortDays(m.Missed), " · ", ", "))
+			fmt.Fprintf(&out, "↻%d missed %s\n", m.Series, strings.ReplaceAll(ShortDays(m.Missed), " · ", ", "))
 		}
 		if m.Task != 0 {
-			fmt.Fprintf(&out, "↻%d made #%d for %s\n", m.Series, m.Task, shortDays([]string{m.Day}))
+			fmt.Fprintf(&out, "↻%d made #%d for %s\n", m.Series, m.Task, ShortDays([]string{m.Day}))
 		}
 	}
 	return out.String()
 }
 
 func occursText(o Occurs) string {
-	day := shortDays([]string{o.Day})
+	day := ShortDays([]string{o.Day})
 	if o.At != "" {
 		day += " " + o.At
 	}
-	then := shortDays(o.Then)
+	then := ShortDays(o.Then)
 	switch {
 	case o.Stopped:
 		then = "nothing: the series is stopped"
@@ -1151,23 +1152,25 @@ func repeatsOf(of map[int]Occurs) map[int]string {
 	return out
 }
 
-func seriesHead(s Series) string {
+// StandingSaid is where a series stands, in words: active, or stopped since a day.
+func StandingSaid(s Series) string {
 	if s.State == "stopped" {
-		return "stopped since " + shortDays([]string{s.Stopped})
+		return "stopped since " + ShortDays([]string{s.Stopped})
 	}
 	return "active"
 }
 
-func seriesNext(s Series) string {
+// NextSaid is the next days of a series in words, or why there are none.
+func NextSaid(s Series) string {
 	switch {
 	case s.Ended && len(s.Next) == 0:
 		return "none, it has ended"
 	case len(s.Next) == 0:
 		return "none"
 	case s.State == "stopped" && len(s.Open) == 0:
-		return "if resumed today: " + shortDays(s.Next)
+		return "if resumed today: " + ShortDays(s.Next)
 	}
-	return shortDays(s.Next)
+	return ShortDays(s.Next)
 }
 
 func seriesListText(all []Series) string {
@@ -1176,18 +1179,19 @@ func seriesListText(all []Series) string {
 	}
 	var out strings.Builder
 	for _, s := range all {
-		fmt.Fprintf(&out, "↻%d  %s  · %s", s.Number, s.Title, seriesHead(s))
+		fmt.Fprintf(&out, "↻%d  %s  · %s", s.Number, s.Title, StandingSaid(s))
 		if s.State == "active" {
 			next := s
 			next.Next = s.Next[:min(1, len(s.Next))]
-			fmt.Fprintf(&out, "  · next %s", seriesNext(next))
+			fmt.Fprintf(&out, "  · next %s", NextSaid(next))
 		}
 		fmt.Fprintf(&out, "\n    %s · %d done · %d skipped · %d missed\n", strings.SplitN(s.Says, ", ", 2)[0], s.Done, s.Skipped, s.Missed)
 	}
 	return out.String()
 }
 
-func templateText(t Template) string {
+// TemplateSaid is what the next occurrence of a series is made from, in a line.
+func TemplateSaid(t Template) string {
 	said := []string{t.Title, t.Priority}
 	if len(t.Labels) > 0 {
 		said = append(said, strings.Join(t.Labels, ", "))
@@ -1206,13 +1210,13 @@ func templateText(t Template) string {
 
 func seriesShownText(s Series) string {
 	var out strings.Builder
-	fmt.Fprintf(&out, "↻%d  %s  %s\n\n", s.Number, s.Title, seriesHead(s))
-	fmt.Fprintf(&out, "rule      %s\nnext      %s\n", s.Says, seriesNext(s))
+	fmt.Fprintf(&out, "↻%d  %s  %s\n\n", s.Number, s.Title, StandingSaid(s))
+	fmt.Fprintf(&out, "rule      %s\nnext      %s\n", s.Says, NextSaid(s))
 	if strings.Contains(s.Says, "after the last is done") && !s.Ended {
 		rule, _ := domain.ParseRule(s.Rule)
 		fmt.Fprintf(&out, "then      %s\n", rule.Then())
 	}
-	fmt.Fprintf(&out, "template  %s\n", templateText(s.Template))
+	fmt.Fprintf(&out, "template  %s\n", TemplateSaid(s.Template))
 	soFar := fmt.Sprintf("%d done · %d skipped · %d missed", s.Done, s.Skipped, s.Missed)
 	if s.TimeSpent != "" {
 		soFar += " · " + s.TimeSpent
@@ -1229,7 +1233,7 @@ func seriesShownText(s Series) string {
 			if o.Archived {
 				is += " · archived"
 			}
-			fmt.Fprintf(&out, "  %-10s  %-5s  %s", shortDays([]string{o.Day}), what, is)
+			fmt.Fprintf(&out, "  %-10s  %-5s  %s", ShortDays([]string{o.Day}), what, is)
 			if o.TimeSpent != "" {
 				out.WriteString("  " + o.TimeSpent)
 			}
@@ -1255,11 +1259,11 @@ func seriesShownText(s Series) string {
 func actSaid(a SeriesAct) string {
 	switch a.Did {
 	case "made":
-		return fmt.Sprintf("made #%d for %s", a.Task, shortDays([]string{a.Day}))
+		return fmt.Sprintf("made #%d for %s", a.Task, ShortDays([]string{a.Day}))
 	case "missed":
-		return "missed " + shortDays([]string{a.Day})
+		return "missed " + ShortDays([]string{a.Day})
 	case "skipped":
-		return fmt.Sprintf("skipped #%d, made for %s", a.Task, shortDays([]string{a.Day}))
+		return fmt.Sprintf("skipped #%d, made for %s", a.Task, ShortDays([]string{a.Day}))
 	case "changed":
 		return fmt.Sprintf("changed %s from %q to %q", a.Field, a.Was, a.Became)
 	case "deleted":
@@ -1278,14 +1282,14 @@ func seriesActedText(verb string, a Answer) string {
 		return fmt.Sprintf("↻%d stopped; nothing more is made\n", s.Number)
 	case "resume":
 		if len(a.Followed) > 0 {
-			return fmt.Sprintf("↻%d resumed · next %s, made as #%d\n", s.Number, shortDays([]string{a.Followed[0].Day}), a.Followed[0].Task)
+			return fmt.Sprintf("↻%d resumed · next %s, made as #%d\n", s.Number, ShortDays([]string{a.Followed[0].Day}), a.Followed[0].Task)
 		}
 		if len(s.Open) > 0 {
 			return fmt.Sprintf("↻%d resumed; %s is still open, and the next comes when it is done or skipped\n", s.Number, numbersOrNothing(s.Open))
 		}
 		return fmt.Sprintf("↻%d resumed; it has ended, and nothing more is made\n", s.Number)
 	case "edit":
-		return fmt.Sprintf("changed ↻%d %s\nrule      %s\ntemplate  %s\n", s.Number, s.Title, s.Says, templateText(s.Template))
+		return fmt.Sprintf("changed ↻%d %s\nrule      %s\ntemplate  %s\n", s.Number, s.Title, s.Says, TemplateSaid(s.Template))
 	}
 	return seriesShownText(s)
 }

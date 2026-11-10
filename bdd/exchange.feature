@@ -258,3 +258,69 @@ Feature: Tasks carried from one store to another
       Then it fails
       And it says objective 9 is not in the file
       And `cairn objective list` lists 0 objectives
+
+  Rule: A file carries the series, and what an import makes of them is the same series, linked to their tasks
+
+    @exchange-a-series-comes-with-its-occurrences
+    Scenario: a series comes back with its rule, its template, its state and its trace, at the new numbers
+      Given recurrence is on for this store
+      And today is "2026-11-09"
+      And I added a task titled "Already here"
+      And a file of my own exported from a store where these were run:
+        """
+        cairn task new "Team stand-up" --every "every weekday 10:30" --label work --estimate 15m
+        cairn task edit 1 --state done
+        cairn task skip 2
+        cairn task new "Expense report" --every "every 4 weeks on monday"
+        cairn series stop 2
+        """
+      When I import the tasks of that file
+      Then it succeeds
+      And it says 4 tasks and 0 objectives were added
+      And `cairn series show 1` says "every weekday at 10:30, on the calendar, from Mon 9 Nov 2026"
+      And `cairn series show 1` says "Team stand-up · normal · work · 15m"
+      And `cairn series show 1` says "1 done · 1 skipped · 0 missed"
+      And `cairn series show 1` says "open      #4"
+      And `cairn series show 1` says "skipped #3, made for Tue 10 Nov"
+      And `cairn series show 2` says "stopped since"
+      And `cairn task list --series 1 --with-archived` lists 3 tasks
+      And `cairn task show 2` says "↻1"
+
+    @exchange-an-imported-series-goes-on
+    Scenario: the open occurrence of a series read in makes the next when it is done
+      Given recurrence is on for this store
+      And today is "2026-11-09"
+      And a file of my own exported from a store where these were run:
+        """
+        cairn task new "Team stand-up" --every "every weekday 10:30"
+        """
+      When I import the tasks of that file
+      And I run `cairn task edit 1 --state done`
+      Then it succeeds
+      And the answer says "↻1 made #2 for Tue 10 Nov"
+
+    @exchange-a-series-outside-the-file
+    Scenario: a file whose series serves an objective it does not hold is refused before anything is added
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 6, "objectives": [], "tasks": [],
+         "series": [{"number": 1, "rule": "every day", "from": "2026-11-09",
+           "template": {"title": "Water", "priority": "normal", "objectives": [9]}}]}
+        """
+      When I import the tasks of that file
+      Then it fails
+      And it says objective 9 is not in the file
+      And `cairn task list` lists 0 tasks
+
+    @exchange-a-series-that-cannot-be-read
+    Scenario: a file whose series' rule cannot be read is refused before anything is added
+      Given a file of my own holding:
+        """
+        {"cairn": "tasks", "version": 6, "objectives": [],
+         "tasks": [{"number": 1, "title": "Ship it", "state": "todo", "priority": "normal"}],
+         "series": [{"number": 1, "rule": "every blue moon", "from": "2026-11-09",
+           "template": {"title": "Water", "priority": "normal"}}]}
+        """
+      When I import the tasks of that file
+      Then it fails
+      And `cairn task list` lists 0 tasks

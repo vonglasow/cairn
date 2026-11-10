@@ -43,6 +43,22 @@ func (b Board) says(key, does string) string {
 }
 
 func (b Board) helpKeys() []string {
+	if b.tab == Series {
+		return b.group("SERIES — the cursor on a series", append([]string{
+			b.says("jk ↓↑", "change series, or occurrence once inside"),
+			b.says("⏎", "its occurrences, archived ones included — ⏎ again opens one"),
+			b.says("e", "its form: what the next is made from, its rule"),
+			b.says("s", "skip the occurrence open; the next is made"),
+			b.says("x", "stop it: nothing more is made, no task goes"),
+			b.says("r", "resume it, from today"),
+			b.says("⌫", "delete it — it asks what becomes of its tasks"),
+			b.says("n", "a new series: a task's form with its rule"),
+			b.says("/", "search"),
+			b.says("⇥", "next tab"),
+			b.says(":", "command"),
+			b.says("esc", "back from its occurrences"),
+		}, b.roamingSays()...)...)
+	}
 	if b.tab == Objectives {
 		return b.group("NORMAL — the cursor on an objective", append([]string{
 			b.says("hjkl ←↓↑→", "change objective"),
@@ -89,7 +105,7 @@ func (b Board) helpKeys() []string {
 		b.says("D", "delete"),
 		b.says("x", "archive or unarchive"),
 		b.says("esc", "back to normal"),
-	}, b.roamingSays()...)...)...)
+	}, append(b.seriesSays(), b.roamingSays()...)...)...)...)
 	out = append(out, b.group("DETAIL — one task, open",
 		b.says("^D ^U", "walk its description, half a box at a time"),
 	)...)
@@ -100,6 +116,13 @@ func (b Board) helpKeys() []string {
 		b.says("^S", "save, from anywhere in it — ⏎ never does"),
 	)...)
 	return append(out, b.group("EVERYWHERE", b.says("?", "help"))...)
+}
+
+func (b Board) seriesSays() []string {
+	if !b.pages.Recurs() {
+		return nil
+	}
+	return []string{b.says("r then a letter", "its series: s skip, x stop, r resume, e open it")}
 }
 
 func (b Board) roamingSays() []string {
@@ -134,7 +157,11 @@ func (b Board) legend() []string {
 		mark(g.Reached, p.Standing(string(objective.Reached)), "reached", "done with"),
 		mark(g.Dropped, p.Standing(string(objective.Dropped)), "dropped", "given up"),
 	)...)
-	return append(out, b.group("ON A CARD",
+	recurs := []string{}
+	if b.pages.Recurs() {
+		recurs = append(recurs, mark(g.Repeats, p.Faint, "", "it comes back: its rule under the title"))
+	}
+	return append(out, b.group("ON A CARD", append(recurs,
 		mark(g.Described, p.Faint, "", "a description exists"),
 		mark(g.Steps, p.Faint, "", "steps done / total"),
 		mark(g.Label, p.Faint, "", "a label"),
@@ -144,7 +171,7 @@ func (b Board) legend() []string {
 		"  "+b.skin.Bright.Render(pad("2d", 12))+b.skin.Says.Render("a deadline close by"),
 		"  "+b.skin.Late.Render(pad("−3d", 12))+b.skin.Says.Render("one that has passed"),
 		"  "+b.skin.Bright.Render(pad("╔═╗", 12))+b.skin.Says.Render("the task in focus"),
-	)...)
+	)...)...)
 }
 
 func (b Board) drawDetail() string {
@@ -179,6 +206,7 @@ func (b Board) detailOffers(c engine.Card) []string {
 	if c.Description != "" {
 		offers = append(offers, b.offer("^D ^U", "description"))
 	}
+	offers = append(offers, b.seriesOffers()...)
 	return append(offers, b.offer("?", "help"), b.offer("esc", "back"))
 }
 
@@ -283,10 +311,13 @@ func (b Board) detailBand(c engine.Card) string {
 		told = append(told, b.skin.Wrong.Render(way))
 	}
 	first := Spread(head, right+" ", b.width)
-	if len(told) == 0 {
-		return first
+	if len(told) > 0 {
+		first += "\n " + strings.Join(told, "   ")
 	}
-	return first + "\n " + strings.Join(told, "   ")
+	if c.Series != nil {
+		first += "\n " + b.skin.Says.Render(Clip(b.occursSaid(c), b.width-margin-margin))
+	}
+	return first
 }
 
 func (b Board) steps(c engine.Card, width int) []string {

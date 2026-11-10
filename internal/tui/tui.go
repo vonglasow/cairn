@@ -11,14 +11,15 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// Tab is which of the two the board is showing.
+// Tab is which of the tabs the board is showing.
 type Tab int
 
-// The two tabs.
+// The tabs.
 const (
 	Tasks Tab = iota
 	Objectives
 	Time
+	Series
 )
 
 // Mode is what the cursor is holding.
@@ -153,6 +154,12 @@ type Board struct {
 	spaceIn  string
 	newSpace string
 	keeping  engine.RecentFolder
+
+	seriesOn      int
+	inOccurrences bool
+	occurrenceAt  int
+	seriesGoing   *seriesGoing
+	wholeSave     *Form
 
 	warned    []string
 	deleting  *engine.Deleting
@@ -324,7 +331,7 @@ func (b Board) took(l Looked) Board {
 	}
 	was := b.task
 	stood := b.at(b.here())
-	b.snap = l.Snapshot
+	b.snap = b.recurring(l.Snapshot)
 	b.err = nil
 	b.warned = l.Warned
 	if b.form.asked != nil {

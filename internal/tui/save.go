@@ -12,11 +12,21 @@ func (b Board) save() (tea.Model, tea.Cmd) {
 	if form.ForObjective {
 		return b, b.saveGoal(form)
 	}
-	return b, b.saveTask(form)
+	if form.ForSeries {
+		return b, b.carry(b.saving(form, engine.TaskNew, engine.SeriesEdit))
+	}
+	if b.asksWhole(form) {
+		b.asking, b.wholeSave = true, &form
+		return b, nil
+	}
+	return b, b.saveTask(form, false)
 }
 
-func (b Board) saveTask(form Form) tea.Cmd {
+func (b Board) saveTask(form Form, whole bool) tea.Cmd {
 	op, asked := b.saving(form, engine.TaskNew, engine.TaskEdit)
+	if whole {
+		asked.Given["series"] = "true"
+	}
 	return func() tea.Msg {
 		if _, err := b.work.Ask(op, asked); err != nil {
 			return Looked{Err: err}

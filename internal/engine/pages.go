@@ -58,6 +58,12 @@ func (p Pages) WithoutWeekends() Pages {
 	return p
 }
 
+// WithoutRecurrence is the pages shown while no task may come back as a series.
+func (p Pages) WithoutRecurrence() Pages {
+	p.noRecurrence = true
+	return p
+}
+
 // Shows says whether a page is drawn.
 func (p Pages) Shows(page string) bool { return !slices.Contains(p.off, page) }
 

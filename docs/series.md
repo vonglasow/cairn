@@ -176,7 +176,35 @@ its notes, time and trace (`@series-migration-rollback-keeps-the-tasks`). A
 label renamed or deleted follows onto the templates; an objective deleted is
 let go of by them.
 
+## Carried in a file
+
+`task export` writes every series beside the tasks — its rule, the day it
+counts from, the day it was stopped, its template and its trace — and the
+objectives its template serves with the rest; `task import` makes each one a
+new series, numbered after the ones already here, and its acts name the tasks
+at their new numbers, so every occurrence is linked to its series again and the
+one open makes the next when it is done
+(`@exchange-a-series-comes-with-its-occurrences`,
+`@exchange-an-imported-series-goes-on`). A task its series made and that was
+deleted since is not in the file: its act comes back naming no task, and the
+series' history still counts it. A series whose rule, days or template cannot be
+read, or whose template serves an objective the file does not hold, refuses the
+whole file before anything is added (`@exchange-a-series-outside-the-file`,
+`@exchange-a-series-that-cannot-be-read`). Its days may be counted from today,
+`"from": "-3d"`, as a task's are. The file went to version 6: an older cairn
+would have read the tasks and dropped every series without a word.
+
+A series comes in whether recurrence is on or not, and stays dormant while it
+is off, as one already in the store does. `cairn fixtures` holds two, and turns
+recurrence on in the settings of the store it makes.
+
 ## On a board
 
-Not in this slice: the Series tab, the `↻` on a card and the `r` keys are the
-boards' to build, from the mockups in `.cairn/notes/247/`.
+The terminal board has them: the series tab, the `↻` and the rule on a card,
+the `r` keys, the question asked on saving an occurrence, and deleting with
+its three choices — see [tui.md](tui.md#series). What a board reads of a
+series comes from the engine: `Look` reads every series whole, a card carries
+the series it is an occurrence of, and `OccurrenceDay`, `SeriesFields` and
+`RepeatsField` say the day, the form and the field, so the window will read
+the same. The window is still to build, from the mockups in
+`.cairn/notes/247/`.

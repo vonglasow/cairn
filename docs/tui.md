@@ -18,7 +18,8 @@ The whole file in eight lines, for whoever has a change to make and not an
 afternoon to spend:
 
 - **Three tabs**, tasks, objectives as a tree of two-line rows, and the time spent; four columns and a band of three stopped
-  states under the last three, and the backlog full height.
+  states under the last three, and the backlog full height. A fourth, the
+  series, while recurrence is on.
 - **Modes**: normal stands on a column, insert holds a task, edit is the form.
   The bar shows only what works where it is.
 - **The cursor holds a task's number**, never a place on screen — a redraw can
@@ -48,6 +49,7 @@ afternoon to spend:
 - [Searching](#searching)
 - [Help, and the command line](#help-and-the-command-line)
 - [Objectives](#objectives)
+- [Series](#series)
 - [Another workspace, in place of this one](#another-workspace-in-place-of-this-one)
 - [Staying true while the store changes](#staying-true-while-the-store-changes)
 - [What it is built from](#what-it-is-built-from)
@@ -70,6 +72,9 @@ engine says a week shows (`Pages.WeekDays`), as Google Calendar's "Show weekends
 off does for a company's week (`@tui-a-week-without-its-weekend`). The week is
 still read whole: time spent on a Saturday is not lost from a total, its lines
 are only not drawn (see [config.md](config.md#the-weekends-of-a-week)).
+
+**series** — the tasks that come back, a fourth tab after the time, there only
+while `[recurrence] on` is true; see [below](#series).
 
 A page the configuration turns off has no tab, and `⇥` walks the others; the
 board opens on the first left. With all three off the screen is empty and only
@@ -208,8 +213,8 @@ Always six: a border, four lines of content, a border.
 | line | what is on it |
 |---|---|
 | 1 | the number on the left, the marks on the right |
-| 2–3 | the title, cut at a word, `…` if it overruns |
-| 4 | the facts, in this order: deadline, steps, labels, the objectives it serves by name (`◇ Firmware`) — cut when the line is full, with `+n` saying how many were left out |
+| 2–3 | the title, cut at a word, `…` if it overruns; on an occurrence of a series, line 3, when the title leaves it free, holds its rule in faint ink, `every weekday 10:30` |
+| 4 | the facts, in this order: deadline — on an occurrence, its day instead — steps, labels, the objectives it serves by name (`◇ Firmware`) — cut when the line is full, with `+n` saying how many were left out |
 
 The height is a budget, not a maximum. A title longer than two lines is cut.
 
@@ -237,7 +242,7 @@ place of the list. That is the one thing about blocking that has to be acted on,
 and it reached the command line's listing and nowhere else.
 
 The marks on line 1 are right-aligned in a fixed order: `▭` for a card off the
-board first, then the description mark, and the state glyph last. The state anchors the far right so the eye finds it
+board first, then `↻` for an occurrence of a series, then the description mark, and the state glyph last. The state anchors the far right so the eye finds it
 in the same place on every card in the band. Both fit alongside a four-digit
 number in ten characters, which is the real ceiling — numbers only ever go up.
 
@@ -384,6 +389,7 @@ edge out of line.
 | the objective a task serves | `◇` | `◇` | |
 | what is in the way | `nf-oct-blocked` | `↳` | |
 | archived | `nf-oct-archive` | `▭` | |
+| it comes back, an occurrence of a series | `nf-md-repeat` | `↻` | |
 
 `‖` does double duty — `paused` on a task, `on-hold` on an objective. It is the
 same idea in two tabs, so it kept one symbol rather than inventing a second for
@@ -441,6 +447,7 @@ from that mode's bar, and pressing it there does nothing.
 | `[` `]` | ✓ | ✓ | | on an objective's board, or on the tasks an objective shows, narrow to one sub-objective, the objective itself, or all of it |
 | `m` then a letter | | ✓ | | move the task to the column that letter begins — `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused — as the window's `m` does |
 | `p` then a letter | | ✓ | | its priority — `l` low, `n` normal, `h` high, `c` critical |
+| `r` then a letter | | ✓ | | on an occurrence of a series, and in its detail: `s` skip it, `x` stop the series, `r` resume it, `e` open the series in its tab — [below](#series) |
 | `f` | | ✓ | | focus or unfocus — an objective has none |
 | `⏎` | | ✓ | ✓ | the detail · on objectives, open the objective |
 | `/` | ✓ | | ✓ | search |
@@ -683,6 +690,12 @@ have squeezed the board and a popup would never have shown the whole trace.
 
  jk ↓↑ steps   e edit   f focus   ⌫ delete the step   ^D ^U description   ? help   esc back
 ```
+
+An occurrence of a series says so on a line of the band of its own:
+`↻1 every weekday at 10:30, on the calendar · 46 done · 3 skipped · 2 missed ·
+next Tue 10 Nov` — how often, what it counts from, what the series did so
+far, and the day after its own (`@tui-series-the-detail-says-the-rule`). The
+bar then offers the `r` keys.
 
 Under the lists, a `CONTEXT` panel says where what was written about the task
 elsewhere lives — the directory a harness writes its dated notes into, said
@@ -1016,6 +1029,95 @@ an objective is never decided for the person; the engine refuses a deletion
 that leaves something undecided, and the box only asks it the way the command
 line's `--keep`, `--delete` and `--tasks` do. An objective holding nothing is
 asked about at the foot, as a task is.
+
+## Series
+
+```
+ tasks   objectives   time   SERIES                                          NORMAL
+
+ Active                                2 │↻1  Team stand-up                         active
+ ┃ ↻1  Team stand-up                today│every weekday at 10:30, on the calendar, from…
+ ┃     every weekday 10:30 · 46 done · 3…│NEXT  Tue 10 Nov · Wed 11 Nov · Thu 12 Nov
+   ↻2  Retrospective              Thu 12 │
+       every 2 weeks on thu 14:00 · 31 d…│TEMPLATE — what the next one is made from
+ Stopped                               1 │  Team stand-up · normal · work · 3 steps · 15m
+   ↻3  Monthly exp… stopped since 12 Oct │SO FAR
+       every 4 weeks on mon · 10 done ·… │  46 done · 3 skipped · 2 missed · 11h20m
+                                         │ON THE BOARD NOW  #312
+                                         │
+                                         │OCCURRENCES · 52  archived ones included
+                                         │› Tue 10 Nov  #312   todo
+                                         │  Fri 6 Nov   #309   done              16m
+                                         │  Thu 5 Nov   #305   skipped · archived
+                                         │  Wed 4 Nov    —     missed
+
+ jk ↓↑ series   ⏎ occurrences   e edit   s skip   x stop   ⌫ delete   n new series
+```
+
+A series is a notion of its own ([series.md](series.md)), and while
+`[recurrence] on` is true it has a tab of its own, the fourth, after the time
+— `⇥` already reached the three others in that order, and a tab put between
+them would have changed where every `⇥` lands. **The list is on the left, the
+series chosen on the right**, as the objectives' tab and the window lay it
+out (`@tui-series-the-tab-lists-them`): the active ones, then the stopped
+ones, each in two rows — its number `↻1`, its title and its next day, or the
+day it was stopped; then its rule and what it did so far. On the right, its
+rule in words, its next days, the template the next occurrence is made from,
+what it did so far, the task open now, and every occurrence it made or missed,
+archived ones included.
+
+`jk` walk the series; `⏎` goes into its occurrences, `jk` walk them, and `⏎`
+opens the task of one in its detail — an archived one too, which no board
+shows otherwise (`@tui-series-the-tab-reaches-an-archived-occurrence`). `esc`
+comes back out. `s` skips the occurrence open, `x` stops the series and `r`
+resumes it (`@tui-series-the-tab-skips-stops-and-resumes`); `e` opens its form
+— title, priority, labels, estimate, objectives, steps, its rule as `repeats`
+and the day it counts from — and saving changes what the next ones are made
+from, never one already made (`@tui-series-the-form-changes-the-series`). `n`
+opens a task's form in todo with its `repeats` field to fill in, and saving it
+makes the task the first occurrence of a new series
+(`@tui-series-n-makes-a-new-one`). `/` narrows the list by its title, its rule
+or its number, as `series list --search` does.
+
+**Deleting asks what becomes of its tasks, as the command line does.** `⌫` or
+`D` opens a box over the tab with the three choices of `series delete`, the
+first chosen: keep every task as an ordinary task, delete the one open and keep
+the rest, or delete them all (`@tui-series-deleting-keeps-the-tasks-unless-told`,
+`@tui-series-deleting-the-open-one`). Deleting them all asks once more, naming
+how many (`@tui-series-deleting-every-task-asks-once-more`). Stopping a series,
+or turning recurrence off, never takes a task away.
+
+**On the tasks board, `r` is a prefix**, as `m` and `p` are: on an occurrence,
+in insert or in its detail, `r s` skips it, `r x` stops its series, `r r`
+resumes it, and `r e` opens the series in its tab (`@tui-series-r-s-skips`,
+`@tui-series-r-x-stops-and-r-r-resumes`, `@tui-series-r-e-opens-its-series`).
+The bar offers them only while the card under the cursor is an occurrence
+(`@tui-series-r-is-offered-only-on-a-recurring-card`). `r` was free on both
+boards.
+
+**A card that comes back is told at a glance** (marker A of the study):
+`↻` among its marks and its rule on the line its title leaves free
+(`@tui-series-a-card-carries-the-loop-and-the-rule`), and on its facts line the
+day it was made for — the time on its day, in the yellow of what is stalled
+once it has passed; its weekday and date within a week; counted down in red once
+passed; nothing further off, as the study's answers chose. The engine says
+which, `engine.OccurrenceDay`, so the window says the same.
+
+**A task becomes a series in its form.** A task that is no occurrence carries
+a `repeats` field: a rule typed there makes it the first occurrence of a new
+series (`@tui-series-a-task-given-a-rule-becomes-the-first`). An occurrence has
+no such field, its series' rule is changed in the series' form. **Saving a
+change to an occurrence's title, priority, labels, estimate, steps or
+objectives asks once** — `change the series too?` — `⏎` for this one only, the
+default, and `s` for the whole series, the ones to come
+(`@tui-series-saving-an-occurrence-asks-this-one-or-all`,
+`@tui-series-saving-this-one-only-leaves-the-series`). A change of column, time
+or deadline asks nothing: they are this one's alone.
+
+**With recurrence off there is none of it**: no tab, no `↻`, no rule line, no
+`repeats` field and no `r` key; the cards are ordinary tasks
+(`@tui-series-off-shows-nothing`). The series tab is held to the window as
+every screen is, on the fixtures (`@tui-series-the-fixtures-fit`).
 
 ## Another workspace, in place of this one
 

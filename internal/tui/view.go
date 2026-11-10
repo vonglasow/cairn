@@ -3,6 +3,7 @@ package tui
 import (
 	"cairn/internal/engine"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -40,6 +41,9 @@ func (b Board) Draw() string {
 	if b.deleting != nil {
 		return b.drawDeleting()
 	}
+	if b.seriesGoing != nil {
+		return b.drawSeriesGoing()
+	}
 	return b.drawBoard()
 }
 
@@ -58,6 +62,8 @@ func (b Board) drawBoard() string {
 		out = append(out, b.objectivesList(l)...)
 	case Time:
 		out = append(out, b.timeWeek(l)...)
+	case Series:
+		out = append(out, b.seriesTab()...)
 	default:
 		out = append(out, b.tasksBoard(l)...)
 	}
@@ -65,7 +71,7 @@ func (b Board) drawBoard() string {
 }
 
 func (b Board) tabs() string {
-	names := map[Tab]string{Tasks: "tasks", Objectives: "objectives", Time: "time"}
+	names := map[Tab]string{Tasks: "tasks", Objectives: "objectives", Series: "series", Time: "time"}
 	left := " " + b.placeMark()
 	for _, tab := range b.shown() {
 		name := b.skin.TabOff.Render(names[tab])
@@ -331,6 +337,9 @@ func (b Board) foot() string {
 	if b.deleting != nil {
 		return b.deletingFoot()
 	}
+	if b.seriesGoing != nil {
+		return b.seriesGoingFoot()
+	}
 	if b.screen == OnWorkspaces {
 		return b.switcherBar()
 	}
@@ -358,6 +367,9 @@ func (b Board) offer(key, does string) string {
 }
 
 func (b Board) offers() []string {
+	if b.tab == Series {
+		return b.seriesTabOffers()
+	}
 	if b.tab == Objectives {
 		return []string{
 			b.offer("jk ↓↑", "objectives"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
@@ -366,11 +378,10 @@ func (b Board) offers() []string {
 		}
 	}
 	if b.mode == Insert {
-		return []string{
+		return slices.Concat([]string{
 			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move"), b.offer("⏎", "open"),
 			b.offer("e", "edit"), b.offer("f", "focus"), b.offer("D", "delete"),
-			b.offer("x", "archive"), b.offer("?", "help"), b.offer("esc", "back"), b.roaming(), b.offer("o", "linked"),
-		}
+			b.offer("x", "archive")}, b.seriesOffers(), []string{b.offer("?", "help"), b.offer("esc", "back"), b.roaming(), b.offer("o", "linked")})
 	}
 	out := []string{
 		b.offer("hjkl ←↓↑→", "columns"), b.offer("i", "insert"),
@@ -406,6 +417,10 @@ func (b Board) promptLine() string {
 }
 
 func (b Board) question() string {
+	if b.wholeSave != nil {
+		return " " + b.skin.Title.Render("change the series too?") + "  " +
+			b.bar(b.offer("⏎", "this one only"), b.offer("s", "the whole series, for the ones to come"), b.offer("esc", "back to the form"))
+	}
 	if b.leaving {
 		return " " + b.skin.Title.Render("throw away what you typed?") + "  " +
 			b.bar(b.offer("⏎", "throw it away"), b.offer("esc", "back to the form"))

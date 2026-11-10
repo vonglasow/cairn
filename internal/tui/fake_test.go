@@ -70,7 +70,7 @@ type placed struct {
 func (f *fake) Version() (int64, error) { return f.version, f.fail }
 
 func standing(f *fake) Board {
-	b := New(f, GlyphsFor(Unicode), func() time.Time { return today }, 100, 40)
+	b := New(f, GlyphsFor(Unicode), func() time.Time { return today }, 100, 40).Paged(engine.Pages{}.WithoutRecurrence())
 	cards := make([]engine.Card, 0, len(f.cards))
 	for _, c := range f.cards {
 		c.InFocus = slices.Contains(f.focus, c.Number)

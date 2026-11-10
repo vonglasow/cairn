@@ -17,6 +17,7 @@ type Form struct {
 	Adding       bool
 	Number       int
 	ForObjective bool
+	ForSeries    bool
 
 	asked  *huh.Form
 	held   map[string]*string
@@ -167,7 +168,11 @@ func (b Board) addForm() (Board, tea.Cmd) {
 	if b.inBand {
 		state = engine.Stalled[0]
 	}
-	b.form = asking(engine.NewTaskFields(state), b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
+	fields := engine.NewTaskFields(state)
+	if b.pages.Recurs() {
+		fields = append(fields, engine.RepeatsField())
+	}
+	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
@@ -211,7 +216,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	if !ok {
 		return b, nil
 	}
-	b.form = asking(engine.EditFields(held), b.formWidth(), b.formHeight(), b.skin, b.about(false, held.Number))
+	b.form = asking(b.taskFields(held), b.formWidth(), b.formHeight(), b.skin, b.about(false, held.Number))
 	b.form.Number = held.Number
 	b.screen = OnForm
 	return b.started()
@@ -283,6 +288,9 @@ func (b Board) formHead() string {
 	if b.form.Number != 0 {
 		number = b.skin.Faint.Render(strconv.Itoa(b.form.Number))
 	}
+	if b.form.ForSeries {
+		number = b.skin.Faint.Render("↻" + strconv.Itoa(b.form.Number))
+	}
 	title := b.form.valueOf("title")
 	if title == "" {
 		title = b.skin.Faint.Render("untitled")
@@ -294,6 +302,10 @@ func (b Board) formHead() string {
 	if b.form.ForObjective {
 		standing = b.form.valueOf("standing")
 		dressed = b.skin.palette.Standing(standing).Style()
+	}
+	if b.form.ForSeries {
+		standing = b.form.valueOf("repeats")
+		dressed = b.skin.Says
 	}
 	right := dressed.Render(standing) + "  " +
 		b.skin.palette.Priority(priority).Style().Render(priority)
@@ -325,9 +337,13 @@ func (b Board) freshened() Board {
 		return b
 	}
 	focused := b.form.asked.GetFocusedField().GetKey()
-	number, forObjective := b.form.Number, b.form.ForObjective
-	b.form = asking(fresh, b.formWidth(), b.formHeight(), b.skin, b.about(forObjective, number))
-	b.form.Number, b.form.ForObjective = number, forObjective
+	number, forObjective, forSeries := b.form.Number, b.form.ForObjective, b.form.ForSeries
+	about := b.about(forObjective, number)
+	if forSeries {
+		about = nil
+	}
+	b.form = asking(fresh, b.formWidth(), b.formHeight(), b.skin, about)
+	b.form.Number, b.form.ForObjective, b.form.ForSeries = number, forObjective, forSeries
 	b, _ = b.started()
 	for _, field := range b.freshOpened() {
 		b.form.opened[field.Name] = field.Value
@@ -351,6 +367,13 @@ func (b Board) freshOpened() []engine.Field {
 }
 
 func (b Board) freshFields() ([]engine.Field, bool) {
+	if b.form.ForSeries {
+		s, found := b.snap.SeriesOf(b.form.Number)
+		if !found {
+			return nil, false
+		}
+		return engine.SeriesFields(s), true
+	}
 	if b.form.ForObjective {
 		for _, g := range b.goals() {
 			if g.Number == b.form.Number {
@@ -359,10 +382,8 @@ func (b Board) freshFields() ([]engine.Field, bool) {
 		}
 		return nil, false
 	}
-	for _, c := range b.cards() {
-		if c.Number == b.form.Number {
-			return engine.EditFields(c), true
-		}
+	if c, found := b.snap.Card(b.form.Number); found {
+		return b.taskFields(c), true
 	}
 	return nil, false
 }

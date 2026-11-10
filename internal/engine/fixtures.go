@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"cairn/internal/config"
 )
 
 //go:embed fixtures/fixtures.json
@@ -50,6 +52,9 @@ func MakeFixtures(folder, from string, fresh bool) (Fixtures, error) {
 		return Fixtures{}, err
 	}
 	if err := os.WriteFile(filepath.Join(folder, fixturesMark), nil, 0o600); err != nil {
+		return Fixtures{}, err
+	}
+	if err := os.WriteFile(config.SettingsBeside(at.Store), []byte("[recurrence]\non = true\n"), 0o600); err != nil {
 		return Fixtures{}, err
 	}
 	if from == "" {

@@ -24,7 +24,8 @@ calls the same engine, so each one behaves the same way.
   act, with the tasks outside them that touch what they keep named apart.
 - **Series**: a task that comes back — every weekday at 10:30, every other
   Thursday, three days after it was last done — one occurrence at a time,
-  each a task of its own. Off until a store's settings turn it on.
+  each a task of its own, with a tab of its own on the terminal board and
+  carried by an export. Off until a store's settings turn it on.
 - **Time from focus**: the task in focus counts its time. `timesheet` reads it
   back by day, and you can add time spent away from the board.
 - **Built for agents**: an MCP server and a Claude Code plugin. An agent keeps

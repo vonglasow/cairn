@@ -33,6 +33,9 @@ func marks(c engine.Card, g Glyphs) string {
 	if c.Archived {
 		found = append(found, g.Archived)
 	}
+	if c.Series != nil {
+		found = append(found, g.Repeats)
+	}
 	if c.Described() {
 		found = append(found, g.Described)
 	}
@@ -50,7 +53,17 @@ func facts(c engine.Card, g Glyphs, s Skin, now time.Time, width int) string {
 		return s.Faint.Render(Clip(inTheWay(c, g), width))
 	}
 	var told, dressed []string
-	if text, show, late := engine.CardDeadline(c, now); show {
+	if text, show, late, passed := engine.OccurrenceDay(c, now); show {
+		told = append(told, text)
+		switch {
+		case late:
+			dressed = append(dressed, s.Late.Render(text))
+		case passed:
+			dressed = append(dressed, s.Band.Render(text))
+		default:
+			dressed = append(dressed, s.Bright.Render(text))
+		}
+	} else if text, show, late := engine.CardDeadline(c, now); show && c.Series == nil {
 		told = append(told, text)
 		if late {
 			dressed = append(dressed, s.Late.Render(text))
@@ -127,7 +140,11 @@ func Rows(c engine.Card, g Glyphs, s Skin, now time.Time, width int) []string {
 			s.palette.Stopped(c.State).Style().Render(glyph), 1)
 	}
 	rows = append(rows, Spread(number, mark, width))
-	for _, line := range Wrap(c.Title, width, titleLines) {
+	for i, line := range Wrap(c.Title, width, titleLines) {
+		if i == titleLines-1 && line == "" && c.Series != nil {
+			rows = append(rows, s.Faint.Render(Clip(c.Series.Rule, width)))
+			continue
+		}
 		rows = append(rows, s.Bright.Render(line))
 	}
 	return append(rows, facts(c, g, s, now, width))

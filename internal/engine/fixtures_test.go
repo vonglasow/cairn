@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -24,6 +25,9 @@ func TestMakeFixtures_fillsAFolderItMakesAndKeepsItAfter(t *testing.T) {
 	}
 	if made.Store != filepath.Join(folder, "cairn.db") || made.Notes != filepath.Join(folder, "notes") || !made.Made {
 		t.Errorf("made %+v", made)
+	}
+	if settings, err := os.ReadFile(filepath.Join(folder, "settings.toml")); err != nil || !strings.Contains(string(settings), "[recurrence]\non = true") {
+		t.Errorf("the settings of the fixtures read %q (%v), want recurrence on", settings, err)
 	}
 	first := countTasks(t, made.Store)
 	if first < 10 {

@@ -37,6 +37,7 @@ type world struct {
 	opened bool
 	left   bool
 	spaces *test.Spaces
+	recurs bool
 }
 
 func newWorld(t *testing.T) *world {
@@ -67,10 +68,18 @@ func (w *world) reset() {
 	w.left = false
 	*w.spaces = test.Spaces{Made: w.t.TempDir, Writing: w.storeAt, Now: func() time.Time { return stood }}
 	w.pages = engine.Pages{}
+	w.recurs = false
+}
+
+func (w *world) shownPages() engine.Pages {
+	if w.recurs {
+		return w.pages
+	}
+	return w.pages.WithoutRecurrence()
 }
 
 func (w *world) open() {
-	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high).Paged(w.pages)
+	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high).Paged(w.shownPages())
 	w.opened = true
 	w.refresh()
 	if w.spaces.Dir != "" {
@@ -171,6 +180,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.registerWorkspaces(sc)
 	w.registerColours(sc)
 	w.registerTree(sc)
+	w.registerSeries(sc)
 	sc.Given(`^a window of (\d+) by (\d+)$`, w.aWindow)
 
 	sc.When(`^I open the board$`, func() error {
@@ -901,6 +911,15 @@ func (w *world) everyScreen(look func(name string)) {
 		{"?", "the help"}, {"?", "the board again"},
 		{"tab", "the objectives"}, {"enter", "an objective's detail"}, {"esc", "the objectives again"},
 		{"tab", "the time"},
+	} {
+		w.press(step.key)
+		look(step.name)
+	}
+	if !w.recurs {
+		return
+	}
+	for _, step := range []struct{ key, name string }{
+		{"tab", "the series"}, {"enter", "a series' occurrences"}, {"esc", "the series again"}, {"e", "a series' form"}, {"esc", "the series again"},
 	} {
 		w.press(step.key)
 		look(step.name)

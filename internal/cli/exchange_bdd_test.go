@@ -47,6 +47,14 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		mine := w.StorePath
 		other := filepath.Join(w.T.TempDir(), "other", "cairn.db")
 		w.file = filepath.Join(w.T.TempDir(), "other", "tasks.json")
+		if settings, err := os.ReadFile(config.SettingsBeside(mine)); err == nil {
+			if err := os.MkdirAll(filepath.Dir(other), 0o700); err != nil {
+				return err
+			}
+			if err := os.WriteFile(config.SettingsBeside(other), settings, 0o600); err != nil {
+				return err
+			}
+		}
 		w.Setenv(config.StoreVariable, other)
 		defer w.Setenv(config.StoreVariable, mine)
 		for _, line := range strings.Split(strings.TrimSpace(run.Content), "\n") {

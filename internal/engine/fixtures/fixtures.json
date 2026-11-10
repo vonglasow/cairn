@@ -1,6 +1,6 @@
 {
   "cairn": "tasks",
-  "version": 5,
+  "version": 6,
   "objectives": [
     {
       "number": 1,
@@ -782,6 +782,136 @@
       "priority": "low",
       "objectives": [
         8
+      ]
+    },
+    {
+      "number": 63,
+      "title": "Team stand-up",
+      "state": "done",
+      "priority": "normal",
+      "deadline": "-3d",
+      "estimate": "15m",
+      "labels": [
+        "team"
+      ],
+      "spent": {
+        "-3d": "14m"
+      },
+      "steps": [
+        {
+          "title": "Yesterday",
+          "done": true
+        },
+        {
+          "title": "Today",
+          "done": true
+        },
+        {
+          "title": "Blockers",
+          "done": true
+        }
+      ],
+      "archived": true
+    },
+    {
+      "number": 64,
+      "title": "Team stand-up",
+      "state": "todo",
+      "priority": "normal",
+      "deadline": "+0d",
+      "estimate": "15m",
+      "labels": [
+        "team"
+      ],
+      "steps": [
+        {
+          "title": "Yesterday",
+          "done": false
+        },
+        {
+          "title": "Today",
+          "done": false
+        },
+        {
+          "title": "Blockers",
+          "done": false
+        }
+      ]
+    },
+    {
+      "number": 65,
+      "title": "Monthly expense report",
+      "state": "done",
+      "priority": "normal",
+      "deadline": "-35d",
+      "archived": true,
+      "spent": {
+        "-35d": "35m"
+      }
+    }
+  ],
+  "series": [
+    {
+      "number": 1,
+      "rule": "every day 10:30",
+      "from": "-3d",
+      "template": {
+        "title": "Team stand-up",
+        "priority": "normal",
+        "labels": [
+          "team"
+        ],
+        "steps": [
+          "Yesterday",
+          "Today",
+          "Blockers"
+        ],
+        "estimate": "15m",
+        "objectives": []
+      },
+      "acts": [
+        {
+          "did": "made",
+          "task": 63,
+          "day": "-3d"
+        },
+        {
+          "did": "missed",
+          "day": "-2d"
+        },
+        {
+          "did": "missed",
+          "day": "-1d"
+        },
+        {
+          "did": "made",
+          "task": 64,
+          "day": "+0d"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "rule": "every 4 weeks on mon",
+      "from": "-70d",
+      "stopped": "-20d",
+      "template": {
+        "title": "Monthly expense report",
+        "priority": "normal",
+        "labels": [],
+        "steps": [],
+        "estimate": "",
+        "objectives": []
+      },
+      "acts": [
+        {
+          "did": "made",
+          "task": 65,
+          "day": "-35d"
+        },
+        {
+          "did": "stopped"
+        }
       ]
     }
   ]

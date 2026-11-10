@@ -28,7 +28,9 @@ estimates overrun and kept, time over several weeks, blockers by a task and by
 a reason and one freed, links, two tasks in focus, archived ones, labels for
 objectives only, and objectives in every standing, late, served by nothing,
 and in a tree — Home automation › Enclosure, Firmware and Features, Features
-waiting on Firmware.
+waiting on Firmware — and two series, a stand-up with its occurrence open and
+two days missed, and a report stopped. Its store's settings turn recurrence on,
+so both boards draw them (`@fixtures-series`).
 `TestFixtures_holdEveryCaseABoardDraws` fails when a case goes missing; a case
 added to a board is added there.
 
