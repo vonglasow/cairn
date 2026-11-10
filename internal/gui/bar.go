@@ -28,6 +28,8 @@ func HeadsOn(w Window, screen Screen) string {
 		return "Filters"
 	case OnLabels:
 		return "Labels"
+	case OnViews:
+		return ViewsSays
 	case OnConfiguration:
 		if name := w.switcher.place.Workspace; name != "" {
 			return "Settings of " + name
@@ -138,6 +140,12 @@ func Shortcut(offer string) string {
 		return "backspace"
 	case "rename":
 		return "r"
+	case "open":
+		return "e"
+	case strings.ToLower(KeepTheViewSays), strings.ToLower(SaveToViewSays):
+		return "enter"
+	case strings.ToLower(KeepAsNewSays):
+		return "v"
 	case "new label":
 		return "n"
 	case "colour":
@@ -206,7 +214,7 @@ type Said struct {
 // PanelClose is the cross at the top right of the panel open, which does what its esc does, and whether the panel open has one: a question is answered, not closed, and a list or a calendar has no heading to carry it.
 func (w Window) PanelClose() (Box, bool) {
 	switch w.screen {
-	case OnForm, OnHelp, OnBackups, OnLabels, OnFiltering, OnConfiguration:
+	case OnForm, OnHelp, OnBackups, OnLabels, OnFiltering, OnConfiguration, OnViews:
 		return FormClose(w.panel()), true
 	}
 	return Box{}, false
@@ -292,6 +300,22 @@ func (w Window) Offers() []string {
 		return []string{"New label", "Close"}
 	case OnMenu, OnWorkspaces:
 		return nil
+	case OnKeeping:
+		if !w.ofView {
+			return []string{KeepTheViewSays, "Cancel"}
+		}
+		if w.ViewChanged() {
+			return []string{SaveToViewSays, KeepAsNewSays, "Close"}
+		}
+		return []string{"Close"}
+	case OnViews:
+		if w.renamingView {
+			return []string{"Save", "Cancel"}
+		}
+		if len(w.snap.Views) == 0 {
+			return []string{"Close"}
+		}
+		return []string{"Open", "Rename", "Delete", "Close"}
 	case OnForm:
 		offers := []string{"Save", "Cancel"}
 		if w.recoverable() {
@@ -476,6 +500,9 @@ func (w Window) shortcut(offer string) string {
 		return "enter"
 	}
 	if w.screen == OnLabels && (w.renaming && offer == "Save" || offer == "Create") {
+		return "enter"
+	}
+	if w.screen == OnViews && w.renamingView && offer == "Save" {
 		return "enter"
 	}
 	if w.screen == OnFates && strings.HasPrefix(offer, "Delete") {

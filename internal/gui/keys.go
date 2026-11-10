@@ -60,6 +60,8 @@ var screens = map[Screen]func(Window, string) Window{
 	OnConfiguration: Window.onConfiguration,
 	OnWorkspaces:    Window.onWorkspaces,
 	OnFates:         Window.onFates,
+	OnKeeping:       Window.onKeeping,
+	OnViews:         Window.onViews,
 }
 
 func (w Window) onBoard(name string) Window {
@@ -100,6 +102,9 @@ func (w Window) onBoard(name string) Window {
 	}
 	if figure, ok := strings.CutPrefix(name, "cmd+shift+"); ok && aFigure(figure) {
 		return w.choosingByPlace(name)
+	}
+	if opened, ok := w.openingByFigure(name); ok {
+		return opened
 	}
 	switch name {
 	case "g":

@@ -59,7 +59,7 @@ type Placed struct {
 	Slot      Box
 	Within    Box
 	Reference bool
-	Blocks    []int
+	Says      string
 }
 
 // Placed is every card the board draws, the columns' then the lanes', in the order they arrive.

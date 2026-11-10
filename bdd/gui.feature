@@ -5681,3 +5681,135 @@ Feature: The desktop board
       And I click the card "OTA updates"
       And I press "f"
       Then the window tells "#2 Features waits on #1 Firmware, not reached"
+
+  Rule: A view keeps the board's filters under a name, and opens them again in one act
+
+    Background:
+      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
+      And I added a task titled "Review the plan" in "todo" at the priority "normal" carrying the label "backend"
+      And I added a task titled "Ship it" in "current" at the priority "high" carrying the label "sprint"
+
+    @gui-view-kept-from-the-filters
+    Scenario: the filters in force are kept as a view from the foot of the filter menu, and fold into its pill
+      When I open the window
+      And I set the filter "label" to "backend"
+      And I press "v"
+      Then the name proposed for the view is "backend"
+      When I press "cmd+a"
+      And I type "Backend work"
+      And I press "enter"
+      Then the view "Backend work" holds the label "backend"
+      And the pills after the tabs read "view Backend work, + Filter"
+      And the tab "Tasks" counts "2/3"
+
+    @gui-view-kept-from-the-command-bar
+    Scenario: the command bar keeps the filters in force as a view named there
+      When I open the window
+      And I set the filter "priority" to "high"
+      And I press "esc"
+      And I press "cmd+k"
+      And I type "view new Urgent"
+      And I press "enter"
+      Then the view "Urgent" holds the priority "high"
+      And the pills after the tabs read "view Urgent, + Filter"
+
+    @gui-view-opened-by-its-key
+    Scenario: ⌘ and a view's place opens it, and ⌘0 goes back to the whole board
+      Given I kept the view "Sprint" holding the label "sprint"
+      When I open the window
+      And I press "cmd+1"
+      Then "current" carries "Ship it"
+      And "todo" does not carry "Write the spec"
+      And the tab "Tasks" counts "1/3"
+      When I press "cmd+0"
+      Then "todo" carries "Write the spec"
+      And the pills after the tabs read "+ Filter"
+
+    @gui-view-listed-at-the-head-of-the-filters
+    Scenario: the filter menu lists the views at its head, each with how many tasks it keeps and its key
+      Given I kept the view "Sprint" holding the label "sprint"
+      And I kept the view "High" holding the priority "high"
+      When I open the window
+      And I press "shift+f"
+      Then the filter menu lists the views "Sprint 1 ⌘1", "High 2 ⌘2"
+      When I click the view "High"
+      Then "todo" carries "Write the spec"
+      And "todo" does not carry "Review the plan"
+
+    @gui-view-a-filter-on-top-marks-it-changed
+    Scenario: a filter added on top of a view marks its pill changed, and is saved into it when asked
+      Given I kept the view "High" holding the priority "high"
+      When I open the window
+      And I press "cmd+1"
+      And I set the filter "label" to "backend"
+      And I press "esc"
+      Then the pill of the view is marked changed
+      And "current" does not carry "Ship it"
+      When I click the pill "view High"
+      And I choose "Save to the view"
+      Then the view "High" holds the label "backend"
+      And the pill of the view is not marked changed
+
+    @gui-view-left-drops-the-change
+    Scenario: leaving a view changed on top drops the change, and the view opens again as it was kept
+      Given I kept the view "High" holding the priority "high"
+      When I open the window
+      And I press "cmd+1"
+      And I set the filter "label" to "backend"
+      And I press "esc"
+      And I press "cmd+0"
+      And I press "cmd+1"
+      Then "current" carries "Ship it"
+      And the pill of the view is not marked changed
+      And the view "High" holds no label
+
+    @gui-view-outside-is-a-reference
+    Scenario: a task outside the view touching one inside is drawn once as a reference, every why joined, and never counted
+      Given I kept the view "Sprint" holding the label "sprint"
+      And I edited task 3 with the blocker "1"
+      And I edited task 2 with the blocker "3"
+      And I linked task 2 to task 3
+      When I open the window
+      And I press "cmd+1"
+      Then "Write the spec" is drawn as a reference saying "outside this view · blocks #3"
+      And "Review the plan" is drawn as a reference saying "outside this view · waits on #3 · linked to #3"
+      And the head of "TODO" counts 0
+
+    @gui-view-the-panel-renames-moves-and-deletes
+    Scenario: the views panel renames a view, moves it to another place, and deletes it
+      Given I kept the view "Sprint" holding the label "sprint"
+      And I kept the view "High" holding the priority "high"
+      When I open the window
+      And I pick "Views…" in the menu bar
+      Then the views panel lists "Sprint", "High"
+      When I press "shift+down"
+      Then the views read "High", "Sprint"
+      When I press "r"
+      And I press "cmd+a"
+      And I type "Now"
+      And I press "enter"
+      Then the views read "High", "Now"
+      When I press "cmd+backspace"
+      Then the views read "High"
+
+    @gui-view-gone-is-said
+    Scenario: a view whose label is gone says so in the panel, and still opens
+      Given I kept the view "Sprint" holding the label "sprint"
+      And I kept the view "High" holding the priority "high"
+      And I edited task 1 with the labels "sprint" and "backend"
+      And I deleted the label "sprint"
+      When I open the window
+      And I pick "Views…" in the menu bar
+      Then the views panel warns "label sprint is gone and narrows nothing"
+
+    @gui-view-shown-tasks-kept-under-the-objective
+    Scenario: an objective's tasks shown are kept as a view proposed under the objective's name
+      Given I added an objective titled "Home automation"
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I press "t"
+      And I press "shift+f"
+      And I press "v"
+      Then the name proposed for the view is "Home automation"

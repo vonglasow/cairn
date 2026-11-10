@@ -435,6 +435,7 @@ from that mode's bar, and pressing it there does nothing.
 | `e` | | ✓ | ✓ | the form |
 | `D` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out. It was `d`, one slip from losing a task; the window deletes with `⌘⌫`, which a terminal is not sent, so here it is the shifted letter. An objective holding sub-objectives or tasks asks what goes with it — [below](#deleting-an-objective) |
 | `t` | | | ✓ | its tasks, on the tasks board |
+| `v` | ✓ | | | the views — a figure opens one, `0` the whole board, `esc` closes them |
 | `[` `]` | ✓ | ✓ | | on an objective's board, narrow to one sub-objective, the objective itself, or all of it |
 | `m` then a letter | | ✓ | | move the task to the column that letter begins — `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused — as the window's `m` does |
 | `p` then a letter | | ✓ | | its priority — `l` low, `n` normal, `h` high, `c` critical |
@@ -740,6 +741,37 @@ priority high · label backend` (`@tui-the-board-says-what-filters-it`). A searc
 narrows what they kept. What a filter keeps is what `task list` keeps with the
 same flag: the engine's `Filters` judges a card by the narrowing the listing is
 read with, so the two cannot disagree.
+
+**`v` turns the foot into the views** (#226,
+[listing.md](listing.md#a-view-keeps-the-filters-under-a-name)), the way `⇧F`
+turns it into the filters: each view after the figure of its place, with how
+many tasks it keeps, then `0` for the whole board and `esc` (`VIEWS`,
+`@tui-view-v-lists-the-views`). A figure opens the view in that place, `0`
+leaves it, and `esc` closes the list and leaves what is in force
+(`@tui-view-a-figure-opens-it`, `@tui-view-0-goes-back-to-the-whole-board`).
+Bare figures on the board would be typed too easily, so they work inside the
+list only, as the workspaces' do; `v` was free in every mode, and works in
+normal on the tasks board. Opening a view clears the filters and the search,
+so a view always opens on the board it was kept with.
+
+The line above the foot names it — `view Sprint · 1 of 3 tasks` — and marks it
+`*` when a filter or a search stands on top of it, followed by what filters it
+(`@tui-view-save-puts-the-change-in`). Keeping is a command: `:view new
+Urgent` keeps the filters and the search in force, and `:view new` alone
+proposes a name from them, an objective by its title, so `t` then `:view new`
+keeps an objective's tasks under its name (`@tui-view-new-keeps-the-filters`,
+`@tui-view-new-proposes-the-objective`). `:view save` puts what stands on top
+into the view in force, and `:view` and a name opens one, whatever its case
+(`@tui-view-opened-by-its-name`). `:view list`, `show`, `edit` and `delete`
+are the command line's, through the command line as every other command.
+
+**What lies outside a view is a reference**: a task outside it that blocks,
+waits on or is linked to one inside it is drawn once, at the foot of its
+column, in `┄` and `┆`, its last line saying why in the late colour —
+`blocks 3 · linked to 3` — and never counted
+(`@tui-view-outside-is-a-reference`). The why takes the line the facts had,
+on an objective's board too; it is words, not the mockup's `⊘ ↔ ⧗`, so no
+glyph had to be checked for its width.
 
 A flat list of results was turned down for losing the column each match is in,
 which is most of what a board is for. Highlighting without hiding was turned down

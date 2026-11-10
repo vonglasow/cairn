@@ -339,6 +339,7 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Step(`^I made the label "([^"]*)" for (tasks|objectives)$`, g.IMadeTheLabelFor)
 	sc.Step(`^objective (\d+) is reached$`, g.ObjectiveIsReached)
 	g.registerTree(sc)
+	g.registerViews(sc)
 	sc.Step(`^I archived task (\d+)$`, g.IArchivedTask)
 	sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, g.IEditedTaskWithTheBlocker)
 	sc.Step(`^I edited task (\d+) with the state "([^"]*)"$`, g.IEditedTaskWithTheState)

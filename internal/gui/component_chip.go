@@ -136,8 +136,8 @@ func sayOnChip(k Kit, ink color.NRGBA, chip Box, key string) {
 
 // Dot is a colour standing beside its name, or a ring where there is no colour to show.
 type Dot struct {
-	Colour string
-	Ring   bool
+	Colour     string
+	Ring, Late bool
 }
 
 // Draw draws the dot in at.
@@ -147,7 +147,11 @@ func (d Dot) Draw(k Kit, at Box) Box {
 		paint.FillShape(k.gtx.Ops, k.skin.Colour.Ink.Faint, clip.Stroke{Path: clip.UniformRRect(rect(at), k.skin.Radius.Full(at)).Path(k.gtx.Ops), Width: k.skin.Size.Stroke}.Op())
 		return at
 	}
-	rounded(k.gtx, at, k.skin.Radius.Full(at), k.skin.Colour.Labels[d.Colour])
+	ink := k.skin.Colour.Labels[d.Colour]
+	if d.Late {
+		ink = k.skin.Colour.State.Late
+	}
+	rounded(k.gtx, at, k.skin.Radius.Full(at), ink)
 	return at
 }
 

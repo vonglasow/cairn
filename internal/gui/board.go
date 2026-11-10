@@ -9,10 +9,10 @@ import (
 
 // Showing is the work narrowed to what the filters keep and a search reaches, which is what everything draws from.
 func (w Window) Showing() engine.Snapshot {
-	if w.looking.Empty() && !w.filters.Narrows() {
+	if w.looking.Empty() && !w.filters.Narrows() && w.viewing == "" {
 		return w.snap
 	}
-	cards := w.snap.Cards
+	cards := w.snap.Viewed(w.viewing, w.snap.Cards)
 	if kept, err := w.filters.Kept(cards); err == nil {
 		cards = kept
 	}

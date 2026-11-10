@@ -151,13 +151,13 @@ func (s Stone) Draw(k Kit, _ Box) Box {
 
 var grainOp = sync.OnceValue(func() paint.ImageOp { return paint.NewImageOp(StoneGrain()) })
 
-// Draw draws the pill in at by its kind: a search or a filter in force with the cross taking it off, the filters folded into one, the act clearing them, the one adding one.
+// Draw draws the pill in at by its kind: a search, a filter or a view in force with the cross taking it off — a view changed on top marked by a late dot — the filters folded into one, the act clearing them, the one adding one.
 func (p FilterPill) Draw(k Kit, at Box) Box {
 	k.put("filter", at)
 	in := k.inside("filter")
 	line := Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}
 	switch p.Kind {
-	case PillSearch, PillFilter:
+	case PillSearch, PillFilter, PillView:
 		p.inForce(k, in, at)
 	case PillAdd:
 		Dashed{Radius: k.skin.Radius.Full(at)}.Draw(in, at)
@@ -184,6 +184,10 @@ func (p FilterPill) inForce(k, in Kit, at Box) {
 	}
 	sayIn(k.gtx, k.th, name, line, p.Name, small, font.Font{}, text.Start)
 	said := ends(k.measured(), p.Name, small) + nameGap
+	if p.Changed {
+		line.W -= dotSide + between
+		Dot{Late: true}.Draw(in, Box{X: line.X + line.W + between, Y: at.Y + (at.H-dotSide)/2, W: dotSide, H: dotSide})
+	}
 	sayIn(k.gtx, k.th, value, Box{X: line.X + said, Y: line.Y, W: line.W - said, H: line.H}, strings.TrimPrefix(p.Said, p.Name+" "), small, font.Font{Weight: font.Medium}, text.Start)
 	Cross{Ink: name}.Draw(in, Box{X: at.X + at.W - pillCross, Y: at.Y + (at.H-pillCross)/2, W: pillCross - 4, H: pillCross})
 }

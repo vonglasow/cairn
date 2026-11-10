@@ -19,24 +19,26 @@ const menuButtonWide = 40
 var menuBar = []MenuGroup{
 	{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Configuration…"}},
 	{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter", "Reset sizes"}},
+	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter", KeepAsViewSays, ViewsSays + "…", "Reset sizes"}},
 	{Name: "Help", Items: []string{"Help", "About cairn"}},
 }
 
 var actsOf = map[string][]engine.Operation{
-	"New":        {engine.TaskNew, engine.ObjectiveNew},
-	"New backup": {engine.BackupNew},
-	"Backups":    {engine.BackupList},
-	"Labels":     {engine.LabelList},
-	"Export":     {engine.TaskExport},
-	"Import":     {engine.TaskImport},
-	"Edit":       {engine.TaskEdit, engine.ObjectiveEdit},
-	"Focus":      {engine.TaskFocus},
-	"Archive":    {engine.TaskArchive},
-	"Delete":     {engine.TaskDelete, engine.ObjectiveDelete},
-	"Search":     {engine.TaskSearch, engine.ObjectiveSearch},
-	"Archived":   {engine.TaskList},
-	"Filter":     {engine.TaskList},
+	"New":           {engine.TaskNew, engine.ObjectiveNew},
+	"New backup":    {engine.BackupNew},
+	"Backups":       {engine.BackupList},
+	"Labels":        {engine.LabelList},
+	"Export":        {engine.TaskExport},
+	"Import":        {engine.TaskImport},
+	"Edit":          {engine.TaskEdit, engine.ObjectiveEdit},
+	"Focus":         {engine.TaskFocus},
+	"Archive":       {engine.TaskArchive},
+	"Delete":        {engine.TaskDelete, engine.ObjectiveDelete},
+	"Search":        {engine.TaskSearch, engine.ObjectiveSearch},
+	"Archived":      {engine.TaskList},
+	"Filter":        {engine.TaskList},
+	KeepAsViewSays:  {engine.ViewNew},
+	ViewsSays + "…": {engine.ViewList},
 }
 
 var pageOfLine = map[string]string{"Tasks": engine.PageTasks, "Objectives": engine.PageObjectives, "Time": engine.PageTime}
@@ -109,6 +111,10 @@ func (w Window) Doable(line string) bool {
 		return chosenTask || onTasks && len(w.Taken()) > 0
 	case "Archived", "Reset sizes":
 		return onTasks
+	case KeepAsViewSays:
+		return onTasks && w.keepable()
+	case ViewsSays + "…":
+		return len(w.snap.Views) > 0
 	}
 	return true
 }

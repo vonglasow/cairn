@@ -349,14 +349,14 @@ label is looked up in — then `Space`, `Radius`, `Size`, `Type` and the
 | `Card`, `Stripe` | a task's card in each of its states — a reference saying why it is there (`Why`) among them — a sub-objective's in tile layout (`GoalTile`), and a priority's edge |
 | `ListItem`, `Connector` | an objective of the list beside a detail, two lines, moved right and joined to its parent below level one; the line that joins, also in a list's row (`Row.Connector`) |
 | `Facts`, `Figures`, `Banner` | names and their values; a row of numbers at the figures' size; a short message boxed in a panel, refused or warned |
-| `LabelChip`, `Pill`, `KeyChip`, `Dot` | a label, a word on a rounded ground, a key on its chip, a colour beside its name |
+| `LabelChip`, `Pill`, `KeyChip`, `Dot` | a label, a word on a rounded ground, a key on its chip, a colour beside its name, or the late ink's |
 | `Button`, `Tabs`, `Segmented` | a word to click, the window's tabs, one choice among a few |
 | `Row`, `Tile`, `Head` | a line of a list, a line inside a field, the line naming what follows |
 | `Field`, `Check`, `Swatch` | what is typed into, the box before a value, a colour to pick |
 | `Progress`, `Spent`, `Scrollbar` | how much is done, how long a day took, which lines are in sight |
 | `Ring`, `TodayMark`, `DayCell` | what the keyboard is on or a target, today, a day of a month |
 | `Bar`, `Hint` | the command bar and one of its offers |
-| `WorkspacePill`, `FilterPill`, `InfoBox` | the workspace, a filter in force, a box of facts |
+| `WorkspacePill`, `FilterPill`, `InfoBox` | the workspace, a filter or a view in force — a view changed on top marked by a late dot — a box of facts |
 | `Empty`, `Dashed`, `Struck`, `Landing` | an empty slot, a dashed line, the line through what is done, where a drop lands |
 | `Cross`, `Chevron`, `CalendarMark`, `Grip`, `FocusDot`, `CopyMark`, `MenuMark`, `Stone`, `StandingMark`, `ServesMark` | the marks; where an objective stands and what a task serves are drawn, not written, since neither face carries `▶ ‖ ◇` |
 
@@ -392,7 +392,9 @@ labels, the backups, the filters, the configuration, the command bar, the
 switcher, the objectives, the week, the week before, a day, a month, its
 months and its years, an objective holding sub-objectives, its tasks shown
 and narrowed, its deletion asked, a sub-objective's form, the parents
-offered and what a task serves refused — at the two sizes the layout is pinned at, 720 by
+offered and what a task serves refused, a view in force, one changed on
+top, its popover, one being kept, the views, one gone and one renamed — the
+fixtures holding three views, one of them gone — at the two sizes the layout is pinned at, 720 by
 560 and 1200 by 800, and fails on any overlap. A card records where it
 writes its number and its facts, so what it writes is judged too. What it
 found when it was written, and what was done:
@@ -1246,6 +1248,66 @@ sight as a reference, dashed and faint, saying `outside this view · blocks
 (`References`, `@gui-objective-a-blocker-outside-is-a-reference`). A card
 names what it serves by name after a drawn `◇` — `◇ Firmware`, `◇ Enclosure
 +1` — where it wrote `◇6` (`@gui-objective-a-card-names-what-it-serves`).
+
+**A view is the board's filters kept under a name** (#226,
+[listing.md](listing.md#a-view-keeps-the-filters-under-a-name)), opened
+again in one act. Whatever narrows the board — the filters and the search —
+is kept from the foot of the filter menu, `v`, from the menu bar's View ›
+*Keep as a view…*, or from the command bar, `view new Shopping`
+(`@gui-view-kept-from-the-filters`, `@gui-view-kept-from-the-command-bar`).
+`v` and not the mockup's `k`: in the filter menu `k` walks up, as `j` walks
+down. The popover that keeps it drops under the pill, as a filter's values do
+(`OnKeeping`, `KeepingBox`): a field holding the name proposed — what each
+filter is on, an objective by its title, joined by a middle dot
+(`Filters.Proposed`) — what it would keep of the board, and the key it will
+get. `⏎` keeps it, and the pills fold into its own. What `t` shows of an
+objective is the same narrowing, a view without a name: kept, it is proposed
+under the objective's name (`@gui-view-shown-tasks-kept-under-the-objective`).
+
+`⌘1`…`⌘9` open the view in that place, `⌘0` leaves it for the whole board;
+`⌘⇧` and a figure still choose a workspace, so a figure under `⌘` is a view
+and under `⌘⇧` a workspace (`@gui-view-opened-by-its-key`). No key used them
+before. The filter menu lists the views at its head, under *Views*, each with
+how many tasks it keeps and its key, the one in force taken, and *Edit the
+views…* under them; a filter the view holds says *in the view* in the faint
+ink (`ViewRows`, `@gui-view-listed-at-the-head-of-the-filters`). A tenth view
+has no key and is opened from the menu. No view opens with the window.
+
+**The view in force is one pill**, `view Home automation`, standing first,
+where the filters it holds would stand — a view of four filters takes the
+room of one (`PillView`). Its cross leaves it. A filter or a search added on
+top is an ordinary pill after it, and marks the view's pill changed with a
+dot in the late ink (`FilterPill{Changed}`, a `Dot{Late}`,
+`@gui-view-a-filter-on-top-marks-it-changed`). Nothing changed is saved until
+asked: a click on the pill opens the view's popover, saying what it holds,
+what it shows of the board and how much is done, and for each objective it
+holds that objective's own figures, *the store's* — a view narrows what is
+shown, never what an objective counts. *Save to the view* `⏎` puts what is on
+top into it (a label or an objective joins those it holds, any other filter
+takes the place of its own: `Filters.Saving`), *Keep as a new view…* `v`
+keeps both under another name. Leaving the view drops what was on top
+without asking, since it never touched the view, and opening it again gives
+the board it was kept with (`@gui-view-left-drops-the-change`).
+
+**What lies outside is a reference, never counted.** A task outside the view
+that blocks one inside it, waits on one, or is linked to one stands at the
+foot of its column as a reference, once, every why joined — `outside this
+view · waits on #3 · linked to #3` — and adds nothing to a column's head or a
+tab's count (`engine.Touching`, `@gui-view-outside-is-a-reference`). One step
+only: a reference's own blockers are not drawn. The board narrowed to an
+objective by `t` draws its references the same way, so it says every why
+too, where it named only blockers.
+
+**The views have a panel of their own** (`OnViews`), opened from the menu's
+last view line, the menu bar's View › *Views…* while there is a view, or the
+command bar. A row is a view: its name, what it holds in the faint ink — the
+late ink when something it holds is gone — how many tasks it keeps, and its
+key. `r` renames it in place, `e` opens it on the board, `⇧↑` `⇧↓` move it,
+which changes its key, and `⌘⌫` deletes it without asking, since no task, no
+time and no note goes with it
+(`@gui-view-the-panel-renames-moves-and-deletes`). A view whose objective or
+label is gone says so in a warning banner under the rows, with what to do
+(`@gui-view-gone-is-said`).
 
 **Deleting an objective asks, row by row** (`Fates`,
 `@gui-objective-deleting-asks-row-by-row`): each sub-objective deleted or kept
@@ -2640,3 +2702,11 @@ would become the one the gates cannot reach.
 
 - **A task open beside the board for good**, which the extra room would allow
   and which would stop this being the same board.
+- **Walking the views of the filter menu with the keyboard.** The arrows walk
+  the filters, as they did; a view is opened by its key or a click, and the
+  rows above the filters wait for a reason to be reached otherwise.
+- **The narrowing bar under a view naming an objective.** The bar of `t`
+  stands beside the objective filter; a view holds its objective in the
+  engine, so a view on a parent does not draw the bar yet.
+- **`⌘Z` bringing a view deleted back.** Deleting a view touches no task, and
+  the panel's undo was left for the day a second deletion wants one.

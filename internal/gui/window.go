@@ -44,6 +44,10 @@ const (
 	OnWorkspaces
 	// OnFates is what deleting an objective asks, row by row, before anything goes.
 	OnFates
+	// OnKeeping is the popover a view is kept from, its name typed, or the one saying what the view in force holds and shows.
+	OnKeeping
+	// OnViews is the panel of the views: renamed, moved, deleted, or opened on the board.
+	OnViews
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )
@@ -103,6 +107,7 @@ type Window struct {
 	filesState
 	configurationState
 	timeState
+	viewsState
 	palette  paletteState
 	switcher switcherState
 	going    bool

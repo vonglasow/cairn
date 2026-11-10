@@ -287,6 +287,10 @@ func (w Window) panel() Box {
 		return w.FiltersBox()
 	case OnConfiguration:
 		return w.ConfigurationBox()
+	case OnKeeping:
+		return w.KeepingBox()
+	case OnViews:
+		return w.ViewsBox()
 	}
 	return Over(w.width, w.height)
 }

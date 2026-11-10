@@ -35,7 +35,12 @@ func (w Window) onFilters(name string) Window {
 		}
 		return w
 	}
+	if opened, ok := w.openingByFigure(name); ok {
+		return opened
+	}
 	switch name {
+	case "v":
+		return w.startingKeep()
 	case "down", "j":
 		w.filterOn = min(len(w.filters)-1, w.filterOn+1)
 	case "up", "k":
@@ -126,7 +131,14 @@ func (w Window) FilterHint() string {
 // FilterFoot is the keys the foot of the open menu says, each with what it does.
 func (w Window) FilterFoot() [][2]string {
 	if !w.filterOpen {
-		return [][2]string{{"↑↓", "walk"}, {"⏎", "open"}, {"⌫", "take off"}, {"⌥⌫", "all"}, {"esc", "close"}}
+		foot := [][2]string{{"↑↓", "walk"}, {"⏎", "open"}, {"⌫", "take off"}, {"⌥⌫", "all"}}
+		if len(w.snap.Views) > 0 {
+			foot = append(foot, [2]string{w.keyboard.Spelled("⌘") + "1–9", "view"})
+		}
+		if w.keepable() {
+			foot = append(foot, [2]string{"v", "keep"})
+		}
+		return append(foot, [2]string{"esc", "close"})
 	}
 	if w.filters[w.filterOn].Many {
 		return [][2]string{{"↑↓", "walk"}, {"⏎", "tick"}, {"esc", "close"}}
@@ -148,7 +160,7 @@ func (w Window) FiltersBox() Box {
 	if w.filterOpen {
 		return w.droppedUnder(anchor, filterValueWide, len(w.filters[w.filterOn].Shown)-1)
 	}
-	return w.droppedUnder(anchor, filterMenuWide, len(w.filters))
+	return w.droppedUnder(anchor, filterMenuWide, w.viewsAbove()+len(w.filters))
 }
 
 func (w Window) droppedUnder(anchor Box, wide, rows int) Box {
@@ -169,6 +181,11 @@ func dropRoom(box Box) int { return max(1, (box.H-dropHead-dropFoot-inset)/menuR
 
 func (w Window) filterAnchor() Box {
 	for _, pill := range w.Pills() {
+		if w.screen == OnKeeping && w.ofView && pill.Kind == PillView {
+			return pill.Box
+		}
+	}
+	for _, pill := range w.Pills() {
 		if w.filterFromPill && pill.Kind == PillFilter && pill.At == w.filterOn {
 			return pill.Box
 		}
@@ -183,7 +200,7 @@ func (w Window) filterAnchor() Box {
 }
 
 // FilterRowAt is where the i-th filter's line is in the menu of filters.
-func (w Window) FilterRowAt(i int) Box { return DropRowAt(w.FiltersBox(), i) }
+func (w Window) FilterRowAt(i int) Box { return DropRowAt(w.FiltersBox(), w.viewsAbove()+i) }
 
 // FilterList is the values of the filter whose list is open, where each is drawn, and whether one is open.
 func (w Window) FilterList() ([]Box, bool) {
@@ -222,6 +239,9 @@ func (w Window) clickingFilters(p Point) Window {
 		}
 		return w
 	}
+	if viewed, on := w.clickingViews(p); on {
+		return viewed
+	}
 	for i := range w.filters {
 		if w.FilterRowAt(i).In(p) {
 			return w.openingFilter(i)
@@ -247,22 +267,25 @@ const (
 	PillClear
 	// PillFolded stands for every filter and the search when they no longer fit.
 	PillFolded
+	// PillView is the view in force, standing for every filter it holds, its cross leaving it.
+	PillView
 )
 
-// FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, and whether it is faint for meaning nothing on the page in sight.
+// FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, whether it is faint for meaning nothing on the page in sight, and for a view whether a filter or a search stands on top of it.
 type FilterPill struct {
-	Box    Box
-	Said   string
-	Name   string
-	Kind   PillKind
-	At     int
-	Faint  bool
-	Serves bool
+	Box     Box
+	Said    string
+	Name    string
+	Kind    PillKind
+	At      int
+	Faint   bool
+	Serves  bool
+	Changed bool
 }
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
 func (p FilterPill) Cross() (Box, bool) {
-	if p.Kind != PillSearch && p.Kind != PillFilter {
+	if p.Kind != PillSearch && p.Kind != PillFilter && p.Kind != PillView {
 		return Box{}, false
 	}
 	return Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
@@ -270,7 +293,7 @@ func (p FilterPill) Cross() (Box, bool) {
 
 // Pills is the row at the right of the tabs: the search kept, then every filter in force, the pill clearing them, and against the menu the pill adding one, which stands where it stood whatever is added; folded into one pill, in that pill's place, when they no longer fit between the tabs and the menu.
 func (w Window) Pills() []FilterPill {
-	if w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch {
+	if w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch && w.screen != OnKeeping {
 		return nil
 	}
 	l := w.Layout()
@@ -289,7 +312,15 @@ func (w Window) Pills() []FilterPill {
 	plain := func(said string, kind PillKind) {
 		row = append(row, FilterPill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
 	}
-	taken := 0
+	taken, viewed := 0, 0
+	if v, in := w.inView(); in {
+		crossed("view", v.Name, PillView, -1)
+		row[0].Changed = w.ViewChanged()
+		if row[0].Changed {
+			row[0].Box.W += dotSide + between
+		}
+		viewed = 1
+	}
 	if !w.looking.Empty() && w.screen != OnSearch {
 		crossed("/", w.looking.Reads(), PillSearch, -1)
 		taken++
@@ -317,10 +348,10 @@ func (w Window) Pills() []FilterPill {
 	if !narrowed {
 		plain(AddFilterSays, PillAdd)
 	}
-	if widthOf(row) > end-start && taken > 0 {
+	if widthOf(row) > end-start && taken+viewed > 0 {
 		row = nil
 		plain(ClearSays, PillClear)
-		plain(FoldedSays(taken), PillFolded)
+		plain(FoldedSays(taken+viewed), PillFolded)
 	}
 	var pills []FilterPill
 	x := max(start, end-widthOf(row))
@@ -358,7 +389,7 @@ func FoldedSays(n int) string { return "Filters · " + strconv.Itoa(n) }
 // TabCount is what a page's tab counts: what it shows, and of how many when the search or the filters narrow it.
 func (w Window) TabCount(page Tab) string {
 	shown := strconv.Itoa(w.Holds(page))
-	if page == Time || (w.looking.Empty() && !w.filters.Narrows()) {
+	if page == Time || (w.looking.Empty() && !w.filters.Narrows() && w.viewing == "") {
 		return shown
 	}
 	if page == Objectives {
@@ -386,13 +417,18 @@ func (w Window) takingOff(at int) Window {
 
 func (w Window) clickingPill(pill FilterPill, p Point) Window {
 	if cross, ok := pill.Cross(); ok && cross.In(p) {
-		if pill.Kind == PillSearch {
+		switch pill.Kind {
+		case PillSearch:
 			w.looking = Written{}
 			return w
+		case PillView:
+			return w.leavingView()
 		}
 		return w.takingOff(pill.At)
 	}
 	switch pill.Kind {
+	case PillView:
+		return w.openingViewPopover()
 	case PillFilter:
 		return w.openingFilterFromPill(pill.At)
 	case PillAdd, PillFolded:

@@ -97,6 +97,9 @@ func (b Board) modeName() string {
 	if b.filtering {
 		return "FILTER"
 	}
+	if b.choosingView {
+		return "VIEWS"
+	}
 	if b.prompt == Searching {
 		return "SEARCH"
 	}
@@ -111,7 +114,11 @@ func (b Board) modeName() string {
 
 func (b Board) tasksBoard(l Layout) []string {
 	all, band := engine.Deal(b.cards(), b.archived)
-	far, farBand := engine.Deal(b.references(), b.archived)
+	var outside []engine.Card
+	for _, r := range b.references() {
+		outside = append(outside, r.Card)
+	}
+	far, farBand := engine.Deal(outside, b.archived)
 	top := l.Top
 	var out []string
 	if b.inside != 0 {
@@ -199,6 +206,11 @@ func (b Board) card(c engine.Card, l Layout) string {
 
 func (b Board) reference(c engine.Card, l Layout) string {
 	rows := Rows(b.servingNamed(c), b.glyphs, SkinOf(Faded), b.now(), l.Interior)
+	for _, r := range b.references() {
+		if r.Card.Number == c.Number {
+			rows[len(rows)-1] = b.skin.Late.Render(Clip(r.Touches(""), l.Interior))
+		}
+	}
 	return b.skin.Reference(l.Column).Render(strings.Join(rows, "\n"))
 }
 
@@ -328,6 +340,9 @@ func (b Board) foot() string {
 	if b.filtering {
 		return b.filtersLine()
 	}
+	if b.choosingView {
+		return b.viewsLine()
+	}
 	if b.prompt != NoPrompt {
 		return b.promptLine()
 	}
@@ -441,6 +456,9 @@ func (b Board) titleLine() string {
 		return " " + b.skin.Faint.Render(Clip(b.opened, b.width-margin-margin))
 	}
 	title := b.wholeTitle()
+	if said := b.viewSays(); title == "" && said != "" {
+		return " " + b.skin.Faint.Render(Clip(said, b.width-margin-margin))
+	}
 	if title == "" && b.filters.Narrows() && !b.filtering {
 		return " " + b.skin.Faint.Render(Clip("filtered by "+b.filters.Said(), b.width-margin-margin))
 	}

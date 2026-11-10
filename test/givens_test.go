@@ -113,3 +113,51 @@ func TestGivens_writeWhatTheyDescribe(t *testing.T) {
 		t.Error("an objective nobody added was shown")
 	}
 }
+
+func TestGivens_keepAndReadViews(t *testing.T) {
+	g := givensOn(t)
+	for _, step := range []func() error{
+		func() error { return g.IAddedATaskCarrying("one", "todo", "high", "backend") },
+		func() error { return g.IAddedATaskTitled("two") },
+		func() error { return g.IAddedAnObjectiveTitled("Ship it") },
+		func() error { return g.IKeptTheViewHolding("Back", "label", "backend") },
+		func() error { return g.IKeptTheViewHolding("High", "priority", "high") },
+		func() error { return g.ILinkedTaskTo(2, 1) },
+	} {
+		if err := step(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if two, err := g.Task(2); err != nil || !slices.Equal(two.Carried().Linked, []int{1}) {
+		t.Errorf("task 2 is linked to %v, %v", two.Carried().Linked, err)
+	}
+	for _, held := range []error{
+		g.ViewHolds("Back", "label", "backend"), g.ViewHolds("high", "priority", "high"),
+		g.ViewHoldsNoLabel("High"), g.ViewsRead(`"Back", "High"`),
+	} {
+		if held != nil {
+			t.Error(held)
+		}
+	}
+	for _, refused := range []error{
+		g.ViewHolds("Back", "priority", "high"), g.ViewHolds("High", "label", "backend"),
+		g.ViewHoldsNoLabel("Back"), g.ViewsRead(`"High"`), g.ViewHoldsObjective("Back", 1),
+		g.ViewHoldsObjective("Nowhere", 1), g.ViewHolds("Nowhere", "label", "x"), g.ViewHoldsNoLabel("Nowhere"),
+	} {
+		if refused == nil {
+			t.Error("a view was said to hold what it does not")
+		}
+	}
+	if _, err := g.ask(engine.ViewNew, map[string]string{"name": "Goal"}, map[string][]string{"objective": {"1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.ViewHoldsObjective("Goal", 1); err != nil {
+		t.Error(err)
+	}
+	if err := g.IDeletedTheLabel("backend"); err != nil {
+		t.Fatal(err)
+	}
+	if one, err := g.Task(1); err != nil || len(one.Carried().Labels) != 0 {
+		t.Errorf("the label deleted is still on task 1: %v, %v", one.Carried().Labels, err)
+	}
+}

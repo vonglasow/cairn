@@ -215,6 +215,9 @@ func (b Board) run(line string) (tea.Model, tea.Cmd) {
 		b.err = unknown(line)
 		return b, nil
 	}
+	if model, cmd, took := b.viewCommand(words); took {
+		return model, cmd
+	}
 	op, found := b.pages.Called(words[0], words[1])
 	if !found {
 		b.err = unknown(line)

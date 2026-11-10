@@ -1496,3 +1496,95 @@ Feature: The board
         | width | height |
         | 80    | 26     |
         | 120   | 40     |
+
+  Rule: A view keeps the board's filters under a name, and opens them again in one act
+
+    Background:
+      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
+      And I added a task titled "Review the plan" in "todo" at the priority "normal" carrying the label "backend"
+      And I added a task titled "Ship it" in "current" at the priority "high" carrying the label "sprint"
+
+    @tui-view-v-lists-the-views
+    Scenario: v turns the foot into the views, each after the figure that opens it
+      Given I kept the view "Sprint" holding the label "sprint"
+      And I kept the view "High" holding the priority "high"
+      When I open the board
+      And I press "v"
+      Then the mode is "VIEWS"
+      And the board says "1 Sprint 1"
+      And the board says "2 High 2"
+      And the board says "0 whole board"
+
+    @tui-view-a-figure-opens-it
+    Scenario: a figure after v opens the view in that place, and the line above the foot names it
+      Given I kept the view "Sprint" holding the label "sprint"
+      When I open the board
+      And I press "v", "1"
+      Then the mode is "NORMAL"
+      And the board carries 1 task
+      And the board says "view Sprint · 1 of 3 tasks"
+
+    @tui-view-0-goes-back-to-the-whole-board
+    Scenario: 0 after v leaves the view for the whole board, and esc leaves what is in force
+      Given I kept the view "Sprint" holding the label "sprint"
+      When I open the board
+      And I press "v", "1", "v", "esc"
+      Then the board carries 1 task
+      When I press "v", "0"
+      Then the board carries 3 tasks
+      And the board does not say "view Sprint"
+
+    @tui-view-new-keeps-the-filters
+    Scenario: :view new keeps the filters in force under the name given
+      When I open the board
+      And I press "shift+f", "l", "j", "j", "j", "esc"
+      And I press ":"
+      And I type "view new Urgent"
+      And I press "enter"
+      Then the view "Urgent" holds the priority "high"
+      And the board says "view Urgent"
+
+    @tui-view-save-puts-the-change-in
+    Scenario: a filter on top of a view is marked, and :view save puts it into the view
+      Given I kept the view "High" holding the priority "high"
+      When I open the board
+      And I press "v", "1"
+      And I press "shift+f", "l", "l", "j", "esc"
+      Then the board says "view High *"
+      When I press ":"
+      And I type "view save"
+      And I press "enter"
+      Then the view "High" holds the label "backend"
+      And the board does not say "view High *"
+
+    @tui-view-opened-by-its-name
+    Scenario: :view and a name opens that view
+      Given I kept the view "Sprint" holding the label "sprint"
+      When I open the board
+      And I press ":"
+      And I type "view sprint"
+      And I press "enter"
+      Then the board carries 1 task
+      And the board says "view Sprint"
+
+    @tui-view-outside-is-a-reference
+    Scenario: a task outside the view touching one inside is shown with why, and not counted
+      Given I kept the view "Sprint" holding the label "sprint"
+      And I edited task 3 with the blocker "1"
+      And I linked task 2 to task 3
+      When I open the board
+      And I press "v", "1"
+      Then the board carries 1 task
+      And the board says "blocks 3"
+      And the board says "linked to 3"
+
+    @tui-view-new-proposes-the-objective
+    Scenario: an objective's tasks shown are kept under the objective's name when none is given
+      Given I added an objective titled "Home automation"
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the board
+      And I press "tab", "t"
+      And I press ":"
+      And I type "view new"
+      And I press "enter"
+      Then the view "Home automation" holds objective 1

@@ -70,6 +70,15 @@ func (w Window) Click(p Point) Window {
 		}
 		return w.clickingFilters(p)
 	}
+	if w.screen == OnKeeping || w.screen == OnViews {
+		if offer, on := w.offerAt(p); on {
+			return w.Choose(offer)
+		}
+		if w.screen == OnKeeping {
+			return w.clickingKeeping(p)
+		}
+		return w.clickingViewsPanel(p)
+	}
 	if offer, on := w.offerAt(p); on {
 		return w.Choose(offer)
 	}

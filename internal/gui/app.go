@@ -526,5 +526,5 @@ func symbolTyped(text, named string) (string, bool) {
 }
 
 func takesTyping(s Screen) bool {
-	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette || s == OnLabels || s == OnWorkspaces
+	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette || s == OnLabels || s == OnWorkspaces || s == OnKeeping || s == OnViews
 }

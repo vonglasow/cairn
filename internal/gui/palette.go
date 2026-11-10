@@ -91,7 +91,8 @@ func (w Window) PaletteRows() []PaletteRow {
 			rows, found[n] = append(rows, openingRow(c)), true
 		}
 	}
-	for _, action := range w.actionRows() {
+	rows = append(rows, w.viewCommandRows(typed)...)
+	for _, action := range append(w.actionRows(), w.viewRows()...) {
 		if reaching(action.Says, typed) {
 			rows = append(rows, action)
 		}

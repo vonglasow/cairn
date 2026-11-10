@@ -108,6 +108,9 @@ type Board struct {
 	filterOn  int
 	filtering bool
 
+	viewing      string
+	choosingView bool
+
 	choosing         bool
 	asking           bool
 	setting          string
@@ -365,18 +368,18 @@ func (b Board) cards() []engine.Card {
 }
 
 func (b Board) unopened() []engine.Card {
-	cards := b.snap.Cards
+	cards := b.snap.Viewed(b.viewing, b.snap.Cards)
 	if kept, err := b.filters.Kept(cards); err == nil {
 		cards = kept
 	}
 	return engine.Found(cards, b.query, b.archived)
 }
 
-func (b Board) references() []engine.Card {
-	if b.inside == 0 && !b.filters.NarrowsBy("objective") {
+func (b Board) references() []engine.Reference {
+	if b.inside == 0 && b.viewing == "" && !b.filters.NarrowsBy("objective") {
 		return nil
 	}
-	return engine.Blocking(b.cards(), engine.OnTheBoard(b.snap.Cards, b.archived))
+	return engine.Touching(b.cards(), engine.OnTheBoard(b.snap.Cards, b.archived))
 }
 
 func (b Board) here() []engine.Card {

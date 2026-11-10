@@ -11,7 +11,7 @@ func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 	want := []MenuGroup{
 		{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Configuration…"}},
 		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter", "Reset sizes"}},
+		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter", "Keep as a view…", "Views…", "Reset sizes"}},
 		{Name: "Help", Items: []string{"Help", "About cairn"}},
 	}
 	got := MenuBar(engine.Pages{})

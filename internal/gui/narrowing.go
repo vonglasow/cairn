@@ -21,7 +21,7 @@ const narrowingLeast = 160
 
 // Narrowing is the bar the board draws beside its pills, and nothing when the objective filter is on no objective holding sub-objectives, or when the bar has no room.
 func (w Window) Narrowing() Narrowing {
-	if w.tab != Tasks || (w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch) {
+	if w.tab != Tasks || (w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch && w.screen != OnKeeping) {
 		return Narrowing{}
 	}
 	value, ok := w.objectiveTaken()
@@ -134,41 +134,32 @@ func drawNarrowing(k Kit, w Window) {
 	s.Draw(k, n.Box)
 }
 
-// References are the tasks the board leaves out that block one it shows, each where its column would have it after the cards it holds: shown while the objective filter narrows the board, and never counted.
+// References are the tasks the board leaves out that block, wait on or are linked to one it shows, each where its column would have it after the cards it holds: shown while a view or the objective filter narrows the board, and never counted.
 func (w Window) References() []Placed {
-	if !w.filters.NarrowsBy("objective") || w.tab != Tasks {
+	if (w.viewing == "" && !w.filters.NarrowsBy("objective")) || w.tab != Tasks {
 		return nil
 	}
 	shown := w.Showing().Cards
-	refs := engine.Blocking(shown, engine.OnTheBoard(w.snap.Cards, w.archived))
+	refs := engine.Touching(shown, engine.OnTheBoard(w.snap.Cards, w.archived))
 	if len(refs) == 0 {
 		return nil
 	}
 	l := w.Layout()
 	dealt, _ := engine.Deal(shown, w.archived)
-	theirs, _ := engine.Deal(refs, w.archived)
+	var cards []engine.Card
+	says := map[int]string{}
+	for _, r := range refs {
+		cards, says[r.Card.Number] = append(cards, r.Card), r.Says()
+	}
+	theirs, _ := engine.Deal(cards, w.archived)
 	var out []Placed
 	for i, column := range theirs {
 		for at, c := range column.Cards {
-			p := Placed{Card: c, Slot: l.CardAt(i, len(dealt[i].Cards)+at, w.scroll[i]), Within: l.Column[i], Reference: true}
-			for _, s := range shown {
-				for _, b := range s.Blockers {
-					if b == c.Number {
-						p.Blocks = append(p.Blocks, s.Number)
-					}
-				}
-			}
-			out = append(out, p)
+			out = append(out, Placed{Card: c, Slot: l.CardAt(i, len(dealt[i].Cards)+at, w.scroll[i]), Within: l.Column[i], Reference: true, Says: says[c.Number]})
 		}
 	}
 	return out
 }
 
-// Why is what a reference says of itself: that the board leaves it out, and what it blocks.
-func (p Placed) Why() string {
-	var blocks []string
-	for _, n := range p.Blocks {
-		blocks = append(blocks, "#"+strconv.Itoa(n))
-	}
-	return "outside this view · blocks " + strings.Join(blocks, ", ")
-}
+// Why is what a reference says of itself: that the board leaves it out, and every way it touches what is shown.
+func (p Placed) Why() string { return p.Says }

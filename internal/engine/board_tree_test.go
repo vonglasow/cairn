@@ -145,14 +145,6 @@ func TestServing_keepsWhatServesAnyOfThem(t *testing.T) {
 	}
 }
 
-func TestBlocking_findsTheBlockersLeftOut(t *testing.T) {
-	all := []Card{{Number: 1, Title: "Order the relay"}, {Number: 2, Blockers: []int{1, 9}}, {Number: 3, Blockers: []int{2}}}
-	shown := []Card{all[1], all[2]}
-	if got := filteredNumbers(Blocking(shown, all)); got != "1" {
-		t.Errorf("Blocking = %q, want 1, the one left out", got)
-	}
-}
-
 func TestBoardFilters_widenAParentToItsSubObjectives(t *testing.T) {
 	s := lookAt(t, homeTree(t))
 	fs := BoardFilters(s, time.Now()).On("objective", "1")

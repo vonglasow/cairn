@@ -134,6 +134,12 @@ func Draw(k Kit, w Window) {
 	if w.Screen() == OnFiltering {
 		drawFilters(popover, w)
 	}
+	if w.Screen() == OnKeeping {
+		drawKeeping(popover, w)
+	}
+	if w.Screen() == OnViews {
+		drawViews(panel, w)
+	}
 	if w.Screen() == OnConfiguration {
 		drawConfiguration(panel, w)
 	}
@@ -268,20 +274,87 @@ func drawConfiguration(k Kit, w Window) {
 	drawPanelOffers(k, box, w)
 }
 
-func drawFilters(k Kit, w Window) {
-	box := w.FiltersBox()
-	Panel{}.Draw(k, box)
-	k = k.inside("panel")
-	head := Box{X: box.X + padding, Y: box.Y + (dropHead-lineHigh)/2, W: box.W - 2*padding, H: lineHigh}
+func drawDropFoot(k Kit, w Window, box Box, keys [][2]string) {
 	foot := Box{X: box.X, Y: box.Y + box.H - dropFoot, W: box.W, H: dropFoot}
 	Rule{}.Draw(k, Box{X: box.X, Y: foot.Y, W: box.W})
 	x := foot.X + padding
-	for _, key := range w.FilterFoot() {
+	for _, key := range keys {
 		chip := KeyChip{Key: key[0]}.Draw(k, Box{X: x, Y: foot.Y, H: foot.H})
 		said := Box{X: chip.X + chip.W + hintSpace, Y: foot.Y + (foot.H-lineHigh)/2, W: ends(w.measured(), key[1], small), H: lineHigh}
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, said, key[1], small, font.Font{}, text.Start)
 		x = said.X + said.W + padding
 	}
+}
+
+func drawKeeping(k Kit, w Window) {
+	box := w.KeepingBox()
+	Panel{}.Draw(k, box)
+	k = k.inside("panel")
+	head := Box{X: box.X + padding, Y: box.Y + (dropHead-lineHigh)/2, W: box.W - 2*padding, H: lineHigh}
+	Head{Said: w.KeepingHead()}.Draw(k, head)
+	Rule{}.Draw(k, Box{X: box.X, Y: box.Y + dropHead - 1, W: box.W})
+	if !w.ofView {
+		field := Field{Lit: true}.Draw(k, w.KeepingField())
+		writing(k.inside("field"), w.measured(), Inside(field), w.Naming(), true, reads, 1, Follow)
+	}
+	w.keepingFacts().Draw(k, w.KeepingFactsAt())
+	drawDropFoot(k, w, box, w.KeepingFoot())
+}
+
+func drawViews(k Kit, w Window) {
+	box := w.ViewsBox()
+	Panel{Head: Heads(w)}.Draw(k, box)
+	k = k.inside("panel")
+	rows := w.ViewsPanelRows()
+	if len(rows) == 0 {
+		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Inside(ListRowAt(box, 0)), ViewsNoneSays, reads)
+	}
+	for _, row := range rows {
+		drawViewRow(k, w, row, true)
+	}
+	if said, at, ok := w.ViewsWarning(); ok {
+		Banner{Said: said, Then: viewsThenSays, Warn: true}.Draw(k, at)
+	}
+	drawPanelOffers(k, box, w)
+}
+
+func drawViewRow(k Kit, w Window, row ViewRow, holds bool) {
+	r := Row{Picked: row.On, Taken: row.Taken}
+	r.Draw(k, row.At)
+	line := Inside(row.At)
+	key := w.keyboard.Spelled(Pretty(row.Key))
+	chip := Box{X: line.X + line.W - KeyChipWide(key), Y: line.Y, W: KeyChipWide(key), H: line.H}
+	if key != "" {
+		r.Chip(k, KeyChip{Key: key, Quiet: true}, chip)
+	}
+	count := strconv.Itoa(row.Keeps)
+	counted := Box{X: chip.X - padding - monoWide(count, small), Y: line.Y, W: monoWide(count, small), H: line.H}
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, counted, count, small, k.skin.Type.Mono, text.End)
+	name := Box{X: line.X, Y: line.Y, W: counted.X - padding - line.X, H: line.H}
+	if row.Typing {
+		field := Field{Lit: true}.Draw(k.inside("row"), Box{X: name.X, Y: row.At.Y + 2, W: name.W / 2, H: row.At.H - 4})
+		writing(k.inside("row").inside("field"), w.measured(), Inside(field), w.viewRenamed, true, reads, 1, Follow)
+		return
+	}
+	said := ends(w.measured(), row.Name, reads)
+	if !holds || said+padding >= name.W {
+		say(k.gtx, k.th, k.skin.Colour.Ink.Text, name, row.Name, reads)
+		return
+	}
+	say(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: name.X, Y: name.Y, W: said + padding/2, H: name.H}, row.Name, reads)
+	ink := k.skin.Colour.Ink.Faint
+	if row.Late {
+		ink = k.skin.Colour.State.Late
+	}
+	sayIn(k.gtx, k.th, ink, Box{X: name.X + said + padding, Y: name.Y, W: name.W - said - padding, H: name.H}, row.Holds, small, font.Font{}, text.Start)
+}
+
+func drawFilters(k Kit, w Window) {
+	box := w.FiltersBox()
+	Panel{}.Draw(k, box)
+	k = k.inside("panel")
+	head := Box{X: box.X + padding, Y: box.Y + (dropHead-lineHigh)/2, W: box.W - 2*padding, H: lineHigh}
+	drawDropFoot(k, w, box, w.FilterFoot())
 	if values, open := w.FilterList(); open {
 		f := w.Filters()[w.FilterOn()]
 		Rule{}.Draw(k, Box{X: box.X, Y: box.Y + dropHead - 1, W: box.W})
@@ -310,11 +383,24 @@ func drawFilters(k Kit, w Window) {
 		}
 		return
 	}
+	v, viewed := w.inView()
+	if rows := w.ViewRows(); len(rows) > 0 {
+		Head{Said: ViewsSays}.Draw(k, head)
+		for _, row := range rows {
+			drawViewRow(k, w, row, false)
+		}
+		Row{Said: EditViewsSays}.Draw(k, w.EditViewsAt())
+		head = Inside(w.FilterHeadAt())
+	}
 	Head{Said: FilterMenuSays}.Draw(k, head)
 	for i, f := range w.Filters() {
 		row := w.FilterRowAt(i)
 		Row{Said: Titled(f.Name), Picked: i == w.FilterOn()}.Draw(k, row)
 		line := Inside(row)
+		if len(f.Taken()) == 0 && viewed && v.Holds.Narrows(f.Arg) {
+			at := ends(w.measured(), Titled(f.Name), reads) + between
+			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - small, H: line.H}, InTheViewSays, small, font.Font{}, text.Start)
+		}
 		if len(f.Taken()) > 0 {
 			at := ends(w.measured(), Titled(f.Name), reads) + between
 			sayIn(k.gtx, k.th, k.skin.Colour.Accent.Base, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - small, H: line.H}, f.TakenSays(), small, font.Font{}, text.Start)
@@ -622,6 +708,9 @@ func drawColumns(k Kit, l Layout, w Window) {
 		drawReferences(on, w, l.Column[i])
 	}
 }
+
+// InTheViewSays is what a filter of the menu says when the view in force holds it.
+const InTheViewSays = "in the view"
 
 func drawReferences(k Kit, w Window, within Box) {
 	for _, p := range w.References() {

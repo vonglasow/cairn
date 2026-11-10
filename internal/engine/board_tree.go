@@ -72,24 +72,6 @@ func (s Snapshot) Segments(n int, cards []Card) []Segment {
 	return out
 }
 
-// Blocking is the tasks in the way of those shown that are not shown themselves: what a narrowed board keeps in sight as a reference.
-func Blocking(shown, all []Card) []Card {
-	in := map[int]bool{}
-	for _, c := range shown {
-		in[c.Number] = true
-	}
-	var out []Card
-	for _, c := range all {
-		if in[c.Number] {
-			continue
-		}
-		if slices.ContainsFunc(shown, func(s Card) bool { return slices.Contains(s.Blockers, c.Number) }) {
-			out = append(out, c)
-		}
-	}
-	return out
-}
-
 // LabelsFor is every label that may be put on what is named, in alphabetical order.
 func (s Snapshot) LabelsFor(on domain.Bearer) []string {
 	var out []string

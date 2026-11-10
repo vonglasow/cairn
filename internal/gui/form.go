@@ -206,6 +206,14 @@ func (w Window) writing(change func(Written) Written) Window {
 		w.renamed = change(w.renamed)
 		return w
 	}
+	if w.screen == OnKeeping && !w.ofView {
+		w.keepName = change(w.keepName)
+		return w
+	}
+	if w.screen == OnViews && w.renamingView {
+		w.viewRenamed = change(w.viewRenamed)
+		return w
+	}
 	if w.screen == OnLabels {
 		return w.seekingLabels(change)
 	}
@@ -517,6 +525,11 @@ func (w Window) recoverable() bool {
 
 // Choose is a button pressed by name, which is how a scenario says it and how a pointer says it.
 func (w Window) Choose(name string) Window {
+	if w.screen == OnKeeping || w.screen == OnViews {
+		if done, took := w.choosingOnViews(name); took {
+			return done
+		}
+	}
 	if w.screen == OnFates {
 		if strings.HasPrefix(name, "Delete") {
 			return w.confirmingFates()
@@ -629,6 +642,10 @@ func (w Window) Choose(name string) Window {
 		return w
 	case "filter":
 		return w.filteringBoard()
+	case strings.ToLower(KeepAsViewSays):
+		return w.startingKeep()
+	case strings.ToLower(ViewsSays) + "…":
+		return w.listingViews()
 	case "reset sizes":
 		return w.resized(Sizes{})
 	case "no filter":

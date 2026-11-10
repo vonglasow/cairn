@@ -18,13 +18,13 @@
  │   ⇧F          filter — ←→     │ │ needs a look                  │
  │ which, ↑↓ its value, ⌫ clears │ │   ‖  paused    waiting on     │
  │ all                           │ │ your decision                 │
- │   ⇥           next tab —      │ │                               │
- │ tasks, objectives, the time   │ │ OBJECTIVES — a tree, sub-     │
- │ spent                         │ │ objectives under ├─ └─        │
- │   :           command — what  │ │   ▶  active    being worked   │
- │ it answers is said until esc  │ │ towards                       │
- │   b           a new backup of │ │   ‖  on-hold   not for now    │
- │ the store                     │ │   ✓  reached   done with      │
- │   ⇧B          the backups     │ │   ✕  dropped   given up       │
+ │   v           the views — a   │ │                               │
+ │ figure opens one, 0 the whole │ │ OBJECTIVES — a tree, sub-     │
+ │ board                         │ │ objectives under ├─ └─        │
+ │   ⇥           next tab —      │ │   ▶  active    being worked   │
+ │ tasks, objectives, the time   │ │ towards                       │
+ │ spent                         │ │   ‖  on-hold   not for now    │
+ │   :           command — what  │ │   ✓  reached   done with      │
+ │ it answers is said until esc  │ │   ✕  dropped   given up       │
 
  ↓↑ read on   esc close

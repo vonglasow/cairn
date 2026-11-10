@@ -37,6 +37,19 @@ func onTheFixtures(t *testing.T) engine.Work {
 	if _, err := engine.Do(engine.TaskImport, store, engine.Input{Given: map[string]string{"from": from}}); err != nil {
 		t.Fatal(err)
 	}
+	for _, kept := range []struct {
+		op engine.Operation
+		in engine.Input
+	}{
+		{engine.ViewNew, engine.Input{Given: map[string]string{"name": "Home automation"}, Listed: map[string][]string{"objective": {"8"}}}},
+		{engine.ViewNew, engine.Input{Given: map[string]string{"name": "Backend, due soon", "priority": "high"}, Listed: map[string][]string{"label": {"backend"}}}},
+		{engine.ViewNew, engine.Input{Given: map[string]string{"name": "Gone"}, Listed: map[string][]string{"label": {"long-gone"}}}},
+		{engine.LabelDelete, engine.Input{Given: map[string]string{"label": "long-gone"}, Confirmed: true}},
+	} {
+		if _, err := engine.Do(kept.op, store, kept.in); err != nil {
+			t.Fatal(err)
+		}
+	}
 	held, err := engine.OpenAt(engine.Places{Store: store, Notes: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
@@ -96,6 +109,7 @@ func everyScreen(w Window) []struct {
 } {
 	card := w.clicked(middleOf(w, 1, 0))
 	parent, sub, refused := objectiveScreens(w)
+	viewed, changed, keeping := viewScreens(w)
 	return []struct {
 		name string
 		w    Window
@@ -133,7 +147,24 @@ func everyScreen(w Window) []struct {
 		{"a sub-objective's form", sub.Edit()},
 		{"the parents offered", onField(sub.Edit(), "parent")},
 		{"what a task serves, refused", refused},
+		{"a view in force", viewed},
+		{"a view changed on top", changed},
+		{"the view's popover", changed.openingViewPopover()},
+		{"a view kept", keeping},
+		{"the views", w.listingViews()},
+		{"a view gone", w.listingViews().Key("down").Key("down")},
+		{"a view renamed", w.listingViews().Choose("Rename")},
 	}
+}
+
+func viewScreens(w Window) (viewed, changed, keeping Window) {
+	viewed = w.Key("cmd+1")
+	changed = w.Key("cmd+2").filteringBoard()
+	changed.filters = changed.filters.On("state", "todo")
+	changed.screen = OnTheBoard
+	keeping = w.filteringBoard()
+	keeping.filters = keeping.filters.On("priority", "high").On("state", "current")
+	return viewed, changed, keeping.Key("v")
 }
 
 func objectiveScreens(w Window) (parent, sub, refused Window) {
@@ -200,6 +231,19 @@ func TestBarWidths_giveWordsUpThenTheFirstOffers(t *testing.T) {
 		got, worded := barWidths(full, keys, c.room)
 		if fmt.Sprint(got) != fmt.Sprint(c.want) || worded != c.worded {
 			t.Errorf("room %d: %v %v, want %v %v", c.room, got, worded, c.want, c.worded)
+		}
+	}
+}
+
+func TestAViewsNameHasTheRoomLeftOfItsCount(t *testing.T) {
+	w := aFixturesBoard(t).filteringBoard()
+	rows := w.ViewRows()
+	if len(rows) == 0 {
+		t.Fatal("the filter menu lists no view")
+	}
+	for _, one := range textDrawn(w) {
+		if one.said == rows[0].Name && one.box.W < rows[0].At.W/2 {
+			t.Errorf("the view %q is written in %+v, of a row %+v", one.said, one.box, rows[0].At)
 		}
 	}
 }

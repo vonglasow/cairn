@@ -32,7 +32,7 @@ func helpGroups() []helpGroup {
 		{"Find", []Said{
 			{Key: "⌘K", Means: "command bar"},
 			{Key: "/", Means: "search"},
-			{Key: "⇧F", Means: "filters"},
+			{Key: "⇧F ⌘1–9", Means: "filters, views"},
 			{Key: "⇧A", Means: "archived"},
 			{Key: "g t/o/i", Means: "go to a page"},
 			{Key: "⌘N", Means: "new task"},

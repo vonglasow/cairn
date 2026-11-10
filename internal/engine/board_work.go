@@ -79,6 +79,7 @@ type Snapshot struct {
 	Focus   []int
 	Colours map[string]string
 	Scopes  map[string]string
+	Views   []Viewing
 	Version int64
 }
 
@@ -98,6 +99,10 @@ func Look(w Work) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
+	views, err := lookAtViews(w)
+	if err != nil {
+		return Snapshot{}, err
+	}
 	version, err := w.Version()
 	if err != nil {
 		return Snapshot{}, err
@@ -106,7 +111,7 @@ func Look(w Work) (Snapshot, error) {
 	if listed.InFocus != nil {
 		held = *listed.InFocus
 	}
-	found := Snapshot{Focus: held, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
+	found := Snapshot{Focus: held, Views: views, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
 	if labels.Labels != nil {
 		for _, one := range *labels.Labels {
 			found.Colours[one.Label] = one.Colour

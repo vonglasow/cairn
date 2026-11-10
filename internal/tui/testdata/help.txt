@@ -13,28 +13,28 @@
  │   /           search                        │ │   ⊘  blocked   waiting on somebody else     │
  │   ⇧F          filter — ←→ which, ↑↓ its     │ │   ◉  watching  handed over, needs a look    │
  │ value, ⌫ clears all                         │ │   ‖  paused    waiting on your decision     │
- │   ⇥           next tab — tasks, objectives, │ │                                             │
- │ the time spent                              │ │ OBJECTIVES — a tree, sub-objectives under   │
- │   :           command — what it answers is  │ │ ├─ └─                                       │
- │ said until esc                              │ │   ▶  active    being worked towards         │
- │   b           a new backup of the store     │ │   ‖  on-hold   not for now                  │
- │   ⇧B          the backups                   │ │   ✓  reached   done with                    │
- │   ←→ t on timewalk the weeks, back to       │ │   ✕  dropped   given up                     │
- │ today's                                     │ │                                             │
- │                                             │ │ ON A CARD                                   │
- │ INSERT — the cursor on a task               │ │   ≡            a description exists         │
- │   hjkl ←↓↑→   tasks, and the band           │ │   ▪            steps done / total           │
- │   gg / G      first / last in the column    │ │   ⚑            a label                      │
- │   ⇧hjkl       move it: sideways changes     │ │   ↳            what is in the way           │
- │ column, up and down change place            │ │   ◇            the objective it serves      │
- │   ⏎           the detail                    │ │   ┆ ┆         in the way, from outside: not │
- │   e           the form                      │ │ counted                                     │
- │   o           a task linked to it           │ │   2d          a deadline close by           │
- │   f           focus or unfocus              │ │   −3d         one that has passed           │
- │   m then a lettermove it to the column it   │ │   ╔═╗         the task in focus             │
- │ begins                                      │ ╰─────────────────────────────────────────────╯
+ │   v           the views — a figure opens    │ │                                             │
+ │ one, 0 the whole board                      │ │ OBJECTIVES — a tree, sub-objectives under   │
+ │   ⇥           next tab — tasks, objectives, │ │ ├─ └─                                       │
+ │ the time spent                              │ │   ▶  active    being worked towards         │
+ │   :           command — what it answers is  │ │   ‖  on-hold   not for now                  │
+ │ said until esc                              │ │   ✓  reached   done with                    │
+ │   b           a new backup of the store     │ │   ✕  dropped   given up                     │
+ │   ⇧B          the backups                   │ │                                             │
+ │   ←→ t on timewalk the weeks, back to       │ │ ON A CARD                                   │
+ │ today's                                     │ │   ≡            a description exists         │
+ │                                             │ │   ▪            steps done / total           │
+ │ INSERT — the cursor on a task               │ │   ⚑            a label                      │
+ │   hjkl ←↓↑→   tasks, and the band           │ │   ↳            what is in the way           │
+ │   gg / G      first / last in the column    │ │   ◇            the objective it serves      │
+ │   ⇧hjkl       move it: sideways changes     │ │   ┆ ┆         in the way, from outside: not │
+ │ column, up and down change place            │ │ counted                                     │
+ │   ⏎           the detail                    │ │   2d          a deadline close by           │
+ │   e           the form                      │ │   −3d         one that has passed           │
+ │   o           a task linked to it           │ │   ╔═╗         the task in focus             │
+ │   f           focus or unfocus              │ ╰─────────────────────────────────────────────╯
+ │   m then a lettermove it to the column it   │
+ │ begins                                      │
  │   p then a letterits priority               │
- │   D           delete                        │
- │   x           archive or unarchive          │
 
  ↓↑ read on   esc close

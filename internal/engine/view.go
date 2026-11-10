@@ -592,7 +592,8 @@ func viewKeptText(v View, said string) string {
 	return fmt.Sprintf("%s · %s · keeps %d of %s\n", said, cmdKey(v.Place), v.Keeps, manyOf(v.Of, "task", "tasks"))
 }
 
-func holdsText(v View) string {
+// HoldsSays is what a view holds, the way a person reads it: each filter and what it is on, what of it is gone said so.
+func HoldsSays(v View) string {
 	var said []string
 	gone := func(what string) string {
 		if slices.Contains(v.Gone, what) {
@@ -636,7 +637,7 @@ func viewsText(views []View) string {
 	tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "#\tname\tholds\tkeeps")
 	for _, v := range views {
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\n", v.Place, v.Name, holdsText(v), v.Keeps)
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\n", v.Place, v.Name, HoldsSays(v), v.Keeps)
 	}
 	_ = tw.Flush()
 	return out.String()
@@ -645,7 +646,7 @@ func viewsText(views []View) string {
 func viewShownText(v View) string {
 	lines := []string{
 		fmt.Sprintf("view     %s  (%s)", v.Name, cmdKey(v.Place)),
-		"holds    " + holdsText(v),
+		"holds    " + HoldsSays(v),
 		fmt.Sprintf("keeps    %d of %s · %d done", v.Keeps, manyOf(v.Of, "task", "tasks"), v.Done),
 	}
 	if len(v.Gone) > 0 {

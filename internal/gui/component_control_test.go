@@ -445,3 +445,30 @@ func TestAScrollbarWithNothingToScrollIsNotDrawn(t *testing.T) {
 		t.Errorf("a scrollbar with nothing to scroll recorded %+v", drawn)
 	}
 }
+
+func TestAViewsPillIsDrawnAsAFilterInForceAndMarkedWhenChanged(t *testing.T) {
+	box := Box{X: 10, Y: 10, W: 140, H: 22}
+	for _, c := range []struct {
+		pill  FilterPill
+		parts []string
+	}{
+		{FilterPill{Kind: PillView, Name: "view", Said: "view Home"}, []string{"filter", "filter/cross"}},
+		{FilterPill{Kind: PillView, Name: "view", Said: "view Home", Changed: true}, []string{"filter", "filter/dot", "filter/cross"}},
+	} {
+		shot, drawn := drawnAlone(t, 160, 40, func(k Kit) { c.pill.Draw(k, box) })
+		if got := pixel(shot, box.X+box.W/2, box.Y+box.H-3); got != Dark().Colour.Surface.Tint {
+			t.Errorf("a view's pill stands on %v", got)
+		}
+		if !slices.Equal(parts(drawn), c.parts) {
+			t.Errorf("%+v recorded %v", c.pill, parts(drawn))
+		}
+	}
+}
+
+func TestALateDotWearsTheLateInk(t *testing.T) {
+	box := Box{X: 4, Y: 4, W: 8, H: 8}
+	shot, _ := drawnAlone(t, 16, 16, func(k Kit) { Dot{Late: true}.Draw(k, box) })
+	if got := pixel(shot, 8, 8); got != Dark().Colour.State.Late {
+		t.Errorf("a late dot is %v", got)
+	}
+}
