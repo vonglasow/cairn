@@ -1607,12 +1607,19 @@ opened a task to read, written in the ink kept for the things beside what is
 read. A line a long act wrapped onto carries no timestamp and is written whole,
 because splitting one sentence across two inks makes it read as two.
 
-**The logo is a card in focus, built of stones, in a dial that fills.** It
-says what cairn is for rather than what it is called: the card the work is on,
-its eye the one the board draws on a card in focus, and the dial the time that
-focus measures. The card is laid in facade stones cut the way the opening cuts
-them, its priority edge on the left, on the window's own dark ground with the
-corners left clear. `internal/logo/cairn.svg` is the one source; the PNGs
+**The logo is a stencil card: a card bitten into a c, cut in three, its last
+piece lit** (#255, mark 21 of three rounds of proposals). The card is the
+board; the two cuts, running from the centre of the bite, are its columns, and
+the piece lit in the accent is where a task goes round to: done. It keeps a
+card's solid silhouette, which is what holds up as an icon, and still reads in
+one colour, the cuts carrying the three columns. As the icon it stands on the
+window's own dark ground, `#0C0D0F`, a squircle with its corners left clear,
+the card in the window's ink and the lit piece in its accent. It replaced a
+card in focus built of stones in a dial that filled, which said too much to
+be read at 32 pixels. Its cuts are diagonal and land on no pixel, so at 16
+pixels they rely on antialiasing and are faint; a hand-drawn 16-pixel master
+is what would make them crisp, and none is drawn yet.
+`internal/logo/cairn.svg` is the one source; the PNGs
 beside it, 16 to 1024 pixels, and the Windows resource are drawn from it by
 `scripts/logo.sh`, so a build needs no drawing tool.
 
