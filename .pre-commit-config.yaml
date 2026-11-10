@@ -74,7 +74,7 @@ repos:
   # rule that is new today found something already true yesterday, which is the
   # right way round (docs/checks.md). The tool running them is pinned below.
   - repo: https://github.com/semgrep/pre-commit
-    rev: a19f9deb8c211c43e469e994fa8ee15178bc1b1d # frozen: v1.183.0
+    rev: e85cc41d57d8c4cc95d97c8813051744e51bd061 # frozen: v1.184.0
     hooks:
       - id: semgrep
         args: [--config, p/golang, --config, p/secrets, --metrics=off, --error, --skip-unknown-extensions]
