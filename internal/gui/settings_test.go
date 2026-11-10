@@ -124,6 +124,9 @@ func TestTheSettingsDrawNoPartOverItsNeighbourAndEveryTextWhereItFits(t *testing
 			for _, crossed := range drawn.Overlaps() {
 				wrong = append(wrong, fmt.Sprintf("%s: %s %+v over %s %+v", s.name, crossed[0].Part, crossed[0].At, crossed[1].Part, crossed[1].At))
 			}
+			for _, stray := range drawn.Strays() {
+				wrong = append(wrong, fmt.Sprintf("%s: %s %+v runs out of %s %+v", s.name, stray[0].Part, stray[0].At, stray[1].Part, stray[1].At))
+			}
 			for _, one := range textDrawn(s.w) {
 				if one.box.W <= 0 || one.box.H <= 0 || one.high > one.box.H+textSlack {
 					wrong = append(wrong, fmt.Sprintf("%s: %q in %+v", s.name, one.said, one.box))

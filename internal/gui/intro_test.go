@@ -30,6 +30,8 @@ func introBoard() Window {
 	return holding(newFake(), cards...).At(time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC))
 }
 
+const underABreath = 2 * time.Second
+
 func playing(w Window, name string, at time.Duration) Window {
 	w = w.Born(w.now).Introducing(name)
 	return w.At(w.now.Add(at))
@@ -40,7 +42,7 @@ func TestEveryIntroEndsOnTheStillBoard(t *testing.T) {
 	stage := w.Stage()
 	for _, name := range config.Intros() {
 		lasts := IntroLasts(name, stage)
-		if lasts <= 0 || lasts > 2200*time.Millisecond {
+		if lasts <= 0 || lasts >= underABreath {
 			t.Errorf("%s lasts %v", name, lasts)
 		}
 		end := Staging(name, lasts, stage)
@@ -82,7 +84,7 @@ func TestABusyBoardArrivesNoSlower(t *testing.T) {
 	}
 	stage := holding(newFake(), cards...).Stage()
 	for _, name := range config.Intros() {
-		if lasts := IntroLasts(name, stage); lasts > 2200*time.Millisecond {
+		if lasts := IntroLasts(name, stage); lasts >= underABreath {
 			t.Errorf("%s lasts %v on a busy board", name, lasts)
 		}
 	}

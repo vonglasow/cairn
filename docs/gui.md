@@ -388,7 +388,11 @@ window's measure (`measured`).
 parts on one layer, inside one parent, whose boxes cross. A part is never
 compared with its parent, nor with anything on another layer — a popover
 over a card is not a fault — and a part drawn over the whole of its parent
-(a ring, a dashed line) is its frame, compared with nothing.
+(a ring, a dashed line) is its frame, compared with nothing. Since a part
+is never compared with its parent, a button laid past its panel's edge
+crossed nothing and passed — the intro chooser's offers did, at 340 wide;
+so `Drawn.Strays` is every part drawn on a panel that runs out of it, and
+the settings' check fails on one too.
 `TestTheFixturesDrawNoPartOverItsNeighbour` draws every screen on the
 fixtures — the board, a chosen card, a task's form and its trace, an
 objective's form, the help, a question, a menu, a calendar, a list, the
@@ -2764,8 +2768,11 @@ lit, shaded, lifted, blurred, drafted) and what is laid over the board
 (`Wave`, `Sweep`, `Grains`, `Pulse` — the focus dot's beat). So a test draws
 any instant of any intro, and its last one is the still board, pixel for
 pixel. A busier board plays faster rather than longer: an intro lasts as long
-as its last card takes to land, never more than a fifth over what it takes
-on a few cards (`IntroLasts`). The `Kit` lays a pose over what it draws
+as its last card takes to land, never more than a fifth over the length the
+page proposed it at (`IntroLasts`), and always under two seconds. A board
+whose staggers would run past that has its whole timeline played faster to
+fit: every delay and every motion shortened by the same share, so the order
+and the curves stay and the cards come quicker one after another. The `Kit` lays a pose over what it draws
 (`posed`), and the marks are components (`component_intro.go`), so the two
 guards hold.
 

@@ -151,6 +151,27 @@ func (d *Drawn) Overlaps() [][2]Drawing {
 	return crossed
 }
 
+// Strays is every part drawn on a panel that runs out of it, beside the panel it runs out of: Overlaps compares a part with its neighbours and never with its parent, so a button laid past the panel's edge crossed nothing it was compared with.
+func (d *Drawn) Strays() [][2]Drawing {
+	var strays [][2]Drawing
+	for i, one := range d.all {
+		parent := parentOf(one.Part)
+		if !strings.HasSuffix("/"+parent, "/panel") {
+			continue
+		}
+		for j := i - 1; j >= 0; j-- {
+			if d.all[j].Part != parent {
+				continue
+			}
+			if common(d.all[j].At, one.At) != one.At {
+				strays = append(strays, [2]Drawing{one, d.all[j]})
+			}
+			break
+		}
+	}
+	return strays
+}
+
 func parentOf(part string) string {
 	at := strings.LastIndex(part, "/")
 	if at < 0 {
