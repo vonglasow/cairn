@@ -315,7 +315,7 @@ func (w Window) panel() Box {
 	case OnFiltering:
 		return w.FiltersBox()
 	case OnConfiguration:
-		return w.ConfigurationBox()
+		return w.SettingsBox()
 	case OnKeeping:
 		return w.KeepingBox()
 	case OnViews:

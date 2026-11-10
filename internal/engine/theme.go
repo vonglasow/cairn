@@ -38,6 +38,14 @@ func Wearing(h Home) (theme.Colours, string) {
 	return s.Colours(), ""
 }
 
+// SchemeOf is the scheme config show listed, read from where it said it is: carried in the binary, or a person's own file.
+func SchemeOf(seen ThemeSeen) (theme.Scheme, error) {
+	if seen.From == theme.Carried {
+		return theme.Find("", seen.Slug)
+	}
+	return theme.Find(filepath.Dir(seen.From), seen.Slug)
+}
+
 func (g *readingGate) themes(p config.Places) {
 	folder, worn := themesIn(g.home.Dir), p.Theme()
 	g.config.Window = &WindowConfig{KeepSizes: p.KeepSizes(), Theme: p.Theme()}

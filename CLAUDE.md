@@ -60,6 +60,7 @@ calls it, and prints — it decides nothing.
 | touching a series, a rule, or what is made when a task comes back | [docs/series.md](docs/series.md) |
 | touching what showing a task says about its outside context, or where that context is looked for | [docs/context.md](docs/context.md) |
 | adding a key to the configuration, or changing how a place is addressed | [docs/config.md](docs/config.md) |
+| writing a key of the configuration from a surface, or reading it again while a board is open | [docs/config.md](docs/config.md#one-configuration-several-ways-in-to-it) |
 | adding anything that changes a task, or touching what is recorded about it | [docs/trace.md](docs/trace.md) |
 | touching the board — its shape, its keys, its modes — or anything a person sees on screen | [docs/tui.md](docs/tui.md) |
 | touching the desktop window, or anything a person sees in one | [docs/gui.md](docs/gui.md) |

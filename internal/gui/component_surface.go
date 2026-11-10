@@ -92,15 +92,19 @@ func (v Veil) ink(s Skin) color.NRGBA {
 }
 
 // Rule is a line across what it is drawn on, between what that shows and what it offers.
-type Rule struct{}
+type Rule struct{ Upright bool }
 
-// Draw draws the rule along the top of at, in the line of the layer it is on.
-func (Rule) Draw(k Kit, at Box) Box {
+// Draw draws the rule along the top of at, or down its left side when upright, in the line of the layer it is on.
+func (r Rule) Draw(k Kit, at Box) Box {
 	line := k.skin.Colour.Line.Rule
 	if k.layer == LayerPanel || k.layer == LayerPopover {
 		line = k.skin.Colour.Line.Raised
 	}
-	rule := k.put("rule", Box{X: at.X, Y: at.Y, W: at.W, H: k.skin.Size.Rule})
+	along := Box{X: at.X, Y: at.Y, W: at.W, H: k.skin.Size.Rule}
+	if r.Upright {
+		along = Box{X: at.X, Y: at.Y, W: k.skin.Size.Rule, H: at.H}
+	}
+	rule := k.put("rule", along)
 	fill(k.gtx, rule, line)
 	return rule
 }

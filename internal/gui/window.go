@@ -312,6 +312,7 @@ func (w Window) Wonder() Window {
 	if err != nil {
 		return w.failing(err)
 	}
+	w = w.rereading()
 	if version == w.version && !w.focusAged() {
 		return w
 	}

@@ -41,6 +41,7 @@ type Segmented struct {
 	On           int
 	Small        bool
 	Back, Next   Box
+	Dot          string
 }
 
 // Draw draws the track over at and every segment in its own box.
@@ -62,6 +63,10 @@ func (s Segmented) Draw(k Kit, at Box) Box {
 			ink = k.skin.Colour.Ink.Text
 		}
 		line := ButtonSaid(segment)
+		if i == 0 && s.Dot != "" {
+			Dot{Colour: s.Dot}.Draw(in.inside("segment"), Box{X: segment.X + pickerPad, Y: segment.Y + (segment.H-dotSide)/2, W: dotSide, H: dotSide})
+			line = Box{X: line.X + dotSide + between, Y: line.Y, W: max(0, line.W-dotSide-between), H: line.H}
+		}
 		if i >= len(s.Counts) || s.Counts[i] == "" {
 			sayStyled(k.gtx, k.th, ink, line, s.Said[i], size, font.Medium, 1, text.Middle)
 			continue

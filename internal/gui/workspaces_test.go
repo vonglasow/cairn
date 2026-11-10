@@ -262,7 +262,7 @@ func TestTheMenuBarOffersTheSwitcher(t *testing.T) {
 func TestTheSettingsOfAWorkspaceSayWhereEachKeyComesFrom(t *testing.T) {
 	f := newFake()
 	f.config = &engine.Config{
-		File: "/c/config.toml", Settings: "/h/settings.toml",
+		File: "/c/config.toml", Settings: "/h/settings.toml", Store: engine.Emplacement{At: "/h/cairn.db"},
 		Pages: &engine.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &engine.Archive{Days: 30},
 		Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &engine.WindowConfig{},
 		Written: []string{"archive.days", "pages.time"}, WrittenHere: []string{"pages.time"},
@@ -272,18 +272,14 @@ func TestTheSettingsOfAWorkspaceSayWhereEachKeyComesFrom(t *testing.T) {
 		t.Errorf("the panel is headed %q", got)
 	}
 	from := map[string]string{}
-	for _, line := range w.ConfigLines() {
-		from[line.Key] = line.From
+	for _, row := range w.SettingRows() {
+		from[row.Key.Name] = row.Comes
 	}
-	if from["pages.time"] != SetHere || from["archive.days"] != FromGlobal || from["time.weekends"] != "default" {
+	if from["pages.time"] != SetHere || from["archive.days"] != FromGlobal || from["time.weekends"] != ByDefault {
 		t.Errorf("the keys come from %v", from)
 	}
-	if said := strings.Join(w.ConfigHead(), "\n"); !strings.Contains(said, "/h/settings.toml") || !strings.Contains(said, "over /c/config.toml") {
-		t.Errorf("the head says %q", said)
-	}
-	segments, ok := w.TimeSegments()
-	if !ok || len(segments) != 3 || segments[2].Said != "off" || !segments[2].On || segments[0].On {
-		t.Errorf("the time reads %+v, %v", segments, ok)
+	if said := w.SettingsPath(); !strings.Contains(said, "/h/settings.toml") || !strings.Contains(said, "over /c/config.toml") {
+		t.Errorf("the scope says %q", said)
 	}
 	if !slices.Contains(w.Offers(), OpenSettings) {
 		t.Errorf("the panel offers %v", w.Offers())
@@ -356,7 +352,7 @@ func TestARecentFolderIsKeptAsAWorkspaceThroughWorkspaceAdd(t *testing.T) {
 func TestTheSettingsOfAWorkspaceSayItsLabelItsColourAndTheGlobalValueOfAKeySetHere(t *testing.T) {
 	f := newFake()
 	f.config = &engine.Config{
-		File: "/c/config.toml", Settings: "/h/settings.toml",
+		File: "/c/config.toml", Settings: "/h/settings.toml", Store: engine.Emplacement{At: "/h/cairn.db"},
 		Pages: &engine.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &engine.Archive{Days: 30},
 		Focus: &engine.FocusConfig{}, Approach: &engine.ApproachConfig{Label: "discuss"}, Time: &engine.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &engine.WindowConfig{},
 		Workspace: &engine.WorkspaceConfig{Colour: "teal"},
@@ -364,28 +360,24 @@ func TestTheSettingsOfAWorkspaceSayItsLabelItsColourAndTheGlobalValueOfAKeySetHe
 		Global: map[string]string{"pages.time": "on"},
 	}
 	w := atPlace(f, engine.WorkspaceShown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
-	lines := map[string]ConfigLine{}
-	for _, line := range w.ConfigLines() {
-		lines[line.Key] = line
+	rows := map[string]SettingRow{}
+	for _, row := range w.SettingRows() {
+		rows[row.Key.Name] = row
 	}
-	if got := lines["pages.time"]; got.Aside() != "← global: on" || lines["archive.days"].Aside() != "" {
-		t.Errorf("pages.time says %q beside it, archive.days %q", got.Aside(), lines["archive.days"].Aside())
+	if got := rows["pages.time"]; got.Aside != "← global: on" || rows["archive.days"].Aside != "" {
+		t.Errorf("pages.time says %q beside it, archive.days %q", got.Aside, rows["archive.days"].Aside)
 	}
-	if got := lines["approach.label"]; got.Value != "discuss" || got.From != "default" {
+	if got := rows["approach.label"]; got.Value != "discuss" || got.Comes != ByDefault {
 		t.Errorf("approach.label reads %+v", got)
 	}
-	colour := lines["workspace.colour"]
-	if colour.Value != "teal" || colour.Swatch != "teal" || colour.From != SetHere || colour.SwatchAt.W == 0 || colour.SwatchAt.X+colour.SwatchAt.W > colour.ValueAt.X {
+	if colour := rows["workspace.colour"]; colour.Value != "teal" || colour.Comes != SetHere || colour.Aside != "" {
 		t.Errorf("the colour reads %+v", colour)
-	}
-	if lines["pages.time"].Swatch != "" {
-		t.Error("a key that is no colour is drawn with a swatch")
 	}
 	f.config.Workspace, f.config.Approach.Label = nil, ""
 	w = atPlace(f, engine.WorkspaceShown{Store: "/s/cairn.db"}).Key("cmd+,")
-	for _, line := range w.ConfigLines() {
-		if line.Key == "workspace.colour" || (line.Key == "approach.label" && line.Value != engine.NotSaid) {
-			t.Errorf("a store wearing no colour, saying no label, reads %+v", line)
+	for _, row := range w.SettingRows() {
+		if row.Key.Name == "approach.label" && row.Value != "" {
+			t.Errorf("a store saying no label reads %+v", row)
 		}
 	}
 }

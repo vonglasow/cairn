@@ -229,6 +229,10 @@ func (w Window) writing(change func(Written) Written) Window {
 		w.renamed = change(w.renamed)
 		return w
 	}
+	if w.screen == OnConfiguration && w.keyWriting != "" {
+		w.keyWritten = change(w.keyWritten)
+		return w
+	}
 	if w.screen == OnKeeping && !w.ofView {
 		w.keepName = change(w.keepName)
 		return w
@@ -566,6 +570,9 @@ func (w Window) Choose(name string) Window {
 		w.screen = OnTheBoard
 		return w
 	}
+	if answered, took := w.choosingOnSettings(name); took {
+		return answered
+	}
 	if answered, took := w.choosingOnSeries(name); took {
 		return answered
 	}
@@ -735,14 +742,6 @@ func (w Window) Choose(name string) Window {
 		return w.openingConfiguration()
 	case "open a workspace…":
 		return w.openingSwitcher()
-	case strings.ToLower(OpenSettings):
-		w.opens = w.configured.Settings
-		return w
-	case "write the file":
-		return w.writingConfiguration()
-	case "open the file":
-		w.opens = w.configured.File
-		return w
 	case "rename":
 		return w.startingRename()
 	case "new label":

@@ -46,6 +46,7 @@ afternoon to spend:
 - [An open task](#an-open-task)
 - [Series](#series)
 - [Several at once](#several-at-once)
+- [Settings changed in place](#settings-changed-in-place)
 - [Workspaces, a window each](#workspaces-a-window-each)
 - [How it is tested](#how-it-is-tested)
 - [Deliberately not there yet](#deliberately-not-there-yet)
@@ -354,6 +355,7 @@ label is looked up in — then `Space`, `Radius`, `Size`, `Type` and the
 | `Button`, `Tabs`, `Segmented` | a word to click, the window's tabs, one choice among a few |
 | `Row`, `Tile`, `Head` | a line of a list, a line inside a field, the line naming what follows |
 | `Field`, `Check`, `Swatch` | what is typed into, the box before a value, a colour to pick |
+| `Toggle`, `Picker`, `Strip`, `SchemeTile` | a setting turned on or off; a value chosen from a list that opens elsewhere, a dot or a scheme's strip before it; a scheme told at a glance by six of its colours; a scheme offered in the theme chooser, a small board in its own colours |
 | `Progress`, `Spent`, `Scrollbar` | how much is done, how long a day took, which lines are in sight |
 | `Ring`, `TodayMark`, `DayCell` | what the keyboard is on or a target, today, a day of a month |
 | `Bar`, `Hint` | the command bar and one of its offers |
@@ -403,7 +405,11 @@ marking them, an occurrence chosen and its form,
 saving one asked, the help with the series, and the command bar answering a
 series with recurrence off — the
 fixtures holding three views, one of them gone, and two series — at the two sizes the layout is pinned at, 720 by
-560 and 1200 by 800, and fails on any overlap. A card records where it
+560 and 1200 by 800, and fails on any overlap. The settings are drawn the same
+way, on a configuration of their own: a workspace's, scrolled, Global and its
+places, a row walked to, a value refused, a field written, the theme chooser,
+the board told of a change and the board and the panel with a file that
+cannot be read (`TestTheSettingsDrawNoPartOverItsNeighbourAndEveryTextWhereItFits`). A card records where it
 writes its number and its facts, so what it writes is judged too. What it
 found when it was written, and what was done:
 
@@ -446,8 +452,11 @@ of a scheme, every other token — space, radius, size, type, shadow — as
 `Dark()` has it. No component and no screen changes, since none of them
 names a colour of its own. Which scheme a window wears, and where a person's
 own is kept, is [config.md](config.md#the-colours-the-window-wears)'s;
-the window is handed its skin when it opens (`gui.Run`), and a window on
-another workspace is another process, which reads its own.
+the window is handed its skin when it opens (`gui.Run`), and from then on
+the skin is the window's state (`Window.Skin`): the theme chooser re-skins it
+while a scheme is previewed, and a configuration read again re-skins it when
+its theme changed. A window on another workspace is another process, which
+reads its own.
 
 A scheme is a **base16 file as tinted-theming writes it** — `system`,
 `name`, `author`, `variant`, and `palette` from `base00` to `base0F`; the
@@ -628,7 +637,7 @@ some want the board as it starts each time and some the board as they left
 it, and the first was the behaviour already there
 (`@gui-the-band-opens-as-tall-as-ever`). Not in the store: the store may be
 shared, and how wide one person likes a column is nobody else's. Not in the
-configuration file either, which a person writes and cairn only reads. On
+configuration file either, which holds choices, not what a hand last dragged. On
 the tasks page only.
 
 **A form is moved by dragging it where it holds no text**. A press
@@ -773,7 +782,8 @@ to be true. The one exception is a task in focus: its time spent grows
 with no write to the store, so while one is, the window reads the store again
 once a minute (`FocusShown`), the least the time is written in. It used to
 show the time read when the board was last loaded and never move. The
-terminal board does the same on its own beat.
+terminal board does the same on its own beat. The same beat reads the configuration again
+when one of its files changed ([settings changed in place](#settings-changed-in-place)).
 
 ## The mouse
 
@@ -1729,8 +1739,8 @@ The days a week shows are the engine's to say (`Pages.WeekDays`), the one
 question both boards ask, so the terminal's week is not a second answer. Only
 what is drawn is left out: the week is still read whole, so time spent on a
 Saturday is not lost from any total that counts it, and the hidden days' cards
-are simply not drawn. There is no toggle on the strip: the window has no writer
-for the configuration yet, so the key is set in the file (see
+are simply not drawn. The key is set from the settings, `Weekends`, a choice
+of two, and the week redraws at once (see
 [config.md](config.md#the-weekends-of-a-week)).
 The page lies over the columns and draws none of them,
 so nothing on it chooses a card behind it. With three pages, `tab` and `shift+tab` walk them round,
@@ -1770,52 +1780,6 @@ number, when it was made and how big it is, `backup 3   2026-11-01 09:12
 *Close* (`esc`) rather than a head spelling out the key. Why a backup was
 made is not said: nothing records it, and a name guessed from its moment
 would be wrong as often as right.
-
-**The configuration is read from the window, and its file opened from there.**
-The window kept the configuration out of sight: to know what cairn read, or to
-change it, a person went to a terminal for `cairn config show`. `⌘,` — Settings
-on a Mac — or Configuration… in the File menu opens a panel over the board
-(`configuration.go`) that says what `config show` says, asked of the engine
-(`engine.ConfigShow`): the file read, or that it is not written yet, then a line
-a key in three columns: the key in Go Mono, its value, and where it came from
-at the right — for a place, `file`, the environment variable or flag that
-named it, or `default`; for any other key, `set here` when the settings
-beside the store say it
-([config.md](config.md#settings-that-belong-to-the-store)), `from the global
-configuration`, or `default` (`ConfigLines`, see
-[Workspaces, a window each](#workspaces-a-window-each)). A path — the store, the notes, the plugin, the file read —
-has a mark before it, two sheets one over the other, that copies it whole to
-the clipboard (`CopyMarks`, `copying.go`); so do where an open task's
-context lives and where cairn is kept, in About
-(`TestAPathIsCopiedByTheMarkBeforeIt`). Holding a path with the pointer
-copied it too, but only once its whole run was dragged over. The engine says which keys the file wrote (`Config.Written`,
-read by `config.Places.Written`), so every key says it, not only the three
-places; the values were written after keys padded with spaces in a
-proportional face, and did not line up
-(`@gui-the-configuration-is-shown`). The file read and when a change is read
-stand at the foot. A file that cannot be made sense of is said, with why,
-instead of the keys. The panel is read-only, and the file stays the truth:
-editing a TOML that carries its comments from a form would lose them, as VS Code
-and Zed, which show their settings and offer to open the file, do not. So the
-panel offers Open the file, which hands the path to the system to open in the
-editor it keeps (`open -t`, `xdg-open`, `cmd /c start`; on a Mac no
-application claims `.toml`, so a plain `open` failed with nothing to show for
-it, and `-t` hands it to the default text editor; the model only says it
-wants it, as it does of a file dialog, and the loop starts the command), and,
-while there is no file, Write the file instead, which is `config init`
-(`engine.ConfigInit`) and reads the panel again. Closing and opening the panel
-again reads the file again: nothing watches it. What the window reads of the
-file — the pages, whether the weekends are shown, the sizes kept, and the
-places the store was opened from — it reads when it opens, so the panel ends on
-a line saying changes take effect when cairn is opened again; the keys the
-engine reads at each use (archiving, focus, a deleted task's time) take effect
-sooner, and the line is still true of them
-(`@gui-the-configuration-is-shown`,
-`@gui-the-configuration-file-is-opened-from-the-window`,
-`@gui-a-missing-configuration-is-written-from-the-window`,
-`@gui-the-menu-bar-opens-the-configuration`). The terminal board does not show
-it: it is not asked for there, and `cairn config show` is a keystroke away from
-it.
 
 **A store behind the window is offered the changes it waits for.** A newer
 cairn — the MCP server Claude Code restarted, a terminal — may apply a change
@@ -2757,6 +2721,114 @@ named; *Cancel* (`esc`) takes nothing.
 *Skip flagged* is offered only when something named could go all the same —
 otherwise it is the first answer again.
 
+## Settings changed in place
+
+**The configuration stays one, in one place; the window is one way in to
+it.** `⌘,` — Settings on a Mac — or Configuration… in the File menu opens
+the settings (`configuration.go`, `draw_settings.go`), drawn as the mockup of
+#260 draws them, at both pinned sizes. Every key a person sets is changed
+there, in the workspace's `settings.toml` or in the global `config.toml`, and
+the window writes nothing itself: it sends the key, the value and the scope to
+the engine (`engine.ConfigSet`, `engine.ConfigUnset`), which checks, edits one
+line of the file and keeps every comment ([config.md](config.md#one-configuration-several-ways-in-to-it)).
+It reverses no decision: the panel was read-only because a form that encodes
+the TOML again loses the comments a person wrote, and nothing here encodes it
+again; the file is still opened from the foot, *Open settings.toml* or *Open
+config.toml*, in the system's editor (`open -t`, `xdg-open`, `cmd /c start`).
+
+**The scope is chosen at the top.** A segmented choice, the workspace's name
+with its dot or *Global*, picks the file written, and the path read is said
+beside it: `settings.toml over config.toml`, or `config.toml · under every
+workspace's own settings`. It opens on the workspace's when the window shows
+a workspace, or a store with settings beside it; on Global for a loose store
+(`@gui-settings-a-toggle-is-written-at-once`,
+`@gui-settings-a-choice-is-written-in-the-global-configuration`).
+
+**Sections at the left, a row a key.** Appearance, Pages, Time, Archive,
+Agents and Places list down a column of their own at 1200, each with its
+count, and the one in sight lit; a click scrolls to it. At 720 the panel takes
+the room the window has, the sections become heads down one scrolling column,
+and where a value comes from goes under its line. A row is the key's name, the
+key in Go Mono, its control, and at the right where its value comes from — the
+catalogue (`config.Keys`) says every one of these, so no key is listed twice:
+
+- a **switch** (`Toggle`) for a key that is true or false, written when it is
+  clicked; a **choice of a few** (`Segmented`) for words, written when one is
+  clicked; a **field** for a duration, a day, a number, a label or a folder,
+  written on `⏎` — `esc` gives it up — a value the reader refuses said under
+  it in `state.wrong`, in the reader's own words, and nothing written
+  (`@gui-settings-a-field-is-written-on-enter`); a **picker** for the theme,
+  which opens the chooser, and for the colour a workspace wears;
+- **where it comes from**, in the workspace's scope: `set here`, with what the
+  global configuration would give, `← global: on`, and *Reset to global*,
+  which takes the line out (`@gui-settings-reset-takes-the-line-out`); `from
+  global`; or `default`. Under the pointer a row that is not set here offers
+  *Set here*, which pins today's value
+  (`@gui-settings-set-here-pins-the-global-value`). In Global the marks read
+  one level down — `in config.toml` and *Reset to default*, or `default` —
+  and a key the workspace overrides says so, `· home sets its own: off`;
+- the **places** belong to the machine and live in Global only: the store and
+  the notes are shown with their copy mark and never written from the window,
+  `read when cairn opens`, since the window keeps the store it opened on
+  (`@gui-settings-places-are-read-when-cairn-opens`); the plugin's folder is a
+  field. The colour a workspace wears is never in Global.
+
+Nothing waits for a Save button, and the foot says it: *Saved as it is changed
+· the file is read again when it changes*. The keyboard walks the rows with
+`↑` `↓`, acts on one with `⏎` or space, cycles a choice with `←` `→`, takes a
+key out with `⌫`, and switches the scope with `tab`. With no global file, the
+foot offers *Write the whole file*, which is `config init`
+(`@gui-a-missing-configuration-is-written-from-the-window`).
+
+**The theme is chosen with a live preview.** The Theme row opens the chooser in
+place of the rows, *Theme of home*: the nine shipped schemes, then a person's
+own from `~/.config/cairn/themes/`, each a tile showing a small board in its
+own colours (`SchemeTile`). The keyboard or a click on a tile re-skins the
+whole window at once — board, panel and chooser — since every component reads
+`k.skin` and nothing else; `⏎`, a second click or *Wear* wears it and writes
+`window.theme` in the scope chosen; `esc` goes back to the scheme in force
+(`@gui-settings-the-theme-is-previewed-then-worn`). A scheme of one's own that
+falls short of a contrast is offered all the same, marked `falls short ×n`,
+the first shortfall said at the foot; one that cannot be read is shown with
+why, and not offered.
+
+**Read again on the beat the window already has.** Every two seconds, beside
+the store's `PRAGMA data_version`, the window stats the global file, the
+store's settings and the scheme of one's own worn (`engine.StampOf`); a size
+or a time that moved is checked against the content's hash, so a save with
+nothing changed does nothing. When one moved, it reads `config show` again
+through the engine, applies all of it — the pages and the tabs, the time, the
+weekends, the series, the theme, the workspace's colour — and says above the
+bar, for a few beats, which keys changed and from what: `settings.toml read
+again — pages.time hidden → off · window.theme default → nord`, with
+*Settings* to open the panel (`engine.ConfigChanges`,
+`@gui-settings-an-edit-by-hand-is-read-again`). No undo: undoing a hand edit
+would write the person's file behind them. A write the window made itself
+says nothing — it stamps the files again as it writes. A file watcher was
+turned down: a new dependency, and editors save by writing a new file and
+renaming it over the old one. Reading on focus was turned down for the
+store already: a board on a second screen has to be true.
+
+**A file that cannot be read keeps the last good configuration.** The window
+does not fall back to defaults, which would turn pages on and change the
+theme under the person's eyes. A banner stays above the bar until the file
+reads — the file, the line, the reader's own words, and when the configuration
+in force was read (`engine.TroubleIn`) — with *Open settings.toml*; in the
+panel, that file's rows are faded and not offered, and the other scope stays
+editable (`@gui-settings-a-file-that-cannot-be-read-keeps-the-last-good`). At
+open the window behaves as before: a file that cannot be read stops it, naming
+the file. The command line and the MCP server read the file at every use and
+refuse a file they cannot read, as they always did.
+
+**What applies at once, and what does not.** At once: the pages, the time,
+recurrence, the weekends, the theme, the workspace's colour, the approach
+label, the archive and the focus session — the last three the engine reads at
+every use anyway. Not: the store, the notes and the workspaces, which the
+window keeps as it opened, as it keeps its name after `workspace use`. Not
+yet: the native menu bar is built when the window opens, so a page turned off
+keeps its menu lines until the window opens again, and keeping the sizes
+takes effect at the next window, which is the one that reads them.
+
 ## Workspaces, a window each
 
 **The window says which workspace it shows, always.** Its title is `cairn —
@@ -2849,9 +2921,9 @@ key set here the panel says what the global configuration would give,
 the line is taken out of the file
 (`@gui-workspace-a-key-set-here-says-the-global-value`). The study drew it
 `↺`; none of the faces the window carries has that glyph, and a character
-with no face is refused by a test, so it is the arrow they do have. The panel
-still only shows: it offers *Open settings.toml* beside *Open the file*,
-handed to the system's editor as the global file is.
+with no face is refused by a test, so it is the arrow they do have. Every key
+is changed from there ([settings changed in place](#settings-changed-in-place)),
+and *Open settings.toml* hands the file to the system's editor.
 
 **A time hidden or off leaves the cards without time.** What a card cost
 against its estimate is shown only while the time is

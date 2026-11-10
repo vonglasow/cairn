@@ -4,6 +4,7 @@ import (
 	"cairn/internal/build"
 	"cairn/internal/engine"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -24,27 +25,28 @@ func TestTheSystemOpensAFileWithItsOwnCommand(t *testing.T) {
 	}
 }
 
+func configuredWith(c engine.Config) *fake {
+	f := newFake()
+	c.File = "/h/.config/cairn/config.toml"
+	c.Store, c.Notes = engine.Emplacement{At: "/h/.cairn/cairn.db"}, engine.Emplacement{At: "/h/.cairn/notes"}
+	c.Pages, c.Archive, c.Focus = &engine.PagesConfig{Tasks: true, Objectives: true, Time: "on"}, &engine.Archive{Days: 14}, &engine.FocusConfig{}
+	c.Approach, c.Time, c.Recurrence = &engine.ApproachConfig{}, &engine.TimeConfig{Deleted: "kept", Weekends: "shown"}, &engine.RecurrenceConfig{}
+	if c.Window == nil {
+		c.Window = &engine.WindowConfig{Theme: "default"}
+	}
+	f.config = &c
+	return f
+}
+
 func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
-	w := holding(newFake())
-	w.configured = engine.Config{File: "/h/.config/cairn/config.toml",
-		Store: engine.Emplacement{At: "/h/.cairn/cairn.db", By: "nothing"},
-		Notes: engine.Emplacement{At: "/h/.cairn/notes", By: "nothing"}, Plugin: engine.Emplacement{At: "/h/.cairn/plugin", By: "nothing"}}
-	w.configHere, w.screen = true, OnConfiguration
+	w := holding(configuredWith(engine.Config{})).openingConfiguration().toSection(SettingSection{Name: "Places", First: 13})
 	marks := w.CopyMarks()
-	if len(marks) != 4 {
+	if len(marks) != 2 {
 		t.Fatalf("the configuration offers %d paths to copy: %+v", len(marks), marks)
 	}
 	store := marks[0]
 	if got, _ := w.clicked(Point{X: store.At.X + store.At.W/2, Y: store.At.Y + store.At.H/2}).Copying(); got != "/h/.cairn/cairn.db" {
 		t.Errorf("the store's mark copies %q", got)
-	}
-	for _, line := range w.ConfigLines() {
-		if line.Key == "store" && line.ValueAt.X < store.At.X+store.At.W {
-			t.Errorf("the store's path %+v is written over its mark %+v", line.ValueAt, store.At)
-		}
-	}
-	if painted(drawn(t, w), store.At, Dark().Colour.Ink.Low) == 0 {
-		t.Error("the mark to copy the store's path is not drawn")
 	}
 }
 
@@ -70,39 +72,34 @@ func TestAnOpenTasksContextIsCopiedByItsMark(t *testing.T) {
 }
 
 func TestAKeyTheStoresSettingsWriteIsSaidToComeFromThem(t *testing.T) {
-	w := holding(newFake())
-	w.configured = engine.Config{File: "/h/.config/cairn/config.toml",
-		Pages: &engine.PagesConfig{}, Archive: &engine.Archive{}, Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{}, Window: &engine.WindowConfig{},
-		Written: []string{"focus.session", "time.weekends"}, WrittenHere: []string{"time.weekends"}}
+	w := holding(configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"focus.session", "time.weekends"}, WrittenHere: []string{"time.weekends"}})).openingConfiguration()
 	from := map[string]string{}
-	for _, line := range w.ConfigLines() {
-		from[line.Key] = line.From
+	for _, row := range w.SettingRows() {
+		from[row.Key.Name] = row.Comes
 	}
-	if from["time.weekends"] != SetHere || from["focus.session"] != FromGlobal || from["time.deleted"] != "default" {
+	if from["time.weekends"] != SetHere || from["focus.session"] != FromGlobal || from["time.deleted"] != ByDefault {
 		t.Errorf("the keys come from %v", from)
 	}
 }
 
-func TestTheTimeIsSaidAsItsWord(t *testing.T) {
-	w := holding(newFake())
-	w.configured = engine.Config{File: "/h/.config/cairn/config.toml",
-		Pages: &engine.PagesConfig{Time: "hidden"}, Archive: &engine.Archive{}, Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{}, Window: &engine.WindowConfig{}}
-	for _, line := range w.ConfigLines() {
-		if line.Key == "pages.time" && line.Value != "hidden" {
-			t.Errorf("pages.time says %q, want hidden", line.Value)
+func TestTheGlobalScopeSaysWhatTheWorkspaceSetsOfItsOwn(t *testing.T) {
+	w := holding(configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"time.weekends"}, WrittenHere: []string{"time.weekends"}, Global: map[string]string{"time.weekends": "shown"}})).openingConfiguration().scoped(true)
+	for _, row := range w.SettingRows() {
+		if row.Key.Name == "time.weekends" && (row.Comes != InFile || !strings.Contains(row.Theirs, "sets its own")) {
+			t.Errorf("the weekends read %+v", row)
+		}
+		if row.Key.Store {
+			t.Errorf("the global scope offers %s", row.Key.Name)
 		}
 	}
 }
 
 func TestTheConfigurationSaysTheSchemeTheWindowWears(t *testing.T) {
-	w := holding(newFake())
-	w.configured = engine.Config{File: "/h/.config/cairn/config.toml",
-		Pages: &engine.PagesConfig{}, Archive: &engine.Archive{}, Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{}, Window: &engine.WindowConfig{Theme: "nord"},
-		WrittenHere: []string{"window.theme"}, Global: map[string]string{"window.theme": "default"}}
-	for _, line := range w.ConfigLines() {
-		if line.Key == "window.theme" {
-			if line.Value != "nord" || line.From != SetHere || line.Global != "default" {
-				t.Errorf("the scheme is said %+v", line)
+	w := holding(configuredWith(engine.Config{Window: &engine.WindowConfig{Theme: "nord"}, Settings: "/h/.cairn/settings.toml", WrittenHere: []string{"window.theme"}, Global: map[string]string{"window.theme": "default"}})).openingConfiguration()
+	for _, row := range w.SettingRows() {
+		if row.Key.Name == "window.theme" {
+			if row.Value != "nord" || row.Comes != SetHere || row.Aside != "← global: default" {
+				t.Errorf("the scheme is said %+v", row)
 			}
 			return
 		}

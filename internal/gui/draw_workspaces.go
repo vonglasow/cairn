@@ -86,20 +86,3 @@ func drawSwitcherLine(k Kit, m Measure, one SwitcherLine) {
 	folder := x + named + padding
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: folder, Y: row.Y, W: max(0, right-folder), H: row.H}, one.Folder, small, k.skin.Type.Mono, text.Start)
 }
-
-func drawTimeSegments(k Kit, w Window) {
-	segments, ok := w.TimeSegments()
-	if !ok {
-		return
-	}
-	shown := Segmented{On: -1, Small: true}
-	for i, segment := range segments {
-		shown.Said = append(shown.Said, segment.Said)
-		shown.At = append(shown.At, segment.At)
-		if segment.On {
-			shown.On = i
-		}
-	}
-	first, last := segments[0].At, segments[len(segments)-1].At
-	shown.Draw(k, Box{X: first.X, Y: first.Y, W: last.X + last.W - first.X, H: first.H})
-}

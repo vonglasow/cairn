@@ -274,7 +274,7 @@ func (w *world) open() error {
 	if w.keepSizes {
 		w.w = w.w.KeepingSizes(SizesAt(engine.Places{Store: w.path}.Sizes()))
 	}
-	w.w = w.w.Look()
+	w.w = w.w.Look().ReadingConfiguration()
 	return w.w.Wrong()
 }
 

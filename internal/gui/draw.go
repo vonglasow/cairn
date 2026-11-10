@@ -104,6 +104,7 @@ func Draw(k Kit, w Window) {
 	}
 	drawBar(k.on(LayerBar), l, w)
 	drawPills(k.on(LayerBar), w)
+	drawBoardBanners(k.on(LayerBar), w)
 	panel, popover := k.on(LayerPanel), k.on(LayerPopover)
 	if w.formUnder() {
 		drawForm(panel, w)
@@ -249,37 +250,6 @@ func drawSwatches(k Kit, w Window) {
 	for i, swatch := range swatches {
 		Swatch{Colour: swatch.Colour, Picked: i == w.ColourPick()}.Draw(k.inside("popover"), swatch.At)
 	}
-}
-
-func drawConfiguration(k Kit, w Window) {
-	box := w.ConfigurationBox()
-	Panel{Head: Heads(w)}.Draw(k, box)
-	k = k.inside("panel")
-	mono := k.skin.Type.Mono
-	lines := w.ConfigLines()
-	head := w.ConfigHead()
-	for i, said := range head {
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Inside(ListRowAt(box, i)), said, small, mono, text.Start)
-	}
-	for _, line := range lines {
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, line.KeyAt, line.Key, small, mono, text.Start)
-		if line.Swatch != "" {
-			Dot{Colour: line.Swatch}.Draw(k, line.SwatchAt)
-		}
-		if line.Key != "pages.time" {
-			say(k.gtx, k.th, k.skin.Colour.Ink.Text, line.ValueAt, line.Value, reads)
-		}
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line.FromAt, line.fromSaid(), small, mono, text.End)
-	}
-	drawTimeSegments(k, w)
-	for i, said := range w.ConfigFoot() {
-		row := Inside(ListRowAt(box, len(head)+len(lines)+i))
-		if i == 0 {
-			row = Box{X: row.X + copyRoom, Y: row.Y, W: row.W - copyRoom, H: row.H}
-		}
-		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, row, said, reads)
-	}
-	drawPanelOffers(k, box, w)
 }
 
 func drawDropFoot(k Kit, w Window, box Box, keys [][2]string) {

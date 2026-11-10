@@ -9,11 +9,15 @@ import (
 type Row struct {
 	Said                  string
 	Picked, Taken, Danger bool
+	Hover                 bool
 }
 
 // Draw draws the row's ground over at and writes its words inside it.
 func (r Row) Draw(k Kit, at Box) Box {
 	k.put("row", at)
+	if r.Hover {
+		rounded(k.gtx, at, k.skin.Radius.Row, k.skin.Colour.Surface.Hover)
+	}
 	if r.Taken {
 		rounded(k.gtx, at, k.skin.Radius.Row, k.skin.Colour.Surface.Tint)
 	}

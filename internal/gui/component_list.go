@@ -258,7 +258,8 @@ func (f Figures) Draw(k Kit, at Box) Box {
 // Banner is a short boxed message inside a panel or a detail: what was refused, in the wrong's tones, or what to watch, in on hold's; then what to do, on a line of its own.
 type Banner struct {
 	Said, Then string
-	Warn       bool
+	Warn, Told bool
+	Room       int
 }
 
 // BannerHigh is how tall a banner saying that is at a width: its words wrapped, and its second line under them.
@@ -279,9 +280,12 @@ func (b Banner) Draw(k Kit, at Box) Box {
 	if b.Warn {
 		ground, ink = k.skin.Colour.Standing["on-hold"].Back, k.skin.Colour.Standing["on-hold"].Ink
 	}
+	if b.Told {
+		ground, ink = k.skin.Colour.Surface.Tint, k.skin.Colour.Ink.OnTint
+	}
 	rounded(k.gtx, at, k.skin.Radius.Card, ground)
 	m := k.measured()
-	inside := Box{X: at.X + bannerPad, Y: at.Y + bannerPad, W: at.W - 2*bannerPad}
+	inside := Box{X: at.X + bannerPad, Y: at.Y + bannerPad, W: at.W - 2*bannerPad - b.Room}
 	said := m.Wrapped(b.Said, inside.W, reads).Said
 	for i, line := range said {
 		sayStyled(k.gtx, k.th, ink, Box{X: inside.X, Y: inside.Y + i*lineHigh, W: inside.W, H: lineHigh}, line, reads, font.SemiBold, 1, text.Start)

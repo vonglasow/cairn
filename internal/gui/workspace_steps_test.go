@@ -318,63 +318,6 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the configuration does not name %q", name)
 	})
-	sc.Then(`^the panel reads the settings of "([^"]*)" over the global configuration$`, func(name string) error {
-		want := []string{filepath.Join(w.spaces.FolderOf(name), config.SettingsFile), "over " + config.FileIn(w.spaces.Dir)}
-		if got := w.w.ConfigHead(); !slices.Equal(got, want) {
-			return fmt.Errorf("the panel's head reads %q, not %q", got, want)
-		}
-		return nil
-	})
-	sc.Then(`^the configuration reads "([^"]*)" (set here|from the global configuration)$`, func(key, from string) error {
-		for _, line := range w.w.ConfigLines() {
-			if line.Key == key {
-				if line.From != from {
-					return fmt.Errorf("%q reads %q %s, not %s", key, line.Value, line.From, from)
-				}
-				return nil
-			}
-		}
-		return fmt.Errorf("the panel holds no %q", key)
-	})
-	sc.Then(`^the configuration reads "([^"]*)" (set here|from the global configuration), (?:"([^"]*)"|nothing) beside it$`, func(key, from, aside string) error {
-		for _, line := range w.w.ConfigLines() {
-			if line.Key == key {
-				if line.From != from || line.Aside() != aside {
-					return fmt.Errorf("%q reads %q %s, %q beside it; not %s, %q", key, line.Value, line.From, line.Aside(), from, aside)
-				}
-				return nil
-			}
-		}
-		return fmt.Errorf("the panel holds no %q", key)
-	})
-	sc.Then(`^the colour of the workspace reads "([^"]*)", beside its swatch$`, func(colour string) error {
-		for _, line := range w.w.ConfigLines() {
-			if line.Key == "workspace.colour" {
-				if line.Value != colour || line.Swatch != colour || line.SwatchAt.W == 0 || line.SwatchAt.X+line.SwatchAt.W > line.ValueAt.X {
-					return fmt.Errorf("the colour reads %q, its swatch %q at %+v, the value at %+v", line.Value, line.Swatch, line.SwatchAt, line.ValueAt)
-				}
-				return nil
-			}
-		}
-		return fmt.Errorf("the panel says no colour: %+v", w.w.ConfigLines())
-	})
-	sc.Then(`^the time reads "([^"]*)" of (".*")$`, func(on, list string) error {
-		segments, ok := w.w.TimeSegments()
-		if !ok {
-			return errors.New("the panel says nothing of the time")
-		}
-		var said []string
-		for _, segment := range segments {
-			said = append(said, segment.Said)
-			if segment.On != (segment.Said == on) {
-				return fmt.Errorf("the segment %q is on: %v", segment.Said, segment.On)
-			}
-		}
-		if want := quoted(list); !slices.Equal(said, want) {
-			return fmt.Errorf("the time reads %q, not %q", said, want)
-		}
-		return nil
-	})
 	sc.Then(`^the window asks the system to open the settings of "([^"]*)"$`, func(name string) error {
 		got, asked := w.w.OpenAsked()
 		if want := filepath.Join(w.spaces.FolderOf(name), config.SettingsFile); !asked || got != want {

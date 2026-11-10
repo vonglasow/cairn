@@ -55,6 +55,15 @@ func (w Window) Click(p Point) Window {
 	if cross, ok := w.PanelClose(); ok && cross.In(p) {
 		return w.Choose(w.leavingOffer())
 	}
+	if clicked, on := w.clickingBanners(p); on {
+		return clicked
+	}
+	if w.screen == OnConfiguration {
+		if offer, on := w.offerAt(p); on {
+			return w.Choose(offer)
+		}
+		return w.clickingSettings(p)
+	}
 	if w.screen == OnBackups {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
@@ -172,6 +181,9 @@ func (w Window) Hovering(p Point) Window {
 	}
 	w.pointed = w.slotAt(p)
 	w.bubbled, w.bubbledFrom = w.countAt(p)
+	if w.screen == OnConfiguration {
+		w = w.hoveringSettings(p)
+	}
 	return w
 }
 
@@ -702,6 +714,9 @@ func (w Window) wheeling(by int, p Point, now time.Time) Window {
 
 // Scroll moves the column under the pointer, and no other.
 func (w Window) Scroll(p Point, by int) Window {
+	if w.screen == OnConfiguration {
+		return w.scrollingSettings(by)
+	}
 	if w.screen == OnForm {
 		if frame, ok := w.partsFrame(); ok && frame.In(p) {
 			return w.scrollingParts(by)

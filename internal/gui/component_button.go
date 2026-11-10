@@ -12,13 +12,22 @@ type Button struct {
 	Said, Key string
 	Look      buttonLook
 	Keyed     bool
+	Small     bool
 }
 
 // Draw draws the button in at.
 func (b Button) Draw(k Kit, at Box) Box {
 	k.put("button", at)
 	back, ink, chip := k.skin.button(b.Look)
-	rounded(k.gtx, at, k.skin.Radius.Control, back)
+	if b.Look == buttonGhost {
+		ringed(k, at, k.skin.Radius.Control, k.skin.Colour.Line.Edge)
+	} else {
+		rounded(k.gtx, at, k.skin.Radius.Control, back)
+	}
+	if b.Small {
+		sayStyled(k.gtx, k.th, ink, Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}, b.Said, small, font.Medium, 1, text.Middle)
+		return at
+	}
 	if !b.Keyed {
 		sayStyled(k.gtx, k.th, ink, ButtonSaid(at), b.Said, reads, font.Medium, 1, text.Middle)
 		return at
@@ -58,6 +67,7 @@ const (
 	buttonDanger
 	buttonOnLit
 	buttonDangerLit
+	buttonGhost
 )
 
 func (s Skin) button(look buttonLook) (back, ink, chip color.NRGBA) {

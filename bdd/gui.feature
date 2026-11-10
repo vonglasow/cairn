@@ -5200,7 +5200,7 @@ Feature: The desktop board
       Then the field "title" reads "Ship it now"
       And the form's steps read "Draft"
 
-  Rule: The configuration is read from the window
+  Rule: The settings are changed in place, and read again when they change
 
     @gui-the-configuration-is-shown
     Scenario: ⌘, shows the configuration in use, key by key, and where each comes from
@@ -5208,26 +5208,27 @@ Feature: The desktop board
       When I open the window
       And I press "cmd+,"
       Then the panel is headed "Configuration"
-      And the configuration reads "store" from the file
+      And the settings are written in "Global"
+      And the configuration reads "store" read when cairn opens
+      And the configuration reads "plugin" from its default
       And the configuration reads "time.weekends" from its default
-      And the configuration's values start on one line down the panel
 
     @gui-the-configuration-file-is-opened-from-the-window
     Scenario: the file is handed to the system to open
       Given a configuration file naming the store
       When I open the window
       And I press "cmd+,"
-      Then the bar offers "Open the file" under "⏎"
-      When I press "enter"
+      And I choose "Open config.toml"
       Then the window asks the system to open the configuration file
 
     @gui-a-missing-configuration-is-written-from-the-window
-    Scenario: with no file, the window writes one
+    Scenario: with no file, the window writes the whole of one
       When I open the window
       And I press "cmd+,"
-      And I choose "Write the file"
+      And I choose "Write the whole file"
       Then a configuration file exists
-      And the configuration reads "plugin" from the file
+      When I choose the scope "Global"
+      Then the configuration reads "plugin" from the file
 
     @gui-the-menu-bar-opens-the-configuration
     Scenario: Configuration… in the menu bar shows the configuration
@@ -5235,6 +5236,138 @@ Feature: The desktop board
       And I pick "Configuration…" in the menu bar
       Then the panel is headed "Configuration"
       And the bar offers "Close" under "esc"
+
+    @gui-settings-a-toggle-is-written-at-once
+    Scenario: a switch clicked is written in the settings of the workspace at once, and the window follows it
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the settings are written in "home"
+      And the configuration reads "recurrence.on" from its default
+      When I click the switch of "recurrence.on"
+      Then the settings of the workspace "home" say `on = true`
+      And the configuration reads "recurrence.on" set here
+      And the banner says nothing of a change
+      When I press "esc"
+      Then the tabs read "TASKS", "OBJECTIVES", "TIME", "SERIES"
+
+    @gui-settings-a-choice-is-written-in-the-global-configuration
+    Scenario: with the global configuration chosen, a choice of three is written there
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I choose the scope "Global"
+      And I click "hidden" on the row "pages.time"
+      Then the global configuration says `time = "hidden"`
+      And the settings of the workspace "home" do not say `time = "hidden"`
+      And the configuration reads "pages.time" from the file
+
+    @gui-settings-reset-takes-the-line-out
+    Scenario: Reset to global takes the key out of the settings of the workspace, and the global value answers again
+      Given the workspace "home", the default
+      And the settings of the workspace "home" turn the time off
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I click "Reset to global" on the row "pages.time"
+      Then the settings of the workspace "home" do not say `time = "off"`
+      And the configuration reads "pages.time" from its default
+      And the tabs read "TASKS", "OBJECTIVES", "TIME"
+
+    @gui-settings-set-here-pins-the-global-value
+    Scenario: a key from the global configuration is set here with the value it has, under the pointer
+      Given the workspace "home", the default
+      And the global configuration says the archive lasts 30 days
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I click "Set here" on the row "archive.days"
+      Then the settings of the workspace "home" say `days = 30`
+      And the configuration reads "archive.days" set here
+
+    @gui-settings-a-field-is-written-on-enter
+    Scenario: a field is written when enter is pressed, and a value it does not take is said under it and not written
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I write "1 hour" in the row "focus.session"
+      Then the row "focus.session" says `focus.session: "1 hour" is not a duration — write 1h, 45m, 1h30m`
+      And the settings of the workspace "home" do not say `session = "1 hour"`
+      When I write "45m" in the row "focus.session"
+      Then the settings of the workspace "home" say `session = "45m"`
+      And the configuration reads "focus.session" set here
+
+    @gui-settings-places-are-read-when-cairn-opens
+    Scenario: the store and the notes are shown and never written from the window
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I choose the scope "Global"
+      Then the configuration reads "store" read when cairn opens
+      And the configuration reads "notes" read when cairn opens
+      And the row "store" offers nothing to change
+
+    @gui-settings-the-theme-is-previewed-then-worn
+    Scenario: the theme chooser re-skins the window as the keyboard walks it, wears the scheme on enter, and esc goes back
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I click the control of "window.theme"
+      Then the panel is headed "Theme of home"
+      When I walk the chooser to "nord"
+      Then the window wears "nord"
+      When I press "esc"
+      Then the window wears "default"
+      And the panel is headed "Settings of home"
+      When I click the control of "window.theme"
+      And I walk the chooser to "gruvbox-dark"
+      And I press "enter"
+      Then the window wears "gruvbox-dark"
+      And the settings of the workspace "home" say `theme = "gruvbox-dark"`
+      And the configuration reads "window.theme" set here
+
+    @gui-settings-an-edit-by-hand-is-read-again
+    Scenario: settings written by hand are read again on the beat, applied, and said
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And the settings of the workspace "home" are written by hand:
+        """
+        [pages]
+        time = "off"
+
+        [window]
+        theme = "nord"
+        """
+      And the window looks again
+      Then the banner says "settings.toml read again"
+      And the banner says "pages.time on → off"
+      And the banner says "window.theme default → nord"
+      And the window wears "nord"
+      And the tabs read "TASKS", "OBJECTIVES"
+
+    @gui-settings-a-file-that-cannot-be-read-keeps-the-last-good
+    Scenario: settings that cannot be read leave the last good ones in force, said until they read
+      Given the workspace "home", the default
+      And the settings of the workspace "home" turn the time off
+      When I open the window on the workspace "home"
+      And the settings of the workspace "home" are written by hand:
+        """
+        [pages]
+        time = "hiden"
+        """
+      And the window looks again
+      Then the banner says "settings.toml cannot be read"
+      And the banner says "line 2"
+      And the tabs read "TASKS", "OBJECTIVES"
+      When I press "cmd+,"
+      Then the row "pages.time" is not offered
+      When the settings of the workspace "home" are written by hand:
+        """
+        [pages]
+        time = "on"
+        """
+      And the window looks again
+      Then the banner says "pages.time off → on"
+      And the banner says nothing of a file that cannot be read
+      And the tabs read "TASKS", "OBJECTIVES", "TIME"
 
   Rule: The window names its workspace, and opens another in a window of its own
 
@@ -5364,8 +5497,7 @@ Feature: The desktop board
       And the configuration reads "archive.days" from the global configuration
       And the configuration reads "time.weekends" from its default
       And the time reads "off" of "on", "hidden", "off"
-      And the bar offers "Open settings.toml" under "⏎"
-      When I press "enter"
+      When I choose "Open settings.toml"
       Then the window asks the system to open the settings of "home"
 
     @gui-workspace-the-switcher-opens-the-settings

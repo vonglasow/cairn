@@ -31,6 +31,9 @@ func HeadsOn(w Window, screen Screen) string {
 	case OnViews:
 		return ViewsSays
 	case OnConfiguration:
+		if w.chooserOpen {
+			return "Theme of " + w.hereName()
+		}
 		if name := w.switcher.place.Workspace; name != "" {
 			return "Settings of " + name
 		}
@@ -276,6 +279,8 @@ func (w Window) OfferLook(i int, offer string) buttonLook {
 		return buttonFaint
 	case w.screen == OnFates && strings.HasPrefix(offer, "Delete"):
 		return buttonDanger
+	case w.screen == OnConfiguration && !strings.HasPrefix(offer, "Wear "):
+		return buttonPlain
 	case offer == "Delete" || offer == "Throw away" || offer == DeleteTheSeriesSays || offer == StopTheSeries || (i == 0 && w.screen == OnAsking && w.destroys()):
 		return buttonDanger
 	case i == 0 && !leaving[offer]:
@@ -319,13 +324,7 @@ func (w Window) Offers() []string {
 		}
 		return []string{"Take off", "No filter", "Close"}
 	case OnConfiguration:
-		if w.configured.Settings != "" && w.switcher.place.Workspace != "" {
-			return []string{OpenSettings, "Open the file", "Close"}
-		}
-		if w.configHere {
-			return []string{"Open the file", "Close"}
-		}
-		return []string{"Write the file", "Close"}
+		return w.settingsOffers()
 	case OnLabels:
 		if w.renaming {
 			return []string{"Save", "Cancel"}
@@ -570,6 +569,9 @@ func (w Window) hintWide(offer string) int {
 }
 
 func (w Window) shortcut(offer string) string {
+	if w.screen == OnConfiguration {
+		return w.settingsShortcut(offer)
+	}
 	if w.screen == OnAsking && offer == w.agreeingVerb() {
 		return "enter"
 	}

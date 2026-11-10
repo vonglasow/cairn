@@ -120,6 +120,19 @@ func TestTroubleIn_namesTheFileTheLineAndWhy(t *testing.T) {
 	}
 }
 
+func TestSchemeOf_readsTheSchemeWhereConfigShowSaysItIs(t *testing.T) {
+	h := homeHolding(t, "", nil)
+	for _, seen := range answered(t, h).Themes {
+		scheme, err := SchemeOf(seen)
+		if err != nil || scheme.Slug != seen.Slug {
+			t.Errorf("%s reads %+v, %v", seen.Slug, scheme.Slug, err)
+		}
+	}
+	if _, err := SchemeOf(ThemeSeen{Slug: "mine", From: "/nowhere/mine.yaml"}); err == nil {
+		t.Error("a scheme of one's own gone is read")
+	}
+}
+
 func TestPlacesOfAnswer_sayWhereTheSettingsAre(t *testing.T) {
 	h := homeHolding(t, homeIsDefault, nil, "h")
 	if got := SettingsOf(answered(t, h)); got != filepath.Join(h.Dir, "h", config.SettingsFile) {
