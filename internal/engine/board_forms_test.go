@@ -132,3 +132,14 @@ func TestANewTaskFormCanComeServingAnObjective(t *testing.T) {
 		t.Errorf("saving it asked %s %v %v", op.Name(), in.Given, in.Listed)
 	}
 }
+
+func TestANewObjectiveFormCanComeUnderAParent(t *testing.T) {
+	fields := NewSubGoalFields(4)
+	if parent, _ := valueOf(fields, "parent"); parent != "4" {
+		t.Errorf("a sub-objective made under 4 sits under %q", parent)
+	}
+	op, in := Saved(fields, true, 0, ObjectiveNew, ObjectiveEdit)
+	if op.Name() != "objective_new" || in.Given["parent"] != "4" {
+		t.Errorf("saving it asked %s %v", op.Name(), in.Given)
+	}
+}

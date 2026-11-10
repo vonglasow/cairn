@@ -139,16 +139,59 @@ func (b Board) goals() []engine.Goal {
 	branches := engine.Branches(engine.FoundGoals(b.snap.Goals, b.query))
 	out := make([]engine.Goal, 0, len(branches))
 	for _, br := range branches {
+		if br.Under && slices.Contains(b.folded, br.Goal.Parent) {
+			continue
+		}
 		out = append(out, br.Goal)
 	}
 	return out
 }
 
-func (b Board) segments() []engine.Segment {
-	if b.inside == 0 {
-		return nil
+func (b Board) folding() Board {
+	tree := b.snap.TreeOf(b.goal)
+	if g, found := b.snap.Goal(tree); !found || len(g.Children) == 0 {
+		return b
 	}
-	return b.snap.Segments(b.inside, b.unopened())
+	if at := slices.Index(b.folded, tree); at >= 0 {
+		b.folded = slices.Delete(slices.Clone(b.folded), at, at+1)
+	} else {
+		b.folded = append(slices.Clone(b.folded), tree)
+	}
+	b.goal = tree
+	return b.follow()
+}
+
+func (b Board) segments() []engine.Segment {
+	if b.inside != 0 {
+		return b.snap.Segments(b.inside, b.unopened())
+	}
+	if value, ok := b.objectiveShown(); ok && b.tab == Tasks {
+		root, _ := strconv.Atoi(strings.TrimSuffix(value, " itself"))
+		return b.snap.Segments(b.snap.TreeOf(root), engine.OnTheBoard(b.snap.Cards, b.archived))
+	}
+	return nil
+}
+
+func (b Board) objectiveShown() (string, bool) {
+	for _, f := range b.filters {
+		if taken := f.Taken(); f.Arg == "objective" && len(taken) == 1 {
+			return taken[0], true
+		}
+	}
+	return "", false
+}
+
+func (b Board) segmentOn() int {
+	if b.inside != 0 {
+		return b.segment
+	}
+	value, _ := b.objectiveShown()
+	for i, seg := range b.segments() {
+		if seg.Value == value {
+			return i
+		}
+	}
+	return 0
 }
 
 func (b Board) walkingSegments(by int) Board {
@@ -156,7 +199,11 @@ func (b Board) walkingSegments(by int) Board {
 	if len(segments) == 0 {
 		return b
 	}
-	b.segment = ((b.segment+by)%len(segments) + len(segments)) % len(segments)
+	b.segment = ((b.segmentOn()+by)%len(segments) + len(segments)) % len(segments)
+	if b.inside == 0 {
+		b.filters = b.filters.On("objective", segments[b.segment].Value)
+		b.segment = 0
+	}
 	b.mode, b.task, b.inBand = Normal, 0, false
 	b.offsets = [engine.Columns]int{}
 	return b

@@ -27,4 +27,4 @@
 
 
 
- hjkl ←↓↑→ objectives   ⏎ open   t its tasks   a new   e edit   D delete
+ jk ↓↑ objectives   ⏎ open   t its tasks   a new   e edit   D delete

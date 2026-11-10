@@ -47,11 +47,20 @@ func (s Snapshot) Reach(n int) []int {
 	return append([]int{n}, g.Children...)
 }
 
-// Segment is one way of narrowing an objective's board: all of it, one sub-objective, or the objective itself; what it reaches, and how many of the cards given it keeps.
+// Segment is one way of narrowing an objective's board: all of it, one sub-objective, or the objective itself; the objective filter's value standing for it, what it reaches, and how many of the cards given it keeps.
 type Segment struct {
 	Name  string
+	Value string
 	Reach []int
 	Count int
+}
+
+// TreeOf is the level-one objective the one numbered heads or sits under: its parent, or itself.
+func (s Snapshot) TreeOf(n int) int {
+	if g, found := s.Goal(n); found && g.Parent != 0 {
+		return g.Parent
+	}
+	return n
 }
 
 // Segments are the ways an objective holding sub-objectives narrows its board, counted over the cards given; nothing for an objective holding none.
@@ -60,12 +69,13 @@ func (s Snapshot) Segments(n int, cards []Card) []Segment {
 	if !found || len(g.Children) == 0 {
 		return nil
 	}
-	out := []Segment{{Name: "all", Reach: s.Reach(n)}}
+	value := strconv.Itoa(n)
+	out := []Segment{{Name: "all", Value: value, Reach: s.Reach(n)}}
 	for _, c := range g.Children {
 		sub, _ := s.Goal(c)
-		out = append(out, Segment{Name: sub.Title, Reach: []int{c}})
+		out = append(out, Segment{Name: sub.Title, Value: strconv.Itoa(c), Reach: []int{c}})
 	}
-	out = append(out, Segment{Name: "itself", Reach: []int{n}})
+	out = append(out, Segment{Name: "itself", Value: value + " itself", Reach: []int{n}})
 	for i := range out {
 		out[i].Count = len(Serving(cards, out[i].Reach...))
 	}

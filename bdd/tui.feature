@@ -679,6 +679,73 @@ Feature: The board
       And the board carries 1 task
       And the board says "filtered by objective #1 Home automation, with its sub-objectives"
 
+    @tui-objective-brackets-walk-its-tasks-shown
+    Scenario: ] and [ narrow the tasks an objective shows to one sub-objective, or to the objective itself
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Vent slots" serving objective 2
+      And I added a task titled "OTA updates" serving objective 3
+      And I added a task titled "Buy the relay" serving objective 1
+      When I open the board
+      And I press "tab", "t", "]"
+      Then the tab is "TASKS"
+      And the board carries 1 task
+      And "BACKLOG" carries "Vent slots"
+      And the board says "filtered by objective #2 Enclosure"
+      When I press "]", "]"
+      Then the board carries 1 task
+      And the board says "filtered by objective #1 Home automation, itself"
+      When I press "]"
+      Then the board carries 3 tasks
+      When I press "["
+      Then the board carries 1 task
+      And "BACKLOG" carries "Buy the relay"
+
+    @tui-objective-shift-n-adds-a-sub-objective
+    Scenario: N adds a sub-objective under the objective the cursor is on
+      Given I added an objective titled "Home automation"
+      When I open the board
+      And I press "tab", "shift+n"
+      And I set the field "title" to "Firmware"
+      And I save the form
+      Then objective 2 sits under objective 1
+
+    @tui-objective-shift-n-on-a-sub-objective-adds-beside-it
+    Scenario: N on a sub-objective adds another under the same parent
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      When I open the board
+      And I press "tab", "j", "shift+n"
+      And I set the field "title" to "Firmware"
+      And I save the form
+      Then objective 3 sits under objective 1
+
+    @tui-objective-z-folds-a-parent
+    Scenario: z folds a parent's sub-objectives away, and unfolds them again
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added an objective titled "Firmware" under objective 1
+      When I open the board
+      And I press "tab", "z"
+      Then the board does not say "Enclosure"
+      And the board says "+2"
+      When I press "z"
+      Then the board says "Enclosure"
+
+    @tui-objective-z-on-a-sub-objective-folds-its-parent
+    Scenario: z on a sub-objective folds its parent, and the cursor goes up to it
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      When I open the board
+      And I press "tab", "j", "z", "e"
+      And I set the field "title" to "Domotics"
+      And I save the form
+      And I press "esc"
+      Then the board says "Domotics"
+      And the board does not say "Home automation"
+      And the board does not say "Enclosure"
+
     @tui-objective-itself-leaves-its-sub-objectives-out
     Scenario: the objective filter narrows to a parent itself, leaving its sub-objectives out
       Given I added an objective titled "Home automation"

@@ -21,10 +21,10 @@
  │   v           the views — a   │ │                               │
  │ figure opens one, 0 the whole │ │ OBJECTIVES — a tree, sub-     │
  │ board                         │ │ objectives under ├─ └─        │
- │   ⇥           next tab —      │ │   ▶  active    being worked   │
- │ tasks, objectives, the time   │ │ towards                       │
- │ spent                         │ │   ‖  on-hold   not for now    │
- │   :           command — what  │ │   ✓  reached   done with      │
- │ it answers is said until esc  │ │   ✕  dropped   given up       │
+ │   [ ]         filtered on an  │ │   ▶  active    being worked   │
+ │ objective: walk its sub-      │ │ towards                       │
+ │ objectives                    │ │   ‖  on-hold   not for now    │
+ │   ⇥           next tab —      │ │   ✓  reached   done with      │
+ │ tasks, objectives, the time   │ │   ✕  dropped   given up       │
 
  ↓↑ read on   esc close

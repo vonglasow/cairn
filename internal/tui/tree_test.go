@@ -172,3 +172,52 @@ func TestTheServesFieldIsATree(t *testing.T) {
 		t.Errorf("the parent is not said to be counted through what is below:\n%s", strip(b.Draw()))
 	}
 }
+
+func TestShiftNOpensAnObjectiveFormUnderTheChosenTree(t *testing.T) {
+	for _, keys := range [][]string{{"tab", "shift+n"}, {"tab", "j", "shift+n"}} {
+		b := hit(standing(treeFake()).with(plainSkin), keys...)
+		if b.screen != OnForm || !b.form.ForObjective || !b.form.Adding {
+			t.Fatalf("%v opened no new objective's form", keys)
+		}
+		if parent := b.form.valueOf("parent"); parent != "1" {
+			t.Errorf("%v put the new objective under %q, want 1", keys, parent)
+		}
+	}
+}
+
+func TestZFoldsAParentAndTheCursorClimbsToIt(t *testing.T) {
+	b := hit(standing(treeFake()).with(plainSkin), "tab", "j", "z")
+	if b.goal != 1 {
+		t.Errorf("folding from a sub-objective left the cursor on %d, want its parent 1", b.goal)
+	}
+	drawn := strip(b.Draw())
+	if strings.Contains(drawn, "Enclosure") || !strings.Contains(drawn, "+2") {
+		t.Errorf("a folded parent still shows its sub-objectives, or not how many:\n%s", drawn)
+	}
+	if b = hit(b, "j"); b.goal != 4 {
+		t.Errorf("j from a folded parent reached %d, want 4", b.goal)
+	}
+	b = hit(b, "k", "z")
+	if !strings.Contains(strip(b.Draw()), "Enclosure") {
+		t.Errorf("z again did not unfold:\n%s", strip(b.Draw()))
+	}
+}
+
+func TestBracketsWalkTheTasksAnObjectiveShows(t *testing.T) {
+	b := hit(standing(treeFake()).with(plainSkin), "tab", "t")
+	drawn := strip(b.Draw())
+	if !strings.Contains(drawn, "‹ all 3 ›") || !strings.Contains(drawn, "[ ]") {
+		t.Errorf("the tasks shown carry no sub-objective to walk:\n%s", drawn)
+	}
+	b = hit(b, "]")
+	if got := b.cards(); len(got) != 1 || got[0].Number != 1 {
+		t.Errorf("] reached %v, want the task of Enclosure", got)
+	}
+	b = hit(b, "[", "[")
+	if got := b.cards(); len(got) != 1 || got[0].Number != 3 {
+		t.Errorf("[ from all reached %v, want the objective itself", got)
+	}
+	if said := b.filters.Said(); said != "objective #1 Home automation, itself" {
+		t.Errorf("the filter says %q", said)
+	}
+}

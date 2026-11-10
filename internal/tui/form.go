@@ -161,10 +161,7 @@ func (b Board) formHeight() int { return max(1, b.height-fixed) }
 
 func (b Board) addForm() (Board, tea.Cmd) {
 	if b.tab == Objectives {
-		b.form = asking(engine.NewGoalFields(), b.formWidth(), b.formHeight(), b.skin, b.about(true, 0))
-		b.form.Adding, b.form.ForObjective = true, true
-		b.screen = OnForm
-		return b.started()
+		return b.addGoalForm(engine.NewGoalFields())
 	}
 	state := engine.StateAt(b.column)
 	if b.inBand {
@@ -174,6 +171,20 @@ func (b Board) addForm() (Board, tea.Cmd) {
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
+}
+
+func (b Board) addGoalForm(fields []engine.Field) (Board, tea.Cmd) {
+	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(true, 0))
+	b.form.Adding, b.form.ForObjective = true, true
+	b.screen = OnForm
+	return b.started()
+}
+
+func (b Board) subGoalForm() (Board, tea.Cmd) {
+	if b.goal == 0 {
+		return b, nil
+	}
+	return b.addGoalForm(engine.NewSubGoalFields(b.snap.TreeOf(b.goal)))
 }
 
 func (b Board) linkedForm() (Board, tea.Cmd) {

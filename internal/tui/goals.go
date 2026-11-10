@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -112,12 +113,16 @@ func (b Board) goalRows(g engine.Goal, width int) []string {
 	if lipgloss.Width(told) > width/3 {
 		told, dressed = "", ""
 	}
-	room := max(1, width-rowIndent-len(strconv.Itoa(g.Number))-2-lipgloss.Width(told)-2)
+	hidden := ""
+	if slices.Contains(b.folded, g.Number) {
+		hidden = "  +" + strconv.Itoa(len(g.Children))
+	}
+	room := max(1, width-rowIndent-len(strconv.Itoa(g.Number))-2-lipgloss.Width(told)-2-len(hidden))
 	title := b.skin.Bright.Render(Clip(g.Title, room))
 	if g.Number == b.goal && b.tab == Objectives {
 		title = b.skin.Title.Render(Clip(g.Title, room))
 	}
-	head := mark + "  " + b.skin.Faint.Render(strconv.Itoa(g.Number)) + "  " + title
+	head := mark + "  " + b.skin.Faint.Render(strconv.Itoa(g.Number)) + "  " + title + b.skin.Faint.Render(hidden)
 	return []string{
 		Spread(head, dressed, width),
 		strings.Repeat(" ", rowIndent) + b.goalFacts(g, width-rowIndent),

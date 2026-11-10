@@ -435,8 +435,10 @@ from that mode's bar, and pressing it there does nothing.
 | `e` | | ✓ | ✓ | the form |
 | `D` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out. It was `d`, one slip from losing a task; the window deletes with `⌘⌫`, which a terminal is not sent, so here it is the shifted letter. An objective holding sub-objectives or tasks asks what goes with it — [below](#deleting-an-objective) |
 | `t` | | | ✓ | its tasks, on the tasks board |
+| `N` | | | ✓ | a new sub-objective, under the objective the cursor is on, or beside the sub-objective it is on |
+| `z` | | | ✓ | fold a parent's sub-objectives away, or show them again |
 | `v` | ✓ | | | the views — a figure opens one, `0` the whole board, `esc` closes them |
-| `[` `]` | ✓ | ✓ | | on an objective's board, narrow to one sub-objective, the objective itself, or all of it |
+| `[` `]` | ✓ | ✓ | | on an objective's board, or on the tasks an objective shows, narrow to one sub-objective, the objective itself, or all of it |
 | `m` then a letter | | ✓ | | move the task to the column that letter begins — `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused — as the window's `m` does |
 | `p` then a letter | | ✓ | | its priority — `l` low, `n` normal, `h` high, `c` critical |
 | `f` | | ✓ | | focus or unfocus — an objective has none |
@@ -898,6 +900,19 @@ The order comes from the state, active first, and each sub-objective follows its
 parent; one whose parent is left out by a search stands at level one. `j` and
 `k` walk the rows in that order, and the list scrolls two lines at a time.
 
+**`z` folds a parent away**: its sub-objectives leave the list, and its first
+line says how many it hides, `+3`; `z` again shows them
+(`@tui-objective-z-folds-a-parent`). On a sub-objective it folds its parent,
+and the cursor climbs to it, since it cannot stay on a row no longer drawn
+(`@tui-objective-z-on-a-sub-objective-folds-its-parent`). A tree of a dozen
+objectives is read one parent at a time; nothing is kept once the board
+closes. **`N` adds a sub-objective**: the objective's form, its parent
+already the one under the cursor — or, on a sub-objective, that one's parent,
+since a third level is refused (`@tui-objective-shift-n-adds-a-sub-objective`,
+`@tui-objective-shift-n-on-a-sub-objective-adds-beside-it`). `a` still adds
+one of level one. The bar there walks with `jk ↓↑`, since `h` and `l` do
+nothing on one column, and the room it gives back holds `N` and `z`.
+
 It is not a kanban. An objective does not circulate — nobody pushes one from
 `active` to `reached` in the morning, it gets there when its tasks are done.
 
@@ -943,7 +958,13 @@ engine to its sub-objectives. For a parent the filter offers both
 `#4 Home automation, with its sub-objectives` and `#4 Home automation, itself`,
 which leaves its sub-objectives out
 (`@tui-objective-itself-leaves-its-sub-objectives-out`). The window's filter
-reads the same values.
+reads the same values. On the tasks so shown, `[` and `]` walk the same
+chips as an objective's board — all of it, each sub-objective, then the
+objective itself — by putting the filter on each in turn, and the chips stand
+after `filtered by …`, counted over the whole board
+(`@tui-objective-brackets-walk-its-tasks-shown`). Each chip is the engine's
+`Segment`, which names the filter's value it stands for, so the window's bar
+and this one walk one list.
 
 **The objective's form says where it sits.** `parent` takes a number, or
 nothing to stand at level one, and says beneath it which are offered — those of

@@ -297,6 +297,14 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		if b.tab == Objectives {
 			return b.showingItsTasks(), nil
 		}
+	case "N", "shift+n":
+		if b.tab == Objectives {
+			return b.subGoalForm()
+		}
+	case "z":
+		if b.tab == Objectives {
+			return b.folding(), nil
+		}
 	case "[":
 		return b.walkingSegments(-1), nil
 	case "]":

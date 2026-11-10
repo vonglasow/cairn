@@ -99,6 +99,7 @@ type Board struct {
 
 	inside  int
 	segment int
+	folded  []int
 
 	typed    string
 	query    string

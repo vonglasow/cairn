@@ -37,4 +37,4 @@
 
 
 
- hjkl ←↓↑→ objectives   ⏎ open   t its tasks   a new   e edit   D delete   / search   ⇥ tab   ? help
+ jk ↓↑ objectives   ⏎ open   t its tasks   a new   e edit   D delete   ? help   N under it   z fold

@@ -277,7 +277,7 @@ func (b Board) chips() string {
 	said := make([]string, 0, len(segments))
 	for i, seg := range segments {
 		chip := seg.Name + " " + strconv.Itoa(seg.Count)
-		if i == b.segment {
+		if i == b.segmentOn() {
 			said = append(said, b.skin.Picked.Render("‹ "+chip+" ›"))
 			continue
 		}
@@ -360,9 +360,9 @@ func (b Board) offer(key, does string) string {
 func (b Board) offers() []string {
 	if b.tab == Objectives {
 		return []string{
-			b.offer("hjkl ←↓↑→", "objectives"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
-			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("/", "search"),
-			b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"), b.roaming(),
+			b.offer("jk ↓↑", "objectives"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
+			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("?", "help"),
+			b.offer("N", "under it"), b.offer("z", "fold"), b.offer("/", "search"), b.offer("⇥", "tab"), b.offer(":", "command"), b.roaming(),
 		}
 	}
 	if b.mode == Insert {
@@ -382,6 +382,9 @@ func (b Board) offers() []string {
 		out = append(out, b.offer("a", "new here"), b.offer("/", "search"),
 			b.offer("?", "help"), b.offer("esc", "objectives"))
 		return out
+	}
+	if len(b.segments()) > 0 {
+		out = append(out, b.offer("[ ]", "sub-objective"))
 	}
 	return append(out, b.offer("a", "new"), b.offer("/", "search"),
 		b.offer("⇥", "tab"), b.offer("?", "help"), b.offer(":", "command"), b.roaming())
@@ -460,7 +463,11 @@ func (b Board) titleLine() string {
 		return " " + b.skin.Faint.Render(Clip(said, b.width-margin-margin))
 	}
 	if title == "" && b.filters.Narrows() && !b.filtering {
-		return " " + b.skin.Faint.Render(Clip("filtered by "+b.filters.Said(), b.width-margin-margin))
+		said := b.skin.Faint.Render("filtered by " + b.filters.Said())
+		if chips := b.chips(); chips != "" {
+			said += "   " + chips
+		}
+		return " " + Clip(said, b.width-margin-margin)
 	}
 	if title == "" {
 		return ""

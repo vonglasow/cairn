@@ -40,6 +40,17 @@ func NewGoalFields() []Field {
 	return GoalFields(Goal{State: string(objective.Active), Priority: string(domain.Normal)})
 }
 
+// NewSubGoalFields is the form of an objective about to be added under a parent.
+func NewSubGoalFields(parent int) []Field {
+	fields := NewGoalFields()
+	for i := range fields {
+		if fields[i].Name == "parent" {
+			fields[i].Value = strconv.Itoa(parent)
+		}
+	}
+	return fields
+}
+
 // EditFields is the form of a task being changed, its steps included.
 func EditFields(c Card) []Field {
 	return append(TaskFields(c), stepsField(PartsWritten(Hanging(c))))

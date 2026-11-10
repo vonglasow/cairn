@@ -133,6 +133,13 @@ func TestSnapshot_segmentsAnObjectiveIntoItsSubObjectives(t *testing.T) {
 	if !slices.Equal(got[3].Reach, []int{1}) || !slices.Equal(got[0].Reach, []int{1, 2, 3}) {
 		t.Errorf("itself reaches %v, all reaches %v", got[3].Reach, got[0].Reach)
 	}
+	var values []string
+	for _, seg := range got {
+		values = append(values, seg.Value)
+	}
+	if !slices.Equal(values, []string{"1", "2", "3", "1 itself"}) {
+		t.Errorf("the segments stand for the objective filter's values %q", values)
+	}
 	if none := s.Segments(4, s.Cards); none != nil {
 		t.Errorf("an objective with no sub-objective has segments %v", none)
 	}
@@ -331,5 +338,14 @@ func TestLeft_countsWhatIsOpenOverTheSubtreeOnce(t *testing.T) {
 	}
 	if got := s.Left(4); got.Tasks != 0 {
 		t.Errorf("Tidy the workshop has %+v left, want nothing", got)
+	}
+}
+
+func TestSnapshot_treeOfIsTheLevelOneObjectiveAboveIt(t *testing.T) {
+	s := lookAt(t, homeTree(t))
+	for n, want := range map[int]int{1: 1, 2: 1, 3: 1, 4: 4, 9: 9} {
+		if got := s.TreeOf(n); got != want {
+			t.Errorf("TreeOf(%d) = %d, want %d", n, got, want)
+		}
 	}
 }

@@ -15,26 +15,26 @@
  │ value, ⌫ clears all                         │ │   ‖  paused    waiting on your decision     │
  │   v           the views — a figure opens    │ │                                             │
  │ one, 0 the whole board                      │ │ OBJECTIVES — a tree, sub-objectives under   │
- │   ⇥           next tab — tasks, objectives, │ │ ├─ └─                                       │
- │ the time spent                              │ │   ▶  active    being worked towards         │
- │   :           command — what it answers is  │ │   ‖  on-hold   not for now                  │
- │ said until esc                              │ │   ✓  reached   done with                    │
- │   b           a new backup of the store     │ │   ✕  dropped   given up                     │
- │   ⇧B          the backups                   │ │                                             │
- │   ←→ t on timewalk the weeks, back to       │ │ ON A CARD                                   │
- │ today's                                     │ │   ≡            a description exists         │
- │                                             │ │   ▪            steps done / total           │
- │ INSERT — the cursor on a task               │ │   ⚑            a label                      │
- │   hjkl ←↓↑→   tasks, and the band           │ │   ↳            what is in the way           │
- │   gg / G      first / last in the column    │ │   ◇            the objective it serves      │
- │   ⇧hjkl       move it: sideways changes     │ │   ┆ ┆         in the way, from outside: not │
- │ column, up and down change place            │ │ counted                                     │
- │   ⏎           the detail                    │ │   2d          a deadline close by           │
- │   e           the form                      │ │   −3d         one that has passed           │
- │   o           a task linked to it           │ │   ╔═╗         the task in focus             │
- │   f           focus or unfocus              │ ╰─────────────────────────────────────────────╯
+ │   [ ]         filtered on an objective:     │ │ ├─ └─                                       │
+ │ walk its sub-objectives                     │ │   ▶  active    being worked towards         │
+ │   ⇥           next tab — tasks, objectives, │ │   ‖  on-hold   not for now                  │
+ │ the time spent                              │ │   ✓  reached   done with                    │
+ │   :           command — what it answers is  │ │   ✕  dropped   given up                     │
+ │ said until esc                              │ │                                             │
+ │   b           a new backup of the store     │ │ ON A CARD                                   │
+ │   ⇧B          the backups                   │ │   ≡            a description exists         │
+ │   ←→ t on timewalk the weeks, back to       │ │   ▪            steps done / total           │
+ │ today's                                     │ │   ⚑            a label                      │
+ │                                             │ │   ↳            what is in the way           │
+ │ INSERT — the cursor on a task               │ │   ◇            the objective it serves      │
+ │   hjkl ←↓↑→   tasks, and the band           │ │   ┆ ┆         in the way, from outside: not │
+ │   gg / G      first / last in the column    │ │ counted                                     │
+ │   ⇧hjkl       move it: sideways changes     │ │   2d          a deadline close by           │
+ │ column, up and down change place            │ │   −3d         one that has passed           │
+ │   ⏎           the detail                    │ │   ╔═╗         the task in focus             │
+ │   e           the form                      │ ╰─────────────────────────────────────────────╯
+ │   o           a task linked to it           │
+ │   f           focus or unfocus              │
  │   m then a lettermove it to the column it   │
- │ begins                                      │
- │   p then a letterits priority               │
 
  ↓↑ read on   esc close
