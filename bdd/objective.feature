@@ -690,6 +690,42 @@ Feature: Objectives
       And the refusal says "an objective goes two levels deep at most"
       And `cairn objective show 1` says it sits under nothing
 
+    @objective-move-first
+    Scenario: an objective is put first among the ones it sits with
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Garden watering"
+      When I run `cairn objective move 2 --first`
+      Then it succeeds
+      And `cairn objective list` lists them in the order 2, 1
+
+    @objective-move-carries-its-sub-objectives
+    Scenario: a parent moves with its sub-objectives
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden watering"
+      When I run `cairn objective move 1 --after 3`
+      Then it succeeds
+      And `cairn objective list` lists them in the order 3, 1, 2
+
+    @objective-move-under-another-parent
+    Scenario: a sub-objective is moved under another parent, last there
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden watering"
+      When I run `cairn objective move 2 --parent 3`
+      Then it succeeds
+      And `cairn objective list` lists them in the order 1, 3, 2
+
+    @objective-move-a-parent-stays-level-one
+    Scenario: a parent is not moved under another objective
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden watering"
+      When I run `cairn objective move 1 --parent 3`
+      Then it fails
+      And the refusal says "an objective goes two levels deep at most"
+      And `cairn objective list` lists them in the order 1, 2, 3
+
     @objective-sub-not-under-itself
     Scenario: an objective does not sit under itself
       Given I added an objective titled "Home automation"

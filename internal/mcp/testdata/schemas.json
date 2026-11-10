@@ -2294,6 +2294,345 @@
       "additionalProperties": false
     }
   },
+  "objective_move": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false,
+      "title": "Move an objective in the order, or under another parent"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "description": "put it directly behind this objective, under this objective's parent",
+          "type": "integer"
+        },
+        "first": {
+          "description": "put it at the head of the ones it sits with",
+          "type": "boolean"
+        },
+        "last": {
+          "description": "put it behind all the ones it sits with",
+          "type": "boolean"
+        },
+        "number": {
+          "description": "the number of the objective",
+          "type": "integer"
+        },
+        "parent": {
+          "description": "the objective to sit under, none to stand on its own; last there unless a place is named",
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "number"
+      ],
+      "type": "object"
+    },
+    "level": 2,
+    "output": {
+      "type": "object",
+      "properties": {
+        "objectives": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "integer",
+                "description": "the objective's number, never handed out twice"
+              },
+              "title": {
+                "type": "string",
+                "description": "what the objective is called"
+              },
+              "state": {
+                "type": "string",
+                "description": "where it stands: active, on-hold, reached or dropped"
+              },
+              "priority": {
+                "type": "string",
+                "description": "low, normal, high or critical"
+              },
+              "description": {
+                "type": "string",
+                "description": "what is written about it; empty when nothing is"
+              },
+              "labels": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "description": "the labels it carries, lower case and sorted; empty or null when it carries none"
+              },
+              "deadline": {
+                "type": "string",
+                "description": "the day it is due, as 2026-12-01; empty when it has none"
+              },
+              "estimate": {
+                "type": "string",
+                "description": "how long it was expected to take, as 40h; empty when nobody said"
+              },
+              "tasks": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "progress": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "tasks": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "steps": {
+                    "type": [
+                      "null",
+                      "object"
+                    ],
+                    "properties": {
+                      "total": {
+                        "type": "integer"
+                      },
+                      "done": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "total",
+                      "done"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "percent": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "percent"
+                ],
+                "additionalProperties": false
+              },
+              "time_spent": {
+                "type": "string",
+                "description": "how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"
+              },
+              "left": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the tasks serving it that are neither done nor archived"
+              },
+              "parent": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "the number of the objective it sits under; null when it stands on its own"
+              },
+              "children": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of its sub-objectives; empty when it holds none"
+              },
+              "waits_on": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the objectives it waits on, which warn and never block; empty when it waits on none"
+              },
+              "waited_on_by": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the objectives that wait on it; empty when none does"
+              },
+              "proposed_reached": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"
+              },
+              "added": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change put on it; left out when it put nothing",
+                "additionalProperties": false
+              },
+              "taken_off": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "labels": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "the labels, lower case"
+                  },
+                  "blockers": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks in its way"
+                  },
+                  "links": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the tasks it is linked to"
+                  },
+                  "objectives": {
+                    "type": [
+                      "null",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "the numbers of the objectives it serves"
+                  }
+                },
+                "description": "what the change took off it; left out when it took nothing",
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "number",
+              "title",
+              "state",
+              "priority",
+              "description",
+              "labels",
+              "deadline",
+              "estimate",
+              "tasks",
+              "progress",
+              "time_spent",
+              "left",
+              "parent",
+              "children",
+              "waits_on",
+              "waited_on_by"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "objectives"
+      ],
+      "additionalProperties": false
+    }
+  },
   "objective_new": {
     "annotations": {
       "destructiveHint": false,

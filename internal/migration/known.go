@@ -409,4 +409,18 @@ DROP TABLE IF EXISTS series_labels;
 DROP TABLE IF EXISTS series;`,
 		loses: "every series, its rule, what it makes the next from and its trace; every task it made stays, an ordinary task with its notes, time and trace",
 	},
+	{
+		name: "objectives keep the order a person gives them",
+		does: `
+ALTER TABLE objectives ADD COLUMN position INTEGER NOT NULL DEFAULT 0;
+UPDATE objectives SET position = (
+	SELECT COUNT(*) FROM objectives AS o
+	WHERE COALESCE(o.parent, 0) = COALESCE(objectives.parent, 0)
+	AND (CASE o.state WHEN 'active' THEN 0 WHEN 'on-hold' THEN 1 WHEN 'reached' THEN 2 WHEN 'dropped' THEN 3 ELSE 4 END * 1000000 + o.number)
+	 <= (CASE objectives.state WHEN 'active' THEN 0 WHEN 'on-hold' THEN 1 WHEN 'reached' THEN 2 WHEN 'dropped' THEN 3 ELSE 4 END * 1000000 + objectives.number)
+);`,
+		undoes: `
+ALTER TABLE objectives DROP COLUMN position;`,
+		loses: "the order given to the objectives by hand; they are listed by standing again, every objective and what it carries staying as it was",
+	},
 }

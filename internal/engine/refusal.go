@@ -105,6 +105,8 @@ var reasons = []reason{
 	{ErrObjectivesBothWays, KindRefused, "objectives-both-ways"},
 	{ErrObjectiveSignAtBirth, KindRefused, "objective-sign-at-creation"},
 	{ErrNowhereToMove, KindRefused, "nowhere-to-move"},
+	{ErrObjectiveNowhereToGo, KindRefused, "objective-nowhere-to-go"},
+	{ErrObjectiveParentAndAfter, KindRefused, "objective-parent-and-after"},
 	{ErrMoreThanOnePlace, KindRefused, "more-than-one-place"},
 	{ErrNothingToLabel, KindRefused, "nothing-to-label"},
 	{ErrNothingToArchive, KindRefused, "nothing-to-archive"},

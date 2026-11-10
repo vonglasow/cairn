@@ -231,7 +231,7 @@ func All() []Operation {
 		TaskArchive, TaskUnarchive, TaskLabel,
 		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport, TaskSkip,
 		StepNew, StepList, StepEdit, StepDelete,
-		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveReport, ObjectiveEdit, ObjectiveDelete, ObjectiveSearch,
+		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveReport, ObjectiveEdit, ObjectiveMove, ObjectiveDelete, ObjectiveSearch,
 		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
 		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
 		LabelList, LabelNew, LabelColour, LabelScope, LabelDelete, LabelRename,

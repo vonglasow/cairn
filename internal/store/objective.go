@@ -24,6 +24,11 @@ var objectiveLabels = labelStore{
 
 const objectiveColumns = `number, title, description, state, priority, deadline, estimate, parent`
 
+const treeOrder = `COALESCE((SELECT p.position FROM objectives AS p WHERE p.number = objectives.parent), position),
+	COALESCE(parent, number), parent IS NOT NULL, position, number`
+
+const lastAmongSiblings = `(SELECT COALESCE(MAX(position), 0) + 1 FROM objectives WHERE COALESCE(parent, 0) = ?)`
+
 type boundObjective struct {
 	number                    int
 	title, description        string
@@ -70,9 +75,9 @@ func renumberedObjective(o objective.Objective, number int) objective.Objective 
 func (s *Store) KeepObjective(o objective.Objective) (objective.Objective, error) {
 	b := bindObjective(o)
 	res, err := s.on.Exec(
-		`INSERT INTO objectives (title, description, state, priority, deadline, estimate, parent)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		b.title, b.description, b.state, b.priority, b.deadline, b.estimate, b.parent)
+		`INSERT INTO objectives (title, description, state, priority, deadline, estimate, parent, position)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, `+lastAmongSiblings+`)`,
+		b.title, b.description, b.state, b.priority, b.deadline, b.estimate, b.parent, b.parent.Int64)
 	if err != nil {
 		return objective.Objective{}, fmt.Errorf("keeping the objective: %w", err)
 	}
@@ -158,12 +163,12 @@ func (s *Store) FindObjective(number int) (objective.Objective, error) {
 	return o, nil
 }
 
-// AllObjectives hands back every objective, in the order they were added.
+// AllObjectives hands back every objective, in the order of the tree: each of level one in its place, followed by its sub-objectives in theirs.
 func (s *Store) AllObjectives() ([]objective.Objective, error) {
 	return s.NarrowedObjectives(&domain.Narrowing{})
 }
 
-// NarrowedObjectives hands back the objectives a narrowing keeps, in the order they were added.
+// NarrowedObjectives hands back the objectives a narrowing keeps, in the order of the tree.
 func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objective, error) {
 	labels, err := pairs[string](s, `SELECT objective_number, label FROM objective_labels ORDER BY objective_number, label`)
 	if err != nil {
@@ -176,7 +181,7 @@ func (s *Store) NarrowedObjectives(kept *domain.Narrowing) ([]objective.Objectiv
 	where, args := readBy(kept).where(objectiveLabels)
 	labelled := func(n int) ([]string, []int, error) { return labels[n], waits[n], nil }
 	objectives, err := rowsOf(s, func(r scanner) (objective.Objective, error) { return s.scanObjective(r, labelled) },
-		fmt.Sprintf(`SELECT %s FROM objectives%s ORDER BY number`, objectiveColumns, where), args...)
+		fmt.Sprintf(`SELECT %s FROM objectives%s ORDER BY %s`, objectiveColumns, where, treeOrder), args...)
 	if err != nil {
 		return nil, fmt.Errorf("reading the objectives: %w", err)
 	}

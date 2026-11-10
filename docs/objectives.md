@@ -191,6 +191,18 @@ are. `objective show` says the parent of each, `—` for one standing on its
 own; a machine reads `parent`, null at level one, and `children`
 (`@objective-sub-json-parent-and-children`).
 
+**The order is the person's.** Objectives are listed in the order the person
+gave them, each of level one followed by its sub-objectives in theirs — no
+longer by standing: the mark already says the standing, and a tree someone
+arranged should stay arranged. `cairn objective move` puts one first, last, or
+behind another (`@objective-move-first`); a parent always moves with its
+sub-objectives (`@objective-move-carries-its-sub-objectives`); behind another,
+or with `--parent`, it goes under that parent, last there unless a place is
+named (`@objective-move-under-another-parent`), with the same refusals as
+`objective edit --parent` (`@objective-move-a-parent-stays-level-one`). A new
+objective goes last among its siblings; migration 23 kept the order by
+standing the store had, as the first order given.
+
 **What a task serves, and how it counts.** A task serves objectives or
 sub-objectives, as many as it serves. On a sub-objective it counts in the
 parent too, and that link is worked out, never stored. A parent's time spent,

@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"cmp"
 	"slices"
 	"strconv"
 
@@ -12,26 +11,9 @@ import (
 // Standings are the four an objective can be in, in the order a list keeps them: what is being worked towards first, what was finished with last.
 var Standings = []string{string(objective.Active), string(objective.OnHold), string(objective.Reached), string(objective.Dropped)}
 
-func standingAt(state string) int {
-	for i, s := range Standings {
-		if s == state {
-			return i
-		}
-	}
-	return len(Standings)
-}
-
-// Sorted puts the objectives in the order a list draws them.
+// Sorted puts the objectives in the order a list draws them: the order a person gave them, as the store keeps it.
 func Sorted(goals []Goal) []Goal {
-	out := make([]Goal, len(goals))
-	copy(out, goals)
-	slices.SortStableFunc(out, func(a, b Goal) int {
-		if by := cmp.Compare(standingAt(a.State), standingAt(b.State)); by != 0 {
-			return by
-		}
-		return cmp.Compare(a.Number, b.Number)
-	})
-	return out
+	return slices.Clone(goals)
 }
 
 // ReachesGoal says whether what was typed reaches an objective, by the same rule a card is reached by.

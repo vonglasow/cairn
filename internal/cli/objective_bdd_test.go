@@ -89,6 +89,26 @@ func (w *world) registerObjective(sc *godog.ScenarioContext) {
 		return test.CountsTasks(w.Out.Stdout, n)
 	})
 
+	sc.Step("^`cairn objective list` lists them in the order ([0-9, ]+)$", func(order string) error {
+		w.Run("cairn objective list --json")
+		var listed struct {
+			Objectives []struct {
+				Number int `json:"number"`
+			} `json:"objectives"`
+		}
+		if err := json.Unmarshal([]byte(w.Out.Stdout), &listed); err != nil {
+			return err
+		}
+		got := []string{}
+		for _, o := range listed.Objectives {
+			got = append(got, strconv.Itoa(o.Number))
+		}
+		if strings.Join(got, ", ") != order {
+			return fmt.Errorf("listed %s, want %s", strings.Join(got, ", "), order)
+		}
+		return nil
+	})
+
 	sc.Step(`^it lists objective (\d+) titled "([^"]*)"$`, func(n int, title string) error {
 		return test.ListsTask(w.Out.Stdout, n, title)
 	})

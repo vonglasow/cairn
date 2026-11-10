@@ -245,6 +245,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"trace_list":         {{Since: []trace.Act{}}},
 		"objective_new":      {{Objective: of(objective.Objective{})}},
 		"objective_list":     {{Objectives: []objective.Objective{}}},
+		"objective_move":     {{Objectives: []objective.Objective{}}},
 		"objective_show":     {{Objective: of(objective.Objective{})}},
 		"objective_report":   {{Objective: of(objective.Objective{}), Period: of(objective.Period{})}},
 		"objective_edit":     {{Objective: of(objective.Objective{})}},

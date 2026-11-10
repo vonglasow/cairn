@@ -17,7 +17,7 @@ func numbersOf(goals []Goal) []int {
 	return out
 }
 
-func TestSorted(t *testing.T) {
+func TestSorted_keepsTheOrderAPersonGave(t *testing.T) {
 	got := Sorted([]Goal{
 		{Number: 4, State: "dropped"},
 		{Number: 3, State: "reached"},
@@ -26,7 +26,7 @@ func TestSorted(t *testing.T) {
 		{Number: 5, State: "active"},
 		{Number: 6, State: "invented"},
 	})
-	want := []int{1, 5, 2, 3, 4, 6}
+	want := []int{4, 3, 2, 1, 5, 6}
 	for i, n := range want {
 		if got[i].Number != n {
 			t.Fatalf("sorted to %v, want %v", numbersOf(got), want)

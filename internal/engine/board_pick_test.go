@@ -23,8 +23,8 @@ func TestFoundGoals_isWhatASearchReachesInTheOrderAListKeeps(t *testing.T) {
 	for _, g := range FoundGoals(goals, "") {
 		got = append(got, g.Number)
 	}
-	if !slices.Equal(got, []int{2, 3, 1}) {
-		t.Errorf("nothing looked for lists %v, want every one, active first", got)
+	if !slices.Equal(got, []int{1, 2, 3}) {
+		t.Errorf("nothing looked for lists %v, want every one, in the order given", got)
 	}
 	got = nil
 	for _, g := range FoundGoals(goals, "docs") {

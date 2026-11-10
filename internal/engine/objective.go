@@ -20,6 +20,7 @@ type objectives interface {
 	NarrowedObjectives(*domain.Narrowing) ([]objective.Objective, error)
 	UpdateObjective(objective.Objective) error
 	DeleteObjective(int) error
+	PlaceObjective(number, parent, after int) error
 	TasksServing(...int) ([]task.Task, error)
 }
 
@@ -99,6 +100,11 @@ func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Object
 	}
 	if err := e.objectives.UpdateObjective(o); err != nil {
 		return objective.Objective{}, err
+	}
+	if now := o.Carried().Parent; now != was.Carried().Parent {
+		if err := e.objectives.PlaceObjective(number, now, -1); err != nil {
+			return objective.Objective{}, err
+		}
 	}
 	return o, nil
 }
