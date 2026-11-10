@@ -200,8 +200,12 @@ func (w Window) References() []Placed {
 	theirs, _ := engine.Deal(cards, w.archived)
 	var out []Placed
 	for i, column := range theirs {
+		after := len(dealt[i].Cards)
+		if w.EmptySays(i) != "" {
+			after++
+		}
 		for at, c := range column.Cards {
-			out = append(out, Placed{Card: c, Slot: l.CardAt(i, len(dealt[i].Cards)+at, w.scroll[i]), Within: l.Column[i], Reference: true, Says: says[c.Number]})
+			out = append(out, Placed{Card: c, Slot: l.CardAt(i, after+at, w.scroll[i]), Within: l.Column[i], Reference: true, Says: says[c.Number]})
 		}
 	}
 	return out

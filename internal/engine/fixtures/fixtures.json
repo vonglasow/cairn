@@ -9,7 +9,8 @@
       "priority": "high",
       "deadline": "+71d",
       "labels": [
-        "product"
+        "product",
+        "area"
       ],
       "description": "Everything a first release needs, and nothing it does not."
     },
@@ -19,9 +20,11 @@
       "state": "active",
       "priority": "normal",
       "labels": [
-        "technical"
+        "technical",
+        "project"
       ],
-      "estimate": "40h"
+      "estimate": "40h",
+      "parent": 1
     },
     {
       "number": 3,
@@ -60,7 +63,7 @@
       "state": "active",
       "priority": "normal",
       "labels": [
-        "project"
+        "area"
       ],
       "description": "An enclosure, a firmware and the features on top, seen together."
     },
@@ -69,6 +72,9 @@
       "title": "Enclosure",
       "state": "reached",
       "priority": "normal",
+      "labels": [
+        "project"
+      ],
       "parent": 8
     },
     {
@@ -76,6 +82,9 @@
       "title": "Firmware",
       "state": "active",
       "priority": "high",
+      "labels": [
+        "project"
+      ],
       "parent": 8
     },
     {
@@ -83,10 +92,73 @@
       "title": "Features",
       "state": "active",
       "priority": "normal",
+      "labels": [
+        "project"
+      ],
       "parent": 8,
       "waits_on": [
         10
       ]
+    },
+    {
+      "number": 12,
+      "title": "Packaging",
+      "state": "active",
+      "priority": "high",
+      "labels": [
+        "project"
+      ],
+      "parent": 1
+    },
+    {
+      "number": 13,
+      "title": "Documentation",
+      "state": "active",
+      "priority": "normal",
+      "labels": [
+        "project"
+      ],
+      "parent": 1
+    },
+    {
+      "number": 14,
+      "title": "Health",
+      "state": "active",
+      "priority": "normal",
+      "labels": [
+        "area"
+      ],
+      "description": "Back on my feet after the knee: the physiotherapy first, then running again. Both are reached; the area itself is left to be put reached."
+    },
+    {
+      "number": 15,
+      "title": "Physiotherapy",
+      "state": "reached",
+      "priority": "normal",
+      "labels": [
+        "project"
+      ],
+      "parent": 14
+    },
+    {
+      "number": 16,
+      "title": "Run a 10k",
+      "state": "reached",
+      "priority": "normal",
+      "labels": [
+        "project"
+      ],
+      "parent": 14
+    },
+    {
+      "number": 17,
+      "title": "Run the household",
+      "state": "active",
+      "priority": "normal",
+      "labels": [
+        "area"
+      ],
+      "description": "The paperwork and the chores that come back."
     }
   ],
   "labels": [
@@ -111,6 +183,11 @@
       "label": "area",
       "colour": "sapphire",
       "scope": "objectives"
+    },
+    {
+      "label": "chore",
+      "colour": "green",
+      "scope": "tasks"
     }
   ],
   "tasks": [
@@ -130,7 +207,7 @@
         "sprint-172"
       ],
       "objectives": [
-        1
+        12
       ],
       "description": "Three ADRs to read before starting.",
       "steps": [
@@ -202,6 +279,9 @@
       ],
       "labels": [
         "backend"
+      ],
+      "objectives": [
+        12
       ]
     },
     {
@@ -209,7 +289,10 @@
       "title": "Paused: decide on naming",
       "state": "paused",
       "priority": "low",
-      "because": "team call"
+      "because": "team call",
+      "objectives": [
+        1
+      ]
     },
     {
       "number": 6,
@@ -218,6 +301,9 @@
       "priority": "normal",
       "blocked_by": [
         54
+      ],
+      "objectives": [
+        2
       ]
     },
     {
@@ -226,7 +312,8 @@
       "state": "todo",
       "priority": "low",
       "labels": [
-        "technical"
+        "technical",
+        "chore"
       ],
       "objectives": [
         2
@@ -240,6 +327,9 @@
       "deadline": "+1d",
       "labels": [
         "doc"
+      ],
+      "objectives": [
+        13
       ]
     },
     {
@@ -247,7 +337,10 @@
       "title": "Deadline today: send the invoice",
       "state": "todo",
       "priority": "high",
-      "deadline": "+0d"
+      "deadline": "+0d",
+      "objectives": [
+        17
+      ]
     },
     {
       "number": 10,
@@ -261,20 +354,26 @@
     },
     {
       "number": 11,
-      "title": "Deadline far off: renew the certificate",
+      "title": "Deadline far off: renew the passport",
       "state": "todo",
       "priority": "low",
-      "deadline": "+200d"
+      "deadline": "+200d",
+      "objectives": [
+        17
+      ]
     },
     {
       "number": 12,
-      "title": "Estimate kept: 1h planned, 1h spent",
+      "title": "Estimate kept: 1h planned for the FAQ, 1h spent",
       "state": "todo",
       "priority": "normal",
       "estimate": "1h",
       "spent": {
         "-2d": "1h"
-      }
+      },
+      "objectives": [
+        13
+      ]
     },
     {
       "number": 13,
@@ -286,37 +385,55 @@
       ],
       "labels": [
         "bug"
+      ],
+      "objectives": [
+        12
       ]
     },
     {
       "number": 14,
-      "title": "Priority low",
+      "title": "Priority low: polish the help page",
       "state": "todo",
-      "priority": "low"
+      "priority": "low",
+      "objectives": [
+        13
+      ]
     },
     {
       "number": 15,
-      "title": "Priority normal",
+      "title": "Priority normal: tune the dimmer curve",
       "state": "todo",
-      "priority": "normal"
+      "priority": "normal",
+      "objectives": [
+        11
+      ]
     },
     {
       "number": 16,
-      "title": "Priority high",
+      "title": "Priority high: fix the boot loop",
       "state": "todo",
-      "priority": "high"
+      "priority": "high",
+      "objectives": [
+        10
+      ]
     },
     {
       "number": 17,
-      "title": "Priority critical",
+      "title": "Priority critical: back up before the migration",
       "state": "todo",
-      "priority": "critical"
+      "priority": "critical",
+      "objectives": [
+        2
+      ]
     },
     {
       "number": 18,
       "title": "Long title that runs past the edge of a card and keeps going, to show where a board cuts it and what it says instead",
       "state": "todo",
-      "priority": "normal"
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
     },
     {
       "number": 19,
@@ -325,20 +442,29 @@
       "priority": "normal",
       "labels": [
         "modularité"
+      ],
+      "objectives": [
+        3
       ]
     },
     {
       "number": 20,
       "title": "Emoji in a title 🚀 ship it 🎉",
       "state": "todo",
-      "priority": "normal"
+      "priority": "normal",
+      "objectives": [
+        1
+      ]
     },
     {
       "number": 21,
       "title": "A long description, to scroll",
       "state": "todo",
       "priority": "normal",
-      "description": "A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nIt ends here."
+      "description": "A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nA description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. A description long enough to need scrolling. \n\nIt ends here.",
+      "objectives": [
+        13
+      ]
     },
     {
       "number": 22,
@@ -348,7 +474,7 @@
     },
     {
       "number": 23,
-      "title": "Steps: all done",
+      "title": "Steps: all done, the release checklist",
       "state": "current",
       "priority": "normal",
       "steps": [
@@ -364,11 +490,14 @@
           "title": "Step 3",
           "done": true
         }
+      ],
+      "objectives": [
+        12
       ]
     },
     {
       "number": 24,
-      "title": "Steps: half done",
+      "title": "Steps: half done, the migration plan",
       "state": "current",
       "priority": "normal",
       "steps": [
@@ -388,11 +517,14 @@
           "title": "Step 4",
           "done": false
         }
+      ],
+      "objectives": [
+        2
       ]
     },
     {
       "number": 25,
-      "title": "Steps: twenty, half done",
+      "title": "Steps: twenty, half done, the user guide",
       "state": "current",
       "priority": "normal",
       "steps": [
@@ -476,6 +608,9 @@
           "title": "Step 20 of twenty",
           "done": false
         }
+      ],
+      "objectives": [
+        13
       ]
     },
     {
@@ -485,6 +620,9 @@
       "priority": "normal",
       "labels": [
         "doc"
+      ],
+      "objectives": [
+        13
       ]
     },
     {
@@ -501,6 +639,9 @@
         "technical",
         "sprint-172",
         "urgent"
+      ],
+      "objectives": [
+        1
       ]
     },
     {
@@ -510,6 +651,9 @@
       "priority": "normal",
       "labels": [
         "release"
+      ],
+      "objectives": [
+        12
       ]
     },
     {
@@ -544,130 +688,151 @@
     },
     {
       "number": 31,
-      "title": "Backlog, to scroll: idea 1",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 32,
-      "title": "Backlog, to scroll: idea 2",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 33,
-      "title": "Backlog, to scroll: idea 3",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 34,
-      "title": "Backlog, to scroll: idea 4",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 35,
-      "title": "Backlog, to scroll: idea 5",
+      "title": "Backlog, to scroll: a dark mode for the board",
       "state": "backlog",
       "priority": "normal",
       "objectives": [
         3
+      ]
+    },
+    {
+      "number": 32,
+      "title": "Backlog, to scroll: drag a card between columns",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
+    },
+    {
+      "number": 33,
+      "title": "Backlog, to scroll: a compact density",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
+    },
+    {
+      "number": 34,
+      "title": "Backlog, to scroll: a tour for newcomers",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        13
+      ]
+    },
+    {
+      "number": 35,
+      "title": "Backlog, to scroll: a keyboard cheat sheet",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        13
       ]
     },
     {
       "number": 36,
-      "title": "Backlog, to scroll: idea 6",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 37,
-      "title": "Backlog, to scroll: idea 7",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 38,
-      "title": "Backlog, to scroll: idea 8",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 39,
-      "title": "Backlog, to scroll: idea 9",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 40,
-      "title": "Backlog, to scroll: idea 10",
+      "title": "Backlog, to scroll: a man page",
       "state": "backlog",
       "priority": "normal",
       "objectives": [
-        3
+        13
+      ]
+    },
+    {
+      "number": 37,
+      "title": "Backlog, to scroll: a Homebrew tap",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        12
+      ]
+    },
+    {
+      "number": 38,
+      "title": "Backlog, to scroll: a Debian package",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        12
+      ]
+    },
+    {
+      "number": 39,
+      "title": "Backlog, to scroll: sign the Windows binary",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        12
+      ]
+    },
+    {
+      "number": 40,
+      "title": "Backlog, to scroll: vacuum the store every week",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        2
       ]
     },
     {
       "number": 41,
-      "title": "Backlog, to scroll: idea 11",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 42,
-      "title": "Backlog, to scroll: idea 12",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 43,
-      "title": "Backlog, to scroll: idea 13",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 44,
-      "title": "Backlog, to scroll: idea 14",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 45,
-      "title": "Backlog, to scroll: idea 15",
+      "title": "Backlog, to scroll: check the store at start",
       "state": "backlog",
       "priority": "normal",
       "objectives": [
-        3
+        2
+      ]
+    },
+    {
+      "number": 42,
+      "title": "Backlog, to scroll: a presence sensor in the hall",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        11
+      ]
+    },
+    {
+      "number": 43,
+      "title": "Backlog, to scroll: lights off when nobody is home",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        11
+      ]
+    },
+    {
+      "number": 44,
+      "title": "Backlog, to scroll: a night mode for the dimmers",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        11
+      ]
+    },
+    {
+      "number": 45,
+      "title": "Backlog, to scroll: update over the air",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        10
       ]
     },
     {
       "number": 46,
-      "title": "Backlog, to scroll: idea 16",
+      "title": "Backlog, to scroll: a watchdog for the radio",
       "state": "backlog",
-      "priority": "normal"
+      "priority": "normal",
+      "objectives": [
+        10
+      ]
     },
     {
       "number": 47,
-      "title": "Backlog, to scroll: idea 17",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 48,
-      "title": "Backlog, to scroll: idea 18",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 49,
-      "title": "Backlog, to scroll: idea 19",
-      "state": "backlog",
-      "priority": "normal"
-    },
-    {
-      "number": 50,
-      "title": "Backlog, to scroll: idea 20",
+      "title": "Backlog, to scroll: a tag for each label colour",
       "state": "backlog",
       "priority": "normal",
       "objectives": [
@@ -675,20 +840,47 @@
       ]
     },
     {
+      "number": 48,
+      "title": "Backlog, to scroll: export to a calendar",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        1
+      ]
+    },
+    {
+      "number": 49,
+      "title": "Backlog, to scroll: a limit per column",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        3
+      ]
+    },
+    {
+      "number": 50,
+      "title": "Backlog, to scroll: undo the last act",
+      "state": "backlog",
+      "priority": "normal",
+      "objectives": [
+        1
+      ]
+    },
+    {
       "number": 51,
-      "title": "Backlog, to scroll: idea 21",
+      "title": "Backlog, to scroll: an idea not sorted yet",
       "state": "backlog",
       "priority": "normal"
     },
     {
       "number": 52,
-      "title": "Backlog, to scroll: idea 22",
+      "title": "Backlog, to scroll: another idea not sorted yet",
       "state": "backlog",
       "priority": "normal"
     },
     {
       "number": 53,
-      "title": "Backlog, to scroll: idea 23",
+      "title": "Backlog, to scroll: a third idea not sorted yet",
       "state": "backlog",
       "priority": "normal"
     },
@@ -811,7 +1003,10 @@
           "done": true
         }
       ],
-      "archived": true
+      "archived": true,
+      "objectives": [
+        1
+      ]
     },
     {
       "number": 64,
@@ -836,6 +1031,9 @@
           "title": "Blockers",
           "done": false
         }
+      ],
+      "objectives": [
+        1
       ]
     },
     {
@@ -847,7 +1045,169 @@
       "archived": true,
       "spent": {
         "-35d": "35m"
-      }
+      },
+      "objectives": [
+        17
+      ]
+    },
+    {
+      "number": 66,
+      "title": "Physio session",
+      "state": "done",
+      "priority": "normal",
+      "deadline": "-28d",
+      "estimate": "45m",
+      "spent": {
+        "-28d": "45m"
+      },
+      "objectives": [
+        15
+      ],
+      "steps": [
+        {
+          "title": "Warm up",
+          "done": true
+        },
+        {
+          "title": "Knee exercises",
+          "done": true
+        },
+        {
+          "title": "Stretch",
+          "done": true
+        }
+      ],
+      "archived": true
+    },
+    {
+      "number": 67,
+      "title": "Physio session",
+      "state": "todo",
+      "priority": "normal",
+      "deadline": "-21d",
+      "estimate": "45m",
+      "objectives": [
+        15
+      ],
+      "steps": [
+        {
+          "title": "Warm up",
+          "done": false
+        },
+        {
+          "title": "Knee exercises",
+          "done": false
+        },
+        {
+          "title": "Stretch",
+          "done": false
+        }
+      ],
+      "archived": true
+    },
+    {
+      "number": 68,
+      "title": "Physio session",
+      "state": "done",
+      "priority": "normal",
+      "deadline": "-14d",
+      "estimate": "45m",
+      "spent": {
+        "-14d": "50m"
+      },
+      "objectives": [
+        15
+      ],
+      "steps": [
+        {
+          "title": "Warm up",
+          "done": true
+        },
+        {
+          "title": "Knee exercises",
+          "done": true
+        },
+        {
+          "title": "Stretch",
+          "done": true
+        }
+      ],
+      "archived": true
+    },
+    {
+      "number": 69,
+      "title": "Physio session",
+      "state": "done",
+      "priority": "normal",
+      "deadline": "-7d",
+      "estimate": "45m",
+      "spent": {
+        "-7d": "45m"
+      },
+      "objectives": [
+        15
+      ],
+      "steps": [
+        {
+          "title": "Warm up",
+          "done": true
+        },
+        {
+          "title": "Knee exercises",
+          "done": true
+        },
+        {
+          "title": "Stretch",
+          "done": true
+        }
+      ],
+      "archived": true
+    },
+    {
+      "number": 70,
+      "title": "Run the 10k on Sunday",
+      "state": "done",
+      "priority": "normal",
+      "deadline": "-5d",
+      "spent": {
+        "-5d": "58m"
+      },
+      "objectives": [
+        16
+      ],
+      "archived": true
+    },
+    {
+      "number": 71,
+      "title": "Water the plants",
+      "state": "done",
+      "priority": "normal",
+      "deadline": "-12d",
+      "estimate": "10m",
+      "labels": [
+        "chore"
+      ],
+      "spent": {
+        "-2d": "10m"
+      },
+      "objectives": [
+        17
+      ],
+      "archived": true
+    },
+    {
+      "number": 72,
+      "title": "Water the plants",
+      "state": "todo",
+      "priority": "normal",
+      "deadline": "+8d",
+      "estimate": "10m",
+      "labels": [
+        "chore"
+      ],
+      "objectives": [
+        17
+      ]
     }
   ],
   "series": [
@@ -867,7 +1227,9 @@
           "Blockers"
         ],
         "estimate": "15m",
-        "objectives": []
+        "objectives": [
+          1
+        ]
       },
       "acts": [
         {
@@ -901,7 +1263,9 @@
         "labels": [],
         "steps": [],
         "estimate": "",
-        "objectives": []
+        "objectives": [
+          17
+        ]
       },
       "acts": [
         {
@@ -911,6 +1275,81 @@
         },
         {
           "did": "stopped"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "rule": "every 10 days after done",
+      "from": "-12d",
+      "template": {
+        "title": "Water the plants",
+        "priority": "normal",
+        "labels": [
+          "chore"
+        ],
+        "steps": [],
+        "estimate": "10m",
+        "objectives": [
+          17
+        ]
+      },
+      "acts": [
+        {
+          "did": "made",
+          "task": 71,
+          "day": "-12d"
+        },
+        {
+          "did": "made",
+          "task": 72,
+          "day": "+8d"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "rule": "every week 4 times",
+      "from": "-28d",
+      "template": {
+        "title": "Physio session",
+        "priority": "normal",
+        "labels": [],
+        "steps": [
+          "Warm up",
+          "Knee exercises",
+          "Stretch"
+        ],
+        "estimate": "45m",
+        "objectives": [
+          15
+        ]
+      },
+      "acts": [
+        {
+          "did": "made",
+          "task": 66,
+          "day": "-28d"
+        },
+        {
+          "did": "made",
+          "task": 67,
+          "day": "-21d"
+        },
+        {
+          "did": "skipped",
+          "task": 67,
+          "day": "-21d"
+        },
+        {
+          "did": "made",
+          "task": 68,
+          "day": "-14d"
+        },
+        {
+          "did": "made",
+          "task": 69,
+          "day": "-7d"
         }
       ]
     }
@@ -927,6 +1366,12 @@
       "priority": "high",
       "label": [
         "backend"
+      ]
+    },
+    {
+      "name": "Firmware work",
+      "objective": [
+        10
       ]
     }
   ]

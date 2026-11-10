@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"cairn/internal/config"
 )
 
 func countTasks(t *testing.T, store string) int {
@@ -28,6 +30,9 @@ func TestMakeFixtures_fillsAFolderItMakesAndKeepsItAfter(t *testing.T) {
 	}
 	if settings, err := os.ReadFile(filepath.Join(folder, "settings.toml")); err != nil || !strings.Contains(string(settings), "[recurrence]\non = true") {
 		t.Errorf("the settings of the fixtures read %q (%v), want recurrence on", settings, err)
+	}
+	if colour, err := config.ColourIn(filepath.Join(folder, "settings.toml")); err != nil || colour == "" {
+		t.Errorf("the settings of the fixtures say the colour %q (%v), want one", colour, err)
 	}
 	first := countTasks(t, made.Store)
 	if first < 10 {

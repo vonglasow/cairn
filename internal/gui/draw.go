@@ -993,7 +993,7 @@ func drawProgressBeside(k Kit, w Window) {
 	inside := Box{X: card.X + padding, Y: card.Y + padding, W: card.W - 2*padding, H: card.H - 2*padding}
 	Head{Said: ProgressHead, Count: strconv.Itoa(g.Percent()) + "%"}.Draw(k, Box{X: inside.X, Y: inside.Y, W: inside.W, H: lineHigh})
 	track := Progress{Done: g.Done, Total: g.Total}.Draw(k, Box{X: inside.X, Y: inside.Y + lineHigh + between, W: inside.W, H: k.skin.Size.Track})
-	facts := w.GoalProgress(g)
+	facts := w.GoalProgress(g).Within(at.H - progressHead)
 	facts.Draw(k, Box{X: inside.X, Y: track.Y + track.H + padding, W: inside.W, H: facts.High()})
 }
 

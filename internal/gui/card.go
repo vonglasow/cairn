@@ -108,10 +108,35 @@ type CardRow struct {
 	Late     bool
 	Series   int
 	SeriesAt Box
+	Start    int
 }
 
 // CardRowOf lays a card's row out in row, measuring its words with m and its figures in Go Mono.
 func CardRowOf(c engine.Card, row Box, m Measure, now time.Time, pages engine.Pages) CardRow {
+	return cardRow(c, row, m, factsOf(c, now, pages))
+}
+
+// ReferenceRowOf lays out the row of a reference: why it is there in place of its facts, cut to the room its number leaves, and its labels in what is left.
+func ReferenceRowOf(c engine.Card, why string, row Box, m Measure, now time.Time, pages engine.Pages) CardRow {
+	why = cutTo(m, why, row.X+row.W-cardRow(c, row, m, nil).Start)
+	if why == "" {
+		return CardRowOf(c, row, m, now, pages)
+	}
+	return cardRow(c, row, m, []fact{{said: why, warn: true}})
+}
+
+func cutTo(m Measure, said string, room int) string {
+	runes := []rune(said)
+	for cut := said; len(runes) > 0; cut = strings.TrimSpace(string(runes)) + "…" {
+		if mixedWide(m, cut, small) <= room {
+			return cut
+		}
+		runes = runes[:len(runes)-1]
+	}
+	return ""
+}
+
+func cardRow(c engine.Card, row Box, m Measure, pieces []fact) CardRow {
 	out := CardRow{Number: "#" + Numbered(c)}
 	if c.Described() {
 		out.Number += " " + Marks().Described
@@ -123,8 +148,8 @@ func CardRowOf(c engine.Card, row Box, m Measure, now time.Time, pages engine.Pa
 		out.SeriesAt = Box{X: x, Y: row.Y, W: SeriesNumberWide(out.Series, small), H: row.H}
 		x += out.SeriesAt.W + 2*pillGap
 	}
+	out.Start = x
 	end := row.X + row.W
-	pieces := factsOf(c, now, pages)
 	serves := Serves(c)
 	wideOf := func(pieces []fact) int {
 		said, _ := joined(pieces)

@@ -187,6 +187,18 @@ func (f Facts) High() int {
 	return high
 }
 
+// Within is the facts, from the first, that are written whole in high.
+func (f Facts) Within(high int) Facts {
+	kept := Facts{}
+	for _, one := range f.Lines {
+		if kept.High()+(Facts{Lines: []Fact{one}}).High() > high {
+			break
+		}
+		kept.Lines = append(kept.Lines, one)
+	}
+	return kept
+}
+
 // Draw writes the facts down at.
 func (f Facts) Draw(k Kit, at Box) Box {
 	k.put("facts", at)

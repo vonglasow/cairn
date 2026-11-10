@@ -506,9 +506,15 @@ func (w Window) ProgressBox() Box {
 	}
 	right := FormBeside(w.formPanel())
 	g, _ := w.snap.Goal(w.form.Number)
-	high := lineHigh + between + 2*padding + lineHigh + w.GoalProgress(g).High()
-	return Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: high}
+	high := progressHead + w.GoalProgress(g).High()
+	box := Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: high}
+	if along := w.offersAlong(w.formPanel()); len(along) > 0 {
+		box.H = max(0, min(box.H, along[0].Y-between-padding-box.Y))
+	}
+	return box
 }
+
+const progressHead = lineHigh + between + 2*padding + lineHigh
 
 // GoalProgress is what an objective's form says of how far it has got: what is done, the time spent against the estimate, what is left, where else it is counted, and the days to its deadline.
 func (w Window) GoalProgress(g engine.Goal) Facts {

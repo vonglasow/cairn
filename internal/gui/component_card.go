@@ -78,13 +78,13 @@ func (c Card) Draw(k Kit, at Box) Box {
 
 	mono := k.skin.Type.Mono
 	laid := CardRowOf(c.Face, parts.Number, m, k.gtx.Now, c.Pages)
+	if c.Reference && c.Why != "" {
+		laid = ReferenceRowOf(c.Face, c.Why, parts.Number, m, k.gtx.Now, c.Pages)
+	}
 	in.put("number", laid.NumberAt)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, parts.Number, laid.Number, small, mono, text.Start)
 	if laid.Series != 0 {
 		SeriesNumber{Number: laid.Series, Ink: k.skin.Colour.Accent.Base}.Draw(in, laid.SeriesAt)
-	}
-	if c.Reference && c.Why != "" {
-		laid.Facts, laid.Late, laid.FactsAt = c.Why, true, FactsAt(parts.Number, ends(m, c.Why, small))
 	}
 	if laid.Facts != "" {
 		in.put("facts", laid.FactsAt)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/objective"
 )
 
 func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
@@ -140,6 +141,84 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 	namingAnObjective := slices.ContainsFunc(read.Views, func(v viewFiled) bool { return len(v.Objective) > 0 })
 	if len(read.Views) < 2 || !namingAnObjective {
 		t.Errorf("views: %d, one naming an objective %v; want two at least, one naming an objective", len(read.Views), namingAnObjective)
+	}
+	fixturesServeObjectives(t, read)
+	fixturesTypeObjectives(t, read)
+	fixturesComeBackEveryWay(t, read)
+}
+
+func fixturesServeObjectives(t *testing.T, read exchanged) {
+	t.Helper()
+	serving, none := 0, 0
+	for _, f := range read.Tasks {
+		if len(f.Objectives) > 0 {
+			serving++
+		} else {
+			none++
+		}
+	}
+	if serving < 3*none || none < 2 {
+		t.Errorf("%d tasks serve an objective and %d none; want three in four at least, and a few serving none", serving, none)
+	}
+}
+
+func fixturesTypeObjectives(t *testing.T, read exchanged) {
+	t.Helper()
+	byNumber := map[int]objectiveFiled{}
+	children := map[int][]int{}
+	for _, o := range read.Objectives {
+		byNumber[o.Number] = o
+		if o.Parent != 0 {
+			children[o.Parent] = append(children[o.Parent], o.Number)
+		}
+	}
+	typed, proposed, viewedUnder := false, false, false
+	for parent, under := range children {
+		o := byNumber[parent]
+		typed = typed || slices.Contains(o.Labels, "area") && len(under) > 1 &&
+			!slices.ContainsFunc(under, func(n int) bool { return !slices.Contains(byNumber[n].Labels, "project") })
+		proposed = proposed || o.State != string(objective.Reached) &&
+			!slices.ContainsFunc(under, func(n int) bool { return byNumber[n].State != string(objective.Reached) })
+	}
+	for _, v := range read.Views {
+		viewedUnder = viewedUnder || slices.ContainsFunc(v.Objective, func(n int) bool { return byNumber[n].Parent != 0 })
+	}
+	onObjectives := map[string]bool{}
+	for _, o := range read.Objectives {
+		for _, l := range o.Labels {
+			onObjectives[l] = true
+		}
+	}
+	both := slices.ContainsFunc(read.Tasks, func(f filed) bool {
+		return slices.ContainsFunc(f.Labels, func(l string) bool { return onObjectives[l] })
+	})
+	forTasks := slices.ContainsFunc(read.Labels, func(l labelFiled) bool { return l.Scope == "tasks" })
+	if !typed || !proposed || !viewedUnder || !both || !forTasks {
+		t.Errorf("an area holding projects %v, a parent proposed as reached %v, a view naming a sub-objective %v, a label on both %v, one for tasks only %v",
+			typed, proposed, viewedUnder, both, forTasks)
+	}
+}
+
+func fixturesComeBackEveryWay(t *testing.T, read exchanged) {
+	t.Helper()
+	afterDone, ended, skipped := false, false, false
+	for _, s := range read.Series {
+		rule, err := domain.ParseRule(s.Rule)
+		if err != nil {
+			t.Fatal(err)
+		}
+		afterDone = afterDone || strings.Contains(rule.Words(), "after done")
+		came := 0
+		for _, a := range s.Acts {
+			skipped = skipped || a.Did == "skipped"
+			if a.Did == "made" || a.Did == "missed" {
+				came++
+			}
+		}
+		ended = ended || rule.Times() > 0 && came >= rule.Times()
+	}
+	if !afterDone || !ended || !skipped {
+		t.Errorf("series: one counted after done %v, one ended by its count %v, an occurrence skipped %v", afterDone, ended, skipped)
 	}
 }
 

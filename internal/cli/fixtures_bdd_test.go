@@ -212,6 +212,7 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	w.registerFixturesCases(sc, inTheStore)
 	sc.Step(`^the window was opened on the store it made$`, func() error {
 		if openedOn == "" {
 			return fmt.Errorf("the window was never opened")

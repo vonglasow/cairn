@@ -27,11 +27,23 @@ nothing carries, deadlines past, today, tomorrow, in a week and far off,
 estimates overrun and kept, time over several weeks, blockers by a task and by
 a reason and one freed, links, two tasks in focus, archived ones, labels for
 objectives only, and objectives in every standing, late, served by nothing,
-and in a tree — Home automation › Enclosure, Firmware and Features, Features
-waiting on Firmware — and two series, a stand-up with its occurrence open and
-two days missed, and a report stopped, and two views, one naming the Home
-automation objective. Its store's settings turn recurrence on,
-so both boards draw them (`@fixtures-series`).
+and in trees two levels deep, each parent labelled `area` and each
+sub-objective `project` — Ship cairn 1.0 › Make the store dependable,
+Packaging and Documentation; Home automation › Enclosure, Firmware and
+Features, Features waiting on Firmware; Health › Physiotherapy and Run a 10k,
+both reached, so Health is proposed as reached — and labels for tasks only
+(`chore`), for objectives only, and for both carried by both. Every task
+serves an objective but five, kept apart on purpose: an inbox of ideas not
+sorted yet, and two that show a card alone. Four series: a stand-up with its
+occurrence open and two days missed, a report stopped, plants watered every
+10 days after done, and a physiotherapy ended by its count, one session
+skipped, its occurrences archived; and three views, one naming the Home
+automation objective, one its sub-objective Firmware. Its store's settings
+turn recurrence on, so both boards draw them (`@fixtures-series`), and give
+it a colour of its own, peach (`@fixtures-a-colour-of-its-own`). One store
+holds one value of a setting: the time stays on, the only way the time on a
+card, an estimate overrun and the timesheet are drawn, and the window wears
+the default scheme, the one the mockups draw.
 `TestFixtures_holdEveryCaseABoardDraws` fails when a case goes missing; a case
 added to a board is added there.
 

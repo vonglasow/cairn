@@ -1271,7 +1271,10 @@ bar; a part chosen is a filter on top of the view, and *all* takes it off
 again (`@gui-view-naming-an-objective-narrows-by-its-parts`). A task outside the objective that blocks one in it stays in
 sight as a reference, dashed and faint, saying `outside this view · blocks
 #2` in the late ink, at the foot of its column, and never counted
-(`References`, `@gui-objective-a-blocker-outside-is-a-reference`). A card
+(`References`, `@gui-objective-a-blocker-outside-is-a-reference`). Its why
+takes the place of its facts, cut short with `…` where the column is narrow,
+its labels in what room is left (`ReferenceRowOf`); in a column holding
+nothing else, it stands under *Nothing here*, never over it. A card
 names what it serves by name after a drawn `◇` — `◇ Firmware`, `◇ Enclosure
 +1` — where it wrote `◇6` (`@gui-objective-a-card-names-what-it-serves`).
 
@@ -2374,7 +2377,9 @@ bar, and as `Facts` what is done, the time spent against the estimate, what is
 left, for a sub-objective the parent it is counted in too
 (`GoalProgress`, `@gui-objective-the-form-says-where-it-is-counted`), and the
 days to its deadline, `2026-11-19, in 10 days`
-(`@gui-objective-the-form-says-the-days-to-the-deadline`). The work stood in the column beside, behind a
+(`@gui-objective-the-form-says-the-days-to-the-deadline`). The box stops
+above the form's foot: in a window too short for every fact, the last ones
+are left out whole, never written over the rule (`Facts.Within`). The work stood in the column beside, behind a
 tab, and the room under the description was empty.
 
 **Two columns and not one above the other.** The fields take the left five

@@ -68,3 +68,37 @@ Feature: A store full of believable work, from the binary alone
       When I make the fixtures in a folder of my own
       Then the store it made has a series with an occurrence open and a day missed
       And the store it made has a series stopped
+
+    @fixtures-most-tasks-serve-an-objective
+    Scenario: most tasks serve an objective, and a few serve none on purpose
+      When I make the fixtures in a folder of my own
+      Then most tasks in the store it made serve an objective
+      And the store it made has tasks serving no objective
+
+    @fixtures-objectives-typed
+    Scenario: an area holds projects, and labels are for tasks, objectives or both
+      When I make the fixtures in a folder of my own
+      Then the store it made has an objective labelled "area" holding sub-objectives labelled "project"
+      And the store it made has a label for tasks only, one for objectives only, and one carried by both
+
+    @fixtures-a-parent-proposed-as-reached
+    Scenario: a parent every sub-objective of which is reached is proposed as reached
+      When I make the fixtures in a folder of my own
+      Then the store it made has an objective proposed as reached
+
+    @fixtures-a-view-on-a-sub-objective
+    Scenario: a view names a sub-objective
+      When I make the fixtures in a folder of my own
+      Then the store it made has a view naming a sub-objective
+
+    @fixtures-series-every-way
+    Scenario: a series counted after done, one ended by its count, and occurrences skipped
+      When I make the fixtures in a folder of my own
+      Then the store it made has a series counted after done
+      And the store it made has a series ended by its count
+      And the store it made has a series with an occurrence skipped
+
+    @fixtures-a-colour-of-its-own
+    Scenario: the store's settings say the colour it wears
+      When I make the fixtures in a folder of my own
+      Then the configuration of the store it made says its colour is set in the store's settings
