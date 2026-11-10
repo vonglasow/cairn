@@ -40,6 +40,14 @@ func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
 }
 
 func (e *Engine) run(op Operation, in Input) (Answer, error) {
+	answer, err := e.acted(op, in)
+	if err != nil || e.timeShown() {
+		return answer, err
+	}
+	return answer.untimed(), nil
+}
+
+func (e *Engine) acted(op Operation, in Input) (Answer, error) {
 	if op.Level == Read || op.Needs != AStore {
 		return op.Run(e.on(), in)
 	}

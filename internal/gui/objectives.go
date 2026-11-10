@@ -119,10 +119,7 @@ func (w Window) Detail() Detail {
 		d.Figures = Box{X: inside.X, Y: y, W: inside.W, H: FiguresHigh}
 		y += FiguresHigh + inset
 	}
-	d.Spent, d.Left, d.LeftSays = "—", "0", "left"
-	if g.Spent > 0 {
-		d.Spent = domain.FormatDuration(g.Spent)
-	}
+	d.Spent, d.Left, d.LeftSays = w.spentSaid(domain.FormatDuration(g.Spent)), "0", "left"
 	if left := w.snap.Left(g.Number); left.Tasks > 0 {
 		d.Left = strconv.Itoa(left.Tasks)
 		if !left.Due.IsZero() {
@@ -228,6 +225,16 @@ func ranked(cards []engine.Card) []engine.Card {
 	}
 	slices.SortStableFunc(out, func(a, b engine.Card) int { return rank(a) - rank(b) })
 	return out
+}
+
+func (w Window) spentSaid(spent string) string {
+	switch {
+	case !w.pages.Shows(engine.PageTime):
+		return ""
+	case spent == "":
+		return "—"
+	}
+	return spent
 }
 
 func (w Window) goalFacts(g engine.Goal) string {

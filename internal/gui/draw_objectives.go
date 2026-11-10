@@ -55,7 +55,11 @@ func drawDetail(k Kit, w Window, d Detail) {
 	say(k.gtx, k.th, k.skin.Colour.Ink.Faint, facts, fits(k.gtx, k.th, d.Facts, facts.W, small), small)
 	if d.Progress.W > 0 {
 		Progress{Done: g.Done, Total: g.Total, Said: d.Counted}.Draw(k, d.Progress)
-		Figures{Said: []Figure{{Figure: d.Spent, Word: "spent"}, {Figure: d.Left, Word: d.LeftSays}}}.Draw(k, d.Figures)
+		said := []Figure{{Figure: d.Left, Word: d.LeftSays}}
+		if d.Spent != "" {
+			said = append([]Figure{{Figure: d.Spent, Word: "spent"}}, said...)
+		}
+		Figures{Said: said}.Draw(k, d.Figures)
 	}
 	if d.Note.W > 0 {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, d.Note, d.NoteSays, small)

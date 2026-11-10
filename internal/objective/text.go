@@ -2,16 +2,18 @@ package objective
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	"cairn/internal/domain"
 )
 
-// Review is what an objective's tasks say of it beyond how far along it is: the time spent on them, and what is left of them.
+// Review is what an objective's tasks say of it beyond how far along it is: the time spent on them, unless the time is not shown, and what is left of them.
 type Review struct {
-	Spent time.Duration
-	Left  Left
+	Spent   time.Duration
+	Untimed bool
+	Left    Left
 }
 
 // Left is what remains of an objective: how many of its tasks are not done, and the soonest deadline among them with the task it falls on.
@@ -52,7 +54,7 @@ func (l Left) Line() string {
 // Text renders an objective in full, empty attributes included, the way a person reads it.
 func Text(o Objective, p domain.Progress, r Review, f Family) string {
 	c := o.Carried()
-	return domain.Card(c.Number, c.Title, []domain.Fact{
+	return domain.Card(c.Number, c.Title, r.shown([]domain.Fact{
 		{Key: "state", Value: string(c.State)},
 		{Key: "parent", Value: f.parentLine()},
 		{Key: "waits on", Value: f.waitsLine()},
@@ -62,10 +64,19 @@ func Text(o Objective, p domain.Progress, r Review, f Family) string {
 		{Key: "deadline", Value: domain.FormatDay(c.Deadline)},
 		{Key: "estimate", Value: domain.FormatDuration(c.Estimate)},
 		{Key: "progress", Value: p.Line("the objective")},
-		{Key: "time spent", Value: domain.FormatDuration(r.Spent)},
+		{Key: spentKey, Value: domain.FormatDuration(r.Spent)},
 		{Key: "left", Value: r.Left.Line()},
-	})
+	}))
 }
+
+func (r Review) shown(facts []domain.Fact) []domain.Fact {
+	if !r.Untimed {
+		return facts
+	}
+	return slices.DeleteFunc(facts, func(f domain.Fact) bool { return f.Key == spentKey })
+}
+
+const spentKey = "time spent"
 
 // Serving renders the tasks put under an objective as the lines already built for each, and says so when there are none — an objective with an empty heading would read as one whose tasks failed to load.
 func Serving(lines []string) string {
@@ -177,15 +188,17 @@ func Report(o Objective, p domain.Progress, r Review, in Period) string {
 	c := o.Carried()
 	heading := c.Title + " — from " + domain.FormatDay(in.Since) + " to " + domain.FormatDay(in.Until)
 	var out strings.Builder
-	out.WriteString(domain.Card(c.Number, heading, []domain.Fact{
+	out.WriteString(domain.Card(c.Number, heading, r.shown([]domain.Fact{
 		{Key: "progress", Value: p.Line("the objective")},
 		{Key: "deadline", Value: domain.FormatDay(c.Deadline)},
-		{Key: "time spent", Value: said(in.Spent()) + " in the period, " + said(r.Spent) + " in all"},
+		{Key: spentKey, Value: said(in.Spent()) + " in the period, " + said(r.Spent) + " in all"},
 		{Key: "left", Value: r.Left.Line()},
-	}))
-	if len(in.Months) == 0 {
+	})))
+	switch {
+	case r.Untimed:
+	case len(in.Months) == 0:
 		out.WriteString("\nnothing was spent in the period\n")
-	} else {
+	default:
 		out.WriteString("\nby month\n")
 		for _, m := range in.Months {
 			fmt.Fprintf(&out, "  %s  %s%s\n", m.Month.Format("2006-01"), domain.FormatDuration(m.Spent), m.splitText())

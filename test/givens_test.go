@@ -24,7 +24,7 @@ func givensOn(t *testing.T) Givens {
 
 func shownText(t *testing.T, one task.Task) string {
 	t.Helper()
-	return task.Text(one, domain.Progress{})
+	return task.Text(one, domain.Progress{}, true)
 }
 
 func TestGivens_writeWhatTheyDescribe(t *testing.T) {

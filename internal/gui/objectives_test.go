@@ -424,6 +424,22 @@ func TestTheRefusalOfADoubleCountSaysWhatToUntick(t *testing.T) {
 	}
 }
 
+func TestAnObjectiveSaysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
+	w := homeWindow(1200, 800)
+	w.pages = engine.PagesOff(engine.PageTime)
+	for _, f := range w.GoalProgress(w.snap.Goals[2]).Lines {
+		if f.Name == "time spent" {
+			t.Errorf("the time not shown, the progress says %+v", f)
+		}
+	}
+	if d := w.Detail(); d.Spent != "" {
+		t.Errorf("the time not shown, the detail says %q spent", d.Spent)
+	}
+	if said := w.spentSaid(""); said != "" {
+		t.Errorf("the time not shown, a tile says %q spent", said)
+	}
+}
+
 func TestTheProgressSaysTheDaysToTheDeadline(t *testing.T) {
 	w := homeWindow(1200, 800).At(time.Date(2026, 11, 9, 10, 0, 0, 0, time.Local))
 	g := w.snap.Goals[0]

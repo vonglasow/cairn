@@ -1016,10 +1016,7 @@ func drawWorkTile(k Kit, w Window, tile WorkTile) {
 	number := "#" + strconv.Itoa(c.Number)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: x, Y: line.Y, W: monoWide(number, small), H: line.H}, number, small, k.skin.Type.Mono, text.Start)
 	x += monoWide(number, small) + padding
-	spent := c.Spent
-	if spent == "" {
-		spent = "—"
-	}
+	spent := w.spentSaid(c.Spent)
 	spentAt := Box{X: tile.At.X + tile.At.W - padding - monoWide(widestTime, small), Y: line.Y, W: monoWide(widestTime, small), H: line.H}
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, spentAt, spent, small, k.skin.Type.Mono, text.End)
 	state := c.State

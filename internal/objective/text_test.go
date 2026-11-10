@@ -206,6 +206,20 @@ func TestReport_saysThePeriodTheMonthsAndWhatWasDone(t *testing.T) {
 	}
 }
 
+func TestText_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
+	said := Text(plan(t), domain.Progress{}, Review{Spent: 2 * time.Hour, Untimed: true}, Family{})
+	if strings.Contains(said, "time spent") {
+		t.Errorf("the time not shown, the text says the time spent:\n%s", said)
+	}
+	in := Period{Since: time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC), Until: time.Date(2026, 8, 31, 0, 0, 0, 0, time.UTC)}
+	report := Report(plan(t), domain.Progress{}, Review{Spent: 2 * time.Hour, Untimed: true}, in)
+	for _, never := range []string{"time spent", "spent in the period", "by month"} {
+		if strings.Contains(report, never) {
+			t.Errorf("the time not shown, the report says %q:\n%s", never, report)
+		}
+	}
+}
+
 func TestLeft_countsWhatIsOpenAndKeepsTheSoonestDeadline(t *testing.T) {
 	soon, late := time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
 	var l Left

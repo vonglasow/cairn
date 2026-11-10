@@ -55,6 +55,29 @@ Feature: Time on, hidden, or off
       And I run `cairn timesheet show --since 2026-09-29 --until 2026-09-29`
       Then the day "2026-09-29" gives task 1 "1h30"
 
+    @time-not-shown-says-no-time-spent
+    Scenario Outline: hidden or off, neither a task nor its objective says the time spent on it
+      Given I added an objective titled "Ship the spec"
+      And I edited task 1 with the objective "1"
+      And I edited task 1 with the time spent "2h"
+      And the pages say time = "<time>"
+      When I run `cairn task show 1`
+      Then the answer does not say "time spent"
+      When I run `cairn task show 1 --json`
+      Then the answer does not say "2h"
+      When I run `cairn objective show 1`
+      Then the answer does not say "time spent"
+      When I run `cairn objective list`
+      Then the answer does not say "2h"
+      When the pages say time = "on"
+      And I run `cairn task show 1`
+      Then the answer says "2h"
+
+      Examples:
+        | time   |
+        | hidden |
+        | off    |
+
   Rule: Off, the focus stays and no time is recorded
 
     @time-off-records-nothing

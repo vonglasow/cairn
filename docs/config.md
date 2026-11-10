@@ -460,7 +460,12 @@ and is offered while one of them is (`@gui-a-page-off-takes-its-menus`,
 shown. `"hidden"` is recorded and not shown: every surface treats the page as
 off — no tab, no time on a card, no timesheet command or tool — and the trace
 keeps counting, so turned back on, every minute spent meanwhile is there
-(`bdd/time.feature`, `@time-hidden-records-what-it-does-not-show`). `"off"` is
+(`bdd/time.feature`, `@time-hidden-records-what-it-does-not-show`). No time
+spent is said of a task, an objective or a series either, in text or in JSON,
+to an agent or on a board: the engine takes it out of every answer before a
+surface sees it, so a surface has nothing to forget; an export still carries
+it, being the store's data and not a picture of it
+(`@time-not-shown-says-no-time-spent`). `"off"` is
 neither: shown as hidden is, and a task in focus counts no time at all — the
 focus stays, without a timer, and turning the time back on starts the timer
 then, nothing before caught up (`@time-off-records-nothing`,

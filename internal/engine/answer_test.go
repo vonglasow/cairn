@@ -212,7 +212,7 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		in   Answer
 		want string
 	}{
-		{"a task", TaskShow, Answer{Task: &built, Progress: progress}, task.Text(built, progress)},
+		{"a task", TaskShow, Answer{Task: &built, Progress: progress}, task.Text(built, progress, true)},
 		{"an empty list of tasks says so", TaskList, Answer{Tasks: []task.Task{}}, "there is no task\n"},
 		{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, task.Lines([]task.Task{built}, task.Marks{})},
 		{"a search that found nothing says so", TaskSearch, Answer{Matched: []task.Task{}}, "there is no task\n"},
@@ -235,7 +235,7 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		{"nothing waiting says so", MigrationApply, Answer{Applied: []string{}}, "there is nothing waiting to be applied\n"},
 		{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, "applied \"add labels\"\n"},
 		{"a sweep says how many", TaskArchive, Answer{Archived: &deleted}, "7 task(s) archived\n"},
-		{"one archived by number shows the card", TaskArchive, Answer{Archived: of(1), Task: &built}, task.Text(built, domain.Progress{})},
+		{"one archived by number shows the card", TaskArchive, Answer{Archived: of(1), Task: &built}, task.Text(built, domain.Progress{}, true)},
 		{"how many were labelled", TaskLabel, Answer{Labelled: &deleted}, "7 task(s) labelled\n"},
 		{"nothing declared, nothing said", Operation{}, Answer{Tasks: []task.Task{built}}, ""},
 	}

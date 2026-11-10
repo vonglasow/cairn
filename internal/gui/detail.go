@@ -518,19 +518,15 @@ const progressHead = lineHigh + between + 2*padding + lineHigh
 
 // GoalProgress is what an objective's form says of how far it has got: what is done, the time spent against the estimate, what is left, where else it is counted, and the days to its deadline.
 func (w Window) GoalProgress(g engine.Goal) Facts {
-	spent := "—"
-	if g.Spent > 0 {
-		spent = domain.FormatDuration(g.Spent)
+	f := Facts{Lines: []Fact{{Name: "done", Value: strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " tasks"}}}
+	if w.pages.Shows(engine.PageTime) {
+		time := Fact{Name: "time spent", Value: w.spentSaid(domain.FormatDuration(g.Spent))}
+		if g.Estimate != "" {
+			time.Aside = "of " + g.Estimate + " estimated"
+		}
+		f.Lines = append(f.Lines, time)
 	}
-	time := Fact{Name: "time spent", Value: spent}
-	if g.Estimate != "" {
-		time.Aside = "of " + g.Estimate + " estimated"
-	}
-	f := Facts{Lines: []Fact{
-		{Name: "done", Value: strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " tasks"},
-		time,
-		{Name: "left", Value: w.snap.Left(g.Number).Line()},
-	}}
+	f.Lines = append(f.Lines, Fact{Name: "left", Value: w.snap.Left(g.Number).Line()})
 	if parent, ok := w.snap.Goal(g.Parent); ok && g.Parent != 0 {
 		f.Lines = append(f.Lines, Fact{Name: "counted in", Value: "#" + strconv.Itoa(parent.Number) + " " + parent.Title,
 			Aside: strconv.Itoa(parent.Done) + " of " + strconv.Itoa(parent.Total) + " there, each task once"})

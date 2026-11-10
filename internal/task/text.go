@@ -8,8 +8,8 @@ import (
 	"cairn/internal/domain"
 )
 
-// Text renders a task in full, empty attributes included, the way a person reads it.
-func Text(t Task, p domain.Progress) string {
+// Text renders a task in full, empty attributes included, the way a person reads it; the time spent only while the time is shown.
+func Text(t Task, p domain.Progress, timed bool) string {
 	c := t.Carried()
 	rows := []domain.Fact{{Key: "state", Value: string(c.State)}}
 	if c.Archived {
@@ -36,7 +36,11 @@ func Text(t Task, p domain.Progress) string {
 		domain.Fact{Key: "linked", Value: strings.Join(linked, ", ")},
 		domain.Fact{Key: "deadline", Value: domain.FormatDay(c.Deadline)},
 		domain.Fact{Key: "estimate", Value: domain.FormatDuration(c.Estimate)},
-		domain.Fact{Key: "time spent", Value: domain.FormatDuration(c.Spent)},
+	)
+	if timed {
+		rows = append(rows, domain.Fact{Key: "time spent", Value: domain.FormatDuration(c.Spent)})
+	}
+	rows = append(rows,
 		domain.Fact{Key: "objectives", Value: strings.Join(serves, ", ")},
 		domain.Fact{Key: "progress", Value: p.Line("the task")},
 	)

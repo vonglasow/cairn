@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -137,5 +138,35 @@ func TestAnswer_asksNoRenewalWhileTheTimeIsOff(t *testing.T) {
 		if c.Did == trace.FocusRenewed {
 			t.Errorf("with the time off, focusing again renewed the session")
 		}
+	}
+}
+
+func TestAnswer_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
+	for _, mode := range []string{"hidden", "off"} {
+		t.Run(mode, func(t *testing.T) {
+			path := storeAt(t, "one")
+			nine := time.Date(2026, 9, 29, 9, 0, 0, 0, time.Local)
+			on := homeTimed(t, path, "", nine)
+			ranAt(t, ObjectiveNew, on, given("title", "ship"))
+			ranAt(t, TaskEdit, on, Input{Given: map[string]string{"number": "1", "spent": "2h"}, Listed: map[string][]string{"objective": {"=1"}}})
+			not := homeTimed(t, path, "[pages]\ntime = \""+mode+"\"\n", nine)
+			shown := ranAt(t, TaskShow, not, given("number", "1"))
+			if spent := factsOf(*shown.Task).Spent; spent != 0 {
+				t.Errorf("task show says %s spent", spent)
+			}
+			if said := RenderText(TaskShow, shown); strings.Contains(said, "time spent") {
+				t.Errorf("task show says the time spent:\n%s", said)
+			}
+			objective := ranAt(t, ObjectiveShow, not, given("number", "1"))
+			if said := RenderText(ObjectiveShow, objective); strings.Contains(said, "time spent") {
+				t.Errorf("objective show says the time spent:\n%s", said)
+			}
+			if listed := ranAt(t, ObjectiveList, not, given()); len(listed.Spent) != 0 {
+				t.Errorf("objective list says %v spent", listed.Spent)
+			}
+			if spent := factsOf(*ranAt(t, TaskShow, on, given("number", "1")).Task).Spent; spent != 2*time.Hour {
+				t.Errorf("shown again, the time spent is %s, want 2h", spent)
+			}
+		})
 	}
 }

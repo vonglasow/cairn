@@ -47,7 +47,7 @@ func rendered(op Operation, a Answer) string {
 	case Timesheet:
 		return trace.SheetText(*a.Sheet, namedAsShown(a.Named, a.Gone))
 	case Review:
-		return objective.Report(*a.Objective, a.Progress, reviewOf(a.Under), *a.Period)
+		return objective.Report(*a.Objective, a.Progress, a.review(), *a.Period)
 	case Focus:
 		if a.Task != nil {
 			return cardText(a) + warningsText(a.Warnings)
@@ -144,7 +144,7 @@ func rendered(op Operation, a Answer) string {
 }
 
 func cardText(a Answer) string {
-	said := task.Text(*a.Task, a.Progress) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
+	said := task.Text(*a.Task, a.Progress, !a.Untimed) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
 	if o, is := a.Occurring[factsOf(*a.Task).Number]; is {
 		said += occursText(o)
 	}
@@ -224,7 +224,7 @@ func objectiveText(a Answer) string {
 	if a.Family != nil {
 		f = *a.Family
 	}
-	said := objective.Text(*a.Objective, a.Progress, reviewOf(a.Under), f)
+	said := objective.Text(*a.Objective, a.Progress, a.review(), f)
 	if len(f.Children) == 0 {
 		said += objective.Serving(linesOf(a.Under))
 	} else {

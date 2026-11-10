@@ -21,14 +21,14 @@ func spec(t *testing.T) Task {
 }
 
 func TestText_leadsWithTheNumberAndTheTitle(t *testing.T) {
-	got := Text(spec(t), domain.Progress{})
+	got := Text(spec(t), domain.Progress{}, true)
 	if first := strings.SplitN(got, "\n", 2)[0]; !strings.Contains(first, "1") || !strings.Contains(first, "Write the spec") {
 		t.Errorf("first line = %q, want the number and the title", first)
 	}
 }
 
 func TestText_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
-	got := Text(spec(t), domain.Progress{})
+	got := Text(spec(t), domain.Progress{}, true)
 	for _, key := range []string{"state", "priority", "description", "labels", "deadline", "estimate", "time spent"} {
 		if !strings.Contains(got, key) {
 			t.Errorf("text is missing %q:\n%s", key, got)
@@ -36,8 +36,14 @@ func TestText_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
 	}
 }
 
+func TestText_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
+	if got := Text(spec(t), domain.Progress{}, false); strings.Contains(got, "time spent") {
+		t.Errorf("the time not shown, the text says the time spent:\n%s", got)
+	}
+}
+
 func TestText_showsTheDefaultsATaskStartsWith(t *testing.T) {
-	got := Text(spec(t), domain.Progress{})
+	got := Text(spec(t), domain.Progress{}, true)
 	if !strings.Contains(got, "backlog") || !strings.Contains(got, "normal") {
 		t.Errorf("text should show backlog and normal:\n%s", got)
 	}
@@ -61,7 +67,7 @@ func TestText_showsWhatTheTaskCarries(t *testing.T) {
 	a.Estimated(estimate)
 	built = a.Task()
 
-	got := Text(built, domain.Progress{})
+	got := Text(built, domain.Progress{}, true)
 	for _, want := range []string{"the one", "spec, team", "2026-09-01", "1h30m"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("text is missing %q:\n%s", want, got)
@@ -70,7 +76,7 @@ func TestText_showsWhatTheTaskCarries(t *testing.T) {
 }
 
 func TestText_showsHowFarAlongItIs(t *testing.T) {
-	got := Text(spec(t), domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}})
+	got := Text(spec(t), domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}}, true)
 	if !strings.Contains(got, "1 of 4 steps are done") {
 		t.Errorf("text is missing the progress line:\n%s", got)
 	}
@@ -80,7 +86,7 @@ func TestText_showsHowFarAlongItIs(t *testing.T) {
 }
 
 func TestText_countsTasksApartFromSteps(t *testing.T) {
-	got := Text(spec(t), domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}})
+	got := Text(spec(t), domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}, true)
 	if !strings.Contains(got, "2 of 2 tasks are done") {
 		t.Errorf("text is missing the progress line:\n%s", got)
 	}
@@ -165,7 +171,7 @@ func TestText_carriesTheAttributesMostTasksDoNot(t *testing.T) {
 	a.Spent(90 * time.Minute)
 	a.Serves(3)
 
-	got := Text(a.Task(), domain.Progress{})
+	got := Text(a.Task(), domain.Progress{}, true)
 	for _, want := range []string{"time spent", "1h30m", "objective"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the card does not carry %q:\n%s", want, got)
@@ -191,10 +197,10 @@ func TestText_saysWhenATaskIsOffTheBoard(t *testing.T) {
 		}
 		return a.Task()
 	}
-	if got := Text(made(true), domain.Progress{}); !strings.Contains(got, "archived") {
+	if got := Text(made(true), domain.Progress{}, true); !strings.Contains(got, "archived") {
 		t.Errorf("Text of an archived task =\n%s\nwant it to say so", got)
 	}
-	if got := Text(made(false), domain.Progress{}); strings.Contains(got, "archived") {
+	if got := Text(made(false), domain.Progress{}, true); strings.Contains(got, "archived") {
 		t.Errorf("Text of one on the board =\n%s\nwant it to say nothing of archiving", got)
 	}
 }
@@ -218,10 +224,10 @@ func TestALineCarriesEnoughToDecideOn(t *testing.T) {
 
 func TestTextSaysWhatItIsLinkedTo(t *testing.T) {
 	linked := Made(Carried{Number: 2, Title: "Write the spec", Linked: []int{1, 3}})
-	if got := Text(linked, domain.Progress{}); !strings.Contains(got, "linked       #1, #3\n") {
+	if got := Text(linked, domain.Progress{}, true); !strings.Contains(got, "linked       #1, #3\n") {
 		t.Errorf("text should say what it is linked to:\n%s", got)
 	}
-	if got := Text(spec(t), domain.Progress{}); !strings.Contains(got, "linked       —\n") {
+	if got := Text(spec(t), domain.Progress{}, true); !strings.Contains(got, "linked       —\n") {
 		t.Errorf("text should say it is linked to nothing:\n%s", got)
 	}
 }
@@ -235,7 +241,7 @@ func TestText_saysWhatBlocksTheTaskAndWhy(t *testing.T) {
 		if because != "" {
 			a.Because(because)
 		}
-		got := Text(a.Task(), domain.Progress{})
+		got := Text(a.Task(), domain.Progress{}, true)
 		for _, line := range strings.Split(got, "\n") {
 			if strings.Contains(line, "blocked by") {
 				return strings.TrimSpace(line)
