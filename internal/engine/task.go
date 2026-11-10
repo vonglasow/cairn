@@ -378,6 +378,18 @@ cairn task delete 1 --also 4 --also 7 --yes`,
 	},
 }
 
+func somethingToLookFor(named *[]string) error {
+	if named == nil {
+		return nil
+	}
+	for _, n := range *named {
+		if strings.TrimSpace(n) != "" {
+			return nil
+		}
+	}
+	return Refusing("nothing-to-look-for", "search: there is nothing to look for")
+}
+
 // TaskSearch names every task carrying everything named, wherever among its facts each one happens to sit.
 var TaskSearch = Operation{
 	Thing: "task",
@@ -397,6 +409,9 @@ cairn task search spec --limit 50 --offset 100`,
 	}, append(append(slices.Clone(taskNarrowing), fieldsArgument), pageArguments...)...),
 	Run: func(on On, in Input) (Answer, error) {
 		named := in.Changed("named")
+		if err := somethingToLookFor(named); err != nil {
+			return Answer{}, err
+		}
 		kept, err := keeping(in, taskNarrowing, on.Engine)
 		if err != nil {
 			return Answer{}, err

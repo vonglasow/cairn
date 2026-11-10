@@ -143,3 +143,18 @@ func TestAsk_aStoreFallenBehindIsRefusedToWhatNeedsItCurrent(t *testing.T) {
 		t.Errorf("Ask(MigrationList) on a store behind = %v, want it to pass", err)
 	}
 }
+
+func TestAskRefusesASearchForNothing(t *testing.T) {
+	e, _ := engineOn(t)
+	add(t, e, "Write the spec")
+
+	for _, named := range [][]string{{""}, {"   "}, {" ", ""}} {
+		_, err := e.Ask(TaskSearch, Input{Listed: map[string][]string{"named": named}})
+		if err == nil {
+			t.Fatalf("Ask(TaskSearch, %q) answered, want it refused", named)
+		}
+		if !strings.Contains(err.Error(), "there is nothing to look for") {
+			t.Errorf("Ask(TaskSearch, %q) = %v, want it to say there is nothing to look for", named, err)
+		}
+	}
+}

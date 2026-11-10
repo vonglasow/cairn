@@ -552,6 +552,18 @@ Feature: Tasks
       When I run `cairn task search spec`
       Then it lists task 1 titled "Write the spec"
 
+    @task-search-empty-term
+    Scenario Outline: nothing to look for is refused, not answered
+      Given I added a task titled "Write the spec"
+      When I run `cairn task search <term> --json`
+      Then it exits with code 1
+      And it says in JSON the refusal is "refused", because "nothing-to-look-for"
+
+      Examples:
+        | term  |
+        | ""    |
+        | "   " |
+
     @task-search-by-its-number
     Scenario: the number is the way back when it is what somebody has
       Given I added a task titled "Write the spec"
