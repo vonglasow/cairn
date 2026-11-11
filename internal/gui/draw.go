@@ -83,6 +83,7 @@ func Draw(k Kit, w Window) {
 		return
 	}
 	if w.Blank() {
+		drawBlank(k, w)
 		return
 	}
 	l := w.Layout()
@@ -872,6 +873,16 @@ func (w Window) cardOf(c engine.Card, chosen, hovered bool) Card {
 func goalFace(g engine.Goal) engine.Card {
 	return engine.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g),
 		Deadline: g.Deadline}
+}
+
+func drawBlank(k Kit, w Window) {
+	if w.Screen() == OnConfiguration {
+		drawConfiguration(k.on(LayerPanel), w)
+		return
+	}
+	offer := BlankOffer(w.width, w.height)
+	Empty{Said: w.BlankSays()}.Draw(k, Box{X: offer.X - 60, Y: offer.Y - 3*lineHigh, W: offer.W + 120, H: 2 * lineHigh})
+	Button{Said: "Open settings", Key: Pretty("cmd+,"), Keyed: true}.Draw(k, offer)
 }
 
 func drawGoalDragging(k Kit, w Window) {

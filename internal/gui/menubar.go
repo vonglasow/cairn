@@ -54,7 +54,7 @@ func offered(pages engine.Pages, line string) bool {
 // MenuBar is every menu of the bar, in the order a window lays them out, with only the lines the pages shown offer: a line acting on a page turned off is gone, a menu left with no line goes too — the same rule as the command line's and the MCP server's (engine.Pages) — and with every page off there is none, the window holding nothing to act on.
 func MenuBar(pages engine.Pages) []MenuGroup {
 	if pages.None() {
-		return nil
+		return []MenuGroup{{Name: "File", Items: []string{"Configuration…"}}}
 	}
 	var bar []MenuGroup
 	for _, group := range menuBar {
@@ -87,7 +87,10 @@ var tabOfLine = map[string]Tab{"Tasks": Tasks, "Objectives": Objectives, "Time":
 
 // Doable says whether a line of the menu bar does something now: offered by the pages shown, on the board, and with what it acts on in sight — a card chosen to edit, a task to focus or archive, another page to go to. The native bars grey what is not, the button's menu leaves it out, and picking it does nothing.
 func (w Window) Doable(line string) bool {
-	if w.Blank() || w.screen != OnTheBoard && w.screen != OnSearch || !offered(w.pages, line) {
+	if w.Blank() {
+		return line == "Configuration…" && w.screen == OnTheBoard
+	}
+	if w.screen != OnTheBoard && w.screen != OnSearch || !offered(w.pages, line) {
 		return false
 	}
 	onTasks := w.tab == Tasks

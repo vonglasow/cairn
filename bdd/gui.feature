@@ -2129,12 +2129,15 @@ Feature: The desktop board
       And the menu bar offers "Objectives", "New", "Edit", "Delete", "Search", "Labels"
 
     @gui-every-page-off-leaves-what-belongs-to-none
-    Scenario: every page turned off leaves the menu bar as empty as the window
+    Scenario: every page turned off leaves the menu bar nothing but the settings
       Given the pages turned off are "tasks, objectives, time"
       When I open the window
-      Then the menu bar offers nothing
+      Then the menu bar offers "Configuration…"
+      And the menu bar offers no "Help", "New", "Tasks"
       When I pick "Help" from the menu bar
       Then the window is on the board
+      When I pick "Configuration…" from the menu bar
+      Then the panel is headed "Configuration"
 
     @gui-the-first-page-shown-opens
     Scenario: with the tasks turned off the window opens on the objectives
@@ -2143,12 +2146,17 @@ Feature: The desktop board
       Then the window is on the page "OBJECTIVES"
 
     @gui-every-page-off-is-an-empty-window
-    Scenario: every page turned off opens a window with nothing in it
+    Scenario: every page turned off opens a window that says so and leads to the settings
       Given the pages turned off are "tasks, objectives, time"
       When I open the window
-      Then the window draws nothing but its ground
+      Then the window says every page is turned off
       When I press "cmd+n"
       Then the window is on the board
+      When I click the offer to open the settings
+      Then the panel is headed "Configuration"
+      When I press "esc"
+      And I press "cmd+,"
+      Then the panel is headed "Configuration"
 
   Rule: Labels are seen and managed apart from any task
 

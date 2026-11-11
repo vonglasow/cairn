@@ -89,6 +89,24 @@ func Dimmed(c engine.Card) bool { return c.Archived || c.State == "done" }
 // Blank says every page is turned off: the window is drawn, and nothing in it.
 func (w Window) Blank() bool { return w.pages.None() }
 
+// BlankSays is what a window with every page turned off says, over the offer to open the settings.
+const BlankSays = "Every page is turned off"
+
+// BlankSays is what the window says when it has no page to show, empty otherwise.
+func (w Window) BlankSays() string {
+	if w.Blank() && w.screen != OnConfiguration {
+		return BlankSays
+	}
+	return ""
+}
+
+// BlankOffer is where a window with no page offers to open the settings: under what it says, in its middle.
+func BlankOffer(width, height int) Box {
+	return Box{X: width/2 - 90, Y: height/2 + lineHigh, W: 180, H: 30}
+}
+
+func (w Window) stranded() bool { return w.Blank() && w.screen != OnConfiguration }
+
 func (w Window) other(by int) Window {
 	shown := w.Shown()
 	if len(shown) == 0 {

@@ -1165,6 +1165,17 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the window says every page is turned off$`, func() error {
+		if got := w.w.BlankSays(); got != BlankSays {
+			return fmt.Errorf("the window says %q, want %q", got, BlankSays)
+		}
+		return nil
+	})
+	sc.When(`^I click the offer to open the settings$`, func() error {
+		b := BlankOffer(w.w.width, w.w.height)
+		w.w = w.w.clicked(Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
+		return nil
+	})
 	sc.Then(`^the window draws nothing but its ground$`, func() error {
 		shot, err := drawnInAStep(w.w)
 		if err != nil {

@@ -479,11 +479,12 @@ Anything else is refused naming `pages.time` and the three words
 (`@time-a-word-it-does-not-know-is-refused`). A store's settings may say it as
 any page (`@time-off-in-the-store-settings`).
 
-With every page off a board opens with nothing in it, its menu bar with
-nothing either (`@gui-every-page-off-leaves-what-belongs-to-none`), and only
-closing it does anything. What belongs to no page — the configuration,
-backups, migrations, the trace, the plugin — stays on the command line and
-for an agent. A
+With every page off a window says so, and offers the settings — a button,
+`⌘,`, and Configuration… alone in its menu bar — since the settings are the
+one way back to a page (#278, `@gui-every-page-off-is-an-empty-window`,
+`@gui-every-page-off-leaves-what-belongs-to-none`). What else belongs to no
+page — backups, migrations, the trace, the plugin — stays on the command line
+and for an agent. A
 page cairn does not have is refused like any other unknown name, and `config
 show` says which pages are off. A configuration that cannot be read turns no
 page off: every command that needs it refuses anyway, and says why.
