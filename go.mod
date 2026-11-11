@@ -17,11 +17,11 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
-	go.yaml.in/yaml/v3 v3.0.4
+	github.com/spf13/pflag v1.1.0
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/image v0.47.0
-	golang.org/x/sys v0.49.0
-	modernc.org/sqlite v1.61.1
+	golang.org/x/sys v0.50.0
+	modernc.org/sqlite v1.62.0
 )
 
 require (
@@ -51,7 +51,6 @@ require (
 	github.com/hashicorp/go-memdb v1.3.5 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
@@ -74,7 +73,7 @@ require (
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	modernc.org/libc v1.79.0 // indirect
+	modernc.org/libc v1.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 )
