@@ -1,6 +1,6 @@
 module cairn/tools
 
-go 1.26.0
+go 1.27.3
 
 toolchain go1.27.4
 
@@ -57,7 +57,7 @@ require (
 	github.com/butuzov/ireturn v0.4.1 // indirect
 	github.com/butuzov/mirror v1.3.3 // indirect
 	github.com/caarlos0/go-version v0.2.2 // indirect
-	github.com/caarlos0/svu/v3 v3.4.1 // indirect
+	github.com/caarlos0/svu/v3 v3.4.4 // indirect
 	github.com/catenacyber/perfsprint v0.10.1 // indirect
 	github.com/ccojocar/zxcvbn-go v1.0.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -96,7 +96,7 @@ require (
 	github.com/go-toolsmith/typep v1.1.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.3 // indirect
-	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gobwas/glob v1.1.0 // indirect
 	github.com/godoc-lint/godoc-lint v0.11.4 // indirect
 	github.com/gofrs/flock v0.13.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
