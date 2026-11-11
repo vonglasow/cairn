@@ -1324,7 +1324,9 @@ objective it waits on not reached (`@gui-objective-a-tile-warns-of-what-it-waits
 then its tasks on it itself, then those in its sub-objectives, each after a
 drawn `◇` and the sub-objectives it serves, the open first and the done
 faded; what has no room is counted, `2 more · t shows them all on the board`.
-What it waits on, and what waits on it, are said as facts
+A task clicked there opens its form over the tab, and closing it comes back
+to the objective it was clicked from (#284,
+`@gui-objective-a-task-in-the-detail-opens`). What it waits on, and what waits on it, are said as facts
 (`@gui-objective-the-detail-says-what-waits-on-what`). A parent every
 sub-objective of which is reached is proposed as reached in a banner, and
 left where it stands: its standing is the person's

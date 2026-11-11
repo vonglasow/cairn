@@ -71,7 +71,7 @@ func (w Window) openingParentOf(n int) Window {
 }
 
 func (w Window) choosingGoal(n int) Window {
-	w.chosen, w.chosenGoal = n, true
+	w.chosen, w.chosenGoal, w.detailGoal = n, true, n
 	w = w.openingParentOf(n)
 	for at, b := range w.Tree() {
 		if b.Goal.Number == n {

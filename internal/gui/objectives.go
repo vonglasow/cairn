@@ -19,8 +19,12 @@ func depthOf(b engine.Branch) int {
 // Detailed is the objective the right of the tab shows: the one chosen, or the first of the tree while none is, a parent drawn only as what holds a match passed over.
 func (w Window) Detailed() (engine.Goal, bool) {
 	tree := w.Tree()
+	shown := w.detailGoal
+	if w.chosenGoal {
+		shown = w.chosen
+	}
 	for _, b := range tree {
-		if w.chosenGoal && b.Goal.Number == w.chosen && !b.Holds {
+		if shown != 0 && b.Goal.Number == shown && !b.Holds {
 			return b.Goal, true
 		}
 	}
@@ -407,6 +411,12 @@ func (w Window) clickingDetail(p Point) (Window, bool) {
 	for _, t := range d.Tiles {
 		if t.At.In(p) {
 			return w.choosingGoal(t.Number), true
+		}
+	}
+	for _, line := range append(append([]TaskLine{}, d.Own...), d.InSubs...) {
+		if line.At.In(p) {
+			w.detailGoal = d.Goal.Number
+			return w.openingTask(line.Card.Number), true
 		}
 	}
 	for at, b := range w.Tree() {

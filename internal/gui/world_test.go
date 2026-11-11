@@ -1284,6 +1284,16 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Step(`^I click the task "([^"]*)" in the detail$`, func(title string) error {
+		d := w.w.Detail()
+		for _, line := range append(append([]TaskLine{}, d.Own...), d.InSubs...) {
+			if line.Card.Title == title {
+				w.w = w.w.clicked(Point{X: line.At.X + line.At.W/2, Y: line.At.Y + line.At.H/2})
+				return nil
+			}
+		}
+		return fmt.Errorf("the detail lists no task titled %q", title)
+	})
 	sc.Step(`^I click "([^"]*)"$`, w.clickOffer)
 	sc.Step(`^I right-click the card "([^"]*)"$`, func(title string) error {
 		at, err := w.find(title)

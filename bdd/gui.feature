@@ -5654,6 +5654,25 @@ Feature: The desktop board
       When I press "up"
       Then the detail is headed "Home automation"
 
+    @gui-objective-a-task-in-the-detail-opens
+    Scenario: a task clicked in the detail of an objective or a sub-objective opens over the tab, and closing it comes back to that objective
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added an objective titled "Garden"
+      And I added a task titled "Buy the relay" serving objective 1
+      And I added a task titled "Flash the bootloader" serving objective 2
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the objective "Home automation"
+      And I click the task "Buy the relay" in the detail
+      Then the form is open on task 1
+      When I press "esc"
+      Then the detail is headed "Home automation"
+      When I click the task "Flash the bootloader" in the detail
+      Then the form is open on task 2
+      When I press "esc"
+      Then the detail is headed "Home automation"
+
     @gui-objective-the-detail-counts-each-task-once
     Scenario: a parent's detail counts the tasks of its subtree once each, and lists them apart
       Given I added an objective titled "Home automation"
