@@ -222,3 +222,27 @@ func goalNumbers(goals []Goal) string {
 	}
 	return Numbers(out)
 }
+
+func TestBoardFilters_keepWhatIsInFocusOrWhatIsNot(t *testing.T) {
+	cards := []Card{{Number: 1}, {Number: 2, InFocus: true}}
+	fs := BoardFilters(Snapshot{Cards: cards}, time.Now())
+	if last := fs[len(fs)-1]; last.Arg != "focus" || !slices.Equal(last.Shown, []string{Any, "in focus", "not in focus"}) {
+		t.Fatalf("the last filter is %+v, want focus: in focus, not in focus", last)
+	}
+	for value, want := range map[string]int{"in": 2, "out": 1} {
+		kept, err := fs.On("focus", value).Kept(cards)
+		if err != nil || len(kept) != 1 || kept[0].Number != want {
+			t.Errorf("focus %s kept %+v (%v), want task %d", value, kept, err, want)
+		}
+	}
+	if said := fs.On("focus", "in").Said(); said != "focus in focus" {
+		t.Errorf("the filters say %q", said)
+	}
+}
+
+func TestTaskList_refusesTheTasksInFocusAndTheOnesThatAreNot(t *testing.T) {
+	_, err := keeping(Input{Given: map[string]string{"focus": "true", "no-focus": "true"}}, taskNarrowing, nil)
+	if err == nil || !strings.Contains(err.Error(), "--focus and --no-focus") {
+		t.Errorf("both asked gave %v", err)
+	}
+}

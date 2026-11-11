@@ -290,6 +290,27 @@ Feature: Ordering
       Then it succeeds
       And it says nothing is in focus
 
+    @ordering-list-in-focus-or-not
+    Scenario: a listing keeps the tasks in focus, or the ones that are not
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Fix the gate"
+      And I put task 2 in focus
+      When I run `cairn task list --focus`
+      Then it succeeds
+      And the answer says "Fix the gate"
+      And the answer does not say "Write the spec"
+      When I run `cairn task list --no-focus`
+      Then it succeeds
+      And the answer says "Write the spec"
+      And the answer does not say "Fix the gate"
+
+    @ordering-list-in-focus-and-not-is-refused
+    Scenario: a listing asked for the tasks in focus and the ones that are not is refused
+      Given I added a task titled "Write the spec"
+      When I run `cairn task list --focus --no-focus`
+      Then it fails
+      And it says on standard error "--focus and --no-focus"
+
   Rule: The focus brings waiting work into current, and moves nothing else
 
     @ordering-focus-moves-waiting-work-into-current

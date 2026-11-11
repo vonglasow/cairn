@@ -42,6 +42,29 @@ func TestDealKeepsTheOrderItWasGiven(t *testing.T) {
 	}
 }
 
+func TestDealDrawsTheTasksInFocusFirstInCurrent(t *testing.T) {
+	all, _ := Deal([]Card{
+		{Number: 1, State: "current"},
+		{Number: 2, State: "current", InFocus: true, Focused: 2},
+		{Number: 3, State: "current"},
+		{Number: 4, State: "current", InFocus: true, Focused: 1},
+		{Number: 5, State: "todo", InFocus: true, Focused: 3},
+		{Number: 6, State: "todo"},
+	}, false)
+	current, _ := At(all, "current")
+	var got []int
+	for _, c := range current.Cards {
+		got = append(got, c.Number)
+	}
+	if !slices.Equal(got, []int{4, 2, 1, 3}) {
+		t.Errorf("current reads %v, want the tasks in focus first, in the order they were focused: [4 2 1 3]", got)
+	}
+	todo, _ := At(all, "todo")
+	if todo.Cards[0].Number != 5 || todo.Cards[1].Number != 6 {
+		t.Errorf("todo reads %v: only current puts the focus first", todo.Cards)
+	}
+}
+
 func TestDealPassesOverAStateItDoesNotKnow(t *testing.T) {
 	all, band := Deal([]Card{{Number: 1, State: "elsewhere"}}, false)
 	if len(band) != 0 {

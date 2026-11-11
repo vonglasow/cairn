@@ -528,6 +528,17 @@ Feature: The board
       And I press "shift+a"
       Then the card for task 1 is marked as archived
 
+    @tui-the-tasks-in-focus-come-first-in-current
+    Scenario: the tasks in focus are drawn first in current, in the order they were focused
+      Given I added a task titled "Answer the mail" with the state "current"
+      And I added a task titled "Fix the gate" with the state "current"
+      And I added a task titled "Call the plumber" with the state "current"
+      And I put task 3 in focus
+      And I put task 2 in focus
+      When I open the board
+      Then the board says "Call the plumber" before "Fix the gate"
+      And the board says "Fix the gate" before "Answer the mail"
+
     @tui-the-task-in-focus-is-told-apart
     Scenario: the task in hand is drawn unlike any other
       Given I added a task titled "Write the spec"
@@ -1737,6 +1748,17 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And I press "shift+f", "l", "l", "l", "l", "l", "j"
     Then the board says "repeats yes"
     And the board says "Stand-up"
+    And the board says nothing of "Write the spec"
+
+  @tui-the-board-narrows-to-what-is-in-focus
+  Scenario: the focus filter keeps the tasks in focus
+    Given I added a task titled "Write the spec"
+    And I added a task titled "Fix the gate"
+    And I put task 2 in focus
+    When I open the board
+    And I press "shift+f", "l", "l", "l", "l", "l", "j"
+    Then the board says "focus in focus"
+    And the board says "Fix the gate"
     And the board says nothing of "Write the spec"
 
   @tui-series-r-s-skips

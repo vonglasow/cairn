@@ -75,6 +75,8 @@ func (h Holds) Narrows(arg string) bool {
 		return len(h.Label) > 0
 	case "objective":
 		return len(h.Objective) > 0
+	case "focus":
+		return h.Focus != ""
 	}
 	return h.DueBefore != ""
 }
@@ -151,6 +153,10 @@ func (fs Filters) holding(in Input) Input {
 					in.Given["itself"] = "true"
 				}
 			}
+		case f.Arg == "focus":
+			delete(in.Given, "focus")
+			delete(in.Given, "no-focus")
+			in.Given[focusAsked(taken[0])] = "true"
 		case f.Arg == "label":
 			for _, value := range taken {
 				if !slices.Contains(in.Listed["label"], value) {
@@ -188,6 +194,11 @@ func (fs Filters) Holding(over View, search string) Input {
 	}
 	if held.Itself {
 		in.Given["itself"] = "true"
+	}
+	if _, named := in.Given["focus"]; !named && held.Focus != "" {
+		if _, named := in.Given["no-focus"]; !named {
+			in.Given[focusAsked(held.Focus)] = "true"
+		}
 	}
 	return in
 }

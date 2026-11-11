@@ -745,3 +745,29 @@ func TestNarrowed_leavesWhatIsArchivedOffTheBoardUnlessAskedForBoth(t *testing.T
 		t.Errorf("asked for both, read %d tasks, want 2", len(all))
 	}
 }
+
+func TestNarrowed_keepsWhatIsInFocusOrWhatIsNot(t *testing.T) {
+	s := openStore(t)
+	keep(t, s, "First")
+	keep(t, s, "Second")
+	keep(t, s, "Third")
+	if err := s.AddFocus(2); err != nil {
+		t.Fatal(err)
+	}
+	for held, want := range map[bool][]int{true: {2}, false: {1, 3}} {
+		kept := &domain.Narrowing{}
+		kept.InFocus(held)
+		tasks, err := s.Narrowed(kept)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []int
+		for _, one := range tasks {
+			got = append(got, one.Carried().Number)
+		}
+		slices.Sort(got)
+		if !slices.Equal(got, want) {
+			t.Errorf("in focus %v keeps %v, want %v", held, got, want)
+		}
+	}
+}

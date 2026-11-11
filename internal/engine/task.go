@@ -95,6 +95,16 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 		Means: "keep only the tasks due on or before this day",
 	},
 	Argument{
+		Name:  "focus",
+		Kind:  Bool,
+		Means: "keep only the tasks in focus",
+	},
+	Argument{
+		Name:  "no-focus",
+		Kind:  Bool,
+		Means: "keep only the tasks not in focus",
+	},
+	Argument{
 		Name:  "archived",
 		Kind:  Bool,
 		Means: "keep only the archived tasks, instead of the ones still on the board",

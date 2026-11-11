@@ -26,7 +26,7 @@ func (e *Engine) viewsWritten(t tree) ([]viewFiled, error) {
 			continue
 		}
 		out = append(out, viewFiled{Name: v.Name, Holds: Holds{State: v.State, Priority: v.Priority, Label: v.Labels, Objective: v.Objectives,
-			Itself: v.Itself, DueBefore: v.DueBefore, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search}})
+			Itself: v.Itself, DueBefore: v.DueBefore, Focus: v.Focus, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search}})
 	}
 	return out, nil
 }
@@ -64,6 +64,9 @@ func viewOfFile(v viewFiled) (store.View, error) {
 	if err := ViewNew.Check(in); err != nil {
 		return store.View{}, err
 	}
+	if v.Focus != "" && v.Focus != "in" && v.Focus != "out" {
+		return store.View{}, fmt.Errorf("%w: view %s keeps the focus %q — in or out", ErrNotAnExport, v.Name, v.Focus)
+	}
 	for _, argument := range viewFilters {
 		if err := accepted(in, argument); err != nil {
 			return store.View{}, err
@@ -73,7 +76,7 @@ func viewOfFile(v viewFiled) (store.View, error) {
 	if err != nil {
 		return store.View{}, err
 	}
-	kept := store.View{Name: name, State: v.State, Priority: v.Priority, DueBefore: v.DueBefore, Search: strings.Join(strings.Fields(v.Search), " "), Labels: labels,
+	kept := store.View{Name: name, State: v.State, Priority: v.Priority, DueBefore: v.DueBefore, Focus: v.Focus, Search: strings.Join(strings.Fields(v.Search), " "), Labels: labels,
 		Objectives: slices.Clone(v.Objective), Itself: v.Itself, Archived: v.Archived, WithArchived: v.WithArchived}
 	if !narrowsAnything(kept) {
 		return store.View{}, Refusing("view-holds-nothing", "a view holds at least one filter or a search")

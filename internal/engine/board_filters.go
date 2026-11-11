@@ -99,7 +99,14 @@ func BoardFilters(s Snapshot, today time.Time) Filters {
 	if len(s.Series) > 0 {
 		fs = append(fs, offered("repeats", "repeats", []string{"true"}, []string{"yes"}))
 	}
-	return fs
+	return append(fs, offered("focus", "focus", []string{"in", "out"}, []string{"in focus", "not in focus"}))
+}
+
+func focusAsked(value string) string {
+	if value == "out" {
+		return "no-focus"
+	}
+	return "focus"
 }
 
 func several(f Filter) Filter {
@@ -302,6 +309,10 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 			repeats = true
 			continue
 		}
+		if f.Arg == "focus" {
+			in.Given[focusAsked(taken[0])] = "true"
+			continue
+		}
 		in.Given[f.Arg] = taken[0]
 	}
 	kept, err := keeping(in, TaskList.Takes, nil)
@@ -332,8 +343,9 @@ func (j *cardJudged) Carrying(priority string) { j.kept = j.kept && j.card.Prior
 func (j *cardJudged) Serving(objectives []int) {
 	j.kept = j.kept && slices.ContainsFunc(j.card.Objectives, func(o int) bool { return slices.Contains(objectives, o) })
 }
-func (j *cardJudged) Archived()     {}
-func (j *cardJudged) WithArchived() {}
+func (j *cardJudged) InFocus(held bool) { j.kept = j.kept && j.card.InFocus == held }
+func (j *cardJudged) Archived()         {}
+func (j *cardJudged) WithArchived()     {}
 
 func (j *cardJudged) DueBefore(day string) {
 	by, err := domain.ParseDeadline(day)

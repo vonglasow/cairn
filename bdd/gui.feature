@@ -5673,6 +5673,22 @@ Feature: The desktop board
       When I press "esc"
       Then the detail is headed "Home automation"
 
+    @gui-objective-a-click-on-nothing-keeps-the-objective-chosen
+    Scenario: a click where there is nothing leaves the objective chosen as it is, a sub-objective as much as any
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Flash the bootloader" serving objective 2
+      When I open the window
+      And I click the tab "OBJECTIVES"
+      And I click the chevron of "Home automation"
+      And I click the objective "Firmware"
+      And I click where there is nothing in the objectives
+      Then the objective "Firmware" is chosen
+      And the detail is headed "Firmware"
+      When I click the task "Flash the bootloader" in the detail
+      And I click outside the panel
+      Then the detail is headed "Firmware"
+
     @gui-objective-the-detail-counts-each-task-once
     Scenario: a parent's detail counts the tasks of its subtree once each, and lists them apart
       Given I added an objective titled "Home automation"
@@ -6517,6 +6533,19 @@ Feature: The desktop board
       And I set the filter "repeats" to "yes"
       Then "todo" carries "Stand-up"
       And "backlog" does not carry "Write the spec"
+
+    @gui-the-board-narrows-to-what-is-in-focus
+    Scenario: the focus filter keeps the tasks in focus, or the ones that are not
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Fix the gate"
+      And I put task 2 in focus
+      When I open the window
+      And I set the filter "focus" to "in focus"
+      Then "current" carries "Fix the gate"
+      And "backlog" does not carry "Write the spec"
+      When I set the filter "focus" to "not in focus"
+      Then "backlog" carries "Write the spec"
+      And "current" does not carry "Fix the gate"
 
     @gui-series-the-tab-narrows-to-a-state
     Scenario: the series tab narrows to a state, and says so on a pill

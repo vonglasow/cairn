@@ -29,7 +29,7 @@ var Stalled = []string{string(domain.Blocked), string(domain.Watching), string(d
 // Band is the name the three stopped states share.
 const Band = "STALLED"
 
-// Deal puts every card where it belongs: in the column of its state, or in the band if its state is one of the three that are not moving.
+// Deal puts every card where it belongs: in the column of its state, or in the band if its state is one of the three that are not moving; in current, the tasks in focus come first, in the order they were focused.
 func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 	out := make([]Column, len(columns))
 	for i, c := range columns {
@@ -46,7 +46,23 @@ func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 			out[at].Cards = append(out[at].Cards, card)
 		}
 	}
+	if at := slices.IndexFunc(out, func(c Column) bool { return c.State == string(domain.Current) }); at >= 0 {
+		out[at].Cards = focusFirst(out[at].Cards)
+	}
 	return out, band
+}
+
+func focusFirst(cards []Card) []Card {
+	var held, rest []Card
+	for _, c := range cards {
+		if c.InFocus {
+			held = append(held, c)
+			continue
+		}
+		rest = append(rest, c)
+	}
+	slices.SortStableFunc(held, func(a, b Card) int { return a.Focused - b.Focused })
+	return append(held, rest...)
 }
 
 // At answers the column of a given state, and whether there is one.

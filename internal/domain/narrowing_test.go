@@ -15,6 +15,7 @@ func (h *heard) Serving(n []int)     { h.said = append(h.said, fmt.Sprint("servi
 func (h *heard) Labelled(l []string) { h.said = append(h.said, "labels "+l[0]) }
 func (h *heard) Archived()           { h.said = append(h.said, "archived") }
 func (h *heard) WithArchived()       { h.said = append(h.said, "both") }
+func (h *heard) InFocus(held bool)   { h.said = append(h.said, fmt.Sprint("focus ", held)) }
 
 func TestNarrowing_tellsWhatWasNamedInTheOrderItWasNamed(t *testing.T) {
 	var n Narrowing
@@ -52,5 +53,15 @@ func TestNarrowing_narrowsOnlyWhenSomethingWasNamed(t *testing.T) {
 	column.InColumn("todo")
 	if !column.Narrows() {
 		t.Error("a column named narrows nothing")
+	}
+}
+
+func TestNarrowing_tellsWhetherItKeepsWhatIsInFocus(t *testing.T) {
+	var n Narrowing
+	n.InFocus(false)
+	h := &heard{}
+	n.Tell(h)
+	if !slices.Equal(h.said, []string{"focus false"}) || !n.Narrows() {
+		t.Errorf("told %v, narrowing %v: want focus false, narrowing", h.said, n.Narrows())
 	}
 }

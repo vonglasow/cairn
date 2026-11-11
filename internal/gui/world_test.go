@@ -1404,6 +1404,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		w.w = w.w.clicked(at).DoubleClick(at)
 		return err
 	})
+	sc.Step(`^I click where there is nothing in the objectives$`, func() error {
+		run := GoalsRun(w.w.Layout())
+		nothing := Point{X: run.X + run.W/2, Y: run.Y + run.H - 4}
+		w.w = w.w.PressAt(nothing).LetGo(nothing)
+		return nil
+	})
 	sc.Step(`^I click outside the panel$`, func() error {
 		off := Point{X: 2, Y: 2}
 		w.w = w.w.PressAt(off).LetGo(off)

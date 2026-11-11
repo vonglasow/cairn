@@ -672,11 +672,25 @@ row says how often an occurrence comes back, `· ↻3 every weekday at 10:30`,
 and an agent reads its series' number under `series`, 0 for any other task;
 with recurrence off neither is said, and neither filter is offered
 (`bdd/series.feature`, `@series-list-repeats`). Both boards offer the same as
-a filter, `repeats` on `yes`, last of their filters and only while there is
+a filter, `repeats` on `yes`, after the others but the focus, and only while there is
 a series (`engine.BoardFilters`, `@gui-series-the-board-narrows-to-what-comes-back`,
 `@tui-series-the-board-narrows-to-what-comes-back`). The narrowing is the engine's,
 over what the store already handed back, like a view's search — see
 [series.md](series.md).
+
+## A listing can keep the tasks in focus, or the ones that are not
+
+`task list --focus` keeps only the tasks in focus, `--no-focus` only the
+ones that are not; both at once keep nothing and are refused, naming both
+(`@ordering-list-in-focus-or-not`, `@ordering-list-in-focus-and-not-is-refused`).
+The focus lives in its own table, so it narrows in SQL like the rest:
+`number IN (SELECT task_number FROM focused)`, for tasks only — an objective
+holds no focus, and a narrowing that names it reads every objective. A view
+keeps it as `focus`, `in` or `out` (migration 25, `@view-new-holds-the-focus`),
+and both boards offer it as their last filter, `focus` on `in focus` or `not
+in focus` (`@gui-the-board-narrows-to-what-is-in-focus`,
+`@tui-the-board-narrows-to-what-is-in-focus`). Without it, the one way to see
+only what was being worked on was `task focus`, which no board offers.
 
 ## Where the narrowing happens
 

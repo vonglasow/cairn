@@ -12,7 +12,7 @@ func TestViews_areKeptInTheirPlacesAndReplacedWhole(t *testing.T) {
 	}
 	kept := []View{
 		{Name: "Home", Objectives: []int{4, 2}, Itself: true, Search: "spec", Labels: []string{"doc"}},
-		{Name: "Next", State: "todo", Priority: "high", DueBefore: "2026-11-30", Archived: true, WithArchived: true, Objectives: []int{}, Labels: []string{}},
+		{Name: "Next", State: "todo", Priority: "high", DueBefore: "2026-11-30", Focus: "in", Archived: true, WithArchived: true, Objectives: []int{}, Labels: []string{}},
 	}
 	if err := s.KeepViews(kept); err != nil {
 		t.Fatal(err)

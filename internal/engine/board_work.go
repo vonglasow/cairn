@@ -39,6 +39,7 @@ type Card struct {
 	SubDone     int
 	SubTotal    int
 	InFocus     bool
+	Focused     int
 	Freed       bool
 	Context     string
 	Said        []string
@@ -205,6 +206,7 @@ func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, conte
 		SubDone:     sofar.Done(),
 		SubTotal:    sofar.Total(),
 		InFocus:     slices.Contains(held, told.Number),
+		Focused:     slices.Index(held, told.Number) + 1,
 		Freed:       slices.Contains(freed, told.Number),
 		Context:     contexts[told.Number],
 		Said:        task.Said(t),

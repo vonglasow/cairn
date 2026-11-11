@@ -44,6 +44,7 @@ type Holds struct {
 	Objective    []int    `json:"objective,omitempty"`
 	Itself       bool     `json:"itself,omitempty" jsonschema:"the objectives themselves, leaving out their sub-objectives"`
 	DueBefore    string   `json:"due_before,omitempty"`
+	Focus        string   `json:"focus,omitempty" jsonschema:"in: only the tasks in focus; out: only the ones that are not"`
 	Archived     bool     `json:"archived,omitempty"`
 	WithArchived bool     `json:"with_archived,omitempty"`
 	Search       string   `json:"search,omitempty"`
@@ -302,6 +303,11 @@ func (e *Engine) holding(v store.View, in Input) (store.View, error) {
 			*into = in.Yes(name)
 		}
 	}
+	focus, err := focusHeld(v.Focus, in)
+	if err != nil {
+		return v, err
+	}
+	v.Focus = focus
 	if objectives := in.Changed("objective"); objectives != nil {
 		numbers, err := e.objectivesNamed(*objectives)
 		if err != nil {
@@ -350,8 +356,23 @@ func (e *Engine) objectivesNamed(given []string) ([]int, error) {
 	return slices.Compact(numbers), nil
 }
 
+func focusHeld(was string, in Input) (string, error) {
+	if in.Yes("focus") && in.Yes("no-focus") {
+		return was, Refusing("focus-and-not", "--focus and --no-focus keep nothing together: name one")
+	}
+	switch {
+	case in.Yes("focus"):
+		return "in", nil
+	case in.Yes("no-focus"):
+		return "out", nil
+	case in.Named("focus") && was == "in", in.Named("no-focus") && was == "out":
+		return "", nil
+	}
+	return was, nil
+}
+
 func narrowsAnything(v store.View) bool {
-	return v.State != "" || v.Priority != "" || v.DueBefore != "" || v.Archived || v.Search != "" || len(v.Objectives) > 0 || len(v.Labels) > 0
+	return v.Focus != "" || v.State != "" || v.Priority != "" || v.DueBefore != "" || v.Archived || v.Search != "" || len(v.Objectives) > 0 || len(v.Labels) > 0
 }
 
 func (e *Engine) keptViews(views []store.View, at int, was string) (Answer, error) {
@@ -382,7 +403,7 @@ func (e *Engine) viewOf(views []store.View, at int) (View, []task.Task, error) {
 	return View{
 		Name: v.Name, Place: at + 1, Keeps: len(kept), Of: len(board), Done: done, Gone: listed(s.lost),
 		Holds: Holds{State: v.State, Priority: v.Priority, Label: v.Labels, Objective: v.Objectives, Itself: v.Itself,
-			DueBefore: v.DueBefore, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search},
+			DueBefore: v.DueBefore, Focus: v.Focus, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search},
 	}, kept, nil
 }
 
@@ -447,6 +468,7 @@ func (e *Engine) seeing(v store.View, kept *domain.Narrowing) (seen, error) {
 		{v.State != "", func() { kept.InColumn(v.State) }},
 		{v.Priority != "", func() { kept.Carrying(v.Priority) }},
 		{v.DueBefore != "", func() { kept.DueBefore(v.DueBefore) }},
+		{v.Focus != "", func() { kept.InFocus(v.Focus == "in") }},
 		{v.Archived, kept.Archived},
 		{len(s.words) > 0, func() {}},
 	} {
@@ -654,6 +676,8 @@ func HoldsSays(v View) string {
 		{v.Holds.State != "", "state " + v.Holds.State},
 		{v.Holds.Priority != "", "priority " + v.Holds.Priority},
 		{v.Holds.DueBefore != "", "due before " + v.Holds.DueBefore},
+		{v.Holds.Focus == "in", "in focus"},
+		{v.Holds.Focus == "out", "not in focus"},
 		{v.Holds.Archived, "archived"},
 		{v.Holds.WithArchived, "with archived"},
 		{v.Holds.Search != "", fmt.Sprintf("search %q", v.Holds.Search)},

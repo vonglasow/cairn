@@ -155,7 +155,11 @@ func (w Window) Click(p Point) Window {
 	if n, on := w.seriesChipAt(p); on {
 		return w.onSeries(n)
 	}
-	return w.aiming(p).choosingAt(w.at(p))
+	at := w.at(p)
+	if at == 0 && w.tab == Objectives {
+		return w
+	}
+	return w.aiming(p).choosingAt(at)
 }
 
 func (w Window) aiming(p Point) Window {

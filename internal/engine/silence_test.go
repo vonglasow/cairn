@@ -125,6 +125,7 @@ func (k *keptBy) Narrowed(n *domain.Narrowing) ([]task.Task, error) {
 func (k *keptBy) InColumn(s string)   { k.told = append(k.told, "column "+s) }
 func (k *keptBy) Carrying(p string)   { k.told = append(k.told, "priority "+p) }
 func (k *keptBy) DueBefore(string)    {}
+func (k *keptBy) InFocus(bool)        {}
 func (k *keptBy) Serving([]int)       {}
 func (k *keptBy) Labelled(l []string) { k.told = append(k.told, "labels "+strings.Join(l, ",")) }
 func (k *keptBy) Archived()           {}

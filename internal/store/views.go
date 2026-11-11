@@ -11,6 +11,7 @@ type View struct {
 	State        string
 	Priority     string
 	DueBefore    string
+	Focus        string
 	Search       string
 	Objectives   []int
 	Labels       []string
@@ -20,9 +21,9 @@ type View struct {
 }
 
 const (
-	viewColumns   = `id, name, place, state, priority, due_before, search, itself, archived, with_archived`
+	viewColumns   = `id, name, place, state, priority, due_before, focus, search, itself, archived, with_archived`
 	everyView     = `SELECT ` + viewColumns + ` FROM views ORDER BY place, id`
-	keepView      = `INSERT INTO views (name, place, state, priority, due_before, search, itself, archived, with_archived) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	keepView      = `INSERT INTO views (name, place, state, priority, due_before, focus, search, itself, archived, with_archived) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	viewObjective = `INSERT OR IGNORE INTO view_objectives (view_id, objective_number) VALUES (?, ?)`
 	viewLabel     = `INSERT OR IGNORE INTO view_labels (view_id, label) VALUES (?, ?)`
 )
@@ -55,7 +56,7 @@ func (s *Store) viewRows() ([]int64, []View, error) {
 	for rows.Next() {
 		var id int64
 		var v View
-		if err := rows.Scan(&id, &v.Name, &v.Place, &v.State, &v.Priority, &v.DueBefore, &v.Search, &v.Itself, &v.Archived, &v.WithArchived); err != nil {
+		if err := rows.Scan(&id, &v.Name, &v.Place, &v.State, &v.Priority, &v.DueBefore, &v.Focus, &v.Search, &v.Itself, &v.Archived, &v.WithArchived); err != nil {
 			return nil, nil, err
 		}
 		ids, views = append(ids, id), append(views, v)
@@ -71,7 +72,7 @@ func (s *Store) KeepViews(views []View) error {
 		}
 	}
 	for i, v := range views {
-		res, err := s.on.Exec(keepView, v.Name, i+1, v.State, v.Priority, v.DueBefore, v.Search, v.Itself, v.Archived, v.WithArchived)
+		res, err := s.on.Exec(keepView, v.Name, i+1, v.State, v.Priority, v.DueBefore, v.Focus, v.Search, v.Itself, v.Archived, v.WithArchived)
 		if err != nil {
 			return fmt.Errorf("keeping the view %q: %w", v.Name, err)
 		}

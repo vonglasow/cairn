@@ -31,6 +31,20 @@ Feature: Views, the filters of a listing kept under a name
       When I run `cairn task list --view spec --json`
       Then the JSON lists the tasks 1, 2
 
+    @view-new-holds-the-focus
+    Scenario: a view holds the tasks in focus, or the ones that are not
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Fix the gate"
+      And I put task 2 in focus
+      When I run `cairn view new Now --focus`
+      Then it succeeds
+      When I run `cairn task list --view now --json`
+      Then the JSON lists the tasks 2
+      When I run `cairn view edit Now --no-focus`
+      Then it succeeds
+      When I run `cairn task list --view now --json`
+      Then the JSON lists the tasks 1
+
     @view-new-refuses-a-name-taken
     Scenario: a name already taken is refused, whatever its case or its accents
       Given I added a task titled "Write the spec"

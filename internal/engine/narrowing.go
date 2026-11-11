@@ -62,6 +62,12 @@ func keeping(in Input, taken []Argument, e *Engine) (*domain.Narrowing, error) {
 		}
 		kept.Labelled(written)
 	}
+	if in.Yes("focus") && in.Yes("no-focus") {
+		return nil, Refusing("focus-and-not", "--focus and --no-focus keep nothing together: name one")
+	}
+	if in.Yes("focus") || in.Yes("no-focus") {
+		kept.InFocus(in.Yes("focus"))
+	}
 	if in.Yes("archived") {
 		kept.Archived()
 	}
@@ -96,8 +102,8 @@ var ErrNotOneOf = errors.New("not one of")
 
 func heldAmong(tasks []task.Task, inFocus []int) []int {
 	kept := make([]int, 0, len(inFocus))
-	for _, one := range tasks {
-		if number := factsOf(one).Number; slices.Contains(inFocus, number) {
+	for _, number := range inFocus {
+		if slices.ContainsFunc(tasks, func(one task.Task) bool { return factsOf(one).Number == number }) {
 			kept = append(kept, number)
 		}
 	}

@@ -240,6 +240,15 @@ task now, keyed by the task so nothing can be held twice, and the order the
 rows were made is the order they were focused in. Holding none is an ordinary
 state, not a missing row.
 
+**Both boards draw the tasks in focus first in current**, in the order they
+were focused, the rest after them in the order kept
+(`@tui-the-tasks-in-focus-come-first-in-current`,
+`TestDealDrawsTheTasksInFocusFirstInCurrent`). With many tasks in current, one
+in focus sat out of sight at the foot of the column. It is drawn only: the order
+kept does not change, a task let go goes back to its place, and `task list`
+gives the order kept. `engine.Deal` does it, so the terminal and the window
+cannot draw it two ways.
+
 What that costs is worth naming: the single holder no longer comes free from
 the shape of the table, and "focusing what is already in focus changes nothing" is
 now a rule the store keeps rather than one the schema makes impossible to

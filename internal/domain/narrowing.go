@@ -15,6 +15,7 @@ type NarrowingTold interface {
 	Labelled(labels []string)
 	Archived()
 	WithArchived()
+	InFocus(held bool)
 }
 
 func (n *Narrowing) name(narrows bool, tell func(NarrowingTold)) {
@@ -55,6 +56,11 @@ func (n *Narrowing) Archived() {
 // WithArchived keeps both sides of the board, which is what a board asks for: it draws the two apart rather than reading twice.
 func (n *Narrowing) WithArchived() {
 	n.name(false, func(to NarrowingTold) { to.WithArchived() })
+}
+
+// InFocus keeps what is being worked on, or what is not.
+func (n *Narrowing) InFocus(held bool) {
+	n.name(true, func(to NarrowingTold) { to.InFocus(held) })
 }
 
 // Narrows says whether anything was named that keeps less than everything.

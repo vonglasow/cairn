@@ -1333,7 +1333,10 @@ drawn `◇` and the sub-objectives it serves, the open first and the done
 faded; what has no room is counted, `2 more · t shows them all on the board`.
 A task clicked there opens its form over the tab, and closing it comes back
 to the objective it was clicked from (#284,
-`@gui-objective-a-task-in-the-detail-opens`). What it waits on, and what waits on it, are said as facts
+`@gui-objective-a-task-in-the-detail-opens`). A click where there is nothing
+does nothing: it used to choose nothing, and the detail fell back to the first
+objective, the one chosen lost (#293,
+`@gui-objective-a-click-on-nothing-keeps-the-objective-chosen`). What it waits on, and what waits on it, are said as facts
 (`@gui-objective-the-detail-says-what-waits-on-what`). A parent every
 sub-objective of which is reached is proposed as reached in a banner, and
 left where it stands: its standing is the person's

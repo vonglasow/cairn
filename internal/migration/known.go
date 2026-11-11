@@ -431,4 +431,12 @@ ALTER TABLE series ADD COLUMN arrives TEXT NOT NULL DEFAULT 'todo';`,
 ALTER TABLE series DROP COLUMN arrives;`,
 		loses: "the column each series puts its occurrences in; every occurrence arrives in todo again, every task staying where it is",
 	},
+	{
+		name: "a view keeps the tasks in focus, or the ones that are not",
+		does: `
+ALTER TABLE views ADD COLUMN focus TEXT NOT NULL DEFAULT '';`,
+		undoes: `
+ALTER TABLE views DROP COLUMN focus;`,
+		loses: "what a view said of the focus; every view keeps the rest of its filters, and every task stays where it is",
+	},
 }

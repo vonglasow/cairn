@@ -14,6 +14,7 @@ type narrowing struct {
 	labels   []string
 	archived bool
 	both     bool
+	focus    []string
 }
 
 func readBy(kept *domain.Narrowing) *narrowing {
@@ -27,6 +28,15 @@ func (n *narrowing) Archived() { n.archived = true }
 
 // WithArchived keeps both, which is what a board asks for: it draws the two apart rather than reading the store twice.
 func (n *narrowing) WithArchived() { n.both = true }
+
+// InFocus keeps what is being worked on, or what is not; it means something only to a task.
+func (n *narrowing) InFocus(held bool) {
+	clause := `number IN (SELECT task_number FROM focused)`
+	if !held {
+		clause = `number NOT IN (SELECT task_number FROM focused)`
+	}
+	n.focus = append(n.focus, clause)
+}
 
 // InColumn keeps what sits in one column.
 func (n *narrowing) InColumn(state string) {
@@ -95,7 +105,7 @@ func (n *narrowing) whereTasks(labels labelStore) (string, []any) {
 	if !n.both {
 		clauses, args = []string{offTheBoard + ` = ?`}, []any{n.archived}
 	}
-	clauses = append(clauses, n.clauses...)
+	clauses = append(append(clauses, n.clauses...), n.focus...)
 	args = append(args, n.args...)
 	for _, label := range n.labels {
 		clauses = append(clauses, labels.carrier)
