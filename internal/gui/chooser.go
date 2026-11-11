@@ -25,7 +25,6 @@ type ChooserTile struct {
 	At   Box
 }
 
-
 func themesFolder(c engine.Config) string { return filepath.Join(filepath.Dir(c.File), "themes") }
 
 func offeredFrom(seen engine.ThemeSeen) schemeOffered {

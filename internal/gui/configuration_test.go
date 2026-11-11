@@ -166,3 +166,14 @@ func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNo
 		t.Errorf("throw away goes to %v", thrown.Screen())
 	}
 }
+
+func TestOpeningAFileOfTheConfigurationFillsItFirst(t *testing.T) {
+	f := configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml", File: "/c/config.toml"})
+	w := holding(f).openingConfiguration().Choose(OpenSettings)
+	if in, ok := f.gave("config", "fill"); !ok || in.Given["global"] == "true" {
+		t.Errorf("opening the settings filled %+v (%v)", in, ok)
+	}
+	if path, asked := w.OpenAsked(); !asked || path != "/h/.cairn/settings.toml" {
+		t.Errorf("the window opens %q (%v)", path, asked)
+	}
+}

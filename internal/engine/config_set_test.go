@@ -210,3 +210,26 @@ func TestConfigSetAndUnsetAreAPersonsOnly(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigFill_writesEveryKeyTheFileCanHoldAsACommentWithItsValueAndWhereItComesFrom(t *testing.T) {
+	h := homeHolding(t, homeIsDefault, nil, "h")
+	path := settingsOf(t, h, "h", "[pages]\n# none at home\nobjectives = false\n")
+	if _, err := setting(h, ConfigFill, map[string]string{}); err != nil {
+		t.Fatal(err)
+	}
+	said := fileRead(t, path)
+	if !strings.HasPrefix(said, "[pages]\n# none at home\nobjectives = false\n") {
+		t.Errorf("what was written did not stay:\n%s", said)
+	}
+	for _, line := range []string{"# time = \"on\"   # by default", "# ghost = 65   # by default", "# colour = "} {
+		if !strings.Contains(said, line) {
+			t.Errorf("the settings say nothing of %q:\n%s", line, said)
+		}
+	}
+	if _, err := setting(h, ConfigFill, map[string]string{"global": "true"}); err != nil {
+		t.Fatal(err)
+	}
+	if global := fileRead(t, config.FileIn(h.Dir)); !strings.Contains(global, "# ghost = 65") || strings.Contains(global, "colour = ") {
+		t.Errorf("the global file reads\n%s", global)
+	}
+}

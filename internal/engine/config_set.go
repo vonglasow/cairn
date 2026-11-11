@@ -67,6 +67,53 @@ var ConfigUnset = Operation{
 	Run:     func(on On, in Input) (Answer, error) { return changingConfig(on.Home, in, false) },
 }
 
+// ConfigFill writes into a file of the configuration every key it can hold and does not say yet, as a comment carrying the value in force and where it comes from, so the file shows what can be changed in it.
+var ConfigFill = Operation{
+	Thing:   "config",
+	Verb:    "fill",
+	Short:   "Write every key a file can hold, as comments",
+	Does:    "Write into the settings of the store in use, or into the global configuration with --global, every key the file can hold and does not say yet, as a comment carrying the value in force and where it comes from; uncommenting a line sets it. Lines and comments already there stay as they are.",
+	Example: "cairn config fill --global",
+	Level:   Write,
+	Needs:   AConfiguration,
+	Again:   ChangesNothingMore,
+	Answers: ConfigWritten{},
+	Takes:   []Argument{configGlobal},
+	Run:     func(on On, in Input) (Answer, error) { return fillingConfig(on.Home, in.Yes("global")) },
+}
+
+func fillingConfig(h Home, global bool) (Answer, error) {
+	held := map[string][]config.Key{}
+	target := ""
+	for _, key := range config.Keys() {
+		path, inGlobal, err := h.writtenFor(key, global)
+		if err != nil || inGlobal != global {
+			continue
+		}
+		held[path] = append(held[path], key)
+		target = path
+	}
+	if target == "" {
+		return Answer{}, Refusing("config-nothing-to-fill", "no key of the configuration is written in that file")
+	}
+	change := func(was []byte) ([]byte, error) {
+		said := was
+		for _, key := range held[target] {
+			value, from := h.inForce(key)
+			literal, err := h.literal(key, value, global)
+			if err != nil || value == "" {
+				literal = `""`
+			}
+			said = config.WithCommented(said, key.Name, literal, from)
+		}
+		return said, nil
+	}
+	if err := rewritten(target, h.Dir, !global, change); err != nil {
+		return Answer{}, err
+	}
+	return Answer{Written: &target}, nil
+}
+
 func changingConfig(h Home, in Input, set bool) (Answer, error) {
 	key, ok := config.KeyNamed(in.Given["key"])
 	if !ok {

@@ -691,6 +691,17 @@ func (w Window) acting(row SettingRow, word int) Window {
 	return w
 }
 
+func (w Window) filling(global bool) Window {
+	in := engine.Input{Given: map[string]string{}}
+	if global {
+		in.Given["global"] = "true"
+	}
+	if _, err := w.work.Ask(engine.ConfigFill, in); err != nil {
+		return w.failing(err)
+	}
+	return w
+}
+
 func (w Window) leavingSettings() Window {
 	if w.keyWriting != "" {
 		w.screen, w.question = OnAsking, aboutLeavingSettings
@@ -850,8 +861,10 @@ func (w Window) choosingOnSettings(name string) (Window, bool) {
 	switch {
 	case name == OpenSettings:
 		w.opens = engine.SettingsOf(w.configured)
+		return w.filling(false), true
 	case name == OpenGlobal:
 		w.opens = w.configured.File
+		return w.filling(true), true
 	case name == WriteWhole:
 		return w.writingConfiguration(), true
 	case name == OpenThemes:

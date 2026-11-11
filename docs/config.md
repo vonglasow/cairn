@@ -678,6 +678,27 @@ refused naming `time.weekends`
 of two, `shown` or `hidden`, written into the file like any key
 ([gui.md](gui.md#settings-changed-in-place)), and the week redraws at once.
 
+## A file opened shows every key it can hold
+
+`cairn config fill` writes into the settings of the store in use — or, with
+`--global`, into the global configuration — every key that file can hold and
+does not say yet, as a comment carrying the value in force and where it comes
+from:
+
+```toml
+[window]
+# theme = "nord"   # from the global configuration
+```
+
+Uncommenting a line sets it. A line or a comment already there stays as it
+is, and a key already written, or already commented, is left alone
+(`config.WithCommented`, `TestConfigFill_writesEveryKeyTheFileCanHoldAsACommentWithItsValueAndWhereItComesFrom`).
+The window does it before it hands a file to the system's editor
+(`TestOpeningAFileOfTheConfigurationFillsItFirst`, #291): the settings of a
+workspace used to open nearly empty, only what it set itself, and the other
+keys could be neither guessed nor changed by hand. Like `config set`, it is
+for a person: no agent is offered it.
+
 ## One configuration, several ways in to it
 
 ```sh

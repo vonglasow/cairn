@@ -151,3 +151,19 @@ func TestTheLineAKeyIsWrittenOnIsFound(t *testing.T) {
 		}
 	}
 }
+
+func TestAKeyNotWrittenJoinsItsTableAsACommentAndAWrittenOneStaysAsItIs(t *testing.T) {
+	got := WithCommented([]byte("[pages]\n# none at home\nobjectives = false\n"), "pages.time", `"on"`, "by default")
+	if want := "[pages]\n# none at home\nobjectives = false\n# time = \"on\"   # by default\n"; string(got) != want {
+		t.Errorf("the file became\n%s", got)
+	}
+	if again := WithCommented(got, "pages.time", `"hidden"`, "from the global configuration"); string(again) != string(got) {
+		t.Errorf("a key already there, as a comment, changed:\n%s", again)
+	}
+	if kept := WithCommented(got, "pages.objectives", "true", "by default"); string(kept) != string(got) {
+		t.Errorf("a key written changed:\n%s", kept)
+	}
+	if fresh := WithCommented(nil, "window.ghost", "65", "by default"); string(fresh) != "[window]\n# ghost = 65   # by default\n" {
+		t.Errorf("an empty file became\n%s", fresh)
+	}
+}

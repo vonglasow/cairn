@@ -121,6 +121,30 @@ func WithKey(data []byte, key, literal string) ([]byte, error) {
 	return sameButFor(data, []byte(strings.Join(said, "")), key, literal)
 }
 
+// WithCommented is the file with a key it does not say yet, neither written nor commented, joining the end of its table as a comment carrying the value given and where it comes from, so uncommenting it sets it; a key already there leaves the file as it is.
+func WithCommented(data []byte, key, literal, from string) []byte {
+	table, name := split(key)
+	entry := "# " + name + " = " + literal + "   # " + from + "\n"
+	var lines []string
+	if len(data) > 0 {
+		lines = linesOf(data)
+	}
+	start, end := regionOf(lines, table)
+	switch {
+	case start < 0 && len(lines) == 0:
+		return []byte("[" + table + "]\n" + entry)
+	case start < 0:
+		return []byte(strings.Join(lines, "") + "\n[" + table + "]\n" + entry)
+	}
+	for _, line := range lines[start:end] {
+		if keyLine(name, false).MatchString(line) || keyLine(name, true).MatchString(line) {
+			return data
+		}
+	}
+	at := insertedAt(lines, start, end)
+	return []byte(strings.Join(slices.Concat(lines[:at], []string{entry}, lines[at:]), ""))
+}
+
 func setIn(lines []string, start, end int, name, literal, entry string) ([]string, error) {
 	said := slices.Clone(lines)
 	line := keyLine(name, false)
