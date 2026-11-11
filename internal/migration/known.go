@@ -423,4 +423,12 @@ UPDATE objectives SET position = (
 ALTER TABLE objectives DROP COLUMN position;`,
 		loses: "the order given to the objectives by hand; they are listed by standing again, every objective and what it carries staying as it was",
 	},
+	{
+		name: "a series says the column its occurrences arrive in",
+		does: `
+ALTER TABLE series ADD COLUMN arrives TEXT NOT NULL DEFAULT 'todo';`,
+		undoes: `
+ALTER TABLE series DROP COLUMN arrives;`,
+		loses: "the column each series puts its occurrences in; every occurrence arrives in todo again, every task staying where it is",
+	},
 }

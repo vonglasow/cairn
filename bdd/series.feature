@@ -203,6 +203,28 @@ Feature: A series, the tasks that come back
       And `cairn task show 2` says "Stand-up"
       And `cairn series show 1` says "changed title"
 
+    @series-edit-the-column-occurrences-arrive-in
+    Scenario: a series chooses the column its occurrences arrive in
+      Given I ran `cairn task new "Team stand-up" --every "every weekday"`
+      When I run `cairn series edit 1 --state current`
+      Then it succeeds
+      When I run `cairn task edit 1 --state done`
+      Then `cairn task show 2` says "current"
+      And `cairn series show 1` says "changed column"
+
+    @series-edit-a-column-that-needs-a-reason-is-refused
+    Scenario Outline: an occurrence arrives in backlog, todo or current, never in a column that needs a reason or in done
+      Given I ran `cairn task new "Team stand-up" --every "every weekday"`
+      When I run `cairn series edit 1 --state <column>`
+      Then it fails
+
+      Examples:
+        | column   |
+        | blocked  |
+        | watching |
+        | paused   |
+        | done     |
+
     @series-task-edit-reaches-the-series
     Scenario: an occurrence changed with --series changes the series too
       Given I ran `cairn task new "Team stand-up" --every "every weekday"`

@@ -23,6 +23,7 @@ type Series struct {
 	Steps      []string
 	Labels     []string
 	Objectives []int
+	Arrives    string
 }
 
 // SeriesAct is one thing that happened to a series: an occurrence made, missed or skipped, a change, a stop, a resumption.
@@ -37,7 +38,7 @@ type SeriesAct struct {
 }
 
 const (
-	seriesColumns = `number, rule, start, stopped, title, priority, estimate, steps`
+	seriesColumns = `number, rule, start, stopped, title, priority, estimate, steps, arrives`
 	seriesActs    = `series_number, did, task_number, day, field, was, became, through, author, at`
 )
 
@@ -71,7 +72,7 @@ func scanSeries(row scanner) (Series, error) {
 	var one Series
 	var estimate int64
 	var steps string
-	if err := row.Scan(&one.Number, &one.Rule, &one.Start, &one.Stopped, &one.Title, &one.Priority, &estimate, &steps); err != nil {
+	if err := row.Scan(&one.Number, &one.Rule, &one.Start, &one.Stopped, &one.Title, &one.Priority, &estimate, &steps, &one.Arrives); err != nil {
 		return Series{}, err
 	}
 	one.Estimate = time.Duration(estimate)
@@ -95,8 +96,11 @@ func (s *Store) templateOf(of *Series) error {
 
 // KeepSeries records a new series and hands it back carrying the number it was given.
 func (s *Store) KeepSeries(one Series) (Series, error) {
-	res, err := s.on.Exec(`INSERT INTO series (rule, start, stopped, title, priority, estimate, steps) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		one.Rule, one.Start, one.Stopped, one.Title, one.Priority, int64(one.Estimate), strings.Join(one.Steps, "\n"))
+	if one.Arrives == "" {
+		one.Arrives = "todo"
+	}
+	res, err := s.on.Exec(`INSERT INTO series (rule, start, stopped, title, priority, estimate, steps, arrives) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		one.Rule, one.Start, one.Stopped, one.Title, one.Priority, int64(one.Estimate), strings.Join(one.Steps, "\n"), one.Arrives)
 	if err != nil {
 		return Series{}, fmt.Errorf("keeping the series: %w", err)
 	}
@@ -110,8 +114,11 @@ func (s *Store) KeepSeries(one Series) (Series, error) {
 
 // UpdateSeries replaces what the store holds for a series.
 func (s *Store) UpdateSeries(one Series) error {
-	if _, err := s.on.Exec(`UPDATE series SET rule = ?, start = ?, stopped = ?, title = ?, priority = ?, estimate = ?, steps = ? WHERE number = ?`,
-		one.Rule, one.Start, one.Stopped, one.Title, one.Priority, int64(one.Estimate), strings.Join(one.Steps, "\n"), one.Number); err != nil {
+	if one.Arrives == "" {
+		one.Arrives = "todo"
+	}
+	if _, err := s.on.Exec(`UPDATE series SET rule = ?, start = ?, stopped = ?, title = ?, priority = ?, estimate = ?, steps = ?, arrives = ? WHERE number = ?`,
+		one.Rule, one.Start, one.Stopped, one.Title, one.Priority, int64(one.Estimate), strings.Join(one.Steps, "\n"), one.Arrives, one.Number); err != nil {
 		return fmt.Errorf("changing series %d: %w", one.Number, err)
 	}
 	return s.keepTemplate(one)

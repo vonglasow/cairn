@@ -42,6 +42,20 @@ type Template struct {
 	Steps      []string `json:"steps"`
 	Estimate   string   `json:"estimate"`
 	Objectives []int    `json:"objectives"`
+	Arrives    string   `json:"arrives" jsonschema:"the column its occurrences arrive in: backlog, todo or current"`
+}
+
+// Arrivals are the columns a series' occurrences may arrive in: a column that needs a reason, or done, is no place for work still to do.
+var Arrivals = []string{string(domain.Backlog), string(domain.Todo), string(domain.Current)}
+
+// ErrNotAnArrival is returned when a series is told to put its occurrences in a column they cannot arrive in.
+var ErrNotAnArrival = errors.New("an occurrence arrives in backlog, todo or current")
+
+func arrivalOf(state domain.State) string {
+	if slices.Contains(Arrivals, string(state)) {
+		return string(state)
+	}
+	return string(domain.Todo)
 }
 
 // Occurrence is one day of a series: the task made for it, or none when it was missed.
@@ -203,6 +217,7 @@ cairn series edit 3 --every "every tuesday 10:00"`,
 		{Name: "label", Kind: List, Means: "a label its occurrences carry; x or +x adds one, -x takes one off, =x replaces them all"},
 		{Name: "estimate", Kind: Duration, Means: "how long each occurrence should take"},
 		{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective its occurrences serve; 4 or +4 adds one, -1 takes one away, =4 replaces them all"},
+		{Name: "state", Kind: Text, OneOf: Arrivals, Outside: ErrNotAnArrival, Means: "the column its occurrences arrive in: backlog, todo or current"},
 		stepsArgument,
 	}, everyArguments...),
 	Run: func(on On, in Input) (Answer, error) {
@@ -556,7 +571,7 @@ func templateOf(t task.Task) store.Series {
 		steps = append(steps, s.Title)
 	}
 	return store.Series{Title: f.Title, Priority: string(f.Priority), Estimate: f.Estimate, Steps: steps,
-		Labels: listed(f.Labels), Objectives: listed(f.Objectives)}
+		Labels: listed(f.Labels), Objectives: listed(f.Objectives), Arrives: arrivalOf(f.State)}
 }
 
 func (e *Engine) beginSeries(t task.Task, rule domain.Rule, from, day time.Time) error {
@@ -588,7 +603,7 @@ func (e *Engine) occur(s aSeries, day time.Time) (int, error) {
 		return 0, err
 	}
 	labels := slices.DeleteFunc(slices.Clone(s.kept.Labels), func(label string) bool { return scopes.of(label).Refuses(label, domain.OnTasks) != nil })
-	state, deadline, estimate := string(domain.Todo), domain.FormatDay(day), domain.FormatDuration(s.kept.Estimate)
+	state, deadline, estimate := arrivalOf(domain.State(s.kept.Arrives)), domain.FormatDay(day), domain.FormatDuration(s.kept.Estimate)
 	objectives := make([]string, 0, len(s.kept.Objectives))
 	for _, n := range s.kept.Objectives {
 		objectives = append(objectives, strconv.Itoa(n))
@@ -812,7 +827,7 @@ func (s aSeries) shape(tasks map[int]task.Task, today time.Time) Series {
 		Next: s.nextDays(tasks, today), Open: listed(s.opened(tasks)),
 		Skipped: s.count("skipped"), Missed: s.count("missed"),
 		Template: Template{Title: s.kept.Title, Priority: s.kept.Priority, Labels: listed(s.kept.Labels), Steps: listed(s.kept.Steps),
-			Estimate: domain.FormatDuration(s.kept.Estimate), Objectives: listed(s.kept.Objectives)},
+			Estimate: domain.FormatDuration(s.kept.Estimate), Objectives: listed(s.kept.Objectives), Arrives: s.kept.Arrives},
 	}
 	if !s.active() {
 		said.State = "stopped"
@@ -937,11 +952,13 @@ func (e *Engine) editSeries(s aSeries, in Input) error {
 		return err
 	}
 	changes.Title = in.Change("title")
+	arrives := changes.State
+	changes.State = nil
 	everyGiven, err := everyNamed(in)
 	if err != nil {
 		return err
 	}
-	if !changes.named() && !everyGiven {
+	if !changes.named() && !everyGiven && arrives == nil {
 		return ErrNothingToChange
 	}
 	was := s.kept
@@ -963,7 +980,14 @@ func (e *Engine) editSeries(s aSeries, in Input) error {
 		}
 		template := templateOf(t)
 		template.Number, template.Rule, template.Start, template.Stopped = was.Number, was.Rule, was.Start, was.Stopped
+		template.Arrives = was.Arrives
 		s.kept = template
+	}
+	if arrives != nil {
+		if !slices.Contains(Arrivals, *arrives) {
+			return fmt.Errorf("%q: %w", *arrives, ErrNotAnArrival)
+		}
+		s.kept.Arrives = *arrives
 	}
 	if everyGiven {
 		rule, err := ruleOf(in)
@@ -996,6 +1020,7 @@ func (e *Engine) keptSeries(was, now store.Series) error {
 		{"objectives", numbersOrNothing(was.Objectives), numbersOrNothing(now.Objectives)},
 		{"rule", was.Rule, now.Rule},
 		{"from", was.Start, now.Start},
+		{"column", was.Arrives, now.Arrives},
 	} {
 		if f.was == f.now {
 			continue

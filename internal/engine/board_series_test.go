@@ -356,3 +356,15 @@ func TestNextDaySaid_isTheNextDayAndItsTimeToday(t *testing.T) {
 		t.Errorf("no next day reads %q", got)
 	}
 }
+
+func TestSeriesFields_offerTheColumnItsOccurrencesArriveIn(t *testing.T) {
+	for _, f := range SeriesFields(Series{Template: Template{Arrives: "current"}}) {
+		if f.Name == "column" {
+			if f.Arg != "state" || f.Value != "current" || len(f.Choices) != 3 {
+				t.Errorf("the column field is %+v, want state, current, three choices", f)
+			}
+			return
+		}
+	}
+	t.Error("the form of a series offers no column")
+}

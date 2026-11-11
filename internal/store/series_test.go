@@ -15,6 +15,7 @@ func TestSeries_areKeptChangedAndDeleted(t *testing.T) {
 	made, err := s.KeepSeries(Series{
 		Rule: "every weekday 10:30", Start: "2026-11-09", Title: "Stand-up", Priority: "normal",
 		Estimate: 15 * time.Minute, Steps: []string{"Yesterday", "Today"}, Labels: []string{"work", "meeting"}, Objectives: []int{4, 2},
+		Arrives: "current",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -30,7 +31,7 @@ func TestSeries_areKeptChangedAndDeleted(t *testing.T) {
 	if !reflect.DeepEqual(found, made) {
 		t.Errorf("found\n%+v\nwant\n%+v", found, made)
 	}
-	found.Stopped, found.Title, found.Labels, found.Objectives, found.Steps = "2026-11-10", "Daily", []string{"team"}, nil, nil
+	found.Stopped, found.Title, found.Labels, found.Objectives, found.Steps, found.Arrives = "2026-11-10", "Daily", []string{"team"}, nil, nil, "backlog"
 	if err := s.UpdateSeries(found); err != nil {
 		t.Fatal(err)
 	}

@@ -34,7 +34,7 @@ func (e *Engine) seriesWritten() ([]seriesFiled, error) {
 		}
 		out = append(out, seriesFiled{Number: kept.Number, Rule: kept.Rule, From: kept.Start, Stopped: kept.Stopped,
 			Template: Template{Title: kept.Title, Priority: kept.Priority, Labels: listed(kept.Labels), Steps: listed(kept.Steps),
-				Estimate: domain.FormatDuration(kept.Estimate), Objectives: listed(kept.Objectives)},
+				Estimate: domain.FormatDuration(kept.Estimate), Objectives: listed(kept.Objectives), Arrives: kept.Arrives},
 			Acts: s.trace()})
 	}
 	return out, nil
@@ -113,7 +113,7 @@ func templateFiled(s seriesFiled) (store.Series, error) {
 		return store.Series{}, err
 	}
 	return store.Series{Rule: rule.Words(), Start: s.From, Stopped: s.Stopped, Title: s.Template.Title, Priority: string(priority),
-		Estimate: estimate, Steps: listed(s.Template.Steps), Labels: labels}, nil
+		Estimate: estimate, Steps: listed(s.Template.Steps), Labels: labels, Arrives: arrivalOf(domain.State(s.Template.Arrives))}, nil
 }
 
 func actFiled(a SeriesAct) (store.SeriesAct, error) {

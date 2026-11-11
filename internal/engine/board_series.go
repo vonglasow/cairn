@@ -202,6 +202,7 @@ func SeriesFields(s Series) []Field {
 	fields := opened(SeriesEdit, []Field{
 		{Name: "title", Arg: "title", Value: s.Template.Title},
 		{Name: "priority", Arg: "priority", Value: s.Template.Priority, Choices: Priorities()},
+		{Name: "column", Arg: "state", Value: s.Template.Arrives, Choices: Arrivals},
 		{Name: "labels", Arg: "label", Value: strings.Join(s.Template.Labels, " ")},
 		{Name: "estimate", Arg: "estimate", Value: s.Template.Estimate},
 		{Name: "objectives", Arg: "objective", Value: Numbers(s.Template.Objectives)},

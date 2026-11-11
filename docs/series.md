@@ -109,8 +109,14 @@ made in one of two ways.
 
 The answer of the act that made one says so, `↻1 made #2 for Tue 10 Nov`, and
 `↻1 missed Tue 10 Nov, Wed 11 Nov` before it; an agent reads the same under
-`made`. An occurrence is made in `todo`, due on its own day, carrying the
-template; a label the store no longer lets a task carry is left off it.
+`made`. An occurrence is made in the column its series says — `todo` unless
+told, or the column the first task was put in — due on its own day, carrying
+the template; a label the store no longer lets a task carry is left off it.
+`series edit --state` changes that column, among `backlog`, `todo` and
+`current` only: a column that needs a reason, or `done`, is no place for work
+still to do (#276, migration 24, `@series-edit-the-column-occurrences-arrive-in`,
+`@series-edit-a-column-that-needs-a-reason-is-refused`). Both boards offer it
+as the `column` of a series' form.
 
 **An occurrence serves the objectives the template serves**, and its time and
 its progress count there as any task's do
