@@ -164,6 +164,7 @@ type Window struct {
 	filters               engine.Filters
 	filterOn              int
 	filterOpen            bool
+	filterTrail           []int
 	filterPick            int
 	filterFromPill        bool
 	looking               Written

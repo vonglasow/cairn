@@ -879,7 +879,13 @@ arrows, and `⏎`, a click or its letter opens its values
 `@gui-a-filter-opens-the-list-of-its-values`). The values are headed by the
 filter's name and how they are taken, a label by its colour's dot, and each
 says how many tasks it would keep under the other filters as they stand
-(`FilterCounts`, counted by the engine); `any` is not one of them, the filter
+(`FilterCounts`, counted by the engine). Every column of the menu is 232
+points wide, whatever it lists, and a value longer than its line is cut with
+`…` short of its count, the pointer resting on it showing it whole
+(`filterColumnWide`, `FilterValueParts`,
+`TestAnObjectiveTooLongForTheFilterIsCutAndShownWholeUnderThePointer`): a
+long objective's title used to run over its count, and the list of values
+was wider than the menu it opened from (#283). `any` is not one of them, the filter
 taken off by its pill's cross or by choosing again the value it is on
 (`@gui-a-value-chosen-again-takes-its-filter-off`). **Nothing narrows until a
 value is chosen**: the arrows only move, over the filters as over their values
@@ -887,9 +893,26 @@ value is chosen**: the arrows only move, over the filters as over their values
 value in place, the board changing under the menu at every press, which is
 what the panel did and the mockup did not. A value is taken by `⏎` or a click;
 labels are ticked, as many as wanted, a task kept when it carries every one
-(`@gui-the-labels-are-filtered-together`), the others take one. `esc` goes
-back where the values were opened from — the menu, or the board for a pill
-(`@gui-a-filters-list-is-left-untouched`). On a line of the menu, `⌫` takes
+(`@gui-the-labels-are-filtered-together`), the others take one.
+
+**The menu is browsed in columns, as the Finder's column view browses
+folders** (#281). A filter opened lists its values in a column at the right
+of the filters, which stay drawn, the one open on grey; `→` or `⏎` on a
+line marked `›` opens the next column, `←` or a click on an earlier column
+goes back, and going back never takes off what was chosen
+(`@gui-the-filters-open-in-columns`, `@gui-a-filters-list-is-left-untouched`).
+An objective with sub-objectives is marked `›`: its column offers it with its
+sub-objectives, itself, then each sub-objective, one column a level
+(`@gui-a-sub-objective-opens-in-a-column-of-its-own`). `space` ticks a label
+or takes a value and stays, the board narrowing under the menu; `⏎` takes and
+closes; `esc` closes the whole menu from any column, as a macOS menu does
+(`@gui-esc-closes-the-whole-menu`) — it used to go back one level, and the
+one way back is now `←`. The menu grows left from under `+ Filter`; when the
+window has no room for every column, the oldest slides behind a 28-point
+stub at the left, which a click brings back
+(`FilterColumns`, `@gui-the-filter-columns-slide-in-a-narrow-window`). A list
+of values that replaced the menu lost where it came from, and a long
+objective tree had no way to show its levels. On a line of the menu, `⌫` takes
 that filter off and that one alone (`@gui-a-filter-is-taken-off-by-its-key`);
 `⌥⌫`, or No filter, puts every one back on `any`
 (`@gui-every-filter-is-cleared-at-once`). On the board, with no menu open, `⌫`

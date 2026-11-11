@@ -163,7 +163,7 @@ func (w Window) onKeeping(name string) Window {
 
 // KeepingBox is the popover dropped under the pill it opened from: a view about to be kept, its name typed and what it would keep said, or the view in force, what it holds and what it shows against the store.
 func (w Window) KeepingBox() Box {
-	box := w.droppedUnder(w.filterAnchor(), filterValueWide+filterMenuWide/2, 0)
+	box := w.droppedUnder(w.filterAnchor(), max(keepingWide, w.footWide()), 0)
 	box.H = dropHead + w.keepingFacts().High() + dropFoot + 2*padding
 	if !w.ofView {
 		box.H += menuRow + padding
@@ -243,7 +243,7 @@ type ViewRow struct {
 }
 
 func (w Window) viewsAbove() int {
-	if len(w.snap.Views) == 0 || w.filterOpen {
+	if len(w.snap.Views) == 0 {
 		return 0
 	}
 	return len(w.snap.Views) + 2
@@ -258,7 +258,10 @@ func (w Window) ViewRows() []ViewRow {
 	if w.screen != OnFiltering || w.viewsAbove() == 0 {
 		return nil
 	}
-	box := w.FiltersBox()
+	box := w.filtersColumn()
+	if box.W == 0 {
+		return nil
+	}
 	var rows []ViewRow
 	for i, v := range w.snap.Views {
 		row := rowOf(v)
@@ -269,10 +272,10 @@ func (w Window) ViewRows() []ViewRow {
 }
 
 // EditViewsAt is the line under the views of the filter menu that opens their panel.
-func (w Window) EditViewsAt() Box { return DropRowAt(w.FiltersBox(), len(w.snap.Views)) }
+func (w Window) EditViewsAt() Box { return DropRowAt(w.filtersColumn(), len(w.snap.Views)) }
 
 // FilterHeadAt is the line naming the filters under the views of the filter menu.
-func (w Window) FilterHeadAt() Box { return DropRowAt(w.FiltersBox(), len(w.snap.Views)+1) }
+func (w Window) FilterHeadAt() Box { return DropRowAt(w.filtersColumn(), len(w.snap.Views)+1) }
 
 func (w Window) clickingViews(p Point) (Window, bool) {
 	for _, row := range w.ViewRows() {

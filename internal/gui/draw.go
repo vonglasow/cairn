@@ -268,6 +268,9 @@ func drawDropFoot(k Kit, w Window, box Box, keys [][2]string) {
 	Rule{}.Draw(k, Box{X: box.X, Y: foot.Y, W: box.W})
 	x := foot.X + padding
 	for _, key := range keys {
+		if x+KeyChipWide(key[0])+hintSpace+ends(w.measured(), key[1], small) > box.X+box.W-padding {
+			return
+		}
 		chip := KeyChip{Key: key[0]}.Draw(k, Box{X: x, Y: foot.Y, H: foot.H})
 		said := Box{X: chip.X + chip.W + hintSpace, Y: foot.Y + (foot.H-lineHigh)/2, W: ends(w.measured(), key[1], small), H: lineHigh}
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, said, key[1], small, font.Font{}, text.Start)
@@ -342,36 +345,61 @@ func drawFilters(k Kit, w Window) {
 	box := w.FiltersBox()
 	Panel{}.Draw(k, box)
 	k = k.inside("panel")
-	head := Box{X: box.X + padding, Y: box.Y + (dropHead-lineHigh)/2, W: box.W - 2*padding, H: lineHigh}
 	drawDropFoot(k, w, box, w.FilterFoot())
-	if values, open := w.FilterList(); open {
-		f := w.Filters()[w.FilterOn()]
-		Rule{}.Draw(k, Box{X: box.X, Y: box.Y + dropHead - 1, W: box.W})
+	columns, stub := w.FilterColumns()
+	if stub.W > 0 {
+		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: stub.X + inset, Y: stub.Y + (dropHead-lineHigh)/2, W: stub.W - inset, H: lineHigh}, "‹", reads)
+	}
+	for i, column := range columns {
+		if i > 0 || stub.W > 0 {
+			Rule{Upright: true}.Draw(k, Box{X: column.Box.X, Y: column.Box.Y, W: 1, H: column.Box.H - dropFoot})
+		}
+		head := Box{X: column.Box.X + padding, Y: column.Box.Y + (dropHead-lineHigh)/2, W: column.Box.W - 2*padding, H: lineHigh}
+		if column.At == 0 {
+			drawFilterNames(k, w, head)
+			continue
+		}
+		drawFilterValues(k, w, column, head, i == len(columns)-1)
+	}
+}
+
+func drawFilterValues(k Kit, w Window, column FilterColumn, head Box, last bool) {
+	f := w.Filters()[w.FilterOn()]
+	Rule{}.Draw(k, Box{X: column.Box.X, Y: column.Box.Y + dropHead - 1, W: column.Box.W})
+	if column.At == 1 {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Text, head, Titled(f.Name), reads)
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, head, w.FilterHint(), small, font.Font{}, text.End)
-		counts := w.FilterCounts()
-		for i, value := range values {
-			if value.H == 0 {
-				continue
-			}
-			taken := w.FilterTaken(i)
-			row := Row{Taken: taken, Picked: i == w.FilterPick()}
-			row.Draw(k, value)
-			line := Inside(value)
-			row.Check(k, Check{Taken: taken}, CheckAt(line))
-			named := PastCheck(line)
-			if f.Arg == "label" {
-				dot := Box{X: named.X, Y: named.Y + (named.H-dotSide)/2, W: dotSide, H: dotSide}
-				Dot{Colour: w.LabelColour(f.Shown[i])}.Draw(k.inside("row"), dot)
-				named.X, named.W = named.X+dotSide+between, named.W-dotSide-between
-			}
-			say(k.gtx, k.th, k.skin.Colour.Ink.Text, named, f.Shown[i], reads)
-			if i < len(counts) {
-				sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, strconv.Itoa(counts[i]), small, k.skin.Type.Mono, text.End)
-			}
-		}
-		return
+	} else if g, found := w.snap.Goal(w.filterTrail[column.At-2]); found {
+		say(k.gtx, k.th, k.skin.Colour.Ink.Text, head, "#"+strconv.Itoa(g.Number)+" "+g.Title, reads)
 	}
+	counts := w.FilterCounts()
+	values, at := w.ValueRows(column)
+	for j, i := range values {
+		taken := w.FilterTaken(i)
+		opened := !last && column.At-1 < len(w.filterTrail) && w.goalOpened(i, column.At-1)
+		row := Row{Taken: taken, Picked: last && i == w.FilterPick(), Hover: opened}
+		row.Draw(k, at[j])
+		line := Inside(at[j])
+		row.Check(k, Check{Taken: taken}, CheckAt(line))
+		named, count := FilterValueParts(at[j])
+		if f.Arg == "label" {
+			dot := Box{X: named.X, Y: named.Y + (named.H-dotSide)/2, W: dotSide, H: dotSide}
+			Dot{Colour: w.LabelColour(f.Shown[i])}.Draw(k.inside("row"), dot)
+			named.X, named.W = named.X+dotSide+between, named.W-dotSide-between
+		}
+		say(k.gtx, k.th, k.skin.Colour.Ink.Text, named, f.Shown[i], reads)
+		said := ""
+		if i < len(counts) {
+			said = strconv.Itoa(counts[i])
+		}
+		if w.opensAColumn(i, column.At-1) {
+			said += " ›"
+		}
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, count, said, small, k.skin.Type.Mono, text.End)
+	}
+}
+
+func drawFilterNames(k Kit, w Window, head Box) {
 	v, viewed := w.inView()
 	if rows := w.ViewRows(); len(rows) > 0 {
 		Head{Said: ViewsSays}.Draw(k, head)
@@ -382,19 +410,20 @@ func drawFilters(k Kit, w Window) {
 		head = Inside(w.FilterHeadAt())
 	}
 	Head{Said: FilterMenuSays}.Draw(k, head)
+	open := w.Screen() == OnFiltering && w.filterOpen
 	for i, f := range w.Filters() {
 		row := w.FilterRowAt(i)
-		Row{Said: Titled(f.Name), Picked: i == w.FilterOn() && w.ViewWalked() == 0}.Draw(k, row)
+		Row{Said: Titled(f.Name), Picked: !open && i == w.FilterOn() && w.ViewWalked() == 0, Hover: open && i == w.FilterOn()}.Draw(k, row)
 		line := Inside(row)
 		if len(f.Taken()) == 0 && viewed && v.Holds.Narrows(f.Arg) {
 			at := ends(w.measured(), Titled(f.Name), reads) + between
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - small, H: line.H}, InTheViewSays, small, font.Font{}, text.Start)
+			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - 2*small, H: line.H}, InTheViewSays, small, font.Font{}, text.Start)
 		}
 		if len(f.Taken()) > 0 {
 			at := ends(w.measured(), Titled(f.Name), reads) + between
-			sayIn(k.gtx, k.th, k.skin.Colour.Accent.Base, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - small, H: line.H}, f.TakenSays(), small, font.Font{}, text.Start)
+			sayIn(k.gtx, k.th, k.skin.Colour.Accent.Base, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - 2*small, H: line.H}, f.TakenSays(), small, font.Font{}, text.Start)
 		}
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, FilterKey(f), small, k.skin.Type.Mono, text.End)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, FilterKey(f)+" ›", small, k.skin.Type.Mono, text.End)
 	}
 }
 

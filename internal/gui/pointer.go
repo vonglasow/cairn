@@ -187,6 +187,9 @@ func (w Window) Hovering(p Point) Window {
 		w.resting, w.restingAt, w.restingWide = w.untailedAt(p)
 	}
 	if w.resting == nil {
+		w.resting, w.restingAt, w.restingWide = w.cutFilterAt(p)
+	}
+	if w.resting == nil {
 		w.resting, w.restingAt, w.restingWide = w.hiddenAt(p)
 	}
 	w.pointed = w.slotAt(p)

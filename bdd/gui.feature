@@ -467,14 +467,66 @@ Feature: The desktop board
       And the filter "priority" lists nothing
 
     @gui-a-filters-list-is-left-untouched
-    Scenario: esc closes a filter's list and leaves the filter as it was
+    Scenario: left closes a filter's column and leaves the filter as it was
       When I open the window
       And I press "shift+f"
       And I click the filter "priority"
       And I press "down"
-      And I press "esc"
+      And I press "left"
       Then the board says it is filtered by ""
       And the window shows the filters
+      And the menu of filters shows 1 column
+
+    @gui-the-filters-open-in-columns
+    Scenario: a filter opens its values in a column at the right of the filters, which stay drawn
+      When I open the window
+      And I press "shift+f"
+      And I press "right"
+      Then the menu of filters shows 2 columns
+      And the filter "column" lists its values
+      When I press "left"
+      Then the menu of filters shows 1 column
+
+    @gui-esc-closes-the-whole-menu
+    Scenario: space takes a value and stays, esc closes the menu from any column, what was taken kept
+      When I open the window
+      And I press "shift+f"
+      And I press "p"
+      And I press "down" 2 times
+      And I press "space"
+      Then the board says it is filtered by "priority high"
+      And the filter "priority" lists its values
+      When I press "esc"
+      Then the window is on the board
+      And the board says it is filtered by "priority high"
+
+    @gui-a-sub-objective-opens-in-a-column-of-its-own
+    Scenario: an objective with sub-objectives opens them in a column of their own
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      And I added a task titled "Flash the bootloader" serving objective 2
+      When I open the window
+      And I press "shift+f"
+      And I press "o"
+      And I press "right"
+      Then the menu of filters shows 3 columns
+      When I press "down" 2 times
+      And I press "enter"
+      Then the board says it is filtered by "objective #2 Firmware"
+      And the window is on the board
+
+    @gui-the-filter-columns-slide-in-a-narrow-window
+    Scenario: in a narrow window the oldest column slides behind a stub, which a click brings back
+      Given a window of 720 by 560
+      And I added an objective titled "Home automation"
+      And I added an objective titled "Firmware" under objective 1
+      When I open the window
+      And I press "shift+f"
+      And I press "o"
+      And I press "right"
+      Then the menu of filters shows 2 columns and a stub
+      When I click the stub of the menu of filters
+      Then the menu of filters shows 2 columns
 
     @gui-the-filters-open-from-the-menu-bar
     Scenario: the menu bar opens the filters

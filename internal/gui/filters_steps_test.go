@@ -45,16 +45,34 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		if want < 0 {
 			return fmt.Errorf("the filter %q offers no %q: %v", name, value, w.w.Filters()[at].Values)
 		}
-		for w.w.FilterPick() < want {
-			w.w = w.w.Key("down")
-		}
-		for w.w.FilterPick() > want {
-			w.w = w.w.Key("up")
+		if err := w.reachingValue(want); err != nil {
+			return err
 		}
 		w.w = w.w.Key("enter")
 		if _, open := w.w.FilterList(); open {
 			w.w = w.w.Key("esc")
 		}
+		return nil
+	})
+	sc.Then(`^the menu of filters shows (\d+) columns?( and a stub)?$`, func(want int, stubbed string) error {
+		cols, stub := w.w.FilterColumns()
+		if w.w.Screen() != OnFiltering || len(cols) != want || (stub.W > 0) != (stubbed != "") {
+			return fmt.Errorf("the menu of filters shows %d columns, stub %v, on screen %v", len(cols), stub, w.w.Screen())
+		}
+		for i := 1; i < len(cols); i++ {
+			if cols[i].Box.X != cols[i-1].Box.X+cols[i-1].Box.W {
+				return fmt.Errorf("column %d stands at %d, not against the one before it ending at %d", i, cols[i].Box.X, cols[i-1].Box.X+cols[i-1].Box.W)
+			}
+		}
+		return nil
+	})
+	sc.When(`^I click the stub of the menu of filters$`, func() error {
+		_, stub := w.w.FilterColumns()
+		if stub.W == 0 {
+			return fmt.Errorf("the menu of filters has no stub")
+		}
+		at := Point{X: stub.X + stub.W/2, Y: stub.Y + stub.H/2}
+		w.w = w.w.PressAt(at).LetGo(at)
 		return nil
 	})
 	sc.Then(`^the pills after the tabs read "([^"]*)"$`, func(want string) error {
@@ -196,4 +214,30 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+}
+
+func (w *world) reachingValue(want int) error {
+	for range 8 {
+		columns := w.w.valueColumns()
+		last := columns[len(columns)-1]
+		target := want
+		if !slices.Contains(last, want) {
+			target = slices.IndexFunc(last, func(v int) bool { return w.w.holdsValue(v, want) })
+			if target < 0 {
+				return fmt.Errorf("no column of the menu leads to value %d: %v", want, columns)
+			}
+			target = last[target]
+		}
+		for slices.Index(last, w.w.FilterPick()) < slices.Index(last, target) {
+			w.w = w.w.Key("down")
+		}
+		for slices.Index(last, w.w.FilterPick()) > slices.Index(last, target) {
+			w.w = w.w.Key("up")
+		}
+		if target == want {
+			return nil
+		}
+		w.w = w.w.Key("right")
+	}
+	return fmt.Errorf("value %d is out of reach", want)
 }

@@ -603,7 +603,7 @@ func (w Window) Choose(name string) Window {
 			return w.taking()
 		}
 		if w.screen == OnFiltering {
-			return w.pickingFilter(w.filterPick)
+			return w.choosingValue()
 		}
 		if w.screen == OnLabels && w.colouring {
 			return w.colouringLabel(w.colourPick)
@@ -619,7 +619,7 @@ func (w Window) Choose(name string) Window {
 		return w.dated(time.Time{})
 	case "cancel":
 		if w.screen == OnFiltering && w.filterOpen {
-			return w.closingFilter()
+			return w.closingMenu()
 		}
 		if w.screen == OnLabels && w.colouring {
 			w.colouring = false
