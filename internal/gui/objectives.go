@@ -126,7 +126,7 @@ func (w Window) Detail() Detail {
 	if left := w.snap.Left(g.Number); left.Tasks > 0 {
 		d.Left = strconv.Itoa(left.Tasks)
 		if !left.Due.IsZero() {
-			d.LeftSays += ", the next due " + domain.FormatDay(left.Due) + " (#" + strconv.Itoa(left.On) + ")"
+			d.LeftSays += ", the next deadline " + domain.FormatDay(left.Due) + " (#" + strconv.Itoa(left.On) + ")"
 		}
 	}
 	if d.Subs {
@@ -252,7 +252,7 @@ func (w Window) goalFacts(g engine.Goal) string {
 		}
 	}
 	if !g.Deadline.IsZero() {
-		facts = append(facts, "due "+domain.FormatDay(g.Deadline))
+		facts = append(facts, "deadline "+domain.FormatDay(g.Deadline))
 	}
 	return strings.Join(facts, " · ")
 }

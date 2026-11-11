@@ -179,7 +179,7 @@ func (fs Filters) Holding(over View, search string) Input {
 	in := fs.Saving(over, search)
 	delete(in.Given, "view")
 	held := over.Holds
-	for name, value := range map[string]string{"state": held.State, "priority": held.Priority, "due-before": held.DueBefore, "search": held.Search} {
+	for name, value := range map[string]string{"state": held.State, "priority": held.Priority, "deadline-before": held.DueBefore, "search": held.Search} {
 		if _, named := in.Given[name]; !named && value != "" {
 			in.Given[name] = value
 		}

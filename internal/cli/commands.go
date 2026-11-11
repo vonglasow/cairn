@@ -13,21 +13,21 @@ import (
 )
 
 var groupShort = map[string]string{
-	"task":      "Add, list, read, change and delete tasks",
-	"objective": "Add, list, read, change and delete objectives",
-	"step":      "Add, list, tick, rename and take away the steps of a task",
+	"task":      "New, list, show, edit and delete tasks",
+	"objective": "New, list, show, edit and delete objectives",
+	"step":      "New, list, edit and delete the steps of a task",
 	"backup":    "New, list, show, restore and delete backups of the store",
 	"migration": "Read and undo what has been done to the shape of the store",
 	"config":    "Show which places cairn uses, and where it got them",
-	"workspace": "List, add, choose and show the workspaces, each a folder holding a store and its notes",
+	"workspace": "List, add, use, show and forget the workspaces, each a folder holding a store and its notes",
 	"debug":     "Pack what debug mode wrote down, to send with a bug",
 	"trace":     "Read what was done to a task, or over a period",
 	"label":     "List every label, and delete or rename one on everything carrying it",
 	"timesheet": "Say how long the work took, day by day, and add what was done without focus",
 	"plugin":    "Write the Claude Code plugin this cairn carries",
 	"app":       "Install cairn as an application, on a Mac or a Linux desktop",
-	"view":      "Keep the filters of a listing under a name, and list, show, change and delete them",
-	"series":    "List, show, change, stop, resume and delete the series, the tasks that come back",
+	"view":      "Save the filters of a listing under a name, and list, show, edit and delete them",
+	"series":    "List, show, edit, stop, resume and delete the series",
 }
 
 func home() engine.Home {
@@ -197,6 +197,9 @@ func newActionCmd(op engine.Operation) *cobra.Command {
 		var v string
 		given[arg.Name] = &v
 		cmd.Flags().StringVar(&v, arg.Name, "", helpOf(arg))
+		if arg.Bare != "" {
+			cmd.Flags().Lookup(arg.Name).NoOptDefVal = arg.Bare
+		}
 	}
 	if op.Level == engine.Full || op.Sweeps != nil || op.Finishes {
 		cmd.Flags().BoolVar(&confirmed, "yes", false, "confirm, since this loses work, reaches everything a narrowing does, or ticks the steps of a task put in done")

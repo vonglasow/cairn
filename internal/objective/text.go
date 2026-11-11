@@ -41,12 +41,12 @@ func (l Left) Line() string {
 		return "nothing"
 	}
 	many := fmt.Sprintf("%d tasks", l.Tasks)
-	next := "the next due"
+	next := "the next deadline"
 	if l.Tasks == 1 {
-		many, next = "1 task", "due"
+		many, next = "1 task", "deadline"
 	}
 	if l.Due.IsZero() {
-		return many + ", none due"
+		return many + ", no deadline"
 	}
 	return fmt.Sprintf("%s, %s %s (#%d)", many, next, domain.FormatDay(l.Due), l.On)
 }

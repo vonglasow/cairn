@@ -16,7 +16,7 @@ func TestTaskExport_writesTheViewsAndTheObjectivesTheyName(t *testing.T) {
 		asked(ObjectiveNew, "title", "Named by a view alone"),
 		asked(ObjectiveNew, "title", "Served by nothing"),
 		asked(ViewNew, "name", "Home", "objective", "1", "itself", "true", "state", "todo"),
-		asked(ViewNew, "name", "Shopping", "label", "shopping", "priority", "high", "due-before", "2026-12-01", "search", "milk", "with-archived", "true"),
+		asked(ViewNew, "name", "Shopping", "label", "shopping", "priority", "high", "deadline-before", "2026-12-01", "search", "milk", "with-archived", "true"),
 		asked(ViewNew, "name", "Attic", "archived", "true"),
 	)
 	if read.Version != 7 {

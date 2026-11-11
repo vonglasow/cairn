@@ -93,7 +93,7 @@ func TestSeriesFields_areWhatTheNextIsMadeFromAndItsRule(t *testing.T) {
 		}
 	}
 	for name, want := range map[string]string{"title": "Stand-up", "priority": "high", "labels": "team work", "estimate": "15m",
-		"objectives": "2", "repeats": "every weekday 10:30", "from": "2026-11-09", "steps": "[ ] Yesterday\n[ ] Today"} {
+		"objectives": "2", "rule": "every weekday 10:30", "from": "2026-11-09", "steps": "[ ] Yesterday\n[ ] Today"} {
 		if got[name] != want {
 			t.Errorf("the field %s holds %q, want %q", name, got[name], want)
 		}
@@ -122,7 +122,7 @@ func TestSaved_sendsNoRuleLeftEmpty(t *testing.T) {
 	if _, in := Saved(fields, true, 0, TaskNew, TaskEdit); in.Given["every"] != "every 3 days" {
 		t.Errorf("the rule typed was not sent: %v", in.Given)
 	}
-	if f := RepeatsField(); f.Name != "repeats" || f.Arg != "every" || f.Means == "" {
+	if f := RepeatsField(); f.Name != "rule" || f.Arg != "every" || f.Means == "" {
 		t.Errorf("the field reads %+v", f)
 	}
 }
@@ -330,16 +330,16 @@ func TestBoardFilters_offerWhatComesBackWhileThereAreSeries(t *testing.T) {
 	cards := []Card{{Number: 1, Series: &Occurs{Series: 1}}, {Number: 2}}
 	plain := BoardFilters(Snapshot{Cards: cards}, time.Now())
 	for _, f := range plain {
-		if f.Arg == "repeats" {
+		if f.Arg == "series" {
 			t.Fatal("a store with no series is offered a repeats filter")
 		}
 	}
-	fs := BoardFilters(Snapshot{Cards: cards, Series: []Series{{Number: 1}}}, time.Now()).On("repeats", "true")
+	fs := BoardFilters(Snapshot{Cards: cards, Series: []Series{{Number: 1}}}, time.Now()).On("series", "0")
 	kept, err := fs.Kept(cards)
 	if err != nil || len(kept) != 1 || kept[0].Number != 1 {
 		t.Errorf("the repeats filter kept %+v (%v)", kept, err)
 	}
-	if fs.Said() != "repeats yes" {
+	if fs.Said() != "series all" {
 		t.Errorf("the filters say %q", fs.Said())
 	}
 }

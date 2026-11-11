@@ -2650,7 +2650,7 @@ trace for one sitting.
 
 A series ([series.md](series.md)) is the window's fourth tab, after the time,
 as the terminal has it (`@gui-series-the-tab-lists-them`) — `⇥` keeps the
-order it had. It is there only while `[recurrence] on` is true; a window not
+order it had. It is there only while `[series] on` is true; a window not
 told otherwise has it off, as the configuration does, so `New` opens with
 recurrence off and `Paged` gives it the store's. **The tab is a split, the
 objectives' own** (`SplitOf`): the list on the left, the active series under
@@ -2694,7 +2694,7 @@ the occurrence open. The bar offers *Open the occurrence* (`⏎`), *Edit*
 (`e`), *Skip* (`s`), *Stop* (`x`) or *Resume* (`r`), *New series* (`n`), the
 search — which narrows the list by title, rule or number, as `series list
 --search` does — and the help. `n` opens a task's form in todo with the keyboard already on
-its `repeats` field (`@gui-series-n-makes-a-new-one`); *Edit the series* opens
+its `rule` field (`@gui-series-n-makes-a-new-one`); *Edit the series* opens
 the series' own form — title, priority, labels, estimate, objectives, steps,
 its rule and the day it counts from, with no trace beside it — and saving it
 changes what comes next, never one made (`@gui-series-the-form-changes-the-series`).
@@ -2742,7 +2742,7 @@ was there; not made up"
 (`@gui-series-the-form-of-an-occurrence-names-the-days-missed`); its foot offers *Skip this one* and
 *Stop the series* — or *Resume the series* — beside *Save*
 (`@gui-series-the-form-of-an-occurrence-says-its-series`). A task that is no
-occurrence carries a `repeats` field, in a section of its own: a rule typed
+occurrence carries a `rule` field, in a section of its own: a rule typed
 there makes it the first occurrence of a new series
 (`@gui-series-a-task-given-a-rule-becomes-the-first`). The field is typed into, and
 **reads the rule back under it as it is typed**: how often, what it counts
@@ -2771,7 +2771,7 @@ A day of the week counted after done is a rule cairn refuses, so ticking a
 day counts on the calendar, and choosing after done lets the days go; an end
 is a number of times or a day, never both, and the picker offers one at a
 time. The picker sets **the day a series counts from** too, a stepper a day
-at a time from today, written in the form's `from` field, beside `repeats`
+at a time from today, written in the form's `from` field, beside `rule`
 in the *Series* section and chosen on a calendar as a deadline is
 (`engine.FromField`, `@gui-series-the-picker-sets-the-day-it-counts-from`).
 The picker hangs under the field where the window has room — at 1200 by 800
@@ -2784,7 +2784,7 @@ default, or *The whole series*, `s`
 `@gui-series-saving-this-one-only-leaves-the-series`).
 
 **With recurrence off, nothing of a series shows**: no tab, no loop, no rule,
-no series number, no `repeats` field, no `r` key and no offer
+no series number, no `rule` field, no `r` key and no offer
 (`@gui-series-off-shows-nothing`) — the engine's `Pages.Recurring` takes them
 off the snapshot the window reads, the one the terminal reads too. The one
 place left is the command bar: a series asked for there is answered by a
@@ -2800,8 +2800,8 @@ made it — made, skipped, missed — read from the series' own acts, which stay
 in their own table: only the history joins them
 (`engine.BeforeIn`, `@gui-series-the-history-of-an-occurrence-goes-on-with-its-series`).
 
-**The board narrows to what comes back** by a filter of its own, `repeats`,
-offered while there is a series, as `task list --repeats` narrows a listing
+**The board narrows to what comes back** by a filter of its own, `series`,
+offered while there is a series, as `task list --series` narrows a listing
 (`@gui-series-the-board-narrows-to-what-comes-back`).
 
 ## Several at once

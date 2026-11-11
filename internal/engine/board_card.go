@@ -84,7 +84,7 @@ func Tallied(parts []Part) string {
 		return ""
 	}
 	left, done := Tally(parts)
-	return fmt.Sprintf("%d to do · %d done", left, done)
+	return fmt.Sprintf("%d left · %d done", left, done)
 }
 
 // ReachesCard says whether what was typed reaches a card.

@@ -273,7 +273,7 @@ func (b Board) detailLeftUnder(c engine.Card, width int) []string {
 		under = append(under, b.named("SERVES", b.serves(c, width-4), width))
 	}
 	if c.Context != "" {
-		under = append(under, b.named("CONTEXT", b.skin.Faint.Render(c.Context), width))
+		under = append(under, b.named("NOTES", b.skin.Faint.Render(c.Context), width))
 	}
 	return under
 }
@@ -299,7 +299,7 @@ func (b Board) detailBand(c engine.Card) string {
 		if show {
 			day += " · " + text
 		}
-		told = append(told, b.skin.Says.Render("due ")+style.Render(day))
+		told = append(told, b.skin.Says.Render("deadline ")+style.Render(day))
 	}
 	if c.Estimate != "" {
 		told = append(told, b.skin.Bright.Render(c.Estimate)+b.skin.Says.Render(" estimated"))

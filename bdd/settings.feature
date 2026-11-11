@@ -327,7 +327,7 @@ Feature: Settings that belong to a store, kept beside it
         | key              | value  | said                                             |
         | pages.time       | hiden  | is not a word pages.time takes (on, hidden, off) |
         | focus.session    | 1hour  | is not a duration — write 1h, 45m, 1h30m         |
-        | recurrence.on    | yes    | is true or false                                 |
+        | series.on    | yes    | is true or false                                 |
         | archive.days     | 0      | is not a number of days, one or more             |
         | archive.start    | monday | is not a day — write 2026-10-21                  |
         | window.theme     | neon   | is not a scheme cairn sees                       |
@@ -351,11 +351,11 @@ Feature: Settings that belong to a store, kept beside it
     @config-set-without-a-file-writes-the-table-alone
     Scenario: with no global file, a key set writes a file holding its table alone
       Given no configuration file
-      When I run `cairn config set recurrence.on true --global`
+      When I run `cairn config set series.on true --global`
       Then it succeeds
       And the global configuration reads:
         """
-        [recurrence]
+        [series]
         on = true
         """
 

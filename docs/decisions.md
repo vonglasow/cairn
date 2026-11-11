@@ -30,7 +30,7 @@ already said why not.
 | no "what makes a task doable now" | two properties were found and the list plainly does not close | [ordering.md](ordering.md#deliberately-not-here-yet) |
 | no task hangs under another; a task is split into steps, a title and a tick each | a sub-task was a whole task for what was most often one line to tick, and its parent and sisters ran through every rule and every surface | [steps.md](steps.md#why-steps-replaced-sub-tasks) |
 | a link between two tasks has no kind and no direction; a task done is never reopened, a linked task is opened | a kind would say again what a label already says, and reopening a task rewrites the period, the time and the story it was finished in | [links.md](links.md) |
-| no `task next` | what it would answer is already asked plainly — `--due-before`, `--state todo`, `task focus` — and choosing among them is the person's order, which cairn does not override | this page |
+| no `task next` | what it would answer is already asked plainly — `--deadline-before`, `--state todo`, `task focus` — and choosing among them is the person's order, which cairn does not override | this page |
 | no follow-up day and no person awaited on a task watched | its `because` says who, its deadline says when, and both boards already mark a deadline passed | [blocking.md](blocking.md#three-words-for-stopped-not-one) |
 | no ticket field; a ticket is named in the title or the description | the search reaches both, and a link is between two tasks, never to a place outside cairn | [links.md](links.md) |
 
@@ -139,3 +139,44 @@ not found a second time as news, and it leaves this list when it is fixed or
 decided.
 
 Nothing, at the moment.
+
+## One word for each notion, on every surface
+
+The window, the terminal, the command line, the MCP server and these pages
+used to name one notion several ways: a task that comes back was a series, a
+recurrence and something that repeats; a day due was a deadline and a due;
+the settings were a configuration. Each notion now has one word, the one the
+person reads (#292, decided 2026-11-11):
+
+- **series** — the setting reads Series, its key `series.on` (the old
+  `[recurrence] on` is still read), the filter `series` on `all`,
+  `task list --series` alone keeps every occurrence and `--series 3` those of
+  ↻3; the refusal says *series are off*;
+- **rule** — the field a series comes back by; `--every` stays the flag;
+- **occurrence** — what a series made, opened as one;
+- **settings** — every screen; `cairn config` and the file names stay;
+- **tab** — what was a page, in the settings' section *Tabs*;
+- **trace** — what was the history of a task;
+- **column** — the filter pill reads `column: todo`; every filter pill reads
+  `name: value`, the view's and the search's as before;
+- **state** — an objective's, in its form;
+- **deadline** — `--deadline-before`, the filter `deadline`, `deadline` where
+  a day was `due`;
+- **notes** — what a form called its context;
+- **left** — `3 left · 5 done`, never `to do` beside a column TODO;
+- **blockers**, **parent** — the form's sections;
+- **save** — to keep something written, *Save as a view…*, *Save search*;
+  *keep* only when a deletion is refused;
+- **new, list, show, edit, delete** — the words the commands' groups say;
+- **report** — `objective report`, never a review;
+- **details**, **help** — the headings.
+
+- **forget** — `workspace forget`, which was `workspace remove`;
+- **description** — `--description` is `--desc` spelled whole;
+- **theme** — never a scheme, in what an agent reads too;
+- **Series** joins the View menu; outside the Series tab the series' acts
+  read *Open the series*, *Skip this one*, *Stop the series*, *Resume the
+  series*; in the tab, where the series is said already, *Edit the series*,
+  *Skip the next*, *Stop*, *Delete…*;
+- **`…`** ends a line only when a choice follows it, and a line opening with
+  `+` is written in sentence case: *+ New task serving it*.

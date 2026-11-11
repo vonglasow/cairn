@@ -108,7 +108,7 @@ func Intros() []string {
 var ErrKeepSizes = errors.New("the window keeps its sizes or not: true or false")
 
 // ErrRecurrence is returned when the file says whether tasks come back with something that is neither true nor false.
-var ErrRecurrence = errors.New("recurrence is on or not: true or false")
+var ErrRecurrence = errors.New("series are on or off: true or false")
 
 // ErrFocus is returned when the file says a focus session lasts something that is not a duration.
 var ErrFocus = errors.New("a focus session lasts a duration, written 1h")
@@ -170,6 +170,7 @@ type file struct {
 	Time       *timed            `toml:"time"`
 	Window     *window           `toml:"window"`
 	Recurrence *recurrence       `toml:"recurrence"`
+	Series     *recurrence       `toml:"series"`
 	Workspace  *workspace        `toml:"workspace"`
 	Workspaces map[string]string `toml:"workspaces"`
 }
@@ -252,7 +253,7 @@ func (r *recurrence) on() (bool, error) {
 	}
 	on, ok := r.On.(bool)
 	if !ok {
-		return false, fmt.Errorf("recurrence.on %v: %w", r.On, ErrRecurrence)
+		return false, fmt.Errorf("series.on %v: %w", r.On, ErrRecurrence)
 	}
 	return on, nil
 }
@@ -431,6 +432,9 @@ func writtenIn(data []byte) []string {
 			continue
 		}
 		for inner := range table {
+			if key == "recurrence" {
+				key = "series"
+			}
 			keys = append(keys, key+"."+inner)
 		}
 	}
@@ -613,7 +617,11 @@ func (p *Places) settle(f file) error {
 	if err != nil {
 		return err
 	}
-	recurring, err := f.Recurrence.on()
+	said := f.Recurrence
+	if f.Series != nil {
+		said = f.Series
+	}
+	recurring, err := said.on()
 	if err != nil {
 		return err
 	}

@@ -302,7 +302,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the open task says where the context of task (\d+) lives$`, func(n int) error {
-		if err := w.mustSay("CONTEXT"); err != nil {
+		if err := w.mustSay("NOTES"); err != nil {
 			return err
 		}
 		return w.mustSay(notesRoot + "/" + strconv.Itoa(n))

@@ -117,7 +117,7 @@ func TestStepsAreTalliedLeftAndDone(t *testing.T) {
 	if left, done := Tally(parts); left != 2 || done != 1 {
 		t.Errorf("Tally = %d left, %d done, want 2 and 1", left, done)
 	}
-	if got := Tallied(parts); got != "2 to do · 1 done" {
+	if got := Tallied(parts); got != "2 left · 1 done" {
 		t.Errorf("Tallied = %q", got)
 	}
 	if got := Tallied(nil); got != "" {
@@ -173,7 +173,7 @@ func TestFilters_keepByWhatFollowsALabel(t *testing.T) {
 }
 
 func TestFilters_keepOnlyWhatIsDueByTheDay(t *testing.T) {
-	due := offered("due by", "due-before", []string{"2026-06-14"}, nil)
+	due := offered("deadline", "deadline-before", []string{"2026-06-14"}, nil)
 	due.At = 1
 	cards := []Card{{Number: 1, Deadline: dayNamed("2026-06-10")}, {Number: 2, Deadline: dayNamed("2026-06-20")}, {Number: 3}}
 	if got := keptNumbers(t, Filters{due}, cards); !slices.Equal(got, []int{1}) {
@@ -184,7 +184,7 @@ func TestFilters_keepOnlyWhatIsDueByTheDay(t *testing.T) {
 func TestFilters_keepNothingDueByTheDayThatAnotherFilterLeftOut(t *testing.T) {
 	priority := offered("priority", "priority", []string{"high"}, nil)
 	priority.At = 1
-	due := offered("due by", "due-before", []string{"2026-06-14"}, nil)
+	due := offered("deadline", "deadline-before", []string{"2026-06-14"}, nil)
 	due.At = 1
 	cards := []Card{{Number: 1, Priority: "high", Deadline: dayNamed("2026-06-10")}, {Number: 2, Priority: "low", Deadline: dayNamed("2026-06-10")}}
 	if got := keptNumbers(t, Filters{priority, due}, cards); !slices.Equal(got, []int{1}) {

@@ -524,7 +524,7 @@ them, and `--itself` keeps to 4 alone. See
 
 ## A deadline narrows as a range, and is looked in as text
 
-`--due-before 2026-10-01` keeps what is due on or before that day, the day
+`--deadline-before 2026-10-01` keeps what is due on or before that day, the day
 itself included: a deadline is the last day something may be done, so a listing
 of what is due by the first that left out the first would answer a different
 question.
@@ -665,14 +665,14 @@ the flags. No view opens on its own when a board opens, and an objective's
 
 ## A listing can keep the occurrences of a series
 
-`task list --repeats` keeps only the tasks a series made, and `--series 3`
+`task list --series` keeps only the tasks a series made, and `--series 3`
 only those of series ↻3, archived ones too once `--with-archived` is said, as
 every listing; a number no series carries is refused. With recurrence on, a
 row says how often an occurrence comes back, `· ↻3 every weekday at 10:30`,
 and an agent reads its series' number under `series`, 0 for any other task;
 with recurrence off neither is said, and neither filter is offered
 (`bdd/series.feature`, `@series-list-repeats`). Both boards offer the same as
-a filter, `repeats` on `yes`, after the others but the focus, and only while there is
+a filter, `series` on `all`, after the others but the focus, and only while there is
 a series (`engine.BoardFilters`, `@gui-series-the-board-narrows-to-what-comes-back`,
 `@tui-series-the-board-narrows-to-what-comes-back`). The narrowing is the engine's,
 over what the store already handed back, like a view's search — see

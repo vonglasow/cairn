@@ -45,7 +45,7 @@ func configuredWith(c engine.Config) *fake {
 func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
 	w := holding(configuredWith(engine.Config{})).openingConfiguration().toSection(SettingSection{Name: "Places", First: 13})
 	marks := w.CopyMarks()
-	if len(marks) != 2 {
+	if len(marks) != 3 {
 		t.Fatalf("the configuration offers %d paths to copy: %+v", len(marks), marks)
 	}
 	store := marks[0]

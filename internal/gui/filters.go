@@ -609,7 +609,7 @@ func (w Window) Pills() []FilterPill {
 			continue
 		}
 		if len(f.Taken()) > 0 {
-			crossed(f.Name, f.TakenSays(), PillFilter, i)
+			crossed(f.Name+":", f.TakenSays(), PillFilter, i)
 			row[len(row)-1].Faint = w.tab == Objectives && !f.ReachesGoals()
 			taken++
 		}

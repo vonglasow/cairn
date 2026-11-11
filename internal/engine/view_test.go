@@ -105,7 +105,7 @@ func TestViewNew_holdsEveryFilterTaskListTakesAndASearch(t *testing.T) {
 	}{
 		{"state", ask("name", "a", "state", "todo"), []int{3}},
 		{"priority", ask("name", "b", "priority", "high"), []int{1}},
-		{"due", ask("name", "c", "due-before", "2026-11-30"), []int{1}},
+		{"due", ask("name", "c", "deadline-before", "2026-11-30"), []int{1}},
 		{"itself", ask("name", "d", "itself", "true").with("objective", "1"), []int{1}},
 		{"archived", ask("name", "e", "archived", "true"), []int{4}},
 		{"with archived", ask("name", "f", "with-archived", "true").with("objective", "1"), []int{1, 2, 4}},
@@ -127,7 +127,7 @@ func TestViewNew_holdsEveryFilterTaskListTakesAndASearch(t *testing.T) {
 		t.Errorf("the views read %+v", views)
 	}
 	text := RenderText(ViewList, did(t, path, ViewList, ask()))
-	for _, said := range []string{"state todo", "priority high", "due before 2026-11-30", "objective 1 itself", "archived", "with archived", `search "sensors"`, "label doc"} {
+	for _, said := range []string{"state todo", "priority high", "deadline before 2026-11-30", "objective 1 itself", "archived", "with archived", `search "sensors"`, "label doc"} {
 		if !strings.Contains(text, said) {
 			t.Errorf("the views read %q, want %q", text, said)
 		}

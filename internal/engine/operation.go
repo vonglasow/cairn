@@ -100,6 +100,7 @@ type Argument struct {
 	Means      string
 	Of         string
 	Repeats    bool
+	Bare       string
 }
 
 // Answered is the one shape an operation's answer takes — an empty value of it, carried so a surface can read the shape off the type.

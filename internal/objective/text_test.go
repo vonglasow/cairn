@@ -137,7 +137,7 @@ func TestAListingSaysWhereAnObjectiveStands(t *testing.T) {
 func TestText_saysTheTimeSpentAndWhatIsLeft(t *testing.T) {
 	got := Text(plan(t), domain.Progress{}, Review{Spent: 2*time.Hour + 15*time.Minute,
 		Left: Left{Tasks: 2, Due: time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC), On: 3}}, Family{})
-	for _, want := range []string{"time spent   2h15m", "left         2 tasks, the next due 2026-11-05 (#3)"} {
+	for _, want := range []string{"time spent   2h15m", "left         2 tasks, the next deadline 2026-11-05 (#3)"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("text is missing %q:\n%s", want, got)
 		}
@@ -151,10 +151,10 @@ func TestLeft_saysWhatRemains(t *testing.T) {
 		want string
 	}{
 		{Left{}, "nothing"},
-		{Left{Tasks: 1}, "1 task, none due"},
-		{Left{Tasks: 1, Due: due, On: 4}, "1 task, due 2026-11-05 (#4)"},
-		{Left{Tasks: 3}, "3 tasks, none due"},
-		{Left{Tasks: 3, Due: due, On: 4}, "3 tasks, the next due 2026-11-05 (#4)"},
+		{Left{Tasks: 1}, "1 task, no deadline"},
+		{Left{Tasks: 1, Due: due, On: 4}, "1 task, deadline 2026-11-05 (#4)"},
+		{Left{Tasks: 3}, "3 tasks, no deadline"},
+		{Left{Tasks: 3, Due: due, On: 4}, "3 tasks, the next deadline 2026-11-05 (#4)"},
 	} {
 		if got := c.left.Line(); got != c.want {
 			t.Errorf("%+v says %q, want %q", c.left, got, c.want)

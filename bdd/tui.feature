@@ -1075,7 +1075,7 @@ Feature: The board
       And I added the step "Get the client's nod" to task 1
       When I open the board
       And I press "i", "enter"
-      Then the board says "1 to do · 1 done"
+      Then the board says "1 left · 1 done"
       And the board says "[ ] 2  Get the client's nod"
       And the board says "[x] 1  Draft the columns"
 
@@ -1303,7 +1303,7 @@ Feature: The board
     Scenario: a board opened on a store behind offers to apply what is waiting
       Given a store from an older cairn, holding a task titled "Write the spec"
       When I open the board
-      Then the board says "apply what this store is waiting for?"
+      Then the board says "apply what this workspace is waiting for?"
       When I press "enter"
       And the board looks again
       Then task 1 is in the column "backlog"
@@ -1325,7 +1325,7 @@ Feature: The board
       When I open the board
       And another cairn rolls the last change back
       And the board looks again
-      Then the board says "apply what this store is waiting for?"
+      Then the board says "apply what this workspace is waiting for?"
 
     @tui-a-store-from-a-newer-cairn-stops-the-board
     Scenario: a store a newer cairn changed stops the board
@@ -1740,13 +1740,13 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Then the board says "every weekday · 10:30"
 
   @tui-series-the-board-narrows-to-what-comes-back
-  Scenario: the repeats filter keeps the tasks that come back
+  Scenario: the series filter keeps the tasks that come back
     Given recurrence is on on the board
     And I added a task titled "Stand-up" coming back "every day"
     And I added a task titled "Write the spec"
     When I open the board
     And I press "shift+f", "l", "l", "l", "l", "l", "j"
-    Then the board says "repeats yes"
+    Then the board says "series all"
     And the board says "Stand-up"
     And the board says nothing of "Write the spec"
 
@@ -1840,7 +1840,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And task 1 was skipped
     When I open the board
     And I press "tab", "tab", "tab", "enter", "j", "enter"
-    Then the mode is "DETAIL"
+    Then the mode is "DETAILS"
     And the open task is task 1
 
   @tui-series-the-tab-skips-stops-and-resumes
@@ -1908,7 +1908,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     When I open the board
     And I press "tab", "tab", "tab", "n"
     And I set the field "title" to "Water the plants"
-    And I set the field "repeats" to "every 3 days after done"
+    And I set the field "rule" to "every 3 days after done"
     And I save the form
     Then series 1 is titled "Water the plants"
     And task 1 is an occurrence of series 1
@@ -1918,7 +1918,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     When I open the board
     And I press "tab", "tab", "tab", "n"
-    Then the cursor is on the field "repeats"
+    Then the cursor is on the field "rule"
 
   @tui-series-a-task-given-a-rule-becomes-the-first
   Scenario: a task given a rule in its form becomes the first occurrence of a new series
@@ -1926,7 +1926,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And I added a task titled "Water the plants"
     When I open the board
     And I press "i", "e"
-    And I set the field "repeats" to "every 3 days"
+    And I set the field "rule" to "every 3 days"
     And I save the form
     Then task 1 is an occurrence of series 1
 

@@ -94,10 +94,10 @@ func BoardFilters(s Snapshot, today time.Time) Filters {
 		offered("priority", "priority", Priorities(), nil),
 		several(offered("label", "label", labels, nil)),
 		objectives,
-		offered("due by", "due-before", days, nil),
+		offered("deadline", "deadline-before", days, nil),
 	}
 	if len(s.Series) > 0 {
-		fs = append(fs, offered("repeats", "repeats", []string{"true"}, []string{"yes"}))
+		fs = append(fs, offered("series", "series", []string{"0"}, []string{"all"}))
 	}
 	return append(fs, offered("focus", "focus", []string{"in", "out"}, []string{"in focus", "not in focus"}))
 }
@@ -305,7 +305,7 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 			in.Listed[f.Arg] = taken
 			continue
 		}
-		if f.Arg == "repeats" {
+		if f.Arg == "series" {
 			repeats = true
 			continue
 		}

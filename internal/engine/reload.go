@@ -59,7 +59,7 @@ func valuesIn(c Config) map[string]string {
 		values["window.ghost"] = strconv.Itoa(c.Window.Ghost)
 	}
 	if c.Recurrence != nil {
-		values["recurrence.on"] = strconv.FormatBool(c.Recurrence.On)
+		values["series.on"] = strconv.FormatBool(c.Recurrence.On)
 	}
 	if c.Workspace != nil {
 		values["workspace.colour"] = c.Workspace.Colour

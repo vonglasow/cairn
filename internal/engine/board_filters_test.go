@@ -47,7 +47,7 @@ func TestFilters_offerEveryNarrowingOfAListingStartingAtAny(t *testing.T) {
 			t.Fatalf("%s opens on %q, not %q", f.Name, f.Value(), Any)
 		}
 	}
-	if got := strings.Join(names, ","); got != "column,priority,label,objective,due by" {
+	if got := strings.Join(names, ","); got != "column,priority,label,objective,deadline,focus" {
 		t.Fatalf("the filters are %s", got)
 	}
 	if fs.Narrows() {
@@ -74,7 +74,7 @@ func TestFilters_keepTheCardsEveryFilterKeeps(t *testing.T) {
 		{"priority", "high", "1 3"},
 		{"label", "sprint", "1 3"},
 		{"objective", "2", "1"},
-		{"due by", "2026-10-31", "1"},
+		{"deadline", "2026-10-31", "1"},
 	} {
 		kept, err := on(BoardFilters(Snapshot{Cards: cards, Goals: []Goal{{Number: 2}}}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC)), c.name, c.value).Kept(cards)
 		if err != nil {

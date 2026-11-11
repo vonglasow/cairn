@@ -254,7 +254,7 @@ func (w Window) WorkTiles() []WorkTile {
 }
 
 // AddingServingSays is the last line of an objective's work, which adds a task serving it.
-const AddingServingSays = "+ new task serving it"
+const AddingServingSays = "+ New task serving it"
 
 func (w Window) clickingWork(p Point) (Window, bool) {
 	if !w.workFrame().In(p) {
@@ -496,7 +496,7 @@ func (w Window) BesideTabsSay() [2]string {
 	if w.form.ForObjective {
 		return [2]string{"Details", "Work"}
 	}
-	return [2]string{"Details", "History"}
+	return [2]string{"Details", "Trace"}
 }
 
 func (w Window) clickingBesideTab(p Point) (Window, bool) {

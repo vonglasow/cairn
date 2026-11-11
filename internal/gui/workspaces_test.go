@@ -155,7 +155,7 @@ func TestTheWindowIsTitledAfterItsWorkspace(t *testing.T) {
 	if got := atPlace(newFake(), engine.WorkspaceShown{Workspace: "work", Store: "/w/cairn.db"}).Title(); got != "cairn — work" {
 		t.Errorf("Title = %q", got)
 	}
-	if got := atPlace(newFake(), engine.WorkspaceShown{Store: "/scratch/cairn.db"}).Title(); got != "cairn — /scratch" {
+	if got := atPlace(newFake(), engine.WorkspaceShown{Store: "/scratch/cairn.db"}).Title(); got != "cairn — scratch" {
 		t.Errorf("Title of a loose store = %q", got)
 	}
 	if got := holding(newFake()).Title(); got != "cairn" {

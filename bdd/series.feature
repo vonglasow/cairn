@@ -247,7 +247,7 @@ Feature: A series, the tasks that come back
       When I run `cairn task edit 1 --every "every 3 days after done"`
       Then it succeeds
       And the answer says "↻1 every 3 days, after the last is done"
-      And `cairn task list --repeats` lists 1 task
+      And `cairn task list --series` lists 1 task
 
     @series-every-refuses-an-occurrence
     Scenario: a rule given to an occurrence is refused, the series' own is changed instead
@@ -274,7 +274,7 @@ Feature: A series, the tasks that come back
       When I run `cairn series delete 1 --keep-tasks --yes`
       Then it succeeds
       And `cairn task list` lists 2 tasks
-      And `cairn task list --repeats` lists 0 tasks
+      And `cairn task list --series` lists 0 tasks
       And `cairn series list` says "there is no series"
 
     @series-delete-the-open-one
@@ -301,7 +301,7 @@ Feature: A series, the tasks that come back
       Given I added a task titled "Write the spec"
       And I ran `cairn task new "Team stand-up" --every "every weekday"`
       And I ran `cairn task new Review --every "every friday"`
-      When I run `cairn task list --repeats`
+      When I run `cairn task list --series`
       Then it succeeds
       And the answer says "↻2 every week on Friday"
       And the answer does not say "Write the spec"

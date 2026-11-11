@@ -600,10 +600,7 @@ func (w Window) seriesChipAt(p Point) (int, bool) {
 
 // The offers a chosen occurrence and the form of one add, and what they answer to.
 const (
-	SkipItSays      = "Skip it"
-	ItsSeriesSays   = "Open its series"
-	StopItSays      = "Stop it"
-	ResumeItSays    = "Resume it"
+	ItsSeriesSays   = "Open the series"
 	SkipThisOneSays = "Skip this one"
 	StopTheSeries   = "Stop the series"
 	ResumeTheSeries = "Resume the series"
@@ -659,14 +656,10 @@ func (w Window) actingOnOccurrence(offer string) (Window, bool) {
 		return w
 	}
 	switch offer {
-	case SkipThisOneSays, SkipItSays:
+	case SkipThisOneSays:
 		return leaving(w).asking(engine.TaskSkip, engine.Numbered(c.Number)), true
 	case StopTheSeries:
 		return leaving(w).asking(engine.SeriesStop, engine.Numbered(c.Series.Series)), true
-	case StopItSays:
-		return w.asking(engine.SeriesStop, engine.Numbered(c.Series.Series)), true
-	case ResumeItSays:
-		return w.asking(engine.SeriesResume, engine.Numbered(c.Series.Series)), true
 	case ResumeTheSeries:
 		return leaving(w).asking(engine.SeriesResume, engine.Numbered(c.Series.Series)), true
 	case ItsSeriesSays:

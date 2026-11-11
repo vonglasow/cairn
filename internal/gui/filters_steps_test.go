@@ -48,9 +48,9 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		if err := w.reachingValue(want); err != nil {
 			return err
 		}
-		w.w = w.w.Key("enter")
-		if _, open := w.w.FilterList(); open {
-			w.w = w.w.Key("esc")
+		w.w = w.w.Key("space")
+		for _, open := w.w.FilterList(); open; _, open = w.w.FilterList() {
+			w.w = w.w.Key("left")
 		}
 		return nil
 	})

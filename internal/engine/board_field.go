@@ -80,7 +80,7 @@ func GoalFields(g Goal) []Field {
 	return opened(ObjectiveEdit, []Field{
 		{Name: "title", Arg: "title", Value: g.Title},
 		{Name: "description", Arg: "desc", Value: g.Description, Long: true},
-		{Name: "standing", Arg: "state", Value: g.State, Choices: Standings},
+		{Name: "state", Arg: "state", Value: g.State, Choices: Standings},
 		{Name: "priority", Arg: "priority", Value: g.Priority, Choices: Priorities()},
 		{Name: "labels", Arg: "label", Value: strings.Join(g.Labels, " ")},
 		{Name: "parent", Arg: "parent", Value: parentWritten(g.Parent)},

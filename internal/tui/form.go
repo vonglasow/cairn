@@ -300,11 +300,11 @@ func (b Board) formHead() string {
 	standing, priority := b.form.valueOf("column"), b.form.valueOf("priority")
 	dressed := b.skin.palette.Stopped(standing).Style()
 	if b.form.ForObjective {
-		standing = b.form.valueOf("standing")
+		standing = b.form.valueOf("state")
 		dressed = b.skin.palette.Standing(standing).Style()
 	}
 	if b.form.ForSeries {
-		standing = b.form.valueOf("repeats")
+		standing = b.form.valueOf("rule")
 		dressed = b.skin.Says
 	}
 	right := dressed.Render(standing) + "  " +

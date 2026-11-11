@@ -31,10 +31,10 @@ type Config struct {
 	Approach    *ApproachConfig   `json:"approach,omitempty"`
 	Time        *TimeConfig       `json:"time,omitempty"`
 	Window      *WindowConfig     `json:"window,omitempty"`
-	Recurrence  *RecurrenceConfig `json:"recurrence,omitempty"`
+	Recurrence  *RecurrenceConfig `json:"series,omitempty"`
 	Workspace   *WorkspaceConfig  `json:"workspace,omitempty" jsonschema:"what the store's settings say of its workspace; nothing for a store no workspace names and whose settings say no colour"`
 	Workspaces  []Workspace       `json:"workspaces,omitempty"`
-	Themes      []ThemeSeen       `json:"themes,omitempty" jsonschema:"every colour scheme cairn sees, the ones it carries and one's own, sorted by name"`
+	Themes      []ThemeSeen       `json:"themes,omitempty" jsonschema:"every theme cairn sees, the ones it carries and one's own, sorted by name"`
 	Problem     string            `json:"problem,omitempty"`
 	Settings    string            `json:"settings,omitempty" jsonschema:"the settings beside the store read over the file, when there are any"`
 	Written     []string          `json:"written,omitempty"`
@@ -68,7 +68,7 @@ func valuesOf(p config.Places) map[string]string {
 		"archive.start": unless(start), "archive.days": strconv.Itoa(days),
 		"focus.session": unless(p.FocusSession()), "approach.label": unless(p.ApproachLabel()),
 		"time.deleted": p.TimeDeleted(), "time.weekends": p.TimeWeekends(), "window.keep_sizes": strconv.FormatBool(p.KeepSizes()),
-		"window.theme": p.Theme(), "window.intro": p.Intro(), "window.ghost": strconv.Itoa(p.Ghost()), "recurrence.on": strconv.FormatBool(p.Recurrence()),
+		"window.theme": p.Theme(), "window.intro": p.Intro(), "window.ghost": strconv.Itoa(p.Ghost()), "series.on": strconv.FormatBool(p.Recurrence()),
 	}
 }
 
@@ -281,7 +281,7 @@ func configText(c Config) string {
 		fmt.Fprintf(&said, "ghost = %d%s\n", c.Window.Ghost, c.from("window.ghost"))
 	}
 	if c.Recurrence != nil {
-		fmt.Fprintf(&said, "\n[recurrence]\non = %t%s\n", c.Recurrence.On, c.from("recurrence.on"))
+		fmt.Fprintf(&said, "\n[series]\non = %t%s\n", c.Recurrence.On, c.from("series.on"))
 	}
 	if c.Workspace != nil {
 		from := "read off the workspace's name"

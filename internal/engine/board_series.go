@@ -190,7 +190,7 @@ func FromField() Field {
 
 // RepeatsField is the field a task is given a rule in, in plain words, to become the first occurrence of a new series.
 func RepeatsField() Field {
-	return Field{Name: "repeats", Arg: "every", Means: meaning(TaskNew, "every"), Example: "every weekday 10:30"}
+	return Field{Name: "rule", Arg: "every", Means: meaning(TaskNew, "every"), Example: "every weekday 10:30"}
 }
 
 // SeriesFields is the form of a series: what its next occurrence is made from, its rule and the day it counts from.
@@ -206,7 +206,7 @@ func SeriesFields(s Series) []Field {
 		{Name: "labels", Arg: "label", Value: strings.Join(s.Template.Labels, " ")},
 		{Name: "estimate", Arg: "estimate", Value: s.Template.Estimate},
 		{Name: "objectives", Arg: "objective", Value: Numbers(s.Template.Objectives)},
-		{Name: "repeats", Arg: "every", Value: s.Rule},
+		{Name: "rule", Arg: "every", Value: s.Rule},
 		{Name: "from", Arg: "from", Value: s.From},
 		{Name: "steps", Arg: "steps", Value: PartsWritten(steps), Long: true},
 	})

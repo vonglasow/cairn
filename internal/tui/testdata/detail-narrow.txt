@@ -1,7 +1,7 @@
-  TASKS 11   objectives 2   time 0                              DETAIL
+  TASKS 11   objectives 2   time 0                             DETAILS
 
  4   Write the spec                                          todo  high
- ⚑ spec   due 2026-09-03 · 2d
+ ⚑ spec   deadline 2026-09-03 · 2d
 
  ╭───────────────────────────────────────╮ ╭──────────────────────────╮
  │ DESCRIPTION                           │ │ TRACE                    │
@@ -9,7 +9,7 @@
  │ three.                              ┃ │ │ 2026-09-02 16:30  chang… │
  ╰───────────────────────────────────────╯ │ 2026-09-02 17:30  chang… │
  ╭───────────────────────────────────────╮ │ 2026-09-02 18:30  chang… │
- │ STEPS   1 to do · 1 done              │ │ 2026-09-02 19:30  chang… │
+ │ STEPS   1 left · 1 done               │ │ 2026-09-02 19:30  chang… │
  │   [ ] 2  Get the client's nod         │ │ 2026-09-02 20:30  chang… │
  │   [x] 1  Draft the columns            │ │ 2026-09-02 21:30  chang… │
  ╰───────────────────────────────────────╯ │ 2026-09-02 22:30  chang… │

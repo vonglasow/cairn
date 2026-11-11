@@ -56,7 +56,7 @@ func viewOfFile(v viewFiled) (store.View, error) {
 		return store.View{}, err
 	}
 	in := Input{Given: map[string]string{"name": name}, Listed: map[string][]string{}}
-	for argument, said := range map[string]string{"state": v.State, "priority": v.Priority, "due-before": v.DueBefore} {
+	for argument, said := range map[string]string{"state": v.State, "priority": v.Priority, "deadline-before": v.DueBefore} {
 		if said != "" {
 			in.Given[argument] = said
 		}

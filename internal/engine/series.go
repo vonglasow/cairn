@@ -114,7 +114,7 @@ type MadeNext struct {
 }
 
 // ErrRecurrenceOff is what anything about a series is refused with while recurrence is off.
-var ErrRecurrenceOff = Refusing("recurrence-off", "recurrence is off: [recurrence] on = true, in the configuration or in the store's settings, turns it on")
+var ErrRecurrenceOff = Refusing("series-off", "series are off: [series] on = true, in the configuration or in the store's settings, turns them on")
 
 var everyArguments = []Argument{
 	{Name: "every", Kind: Text, Repeats: true, Means: "a rule it comes back by, in plain words: every weekday 10:30, every other thursday 14:00, every 3 days after done, every monday 10 times, every day until 2026-12-31; the task is its first occurrence"},
@@ -1336,9 +1336,8 @@ func seriesDeletedText(d SeriesDeleted) string {
 	return said + "\n"
 }
 
-var repeatsArgument = Argument{Name: "repeats", Kind: Bool, Repeats: true, Means: "keep only the occurrences of a series"}
 
-var inSeriesArgument = Argument{Name: "series", Kind: Number, Of: "a series", Repeats: true, Means: "keep only the occurrences of this series, by its number"}
+var inSeriesArgument = Argument{Name: "series", Kind: Number, Of: "a series", Repeats: true, Bare: "0", Means: "keep only the occurrences of this series, by its number; named alone, or 0, the occurrences of every series"}
 
 var seriesTooArgument = Argument{Name: "series", Kind: Bool, Repeats: true, Means: "change the series it is an occurrence of as well, for the ones to come: whatever of its title, priority, labels, estimate, steps and objectives is named"}
 
@@ -1409,13 +1408,13 @@ type occurrencesAsked struct {
 
 func (e *Engine) occurrencesIn(in Input) (occurrencesAsked, error) {
 	series, named := in.Whole("series")
-	if !in.Yes("repeats") && !named {
+	if !named {
 		return occurrencesAsked{}, nil
 	}
 	if err := e.mayRecur(); err != nil {
 		return occurrencesAsked{}, err
 	}
-	if named {
+	if series != 0 {
 		if _, err := e.seriesAt(series); err != nil {
 			return occurrencesAsked{}, err
 		}

@@ -90,7 +90,7 @@ func Dimmed(c engine.Card) bool { return c.Archived || c.State == "done" }
 func (w Window) Blank() bool { return w.pages.None() }
 
 // BlankSays is what a window with every page turned off says, over the offer to open the settings.
-const BlankSays = "Every page is turned off"
+const BlankSays = "Every tab is turned off"
 
 // BlankSays is what the window says when it has no page to show, empty otherwise.
 func (w Window) BlankSays() string {

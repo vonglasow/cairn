@@ -109,10 +109,10 @@ func TestTouching_namesEveryWayATaskLeftOutTouchesOneShown(t *testing.T) {
 func TestFilters_holdWhatAViewKeeps(t *testing.T) {
 	s := lookAt(t, homeTree(t))
 	s.Cards = append(s.Cards, Card{Number: 9, Labels: []string{"backend"}})
-	fs := BoardFilters(s, time.Date(2026, 11, 9, 0, 0, 0, 0, time.UTC)).On("priority", "high").On("objective", "1 itself").On("due-before", "2026-11-16")
+	fs := BoardFilters(s, time.Date(2026, 11, 9, 0, 0, 0, 0, time.UTC)).On("priority", "high").On("objective", "1 itself").On("deadline-before", "2026-11-16")
 	fs = fs.Toggled(2, "backend")
 	in := fs.Holding(View{}, "relay  board")
-	if in.Given["priority"] != "high" || in.Given["due-before"] != "2026-11-16" || in.Given["itself"] != "true" || in.Given["search"] != "relay board" {
+	if in.Given["priority"] != "high" || in.Given["deadline-before"] != "2026-11-16" || in.Given["itself"] != "true" || in.Given["search"] != "relay board" {
 		t.Errorf("the filters hold %+v", in.Given)
 	}
 	if !slices.Equal(in.Listed["objective"], []string{"1"}) || !slices.Equal(in.Listed["label"], []string{"backend"}) {
@@ -133,7 +133,7 @@ func TestFilters_holdAViewAndWhatIsOnTopAsANewView(t *testing.T) {
 	s := lookAt(t, homeTree(t))
 	over := View{Name: "Home", Holds: Holds{State: "todo", Priority: "high", DueBefore: "+7d", Search: "pin", Label: []string{"area"}, Objective: []int{1}, Itself: true}}
 	in := BoardFilters(s, time.Now()).Holding(over, "")
-	if in.Named("view") || in.Given["state"] != "todo" || in.Given["priority"] != "high" || in.Given["due-before"] != "+7d" || in.Given["search"] != "pin" || in.Given["itself"] != "true" {
+	if in.Named("view") || in.Given["state"] != "todo" || in.Given["priority"] != "high" || in.Given["deadline-before"] != "+7d" || in.Given["search"] != "pin" || in.Given["itself"] != "true" {
 		t.Errorf("a view held as a new one gives %+v", in.Given)
 	}
 	if !slices.Equal(in.Listed["label"], []string{"area"}) || !slices.Equal(in.Listed["objective"], []string{"1"}) {
@@ -168,12 +168,12 @@ func TestFilters_saveWhatIsOnTopIntoAView(t *testing.T) {
 
 func TestHolds_sayWhichFilterAViewHolds(t *testing.T) {
 	h := Holds{State: "todo", Label: []string{"x"}}
-	for arg, want := range map[string]bool{"state": true, "label": true, "priority": false, "objective": false, "due-before": false} {
+	for arg, want := range map[string]bool{"state": true, "label": true, "priority": false, "objective": false, "deadline-before": false} {
 		if got := h.Narrows(arg); got != want {
 			t.Errorf("Narrows(%s) = %v", arg, got)
 		}
 	}
-	if !(Holds{Priority: "high", Objective: []int{1}, DueBefore: "+7d"}).Narrows("due-before") {
+	if !(Holds{Priority: "high", Objective: []int{1}, DueBefore: "+7d"}).Narrows("deadline-before") {
 		t.Error("a day due by is not held")
 	}
 }

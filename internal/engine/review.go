@@ -15,8 +15,8 @@ import (
 var ObjectiveReport = Operation{
 	Thing: "objective",
 	Verb:  "report",
-	Short: "Review an objective over a period",
-	Does:  "Write an objective's review over a period: how far along it is, the time spent on its tasks in the period month by month and in all, the tasks put in done in the period, and what is left.",
+	Short: "Report on an objective over a period",
+	Does:  "Write an objective's report over a period: how far along it is, the time spent on its tasks in the period month by month and in all, the tasks put in done in the period, and what is left.",
 	Example: `cairn objective report 6 --since 2026-07-01
 cairn objective report 6 --since 2026-07-01 --until 2026-09-30`,
 	Level:   Read,

@@ -1,4 +1,4 @@
-  TASKS 11   objectives 2   time 0                                                          DETAIL
+  TASKS 11   objectives 2   time 0                                                         DETAILS
 
  8   Client's answer                                                            ⊘ blocked  critical
  ↳ 4

@@ -140,7 +140,7 @@ func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
 			filters = append(filters, pill)
 		}
 	}
-	if len(filters) != 1 || !strings.HasPrefix(filters[0].Said, "priority ") {
+	if len(filters) != 1 || !strings.HasPrefix(filters[0].Said, "priority: ") {
 		t.Fatalf("the filters in force are %+v", filters)
 	}
 	cross, _ := filters[0].Cross()

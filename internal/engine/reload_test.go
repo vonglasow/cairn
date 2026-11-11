@@ -21,7 +21,7 @@ func answered(t *testing.T, h Home) Config {
 }
 
 func TestPagesOf_readsThePagesTheWeekAndTheSeriesOffAnAnswer(t *testing.T) {
-	h := homeHolding(t, "[pages]\nobjectives = false\ntime = \"hidden\"\n[time]\nweekends = \"hidden\"\n[recurrence]\non = true\n", nil)
+	h := homeHolding(t, "[pages]\nobjectives = false\ntime = \"hidden\"\n[time]\nweekends = \"hidden\"\n[series]\non = true\n", nil)
 	p := PagesOf(answered(t, h))
 	if p.Shows(PageObjectives) || p.Shows(PageTime) || !p.Shows(PageTasks) || p.WeekDays() != 5 || !p.Recurs() {
 		t.Errorf("the pages read %+v", p)

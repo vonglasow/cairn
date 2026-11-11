@@ -79,7 +79,7 @@ cairn task list --count state`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes:   append(append(slices.Clone(taskNarrowing), viewArgument, numbersArgument, fieldsArgument, countArgument, repeatsArgument, inSeriesArgument), pageArguments...),
+	Takes:   append(append(slices.Clone(taskNarrowing), viewArgument, numbersArgument, fieldsArgument, countArgument, inSeriesArgument), pageArguments...),
 	Run:     listing,
 }
 
@@ -90,7 +90,7 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	"objective": "keep only the tasks serving this objective or one of its sub-objectives",
 }),
 	Argument{
-		Name:  "due-before",
+		Name:  "deadline-before",
 		Kind:  Day,
 		Means: "keep only the tasks due on or before this day",
 	},

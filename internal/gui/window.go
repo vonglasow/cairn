@@ -286,7 +286,7 @@ func (w Window) ContextSays() []Readable {
 	if at == "" || w.contextPath().W == 0 {
 		return nil
 	}
-	return []Readable{one("name:context", ContextName(w.formPanel()), "context", small),
+	return []Readable{one("name:context", ContextName(w.formPanel()), "notes", small),
 		one("field:context", w.contextPath(), at, small)}
 }
 

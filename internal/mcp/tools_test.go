@@ -343,7 +343,7 @@ func TestOffered_takesNoRuleWhileRecurrenceIsOff(t *testing.T) {
 		return false
 	}
 	off := engine.PagesFrom(engine.Home{Dir: t.TempDir(), Lookup: func(string) (string, bool) { return "", false }})
-	if takes(off, "task_new", "every") || takes(off, "task_list", "repeats") {
+	if takes(off, "task_new", "every") || takes(off, "task_list", "series") {
 		t.Error("with recurrence off, a tool takes a rule")
 	}
 	if !takes(engine.Pages{}, "task_new", "every") || !takes(engine.Pages{}, "task_edit", "series") {

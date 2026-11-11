@@ -40,9 +40,9 @@ func HeadsOn(w Window, screen Screen) string {
 		if name := w.switcher.place.Workspace; name != "" {
 			return "Settings of " + name
 		}
-		return "Configuration"
+		return "Settings"
 	case OnHelp:
-		return "What everything does"
+		return "Help"
 	case OnSeriesFates:
 		s, _ := w.snap.SeriesOf(w.fateOf)
 		return "Delete the series " + s.Title + "?"
@@ -128,7 +128,7 @@ func Shortcut(offer string) string {
 	switch strings.ToLower(offer) {
 	case "new":
 		return "cmd+n"
-	case "keep search":
+	case "save search":
 		return "enter"
 	case "search":
 		return "/"
@@ -146,7 +146,7 @@ func Shortcut(offer string) string {
 		return "shift+b"
 	case "labels":
 		return "shift+l"
-	case "configuration…":
+	case "settings…":
 		return "cmd+,"
 	case "open a workspace…":
 		return "cmd+shift+o"
@@ -210,13 +210,13 @@ func Shortcut(offer string) string {
 		return "n"
 	case strings.ToLower(OpenOccurrence):
 		return "enter"
-	case strings.ToLower(SkipItSays):
+	case strings.ToLower(SkipThisOneSays):
 		return "r s"
 	case strings.ToLower(ItsSeriesSays):
 		return "r e"
-	case strings.ToLower(StopItSays):
+	case strings.ToLower(StopTheSeries):
 		return "r x"
-	case strings.ToLower(ResumeItSays):
+	case strings.ToLower(ResumeTheSeries):
 		return "r r"
 	case strings.ToLower(DeleteTheSeriesSays), strings.ToLower(ThisOneOnlySays):
 		return "enter"
@@ -396,7 +396,7 @@ func (w Window) Offers() []string {
 	case OnSeriesFates:
 		return []string{DeleteTheSeriesSays, "Cancel"}
 	case OnSearch:
-		return []string{"Keep search", "Close"}
+		return []string{"Save search", "Close"}
 	}
 	return w.BoardOffers()
 }
@@ -440,11 +440,11 @@ func (w Window) BoardOffers() []string {
 		offers = append(offers, "Edit", engine.AwayOp(card).Offered(), "Delete")
 	}
 	if c, ok := w.occurrenceChosen(); ok {
-		stop := StopItSays
+		stop := StopTheSeries
 		if c.Series.Stopped {
-			stop = ResumeItSays
+			stop = ResumeTheSeries
 		}
-		offers = append(offers, ItsSeriesSays, SkipItSays, stop)
+		offers = append(offers, ItsSeriesSays, SkipThisOneSays, stop)
 	}
 	return offers
 }

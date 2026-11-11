@@ -253,7 +253,7 @@ func TestTheStepsOfAnOpenTaskSayWhatIsLeft(t *testing.T) {
 	if !strings.Contains(rows[1], "[x]") || !strings.Contains(rows[1], "Draft the columns") {
 		t.Errorf("the second row is %q, want the part done, ticked", rows[1])
 	}
-	if head := b.stepsHead(f.cards[0]); !strings.Contains(head, "1 to do · 1 done") {
+	if head := b.stepsHead(f.cards[0]); !strings.Contains(head, "1 left · 1 done") {
 		t.Errorf("the heading reads %q", head)
 	}
 }

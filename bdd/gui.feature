@@ -441,8 +441,7 @@ Feature: The desktop board
       And I press "down"
       And I press "right"
       Then the board says it is filtered by ""
-      When I press "enter"
-      And I press "down"
+      When I press "down"
       Then the board says it is filtered by ""
       And the window shows the filters
 
@@ -549,7 +548,7 @@ Feature: The desktop board
       When I open the window
       And I set the filter "priority" to "high"
       And I press "esc"
-      Then the pills after the tabs read "priority high, Clear, + Filter"
+      Then the pills after the tabs read "priority: high, Clear, + Filter"
       And the tab "Tasks" counts "2/3"
       And the pills end against the menu
 
@@ -605,7 +604,7 @@ Feature: The desktop board
       When I open the window
       And I set the filter "priority" to "high"
       And I press "esc"
-      And I click the pill "priority high"
+      And I click the pill "priority: high"
       And I press "enter"
       Then the board says it is filtered by ""
 
@@ -614,7 +613,7 @@ Feature: The desktop board
       When I open the window
       And I set the filter "priority" to "high"
       And I press "esc"
-      And I click the pill "priority high"
+      And I click the pill "priority: high"
       Then the filter "priority" lists its values
       And the filter "priority" says "normal" keeps 1
       And the filter "priority" says "high" keeps 2
@@ -638,7 +637,7 @@ Feature: The desktop board
       And I press "/"
       And I type "spec"
       And I press "enter"
-      Then the pills after the tabs read "/ spec, priority high, Clear, + Filter"
+      Then the pills after the tabs read "/ spec, priority: high, Clear, + Filter"
       When I click the pill "Clear"
       Then the board says it is filtered by ""
       And no search is kept
@@ -665,8 +664,8 @@ Feature: The desktop board
       And I press "esc"
       And I click the tab "OBJECTIVES"
       Then the objectives shown read "Plan the trip"
-      And the pill "column todo" is drawn faint
-      And the pill "objective #2 Plan the trip" is not drawn faint
+      And the pill "column: todo" is drawn faint
+      And the pill "objective: #2 Plan the trip" is not drawn faint
 
     @gui-the-filters-narrow-the-time
     Scenario: the filters narrow the time page to the tasks they keep, its totals with them
@@ -1331,7 +1330,7 @@ Feature: The desktop board
       And I click the tab "OBJECTIVES"
       And I click the objective "Ship cairn"
       And I choose "Edit"
-      And I click the field "standing"
+      And I click the field "state"
       Then the window is choosing
       And the list reads "active", "on-hold", "reached", "dropped"
 
@@ -2109,7 +2108,7 @@ Feature: The desktop board
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Configuration…", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
+      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Settings…", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
 
     @gui-the-version-is-shown-from-the-menu
     Scenario: About cairn, in the menu bar, says which version this is
@@ -2184,12 +2183,12 @@ Feature: The desktop board
     Scenario: every page turned off leaves the menu bar nothing but the settings
       Given the pages turned off are "tasks, objectives, time"
       When I open the window
-      Then the menu bar offers "Configuration…"
+      Then the menu bar offers "Settings…"
       And the menu bar offers no "Help", "New", "Tasks"
       When I pick "Help" from the menu bar
       Then the window is on the board
-      When I pick "Configuration…" from the menu bar
-      Then the panel is headed "Configuration"
+      When I pick "Settings…" from the menu bar
+      Then the panel is headed "Settings"
 
     @gui-the-first-page-shown-opens
     Scenario: with the tasks turned off the window opens on the objectives
@@ -2205,10 +2204,10 @@ Feature: The desktop board
       When I press "cmd+n"
       Then the window is on the board
       When I click the offer to open the settings
-      Then the panel is headed "Configuration"
+      Then the panel is headed "Settings"
       When I press "esc"
       And I press "cmd+,"
-      Then the panel is headed "Configuration"
+      Then the panel is headed "Settings"
 
   Rule: Labels are seen and managed apart from any task
 
@@ -3496,7 +3495,7 @@ Feature: The desktop board
       When I press "down"
       Then the keyboard is on the work "Ship it"
       When I press "down"
-      Then the keyboard is on the work "+ new task serving it"
+      Then the keyboard is on the work "+ New task serving it"
       When I press "up"
       And I press "enter"
       Then the form is open on task 2
@@ -3508,7 +3507,7 @@ Feature: The desktop board
       And I click the tab "OBJECTIVES"
       And I click the objective "Ship the board"
       And I press "enter"
-      And I click the work "+ new task serving it"
+      And I click the work "+ New task serving it"
       Then the window is on the form
       And the field "objectives" names "Ship the board"
 
@@ -5017,7 +5016,7 @@ Feature: The desktop board
       And no two fields of the form overlap
       And the title runs the width of the form, above everything else
       And the description runs the width of the form, under the title
-      And the form groups its fields under "STATE", "TIME", "BLOCKED", "LINKS"
+      And the form groups its fields under "STATE", "TIME", "BLOCKERS", "LINKS"
 
     @gui-a-new-task-goes-in-with-its-steps
     Scenario: a new task is added with the steps already written down for it
@@ -5069,7 +5068,7 @@ Feature: The desktop board
     Scenario: the help says what it is before it says anything else
       When I open the window
       And I click "Help"
-      Then the help is headed "What everything does"
+      Then the help is headed "Help"
 
     @gui-a-panel-rule-can-be-seen
     Scenario: the rule over what a panel offers can be told from the panel it is drawn on
@@ -5299,7 +5298,7 @@ Feature: The desktop board
       Given a configuration file naming the store
       When I open the window
       And I press "cmd+,"
-      Then the panel is headed "Configuration"
+      Then the panel is headed "Settings"
       And the settings are written in "Global"
       And the configuration reads "store" read when cairn opens
       And the configuration reads "plugin" from its default
@@ -5323,10 +5322,10 @@ Feature: The desktop board
       Then the configuration reads "plugin" from the file
 
     @gui-the-menu-bar-opens-the-configuration
-    Scenario: Configuration… in the menu bar shows the configuration
+    Scenario: Settings… in the menu bar shows the settings
       When I open the window
-      And I pick "Configuration…" in the menu bar
-      Then the panel is headed "Configuration"
+      And I pick "Settings…" in the menu bar
+      Then the panel is headed "Settings"
       And the bar offers "Close" under "esc"
 
     @gui-settings-a-toggle-is-written-at-once
@@ -5335,10 +5334,10 @@ Feature: The desktop board
       When I open the window on the workspace "home"
       And I press "cmd+,"
       Then the settings are written in "home"
-      And the configuration reads "recurrence.on" from its default
-      When I click the switch of "recurrence.on"
+      And the configuration reads "series.on" from its default
+      When I click the switch of "series.on"
       Then the settings of the workspace "home" say `on = true`
-      And the configuration reads "recurrence.on" set here
+      And the configuration reads "series.on" set here
       And the banner says nothing of a change
       When I press "esc"
       Then the tabs read "TASKS", "OBJECTIVES", "TIME", "SERIES"
@@ -6490,7 +6489,7 @@ Feature: The desktop board
       And I added a task titled "Stand-up" coming back "every day"
       When I open the window
       And I click the card "Stand-up"
-      Then the bar offers "Skip it" under "r s"
+      Then the bar offers "Skip this one" under "r s"
       When I press "r"
       And I press "s"
       Then task 1 is archived
@@ -6577,12 +6576,12 @@ Feature: The desktop board
       And the trace says "skipped #1"
 
     @gui-series-the-board-narrows-to-what-comes-back
-    Scenario: the repeats filter keeps the tasks that come back
+    Scenario: the series filter keeps the tasks that come back
       Given recurrence is on in the window
       And I added a task titled "Stand-up" coming back "every day"
       And I added a task titled "Write the spec"
       When I open the window
-      And I set the filter "repeats" to "yes"
+      And I set the filter "series" to "all"
       Then "todo" carries "Stand-up"
       And "backlog" does not carry "Write the spec"
 
@@ -6630,7 +6629,7 @@ Feature: The desktop board
       And today is "2026-11-09"
       When I open the window
       And I press "cmd+n"
-      And I click the field "repeats"
+      And I click the field "rule"
       And I click the next of "from" in the rule's picker
       Then the field "from" reads "2026-11-10"
 
@@ -6650,8 +6649,8 @@ Feature: The desktop board
       And I added a task titled "Stand-up" coming back "every day"
       When I open the window
       And I click the card "Stand-up"
-      Then the bar offers "Open its series" under "r e"
-      And the bar offers "Stop it" under "r x"
+      Then the bar offers "Open the series" under "r e"
+      And the bar offers "Stop the series" under "r x"
 
     @gui-series-the-help-says-the-r-keys
     Scenario: the help says what the r keys do while a task may come back, and nothing of them otherwise
@@ -6801,9 +6800,9 @@ Feature: The desktop board
       When I open the window
       And I click the tab "SERIES"
       And I press "n"
-      Then the keyboard is on "repeats"
+      Then the keyboard is on "rule"
       When I set the field "title" to "Water the plants"
-      And I set the field "repeats" to "every 3 days after done"
+      And I set the field "rule" to "every 3 days after done"
       And I press "cmd+enter"
       Then series 1 is titled "Water the plants"
       And task 1 is an occurrence of series 1
@@ -6814,77 +6813,77 @@ Feature: The desktop board
       And I added a task titled "Water the plants"
       When I open the window
       And I double-click the card "Water the plants"
-      And I set the field "repeats" to "every 3 days"
+      And I set the field "rule" to "every 3 days"
       And I press "cmd+enter"
       Then task 1 is an occurrence of series 1
 
     @gui-series-the-repeats-picker-writes-the-words
-    Scenario: the picker beside the repeats field writes a rule in the words the field reads
+    Scenario: the picker beside the rule field writes a rule in the words the field reads
       Given recurrence is on in the window
       When I open the window
       And I press "cmd+n"
-      And I click the field "repeats"
+      And I click the field "rule"
       And I choose the rule "every weekday"
-      Then the field "repeats" reads "every weekday"
+      Then the field "rule" reads "every weekday"
 
     @gui-series-the-repeats-picker-builds-the-rule-by-its-parts
-    Scenario: the picker under the repeats field builds the rule from its parts, written in the words the field reads
+    Scenario: the picker under the rule field builds the rule from its parts, written in the words the field reads
       Given recurrence is on in the window
       When I open the window
       And I press "cmd+n"
-      And I click the field "repeats"
+      And I click the field "rule"
       Then the rule's picker offers "every", "on", "at", "ends" and "the next one comes"
       When I click "weeks" in the rule's picker
       And I click "Th" in the rule's picker
       And I click the next of "every" in the rule's picker
-      Then the field "repeats" reads "every 2 weeks on thu"
+      Then the field "rule" reads "every 2 weeks on thu"
       When I press "enter"
       Then the rule's picker is closed
-      And the field "repeats" reads "every 2 weeks on thu"
+      And the field "rule" reads "every 2 weeks on thu"
 
     @gui-series-the-repeats-picker-ends-and-counts-after-done
     Scenario: the picker ends a rule after so many times, and counts it from the last one done
       Given recurrence is on in the window
       When I open the window
       And I press "cmd+n"
-      And I click the field "repeats"
+      And I click the field "rule"
       And I click "after the last is done" in the rule's picker
       And I click "after" in the rule's picker
-      Then the field "repeats" reads "every day after done 10 times"
+      Then the field "rule" reads "every day after done 10 times"
 
     @gui-series-the-repeats-picker-walked-by-the-keyboard
     Scenario: the picker is walked by the keyboard, a part a line
       Given recurrence is on in the window
       When I open the window
       And I press "cmd+n"
-      And I click the field "repeats"
+      And I click the field "rule"
       And I press "right"
       And I press "down"
       And I press "right"
-      Then the field "repeats" reads "every 2 weeks"
+      Then the field "rule" reads "every 2 weeks"
 
     @gui-series-the-repeats-picker-cancelled-leaves-the-words
     Scenario: the picker cancelled leaves the field as it was before it opened
       Given recurrence is on in the window
       When I open the window
       And I press "cmd+n"
-      And I set the field "repeats" to "every monday"
-      And I click the field "repeats"
+      And I set the field "rule" to "every monday"
+      And I click the field "rule"
       And I click "months" in the rule's picker
       And I press "esc"
       Then the rule's picker is closed
-      And the field "repeats" reads "every monday"
+      And the field "rule" reads "every monday"
 
     @gui-series-the-repeats-field-reads-the-rule-back
     Scenario: a rule typed is read back under its field with the days it comes on, before anything is saved
       Given recurrence is on in the window
       When I open the window
       And I press "cmd+n"
-      And I set the field "repeats" to "every other thursday 14:00"
-      Then under the field "repeats" the window reads "every 2 weeks on Thursday at 14:00, on the calendar"
-      And under the field "repeats" the window reads the next three days
-      When I set the field "repeats" to "every blue moon"
-      Then under the field "repeats" the window reads "not a rule cairn reads"
+      And I set the field "rule" to "every other thursday 14:00"
+      Then under the field "rule" the window reads "every 2 weeks on Thursday at 14:00, on the calendar"
+      And under the field "rule" the window reads the next three days
+      When I set the field "rule" to "every blue moon"
+      Then under the field "rule" the window reads "not a rule cairn reads"
 
     @gui-series-saving-an-occurrence-asks-this-one-or-all
     Scenario: changing the title of an occurrence asks whether the series changes too
@@ -6912,14 +6911,14 @@ Feature: The desktop board
       And series 1 is titled "Stand-up"
 
     @gui-series-off-shows-nothing
-    Scenario: with recurrence off, there is no loop, no rule, no repeats field and no series tab
+    Scenario: with recurrence off, there is no loop, no rule, no rule field and no series tab
       Given recurrence is off in the window
       And I added a task titled "Stand-up" coming back "every day"
       When I open the window
       Then the tabs read "TASKS", "OBJECTIVES", "TIME"
       And the card "Stand-up" says nothing of a series
       When I double-click the card "Stand-up"
-      Then the form has no field "repeats"
+      Then the form has no field "rule"
 
     @gui-series-off-says-why-in-the-command-bar
     Scenario: with recurrence off, a series asked for in the command bar is answered by a banner saying how to turn it on
@@ -6927,4 +6926,4 @@ Feature: The desktop board
       When I open the window
       And I press "cmd+k"
       And I type "series"
-      Then the command bar says "recurrence is off"
+      Then the command bar says "series are off"

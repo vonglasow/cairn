@@ -51,8 +51,8 @@ func TestAKeyInATableNotThereJoinsATableOfItsOwnAtTheEnd(t *testing.T) {
 }
 
 func TestAKeyInAnEmptyFileIsItsTableAlone(t *testing.T) {
-	got, err := WithKey(nil, "recurrence.on", "true")
-	if err != nil || string(got) != "[recurrence]\non = true\n" {
+	got, err := WithKey(nil, "series.on", "true")
+	if err != nil || string(got) != "[series]\non = true\n" {
 		t.Errorf("an empty file became %q, %v", got, err)
 	}
 }

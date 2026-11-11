@@ -150,10 +150,10 @@ kept. Deleting the series removes its rule and its template; its trace stays.
 
 ## Turned on per store
 
-`[recurrence] on = false` is the default, and a store's `settings.toml` may say
+`[series] on = false` is the default, and a store's `settings.toml` may say
 `on = true` for its workspace alone — see
 [config.md](config.md#tasks-that-come-back-turned-on-per-store). Off, there is
-no `--every`, no `--repeats`, no `series` command and no series tool for an
+no `--every`, no `--series`, no `series` command and no series tool for an
 agent; nothing is made; the series stay as they were, dormant; an occurrence
 open is an ordinary task, with no `↻` on it (`@series-off-offers-nothing`,
 `@series-off-leaves-the-tasks-ordinary`). Turned back on, every series is as it

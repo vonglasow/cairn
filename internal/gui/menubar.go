@@ -17,9 +17,9 @@ type MenuGroup struct {
 const menuButtonWide = 40
 
 var menuBar = []MenuGroup{
-	{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Configuration…"}},
+	{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Settings…"}},
 	{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Archived", "Filter", KeepAsViewSays, ViewsSays + "…", "Reset sizes"}},
+	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Series", "Archived", "Filter", KeepAsViewSays, ViewsSays + "…", "Reset sizes"}},
 	{Name: "Help", Items: []string{"Help", "About cairn"}},
 }
 
@@ -54,7 +54,7 @@ func offered(pages engine.Pages, line string) bool {
 // MenuBar is every menu of the bar, in the order a window lays them out, with only the lines the pages shown offer: a line acting on a page turned off is gone, a menu left with no line goes too — the same rule as the command line's and the MCP server's (engine.Pages) — and with every page off there is none, the window holding nothing to act on.
 func MenuBar(pages engine.Pages) []MenuGroup {
 	if pages.None() {
-		return []MenuGroup{{Name: "File", Items: []string{"Configuration…"}}}
+		return []MenuGroup{{Name: "File", Items: []string{"Settings…"}}}
 	}
 	var bar []MenuGroup
 	for _, group := range menuBar {
@@ -88,7 +88,7 @@ var tabOfLine = map[string]Tab{"Tasks": Tasks, "Objectives": Objectives, "Time":
 // Doable says whether a line of the menu bar does something now: offered by the pages shown, on the board, and with what it acts on in sight — a card chosen to edit, a task to focus or archive, another page to go to. The native bars grey what is not, the button's menu leaves it out, and picking it does nothing.
 func (w Window) Doable(line string) bool {
 	if w.Blank() {
-		return line == "Configuration…" && w.screen == OnTheBoard
+		return line == "Settings…" && w.screen == OnTheBoard
 	}
 	if w.screen != OnTheBoard && w.screen != OnSearch || !offered(w.pages, line) {
 		return false
@@ -98,6 +98,8 @@ func (w Window) Doable(line string) bool {
 	switch line {
 	case "Tasks", "Objectives", "Time":
 		return w.tab != tabOfLine[line]
+	case "Series":
+		return w.tab != Series && slices.Contains(w.Shown(), Series)
 	case "New":
 		if w.tab == Objectives {
 			return w.pages.Offers(engine.ObjectiveNew)

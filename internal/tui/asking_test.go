@@ -151,7 +151,7 @@ func TestALookRefusedForAStoreBehindIsAskedAbout(t *testing.T) {
 	if !b.asking {
 		t.Fatalf("the board is not asking, and says %q", strip(b.Draw()))
 	}
-	if said := strip(b.foot()); !strings.Contains(said, "apply what this store is waiting for?") {
+	if said := strip(b.foot()); !strings.Contains(said, "apply what this workspace is waiting for?") {
 		t.Errorf("the foot says %q", said)
 	}
 }

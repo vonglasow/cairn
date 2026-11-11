@@ -26,7 +26,7 @@ three you can act on, before what is history.
 **A task watched is followed up with what it already carries.** Who or what
 it waits on is its `because`; the day to look again is its deadline, which
 both boards write in red once it has passed; what is due a look today is
-`task list --state watching --due-before 2026-10-24`, on that day.
+`task list --state watching --deadline-before 2026-10-24`, on that day.
 
 ```sh
 cairn task edit 7 --state watching --because "Bob, for the review" --deadline 2026-10-28

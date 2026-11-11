@@ -247,7 +247,7 @@ func TestTheProgressOfASubObjectiveSaysWhereItIsCounted(t *testing.T) {
 	want := []Fact{
 		{Name: "done", Value: "1 of 2 tasks"},
 		{Name: "time spent", Value: "—", Aside: "of 12h estimated"},
-		{Name: "left", Value: "1 task, none due"},
+		{Name: "left", Value: "1 task, no deadline"},
 		{Name: "counted in", Value: "#1 Home automation", Aside: "1 of 3 there, each task once"},
 	}
 	if !slices.Equal(got, want) {

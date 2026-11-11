@@ -35,7 +35,7 @@ func recurringRoot(t *testing.T) *cobra.Command {
 	if err := os.MkdirAll(filepath.Join(dir, ".config", "cairn"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, ".config", "cairn", "config.toml"), []byte("[recurrence]\non = true\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".config", "cairn", "config.toml"), []byte("[series]\non = true\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return newRootCmdFor(engine.Home{Dir: dir, Lookup: func(string) (string, bool) { return "", false }})

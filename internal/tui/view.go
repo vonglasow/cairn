@@ -117,7 +117,7 @@ func (b Board) modeName() string {
 		return "HELP"
 	}
 	if b.screen == OnDetail {
-		return "DETAIL"
+		return "DETAILS"
 	}
 	if b.screen == OnForm {
 		return "EDIT"
@@ -402,7 +402,7 @@ func (b Board) offers() []string {
 		return []string{
 			b.offer("jk ↓↑", "objectives"), b.offer("JK", "order"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
 			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("?", "help"),
-			b.offer("N", "under it"), b.offer("z", "fold"), b.offer("/", "search"), b.offer("⇥", "tab"), b.offer(":", "command"), b.roaming(),
+			b.offer("N", "sub-objective"), b.offer("z", "fold"), b.offer("/", "search"), b.offer("⇥", "tab"), b.offer(":", "command"), b.roaming(),
 		}
 	}
 	if b.mode == Insert {
@@ -467,7 +467,7 @@ func (b Board) question() string {
 			b.bar(b.offer("esc", "close the board, then open cairn again"))
 	}
 	if b.aboutReason(engine.ErrStoreBehind) {
-		return " " + b.skin.Title.Render("apply what this store is waiting for?") + "  " +
+		return " " + b.skin.Title.Render("apply what this workspace is waiting for?") + "  " +
 			b.bar(b.offer("⏎", "apply, a backup is set aside first"), b.offer("esc", "quit"))
 	}
 	if b.agreeing != nil {

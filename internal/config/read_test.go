@@ -856,7 +856,7 @@ func TestRead_refusesATimeThatIsNotOneOfTheThreeWords(t *testing.T) {
 }
 
 func TestRead_saysWhetherTasksComeBack(t *testing.T) {
-	read, err := config.Read(writtenConfig(t, "[recurrence]\non = true\n"), silentEnv)
+	read, err := config.Read(writtenConfig(t, "[series]\non = true\n"), silentEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -867,9 +867,9 @@ func TestRead_saysWhetherTasksComeBack(t *testing.T) {
 	if none.Recurrence() {
 		t.Error("with no file, recurrence is on")
 	}
-	_, err = config.Read(writtenConfig(t, "[recurrence]\non = 3\n"), silentEnv)
-	if !errors.Is(err, config.ErrRecurrence) || !strings.Contains(err.Error(), "recurrence.on") {
-		t.Errorf("err = %v, want ErrRecurrence naming recurrence.on", err)
+	_, err = config.Read(writtenConfig(t, "[series]\non = 3\n"), silentEnv)
+	if !errors.Is(err, config.ErrRecurrence) || !strings.Contains(err.Error(), "series.on") {
+		t.Errorf("err = %v, want ErrRecurrence naming series.on", err)
 	}
 }
 
@@ -879,7 +879,7 @@ func TestRead_aStoreTurnsRecurrenceOnForItself(t *testing.T) {
 		t.Fatal(err)
 	}
 	settings := filepath.Join(t.TempDir(), "settings.toml")
-	if err := os.WriteFile(settings, []byte("[recurrence]\non = true\n"), 0o600); err != nil {
+	if err := os.WriteFile(settings, []byte("[series]\non = true\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	here, err := read.WithSettings(settings)
@@ -904,5 +904,12 @@ func TestRead_saysHowSeeThroughWhatIsDraggedIs(t *testing.T) {
 		if _, err := config.Read(writtenConfig(t, "[window]\nghost = "+said+"\n"), silentEnv); !errors.Is(err, config.ErrGhost) || !strings.Contains(err.Error(), "window.ghost") {
 			t.Errorf("ghost = %s: err = %v, want ErrGhost naming window.ghost", said, err)
 		}
+	}
+}
+
+func TestRead_stillReadsTheOldNameOfTheSeriesKey(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[recurrence]\non = true\n"), silentEnv)
+	if err != nil || !read.Recurrence() || !slices.Contains(read.Written(), "series.on") {
+		t.Errorf("[recurrence] on = true reads %v (%v), written %v", read.Recurrence(), err, read.Written())
 	}
 }

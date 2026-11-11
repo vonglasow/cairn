@@ -488,7 +488,7 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 	if got := Heads(on.Choose("Delete")); got != "Delete task 7?" {
 		t.Errorf("the question is headed %q", got)
 	}
-	if got := Heads(w.Key("?")); got != "What everything does" {
+	if got := Heads(w.Key("?")); got != "Help" {
 		t.Errorf("the help is headed %q", got)
 	}
 	for screen, want := range map[Screen]string{OnFiltering: "Filters", OnLabels: "Labels"} {

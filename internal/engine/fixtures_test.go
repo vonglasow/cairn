@@ -28,7 +28,7 @@ func TestMakeFixtures_fillsAFolderItMakesAndKeepsItAfter(t *testing.T) {
 	if made.Store != filepath.Join(folder, "cairn.db") || made.Notes != filepath.Join(folder, "notes") || !made.Made {
 		t.Errorf("made %+v", made)
 	}
-	if settings, err := os.ReadFile(filepath.Join(folder, "settings.toml")); err != nil || !strings.Contains(string(settings), "[recurrence]\non = true") {
+	if settings, err := os.ReadFile(filepath.Join(folder, "settings.toml")); err != nil || !strings.Contains(string(settings), "[series]\non = true") {
 		t.Errorf("the settings of the fixtures read %q (%v), want recurrence on", settings, err)
 	}
 	if colour, err := config.ColourIn(filepath.Join(folder, "settings.toml")); err != nil || colour == "" {

@@ -67,7 +67,7 @@ func TestAValueIsWrittenAsTheKeyTakesIt(t *testing.T) {
 	for _, c := range []struct{ key, value, literal string }{
 		{"pages.time", "hidden", `"hidden"`},
 		{"pages.tasks", "false", "false"},
-		{"recurrence.on", "true", "true"},
+		{"series.on", "true", "true"},
 		{"focus.session", "45m", `"45m"`},
 		{"archive.start", "2026-10-21", "2026-10-21"},
 		{"archive.days", "14", "14"},
@@ -88,7 +88,7 @@ func TestAValueIsWrittenAsTheKeyTakesIt(t *testing.T) {
 func TestAValueTheKeyDoesNotTakeIsRefusedNamingIt(t *testing.T) {
 	for _, c := range []struct{ key, value, said string }{
 		{"pages.time", "hiden", `"hiden" is not a word pages.time takes (on, hidden, off)`},
-		{"recurrence.on", "yes", `recurrence.on: "yes" is true or false`},
+		{"series.on", "yes", `series.on: "yes" is true or false`},
 		{"archive.days", "0", `archive.days: "0" is not a number of days`},
 		{"archive.days", "x", `archive.days: "x" is not a number of days`},
 		{"archive.start", "monday", `archive.start: "monday" is not a day`},
@@ -115,5 +115,12 @@ func TestTheSettingsOfAStoreSayTheApproachLabelEmptyForNoLabelHere(t *testing.T)
 	}
 	if got, err := label.LiteralHere("discuss"); err != nil || got != `"discuss"` {
 		t.Errorf("a label here is written %q, %v", got, err)
+	}
+}
+
+func TestTheSettingsSayTabsAndSeries(t *testing.T) {
+	series, _ := KeyNamed("series.on")
+	if series.Says != "Series" || series.Section != "Tabs" {
+		t.Errorf("series.on says %q under %q, want Series under Tabs", series.Says, series.Section)
 	}
 }

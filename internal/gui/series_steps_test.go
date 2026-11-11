@@ -17,7 +17,7 @@ import (
 func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Given(`^recurrence is (on|off) in the window$`, func(said string) error {
 		w.recurs = said == "on"
-		return os.WriteFile(config.SettingsBeside(w.path), []byte("[recurrence]\non = "+fmt.Sprint(w.recurs)+"\n"), 0o600)
+		return os.WriteFile(config.SettingsBeside(w.path), []byte("[series]\non = "+fmt.Sprint(w.recurs)+"\n"), 0o600)
 	})
 	sc.Then(`^the card "([^"]*)" says its rule "([^"]*)"$`, func(title, rule string) error {
 		slot, err := w.cardSlotOf(title)

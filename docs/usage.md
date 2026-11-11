@@ -200,7 +200,7 @@ detach|delete`. See [docs/objectives.md](objectives.md#two-levels).
 ## Tasks that come back
 
 Off until a store's `settings.toml`, or the configuration, says
-`[recurrence] on = true`. Then a task made with a rule is the first occurrence
+`[series] on = true`. Then a task made with a rule is the first occurrence
 of a series, and the next is made when it is done or skipped:
 
 ```sh
@@ -210,7 +210,7 @@ cairn task new "Water the plants" --every "every 3 days" --after-done
 cairn task edit 12 --every "every monday"    # an ordinary task becomes the first
 cairn task skip 14                           # archived, written skipped, the next made
 cairn task edit 14 --title Stand-up --series # this one, and the ones to come
-cairn task list --repeats                    # only the occurrences; --series 3 for one series
+cairn task list --series                    # only the occurrences; --series 3 for one series
 cairn series list --state stopped --search expense
 cairn series show 3                          # rule, next days, template, occurrences, trace
 cairn series edit 3 --every "every tuesday 10:00"
@@ -487,7 +487,7 @@ replaces the answer rather than queueing behind it, and writes nothing down.
 ```sh
 cairn config show                # which places cairn will use, and what named each
 cairn config set pages.time off  # one key, in the settings of the store in use
-cairn config set recurrence.on true --global   # one key, in the global file
+cairn config set series.on true --global   # one key, in the global file
 cairn config unset pages.time    # its line taken out; the value under it answers
 ```
 
@@ -500,7 +500,7 @@ A workspace keeps a store and its notes together in one folder, under a name:
 ```sh
 cairn workspace add work ~/cairn/work   # names it in the file, makes the folder
 cairn workspace use work                # the one used when nothing else says
-cairn workspace remove play             # forgets it; its folder is left alone
+cairn workspace forget play             # forgets it; its folder is left alone
 cairn workspace list                    # each one, the default marked
 cairn workspace show                    # which one answers, and why
 cairn task list --workspace home        # another, for this command alone

@@ -39,7 +39,7 @@ func keeping(in Input, taken []Argument, e *Engine) (*domain.Narrowing, error) {
 	if priority, named := in.Given["priority"]; named {
 		kept.Carrying(priority)
 	}
-	if due, named := in.Given["due-before"]; named {
+	if due, named := in.Given["deadline-before"]; named {
 		kept.DueBefore(due)
 	}
 	if serving := in.Changed("objective"); serving != nil {

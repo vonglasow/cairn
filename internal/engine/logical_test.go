@@ -47,7 +47,7 @@ func TestStoreProblem_passesOnAStoreOfTheWrongAgeAsItIs(t *testing.T) {
 }
 
 func TestCheck_readsPastAnArgumentLeftOut(t *testing.T) {
-	if err := TaskArchive.Check(given("due-before", "soon")); !errors.Is(err, domain.ErrNotADay) {
+	if err := TaskArchive.Check(given("deadline-before", "soon")); !errors.Is(err, domain.ErrNotADay) {
 		t.Errorf("Check = %v, want the day refused", err)
 	}
 }

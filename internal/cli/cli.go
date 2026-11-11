@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	rdebug "runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -150,7 +151,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 	root.SetIn(stdin)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
-	root.SetArgs(args)
+	root.SetArgs(bareJoined(args))
 
 	asMachine := askedFor(jsonFlag, args)
 	sayIgnored(h, stderr)
@@ -229,4 +230,30 @@ func debugging(root *cobra.Command, h engine.Home, args []string, stderr io.Writ
 		written.Fact(fact[0], fact[1])
 	}
 	return written
+}
+
+func bareJoined(args []string) []string {
+	var bare []string
+	for _, op := range engine.All() {
+		for _, arg := range op.Takes {
+			if arg.Bare != "" {
+				bare = append(bare, "--"+arg.Name)
+			}
+		}
+	}
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		if spelled, ok := strings.CutPrefix(args[i], "--description"); ok && (spelled == "" || strings.HasPrefix(spelled, "=")) {
+			args[i] = "--desc" + spelled
+		}
+		if slices.Contains(bare, args[i]) && i+1 < len(args) {
+			if _, err := strconv.Atoi(args[i+1]); err == nil {
+				out = append(out, args[i]+"="+args[i+1])
+				i++
+				continue
+			}
+		}
+		out = append(out, args[i])
+	}
+	return out
 }

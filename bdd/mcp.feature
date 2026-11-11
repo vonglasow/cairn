@@ -101,10 +101,10 @@ Feature: Answering a machine over MCP
       And it does not offer `workspace_use`
 
     @workspace-an-agent-cannot-remove-one
-    Scenario: an agent cannot remove a workspace
+    Scenario: an agent cannot forget a workspace
       Given a cairn server started with `--access full`
       When I ask it what it can do
-      Then it does not offer `workspace_remove`
+      Then it does not offer `workspace_forget`
 
     @config-an-agent-cannot-set-a-key
     Scenario: an agent can read the configuration, and neither set a key nor take one out
@@ -807,7 +807,7 @@ Feature: Answering a machine over MCP
       When I call `task_new` with {"title": "Team stand-up", "every": "every weekday 10:30"}
       Then it answers without an error
       And its answer holds to the shape the tool described
-      When I call `task_list` with {"repeats": true}
+      When I call `task_list` with {"series": 0}
       Then it answers with the task 1
       And its answer holds to the shape the tool described
       When I call `series_show` with {"number": 1}

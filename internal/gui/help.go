@@ -41,7 +41,7 @@ func (w Window) helpGroups() []helpGroup {
 			{Key: "⇧L", Means: "labels"},
 			{Key: "⇧B", Means: "backups"},
 			{Key: "⌘B", Means: "new backup"},
-			{Key: "⌘,", Means: "configuration"},
+			{Key: "⌘,", Means: "settings"},
 			{Key: "⌘E ⌘O", Means: "export, import"},
 			{Key: "?", Means: "this help"},
 		}},

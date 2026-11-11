@@ -216,6 +216,11 @@ Feature: Tasks
 
   Rule: Tasks can be listed
 
+    @task-new-description-spelled-whole
+    Scenario: --description is --desc spelled whole
+      When I run `cairn task new "Write the spec" --description "the one with the diagrams"`
+      Then `cairn task show 1` says "the one with the diagrams"
+
     @task-list-empty
     Scenario: listing when there is nothing says so
       When I run `cairn task list`
@@ -344,20 +349,20 @@ Feature: Tasks
       Given I added a task titled "Write the spec" with the deadline "2026-09-10"
       And I added a task titled "Ship it" with the deadline "2026-12-01"
       And I added a task titled "Someday"
-      When I run `cairn task list --due-before 2026-10-01`
+      When I run `cairn task list --deadline-before 2026-10-01`
       Then it lists 1 task
       And it lists task 1 titled "Write the spec"
 
     @task-list-narrowed-by-a-deadline-takes-the-day-itself
     Scenario: the day named is inside the range, not beside it
       Given I added a task titled "Write the spec" with the deadline "2026-10-01"
-      When I run `cairn task list --due-before 2026-10-01`
+      When I run `cairn task list --deadline-before 2026-10-01`
       Then it lists 1 task
 
     @task-list-narrowed-by-a-deadline-refuses-what-is-not-a-day
     Scenario: a day that is not one is refused rather than read as none
       Given I added a task titled "Write the spec" with the deadline "2026-10-01"
-      When I run `cairn task list --due-before soon`
+      When I run `cairn task list --deadline-before soon`
       Then it fails
 
     @task-list-narrowed-by-priority

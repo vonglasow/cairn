@@ -11,7 +11,7 @@
  │                                                  waits on                                      │
  │                                                  >                                             │
  │                                                                                                │
- │   standing                                       deadline                                      │
+ │   state                                          deadline                                      │
  │   active                                         > 2026-10-16                                  │
  │                                                                                                │
  │   priority                                       estimate                                      │

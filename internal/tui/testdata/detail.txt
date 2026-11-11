@@ -1,14 +1,14 @@
-  TASKS 11   objectives 2   time 0                                                          DETAIL
+  TASKS 11   objectives 2   time 0                                                         DETAILS
 
  4   Write the spec                                                                      todo  high
- ⚑ spec   due 2026-09-03 · 2d
+ ⚑ spec   deadline 2026-09-03 · 2d
 
  ╭───────────────────────────────────────────────────────╮ ╭──────────────────────────────────────╮
  │ DESCRIPTION                                           │ │ TRACE                                │
  │ The client wants two columns, not three.            ┃ │ │ 2026-09-02 03:30  changed  priority… │
  ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 04:30  changed  priority… │
  ╭───────────────────────────────────────────────────────╮ │ 2026-09-02 05:30  changed  priority… │
- │ STEPS   1 to do · 1 done                              │ │ 2026-09-02 06:30  changed  priority… │
+ │ STEPS   1 left · 1 done                               │ │ 2026-09-02 06:30  changed  priority… │
  │   [ ] 2  Get the client's nod                         │ │ 2026-09-02 07:30  changed  priority… │
  │   [x] 1  Draft the columns                            │ │ 2026-09-02 08:30  changed  priority… │
  ╰───────────────────────────────────────────────────────╯ │ 2026-09-02 09:30  changed  priority… │

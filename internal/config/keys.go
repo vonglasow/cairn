@@ -43,7 +43,7 @@ type Key struct {
 // The sections the keys are shown under, in the order they are shown.
 const (
 	SectionAppearance = "Appearance"
-	SectionPages      = "Pages"
+	SectionPages      = "Tabs"
 	SectionTime       = "Time"
 	SectionArchive    = "Archive"
 	SectionAgents     = "Agents"
@@ -65,7 +65,7 @@ var keys = []Key{
 	{Name: "pages.tasks", Kind: KindBool, Section: SectionPages, Says: "Tasks"},
 	{Name: "pages.objectives", Kind: KindBool, Section: SectionPages, Says: "Objectives"},
 	{Name: "pages.time", Kind: KindWords, Words: []string{TimeOn, TimeHidden, TimeOff}, Section: SectionPages, Says: "Time"},
-	{Name: "recurrence.on", Kind: KindBool, Section: SectionPages, Says: "Tasks that come back"},
+	{Name: "series.on", Kind: KindBool, Section: SectionPages, Says: "Series"},
 	{Name: "time.weekends", Kind: KindWords, Words: []string{WeekendsShown, WeekendsHidden}, Section: SectionTime, Says: "Weekends"},
 	{Name: "time.deleted", Kind: KindWords, Words: []string{TimeKept, TimeTaken}, Section: SectionTime, Says: "A deleted task's time"},
 	{Name: "focus.session", Kind: KindDuration, Section: SectionTime, Says: "Focus session asks after"},

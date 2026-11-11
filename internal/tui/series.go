@@ -307,7 +307,7 @@ func numbersSaid(all []int) string {
 
 func (b Board) seriesTabOffers() []string {
 	if b.inOccurrences {
-		return []string{b.offer("jk ↓↑", "occurrences"), b.offer("⏎", "open the task"), b.offer("esc", "the series"), b.offer("?", "help")}
+		return []string{b.offer("jk ↓↑", "occurrences"), b.offer("⏎", "open the occurrence"), b.offer("esc", "the series"), b.offer("?", "help")}
 	}
 	offers := []string{b.offer("jk ↓↑", "series"), b.offer("⏎", "occurrences")}
 	if s, found := b.chosenSeries(); found {

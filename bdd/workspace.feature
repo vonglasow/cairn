@@ -564,10 +564,10 @@ Feature: Workspaces, each a folder holding a store and its notes
   Rule: A workspace removed leaves the configuration, and nothing else
 
     @workspace-remove-drops-only-the-entry
-    Scenario: workspace remove drops the workspace from the configuration and touches no file
+    Scenario: workspace forget drops the workspace from the configuration and touches no file
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
       And I run `cairn task new "Buy bread" --workspace home`
-      When I run `cairn workspace remove home`
+      When I run `cairn workspace forget home`
       Then it succeeds
       And the task was written to "~/cairn/home/cairn.db"
       When I run `cairn workspace list`
@@ -575,16 +575,16 @@ Feature: Workspaces, each a folder holding a store and its notes
       And it lists "work" at "~/cairn/work" as the default
 
     @workspace-remove-refuses-an-unknown-name
-    Scenario: workspace remove refuses a workspace nobody named
+    Scenario: workspace forget refuses a workspace nobody named
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
-      When I run `cairn workspace remove play`
+      When I run `cairn workspace forget play`
       Then it refuses, and names "play"
       And the configuration still holds, unchanged, everything it held
 
     @workspace-remove-refuses-the-default
-    Scenario: workspace remove refuses the default, and says how to choose another
+    Scenario: workspace forget refuses the default, and says how to choose another
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
-      When I run `cairn workspace remove work`
+      When I run `cairn workspace forget work`
       Then it refuses, and names "work"
       And it names "cairn workspace use"
       And the configuration still holds, unchanged, everything it held

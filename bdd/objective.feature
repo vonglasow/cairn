@@ -572,7 +572,7 @@ Feature: Objectives
       And I edited task 2 with the deadline "2026-11-20"
       And I edited task 3 with the deadline "2026-11-05"
       When I run `cairn objective show 1`
-      Then the objective carries the left "2 tasks, the next due 2026-11-05 (#3)"
+      Then the objective carries the left "2 tasks, the next deadline 2026-11-05 (#3)"
 
     @objective-with-nothing-left-says-so
     Scenario: an objective whose every task is done has nothing left
@@ -632,7 +632,7 @@ Feature: Objectives
       And I edited task 1 with the state "done"
       When I run `cairn objective report 1 --since 2026-10-01`
       Then the report names task 1 as done in the period
-      And the objective carries the left "1 task, none due"
+      And the objective carries the left "1 task, no deadline"
 
     @objective-report-before-the-work-names-nothing-done
     Scenario: a period that ends before anything was done names nothing done in it
@@ -835,7 +835,7 @@ Feature: Objectives
       When I run `cairn objective show 1`
       Then the answer says "1 of 3 tasks are done"
       And the objective carries the time spent "1h45m"
-      And the objective carries the left "2 tasks, none due"
+      And the objective carries the left "2 tasks, no deadline"
 
     @objective-sub-show-splits-its-tasks
     Scenario: a parent names its sub-objectives, the tasks on itself and those in its sub-objectives

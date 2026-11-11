@@ -17,7 +17,7 @@ func TestNewForms_startWhereEveryBoardStartsThem(t *testing.T) {
 		t.Errorf("a new task starts at %q, want normal", priority)
 	}
 	goal := NewGoalFields()
-	if state, _ := valueOf(goal, "standing"); state != "active" {
+	if state, _ := valueOf(goal, "state"); state != "active" {
 		t.Errorf("a new objective starts %q, want active", state)
 	}
 	if priority, _ := valueOf(goal, "priority"); priority != "normal" {

@@ -708,7 +708,7 @@ func (w Window) Choose(name string) Window {
 	case "about cairn":
 		w.screen, w.question = OnAsking, aboutCairn
 		return w
-	case "keep search":
+	case "save search":
 		w.screen = OnTheBoard
 		return w
 	case "clear":
@@ -727,6 +727,8 @@ func (w Window) Choose(name string) Window {
 		return w.onPage(Objectives)
 	case "time":
 		return w.onPage(Time)
+	case "series":
+		return w.onPage(Series)
 	case "export":
 		return w.exportingTasks()
 	case "import":
@@ -737,7 +739,7 @@ func (w Window) Choose(name string) Window {
 		return w.listingBackups()
 	case "labels":
 		return w.listingLabels()
-	case "configuration…":
+	case "settings…":
 		return w.openingConfiguration()
 	case "open a workspace…":
 		return w.openingSwitcher()

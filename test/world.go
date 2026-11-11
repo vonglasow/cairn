@@ -263,7 +263,7 @@ func (w *World) Recurrence(said string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	return os.WriteFile(path, fmt.Appendf(nil, "[recurrence]\non = %t\n", said == "on"), 0o600)
+	return os.WriteFile(path, fmt.Appendf(nil, "[series]\non = %t\n", said == "on"), 0o600)
 }
 
 // ItIsLater moves the moment cairn takes for now that far ahead of the clock.

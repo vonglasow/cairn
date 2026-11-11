@@ -63,6 +63,7 @@ func columnsNamed(said string) []string {
 }
 
 func (w *world) registerOrdering(sc *godog.ScenarioContext) {
+	sc.Step(`^it says on standard error "([^"]*)"$`, w.itSaysOnStandardError)
 	sc.Step(`^it lists the tasks in the order (.+)$`, func(list string) error {
 		w.Run("cairn task list")
 		return listedInOrder(rowsOf(w.Out.Stdout, false), list)

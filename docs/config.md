@@ -156,7 +156,7 @@ otherwise start a new, empty board somewhere nobody looks.
   A workspace whose folder is gone is refused, naming the folder, and the file
   is left as it was (`@workspace-use-refuses-a-folder-gone`): made the
   default, it would have every later command refused in its turn.
-- `cairn workspace remove <name>` takes the workspace out of the file — its
+- `cairn workspace forget <name>` takes the workspace out of the file — its
   line, and nothing else of the file — and touches no other file: its
   folder, its store and its notes stay where they are
   (`@workspace-remove-drops-only-the-entry`). A name the file does not give
@@ -195,7 +195,7 @@ otherwise start a new, empty board somewhere nobody looks.
 `workspace list` and `workspace show` are tools of the MCP server too:
 `workspace_show` says which workspace a server answers from — the one it
 started on, which it keeps whatever the default becomes ([mcp.md](mcp.md)). `workspace add`,
-`workspace use` and `workspace remove` are not (`@workspace-an-agent-cannot-add-or-switch`,
+`workspace use` and `workspace forget` are not (`@workspace-an-agent-cannot-add-or-switch`,
 `@workspace-an-agent-cannot-remove-one`):
 they change where every later command reads and writes, which is the
 person's to decide, like `cairn upgrade` ([mcp.md](mcp.md)). They are
@@ -313,7 +313,7 @@ switching workspace switches them with the store (`bdd/settings.feature`,
   reads the settings beside it as well (`@settings-beside-a-store-named`), so
   a store moved by hand takes its settings with it.
 - **What it may say**: every table but the machine's — `[pages]`, `[archive]`,
-  `[focus]`, `[approach]`, `[time]`, `[window]`, `[recurrence]` — and one table of its own,
+  `[focus]`, `[approach]`, `[time]`, `[window]`, `[series]` — and one table of its own,
   `[workspace]`, the colour it wears (above). A key it says wins
   (`@settings-the-store-wins`); a key it leaves out is the global file's, or
   the default (`@settings-a-key-not-said-comes-from-the-global-file`); each
@@ -566,20 +566,20 @@ forward instead. A day it cannot read is taken as no day named.
 ## Tasks that come back, turned on per store
 
 ```toml
-[recurrence]
+[series]
 on = false   # true lets a task come back as a series
 ```
 
 Off unless it says `true`, in the file or in a store's `settings.toml`, so one
 workspace has series and another none. Off, every surface offers none of it:
-`--every`, `--repeats` and `task edit --series` are no flags, `series` and
+`--every`, `--series` and `task edit --series` are no flags, `series` and
 `task skip` no commands, and their tools are not offered to an agent — the
 engine refuses them anyway, `recurrence-off`, to whatever reaches it another
 way. Nothing is made, the series stay dormant as they were, and an occurrence
 open is an ordinary task (`bdd/series.feature`, `@series-off-offers-nothing`).
 Turned back on, every series is there again and makes nothing it missed; an MCP
 server running sees it at its next call, its tools' shapes included. Anything
-but `true` or `false` is refused naming `recurrence.on`
+but `true` or `false` is refused naming `series.on`
 (`@series-config-recurrence-is-on-or-off`), and `config show` says it
 (`@series-config-recurrence-is-said`). What a series is: [series.md](series.md).
 

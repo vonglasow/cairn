@@ -69,7 +69,7 @@ ghost = 65
 # Whether a task may come back as a series: made with a rule, every weekday
 # 10:30, and made again when it is done or skipped. Off unless it says true;
 # turned off, no series makes anything and every task one made stays.
-[recurrence]
+[series]
 on = false
 
 # Workspaces: each a name, and the folder holding its own store and notes

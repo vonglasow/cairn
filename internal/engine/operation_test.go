@@ -340,15 +340,15 @@ func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
 func TestCheck_refusesADayThatIsNotOne(t *testing.T) {
 	op := Operation{
 		Thing: "task", Verb: "list",
-		Takes: []Argument{{Name: "due-before", Kind: Day, Means: "due on or before this day"}},
+		Takes: []Argument{{Name: "deadline-before", Kind: Day, Means: "due on or before this day"}},
 	}
-	if err := op.Check(Input{Given: map[string]string{"due-before": "soon"}}); err == nil {
+	if err := op.Check(Input{Given: map[string]string{"deadline-before": "soon"}}); err == nil {
 		t.Error("a day that is not one was allowed through")
 	}
-	if err := op.Check(Input{Given: map[string]string{"due-before": "2026-10-01"}}); err != nil {
+	if err := op.Check(Input{Given: map[string]string{"deadline-before": "2026-10-01"}}); err != nil {
 		t.Errorf("a day that is one was refused: %v", err)
 	}
-	if err := op.Check(Input{Given: map[string]string{"due-before": ""}}); err != nil {
+	if err := op.Check(Input{Given: map[string]string{"deadline-before": ""}}); err != nil {
 		t.Errorf("an empty day was refused: %v", err)
 	}
 }

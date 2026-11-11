@@ -83,7 +83,7 @@ type Workspaces struct {
 	Recent     []RecentFolder `json:"recent,omitempty"`
 }
 
-// WorkspaceRemoved is how workspace remove answers: the workspace the configuration no longer names, its folder, left as it was, and the file it was taken out of.
+// WorkspaceRemoved is how workspace forget answers: the workspace the configuration no longer names, its folder, left as it was, and the file it was taken out of.
 type WorkspaceRemoved struct {
 	Name    string `json:"name"`
 	Folder  string `json:"folder"`
@@ -533,10 +533,10 @@ var WorkspaceUse = Operation{
 // WorkspaceRemove takes a workspace out of the configuration, and leaves its folder as it is.
 var WorkspaceRemove = Operation{
 	Thing:   "workspace",
-	Verb:    "remove",
+	Verb:    "forget",
 	Short:   "Forget a workspace, leaving its folder as it is",
 	Does:    "Take a workspace out of the configuration file, leaving the rest of the file as it was and its folder, its store and its notes untouched; the default is refused until another is made the default. A folder moved is named again with cairn workspace add.",
-	Example: "cairn workspace remove play",
+	Example: "cairn workspace forget play",
 	Level:   Write,
 	Needs:   AConfiguration,
 	Answers: WorkspaceRemoved{},

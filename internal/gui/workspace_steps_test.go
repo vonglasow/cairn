@@ -199,16 +199,13 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the window is titled after the folder "([^"]*)"$`, func(folder string) error {
-		if got, want := w.w.Title(), "cairn — "+filepath.Join(w.spaces.Dir, folder); got != want {
+		if got, want := w.w.Title(), "cairn — "+folder; got != want {
 			return fmt.Errorf("the window is titled %q, not %q", got, want)
 		}
 		return nil
 	})
 	sc.Then(`^the top bar opens with the (workspace|folder) "([^"]*)", before the tabs$`, func(kind, name string) error {
 		l := w.w.Layout()
-		if kind == "folder" {
-			name = filepath.Join(w.spaces.Dir, name)
-		}
 		if w.w.PlaceSays() != name || w.w.Loose() != (kind == "folder") {
 			return fmt.Errorf("the top bar opens with %q, loose %v", w.w.PlaceSays(), w.w.Loose())
 		}

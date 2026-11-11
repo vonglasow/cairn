@@ -318,7 +318,7 @@ func (w Window) actsSaid() []SwitcherAct {
 	if w.switcher.place.Workspace != "" {
 		acts = append(acts, SwitcherAct{Said: "Settings of " + w.switcher.place.Workspace + "…", Key: Pretty("cmd+,")})
 	} else {
-		acts = append(acts, SwitcherAct{Said: "Configuration…", Key: Pretty("cmd+,")})
+		acts = append(acts, SwitcherAct{Said: "Settings…", Key: Pretty("cmd+,")})
 	}
 	return acts
 }

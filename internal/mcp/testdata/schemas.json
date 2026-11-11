@@ -555,7 +555,7 @@
           ],
           "additionalProperties": false
         },
-        "recurrence": {
+        "series": {
           "type": [
             "null",
             "object"
@@ -578,6 +578,10 @@
           "properties": {
             "colour": {
               "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "description": "the name the store's settings give it, shown where no workspace names it"
             }
           },
           "description": "what the store's settings say of its workspace; nothing for a store no workspace names and whose settings say no colour",
@@ -662,7 +666,7 @@
             ],
             "additionalProperties": false
           },
-          "description": "every colour scheme cairn sees, the ones it carries and one's own, sorted by name"
+          "description": "every theme cairn sees, the ones it carries and one's own, sorted by name"
         },
         "problem": {
           "type": "string"
@@ -3005,7 +3009,7 @@
       "idempotentHint": true,
       "openWorldHint": false,
       "readOnlyHint": true,
-      "title": "Review an objective over a period"
+      "title": "Report on an objective over a period"
     },
     "input": {
       "additionalProperties": false,
@@ -5763,9 +5767,13 @@
           "description": "keep only the archived tasks, instead of the ones still on the board",
           "type": "boolean"
         },
-        "due-before": {
+        "deadline-before": {
           "description": "keep only the tasks due on or before this day",
           "type": "string"
+        },
+        "focus": {
+          "description": "keep only the tasks in focus",
+          "type": "boolean"
         },
         "itself": {
           "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
@@ -5777,6 +5785,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "no-focus": {
+          "description": "keep only the tasks not in focus",
+          "type": "boolean"
         },
         "number": {
           "description": "the number of the task",
@@ -7465,9 +7477,13 @@
           "description": "keep only the archived tasks, instead of the ones still on the board",
           "type": "boolean"
         },
-        "due-before": {
+        "deadline-before": {
           "description": "keep only the tasks due on or before this day",
           "type": "string"
+        },
+        "focus": {
+          "description": "keep only the tasks in focus",
+          "type": "boolean"
         },
         "itself": {
           "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
@@ -7479,6 +7495,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "no-focus": {
+          "description": "keep only the tasks not in focus",
+          "type": "boolean"
         },
         "objective": {
           "description": "keep only the tasks serving this objective or one of its sub-objectives",
@@ -7564,7 +7584,7 @@
           ],
           "type": "string"
         },
-        "due-before": {
+        "deadline-before": {
           "description": "keep only the tasks due on or before this day",
           "type": "string"
         },
@@ -7592,6 +7612,10 @@
           },
           "type": "array"
         },
+        "focus": {
+          "description": "keep only the tasks in focus",
+          "type": "boolean"
+        },
         "itself": {
           "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
           "type": "boolean"
@@ -7606,6 +7630,10 @@
         "limit": {
           "description": "answer at most this many tasks, in the board's order, the answer then saying under total how many there are in all",
           "type": "integer"
+        },
+        "no-focus": {
+          "description": "keep only the tasks not in focus",
+          "type": "boolean"
         },
         "number": {
           "description": "the number of a task to answer, and no other; named twice, both — archived or not, and a number no task carries said under unknown",
@@ -7641,12 +7669,8 @@
           ],
           "type": "string"
         },
-        "repeats": {
-          "description": "keep only the occurrences of a series",
-          "type": "boolean"
-        },
         "series": {
-          "description": "keep only the occurrences of this series, by its number",
+          "description": "keep only the occurrences of this series, by its number; named alone, or 0, the occurrences of every series",
           "type": "integer"
         },
         "state": {
@@ -8850,7 +8874,7 @@
           "description": "keep only the archived tasks, instead of the ones still on the board",
           "type": "boolean"
         },
-        "due-before": {
+        "deadline-before": {
           "description": "keep only the tasks due on or before this day",
           "type": "string"
         },
@@ -8878,6 +8902,10 @@
           },
           "type": "array"
         },
+        "focus": {
+          "description": "keep only the tasks in focus",
+          "type": "boolean"
+        },
         "itself": {
           "description": "keep to the tasks serving the objective named itself, leaving out those serving only its sub-objectives",
           "type": "boolean"
@@ -8899,6 +8927,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "no-focus": {
+          "description": "keep only the tasks not in focus",
+          "type": "boolean"
         },
         "objective": {
           "description": "keep only the tasks serving this objective or one of its sub-objectives",
@@ -11372,6 +11404,10 @@
                   "due_before": {
                     "type": "string"
                   },
+                  "focus": {
+                    "type": "string",
+                    "description": "in: only the tasks in focus; out: only the ones that are not"
+                  },
                   "archived": {
                     "type": "boolean"
                   },
@@ -11735,6 +11771,10 @@
         },
         "notes": {
           "type": "string"
+        },
+        "own": {
+          "type": "string",
+          "description": "the name the store's settings give it, shown where no workspace names it"
         },
         "colour": {
           "type": "string",

@@ -130,7 +130,7 @@ prints the configuration in use and where each value came from.
 
 A workspace is a named folder holding a store and its notes. `cairn workspace
 add work ~/cairn/work` names one, `cairn workspace use work` makes it the
-default, `cairn workspace remove work` forgets it and leaves its folder alone,
+default, `cairn workspace forget work` forgets it and leaves its folder alone,
 `cairn workspace list` and `cairn workspace show` say which there are and which
 one answers, and why — the rung that named it and those it passed over — each
 in its colour, with its time when it is not on. `--workspace <name>` or `--store <path>` on any
@@ -220,7 +220,7 @@ ghost = 65
 # Whether a task may come back as a series: made with a rule, every weekday
 # 10:30, and made again when it is done or skipped. Off unless it says true;
 # turned off, no series makes anything and every task one made stays.
-[recurrence]
+[series]
 on = false
 
 # Workspaces: each a name, and the folder holding its own store and notes

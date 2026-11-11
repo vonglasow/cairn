@@ -290,7 +290,7 @@ func (e *Engine) holding(v store.View, in Input) (store.View, error) {
 			return v, err
 		}
 	}
-	for name, into := range map[string]*string{"state": &v.State, "priority": &v.Priority, "due-before": &v.DueBefore} {
+	for name, into := range map[string]*string{"state": &v.State, "priority": &v.Priority, "deadline-before": &v.DueBefore} {
 		if said, named := in.Given[name]; named {
 			*into = said
 		}
@@ -675,7 +675,7 @@ func HoldsSays(v View) string {
 	}{
 		{v.Holds.State != "", "state " + v.Holds.State},
 		{v.Holds.Priority != "", "priority " + v.Holds.Priority},
-		{v.Holds.DueBefore != "", "due before " + v.Holds.DueBefore},
+		{v.Holds.DueBefore != "", "deadline before " + v.Holds.DueBefore},
 		{v.Holds.Focus == "in", "in focus"},
 		{v.Holds.Focus == "out", "not in focus"},
 		{v.Holds.Archived, "archived"},

@@ -27,7 +27,7 @@ func (w Window) Naming() Written { return w.keepName }
 const (
 	ViewsSays        = "Views"
 	EditViewsSays    = "Edit the views…"
-	KeepAsViewSays   = "Keep as a view…"
+	KeepAsViewSays   = "Save as a view…"
 	KeepTheViewSays  = "Keep the view"
 	SaveToViewSays   = "Save to the view"
 	KeepAsNewSays    = "Keep as a new view…"

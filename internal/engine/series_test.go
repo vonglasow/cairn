@@ -101,7 +101,7 @@ func TestSeries_doneMakesTheNextAndWritesTheDaysMissed(t *testing.T) {
 		t.Errorf("the series reads %+v:\n%s", s, text)
 	}
 	doneOn(t, path, "2026-11-12", TaskEdit, ask("number", "1", "title", "again"))
-	if got := occurrencesListed(t, path, "2026-11-12", ask("repeats", "true")); !slices.Equal(got, []int{2, 1}) {
+	if got := occurrencesListed(t, path, "2026-11-12", ask("series", "0")); !slices.Equal(got, []int{2, 1}) {
 		t.Errorf("an act on a task done made another: %v", got)
 	}
 }
@@ -136,7 +136,7 @@ func TestSeries_stoppedMakesNothingAndResumedCatchesNothingUp(t *testing.T) {
 	refusedOn(t, path, "2026-11-09", SeriesStop, ask("number", "1"), "series-stopped")
 	refusedOn(t, path, "2026-11-09", TaskSkip, ask("number", "1"), "series-stopped")
 	doneOn(t, path, "2026-11-10", TaskEdit, ask("number", "1", "state", "done"))
-	if got := occurrencesListed(t, path, "2026-11-12", ask("repeats", "true", "with-archived", "true")); !slices.Equal(got, []int{1}) {
+	if got := occurrencesListed(t, path, "2026-11-12", ask("series", "0", "with-archived", "true")); !slices.Equal(got, []int{1}) {
 		t.Errorf("a stopped series made %v", got)
 	}
 	answer := doneOn(t, path, "2026-11-16", SeriesResume, ask("number", "1"))
@@ -155,7 +155,7 @@ func recurring(t *testing.T, home string, on bool) {
 	if err := os.MkdirAll(filepath.Join(home, ".config", "cairn"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(home, ".config", "cairn", "config.toml"), fmt.Appendf(nil, "[recurrence]\non = %t\n", on), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(home, ".config", "cairn", "config.toml"), fmt.Appendf(nil, "[series]\non = %t\n", on), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -188,7 +188,7 @@ func TestSeries_withNothingOpenTheNextIsMadeOnItsDayAndNotBefore(t *testing.T) {
 	at("2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
 	recurring(t, home, true)
 	listed := func(day string) []int {
-		return rowsListed(Of(TaskList, at(day, TaskList, ask("repeats", "true", "with-archived", "true"))).(Tasks))
+		return rowsListed(Of(TaskList, at(day, TaskList, ask("series", "0", "with-archived", "true"))).(Tasks))
 	}
 	if got := listed("2026-11-19"); !slices.Equal(got, []int{1}) {
 		t.Errorf("made ahead of its day: %v", got)
@@ -206,7 +206,7 @@ func TestSeries_anActThatLeavesNothingOpenMakesTheNext(t *testing.T) {
 	path := seriesStore(t)
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Review", "every", "every friday"))
 	doneOn(t, path, "2026-11-09", TaskDelete, ask("number", "1"))
-	if got := occurrencesListed(t, path, "2026-11-09", ask("repeats", "true")); !slices.Equal(got, []int{2}) {
+	if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0")); !slices.Equal(got, []int{2}) {
 		t.Fatalf("the act that left nothing open made %v", got)
 	}
 	if f := factsOf(*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2")).Task); f.Deadline.Format("2006-01-02") != "2026-11-20" {
@@ -219,7 +219,7 @@ func TestSeries_endsAfterSoManyTimes(t *testing.T) {
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Course", "every", "every day 2 times"))
 	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
 	doneOn(t, path, "2026-11-10", TaskEdit, ask("number", "2", "state", "done"))
-	if got := occurrencesListed(t, path, "2026-11-12", ask("repeats", "true", "with-archived", "true")); !slices.Equal(got, []int{1, 2}) {
+	if got := occurrencesListed(t, path, "2026-11-12", ask("series", "0", "with-archived", "true")); !slices.Equal(got, []int{1, 2}) {
 		t.Errorf("an ended series made %v", got)
 	}
 	s, text := shownSeries(t, path, "2026-11-12", "1")
@@ -324,7 +324,7 @@ func TestSeries_deletingAsksWhatBecomesOfItsTasks(t *testing.T) {
 		if got := occurrencesListed(t, path, "2026-11-09", ask("with-archived", "true")); !slices.Equal(got, c.left) {
 			t.Errorf("%s left %v, want %v", c.choice, got, c.left)
 		}
-		if got := occurrencesListed(t, path, "2026-11-09", ask("repeats", "true", "with-archived", "true")); len(got) != 0 {
+		if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0", "with-archived", "true")); len(got) != 0 {
 			t.Errorf("%s: occurrences of a deleted series: %v", c.choice, got)
 		}
 	}
@@ -365,10 +365,10 @@ func TestSeries_offMakesNothingAndRefusesARule(t *testing.T) {
 		return "", false
 	}}
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
-	if _, err := DoAt(TaskNew, Places{Store: path, Home: off}, ask("title", "x", "every", "every day").input(), Acting{}); RefusalOf(err).Reason != "recurrence-off" {
+	if _, err := DoAt(TaskNew, Places{Store: path, Home: off}, ask("title", "x", "every", "every day").input(), Acting{}); RefusalOf(err).Reason != "series-off" {
 		t.Errorf("a rule given with recurrence off: %v", err)
 	}
-	if _, err := DoAt(SeriesList, Places{Store: path, Home: off}, ask().input(), Acting{}); RefusalOf(err).Reason != "recurrence-off" {
+	if _, err := DoAt(SeriesList, Places{Store: path, Home: off}, ask().input(), Acting{}); RefusalOf(err).Reason != "series-off" {
 		t.Errorf("series asked for with recurrence off: %v", err)
 	}
 	answer, err := DoAt(TaskEdit, Places{Store: path, Home: off}, ask("number", "1", "state", "done").input(), Acting{})
@@ -387,7 +387,7 @@ func TestSeries_offMakesNothingAndRefusesARule(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(home, ".config", "cairn"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(home, ".config", "cairn", "config.toml"), []byte("[recurrence]\non = true\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(home, ".config", "cairn", "config.toml"), []byte("[series]\non = true\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if !PagesFrom(off).Offers(SeriesList) || !slices.ContainsFunc(PagesFrom(off).Shaped(TaskNew).Takes, func(a Argument) bool { return a.Name == "every" }) {
@@ -412,7 +412,7 @@ func TestSeries_countedAfterDoneWithNothingOpenComesOnItsDayOrToday(t *testing.T
 		at("2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
 		recurring(t, home, true)
 		listed := func(day string) []int {
-			return rowsListed(Of(TaskList, at(day, TaskList, ask("repeats", "true"))).(Tasks))
+			return rowsListed(Of(TaskList, at(day, TaskList, ask("series", "0"))).(Tasks))
 		}
 		if got := listed(c.before); !slices.Equal(got, []int{1}) {
 			t.Errorf("made ahead of its day: %v", got)
@@ -465,7 +465,7 @@ func TestSeries_aRuleIsRefusedWhatItCannotDo(t *testing.T) {
 	refusedOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "from", "2026-11-12"), "every-required")
 	refusedOn(t, path, "2026-11-09", TaskEdit, ask("number", "9", "every", "every day"), "no-such-task")
 	refusedOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "every", "every day until 2026-11-01"), "series-ends-before")
-	if got := occurrencesListed(t, path, "2026-11-09", ask("repeats", "true", "with-archived", "true")); len(got) != 0 {
+	if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0", "with-archived", "true")); len(got) != 0 {
 		t.Errorf("a refused rule made %v", got)
 	}
 }
@@ -474,7 +474,7 @@ func TestSeries_anEmptyDayAndAfterDoneFalseNameNoRule(t *testing.T) {
 	path := seriesStore(t)
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Spec", "from", "", "after-done", "false"))
 	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "title", "Spec it", "from", "", "after-done", "false"))
-	if got := occurrencesListed(t, path, "2026-11-09", ask("repeats", "true", "with-archived", "true")); len(got) != 0 {
+	if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0", "with-archived", "true")); len(got) != 0 {
 		t.Errorf("an empty day made %v", got)
 	}
 	refusedOn(t, path, "2026-11-09", TaskNew, ask("title", "x", "from", "2026-11-12"), "every-required")

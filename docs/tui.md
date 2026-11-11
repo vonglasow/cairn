@@ -74,7 +74,7 @@ still read whole: time spent on a Saturday is not lost from a total, its lines
 are only not drawn (see [config.md](config.md#the-weekends-of-a-week)).
 
 **series** — the tasks that come back, a fourth tab after the time, there only
-while `[recurrence] on` is true; see [below](#series).
+while `[series] on` is true; see [below](#series).
 
 **Each tab counts what it holds**, as the window's tabs do: the tasks the board
 shows, the objectives listed, the tasks the week shown was worked on
@@ -892,7 +892,7 @@ for the arguments no key can carry, not a second way of doing what a key does.
 
 **`:set` and `:unset` set a key of the configuration** without leaving the
 board: `:set pages.time off`, `:set --global focus.session 45m`, `:unset
-recurrence.on`. They are not a second editor: they call `engine.ConfigSet` and
+series.on`. They are not a second editor: they call `engine.ConfigSet` and
 `engine.ConfigUnset`, the operations `cairn config set` and `unset` and the
 window's settings call, so the same file is written the same way — one line,
 every comment kept, and nothing written that does not read back
@@ -1098,7 +1098,7 @@ asked about at the foot, as a task is.
 ```
 
 A series is a notion of its own ([series.md](series.md)), and while
-`[recurrence] on` is true it has a tab of its own, the fourth, after the time
+`[series] on` is true it has a tab of its own, the fourth, after the time
 — `⇥` already reached the three others in that order, and a tab put between
 them would have changed where every `⇥` lands. **The list is on the left, the
 series chosen on the right**, as the objectives' tab and the window lay it
@@ -1119,7 +1119,7 @@ resumes it (`@tui-series-the-tab-skips-stops-and-resumes`); `e` opens its form
 — title, priority, labels, estimate, objectives, steps, its rule as `repeats`
 and the day it counts from — and saving changes what the next ones are made
 from, never one already made (`@tui-series-the-form-changes-the-series`). `n`
-opens a task's form in todo with the cursor on its `repeats` field
+opens a task's form in todo with the cursor on its `rule` field
 (`@tui-series-n-lands-on-the-rule`), and saving it makes the task the first
 occurrence of a new series (`@tui-series-n-makes-a-new-one`). `/` narrows the list by its title, its rule
 or its number, as `series list --search` does.
@@ -1155,7 +1155,7 @@ end with `repeats`, while there is a series
 (`@tui-series-the-board-narrows-to-what-comes-back`).
 
 **A task becomes a series in its form.** A task that is no occurrence carries
-a `repeats` field: a rule typed there makes it the first occurrence of a new
+a `rule` field: a rule typed there makes it the first occurrence of a new
 series (`@tui-series-a-task-given-a-rule-becomes-the-first`). An occurrence has
 no such field, its series' rule is changed in the series' form. **Saving a
 change to an occurrence's title, priority, labels, estimate, steps or
@@ -1166,7 +1166,7 @@ default, and `s` for the whole series, the ones to come
 or deadline asks nothing: they are this one's alone.
 
 **With recurrence off there is none of it**: no tab, no `↻`, no rule line, no
-`repeats` field and no `r` key; the cards are ordinary tasks
+`rule` field and no `r` key; the cards are ordinary tasks
 (`@tui-series-off-shows-nothing`). The series tab is held to the window as
 every screen is, on the fixtures (`@tui-series-the-fixtures-fit`).
 
