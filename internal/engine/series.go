@@ -1336,7 +1336,6 @@ func seriesDeletedText(d SeriesDeleted) string {
 	return said + "\n"
 }
 
-
 var inSeriesArgument = Argument{Name: "series", Kind: Number, Of: "a series", Repeats: true, Bare: "0", Means: "keep only the occurrences of this series, by its number; named alone, or 0, the occurrences of every series"}
 
 var seriesTooArgument = Argument{Name: "series", Kind: Bool, Repeats: true, Means: "change the series it is an occurrence of as well, for the ones to come: whatever of its title, priority, labels, estimate, steps and objectives is named"}
