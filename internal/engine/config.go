@@ -67,7 +67,7 @@ func valuesOf(p config.Places) map[string]string {
 		"archive.start": unless(start), "archive.days": strconv.Itoa(days),
 		"focus.session": unless(p.FocusSession()), "approach.label": unless(p.ApproachLabel()),
 		"time.deleted": p.TimeDeleted(), "time.weekends": p.TimeWeekends(), "window.keep_sizes": strconv.FormatBool(p.KeepSizes()),
-		"window.theme": p.Theme(), "window.intro": p.Intro(), "recurrence.on": strconv.FormatBool(p.Recurrence()),
+		"window.theme": p.Theme(), "window.intro": p.Intro(), "window.ghost": strconv.Itoa(p.Ghost()), "recurrence.on": strconv.FormatBool(p.Recurrence()),
 	}
 }
 
@@ -89,6 +89,7 @@ type WindowConfig struct {
 	KeepSizes bool   `json:"keep_sizes"`
 	Theme     string `json:"theme"`
 	Intro     string `json:"intro" jsonschema:"how the board arrives when the window opens"`
+	Ghost     int    `json:"ghost" jsonschema:"how much of what is dragged shows, in percent"`
 	Unworn    string `json:"unworn,omitempty" jsonschema:"why the scheme named cannot be worn; the window then wears default"`
 }
 
@@ -275,6 +276,7 @@ func configText(c Config) string {
 		fmt.Fprintf(&said, "\n[window]\nkeep_sizes = %t%s\ntheme = %q%s\n", c.Window.KeepSizes, c.from("window.keep_sizes"), c.Window.Theme, c.from("window.theme"))
 		said.WriteString(themesText(c))
 		fmt.Fprintf(&said, "intro = %q%s\n", c.Window.Intro, c.from("window.intro"))
+		fmt.Fprintf(&said, "ghost = %d%s\n", c.Window.Ghost, c.from("window.ghost"))
 	}
 	if c.Recurrence != nil {
 		fmt.Fprintf(&said, "\n[recurrence]\non = %t%s\n", c.Recurrence.On, c.from("recurrence.on"))

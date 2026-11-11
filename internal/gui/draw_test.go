@@ -178,6 +178,18 @@ func lettered(shot *image.RGBA, b Box, want color.NRGBA) int {
 	return count
 }
 
+func lit(shot *image.RGBA, b Box, above uint8) int {
+	count := 0
+	for y := b.Y; y < b.Y+b.H; y++ {
+		for x := b.X; x < b.X+b.W; x++ {
+			if shot.RGBAAt(x, y).R > above {
+				count++
+			}
+		}
+	}
+	return count
+}
+
 func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
@@ -522,7 +534,7 @@ func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
 
 	shot := drawn(t, w)
 	ghost, _ := w.Ghost()
-	if got := painted(shot, ghost, Dark().Colour.Surface.Ghost); got == 0 {
+	if got := painted(shot, ghost, Dark().Colour.Surface.Back); got == ghost.W*ghost.H {
 		t.Error("the card being dragged is not drawn")
 	}
 	landing, _ := w.Landing()
@@ -582,7 +594,7 @@ func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 	w = w.MoveTo(middleOf(w, 1, 0))
 	ghost, _ := w.Ghost()
 
-	written := painted(drawn(t, w), PartsOf(ghost).Title, Dark().Colour.Ink.Text)
+	written := lit(drawn(t, w), PartsOf(ghost).Title, 90)
 	if written == 0 {
 		t.Fatal("the card in mid-air carries no title")
 	}
@@ -590,7 +602,7 @@ func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 	long := holding(f, engine.Card{Number: 2, Title: "A very long name indeed for a task", State: "backlog"})
 	long = long.PressAt(middleOf(long, 0, 0)).MoveTo(middleOf(long, 1, 0))
 	longGhost, _ := long.Ghost()
-	if written >= painted(drawn(t, long), PartsOf(longGhost).Title, Dark().Colour.Ink.Text) {
+	if written >= lit(drawn(t, long), PartsOf(longGhost).Title, 90) {
 		t.Error("the card in mid-air is carrying somebody else's title")
 	}
 }
@@ -1170,20 +1182,20 @@ func loosened(gtx layout.Context) layout.Context {
 	return loose
 }
 
-func TestGhost_isDrawnAsTheKindOfThingItIs(t *testing.T) {
+func TestTheGhostIsSeeThrough(t *testing.T) {
 	f := newFake()
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	from := middleOf(w, 1, 0)
-	to := Point{X: from.X, Y: from.Y - CardHeight}
-	w = w.PressAt(from).MoveTo(to)
+	resting := PartsOf(w.Layout().CardAt(1, 0, 0)).Title
+	body := drawn(t, w).RGBAAt(resting.X+resting.W-1, resting.Y)
+	w = w.PressAt(from).MoveTo(middleOf(w, 2, 0))
 	ghost, dragging := w.Ghost()
 	if !dragging {
 		t.Fatal("nothing is in hand on the board")
 	}
-	shot := drawn(t, w)
-	foot := Box{X: ghost.X + 2, Y: ghost.Y + ghost.H - between, W: ghost.W - 4, H: between - 2}
-	if painted(shot, foot, Dark().Colour.Surface.Ghost) == 0 {
-		t.Errorf("the foot of what is in hand is not filled: %+v", foot)
+	title := PartsOf(ghost).Title
+	if got := drawn(t, w).RGBAAt(title.X+title.W-1, title.Y); got == body {
+		t.Errorf("what is in hand reads %v, as a card at rest does: it hides what is under it", got)
 	}
 }
 
@@ -1311,7 +1323,7 @@ func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
 	}
 }
 
-func TestADragOpensRoomWhereTheCardWouldLand(t *testing.T) {
+func TestADragDrawsALineWhereTheCardWouldLandAndMovesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f,
 		engine.Card{Number: 1, Title: "First", State: "todo"},
@@ -1322,26 +1334,37 @@ func TestADragOpensRoomWhereTheCardWouldLand(t *testing.T) {
 	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
 
 	landing, ok := w.Landing()
-	if !ok || landing != (Box{X: second.X, Y: second.Y, W: second.W, H: CardHeight}) {
-		t.Errorf("the card would land in %+v, want the room %+v", landing, second)
+	if !ok || landing != LineAbove(second) {
+		t.Errorf("the card would land at %+v, want the line above Second, %+v", landing, LineAbove(second))
 	}
 	slots := map[int]Box{}
 	for _, p := range w.Placed() {
 		slots[p.Card.Number] = p.Slot
 	}
-	if _, drawn := slots[3]; drawn {
-		t.Error("the card in hand is still drawn in its column")
+	if slots[3] != l.CardAt(0, 0, 0) {
+		t.Errorf("the card in hand is drawn at %+v, want its own place, faint", slots[3])
 	}
-	if slots[1] != l.CardAt(1, 0, 0) || slots[2] != l.CardAt(1, 2, 0) {
-		t.Errorf("First is at %+v and Second at %+v: no room was made between them", slots[1], slots[2])
+	if slots[1] != l.CardAt(1, 0, 0) || slots[2] != l.CardAt(1, 1, 0) {
+		t.Errorf("First is at %+v and Second at %+v: the column moved", slots[1], slots[2])
 	}
 	w = w.MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H*3/4})
-	if landing, _ := w.Landing(); landing.Y != l.CardAt(1, 2, 0).Y {
-		t.Errorf("over the lower half of Second the card would land at %d, want after it", landing.Y)
+	if landing, _ := w.Landing(); landing != LineAbove(l.CardAt(1, 2, 0)) {
+		t.Errorf("over the lower half of Second the card would land at %+v, want the line after it", landing)
 	}
 }
 
-func TestADragOpensRoomInALaneWhereTheCardWouldLand(t *testing.T) {
+func TestTheGhostOfACardIsTheCardsOwnSize(t *testing.T) {
+	f := newFake()
+	w := holding(f, engine.Card{Number: 1, Title: "First", State: "todo"}, engine.Card{Number: 2, Title: "Second", State: "backlog"})
+	panel := PartsOf(w.Layout().CardAt(1, 0, 0)).Panel
+	w = w.PressAt(middleOf(w, 1, 0)).MoveTo(middleOf(w, 0, 0))
+	ghost, ok := w.Ghost()
+	if !ok || ghost.W != panel.W || ghost.H != panel.H {
+		t.Errorf("the ghost is %+v, want the card's own size %dx%d", ghost, panel.W, panel.H)
+	}
+}
+
+func TestADragDrawsALineInALaneAndMovesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f,
 		engine.Card{Number: 1, Title: "First", State: "blocked"},
@@ -1352,15 +1375,15 @@ func TestADragOpensRoomInALaneWhereTheCardWouldLand(t *testing.T) {
 	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
 
 	landing, ok := w.Landing()
-	if !ok || landing != (Box{X: second.X, Y: second.Y, W: second.W, H: CardHeight}) {
-		t.Errorf("the card would land in %+v, want the room %+v", landing, second)
+	if !ok || landing != LineAbove(second) {
+		t.Errorf("the card would land at %+v, want the line above Second", landing)
 	}
 	slots := map[int]Box{}
 	for _, p := range w.Placed() {
 		slots[p.Card.Number] = p.Slot
 	}
-	if slots[1] != l.LaneCardAt(0, 0, 0) || slots[2] != l.LaneCardAt(0, 2, 0) {
-		t.Errorf("First is at %+v and Second at %+v: no room was made between them", slots[1], slots[2])
+	if slots[1] != l.LaneCardAt(0, 0, 0) || slots[2] != l.LaneCardAt(0, 1, 0) {
+		t.Errorf("First is at %+v and Second at %+v: the lane moved", slots[1], slots[2])
 	}
 }
 
@@ -1535,7 +1558,7 @@ func TestTheCardInHandIsRaised(t *testing.T) {
 	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(middleOf(w, 1, 0))
 	shot := drawn(t, w)
 	ghost, _ := w.Ghost()
-	under := shot.RGBAAt(ghost.X+ghost.W/2, ghost.Y+ghost.H+4)
+	under := shot.RGBAAt(ghost.X+ghost.W/2, ghost.Y+ghost.H+1)
 	if under.R >= Dark().Colour.Surface.Ground.R {
 		t.Errorf("under the card in hand reads %v: it casts no shadow", under)
 	}

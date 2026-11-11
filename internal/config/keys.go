@@ -25,6 +25,7 @@ const (
 	KindColour   Kind = "colour"
 	KindTheme    Kind = "theme"
 	KindIntro    Kind = "intro"
+	KindPercent  Kind = "percent"
 )
 
 // Key is one key of the configuration as a person sets it: its dotted name, the kind of value it takes and the words it takes when it takes words, whether it belongs to the machine or to a store alone, and the section and words a surface names it by.
@@ -59,6 +60,7 @@ var keys = []Key{
 	{Name: "window.intro", Kind: KindIntro, Words: Intros(), Section: SectionAppearance, Says: "Intro"},
 	{Name: "workspace.colour", Kind: KindColour, Store: true, Section: SectionAppearance, Says: "Colour"},
 	{Name: "window.keep_sizes", Kind: KindBool, Section: SectionAppearance, Says: "Keep column sizes"},
+	{Name: "window.ghost", Kind: KindPercent, Section: SectionAppearance, Says: "What is dragged shows at", Unit: "%"},
 	{Name: "pages.tasks", Kind: KindBool, Section: SectionPages, Says: "Tasks"},
 	{Name: "pages.objectives", Kind: KindBool, Section: SectionPages, Says: "Objectives"},
 	{Name: "pages.time", Kind: KindWords, Words: []string{TimeOn, TimeHidden, TimeOff}, Section: SectionPages, Says: "Time"},
@@ -124,6 +126,11 @@ func (k Key) Literal(value string) (string, error) {
 	case KindNumber:
 		if n, err := strconv.Atoi(value); err != nil || n < 1 {
 			return "", Refused("%s: %q is not a number of days, one or more", k.Name, value)
+		}
+		return value, nil
+	case KindPercent:
+		if n, err := strconv.Atoi(value); err != nil || n < LeastGhost || n > MostGhost {
+			return "", Refused("%s: %q is not a percentage from %d to %d", k.Name, value, LeastGhost, MostGhost)
 		}
 		return value, nil
 	case KindPath:

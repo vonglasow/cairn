@@ -18,6 +18,12 @@ func drawGoals(k Kit, l Layout, w Window) {
 	in, clipped := on.within(GoalsRun(l))
 	for at, b := range tree {
 		item := w.goalItem(b, GoalAt(l, at, w.goals))
+		if w.GoalDragging() && b.Goal.Number == w.grabbedGoal {
+			origin := in.faded(OriginShows)
+			item.Draw(in, GoalAt(l, at, w.goals))
+			origin.Pop()
+			continue
+		}
 		if b.Holds {
 			faded := in.faded(0.5)
 			item.Draw(in, GoalAt(l, at, w.goals))

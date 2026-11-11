@@ -56,6 +56,7 @@ func valuesIn(c Config) map[string]string {
 	}
 	if c.Window != nil {
 		values["window.keep_sizes"], values["window.theme"], values["window.intro"] = strconv.FormatBool(c.Window.KeepSizes), c.Window.Theme, c.Window.Intro
+		values["window.ghost"] = strconv.Itoa(c.Window.Ghost)
 	}
 	if c.Recurrence != nil {
 		values["recurrence.on"] = strconv.FormatBool(c.Recurrence.On)

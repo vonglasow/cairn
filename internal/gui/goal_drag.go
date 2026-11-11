@@ -97,11 +97,33 @@ func (w Window) goalLanding() (engine.Input, Box, bool) {
 			return in, box, true
 		}
 		if zone == engine.DropBefore {
-			return in, Box{X: box.X, Y: box.Y - 1, W: box.W, H: 2}, true
+			return in, Box{X: box.X, Y: box.Y - landingHigh/2 - 2, W: box.W, H: landingHigh}, true
 		}
-		return in, Box{X: box.X, Y: box.Y + box.H - 1, W: box.W, H: 2}, true
+		return in, Box{X: box.X, Y: box.Y + box.H + 2 - landingHigh/2, W: box.W, H: landingHigh}, true
 	}
 	return engine.Input{}, Box{}, false
+}
+
+func (w Window) goalRow(n int) (Box, bool) {
+	l := w.Layout()
+	for i, b := range w.Tree() {
+		if b.Goal.Number == n {
+			return ItemOf(GoalAt(l, i, w.goals), depthOf(b)), true
+		}
+	}
+	return Box{}, false
+}
+
+// GoalGhost is the objective in mid-air: its own row's size, held where it was taken; and whether there is one.
+func (w Window) GoalGhost() (Box, bool) {
+	if !w.GoalDragging() {
+		return Box{}, false
+	}
+	row, found := w.goalRow(w.grabbedGoal)
+	if !found {
+		return Box{}, false
+	}
+	return Box{X: row.X + w.held.At.X - w.held.From.X, Y: row.Y + w.held.At.Y - w.held.From.Y, W: row.W, H: row.H}, true
 }
 
 // GoalLanding is the row an objective carried would land by, ringed: the row itself when it would go under it, a thin line above or below it otherwise; and whether there is one.

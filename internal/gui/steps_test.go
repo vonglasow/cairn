@@ -787,7 +787,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		line, ok := w.w.PartLanding()
 		at := slices.IndexFunc(w.w.PartsTicked(), func(c engine.Card) bool { return c.Title == title })
 		tile := w.w.partTiles()[at-w.w.partsFrom()]
-		if !ok || line.Y != tile.Y+tile.H-landingHigh {
+		if !ok || line.Y != tile.Y+tile.H+1-landingHigh/2 {
 			return fmt.Errorf("it would land at %v (%v), and %q ends at %d", line, ok, title, tile.Y+tile.H)
 		}
 		return nil

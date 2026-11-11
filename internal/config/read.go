@@ -66,6 +66,18 @@ const (
 	TimeOff    = "off"
 )
 
+// ErrGhost is returned when the file says what is dragged shows at a percentage the window does not draw.
+var ErrGhost = errors.New("is not a percentage from 20 to 90")
+
+// DefaultGhost is how much of what is dragged shows, in percent, when the file says nothing.
+const DefaultGhost = 65
+
+// LeastGhost and MostGhost bound how much of what is dragged shows: below, it is lost; above, it hides what is under it.
+const (
+	LeastGhost = 20
+	MostGhost  = 90
+)
+
 // ErrIntro is returned when the file names an intro the window does not have.
 var ErrIntro = errors.New("is not an intro the window has")
 
@@ -134,6 +146,7 @@ type Places struct {
 	recurrence       bool
 	theme            string
 	intro            string
+	ghost            int
 	written          []string
 	ignored          []string
 	workspaces       []Workspace
@@ -175,6 +188,18 @@ type window struct {
 	KeepSizes any     `toml:"keep_sizes"`
 	Theme     *string `toml:"theme"`
 	Intro     *string `toml:"intro"`
+	Ghost     any     `toml:"ghost"`
+}
+
+func (w *window) ghost() (int, error) {
+	if w == nil || w.Ghost == nil {
+		return DefaultGhost, nil
+	}
+	n, ok := w.Ghost.(int64)
+	if !ok || n < LeastGhost || n > MostGhost {
+		return 0, fmt.Errorf("window.ghost %v %w", w.Ghost, ErrGhost)
+	}
+	return int(n), nil
 }
 
 func (w *window) intro() (string, error) {
@@ -361,6 +386,9 @@ func (p Places) Theme() string { return p.theme }
 
 // Intro is the intro the board arrives by when the window opens: DefaultIntro unless the file names another.
 func (p Places) Intro() string { return p.intro }
+
+// Ghost is how much of what is dragged shows, in percent: DefaultGhost unless the file says otherwise.
+func (p Places) Ghost() int { return p.ghost }
 
 // Written is every key the file writes, dotted under its table and sorted: what is not among them holds its default, or what the environment says.
 func (p Places) Written() []string { return p.written }
@@ -566,6 +594,9 @@ func (p *Places) settle(f file) error {
 		return err
 	}
 	p.intro = intro
+	if p.ghost, err = f.Window.ghost(); err != nil {
+		return err
+	}
 	mode, err := f.Pages.time()
 	if err != nil {
 		return err

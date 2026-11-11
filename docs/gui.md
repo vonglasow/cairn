@@ -981,11 +981,18 @@ lands on what it opened and is a press there.
 follows the pointer; below that it is a click. Without the threshold, a shaky
 click would move a task.
 
-**The board makes room where the card would land.** While a card is dragged
-it leaves its place, and the column under the pointer opens a card's room
-where it would go, the cards after it moved down and the room outlined — the
-way a list a card is dragged through behaves in Trello and the like
-(`TestADragOpensRoomWhereTheCardWouldLand`). Which room is the half of a card
+**A line says where the card would land; nothing else moves.** While a card
+is dragged it stays in its place, faded to a quarter (`OriginShows`), and a
+line in the gap under the pointer says where it would go
+(`TestADragDrawsALineWhereTheCardWouldLandAndMovesNothing`). The board used
+to open a card's room there, the cards after it moved down: every move of the
+pointer shifted a column, and the eye lost the card it was looking for. The
+card in hand is a ghost of its own size, held where it was taken and drawn
+see-through (`TestTheGhostOfACardIsTheCardsOwnSize`), at `window.ghost` per
+cent, 65 unless said ([config.md](config.md#what-is-dragged)), so the
+line under it stays in sight. Over its own place no line is drawn: a drop
+there moves nothing. Objectives and steps are carried the same way: the row
+in hand a ghost of its size, its place faded, a line in the gap. Which place is the half of a card
 the pointer is over: the upper half of a card puts it before, the lower half
 after. A thin line across the top of the slot under the pointer said it before,
 and since the slot was a card's whole height, the last card of a column
@@ -1024,9 +1031,9 @@ reach: the wheel did nothing over it and the arrows chose cards nobody could
 see. It now scrolls the way a column does, between the same two ends.
 
 **A lane takes a place the way a column does.** A card dragged over a lane
-opens a card's room where it would land, and the drop carries the lane and the
+draws the line where it would land, and the drop carries the lane and the
 place in one `task move` (`@gui-a-drag-in-a-lane-carries-the-place`,
-`TestADragOpensRoomInALaneWhereTheCardWouldLand`). A drop used to carry the
+`TestADragDrawsALineInALaneAndMovesNothing`). A drop used to carry the
 lane alone: the card went last, and one dropped in its own lane did not move,
 so the order of what was stopped could not be set from the window at all
 (`@gui-a-drag-within-a-lane-only-moves`).

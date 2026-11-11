@@ -59,11 +59,12 @@ weekends = "shown"
 # name its own, so each workspace wears one. Last, how the board arrives
 # when the window opens: ripple, deck, spring, accordion, sweep, flap, pull,
 # particles, dolly, blueprint or stones. None when the system asks for less
-# motion.
+# motion. And how much of what is dragged shows, in per cent, 20 to 90.
 [window]
 keep_sizes = false
 theme = "default"
 intro = "ripple"
+ghost = 65
 
 # Whether a task may come back as a series: made with a rule, every weekday
 # 10:30, and made again when it is done or skipped. Off unless it says true;

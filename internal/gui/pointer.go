@@ -860,17 +860,31 @@ func (w Window) dropped(number int, p Point) Window {
 
 func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {
 	if lane, in := l.LaneUnder(p); in {
-		here := w.besideHeld(w.inLane(lane))
-		return engine.Stalled[lane], placeAfter(here, landed(l.Lane[lane], w.lanes[lane], p, len(here))), true
+		all := w.inLane(lane)
+		return engine.Stalled[lane], placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Lane[lane], w.lanes[lane], p, len(all)))), true
 	}
 	for i := range engine.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}
-		here := w.besideHeld(w.inColumn(i))
-		return engine.StateAt(i), placeAfter(here, landed(l.Column[i], w.scroll[i], p, len(here))), true
+		all := w.inColumn(i)
+		return engine.StateAt(i), placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Column[i], w.scroll[i], p, len(all)))), true
 	}
 	return "", nil, false
+}
+
+func (w Window) leftBefore(all []engine.Card, at int) int {
+	kept := len(w.besideHeld(all[:min(at, len(all))]))
+	return kept
+}
+
+func (w Window) ownPlace(all []engine.Card, at int) bool {
+	for i, c := range all {
+		if c.Number == w.held.Number {
+			return at == i || at == i+1
+		}
+	}
+	return false
 }
 
 func placeAfter(here []engine.Card, at int) map[string]string {
@@ -906,7 +920,7 @@ func (w Window) openedAt(l Layout) (column, at int, open bool) {
 	}
 	for i := range engine.Columns {
 		if l.Column[i].In(w.held.At) {
-			return i, landed(l.Column[i], w.scroll[i], w.held.At, len(w.besideHeld(w.inColumn(i)))), true
+			return i, landed(l.Column[i], w.scroll[i], w.held.At, len(w.inColumn(i))), true
 		}
 	}
 	return 0, 0, false
@@ -920,7 +934,7 @@ func (w Window) openedInLane(l Layout) (lane, at int, open bool) {
 	if !in {
 		return 0, 0, false
 	}
-	return lane, landed(l.Lane[lane], w.lanes[lane], w.held.At, len(w.besideHeld(w.inLane(lane)))), true
+	return lane, landed(l.Lane[lane], w.lanes[lane], w.held.At, len(w.inLane(lane))), true
 }
 
 func (w Window) clickedOff(p Point) Window {

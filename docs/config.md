@@ -777,6 +777,20 @@ takes them back ([gui.md](gui.md)). Anything but `true` or `false` is refused,
 naming `window.keep_sizes` (`@config-keep-sizes-is-yes-or-no`), and `config
 show` says whether it is on (`@config-show-says-the-window-keeps-its-sizes`).
 
+## What is dragged
+
+```toml
+[window]
+ghost = 65   # per cent, 20 to 90
+```
+
+What the pointer carries — a card, an objective, a step — is drawn
+see-through, so the line saying where it would land stays in sight under it.
+`ghost` says how much of it shows: 65 per cent unless said. Under 20 it is
+lost against the board, over 90 it hides the line again; anything outside,
+or not a whole number, is refused, naming `window.ghost`. The settings offer
+it under Appearance ([gui.md](gui.md)).
+
 ## How the board arrives
 
 ```toml

@@ -235,12 +235,18 @@ func (w Window) inHand() (int, bool) {
 	return from, from >= 0 && from < len(w.form.parts()) && w.held.Moved
 }
 
-// PartGhost is the step in hand, drawn under the pointer the way a card in hand is: as wide as a tile and as high.
+// PartGhost is the step in hand: its own tile's size, moving only up and down, held where it was taken.
 func (w Window) PartGhost() (Box, bool) {
-	if _, ok := w.inHand(); !ok {
+	from, ok := w.inHand()
+	if !ok {
 		return Box{}, false
 	}
-	tile := w.partTiles()[0]
+	tiles := w.partTiles()
+	tile := tiles[0]
+	if at := from - w.partsFrom(); at >= 0 && at < len(tiles)-1 {
+		tile = tiles[at]
+		return Box{X: tile.X, Y: tile.Y + w.held.At.Y - w.held.From.Y, W: tile.W, H: tile.H}, true
+	}
 	return Box{X: tile.X, Y: w.held.At.Y - SubHeight/2, W: tile.W, H: SubHeight}, true
 }
 
@@ -256,11 +262,14 @@ func (w Window) PartLanding() (Box, bool) {
 		adding := tiles[len(tiles)-1]
 		return Box{X: tiles[0].X, Y: adding.Y, W: tiles[0].W, H: landingHigh}, true
 	}
+	if to == from {
+		return Box{}, false
+	}
 	tile := tiles[to-w.partsFrom()]
 	if to > from {
-		return Box{X: tile.X, Y: tile.Y + tile.H - landingHigh, W: tile.W, H: landingHigh}, true
+		return Box{X: tile.X, Y: tile.Y + tile.H + 1 - landingHigh/2, W: tile.W, H: landingHigh}, true
 	}
-	return Box{X: tile.X, Y: tile.Y, W: tile.W, H: landingHigh}, true
+	return Box{X: tile.X, Y: tile.Y - 1 - landingHigh/2, W: tile.W, H: landingHigh}, true
 }
 
 func (w Window) onParts(name string) (Window, bool) {

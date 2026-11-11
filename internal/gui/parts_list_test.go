@@ -274,14 +274,14 @@ func TestAPartInHandSaysWhereItLands(t *testing.T) {
 		t.Error("a part says where it lands before it has moved")
 	}
 	up := pressed.MoveTo(middle(tiles[0]))
-	if line, ok := up.PartLanding(); !ok || line.Y != tiles[0].Y || line.X != tiles[0].X || line.W != tiles[0].W {
-		t.Errorf("carried up onto the first, it lands at %v (%v), want the top of %v", line, ok, tiles[0])
+	if line, ok := up.PartLanding(); !ok || line.Y != tiles[0].Y-1-landingHigh/2 || line.X != tiles[0].X || line.W != tiles[0].W {
+		t.Errorf("carried up onto the first, it lands at %v (%v), want the gap above %v", line, ok, tiles[0])
 	}
 	down := pressed.MoveTo(middle(tiles[2]))
-	if line, ok := down.PartLanding(); !ok || line.Y != tiles[2].Y+tiles[2].H-landingHigh {
-		t.Errorf("carried down onto the last, it lands at %v (%v), want the bottom of %v", line, ok, tiles[2])
+	if line, ok := down.PartLanding(); !ok || line.Y != tiles[2].Y+tiles[2].H+1-landingHigh/2 {
+		t.Errorf("carried down onto the last, it lands at %v (%v), want the gap under %v", line, ok, tiles[2])
 	}
-	if ghost, ok := down.PartGhost(); !ok || ghost.H != SubHeight || ghost.Y != middle(tiles[2]).Y-SubHeight/2 || ghost.X != tiles[2].X {
+	if ghost, ok := down.PartGhost(); !ok || ghost.H != tiles[1].H || ghost.Y != tiles[1].Y+middle(tiles[2]).Y-middle(tiles[1]).Y || ghost.X != tiles[1].X {
 		t.Errorf("the part in hand is drawn at %v", ghost)
 	}
 	off := pressed.MoveTo(Point{X: 1, Y: 1})
@@ -289,7 +289,7 @@ func TestAPartInHandSaysWhereItLands(t *testing.T) {
 		t.Error("held off the list, it says it would land somewhere")
 	}
 	shot := drawn(t, down)
-	if ghost, _ := down.PartGhost(); painted(shot, ghost, Dark().Colour.Surface.Ghost) == 0 {
+	if ghost, _ := down.PartGhost(); lit(shot, SubWriting(ghost), 90) == 0 {
 		t.Error("the part in hand is not drawn")
 	}
 	over := pressed.MoveTo(Point{X: middle(tiles[2]).X, Y: tiles[2].Y + tiles[2].H - 2})
@@ -325,8 +325,8 @@ func TestWhereAPartLandsAtTheEdges(t *testing.T) {
 	if line, ok := pressed.MoveTo(middle(adding)).PartLanding(); !ok || line.Y != adding.Y || line.X != tiles[0].X {
 		t.Errorf("over the line that adds it lands at %v (%v), want the top of %v", line, ok, adding)
 	}
-	if line, ok := pressed.MoveTo(Point{X: middle(tiles[0]).X, Y: tiles[0].Y + 2}).PartLanding(); !ok || line.Y != tiles[0].Y {
-		t.Errorf("over its own tile it lands at %v (%v), want the top of %v", line, ok, tiles[0])
+	if line, ok := pressed.MoveTo(Point{X: middle(tiles[0]).X, Y: tiles[0].Y + 2}).PartLanding(); ok {
+		t.Errorf("over its own tile it lands at %v: a drop there moves nothing", line)
 	}
 	if _, ok := w.PressAt(middle(adding)).MoveTo(middle(tiles[0])).PartGhost(); ok {
 		t.Error("the line that adds was taken in hand")
@@ -352,8 +352,8 @@ func TestAPartLandsInAScrolledList(t *testing.T) {
 	}
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	held := w.PressAt(middle(tiles[0])).MoveTo(Point{X: middle(tiles[0]).X, Y: middle(tiles[0]).Y + Wobble + 1}).MoveTo(middle(tiles[1]))
-	if line, ok := held.PartLanding(); !ok || line.Y != tiles[1].Y+tiles[1].H-landingHigh {
-		t.Errorf("carried down onto the second tile in sight, it lands at %v (%v), want the bottom of %v", line, ok, tiles[1])
+	if line, ok := held.PartLanding(); !ok || line.Y != tiles[1].Y+tiles[1].H+1-landingHigh/2 {
+		t.Errorf("carried down onto the second tile in sight, it lands at %v (%v), want the gap under %v", line, ok, tiles[1])
 	}
 }
 

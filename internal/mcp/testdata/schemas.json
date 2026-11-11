@@ -538,6 +538,10 @@
               "type": "string",
               "description": "how the board arrives when the window opens"
             },
+            "ghost": {
+              "type": "integer",
+              "description": "how much of what is dragged shows, in percent"
+            },
             "unworn": {
               "type": "string",
               "description": "why the scheme named cannot be worn; the window then wears default"
@@ -546,7 +550,8 @@
           "required": [
             "keep_sizes",
             "theme",
-            "intro"
+            "intro",
+            "ghost"
           ],
           "additionalProperties": false
         },

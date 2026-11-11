@@ -785,6 +785,10 @@ func drawPlaced(k Kit, w Window, within Box, scene Scene) {
 
 func drawPosed(k Kit, w Window, p Placed, pose Pose, beating bool) {
 	chosen := p.Card.Number == w.Chosen() || w.isTaken(p.Card.Number)
+	if w.Dragging() && (p.Card.Number == w.held.Number || w.isTaken(w.held.Number) && w.isTaken(p.Card.Number)) {
+		origin := k.faded(OriginShows)
+		defer origin.Pop()
+	}
 	card := w.cardOf(p.Card, chosen, p.Slot == w.pointed)
 	card.Dimmed, card.Undotted, card.Draft = Dimmed(p.Card), beating && p.Card.InFocus, pose.Draft
 	if pose.Draft != nil && pose.Draft.Typed >= 0 {
@@ -886,8 +890,12 @@ func drawBlank(k Kit, w Window) {
 }
 
 func drawGoalDragging(k Kit, w Window) {
-	if landing, somewhere := w.GoalLanding(); somewhere {
+	if landing, somewhere := w.GoalLanding(); somewhere && landing.H == landingHigh {
+		Landing{}.Draw(k, landing)
+	} else if somewhere {
 		Ring{Target: true, Radius: k.skin.Radius.Card}.Draw(k, landing)
+	}
+	if landing, somewhere := w.GoalLanding(); somewhere {
 		said := w.GoalLandingSays()
 		wide := 7*len(said) + 16
 		Pill{Said: said, Tone: ToneHere}.Draw(k, Box{X: landing.X + landing.W - wide - 8, Y: landing.Y - 10, W: wide, H: 20})
@@ -895,30 +903,44 @@ func drawGoalDragging(k Kit, w Window) {
 	if !w.GoalDragging() {
 		return
 	}
-	g, found := w.snap.Goal(w.grabbedGoal)
+	ghost, found := w.GoalGhost()
 	if !found {
 		return
 	}
-	wide := GoalsRun(w.Layout()).W
-	ghost := Box{X: w.held.At.X - wide/2, Y: w.held.At.Y - CardHeight/2, W: wide, H: CardHeight}
-	Card{Dragged: true, Face: goalFace(g)}.Draw(k, ghost)
+	l := w.Layout()
+	for at, b := range w.Tree() {
+		if b.Goal.Number != w.grabbedGoal {
+			continue
+		}
+		slot := GoalAt(l, at, w.goals)
+		row := ItemOf(slot, depthOf(b))
+		seen := k.faded(w.GhostShows())
+		Lifted{By: 1}.Draw(k, ghost)
+		w.goalItem(b, slot).Draw(k, Box{X: slot.X + ghost.X - row.X, Y: slot.Y + ghost.Y - row.Y, W: slot.W, H: slot.H})
+		seen.Pop()
+	}
 }
 
 func drawDragging(k Kit, w Window) {
-	if landing, somewhere := w.Landing(); somewhere {
-		Ring{Target: true, Radius: k.skin.Radius.Card}.Draw(k, PartsOf(landing).Panel)
-	}
-	ghost, dragging := w.Ghost()
+	landing, somewhere := w.Landing()
+	slot, dragging := w.ghostSlot()
 	if !dragging {
 		return
 	}
-	held := Card{Dragged: true}
 	for _, c := range w.Reading().Cards {
-		if c.Number == w.held.Number {
-			held.Face = c
+		if c.Number != w.held.Number {
+			continue
 		}
+		shadow := k.faded(w.GhostShows())
+		Lifted{By: 1}.Draw(k, PartsOf(slot).Panel)
+		shadow.Pop()
+		if somewhere {
+			Landing{}.Draw(k, landing)
+		}
+		seen := k.faded(w.GhostShows())
+		w.cardOf(c, false, false).Draw(k, slot)
+		seen.Pop()
 	}
-	held.Draw(k, ghost)
 }
 
 func drawBar(k Kit, l Layout, w Window) {
@@ -1123,6 +1145,12 @@ func drawTicked(k Kit, name, frame Box, w Window) {
 			writing(k, w.measured(), SubWriting(tile), f.named, true, small, 1, Follow)
 			continue
 		}
+		if _, carried := w.PartGhost(); carried && f.carried-1 == at {
+			origin := k.faded(OriginShows)
+			drawSub(k, tile, parts[at], StepLine(parts[at]), false, false, Written{})
+			origin.Pop()
+			continue
+		}
 		drawSub(k, tile, parts[at], StepLine(parts[at]), on && f.partAt == at, on && slices.Contains(f.selectedParts(), at), Written{})
 	}
 	if field, ok := f.partsField(); ok {
@@ -1142,9 +1170,12 @@ func drawTicked(k Kit, name, frame Box, w Window) {
 		say(k.gtx, k.th, ink, adding, AddingAPart, small)
 	}
 	if ghost, ok := w.PartGhost(); ok {
-		Ring{Target: true, Radius: k.skin.Radius.Row}.Draw(k.inside("tile"), Tile{Picked: true}.Draw(k, ghost))
+		seen := k.faded(w.GhostShows())
+		Lifted{By: 1}.Draw(k, ghost)
+		Tile{}.Draw(k, ghost)
 		line := SubWriting(ghost)
 		say(k.gtx, k.th, k.skin.Colour.Ink.Text, line, fits(k.gtx, k.th, StepLine(parts[f.carried-1]), line.W, small), small)
+		seen.Pop()
 	}
 	if line, ok := w.PartLanding(); ok {
 		Landing{}.Draw(k, line)

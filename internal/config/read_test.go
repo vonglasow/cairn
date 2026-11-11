@@ -887,3 +887,22 @@ func TestRead_aStoreTurnsRecurrenceOnForItself(t *testing.T) {
 		t.Errorf("the store's settings turn recurrence on: %v, %v", here.Recurrence(), err)
 	}
 }
+
+func TestRead_saysHowSeeThroughWhatIsDraggedIs(t *testing.T) {
+	read, err := config.Read(writtenConfig(t, "[window]\nghost = 40\n"), silentEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := read.Ghost(); got != 40 {
+		t.Errorf("the ghost is %d %%, want 40", got)
+	}
+	none, _ := config.Read(t.TempDir(), silentEnv)
+	if got := none.Ghost(); got != config.DefaultGhost || config.DefaultGhost != 65 {
+		t.Errorf("with no file, the ghost is %d %%, want 65", got)
+	}
+	for _, said := range []string{"5", "100", "\"half\""} {
+		if _, err := config.Read(writtenConfig(t, "[window]\nghost = "+said+"\n"), silentEnv); !errors.Is(err, config.ErrGhost) || !strings.Contains(err.Error(), "window.ghost") {
+			t.Errorf("ghost = %s: err = %v, want ErrGhost naming window.ghost", said, err)
+		}
+	}
+}

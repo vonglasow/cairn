@@ -218,3 +218,13 @@ func TestConfigShow_saysWhetherTasksComeBack(t *testing.T) {
 		t.Errorf("Recurrence = %+v:\n%s", c.Recurrence, configText(c))
 	}
 }
+
+func TestValuesOf_sayHowSeeThroughWhatIsDraggedIs(t *testing.T) {
+	read, err := config.Read(t.TempDir(), func(string) (string, bool) { return "", false })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := valuesOf(read)["window.ghost"]; got != "65" {
+		t.Errorf("window.ghost says %q, want 65", got)
+	}
+}

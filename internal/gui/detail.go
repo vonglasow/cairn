@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"fmt"
@@ -8,34 +9,67 @@ import (
 	"time"
 )
 
-// Ghost is the card in mid-air under the pointer, and whether there is one.
+// Ghost is the card in mid-air: the card itself, its own size, held where it was taken; and whether there is one.
 func (w Window) Ghost() (Box, bool) {
+	slot, ok := w.ghostSlot()
+	if !ok {
+		return Box{}, false
+	}
+	panel := PartsOf(slot).Panel
+	return Box{X: slot.X, Y: slot.Y, W: panel.W, H: panel.H}, true
+}
+
+func (w Window) ghostSlot() (Box, bool) {
 	if !w.Dragging() {
 		return Box{}, false
 	}
-	l := w.Layout()
-	return Box{
-		X: w.held.At.X - l.Column[0].W/2,
-		Y: w.held.At.Y - CardHeight/2,
-		W: l.Column[0].W,
-		H: CardHeight,
-	}, true
+	for _, p := range w.Placed() {
+		if p.Card.Number == w.held.Number {
+			by := Point{X: w.held.At.X - w.held.From.X, Y: w.held.At.Y - w.held.From.Y}
+			return Box{X: p.Slot.X + by.X, Y: p.Slot.Y + by.Y, W: p.Slot.W, H: p.Slot.H}, true
+		}
+	}
+	return Box{}, false
 }
 
-// Landing is the room the card would drop into, a card high, the cards after it moved down to make it; and whether it is over one at all.
+// LineAbove is the line a drop lands on just above a slot: in the gap between it and the card before.
+func LineAbove(slot Box) Box {
+	panel := PartsOf(slot).Panel
+	gap := slot.H - panel.H
+	return Box{X: panel.X, Y: slot.Y - gap/2 - landingHigh/2 - landingHigh%2, W: panel.W, H: landingHigh}
+}
+
+// Landing is the line where the card would drop, between two cards, the board not moving; and whether it is over a place it would move to.
 func (w Window) Landing() (Box, bool) {
 	if !w.Dragging() {
 		return Box{}, false
 	}
 	l := w.Layout()
 	if lane, at, open := w.openedInLane(l); open {
-		return l.LaneCardAt(lane, at, w.lanes[lane]), true
+		if w.ownPlace(w.inLane(lane), at) {
+			return Box{}, false
+		}
+		return LineAbove(l.LaneCardAt(lane, at, w.lanes[lane])), true
 	}
 	if column, at, open := w.openedAt(l); open {
-		return l.CardAt(column, at, w.scroll[column]), true
+		if w.ownPlace(w.inColumn(column), at) {
+			return Box{}, false
+		}
+		return LineAbove(l.CardAt(column, at, w.scroll[column])), true
 	}
 	return Box{}, false
 }
+
+// GhostShows is how much of what is dragged shows: what the configuration says, or config.DefaultGhost.
+func (w Window) GhostShows() float32 {
+	if w.configured.Window != nil && w.configured.Window.Ghost > 0 {
+		return float32(w.configured.Window.Ghost) / 100
+	}
+	return float32(config.DefaultGhost) / 100
+}
+
+// OriginShows is how much of a carried thing's own place still shows: faint, so it reads as where it came from.
+const OriginShows = 0.25
 
 const landingHigh = 3
 
