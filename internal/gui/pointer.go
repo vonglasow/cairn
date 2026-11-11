@@ -65,6 +65,9 @@ func (w Window) Click(p Point) Window {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
 		}
+		if !w.introsOpen && !w.chooserOpen && !w.SettingsBox().In(p) && len(w.ColourSwatches()) == 0 {
+			return w.leavingSettings()
+		}
 		return w.clickingSettings(p)
 	}
 	if w.screen == OnBackups {
@@ -188,6 +191,9 @@ func (w Window) Hovering(p Point) Window {
 	}
 	if w.resting == nil {
 		w.resting, w.restingAt, w.restingWide = w.cutFilterAt(p)
+	}
+	if w.resting == nil {
+		w.resting, w.restingAt, w.restingWide = w.switcherPathAt(p)
 	}
 	if w.resting == nil {
 		w.resting, w.restingAt, w.restingWide = w.hiddenAt(p)
@@ -555,6 +561,9 @@ func (w Window) PressAt(p Point) Window {
 		w.draggingChoosing = ChoosingBar(w.ChoosingBox()).In(p)
 		return w
 	}
+	if taken, ok := w.takingPanel(p); ok {
+		return taken
+	}
 	if w.screen == OnForm {
 		if _, bar, _, _, long := w.sayingOn(); long && bar.In(p) {
 			w.draggingSaying = true
@@ -621,6 +630,9 @@ func (w Window) MoveTo(p Point) Window {
 	if w.resizingForm {
 		return w.resizingTheForm(p)
 	}
+	if w.movingPanel || w.resizingPanel {
+		return w.carryingPanel(p)
+	}
 	if w.draggingForm {
 		return w.movingForm(p)
 	}
@@ -677,6 +689,9 @@ func (w Window) LetGo(p Point) Window {
 	if w.resizingForm {
 		w.resizingForm, w.held, w.pressed = false, Held{}, false
 		return w.resized(w.sizes)
+	}
+	if w.movingPanel || w.resizingPanel {
+		return w.lettingGoOfPanel(p)
 	}
 	if w.draggingForm {
 		w.draggingForm, w.held, w.pressed = false, Held{}, false
@@ -947,6 +962,9 @@ func (w Window) openedInLane(l Layout) (lane, at int, open bool) {
 func (w Window) clickedOff(p Point) Window {
 	if w.pickingLabels && w.screen == OnChoosing {
 		return w.leavingThePicker()
+	}
+	if w.screen == OnCalendar && w.calendarKey != "" {
+		return w.leavingCalendar()
 	}
 	overForm := w.screen == OnChoosing || w.screen == OnCalendar || w.screen == OnRule
 	if w.screen == OnCalendar || w.screen == OnRule {

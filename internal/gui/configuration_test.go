@@ -1,11 +1,15 @@
 package gui
 
 import (
-	"cairn/internal/build"
-	"cairn/internal/engine"
 	"slices"
 	"strings"
 	"testing"
+	"time"
+
+	"cairn/internal/build"
+	"cairn/internal/config"
+	"cairn/internal/domain"
+	"cairn/internal/engine"
 )
 
 func TestTheSystemOpensAFileWithItsOwnCommand(t *testing.T) {
@@ -105,4 +109,60 @@ func TestTheConfigurationSaysTheSchemeTheWindowWears(t *testing.T) {
 		}
 	}
 	t.Error("the configuration does not say the scheme the window wears")
+}
+
+func TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches(t *testing.T) {
+	f := configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml"})
+	w := holding(f).openingConfiguration()
+	row := func(w Window, name string) SettingRow {
+		for _, one := range w.SettingRows() {
+			if one.Key.Name == name {
+				return one
+			}
+		}
+		t.Fatalf("no setting %s among %d rows", name, len(w.SettingRows()))
+		return SettingRow{}
+	}
+	dating := w.acting(row(w, "archive.start"), -1)
+	if dating.Screen() != OnCalendar {
+		t.Fatalf("archive.start opens %v, want the calendar", dating.Screen())
+	}
+	dated := dating.dated(time.Date(2026, 11, 2, 0, 0, 0, 0, time.Local))
+	if in, ok := f.gave("config", "set"); dated.Screen() != OnConfiguration || !ok || in.Given["key"] != "archive.start" || in.Given["value"] != "2026-11-02" {
+		t.Errorf("the day taken set %+v (%v), back on %v", in, ok, dated.Screen())
+	}
+	colouring := w.acting(row(w, "workspace.colour"), -1)
+	if got := len(colouring.ColourSwatches()); got != len(domain.LabelColours) {
+		t.Fatalf("the colour opens %d swatches, want %d", got, len(domain.LabelColours))
+	}
+	colouring.Key("right").Key("enter")
+	if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != "workspace.colour" || !slices.Contains(domain.LabelColours, in.Given["value"]) {
+		t.Errorf("the swatch taken set %+v (%v)", in, ok)
+	}
+}
+
+func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNotSaved(t *testing.T) {
+	w := holding(configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml"})).openingConfiguration()
+	box := w.SettingsBox()
+	outside := Point{X: box.X / 2, Y: box.Y + box.H/2}
+	if closed := w.Click(outside); closed.Screen() != OnTheBoard {
+		t.Errorf("a click outside the settings leaves the window on %v", closed.Screen())
+	}
+	var typed Window
+	for _, row := range w.SettingRows() {
+		if row.Key.Kind == config.KindText {
+			typed = w.acting(row, -1).Key("x")
+			break
+		}
+	}
+	asked := typed.Click(outside)
+	if asked.Screen() != OnAsking || !slices.Equal(asked.Offers(), []string{"Throw away", "Keep editing"}) {
+		t.Fatalf("a click outside with a value typed leaves %v offering %v", asked.Screen(), asked.Offers())
+	}
+	if kept := asked.Choose("Keep editing"); kept.Screen() != OnConfiguration || kept.keyWriting == "" {
+		t.Errorf("keep editing goes to %v, writing %q", kept.Screen(), kept.keyWriting)
+	}
+	if thrown := asked.Choose("Throw away"); thrown.Screen() != OnTheBoard {
+		t.Errorf("throw away goes to %v", thrown.Screen())
+	}
 }

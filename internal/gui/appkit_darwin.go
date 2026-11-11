@@ -103,6 +103,19 @@ void cairn_open_panel(uintptr_t view, const char *extensions) {
 	}];
 }
 
+// cairn_folder_panel asks, over the window, for a folder. Called on the main
+// thread.
+void cairn_folder_panel(uintptr_t view) {
+	NSView *over = (__bridge NSView *)(void *)view;
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+	[panel setCanChooseFiles:NO];
+	[panel setCanChooseDirectories:YES];
+	[panel setAllowsMultipleSelection:NO];
+	[panel beginSheetModalForWindow:[over window] completionHandler:^(NSInteger result) {
+		cairnAnswered(panel, result);
+	}];
+}
+
 // cairn_icon shows the image given, the bytes of a PNG, as the application's
 // icon in the Dock and the switcher: a binary with no bundle around it has
 // none. An application that has not finished launching is made a Dock one

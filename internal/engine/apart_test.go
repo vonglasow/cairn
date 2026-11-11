@@ -58,11 +58,12 @@ func TestWorkspace_itsStoreIsTheCairnDbOfItsFolder(t *testing.T) {
 	}
 }
 
-func TestWorkspaceShown_isNamedByItsWorkspaceOrTheFolderOfItsStore(t *testing.T) {
+func TestWorkspaceShown_isNamedShortNeverByAWholePath(t *testing.T) {
 	cases := map[string]WorkspaceShown{
-		"home":                      {Workspace: "home", Store: filepath.Join("x", "cairn.db")},
-		filepath.Join("a", "loose"): {Store: filepath.Join("a", "loose", "cairn.db")},
-		"":                          {},
+		"home":     {Workspace: "home", Own: "kept", Store: filepath.Join("x", "cairn.db")},
+		"fixtures": {Own: "fixtures", Store: filepath.Join("tmp", "x", "cairn.db")},
+		"loose":    {Store: filepath.Join("a", "loose", "cairn.db")},
+		"":         {},
 	}
 	for want, shown := range cases {
 		if got := shown.Name(); got != want {

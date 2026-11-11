@@ -630,8 +630,7 @@ func (w Window) Choose(name string) Window {
 			return w
 		}
 		if w.screen == OnCalendar {
-			w.screen = OnForm
-			return w
+			return w.leavingCalendar()
 		}
 		if w.screen == OnRule {
 			return w.closingRule(false)
@@ -793,8 +792,16 @@ func (w Window) Choose(name string) Window {
 		}
 		return w.Delete()
 	case "throw away":
+		if w.question == aboutLeavingSettings {
+			w.screen, w.question, w.keyWriting = OnConfiguration, aboutDeleting, ""
+			return w.Choose("Close")
+		}
 		return w.throwingAway()
 	case "back", "keep editing":
+		if w.question == aboutLeavingSettings {
+			w.screen, w.question = OnConfiguration, aboutDeleting
+			return w
+		}
 		w.screen, w.question = OnForm, aboutDeleting
 		return w
 	case "recover":

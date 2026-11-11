@@ -14,17 +14,22 @@ import (
 // ErrDeclined is what a dialog answers when it was closed without a file.
 var ErrDeclined = errors.New("no file was chosen")
 
-// Files is the system's file dialog: a file chosen to be read, or one to be written under a name it suggests.
+// ErrNoPicker is what a system with no folder picker answers: the folder is typed instead.
+var ErrNoPicker = errors.New("this system has no folder picker")
+
+// Files is the system's file dialog: a file chosen to be read, one to be written under a name it suggests, or a folder.
 type Files interface {
 	ChooseFile(extensions ...string) (io.ReadCloser, error)
 	CreateFile(name string) (io.WriteCloser, error)
+	ChooseFolder() (string, error)
 }
 
-// FileAsk is what the window wants of the dialog: a file to save the tasks already written at From to, under Name, or a file of tasks to add.
+// FileAsk is what the window wants of the dialog: a file to save the tasks already written at From to, under Name, a file of tasks to add, or a folder to open.
 type FileAsk struct {
-	Save bool
-	Name string
-	From string
+	Save   bool
+	Folder bool
+	Name   string
+	From   string
 }
 
 // Filed is what came of it: the file the dialog named, the window's own copy of a file chosen, or the dialog closed, or what went wrong.
@@ -75,6 +80,9 @@ func (w Window) importingTasks() Window {
 
 // Filed takes what the dialog answered: tasks written out are said, the tasks of a file chosen are added at once — nothing is replaced, so nothing is asked — and a dialog closed changes nothing.
 func (w Window) Filed(got Filed) Window {
+	if got.Ask.Folder {
+		return w.folderChosen(got)
+	}
 	if got.Declined {
 		return w
 	}
@@ -85,6 +93,20 @@ func (w Window) Filed(got Filed) Window {
 		return w.telling("the tasks were written to " + got.Called)
 	}
 	return w.addingFrom(got.Chosen, filepath.Base(got.Called))
+}
+
+func (w Window) folderChosen(got Filed) Window {
+	switch {
+	case errors.Is(got.Err, ErrNoPicker):
+		w.switcher.asking, w.switcher.typed = aFolder, Written{}
+		return w
+	case got.Declined:
+		w.switcher.asking, w.switcher.typed = narrowing, Written{}
+		return w
+	case got.Err != nil:
+		return w.failing(got.Err)
+	}
+	return w.askingApart(engine.Elsewhere{Folder: got.Chosen}, got.Chosen)
 }
 
 func (w Window) addingFrom(from, name string) Window {
@@ -103,6 +125,14 @@ func (w Window) addingFrom(from, name string) Window {
 // Filing is what the loop does on the side while the dialog is open: it asks the system, and copies the file one way or the other.
 func Filing(ask FileAsk, files Files) Filed {
 	got := Filed{Ask: ask}
+	if ask.Folder {
+		chosen, err := files.ChooseFolder()
+		got.Chosen, got.Declined = chosen, errors.Is(err, ErrDeclined)
+		if !got.Declined {
+			got.Err = err
+		}
+		return got
+	}
 	if ask.Save {
 		defer func() { _ = os.RemoveAll(filepath.Dir(ask.From)) }()
 		to, err := files.CreateFile(ask.Name)

@@ -132,6 +132,12 @@ func ColourIn(path string) (string, error) {
 	return read.colour, err
 }
 
+// NameIn is the name the settings at a path give their store: nothing when they give none.
+func NameIn(path string) (string, error) {
+	read, err := Places{}.WithSettings(path)
+	return read.name, err
+}
+
 func storesOwn(data []byte) []string {
 	var said []string
 	for _, key := range writtenIn(data) {

@@ -63,6 +63,7 @@ func valuesIn(c Config) map[string]string {
 	}
 	if c.Workspace != nil {
 		values["workspace.colour"] = c.Workspace.Colour
+		values["workspace.name"] = c.Workspace.Name
 	}
 	values["plugin"] = c.Plugin.At
 	return values

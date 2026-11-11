@@ -278,8 +278,11 @@ func TestTheSettingsOfAWorkspaceSayWhereEachKeyComesFrom(t *testing.T) {
 	if from["pages.time"] != SetHere || from["archive.days"] != FromGlobal || from["time.weekends"] != ByDefault {
 		t.Errorf("the keys come from %v", from)
 	}
-	if said := w.SettingsPath(); !strings.Contains(said, "/h/settings.toml") || !strings.Contains(said, "over /c/config.toml") {
-		t.Errorf("the scope says %q", said)
+	if said := w.SettingsPath(); said != "settings.toml over config.toml" {
+		t.Errorf("the scope says %q, want the files' names alone", said)
+	}
+	if marks := w.CopyMarks(); !slices.ContainsFunc(marks, func(m CopyMark) bool { return m.Said == "/h/settings.toml" }) {
+		t.Errorf("the settings' copy marks are %+v, none copying /h/settings.toml", marks)
 	}
 	if !slices.Contains(w.Offers(), OpenSettings) {
 		t.Errorf("the panel offers %v", w.Offers())
@@ -379,5 +382,25 @@ func TestTheSettingsOfAWorkspaceSayItsLabelItsColourAndTheGlobalValueOfAKeySetHe
 		if row.Key.Name == "approach.label" && row.Value != "" {
 			t.Errorf("a store saying no label reads %+v", row)
 		}
+	}
+}
+
+func TestAStoreIsShownByAShortNameItsPathUnderThePointer(t *testing.T) {
+	w := switching(newFake(), nil)
+	lines := w.SwitcherLines()
+	recent := slices.IndexFunc(lines, func(l SwitcherLine) bool { return l.Recent })
+	home := slices.IndexFunc(lines, func(l SwitcherLine) bool { return l.Name == "home" })
+	if recent < 0 || home < 0 || lines[recent].Name != "s" {
+		t.Fatalf("the switcher reads %+v, want the recent folder named s", lines)
+	}
+	for at, path := range map[int]string{recent: "/s", home: "/h"} {
+		box := lines[at].At
+		if said := w.Hovering(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}).Bubble(); said != path {
+			t.Errorf("the pointer on %q says %q, want %q", lines[at].Name, said, path)
+		}
+	}
+	loose := atPlace(newFake(), engine.WorkspaceShown{Store: "/Users/me/projects/proj/cairn.db"})
+	if said := loose.PlaceShown(); said != "proj" {
+		t.Errorf("the pill of a store no workspace names reads %q, want proj", said)
 	}
 }

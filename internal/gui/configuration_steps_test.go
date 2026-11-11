@@ -77,9 +77,13 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the panel reads the settings of "([^"]*)" over the global configuration$`, func(name string) error {
-		want := filepath.Join(w.spaces.FolderOf(name), config.SettingsFile) + " over " + config.FileIn(w.spaces.Dir)
+		want := config.SettingsFile + " over " + filepath.Base(config.FileIn(w.spaces.Dir))
 		if got := w.w.SettingsPath(); got != want {
 			return fmt.Errorf("the panel reads %q, not %q", got, want)
+		}
+		written := filepath.Join(w.spaces.FolderOf(name), config.SettingsFile)
+		if !slices.ContainsFunc(w.w.CopyMarks(), func(m CopyMark) bool { return m.Said == written }) {
+			return fmt.Errorf("no mark copies %s: %+v", written, w.w.CopyMarks())
 		}
 		return nil
 	})

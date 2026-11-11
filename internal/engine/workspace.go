@@ -112,6 +112,7 @@ type WorkspaceShown struct {
 	Why       Why      `json:"why"`
 	Store     string   `json:"store"`
 	Notes     string   `json:"notes"`
+	Own       string   `json:"own,omitempty" jsonschema:"the name the store's settings give it, shown where no workspace names it"`
 	Colour    string   `json:"colour,omitempty" jsonschema:"one of the label colours: the one the store's settings say, or one read off the workspace's name; none for a store no workspace names and whose settings say none"`
 	Time      string   `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
 	TimeFrom  string   `json:"time_from" jsonschema:"where the time is said: set in the store's settings, from the global configuration, or by default"`
@@ -381,7 +382,8 @@ func InWords(items []string) string {
 }
 
 func (a answering) shown() WorkspaceShown {
-	shown := WorkspaceShown{Workspace: a.workspace, Folder: a.folder, Why: a.why, Store: a.store.At, Notes: a.notes.At, Colour: colourOf(a.workspace, a.store.At)}
+	own, _ := config.NameIn(config.SettingsBeside(a.store.At))
+	shown := WorkspaceShown{Workspace: a.workspace, Folder: a.folder, Why: a.why, Store: a.store.At, Notes: a.notes.At, Own: own, Colour: colourOf(a.workspace, a.store.At)}
 	if a.workspace == "" {
 		shown.Add = "cairn workspace add <name> <folder>"
 		if filepath.Base(a.store.At) == storeFile {

@@ -25,6 +25,16 @@ func (breaking) Close() error              { return nil }
 
 var errBroke = errors.New("the file broke")
 
+func (d dialog) ChooseFolder() (string, error) {
+	if d.closed {
+		return "", ErrDeclined
+	}
+	if d.broken != nil {
+		return "", d.broken
+	}
+	return d.open, nil
+}
+
 func (d dialog) ChooseFile(...string) (io.ReadCloser, error) {
 	if d.closed {
 		return nil, ErrDeclined
@@ -201,5 +211,24 @@ func TestCarryingTheTasksIsOffered(t *testing.T) {
 	}
 	if New(f, 1200, 800).Choose("Export"); f.what("task", "export") != 1 {
 		t.Error("Export wrote nothing")
+	}
+}
+
+func TestOpenAFolderAsksTheSystemsPickerAndOpensWhatItChose(t *testing.T) {
+	w := switching(newFake(), nil).actingInSwitcher(OpenFolderSays)
+	ask, asked := w.FileAsked()
+	if !asked || !ask.Folder {
+		t.Fatalf("Open a folder… asks %+v (%v), want the system's folder picker", ask, asked)
+	}
+	w = w.FileTaken()
+	chosen := w.Filed(Filing(ask, dialog{open: "/somewhere/proj"}))
+	if to, apart := chosen.ApartAsked(); !apart || to.Folder != "/somewhere/proj" {
+		t.Errorf("the folder chosen asks %+v (%v)", to, apart)
+	}
+	if closed := w.Filed(Filing(ask, dialog{closed: true})); closed.switcher.asking != narrowing || closed.Wrong() != nil {
+		t.Errorf("a cancel leaves the switcher asking %v, saying %v", closed.switcher.asking, closed.Wrong())
+	}
+	if typed := w.Filed(Filing(ask, dialog{broken: ErrNoPicker})); typed.switcher.asking != aFolder || typed.Wrong() != nil {
+		t.Errorf("with no picker the switcher asks %v, saying %v, want a folder typed", typed.switcher.asking, typed.Wrong())
 	}
 }

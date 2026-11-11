@@ -79,3 +79,13 @@ func TestWithoutWorkspace_refusesWhatItCannotChange(t *testing.T) {
 		}
 	}
 }
+
+func TestNameIn_readsTheNameAStoreGivesItself(t *testing.T) {
+	path := filepath.Join(t.TempDir(), config.SettingsFile)
+	if err := os.WriteFile(path, []byte("[workspace]\nname = \"fixtures\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if name, err := config.NameIn(path); err != nil || name != "fixtures" {
+		t.Errorf("NameIn = %q, %v; want fixtures", name, err)
+	}
+}

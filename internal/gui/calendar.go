@@ -211,7 +211,32 @@ func (w Window) onCalendar(name string) Window {
 }
 
 func (w Window) dated(day time.Time) Window {
+	if key := w.calendarKey; key != "" {
+		w.calendarKey, w.screen = "", OnConfiguration
+		if day.IsZero() {
+			return w.unsetting(key)
+		}
+		return w.setting(key, domain.FormatDay(day))
+	}
 	w.form = w.form.Writes(Ending(domain.FormatDay(day)))
+	w.screen = OnForm
+	return w
+}
+
+func (w Window) openingCalendarFor(key, value string) Window {
+	w.day = w.today()
+	if held, err := domain.ParseDeadline(value); err == nil && !held.IsZero() {
+		w.day = engine.DayOf(held)
+	}
+	w.calendarKey, w.screen = key, OnCalendar
+	return w
+}
+
+func (w Window) leavingCalendar() Window {
+	if w.calendarKey != "" {
+		w.calendarKey, w.screen = "", OnConfiguration
+		return w
+	}
 	w.screen = OnForm
 	return w
 }

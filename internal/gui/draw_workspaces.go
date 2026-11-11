@@ -75,14 +75,6 @@ func drawSwitcherLine(k Kit, m Measure, one SwitcherLine) {
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: right - tag, Y: row.Y, W: tag, H: row.H}, one.Tag, small, font.Font{}, text.End)
 	right -= tag + padding
 	x := dot.X + dot.W + between
-	if one.Recent {
-		Dot{Ring: true}.Draw(k, dot)
-		sayIn(k.gtx, k.th, ink, Box{X: x, Y: row.Y, W: max(0, right-x), H: row.H}, one.Name, small, k.skin.Type.Mono, text.Start)
-		return
-	}
-	Dot{Colour: one.Colour, Ring: one.Gone}.Draw(k, dot)
-	named := min(ends(m, one.Name, reads)+placeSlack, max(0, right-x))
-	sayStyled(k.gtx, k.th, ink, Box{X: x, Y: row.Y, W: named, H: row.H}, one.Name, reads, font.Medium, 1, text.Start)
-	folder := x + named + padding
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: folder, Y: row.Y, W: max(0, right-folder), H: row.H}, one.Folder, small, k.skin.Type.Mono, text.Start)
+	Dot{Colour: one.Colour, Ring: one.Gone || one.Recent}.Draw(k, dot)
+	sayStyled(k.gtx, k.th, ink, Box{X: x, Y: row.Y, W: max(0, right-x), H: row.H}, one.Name, reads, font.Medium, 1, text.Start)
 }

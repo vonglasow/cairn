@@ -99,9 +99,6 @@ func (w Window) placeAt(l Layout) Box {
 const placeRoom = 2*padding + dotSide + 2*between + placeCaret
 
 func (w Window) placeTextWide() int {
-	if w.Loose() {
-		return monoWide(w.PlaceShown(), small)
-	}
 	return min(w.placeText(), ends(w.measured(), w.PlaceShown(), reads)+placeSlack)
 }
 
@@ -113,21 +110,24 @@ func (w Window) placeText() int {
 	return room
 }
 
-// PlaceShown is what the pill writes: the workspace, or the folder of the store cut at its start to the room the pill has.
+// PlaceShown is what the pill writes: the short name of the place, never its whole path; nothing when the pill has no room for words.
 func (w Window) PlaceShown() string {
-	said := w.PlaceSays()
 	if w.placeText() == 0 {
 		return ""
 	}
-	if !w.Loose() {
-		return said
+	return w.PlaceSays()
+}
+
+func (w Window) switcherPathAt(p Point) ([]string, Box, int) {
+	if w.screen != OnWorkspaces {
+		return nil, Box{}, 0
 	}
-	runes := []rune(said)
-	for len(runes) > 1 && monoWide(said, small) > w.placeText() {
-		runes = runes[1:]
-		said = "…" + string(runes)
+	for _, line := range w.SwitcherLines() {
+		if line.At.In(p) && line.Folder != "" {
+			return []string{line.Folder}, line.At, line.At.W
+		}
 	}
-	return said
+	return nil, Box{}, 0
 }
 
 // PlaceParts is where the pill draws its dot, its name and its caret.
@@ -193,7 +193,7 @@ func (w Window) spaceLine(place int, one engine.Workspace) SwitcherLine {
 }
 
 func (w Window) recentLine(one engine.RecentFolder) SwitcherLine {
-	line := SwitcherLine{Name: one.Shown(), Recent: true, Gone: one.NotFound, Tag: one.Said(w.now), to: engine.Elsewhere{Store: one.Store}}
+	line := SwitcherLine{Name: one.Name(), Folder: one.Shown(), Recent: true, Gone: one.NotFound, Tag: one.Said(w.now), to: engine.Elsewhere{Store: one.Store}}
 	if !one.NotFound {
 		line.keeps = one.Folder
 	}
@@ -458,6 +458,7 @@ func (w Window) actingInSwitcher(said string) Window {
 	switch said {
 	case OpenFolderSays:
 		w.switcher.asking, w.switcher.typed = aFolder, Written{}
+		w.fileAsk = &FileAsk{Folder: true}
 	case NewWorkspaceSays:
 		w.switcher.asking, w.switcher.typed = aName, Written{}
 	case KeepAsWorkspaceSays:

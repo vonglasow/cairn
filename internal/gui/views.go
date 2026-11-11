@@ -295,8 +295,7 @@ func (w Window) listingViews() Window {
 	return w
 }
 
-// ViewsBox is the panel of the views: across the middle of the window, a line a view, and the warning of the one chosen when something it holds is gone.
-func (w Window) ViewsBox() Box {
+func (w Window) viewsOpens() Box {
 	var said []string
 	for _, v := range w.snap.Views {
 		said = append(said, v.Name+"   "+engine.HoldsSays(v.View)+"   "+strconv.Itoa(len(v.Kept))+"   ⌘9")
@@ -502,3 +501,6 @@ func (w Window) viewCommandRows(typed string) []PaletteRow {
 		return w.keepingView(name)
 	}}}
 }
+
+// ViewsBox is the panel of the views: across the middle of the window, a line a view, and the warning of the one chosen when something it holds is gone.
+func (w Window) ViewsBox() Box { return w.placedPanel(OnViews, w.viewsOpens()) }

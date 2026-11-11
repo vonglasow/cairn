@@ -46,6 +46,7 @@ type Config struct {
 // WorkspaceConfig is the colour the workspace wears: the one its settings say, or one read off its name.
 type WorkspaceConfig struct {
 	Colour string `json:"colour"`
+	Name   string `json:"name,omitempty" jsonschema:"the name the store's settings give it, shown where no workspace names it"`
 }
 
 // NotSaid is how a key with no value, and none by default, is told.
@@ -159,8 +160,9 @@ func (g *readingGate) Resolved(p config.Places) {
 			g.config.Global[key] = value
 		}
 	}
-	if colour := colourOf(places.workspace, places.store.At); colour != "" {
-		g.config.Workspace = &WorkspaceConfig{Colour: colour}
+	own, _ := config.NameIn(config.SettingsBeside(places.store.At))
+	if colour := colourOf(places.workspace, places.store.At); colour != "" || own != "" {
+		g.config.Workspace = &WorkspaceConfig{Colour: colour, Name: own}
 	}
 	g.config.Store = places.store
 	g.config.Notes = places.notes
@@ -287,6 +289,9 @@ func configText(c Config) string {
 			from = "set in the store's settings"
 		}
 		fmt.Fprintf(&said, "\n[workspace]\ncolour = %q   # %s\n", c.Workspace.Colour, from)
+		if c.Workspace.Name != "" {
+			fmt.Fprintf(&said, "name = %q   # set in the store's settings\n", c.Workspace.Name)
+		}
 	}
 	said.WriteString(workspacesTable(c.Workspaces))
 	return said.String()

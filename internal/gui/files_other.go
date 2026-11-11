@@ -5,6 +5,8 @@ package gui
 import (
 	"errors"
 	"io"
+	"os/exec"
+	"strings"
 
 	"gioui.org/app"
 	"gioui.org/io/event"
@@ -26,6 +28,22 @@ func (s explorerFiles) ChooseFile(extensions ...string) (io.ReadCloser, error) {
 func (s explorerFiles) CreateFile(name string) (io.WriteCloser, error) {
 	file, err := s.dialog.CreateFile(name)
 	return file, refusedOrDeclined(err)
+}
+
+func (s explorerFiles) ChooseFolder() (string, error) {
+	picker, err := exec.LookPath("zenity")
+	if err != nil {
+		return "", ErrNoPicker
+	}
+	out, err := exec.Command(picker, "--file-selection", "--directory").Output()
+	var exited *exec.ExitError
+	if errors.As(err, &exited) && exited.ExitCode() == 1 {
+		return "", ErrDeclined
+	}
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
 }
 
 func refusedOrDeclined(err error) error {

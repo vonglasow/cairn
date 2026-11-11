@@ -136,6 +136,9 @@ func Draw(k Kit, w Window) {
 	if w.Screen() == OnSeriesFates {
 		drawSeriesFates(panel, w)
 	}
+	if w.Screen() == OnCalendar && w.calendarKey != "" {
+		drawConfiguration(panel, w)
+	}
 	if w.Screen() == OnCalendar {
 		drawCalendar(popover, w)
 	}
@@ -169,6 +172,9 @@ func Draw(k Kit, w Window) {
 	if w.Screen() == OnWorkspaces {
 		drawSwitcher(popover, w)
 	}
+	if w.Screen() == OnConfiguration {
+		drawSwatches(popover, w)
+	}
 	for _, mark := range w.CopyMarks() {
 		mark.Draw(popover, mark.At)
 	}
@@ -188,7 +194,7 @@ func Draw(k Kit, w Window) {
 
 func drawBackups(k Kit, w Window) {
 	box := w.BackupsBox()
-	Panel{Head: Heads(w)}.Draw(k, box)
+	Panel{Head: Heads(w), Moves: true}.Draw(k, box)
 	k = k.inside("panel")
 	from := w.BackupsFrom()
 	for i, one := range w.Backups()[from:min(len(w.Backups()), from+w.BackupsRoom())] {
@@ -199,7 +205,7 @@ func drawBackups(k Kit, w Window) {
 
 func drawLabels(k Kit, w Window) {
 	box := w.LabelsBox()
-	Panel{Head: Heads(w)}.Draw(k, box)
+	Panel{Head: Heads(w), Moves: true}.Draw(k, box)
 	m := w.measured()
 	drawLabelSearch(k.inside("panel"), w, m, w.LabelSearchAt())
 	rows := w.LabelRows()
@@ -295,7 +301,7 @@ func drawKeeping(k Kit, w Window) {
 
 func drawViews(k Kit, w Window) {
 	box := w.ViewsBox()
-	Panel{Head: Heads(w)}.Draw(k, box)
+	Panel{Head: Heads(w), Moves: true}.Draw(k, box)
 	k = k.inside("panel")
 	rows := w.ViewsPanelRows()
 	if len(rows) == 0 {
@@ -687,7 +693,7 @@ func drawSaid(k Kit, w Window, said []Said, box Box) {
 
 func drawHelp(k Kit, w Window) {
 	box := w.HelpBox()
-	Panel{Head: Heads(w)}.Draw(k, box)
+	Panel{Head: Heads(w), Moves: true}.Draw(k, box)
 	k = k.inside("panel")
 	for _, line := range w.HelpLines() {
 		if line.Head != "" {

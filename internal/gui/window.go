@@ -157,6 +157,11 @@ type Window struct {
 	formMoved, formGrip   Point
 	draggingForm, dragged bool
 	resizingForm          bool
+	movingPanel           bool
+	colourKey             string
+	calendarKey           string
+	resizingPanel         bool
+	panels                map[Screen]panelPlace
 	resizedFrom           Box
 	sizes                 Sizes
 	kept                  SizesKept

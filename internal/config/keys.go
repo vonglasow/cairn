@@ -59,6 +59,7 @@ var keys = []Key{
 	{Name: "window.theme", Kind: KindTheme, Section: SectionAppearance, Says: "Theme"},
 	{Name: "window.intro", Kind: KindIntro, Words: Intros(), Section: SectionAppearance, Says: "Intro"},
 	{Name: "workspace.colour", Kind: KindColour, Store: true, Section: SectionAppearance, Says: "Colour"},
+	{Name: "workspace.name", Kind: KindText, Store: true, Section: SectionAppearance, Says: "Name"},
 	{Name: "window.keep_sizes", Kind: KindBool, Section: SectionAppearance, Says: "Keep column sizes"},
 	{Name: "window.ghost", Kind: KindPercent, Section: SectionAppearance, Says: "What is dragged shows at", Unit: "%"},
 	{Name: "pages.tasks", Kind: KindBool, Section: SectionPages, Says: "Tasks"},

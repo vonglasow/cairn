@@ -61,8 +61,7 @@ func (w Window) choosingWide() int {
 	return max(listLeast, rows, w.headWide(), w.offersWide())
 }
 
-// BackupsBox is the panel of the list of backups: across the middle of the window, as long as the backups up to what the window has room for.
-func (w Window) BackupsBox() Box {
+func (w Window) backupsOpens() Box {
 	said := make([]string, 0, len(w.backups))
 	for _, one := range w.backups {
 		said = append(said, backupSays(one))
@@ -103,3 +102,6 @@ func ends(m Measure, said string, size int) int {
 	edges := m(said, size)
 	return edges[len(edges)-1]
 }
+
+// BackupsBox is the panel of the list of backups: across the middle of the window, as long as the backups up to what the window has room for.
+func (w Window) BackupsBox() Box { return w.placedPanel(OnBackups, w.backupsOpens()) }

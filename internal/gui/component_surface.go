@@ -22,14 +22,20 @@ func (g Ground) Draw(k Kit, at Box) Box {
 }
 
 // Panel is a raised box over the board, a form's or a list's, headed when it has a head.
-type Panel struct{ Head string }
+type Panel struct {
+	Head  string
+	Moves bool
+}
 
-// Draw raises the panel over at, its shadow under it, and writes its head.
+// Draw raises the panel over at, its shadow under it, writes its head, and draws the grip it is resized by when it moves.
 func (p Panel) Draw(k Kit, at Box) Box {
 	k.put("panel", at)
 	raised(k, at, k.skin.Radius.Panel, k.skin.Colour.Surface.Raised)
 	if p.Head != "" {
 		Heading{Said: p.Head}.Draw(k.inside("panel"), FormHeading(at))
+	}
+	if p.Moves {
+		Grip{Ink: k.skin.Colour.Ink.Faint}.Draw(k.inside("panel"), FormGrip(at))
 	}
 	return at
 }

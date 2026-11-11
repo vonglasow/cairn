@@ -8,6 +8,7 @@ package gui
 
 void cairn_save_panel(uintptr_t view, const char *name);
 void cairn_open_panel(uintptr_t view, const char *extensions);
+void cairn_folder_panel(uintptr_t view);
 */
 import "C"
 
@@ -46,6 +47,10 @@ func (f appkitFiles) ChooseFile(extensions ...string) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return os.Open(path)
+}
+
+func (f appkitFiles) ChooseFolder() (string, error) {
+	return f.asked(func(view C.uintptr_t, _ *C.char) { C.cairn_folder_panel(view) }, "")
 }
 
 func (f appkitFiles) CreateFile(name string) (io.WriteCloser, error) {

@@ -140,6 +140,7 @@ type Places struct {
 	focusSession     string
 	approach         string
 	colour           string
+	name             string
 	timeDeleted      string
 	timeWeekends     string
 	keepSizes        bool
@@ -175,6 +176,14 @@ type file struct {
 
 type workspace struct {
 	Colour *string `toml:"colour"`
+	Name   *string `toml:"name"`
+}
+
+func (w *workspace) name() string {
+	if w == nil || w.Name == nil {
+		return ""
+	}
+	return *w.Name
 }
 
 func (w *workspace) colour() string {
@@ -374,6 +383,9 @@ func (p Places) ApproachLabel() string { return p.approach }
 
 // Colour is the colour the store's settings say its workspace wears, exactly as written; nothing when they say none, and never the global file's, which a store's colour is not.
 func (p Places) Colour() string { return p.colour }
+
+// Name is the name a store's settings give it, shown where no workspace names it; nothing when they give none.
+func (p Places) Name() string { return p.name }
 
 // KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
 func (p Places) KeepSizes() bool { return p.keepSizes }
@@ -608,7 +620,7 @@ func (p *Places) settle(f file) error {
 	p.timeMode, p.recurrence = mode, recurring
 	p.archiveStart, p.archiveDays, p.timeDeleted, p.timeWeekends, p.keepSizes = start, days, deleted, weekends, keep
 	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off(mode == TimeOn)
-	p.colour, p.theme = f.Workspace.colour(), f.Window.theme()
+	p.colour, p.name, p.theme = f.Workspace.colour(), f.Workspace.name(), f.Window.theme()
 	return nil
 }
 

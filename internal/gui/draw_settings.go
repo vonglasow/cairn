@@ -17,7 +17,7 @@ func drawConfiguration(k Kit, w Window) {
 		k = k.inside("veil")
 	}
 	box := w.SettingsBox()
-	Panel{Head: Heads(w)}.Draw(k, box)
+	Panel{Head: Heads(w), Moves: true}.Draw(k, box)
 	in := k.inside("panel")
 	if w.introsOpen {
 		drawIntros(in, w, box)

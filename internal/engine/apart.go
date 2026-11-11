@@ -27,15 +27,17 @@ func OpenApart(held *Engine, to Elsewhere) (Apart, error) {
 // Store is the store of the workspace: the cairn.db of its folder.
 func (w Workspace) Store() string { return filepath.Join(w.Folder, storeFile) }
 
-// Name is how the place a board shows is named to a person: the workspace that names its store, or the folder holding the store when none does.
+// Name is how the place a board shows is named to a person, short, never a whole path: the workspace that names its store, the name the store's settings give it, or the folder holding the store.
 func (s WorkspaceShown) Name() string {
-	if s.Workspace != "" {
+	switch {
+	case s.Workspace != "":
 		return s.Workspace
-	}
-	if s.Store == "" {
+	case s.Own != "":
+		return s.Own
+	case s.Store == "":
 		return ""
 	}
-	return filepath.Dir(s.Store)
+	return filepath.Base(filepath.Dir(s.Store))
 }
 
 // Cost is what a card says it cost against what it was reckoned to cost, and whether that is over, when the time is shown; nothing when it is hidden or off.

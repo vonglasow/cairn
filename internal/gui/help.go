@@ -147,8 +147,7 @@ func (w Window) helpColumns() int {
 	return 1
 }
 
-// HelpBox is the panel the help is drawn in: across the middle of the window, as tall as its longest column.
-func (w Window) HelpBox() Box {
+func (w Window) helpOpens() Box {
 	over := Over(w.width, w.height)
 	rows := w.helpRows()
 	fixed := FirstRow(over) - over.Y + padding + barHigh + padding
@@ -162,3 +161,6 @@ const (
 	helpBetween     = 24
 	helpColumnLeast = 230
 )
+
+// HelpBox is the panel the help is drawn in: across the middle of the window, as tall as its longest column.
+func (w Window) HelpBox() Box { return w.placedPanel(OnHelp, w.helpOpens()) }

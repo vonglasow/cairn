@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cairn/internal/config"
+	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -128,18 +129,26 @@ func (w Window) hereName() string {
 	return "here"
 }
 
-// SettingsPath is what the panel says beside the scope: the file written, and the one it lies over or under.
+// SettingsPath is what the panel says beside the scope: the name of the file written, and of the one it lies over or under; the whole path is copied from the mark before it.
 func (w Window) SettingsPath() string {
+	global := filepath.Base(w.configured.File)
 	if w.global {
 		if w.HereOffered() {
-			return tilde(w.configured.File) + " · under every workspace's own settings"
+			return global + " · under every workspace's own settings"
 		}
-		return tilde(w.configured.File)
+		return global
 	}
 	if w.narrow() {
-		return tilde(engine.SettingsOf(w.configured))
+		return filepath.Base(engine.SettingsOf(w.configured))
 	}
-	return tilde(engine.SettingsOf(w.configured)) + " over " + tilde(w.configured.File)
+	return filepath.Base(engine.SettingsOf(w.configured)) + " over " + global
+}
+
+func (w Window) settingsWritten() string {
+	if w.global {
+		return w.configured.File
+	}
+	return engine.SettingsOf(w.configured)
 }
 
 func tilde(path string) string {
@@ -299,8 +308,7 @@ func SettingsBox(width, height int) Box {
 	return Box{X: (width - wide) / 2, Y: (height - high) / 2, W: wide, H: high}
 }
 
-// SettingsBox is the panel of the settings in this window.
-func (w Window) SettingsBox() Box {
+func (w Window) settingsOpens() Box {
 	if w.introsOpen {
 		return IntrosBox(w.width, w.height)
 	}
@@ -376,7 +384,7 @@ func (w Window) scopeWords() []string {
 func (w Window) ScopePathAt() Box {
 	scope, segments := ScopeAt(w.SettingsBox()), w.ScopeSegments()
 	last := segments[len(segments)-1]
-	x := last.X + last.W + 2 + padding
+	x := last.X + last.W + 2 + padding + copyRoom
 	return Box{X: x, Y: scope.Y + (scope.H-lineHigh)/2, W: max(0, scope.X+scope.W-x), H: lineHigh}
 }
 
@@ -565,6 +573,19 @@ func (w Window) onConfiguration(name string) Window {
 	if w.chooserOpen {
 		return w.inChooser(name)
 	}
+	if w.colourKey != "" {
+		switch name {
+		case "right", "l":
+			w.colourPick = min(len(domain.LabelColours)-1, w.colourPick+1)
+		case "left", "h":
+			w.colourPick = max(0, w.colourPick-1)
+		case "enter", "space":
+			return w.colouredSetting(w.colourPick)
+		case "esc":
+			w.colourKey = ""
+		}
+		return w
+	}
 	if w.keyWriting != "" {
 		switch name {
 		case "enter":
@@ -661,10 +682,21 @@ func (w Window) acting(row SettingRow, word int) Window {
 	case config.KindIntro:
 		return w.openingIntros()
 	case config.KindColour:
-		return w.setting(row.Key.Name, nextColour(row.Value))
+		w.colourKey, w.colourPick = row.Key.Name, max(0, slices.Index(domain.LabelColours, row.Value))
+		return w
+	case config.KindDay:
+		return w.openingCalendarFor(row.Key.Name, row.Value)
 	}
 	w.keyWriting, w.keyWritten, w.refusedKey = row.Key.Name, Written{}.Types(row.Value).All(), ""
 	return w
+}
+
+func (w Window) leavingSettings() Window {
+	if w.keyWriting != "" {
+		w.screen, w.question = OnAsking, aboutLeavingSettings
+		return w
+	}
+	return w.Choose("Close")
 }
 
 func (w Window) settingEdited() Window {
@@ -710,11 +742,6 @@ func (w Window) applyingOwn() Window {
 	w = w.takingConfig(got)
 	w.stamp = engine.StampOf(got)
 	return w
-}
-
-func nextColour(now string) string {
-	colours := labelColourNames()
-	return colours[(slices.Index(colours, now)+1)%len(colours)]
 }
 
 func (w Window) clickingSettings(p Point) Window {
@@ -1006,3 +1033,6 @@ func HandOver(path string) error {
 	go func() { _ = command.Wait() }()
 	return nil
 }
+
+// SettingsBox is the panel of the settings in this window.
+func (w Window) SettingsBox() Box { return w.placedPanel(OnConfiguration, w.settingsOpens()) }

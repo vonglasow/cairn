@@ -1369,7 +1369,7 @@ func TestTheFormDrawsItsGrip(t *testing.T) {
 	}
 }
 
-func TestAFormsButtonsEndBeforeItsGripAndAnotherPanelsAtItsPadding(t *testing.T) {
+func TestAPanelsButtonsEndBeforeItsGrip(t *testing.T) {
 	rightmost := func(along []Box) int {
 		end := 0
 		for _, one := range along {
@@ -1385,8 +1385,8 @@ func TestAFormsButtonsEndBeforeItsGripAndAnotherPanelsAtItsPadding(t *testing.T)
 	}
 	help := w.Key("?")
 	box := help.HelpBox()
-	if end := rightmost(help.offersAlong(box)); end != box.X+box.W-padding-inset {
-		t.Errorf("the help's buttons end at %d, not at its padding %d", end, box.X+box.W-padding-inset)
+	if end := rightmost(help.offersAlong(box)); end != FormGrip(box).X {
+		t.Errorf("the help's buttons end at %d, not where its grip begins at %d", end, FormGrip(box).X)
 	}
 }
 

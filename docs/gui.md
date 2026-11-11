@@ -1174,7 +1174,15 @@ one task to the next and moved the description with it
 resizes it when dragged, its top left staying where it is, down to
 `FormLeast` and up to the window; the size given is kept with the board's
 other sizes and the next form opens at it
-(`FormGrip`, `Sizes.Form`, `TestTheFormIsResizedByItsCornerAndKeepsTheSize`). `FormPlace`
+(`FormGrip`, `Sizes.Form`, `TestTheFormIsResizedByItsCornerAndKeepsTheSize`).
+**Every panel does the same** (#287): the settings, the labels, the views,
+the backups and the help move when dragged by their heading and resize from
+the grip at their corner, inside the window and no smaller than `PanelLeast`,
+and open again where and as big as they were left while the window is open
+(`placedPanel`, `TestEveryPanelMovesByItsHeadingAndResizesByItsGrip`). A
+press on the heading that does not move is a click. They used to stay where
+and as big as they opened, one behaviour for the form and another for the
+rest. `FormPlace`
 says where every field of a form goes, and everything that draws, clicks or
 measures a form asks it.
 
@@ -2924,11 +2932,16 @@ catalogue (`config.Keys`) says every one of these, so no key is listed twice:
 
 - a **switch** (`Toggle`) for a key that is true or false, written when it is
   clicked; a **choice of a few** (`Segmented`) for words, written when one is
-  clicked; a **field** for a duration, a day, a number, a label or a folder,
+  clicked; a **field** for a duration, a number, a label or a folder,
   written on `⏎` — `esc` gives it up — a value the reader refuses said under
   it in `state.wrong`, in the reader's own words, and nothing written
   (`@gui-settings-a-field-is-written-on-enter`); a **picker** for the theme,
-  which opens the chooser, and for the colour a workspace wears;
+  which opens the chooser; a day on **the calendar** a deadline is chosen on,
+  *No day* unsetting it; and the colour a workspace wears on **the swatches**
+  a label is coloured with, `←` `→` and `⏎`
+  (`TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches`, #288). A day
+  was typed and a colour walked as a word, one picker for each kind of value
+  on a form and another in the settings;
 - **where it comes from**, in the workspace's scope: `set here`, with what the
   global configuration would give, `← global: on`, and *Reset to global*,
   which takes the line out (`@gui-settings-reset-takes-the-line-out`); `from
@@ -2944,9 +2957,18 @@ catalogue (`config.Keys`) says every one of these, so no key is listed twice:
   field. The colour a workspace wears is never in Global.
 
 Nothing waits for a Save button, and the foot says it: *Saved as it is changed
-· the file is read again when it changes*. The keyboard walks the rows with
+· the file is read again when it changes*. A click outside the panel closes
+it, as it does a form; while a value is being typed and not yet written, it
+asks first the question a form asks, *Throw away* or *Keep editing*
+(`leavingSettings`,
+`TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNotSaved`,
+#290) — leaving used to take `esc` or the close button alone. The keyboard walks the rows with
 `↑` `↓`, acts on one with `⏎` or space, cycles a choice with `←` `→`, takes a
-key out with `⌫`, and switches the scope with `tab`. With no global file, the
+key out with `⌫`, and switches the scope with `tab`. Beside the scope the
+panel names the file it writes and the one under it — `settings.toml over
+config.toml` — by name alone; the whole path is copied from the mark before
+it, as the store's and the notes' are (`SettingsPath`, #289): a whole path
+there was too long to read, and cut. With no global file, the
 foot offers *Write the whole file*, which is `config init`
 (`@gui-a-missing-configuration-is-written-from-the-window`).
 
@@ -3007,7 +3029,9 @@ windows apart; a store no workspace names is titled by its folder
 (`Window.Title`, from `engine.WorkspaceShown.Name`, the rule the terminal's
 header follows too). The top bar opens with a pill before the tabs: a dot in
 the workspace's colour, its name and a caret; a loose store shows a ring and
-its folder in Go Mono, cut at its start (`PlaceShown`)
+its short name — the one its settings give it, or its folder's own — never
+its whole path, which the pointer resting on a line of the switcher shows
+(`PlaceShown`, `switcherPathAt`, `TestAStoreIsShownByAShortNameItsPathUnderThePointer`, #285)
 (`@gui-workspace-the-title-and-the-pill-name-it`,
 `@gui-workspace-a-loose-store-shows-its-folder`). The place is read once, when
 the window first looks at its store (`engine.WorkspaceShow`): a window keeps
@@ -3038,7 +3062,13 @@ their figure (`keyOf`). *Open a folder…* and *New workspace…* type into the
 same line, through the engine's `Switch` rules and `workspace add`; a folder
 that is not there is refused with the engine's reason and the line kept
 (`@gui-workspace-a-folder-opens-in-a-window-of-its-own`,
-`@gui-workspace-a-new-one-is-made-and-opened`). With the keyboard on a recent
+`@gui-workspace-a-new-one-is-made-and-opened`). *Open a folder…* asks the
+system's own folder picker first — an `NSOpenPanel` on macOS, `zenity` where
+Linux has it — and opens the folder chosen; a cancel changes nothing, and
+where there is no picker the line asks for the path to be typed, as it always
+did (`Files.ChooseFolder`, `ErrNoPicker`,
+`TestOpenAFolderAsksTheSystemsPickerAndOpensWhatItChose`, #286): a path typed
+by hand was the one way in, and nobody types a path they could point at. With the keyboard on a recent
 folder that is still there, the foot offers *Keep as a workspace…* too: it
 asks for a name, gives it and the folder to `workspace add` — the path the
 terminal's `^K` and the command line take — and lists the switcher again,

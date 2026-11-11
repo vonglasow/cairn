@@ -34,6 +34,9 @@ func TestMakeFixtures_fillsAFolderItMakesAndKeepsItAfter(t *testing.T) {
 	if colour, err := config.ColourIn(filepath.Join(folder, "settings.toml")); err != nil || colour == "" {
 		t.Errorf("the settings of the fixtures say the colour %q (%v), want one", colour, err)
 	}
+	if name, err := config.NameIn(filepath.Join(folder, "settings.toml")); err != nil || name != "fixtures" {
+		t.Errorf("the settings of the fixtures name them %q (%v), want fixtures", name, err)
+	}
 	first := countTasks(t, made.Store)
 	if first < 10 {
 		t.Errorf("the fixtures hold %d tasks", first)

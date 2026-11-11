@@ -220,6 +220,8 @@ func (h Home) inForce(key config.Key) (string, string) {
 		return placeOf(read, key.Name), from
 	case "workspace.colour":
 		return read.Colour(), from
+	case "workspace.name":
+		return read.Name(), from
 	}
 	value := valuesOf(read)[key.Name]
 	if value == NotSaid {

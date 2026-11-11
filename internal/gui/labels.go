@@ -268,8 +268,7 @@ func (w Window) clickingLabels(p Point) Window {
 	return w
 }
 
-// LabelsBox is the panel of the list of labels: across the middle of the window, its search first, then every label up to what the window has room for, wide enough for the actions of the one chosen; a search narrows the list, not the panel.
-func (w Window) LabelsBox() Box {
+func (w Window) labelsOpens() Box {
 	m := w.measured()
 	said := []string{LabelSearchSays}
 	if w.making {
@@ -400,6 +399,12 @@ func (w Window) startingColour() Window {
 	return w
 }
 
+func (w Window) colouredSetting(at int) Window {
+	key := w.colourKey
+	w.colourKey = ""
+	return w.setting(key, domain.LabelColours[at])
+}
+
 func (w Window) colouringLabel(at int) Window {
 	in := engine.Input{Given: map[string]string{"label": w.labelChosen(), "colour": domain.LabelColours[at]}}
 	if _, err := w.work.Ask(engine.LabelColour, in); err != nil {
@@ -416,14 +421,22 @@ type ColourSwatch struct {
 
 // ColourSwatches is the fourteen colours laid out under the label being coloured, a swatch each, and nothing while no label is.
 func (w Window) ColourSwatches() []ColourSwatch {
-	if !w.colouring || w.screen != OnLabels {
-		return nil
-	}
 	var row Box
-	for _, one := range w.LabelRows() {
-		if one.On {
-			row = one.At
+	switch {
+	case w.colouring && w.screen == OnLabels:
+		for _, one := range w.LabelRows() {
+			if one.On {
+				row = one.At
+			}
 		}
+	case w.colourKey != "" && w.screen == OnConfiguration:
+		for _, one := range w.SettingRows() {
+			if one.Key.Name == w.colourKey {
+				row = one.Control
+			}
+		}
+	default:
+		return nil
 	}
 	wide := len(domain.LabelColours)*(swatchSide+swatchGap) - swatchGap
 	x := max(margin+inset, min(row.X+inset, w.width-margin-inset-wide))
@@ -442,3 +455,6 @@ const (
 	swatchSide = 18
 	swatchGap  = 6
 )
+
+// LabelsBox is the panel of the list of labels: across the middle of the window, its search first, then every label up to what the window has room for, wide enough for the actions of the one chosen; a search narrows the list, not the panel.
+func (w Window) LabelsBox() Box { return w.placedPanel(OnLabels, w.labelsOpens()) }

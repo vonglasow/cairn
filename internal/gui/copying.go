@@ -28,7 +28,8 @@ func (w Window) CopyMarks() []CopyMark {
 				marks = append(marks, markBefore(row.Control, w.placeOf(row.Key.Name)))
 			}
 		}
-		return marks
+		path := w.ScopePathAt()
+		return append(marks, markBefore(Box{X: path.X - copyRoom, Y: path.Y, H: path.H}, w.settingsWritten()))
 	case w.screen == OnAsking && w.question == aboutCairn:
 		said := AboutSays(build.Read())
 		box := w.QuestionBox()

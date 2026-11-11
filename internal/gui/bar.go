@@ -47,7 +47,7 @@ func HeadsOn(w Window, screen Screen) string {
 		s, _ := w.snap.SeriesOf(w.fateOf)
 		return "Delete the series " + s.Title + "?"
 	case OnAsking:
-		if w.question == aboutLeaving {
+		if w.question == aboutLeaving || w.question == aboutLeavingSettings {
 			return "Throw away what you typed?"
 		}
 		if w.asksAboutSeveral() {
@@ -367,7 +367,7 @@ func (w Window) Offers() []string {
 		}
 		return append(offers, w.occurrenceOffers()...)
 	case OnAsking:
-		if w.question == aboutLeaving {
+		if w.question == aboutLeaving || w.question == aboutLeavingSettings {
 			return []string{"Throw away", "Keep editing"}
 		}
 		if w.question == aboutCairn {
@@ -502,7 +502,7 @@ func (w Window) offersAlong(panel Box) []Box {
 		right += wide
 	}
 	end := panel.X + panel.W - padding
-	if w.formUnder() && panel == w.formPanel() {
+	if w.formUnder() && panel == w.formPanel() || movable(w.screen) && panel == w.panel() {
 		end = FormGrip(panel).X + inset
 	}
 	laid := laidAlong(widths, func(i int) Box { return PanelOfferAt(panel, i) }, end-right)
@@ -675,6 +675,9 @@ func (w Window) Asks() []Said {
 	if w.asksAboutSeveral() {
 		return w.severalSays()
 	}
+	if w.question == aboutLeavingSettings {
+		return []Said{{Means: "The setting typed is not saved."}}
+	}
 	if w.question == aboutLeaving {
 		return []Said{
 			{Means: "It is set aside: this " + w.formKind() + "'s form brings it back."},
@@ -797,6 +800,7 @@ type Question int
 const (
 	aboutDeleting Question = iota
 	aboutLeaving
+	aboutLeavingSettings
 	aboutSweeping
 	aboutDeletingSeveral
 	aboutArchivingSeveral

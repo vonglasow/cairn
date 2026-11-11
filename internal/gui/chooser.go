@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/theme"
 )
@@ -26,7 +25,6 @@ type ChooserTile struct {
 	At   Box
 }
 
-func labelColourNames() []string { return domain.LabelColours }
 
 func themesFolder(c engine.Config) string { return filepath.Join(filepath.Dir(c.File), "themes") }
 

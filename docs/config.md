@@ -229,6 +229,21 @@ time and two workspaces seldom share one
 name it, `--json` too (`@workspace-colour-shown-and-as-json`); a store no
 workspace names wears the colour its settings say, or none.
 
+### The name a store gives itself
+
+```toml
+# ~/scratch/settings.toml
+[workspace]
+name = "scratch"
+```
+
+A store no workspace names is shown by `name` under `[workspace]` in its own
+settings, or else by its folder's own name — never by a whole path, which a
+pill, a title or a line of the switcher could only cut until it read nothing
+(#285, `engine.WorkspaceShown.Name`, `RecentFolder.Name`). A workspace's own
+name wins over it. `cairn fixtures` writes `name = "fixtures"`. The window's
+settings offer it beside the colour; the whole path is said under the pointer.
+
 A colour that is none of the fourteen is refused like any value the settings
 get wrong, naming it and `workspace.colour`
 (`@workspace-a-colour-not-in-the-palette-is-refused`). **It belongs to the

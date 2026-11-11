@@ -95,6 +95,14 @@ func recentIn(h Home, p config.Places) []RecentFolder {
 }
 
 // Shown is how a recent folder is named to a person: its folder, or the store itself when the store is not its folder's cairn.db.
+// Name is how a recent folder is named to a person, short: the name its store's settings give it, or its folder's own name.
+func (r RecentFolder) Name() string {
+	if own, err := config.NameIn(config.SettingsBeside(r.Store)); err == nil && own != "" {
+		return own
+	}
+	return filepath.Base(r.Shown())
+}
+
 func (r RecentFolder) Shown() string {
 	if r.Folder != "" {
 		return r.Folder
