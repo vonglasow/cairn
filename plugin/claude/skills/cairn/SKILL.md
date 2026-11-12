@@ -111,6 +111,19 @@ When the work is delivered, write before moving the task:
 A task closed because it is obsolete, or merged into another, gets the same
 entry, saying which: the task that carries the work now, or why none does.
 
+## Abandoning — a task given up
+
+A task abandoned is deleted, not put in `done`: `done` says the work was
+delivered, and would tick its open steps. Before deleting it:
+
+1. a dated entry saying it is abandoned and why, and what to start from if the
+   need comes back;
+2. summary.md rewritten to say it was abandoned;
+3. `task_unfocus` if it is in focus, then `task_delete`.
+
+The notes stay where they are: cairn deletes the task, never its notes, and
+the trace keeps what the task held.
+
 ## A decision that changes the task
 
 A task that asked a question ("decide between A, B and C") and got its

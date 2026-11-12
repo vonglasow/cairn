@@ -260,6 +260,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"task_export":        {{Exported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(domain.Held{})}},
 		"task_import":        {{Imported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(domain.Held{})}},
 		"plugin_write":       {{Plugin: func() *string { s := "/claude-plugin"; return &s }()}},
+		"plugin_show":        {{Install: &PluginShown{Version: "v0.12.0", Install: installFromTag("v0.12.0")}}},
 		"app_install":        {{Installed: func() *string { s := "/Applications/cairn.app"; return &s }(), Runs: func() *string { s := "/usr/local/bin/cairn"; return &s }(), OpenedFrom: func() *string { s := "the Dock"; return &s }()}},
 		"migration_list":     {{Changes: []migration.Migration{}, Holds: of(domain.Held{})}},
 		"migration_show":     {{Change: of(migration.Migration{})}},

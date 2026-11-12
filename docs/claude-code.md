@@ -71,6 +71,7 @@ the task; to stop it, detach the session.
 |---|---|
 | listing tasks, taking and releasing the focus on request, showing a task | cairn MCP server |
 | reading and writing notes, the summary, the ticket on demand | Claude, through the skill |
+| reading back a day or a week, the sessions no task names, where things stand | Claude, through the `recap` and `status` skills |
 | the session entry, which session holds which task, idleness, session end | the hook script — deterministic |
 
 The trace already records every focus taken and released, with its time; it is
@@ -209,9 +210,9 @@ which the line keeps out by asking for its `why` — no line is printed, and the
 session starts as before
 (`@claude-session-start-says-nothing-when-the-environment-names-no-workspace`).
 
-## The skill
+## The skills
 
-One skill, `cairn`, whose description carries the words above so that
+The skill `cairn`, whose description carries the words above so that
 "task cairn" and `cairn#123` call it. It holds the three gestures — attaching,
 choosing, detaching — the rule of words, and one rule about a task done: it is
 not reopened, a task linked to it is opened instead (see
@@ -233,7 +234,32 @@ on its own and filled differently every time:
 - **the command line** — what an agent driving `cairn` from the shell would
   not expect, for when the MCP server fails or a batch is long;
 - **the notation** — `#123` will do while no other tracker is in the
-  conversation, because both the person and the agent wrote it anyway.
+  conversation, because both the person and the agent wrote it anyway;
+- **abandoning** — a task given up is deleted, after a dated entry saying why
+  and summary.md rewritten; `done` would say it was delivered and tick its
+  steps (`@plugin-the-skill-says-what-abandoning-writes`).
+
+Two more skills read without changing the work:
+
+- **`recap`** reads back the last day worked — the last day before today with
+  at least one act in the trace — or a week, Monday to Sunday: the acts
+  (`trace_list` with `since` and `until`), the time per task
+  (`timesheet_show`), and for a week the objectives that moved. It then reads
+  the Claude Code sessions of the period, which cairn never does, leaves out
+  those the trace names (`claude session <id>`) or a task's notes hold, and
+  proposes a task for each one left, in a table. On the person's word, line by
+  line, it attaches one: an entry in the task's notes, closed with `released`
+  so the hook does not take it for a session still running, the summary when
+  it changes, and its time through `timesheet_add`. A session not to propose
+  again goes in `sessions-ignored`, beside the store, with its reason.
+- **`status`** says where things stand at any moment: the tasks in focus and
+  in `current` with their open steps, what was done since the last day worked,
+  what is left in the version (its label, counted per column), and what waits
+  on the person.
+
+Neither ranks nor reports anything cairn does not filter: see
+[decisions.md](decisions.md). Each call they write out whole is handed to the
+MCP server (`@plugin-the-other-skills-ask-what-cairn-answers`).
 
 ## Where it lives, and how it is installed
 
@@ -244,6 +270,8 @@ plugin/claude/
   .claude-plugin/plugin.json
   .mcp.json                     cairn mcp serve --access full
   skills/cairn/SKILL.md
+  skills/recap/SKILL.md
+  skills/status/SKILL.md
   hooks/hooks.json
   hooks/cairn-session.sh
 ```
@@ -260,6 +288,24 @@ engine write and read the session entries in a task's notes, which cairn never
 looks at ([context.md](context.md)). What the engine took instead is what any
 surface needs: it lets go of a focus whose task is done or blocked, and asks
 for a session past its length to be renewed ([ordering.md](ordering.md)).
+
+**From GitHub, at the binary's tag, first.** The repository is a marketplace,
+and Claude Code pins one to a tag: `/plugin marketplace add
+vonglasow/cairn@vX.Y.Z`, then `/plugin install cairn@cairn`. `cairn plugin
+show` (`plugin_show`) prints those for the version of the cairn running
+(`@plugin-installed-from-its-tag`), after `/plugin marketplace remove cairn`:
+Claude Code's documentation says nothing of moving a marketplace already added
+to another tag, and removing it — which uninstalls its plugin, hence the
+install after — is the one way it does document. A cairn that is no version
+released has no tag, and says to run `cairn plugin write`
+(`@plugin-installed-from-a-build`). `cairn upgrade` prints the same lines for
+the version it put in place (`@upgrade-says-how-to-install-its-plugin`). The
+release writes the version into the plugin's manifest
+([release.md](release.md)), so at a session's start the hook reads its own
+manifest, compares it with `cairn --version`, each cut at its first `-` so a
+build since a version counts as that version, and says when they differ and
+both are versions (`@claude-session-start-says-the-plugin-is-of-another-version`).
+cairn never runs Claude Code's commands itself.
 
 **The binary carries the plugin.** A person handed only the binary — by brew,
 or as a file — has no repository to add as a marketplace. So `plugin.go`, in
@@ -371,6 +417,6 @@ workspace. That is what `CAIRN_WORKSPACE` replaces.
 
 ## Not in this piece
 
-Putting a column back in order on request, bringing external tickets in, the
-daily report, ticket systems other than Azure DevOps, a setting that fetches
+Putting a column back in order on request, bringing external tickets in,
+ticket systems other than Azure DevOps, a setting that fetches
 the ticket on every attachment.

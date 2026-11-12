@@ -55,7 +55,13 @@ case $(field .hook_event_name) in
        else "the store \(.store), which no workspace names" end) as $where
       | "cairn: the cairn MCP server of this session answers from \($where), because \(.why.rung). "
       + "It keeps it while the session lasts; workspace_show says it again. "
-      + "Switching is for the person: another workspace is another server."' ;;
+      + "Switching is for the person: another workspace is another server."'
+    plugin=$(jq -r '.version // empty' "$(dirname "$0")/../.claude-plugin/plugin.json" 2>/dev/null)
+    binary=$(cairn --version 2>/dev/null | sed -n '1s/^cairn //p')
+    case "$plugin $binary" in
+      v*" "v*) [ "${plugin%%-*}" = "${binary%%-*}" ] ||
+        echo "cairn: the plugin of this session is $plugin, and cairn $binary: cairn plugin show says how to install the plugin of its version." ;;
+    esac ;;
   SessionEnd)
     [ -z "$task" ] || { let_go; close_link; } ;;
 esac

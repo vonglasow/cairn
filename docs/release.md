@@ -48,7 +48,18 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    version the Makefile pins and run with `go run`, so there is nothing to
    install first.
 
-3. **Checks everything, on both systems.**
+3. **Writes the version into the plugin's manifest**,
+   `plugin/claude/.claude-plugin/plugin.json`, in a commit of its own,
+   `chore(release): vX.Y.Z`, which is the commit tagged
+   (`@version-writes-itself-into-the-plugin`). Claude Code installs the plugin
+   from the tag (`/plugin marketplace add vonglasow/cairn@vX.Y.Z`) and versions
+   it by that manifest; with no version there it would version it by a commit,
+   and the hook could not tell the plugin's version from the binary's. The
+   commit follows the git configuration of whoever releases, signed when it
+   signs. Run again after a check failed, the manifest says the version
+   already and nothing is committed.
+
+4. **Checks everything, on both systems.**
 
    ```sh
    make release-check  # every hook, the commit's and the push's, on every file
@@ -61,7 +72,7 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    and pull request. A version is made from a commit whose `check` run, its
    mutation job included, is green on GitHub.
 
-4. **Tags it**, an annotated tag named by the number, and only now: a version
+5. **Tags it**, an annotated tag named by the number, and only now: a version
    whose checks failed was never a version, and a tag made before them would
    say it was. Run again on a commit tagged already, the release checks it
    again, under that tag.
@@ -72,7 +83,7 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    Windows a tool that takes a file with no mark of its encoding for the
    system's code page wrote every dash as `â€”`.
 
-5. **Is pushed, by hand.** `git push origin main` and `git push origin vX.Y.Z`:
+6. **Is pushed, by hand.** `git push origin main` and `git push origin vX.Y.Z`:
    the person pushing decides the version goes out, and nothing goes out
    before. gaia, whose release runs on every push to `main`, showed what the
    other way costs — a version for every `feat`, many of them for very little.
@@ -113,8 +124,16 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    `brew install vonglasow/tap/cairn` takes the latest and
    `brew install vonglasow/tap/cairn@0.4` an older one.
 
-**The Claude Code plugin is the binary's, and the binary keeps it current.**
-The plugin is embedded in the binary, so an archive needs nothing beside it,
+**The Claude Code plugin is installed from the version's tag.**
+`cairn plugin show` prints the commands for the binary's own version, and
+`cairn upgrade` those for the version it put in place: `/plugin marketplace
+remove cairn` where another version is installed, `/plugin marketplace add
+vonglasow/cairn@vX.Y.Z`, `/plugin install cairn@cairn`. cairn never runs them:
+they are Claude Code's, and the person's to type. The hook says, at a
+session's start, when the plugin and the binary are not of the same version.
+
+**The binary carries the plugin too, and keeps the one it wrote current.**
+For an install without GitHub, the plugin is embedded in the binary, so an archive needs nothing beside it,
 and the formula installs the binary alone and says, in its caveats, to run
 `cairn plugin write` once (`@version-brew-formula-says-how-to-add-the-plugin`).
 After that, `cairn mcp serve` — which Claude Code starts with every session —
@@ -209,8 +228,10 @@ annotated tag, which carries its own version's part — `git show v1.2.0` says
 what that version brought. `make changelog` prints it with what the next
 version would bring, and makes nothing.
 
-Kept as a file it would be one more thing to write in every commit, or a
-release that commits on its own; read off the tags it cannot drift from them.
+Kept as a file it would be one more thing to write in every commit, or one
+more file the release commits beside the plugin's manifest — which it commits
+only because Claude Code reads it at the tag; read off the tags it cannot
+drift from them.
 - **A migration run for somebody.** A store behind the new binary is refused
   until `cairn migration apply` — which sets a backup aside first. A version
   that changed the store's shape on the way past would be changing somebody's

@@ -201,7 +201,7 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			}
 			return nil
 		})
-		sc.Step(`^I read the cairn skill$`, func() error {
+		sc.Step(`^I read the (\w+) skill$`, func(skill string) error {
 			if _, err := w.cairn("plugin", "write"); err != nil {
 				return err
 			}
@@ -209,7 +209,7 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 			if err != nil {
 				return err
 			}
-			said, err := os.ReadFile(filepath.Join(written, "skills", "cairn", "SKILL.md"))
+			said, err := os.ReadFile(filepath.Join(written, "skills", skill, "SKILL.md"))
 			w.out = string(said)
 			return err
 		})
@@ -293,7 +293,7 @@ func initPlugin(t *testing.T) func(*godog.ScenarioContext) {
 }
 
 func TestAcceptance_ClaudePlugin(t *testing.T) {
-	if test.Suite(t, "claude-plugin.feature", initPlugin(t), "").Run() != 0 {
+	if test.Suite(t, "claude-plugin.feature", initPlugin(t), "~@plugin-installed-from-its-tag && ~@plugin-installed-from-a-build").Run() != 0 {
 		t.Fatal("the Claude plugin's scenarios did not all pass")
 	}
 }

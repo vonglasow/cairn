@@ -149,6 +149,7 @@ func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io
 
 // MainIn runs the command line the way Main does, in the home given rather than the process's.
 func MainIn(ctx context.Context, h engine.Home, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	h.Version = stampsIn(ctx).Version
 	ctx = withHome(ctx, h)
 	h.Workspace, h.Store = valueOf(workspaceFlag, args), valueOf(storeFlag, args)
 	root := newRootCmdFor(h, stampsIn(ctx))

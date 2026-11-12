@@ -74,8 +74,9 @@ downloads the archive made for your system from the latest release, checks it
 against `SHA256SUMS`, and puts the new binary in the place of the one you ran.
 That place has to be one you can write, and it is tried before anything is
 downloaded; a cairn in `/usr/local/bin` is upgraded with `sudo cairn upgrade`. It leaves a cairn installed by Homebrew to
-`brew upgrade cairn`, and a cairn built from source to being built again. Then `cairn plugin write`, below,
-gives Claude Code the plugin this cairn carries, once.
+`brew upgrade cairn`, and a cairn built from source to being built again. It
+then prints the commands that give Claude Code the plugin of the new version,
+below.
 
 ## Installing it
 
@@ -121,9 +122,23 @@ It needs `cairn` and `jq` on your `PATH`, and its hook is a shell script: on
 Windows, Claude Code runs it through Git Bash, and `jq` comes with
 `winget install jqlang.jq`.
 
-The binary carries the plugin it was built with, so the sources are not needed
-for it, however cairn was installed: Homebrew, an archive on Linux or Windows,
-or a build. Write it out once, beside the store, or in the folder the
+The plugin of a version is on GitHub, at the version's tag. `cairn plugin
+show` prints the commands for the cairn you run; for v0.12.0, in Claude Code:
+
+```text
+/plugin marketplace add vonglasow/cairn@v0.12.0
+/plugin install cairn@cairn
+```
+
+Where the plugin of another version is installed, `/plugin marketplace remove
+cairn` comes first. After an upgrade, `cairn upgrade` prints the commands for
+the new version, and at the start of a session the plugin says when it is not
+of the version of the cairn it runs.
+
+Without GitHub, or with a cairn built from source, which is no version: the
+binary carries the plugin it was built with, so the sources are not needed for
+it, however cairn was installed: Homebrew, an archive on Linux or Windows, or a
+build. Write it out once, beside the store, or in the folder the
 configuration's `plugin` key names (README, Configuration):
 
 ```sh

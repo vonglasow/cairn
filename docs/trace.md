@@ -309,7 +309,11 @@ what it was, what it became, when, and by which surface.
 
 Two commands: `cairn trace show <number>` for one task's history, and `cairn
 trace list` for the acts over a period with the derived numbers under them.
-`--since` widens it; left out, it means today. `trace` is a group of its own
+`--since` widens it; left out, it means today. `--until` ends it, the whole of
+its day kept (`@trace-list-until-a-day`): `--since 2026-09-29 --until
+2026-09-29` reads one past day, which is what reading back the last day worked
+needs. Left out, the period has no end; one that ends before it begins holds
+nothing. `trace` is a group of its own
 beside `backup` and `migration` — things about the tasks that are not tasks.
 
 **`trace show` refuses a task nothing was ever written down about**, and the
@@ -348,7 +352,8 @@ backups is fifty times that. It is also answered by keeping fewer backups.
   to look at and a concrete reason to cut.
 - **A reading of a day or a week.** The timesheet gives the hours raw on
   purpose. What a good day looks like, what counts as an interruption — those
-  are judgements, and cairn does not make them. Hours gathered by objective or
+  are judgements, and cairn does not make them: the plugin's `recap` skill
+  reads the facts cairn filters ([claude-code.md](claude-code.md#the-skills)). Hours gathered by objective or
   by label are not a judgement, and they are not here either: nothing has asked
   for them, and a sheet is filled in from the raw hours by whoever fills it.
 - **The order of the whole list at a past moment.** See above: the act is

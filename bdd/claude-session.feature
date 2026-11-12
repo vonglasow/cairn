@@ -137,3 +137,22 @@ Feature: A Claude Code session tied to a cairn task
       When session "s1" starts
       Then the hook says "which no workspace names"
       And the hook succeeded
+
+  Rule: A session's start says when its plugin is not of the version of the cairn it runs
+
+    @claude-session-start-says-the-plugin-is-of-another-version
+    Scenario: a plugin of another version than the cairn is said, with where to find the right one
+      Given the plugin of the session is v0.11.0
+      And the cairn on the PATH is v0.12.0
+      When session "s1" starts
+      Then the hook says "the plugin of this session is v0.11.0, and cairn v0.12.0"
+      And the hook says "cairn plugin show"
+      And the hook succeeded
+
+    @claude-session-start-says-nothing-of-a-plugin-of-its-version
+    Scenario: a plugin of the version a cairn built since was made from is not said
+      Given the plugin of the session is v0.12.0
+      And the cairn on the PATH is v0.12.0-3-gabc1234
+      When session "s1" starts
+      Then the hook does not say "plugin"
+      And the hook succeeded

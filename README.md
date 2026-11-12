@@ -92,14 +92,17 @@ examples.
 ## With Claude Code
 
 ```sh
-cairn plugin write
+cairn plugin show
 ```
 
-Then, in Claude Code, run the two commands it prints:
-`/plugin marketplace add <folder>` and `/plugin install cairn@cairn`. The
-plugin brings the MCP server, a skill and a hook that ties a session to the
-task in focus. cairn updates it itself after every upgrade. See
-[docs/claude-code.md](docs/claude-code.md).
+Then, in Claude Code, run the commands it prints, which install the plugin of
+your cairn's version from its tag on GitHub:
+`/plugin marketplace add vonglasow/cairn@vX.Y.Z` and
+`/plugin install cairn@cairn`. The plugin brings the MCP server, the skills —
+working on a task, reading back a day or a week, where things stand — and a
+hook that ties a session to the task in focus. `cairn upgrade` prints the
+commands for the new version; without GitHub, `cairn plugin write` writes the
+plugin the binary carries. See [docs/claude-code.md](docs/claude-code.md).
 
 ## Upgrading
 

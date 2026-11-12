@@ -7,12 +7,13 @@ import (
 	"sync"
 	"time"
 
+	"cairn/internal/build"
 	"cairn/internal/config"
 	"cairn/internal/debug"
 	"cairn/internal/domain"
 )
 
-// Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, the workspace or the store its command line named, and where a server kept answering from since it started.
+// Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, the workspace or the store its command line named, where a server kept answering from since it started, and the version of the cairn running, its stamps' when none is given.
 type Home struct {
 	Dir       string
 	Missing   error
@@ -20,6 +21,14 @@ type Home struct {
 	Workspace string
 	Store     string
 	Kept      *Started
+	Version   string
+}
+
+func (h Home) version() string {
+	if h.Version != "" {
+		return h.Version
+	}
+	return build.Read().Version
 }
 
 func (h Home) lookup() func(string) (string, bool) {

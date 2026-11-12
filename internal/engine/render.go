@@ -126,6 +126,8 @@ func rendered(op Operation, a Answer) string {
 		return fmt.Sprintf("backup %d was restored\n", *a.Restored)
 	case PluginWritten:
 		return pluginText(*a.Plugin)
+	case PluginShown:
+		return pluginShownText(*a.Install)
 	case AppInstalled:
 		return appText(Of(op, a).(AppInstalled))
 	case Exported:

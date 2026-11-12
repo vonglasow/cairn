@@ -4045,6 +4045,44 @@
       "additionalProperties": false
     }
   },
+  "plugin_show": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true,
+      "title": "Say how to install the Claude Code plugin of this cairn's version"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "level": 1,
+    "output": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "install": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "description": "the commands to type in Claude Code, in order; none when this cairn is no version released"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "additionalProperties": false
+    }
+  },
   "plugin_write": {
     "annotations": {
       "destructiveHint": false,
@@ -11206,6 +11244,10 @@
         },
         "since": {
           "description": "the first day to look at; today when left out",
+          "type": "string"
+        },
+        "until": {
+          "description": "the last day to look at, the whole of it; no end when left out",
           "type": "string"
         }
       },

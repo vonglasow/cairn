@@ -213,6 +213,33 @@ Feature: The trace
       When I run `cairn trace list --since 2099-01-01`
       Then it says nothing was done
 
+    @trace-list-until-a-day
+    Scenario: what was done on one past day is listed alone
+      Given it is 09:00 on 2026-09-28
+      And I added a task titled "Monday's"
+      And it is 09:00 on 2026-09-29
+      And I added a task titled "Tuesday's"
+      And it is 09:00 on 2026-09-30
+      And I added a task titled "Wednesday's"
+      When I run `cairn trace list --since 2026-09-29 --until 2026-09-29`
+      Then it lists the acts of 1 task
+      And it says nothing of task 1
+      And it says nothing of task 3
+
+    @trace-list-until-with-no-start
+    Scenario: a period with only an end starts today, and so holds nothing before it
+      Given it is 09:00 on 2026-09-28
+      And I added a task titled "Monday's"
+      When I run `cairn trace list --until 2026-09-29`
+      Then it says nothing was done
+
+    @trace-list-ending-before-it-begins
+    Scenario: a period that ends before it begins holds nothing
+      Given it is 09:00 on 2026-09-29
+      And I added a task titled "Tuesday's"
+      When I run `cairn trace list --since 2026-09-30 --until 2026-09-28`
+      Then it says nothing was done
+
     @trace-letting-go-of-nothing-is-written-down-nowhere
     Scenario: unfocusing nothing is written down nowhere
       Given I added a task titled "Write the spec"
@@ -241,6 +268,13 @@ Feature: The trace
     Scenario: a period has to start on a day
       Given I added a task titled "First"
       When I run `cairn trace list --since pasunjour`
+      Then it fails
+      And it says what it expects instead of "pasunjour"
+
+    @trace-list-until-something-that-is-not-a-day
+    Scenario: a period has to end on a day
+      Given I added a task titled "First"
+      When I run `cairn trace list --until pasunjour`
       Then it fails
       And it says what it expects instead of "pasunjour"
 

@@ -242,7 +242,7 @@ func All() []Operation {
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, DebugReport,
 		WorkspaceList, WorkspaceShow,
-		PluginWrite, AppInstall,
+		PluginWrite, PluginShow, AppInstall,
 	}
 }
 
@@ -345,6 +345,7 @@ type Answer struct {
 	Exported          *string
 	Imported          *string
 	Plugin            *string
+	Install           *PluginShown
 	Written           *string
 	Archived          *int
 	Labelled          *int

@@ -37,8 +37,17 @@ if tag=$(git describe --tags --exact-match 2>/dev/null); then
 else
   tag=$(svu next --v0)
   [ "$tag" != "$(svu current)" ] || die "nothing since $tag calls for a version: no feat, no fix, no BREAKING CHANGE"
-  echo "this commit becomes $tag"
   fresh=true
+  # The plugin installed from GitHub is the one at the tag: it says its
+  # version, which the hook compares with the cairn it runs.
+  manifest=plugin/claude/.claude-plugin/plugin.json
+  if [ "$(jq -r '.version // empty' "$manifest")" != "$tag" ]; then
+    jq --arg version "$tag" '.version = $version' "$manifest" >"$manifest.new"
+    mv "$manifest.new" "$manifest"
+    git add "$manifest"
+    git commit -q -m "chore(release): $tag"
+  fi
+  echo "this commit becomes $tag"
 fi
 
 # The mutation sweep is check.yml's, on every push: said here so a version is

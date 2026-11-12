@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/cucumber/godog"
 
 	"cairn/internal/config"
-	"cairn/internal/engine"
 	"cairn/test"
 )
 
@@ -37,11 +35,6 @@ func (w *world) registerTime(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^the settings beside the store say time = (\S+)$`, func(said string) error {
 		return os.WriteFile(config.SettingsBeside(w.StorePath), fmt.Appendf(nil, "[pages]\ntime = %s\n", said), 0o600)
-	})
-	sc.Step(`^it is (\d{2}):(\d{2}) on (\d{4})-(\d{2})-(\d{2})$`, func(hour, minute, year, month, day int) error {
-		at := time.Date(year, time.Month(month), day, hour, minute, 0, 0, time.Local)
-		w.Setenv(engine.NowVariable, at.Format(time.RFC3339))
-		return nil
 	})
 	sc.Step(`^it says on standard error that the time is "on", "hidden" or "off"$`, func() error {
 		return test.WantContains(w.Out.Stderr, `"on", "hidden" or "off"`, "standard error")

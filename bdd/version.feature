@@ -80,6 +80,17 @@ Feature: Version
     Then it refuses, saying "a version is made from a clean tree"
     And no tag was made
 
+  @version-writes-itself-into-the-plugin
+  Scenario: a version writes itself into the plugin's manifest, in a commit of its own, and tags that commit
+    Given a repository on a branch called "main"
+    And a version "v0.1.0" made there
+    And the commits "feat: say more"
+    And everything a release checks passes there
+    When I make a release there
+    Then the release is made
+    And the plugin's manifest there says version "v0.2.0"
+    And the tag "v0.2.0" is on the commit "chore(release): v0.2.0"
+
   @version-archive-says-what-changed
   Scenario: a version says what changed, version by version
     Given a repository on a branch called "main"

@@ -29,7 +29,8 @@ func (u Upgraded) String() string {
 	if u.From == u.To {
 		return "cairn " + u.From + " is the newest already, in " + u.Binary + "\n"
 	}
-	return "cairn went from " + u.From + " to " + u.To + ", in " + u.Binary + "\n"
+	return "cairn went from " + u.From + " to " + u.To + ", in " + u.Binary + "\n\n" +
+		"its plugin is at the tag " + u.To + "; " + installText(installFromTag(u.To))
 }
 
 // Upgrade puts the newest release of cairn, made for platform, in the place of binary, the cairn that was run at version; one already the newest is left as it is.

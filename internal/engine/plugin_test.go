@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -116,5 +117,46 @@ func TestKeepPluginCurrent_rewritesOnlyAPluginAnotherCairnWrote(t *testing.T) {
 	}
 	if rewrote, err := KeepPluginCurrent(at, "v2.0.0"); err != nil || rewrote {
 		t.Fatalf("a plugin already current was written again: %v, %v", rewrote, err)
+	}
+}
+
+func TestPluginShow_aReleaseSaysHowToInstallThePluginFromItsTag(t *testing.T) {
+	answer, err := PluginShow.Run(On{Home: Home{Version: "v0.12.0"}}, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	install := []string{
+		"/plugin marketplace remove cairn",
+		"/plugin marketplace add vonglasow/cairn@v0.12.0",
+		"/plugin install cairn@cairn",
+	}
+	if shaped, ok := Of(PluginShow, answer).(PluginShown); !ok || shaped.Version != "v0.12.0" || !slices.Equal(shaped.Install, install) {
+		t.Errorf("a machine is told %#v", Of(PluginShow, answer))
+	}
+	if said := RenderText(PluginShow, answer); !strings.Contains(said, "  "+strings.Join(install, "\n  ")+"\n") {
+		t.Errorf("the answer reads %q", said)
+	}
+}
+
+func TestPluginShow_aBuildThatIsNoVersionSaysToWriteThePluginItCarries(t *testing.T) {
+	answer, err := PluginShow.Run(On{Home: Home{Version: "v0.11.0-79-g616ccfc"}}, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shaped := Of(PluginShow, answer).(PluginShown); shaped.Version != "v0.11.0-79-g616ccfc" || len(shaped.Install) != 0 {
+		t.Errorf("a machine is told %#v", shaped)
+	}
+	if said := RenderText(PluginShow, answer); !strings.Contains(said, "cairn plugin write") || strings.Contains(said, "/plugin") {
+		t.Errorf("the answer reads %q", said)
+	}
+}
+
+func TestPluginShow_saysThisCairnsVersionWhenNoneIsGiven(t *testing.T) {
+	answer, err := PluginShow.Run(On{}, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shaped := Of(PluginShow, answer).(PluginShown); shaped.Version != build.Read().Version {
+		t.Errorf("the version said is %q, want %q", shaped.Version, build.Read().Version)
 	}
 }

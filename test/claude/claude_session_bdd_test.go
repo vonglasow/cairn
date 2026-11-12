@@ -36,6 +36,7 @@ type sessionWorld struct {
 	said   string
 	failed error
 	waits  string
+	plugin string
 }
 
 func (w *sessionWorld) reset() {
@@ -53,6 +54,7 @@ func (w *sessionWorld) reset() {
 		"TMPDIR="+home,
 	)
 	w.waits = home
+	w.plugin = filepath.Join("..", "..", "plugin", "claude")
 }
 
 // idleOver waits out the delay a session's answer starts, then for the hook's
@@ -84,12 +86,43 @@ func (w *sessionWorld) hook(event map[string]any) {
 		event["cwd"] = "/work/project"
 	}
 	input, _ := json.Marshal(event)
-	run := exec.Command("bash", filepath.Join("..", "..", "plugin", "claude", "hooks", "cairn-session.sh"))
+	run := exec.Command("bash", filepath.Join(w.plugin, "hooks", "cairn-session.sh"))
 	run.Env = w.env
 	run.Stdin = strings.NewReader(string(input))
 	run.WaitDelay = time.Second
 	out, err := run.CombinedOutput()
 	w.said, w.failed = string(out), err
+}
+
+func (w *sessionWorld) pluginOf(version string) error {
+	w.plugin = w.t.TempDir()
+	hook, err := os.ReadFile(filepath.Join("..", "..", "plugin", "claude", "hooks", "cairn-session.sh"))
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Join(w.plugin, "hooks"), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(w.plugin, "hooks", "cairn-session.sh"), hook, 0o755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Join(w.plugin, ".claude-plugin"), 0o755); err != nil {
+		return err
+	}
+	manifest, _ := json.Marshal(map[string]string{"name": "cairn", "version": version})
+	return os.WriteFile(filepath.Join(w.plugin, ".claude-plugin", "plugin.json"), manifest, 0o644)
+}
+
+func (w *sessionWorld) cairnOf(version string) error {
+	dir := w.t.TempDir()
+	said := "#!/bin/sh\n" +
+		"[ \"$1\" != --version ] || { echo \"cairn " + version + "\"; exit 0; }\n" +
+		"exec \"" + filepath.Join(cairnOnPath(w.t), "cairn") + "\" \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "cairn"), []byte(said), 0o755); err != nil {
+		return err
+	}
+	w.env = append(w.env, "PATH="+dir+string(os.PathListSeparator)+cairnOnPath(w.t)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return nil
 }
 
 func (w *sessionWorld) toolUse(session, tool string, input map[string]any, cwd string) {
@@ -385,6 +418,14 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 			}
 			return nil
 		})
+		sc.Then(`^the hook does not say "([^"]*)"$`, func(unwanted string) error {
+			if strings.Contains(w.said, unwanted) {
+				return fmt.Errorf("the hook said %q, want nothing of %q", w.said, unwanted)
+			}
+			return nil
+		})
+		sc.Given(`^the plugin of the session is (\S+)$`, w.pluginOf)
+		sc.Given(`^the cairn on the PATH is (\S+)$`, w.cairnOf)
 		sc.Then(`^the hook succeeded$`, func() error {
 			if w.failed != nil {
 				return fmt.Errorf("the hook failed: %w\n%s", w.failed, w.said)

@@ -27,6 +27,17 @@ Feature: cairn upgrades itself
       Then it succeeds
       And it says v0.10.0 is the newest already
       And the cairn in its place is the one that was there
+      And the answer does not say "/plugin"
+
+    @upgrade-says-how-to-install-its-plugin
+    Scenario: a newer release says how to install the plugin of its version
+      Given cairn v0.11.0 is released, with a binary for this system
+      And the cairn I run is v0.10.0, from a release
+      When I run `cairn upgrade`
+      Then it succeeds
+      And the answer says "/plugin marketplace remove cairn"
+      And the answer says "/plugin marketplace add vonglasow/cairn@v0.11.0"
+      And the answer says "/plugin install cairn@cairn"
 
     @upgrade-answers-json
     Scenario: asked for JSON, it says what it went from, to, and where

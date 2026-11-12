@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -371,12 +372,81 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		})
 
 		sc.Step(`^I make a release there$`, func() error {
-			run := apart(exec.Command("bash", filepath.Join(w.repo, "scripts", "release.sh")))
+			run := test.WithGoCaches(apart(exec.Command("bash", filepath.Join(w.repo, "scripts", "release.sh"))))
 			run.Dir = w.repo
 			out, err := run.CombinedOutput()
 			w.out = test.Result{Stderr: string(out), Code: exitOK}
 			if err != nil {
 				w.out.Code = 1
+			}
+			return nil
+		})
+
+		sc.Step(`^everything a release checks passes there$`, func() error {
+			held := map[string]string{
+				"Makefile": "release-check linux build:\n\t@:\n",
+				"go.mod":   "module released\n",
+			}
+			for _, name := range []string{"tools/go.mod", "tools/go.sum", "plugin/claude/.claude-plugin/plugin.json"} {
+				said, err := os.ReadFile(filepath.Join(root(), filepath.FromSlash(name)))
+				if err != nil {
+					return err
+				}
+				held[name] = string(said)
+			}
+			for name, said := range held {
+				path := filepath.Join(w.repo, filepath.FromSlash(name))
+				if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+					return err
+				}
+				if err := os.WriteFile(path, []byte(said), 0o644); err != nil {
+					return err
+				}
+			}
+			for _, args := range [][]string{
+				{"config", "user.name", "t"},
+				{"config", "user.email", "t@t"},
+				{"add", "."},
+				{"commit", "-q", "-m", "chore: what a release runs"},
+			} {
+				if err := command(w.repo, "git", args...); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+
+		sc.Step(`^the release is made$`, func() error {
+			if w.out.Code != exitOK {
+				return fmt.Errorf("the release failed:\n%s", w.out.Stderr)
+			}
+			return nil
+		})
+
+		sc.Step(`^the plugin's manifest there says version "([^"]*)"$`, func(want string) error {
+			said, err := os.ReadFile(filepath.Join(w.repo, "plugin", "claude", ".claude-plugin", "plugin.json"))
+			if err != nil {
+				return err
+			}
+			var manifest struct {
+				Version string `json:"version"`
+			}
+			if err := json.Unmarshal(said, &manifest); err != nil {
+				return err
+			}
+			if manifest.Version != want {
+				return fmt.Errorf("the manifest says version %q, want %q", manifest.Version, want)
+			}
+			return nil
+		})
+
+		sc.Step(`^the tag "([^"]*)" is on the commit "([^"]*)"$`, func(tag, subject string) error {
+			said, err := apart(exec.Command("git", "-C", w.repo, "log", "-1", "--format=%s", tag+"^{commit}")).Output()
+			if err != nil {
+				return fmt.Errorf("no tag %s: %w", tag, err)
+			}
+			if got := strings.TrimSpace(string(said)); got != subject {
+				return fmt.Errorf("the tag %s is on %q, want %q", tag, got, subject)
 			}
 			return nil
 		})
@@ -468,7 +538,7 @@ func TestAcceptance_Version_ComesAsABinaryForEachSystem(t *testing.T) {
 }
 
 func TestAcceptance_Version_IsMadeOnlyFromMainAndClean(t *testing.T) {
-	runAcceptance(t, "version.feature", initVersion(t), "@version-is-made-on-main,@version-is-made-from-a-clean-tree")
+	runAcceptance(t, "version.feature", initVersion(t), "@version-is-made-on-main,@version-is-made-from-a-clean-tree,@version-writes-itself-into-the-plugin")
 }
 
 func (w *versionWorld) changelog() (string, error) {

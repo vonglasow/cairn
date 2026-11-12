@@ -19,6 +19,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/build"
 	"cairn/internal/config"
 	"cairn/internal/domain"
 	"cairn/test"
@@ -34,6 +35,7 @@ type world struct {
 
 	window   opensWindow
 	terminal opensBoard
+	stamped  func() build.Info
 }
 
 func newWorld(t *testing.T) *world {
@@ -51,6 +53,9 @@ func (w *world) context() context.Context {
 	}
 	if w.terminal != nil {
 		ctx = withBoard(ctx, w.terminal)
+	}
+	if w.stamped != nil {
+		ctx = withStamps(ctx, w.stamped)
 	}
 	return ctx
 }
@@ -152,6 +157,12 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
 	w.registerStep(sc)
 	w.registerSession(sc)
+
+	sc.Step(`^it is (\d{2}):(\d{2}) on (\d{4})-(\d{2})-(\d{2})$`, func(hour, minute, year, month, day int) error {
+		at := time.Date(year, time.Month(month), day, hour, minute, 0, 0, time.Local)
+		w.Setenv(engine.NowVariable, at.Format(time.RFC3339))
+		return nil
+	})
 
 	sc.Step(`^it says the (\w+) went from "([^"]*)" to "([^"]*)"$`,
 		func(field, was, became string) error {

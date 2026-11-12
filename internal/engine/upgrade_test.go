@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -67,7 +68,9 @@ func TestUpgrade_leavesWhatSomebodyElseKeeps(t *testing.T) {
 }
 
 func TestUpgraded_saysWhatWasDone(t *testing.T) {
-	if said := (Upgraded{From: "v0.9.0", To: "v0.10.0", Binary: "/bin/cairn"}).String(); said != "cairn went from v0.9.0 to v0.10.0, in /bin/cairn\n" {
+	said := (Upgraded{From: "v0.9.0", To: "v0.10.0", Binary: "/bin/cairn"}).String()
+	if !strings.HasPrefix(said, "cairn went from v0.9.0 to v0.10.0, in /bin/cairn\n") ||
+		!strings.Contains(said, "/plugin marketplace add vonglasow/cairn@v0.10.0\n") {
 		t.Errorf("an upgrade says %q", said)
 	}
 	if said := (Upgraded{From: "v0.10.0", To: "v0.10.0", Binary: "/bin/cairn"}).String(); said != "cairn v0.10.0 is the newest already, in /bin/cairn\n" {

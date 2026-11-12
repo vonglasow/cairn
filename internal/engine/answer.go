@@ -328,6 +328,8 @@ func Of(op Operation, a Answer) any {
 		return Restored{Restored: *a.Restored}
 	case PluginWritten:
 		return PluginWritten{Plugin: *a.Plugin}
+	case PluginShown:
+		return *a.Install
 	case AppInstalled:
 		return AppInstalled{Installed: *a.Installed, Runs: *a.Runs, OpenedFrom: *a.OpenedFrom}
 	case Exported:

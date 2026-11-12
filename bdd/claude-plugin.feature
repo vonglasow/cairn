@@ -43,6 +43,27 @@ Feature: The Claude Code plugin comes with the binary
       When the MCP server starts
       Then the plugin in that folder says the version of the cairn that wrote it
 
+  Rule: The plugin is installed from GitHub, at the tag of the cairn that runs it
+
+    @plugin-installed-from-its-tag
+    Scenario: a cairn released says how to install the plugin of its own version
+      Given a store of my own, somewhere that is not the default place
+      And the cairn I run is v0.12.0, from a release
+      When I run `cairn plugin show`
+      Then it succeeds
+      And the answer says "/plugin marketplace add vonglasow/cairn@v0.12.0"
+      And the answer says "/plugin install cairn@cairn"
+      And the answer says "/plugin marketplace remove cairn"
+
+    @plugin-installed-from-a-build
+    Scenario: a cairn built from its source says to write the plugin it carries, as no tag holds it
+      Given a store of my own, somewhere that is not the default place
+      And the cairn I run is v0.11.0-79-g616ccfc, built from its source
+      When I run `cairn plugin show`
+      Then it succeeds
+      And the answer says "cairn plugin write"
+      And the answer does not say "vonglasow/cairn@"
+
   @plugin-the-skill-says-open-a-linked-task
   Scenario: the skill tells an agent to open a linked task rather than reopen one done
     When I read the cairn skill
@@ -91,3 +112,45 @@ Feature: The Claude Code plugin comes with the binary
     Then the skill says "answers from one workspace"
     And the skill says "`workspace_show {}`"
     And the skill says "Switching is the person's"
+
+  @plugin-the-skill-says-what-abandoning-writes
+  Scenario: the skill tells an agent that a task abandoned is deleted, its reasons kept in its notes
+    When I read the cairn skill
+    Then the skill says "A task abandoned is deleted"
+    And the skill says "a dated entry saying it is abandoned and why"
+
+  Rule: Reading back a day or a week, and where things stand, are skills of the plugin
+
+    @plugin-the-recap-skill-reads-back-the-last-day-worked
+    Scenario: the recap skill reads back the last day worked, or a week from Monday to Sunday
+      When I read the recap skill
+      Then the skill says "the last day before today with at least one act in the trace"
+      And the skill says "Monday to Sunday, the previous one when asked on a Monday"
+      And the skill says "the time per task"
+      And the skill says "the objectives that moved"
+
+    @plugin-the-recap-skill-proposes-the-sessions-no-task-names
+    Scenario: the recap skill proposes a task for each Claude Code session the trace does not name, and attaches it on the person's word
+      When I read the recap skill
+      Then the skill says "the task proposed"
+      And the skill says "Attach nothing until the person says"
+      And the skill says "sessions-ignored"
+      And the skill says "timesheet_add"
+
+    @plugin-the-status-skill-says-where-things-stand
+    Scenario: the status skill says where things stand
+      When I read the status skill
+      Then the skill says "their open steps"
+      And the skill says "what is left in the version"
+      And the skill says "what waits on the person"
+
+    @plugin-the-other-skills-ask-what-cairn-answers
+    Scenario Outline: every call the <skill> skill writes out whole is one the MCP server answers
+      When I read the <skill> skill
+      Then the skill writes out at least one call whole
+      And the MCP server answers every call the skill writes out whole
+
+      Examples:
+        | skill  |
+        | recap  |
+        | status |
