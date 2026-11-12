@@ -20,10 +20,10 @@ func (s *Store) PlaceObjective(number, parent, after int) error {
 		return err
 	}
 	at := len(siblings)
-	switch {
-	case after == 0:
+	if after == 0 {
 		at = 0
-	case after > 0:
+	}
+	if after > 0 {
 		i := slices.Index(siblings, after)
 		if i < 0 {
 			return fmt.Errorf("objective %d does not sit where objective %d would go", after, number)

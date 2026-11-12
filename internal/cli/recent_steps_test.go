@@ -114,9 +114,7 @@ func (w *workspaces) registerRecent(sc *godog.ScenarioContext) {
 }
 
 func (w *workspaces) openTheBoardWith(line string) error {
-	was := openTui
-	defer func() { openTui = was }()
-	openTui = func(*cobra.Command, tea.Model) error { return nil }
+	w.terminal = func(*cobra.Command, tea.Model) error { return nil }
 	w.Run(line)
 	if w.Out.Code != exitOK {
 		return fmt.Errorf("the board did not open: exit %d (%s)", w.Out.Code, w.Out.Stderr)

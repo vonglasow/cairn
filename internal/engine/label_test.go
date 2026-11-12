@@ -3,6 +3,7 @@ package engine
 import (
 	"cairn/internal/domain"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -246,5 +247,27 @@ func TestLabels_outOfTheirScopeAreRefused(t *testing.T) {
 	}
 	if _, err := Do(LabelScope, path, given("label", "area", "scope", "tasks")); err == nil || !strings.Contains(err.Error(), `"area" is carried by 1 objective`) {
 		t.Errorf("narrowing a label an objective carries to tasks reads %v", err)
+	}
+}
+
+func TestLabelRename_renamesItOnEveryObjectiveAndListsIt(t *testing.T) {
+	path := storeAt(t)
+	for _, title := range []string{"one", "two"} {
+		if _, err := Do(ObjectiveNew, path, Input{Given: map[string]string{"title": title}, Listed: map[string][]string{"label": {"sp26-20"}}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	answer, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "sp26-20", "to": "sprint-20"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if answer.Labels == nil || !slices.ContainsFunc(*answer.Labels, func(l LabelCarried) bool { return l.Label == "sprint-20" }) {
+		t.Errorf("the rename answered %+v", answer.Labels)
+	}
+	for _, n := range []string{"1", "2"} {
+		goal, _ := Do(ObjectiveShow, path, given("number", n))
+		if labels := factsOfObjective(*goal.Objective).Labels; !slices.Equal(labels, []string{"sprint-20"}) {
+			t.Errorf("objective %s carries %v", n, labels)
+		}
 	}
 }

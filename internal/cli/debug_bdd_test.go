@@ -15,5 +15,5 @@ func initDebug(t *testing.T) func(*godog.ScenarioContext) {
 }
 
 func TestAcceptance_Debug(t *testing.T) {
-	runAcceptance(t, "debug.feature", initDebug(t), "")
+	runOneAtATime(t, "debug.feature", initDebug(t), "")
 }

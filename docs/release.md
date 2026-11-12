@@ -79,9 +79,19 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
 
 ## What pushing the tag does
 
-`.github/workflows/release.yml` runs on a pushed tag `vX.Y.Z`, in three jobs:
+`.github/workflows/release.yml` runs on a pushed tag `vX.Y.Z`, in four jobs:
 
-1. **A binary on each system.** The window needs cgo — and the graphics
+1. **Every check, on the commit the tag names.** The release calls
+   `check.yml` itself (`workflow_call`) — the hooks on Linux, the race
+   detector, the mutation sweep — and builds nothing unless all of it passed.
+   What step 3 above ran by hand, and the `check` run of the commit on `main`,
+   are what the person looked at before tagging; this is what the release
+   trusts, because it is the only run it can be sure was of that commit and
+   came out green. A tag on a commit whose checks fail makes no version: fix,
+   delete the tag, and release again. Run by hand (`workflow_dispatch`), the
+   workflow skips it and builds the binaries as a preview, which
+   release nothing.
+2. **A binary on each system.** The window needs cgo — and the graphics
    headers on Linux — so no binary is built for a system from another: one job
    per system builds it where it runs, with `make package`, which
    `scripts/package.sh` is. macOS on Apple silicon and on Intel, Linux on
@@ -90,11 +100,11 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    `README.md`, `INSTALL.md` and `THIRD_PARTY_NOTICES` (`@version-binary-archive`).
    GoReleaser, which gaia uses, cannot do this without its paid edition: its
    free one builds every system from one machine, which cgo rules out.
-2. **The release.** It holds the binaries, `SHA256SUMS` with every one's sum
+3. **The release.** It holds the binaries, `SHA256SUMS` with every one's sum
    (`scripts/sums.sh`), and `CHANGELOG.md`; the tag's message — the version's
    part of the changelog — is its notes. No source archive: GitHub adds its
    own, and building is for whoever clones.
-3. **The tap.** The formula, written by `scripts/formula.sh` from the sums,
+4. **The tap.** The formula, written by `scripts/formula.sh` from the sums,
    fetches the archive made for the system it is installed on and installs the
    binary, building nothing (`@version-brew-formula`); with a system's archive
    missing, none is written. It goes to `vonglasow/homebrew-tap`, the tap gaia's

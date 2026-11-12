@@ -35,7 +35,6 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 	var folder, from string
 	var held []byte
 	var openedOn string
-	was := openGui
 	made := func(extra string) {
 		w.Run(fmt.Sprintf("cairn fixtures %s%s", folder, extra))
 	}
@@ -53,10 +52,6 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 		folder, from, held, openedOn = filepath.Join(w.T.TempDir(), "fixtures"), "", nil, ""
 		return ctx, nil
 	})
-	sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
-		openGui = was
-		return ctx, err
-	})
 	sc.Step(`^I make the fixtures in a folder of my own$`, func() { made("") })
 	sc.Step(`^I made the fixtures in a folder of my own$`, func() error {
 		made("")
@@ -66,7 +61,7 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 	sc.Step(`^I make the fixtures in that folder again with --new$`, func() { made(" --new") })
 	sc.Step(`^I make the fixtures in a folder of my own from that file$`, func() { made(" --from " + from) })
 	sc.Step(`^I make the fixtures in a folder of my own with --gui$`, func() {
-		openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(work engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
 			openedOn = "opened"
 			_, err := work.Version()
 			return err

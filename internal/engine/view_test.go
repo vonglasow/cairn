@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"cairn/internal/store"
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -411,5 +413,163 @@ func TestViewShow_givesEachObjectiveItNamesWithTheStoresFigures(t *testing.T) {
 	kept, _ := viewed(t, path, ViewNew, ask("name", "Other").with("objective", "1"))
 	if len(kept.Objectives) != 0 {
 		t.Errorf("keeping a view gives the objectives %+v, which only showing it gives", kept.Objectives)
+	}
+}
+
+func TestCmdKey_isAPlacePastNine(t *testing.T) {
+	if got := cmdKey(9); got != "⌘9" {
+		t.Errorf("place 9 is %q", got)
+	}
+	if got := cmdKey(10); got != "place 10" {
+		t.Errorf("place 10 is %q", got)
+	}
+}
+
+func TestObjectivesNamed_passesOverABlankOne(t *testing.T) {
+	e := openEngine(t)
+	addObjective(t, e, "Ship")
+	got, err := e.objectivesNamed([]string{" ", "1"})
+	if err != nil || len(got) != 1 || got[0] != 1 {
+		t.Errorf("named %v, %v", got, err)
+	}
+	if _, err := e.objectivesNamed([]string{"x"}); !errors.Is(err, ErrObjectiveRequired) {
+		t.Errorf("a word for an objective: %v", err)
+	}
+}
+
+func TestViewObjectives_passOverAnObjectiveGone(t *testing.T) {
+	e := openEngine(t)
+	addObjective(t, e, "Ship")
+	got, err := e.viewObjectives([]int{9, 1})
+	if err != nil || len(got) != 1 {
+		t.Errorf("objectives of a view %+v, %v", got, err)
+	}
+}
+
+func TestView_findsTheFirstViewAndOnlyAViewThere(t *testing.T) {
+	s := Snapshot{Views: []Viewing{{View: View{Name: "Home"}}, {View: View{Name: "Work"}}}}
+	if _, found := s.View("home"); !found {
+		t.Error("the first view is not found")
+	}
+	cards := []Card{{Number: 1}, {Number: 2}}
+	if got := s.Viewed("nowhere", cards); len(got) != 2 {
+		t.Errorf("a view not there keeps %d cards", len(got))
+	}
+}
+
+func TestViewNew_refusesTheNameOfTheSecondView(t *testing.T) {
+	path := storeAt(t, "one")
+	did(t, path, ViewNew, ask("name", "Home", "state", "todo"))
+	did(t, path, ViewNew, ask("name", "Work", "state", "done"))
+	refusedAs(t, path, ViewNew, ask("name", "work", "state", "todo"), "view-name-taken")
+}
+
+func TestFocusHeld_saysWhatEachFocusAskedKeeps(t *testing.T) {
+	for _, c := range []struct {
+		was  string
+		in   Input
+		want string
+	}{
+		{"", given("focus", "true"), "in"},
+		{"", given("no-focus", "true"), "out"},
+		{"in", given("focus", "false"), ""},
+		{"out", given("no-focus", "false"), ""},
+		{"out", given("focus", "false"), "out"},
+		{"in", given("no-focus", "false"), "in"},
+		{"in", Input{}, "in"},
+	} {
+		got, err := focusHeld(c.was, c.in)
+		if err != nil || got != c.want {
+			t.Errorf("was %q, given %v: %q, %v; want %q", c.was, c.in.Given, got, err, c.want)
+		}
+	}
+}
+
+func TestViewShow_countsTheTasksKeptThatAreDone(t *testing.T) {
+	path := storeAt(t, "one", "two")
+	did(t, path, TaskEdit, ask("number", "1", "state", "done"))
+	did(t, path, ViewNew, ask("name", "All", "search", "o"))
+	if v := did(t, path, ViewShow, ask("view", "All")).Viewed; v == nil || v.Done != 1 {
+		t.Errorf("the view shown reads %+v", v)
+	}
+}
+
+func viewShown(t *testing.T, e *Engine, name string) *View {
+	t.Helper()
+	a, err := e.Ask(ViewShow, given("view", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a.Viewed
+}
+
+func TestViewShow_aViewWithOneLabelGoneStillKeepsWhatTheRestKeeps(t *testing.T) {
+	e := openEngine(t)
+	if _, err := e.Ask(TaskNew, Input{Given: map[string]string{"title": "one"}, Listed: map[string][]string{"label": {"x"}}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.KeepViews([]store.View{{Name: "Mine", State: "backlog", Labels: []string{"x", "y"}}}); err != nil {
+		t.Fatal(err)
+	}
+	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
+		t.Errorf("the view shown reads %+v", v)
+	}
+}
+
+func TestViewShow_anObjectiveGoneLeavesTheNextNarrowing(t *testing.T) {
+	e := openEngine(t)
+	addObjective(t, e, "Ship")
+	serving(t, e, "serving", 1)
+	add(t, e, "loose")
+	if err := e.store.KeepViews([]store.View{{Name: "Mine", Objectives: []int{9, 1}}}); err != nil {
+		t.Fatal(err)
+	}
+	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
+		t.Errorf("the view shown reads %+v", v)
+	}
+}
+
+func TestViewShow_saysTheTasksOutsideInTheirNumbersOrder(t *testing.T) {
+	path := storeAt(t, "one", "two", "three")
+	did(t, path, TaskEdit, ask("number", "3", "state", "todo").with("link", "1", "2"))
+	did(t, path, TaskMove, ask("number", "2", "first", "true"))
+	did(t, path, ViewNew, ask("name", "Todo", "state", "todo"))
+	v := did(t, path, ViewShow, ask("view", "Todo")).Viewed
+	if v == nil || len(v.Outside) != 2 || v.Outside[0].Number != 1 || v.Outside[1].Number != 2 {
+		t.Errorf("outside reads %+v", v)
+	}
+}
+
+func TestViewShownText_saysNoGoneNorOutsideWhenThereIsNone(t *testing.T) {
+	said := viewShownText(View{Name: "Home", Place: 1, Holds: Holds{State: "todo"}, Keeps: 1, Of: 2})
+	want := "view     Home  (⌘1)\nholds    " + HoldsSays(View{Holds: Holds{State: "todo"}}) + "\nkeeps    1 of 2 tasks · 0 done\n"
+	if said != want {
+		t.Errorf("said %q, want %q", said, want)
+	}
+}
+
+func TestLostText_saysNothingOutsideAViewAndOneGoneInTheSingular(t *testing.T) {
+	if got := lostText(Answer{Lost: []string{"label x"}}); got != "" {
+		t.Errorf("outside a view: %q", got)
+	}
+	if got := lostText(Answer{InView: "Home", Lost: []string{"label x"}}); got != "view Home: label x is gone and narrows nothing\n  cairn view edit Home, or cairn view delete Home\n" {
+		t.Errorf("one gone: %q", got)
+	}
+}
+
+func TestViewShow_anObjectiveGoneBeforeAnotherLeavesTheOtherNarrowing(t *testing.T) {
+	e := openEngine(t)
+	addObjective(t, e, "Gone")
+	addObjective(t, e, "Ship")
+	serving(t, e, "serving", 2)
+	add(t, e, "loose")
+	if err := objectiveDeleted(e, map[string]string{"number": "1"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.KeepViews([]store.View{{Name: "Mine", Objectives: []int{1, 2}}}); err != nil {
+		t.Fatal(err)
+	}
+	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
+		t.Errorf("the view shown reads %+v", v)
 	}
 }

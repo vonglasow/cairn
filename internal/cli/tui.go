@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"io"
 	"os"
 	"time"
@@ -12,7 +13,22 @@ import (
 	"cairn/internal/tui"
 )
 
-var openTui = runTui
+type opensBoard = func(*cobra.Command, tea.Model) error
+
+var openTui opensBoard = runTui
+
+type boardKey struct{}
+
+func withBoard(ctx context.Context, open opensBoard) context.Context {
+	return context.WithValue(ctx, boardKey{}, open)
+}
+
+func boardFor(cmd *cobra.Command) opensBoard {
+	if open, given := carried[opensBoard](cmd, boardKey{}); given {
+		return open
+	}
+	return openTui
+}
 
 func openTerminal(cmd *cobra.Command, h engine.Home, icons string) error {
 	set, err := tui.ParseSet(icons)
@@ -25,7 +41,7 @@ func openTerminal(cmd *cobra.Command, h engine.Home, icons string) error {
 	}
 	defer func() { _ = held.Close() }()
 	board := tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(h)).Noting(notedIn(cmd.Context()))
-	return openTui(cmd, board.Switching(func(to engine.Elsewhere) (engine.Pages, error) { return engine.Switch(held, to) }))
+	return boardFor(cmd)(cmd, board.Switching(func(to engine.Elsewhere) (engine.Pages, error) { return engine.Switch(held, to) }))
 }
 
 func runTui(cmd *cobra.Command, model tea.Model) error {

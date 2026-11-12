@@ -86,3 +86,31 @@ func TestPlaceObjective_movesOneUnderAnotherParent(t *testing.T) {
 		t.Errorf("listed %q, want Home, Work, Spec, Garden", got)
 	}
 }
+
+func positionsUnder(t *testing.T, s *Store, parent int) []int {
+	t.Helper()
+	got, err := rowsOf(s, one[int], `SELECT position FROM objectives WHERE COALESCE(parent, 0) = ? ORDER BY position`, parent)
+	if err != nil {
+		t.Fatalf("reading the positions under %d: %v", parent, err)
+	}
+	return got
+}
+
+func TestPlaceObjective_numbersTheSiblingsItLeavesAndJoinsFromOne(t *testing.T) {
+	s := openStore(t)
+	keepObjective(t, s, "Home")
+	keepObjective(t, s, "Work")
+	keepUnder(t, s, "Garden", 1)
+	keepUnder(t, s, "Roof", 1)
+	keepUnder(t, s, "Cellar", 1)
+	keepUnder(t, s, "Spec", 2)
+	if err := s.PlaceObjective(3, 2, -1); err != nil {
+		t.Fatalf("PlaceObjective: %v", err)
+	}
+	if got := positionsUnder(t, s, 1); !slices.Equal(got, []int{1, 2}) {
+		t.Errorf("the objectives left under Home sit at %v, want 1 and 2", got)
+	}
+	if got := positionsUnder(t, s, 2); !slices.Equal(got, []int{1, 2}) {
+		t.Errorf("the objectives under Work sit at %v, want 1 and 2", got)
+	}
+}

@@ -13,12 +13,11 @@ var Standings = []string{string(objective.Active), string(objective.OnHold), str
 
 // Stepped is what moves an objective one place up or down among its siblings, a parent with its sub-objectives; false at the first or the last, since crossing to another parent is a deliberate act.
 func Stepped(goals []Goal, n int, up bool) (Input, bool) {
-	parent := -1
-	for _, g := range goals {
-		if g.Number == n {
-			parent = g.Parent
-		}
+	i := slices.IndexFunc(goals, func(g Goal) bool { return g.Number == n })
+	if i < 0 {
+		return Input{}, false
 	}
+	parent := goals[i].Parent
 	var siblings []int
 	for _, g := range goals {
 		if g.Parent == parent {
@@ -26,16 +25,15 @@ func Stepped(goals []Goal, n int, up bool) (Input, bool) {
 		}
 	}
 	at := slices.Index(siblings, n)
-	if at < 0 || (up && at == 0) || (!up && at == len(siblings)-1) {
+	if (up && at == 0) || (!up && at == len(siblings)-1) {
 		return Input{}, false
 	}
 	given := map[string]string{"number": strconv.Itoa(n)}
-	switch {
-	case up && at == 1:
+	if up && at == 1 {
 		given["first"] = "true"
-	case up:
+	} else if up {
 		given["after"] = strconv.Itoa(siblings[at-2])
-	default:
+	} else {
 		given["after"] = strconv.Itoa(siblings[at+1])
 	}
 	return Input{Given: given}, true

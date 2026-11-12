@@ -67,7 +67,7 @@ func (w *world) aCairnServerStartedFromACairnOnDisk() error {
 	}
 	client := w.client()
 	cmd := exec.Command(w.onDisk, "mcp", "serve", "--access", "full")
-	cmd.Env = os.Environ()
+	cmd.Env = w.Environ()
 	cmd.Stderr = io.Discard
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

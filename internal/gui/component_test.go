@@ -25,7 +25,7 @@ func drawnAlone(t *testing.T, wide, high int, draw func(k Kit)) (*image.RGBA, []
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(wide, high)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	var drawn Drawn
-	k := NewKit(gtx, Theme(), Dark(), &drawn)
+	k := NewKit(gtx, drawingTheme(), Dark(), &drawn)
 	fill(gtx, Box{W: wide, H: high}, k.skin.Colour.Surface.Back)
 	draw(k)
 	if err := window.Frame(gtx.Ops); err != nil {
@@ -250,7 +250,7 @@ func TestACardCountsTheLabelsItLeavesOutInAPillWithNoRing(t *testing.T) {
 	s := Dark()
 	face := engine.Card{Number: 7, Title: "Write the scenario", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
 	shot, drawn, p := cardDrawn(t, Card{Face: face})
-	laid := CardRowOf(face, p.Number, Measured(Theme()), time.Time{}, engine.Pages{})
+	laid := CardRowOf(face, p.Number, Measured(drawingTheme()), time.Time{}, engine.Pages{})
 	if laid.Count == "" {
 		t.Fatal("the card leaves no label out")
 	}
@@ -267,7 +267,7 @@ func TestAnObjectivesCardDrawsItsStandingAsAPillOfThatStanding(t *testing.T) {
 	s := Dark()
 	face := goalFace(engine.Goal{Number: 3, Title: "Ship v0.11", State: "on-hold"})
 	shot, drawn, _ := cardDrawn(t, Card{Face: face, Standing: "on-hold"})
-	pill := StandingPill(face, Box{X: 10, Y: 10, W: 280, H: CardHeight}, Measured(Theme()))
+	pill := StandingPill(face, Box{X: 10, Y: 10, W: 280, H: CardHeight}, Measured(drawingTheme()))
 	if got := pixel(shot, pill.X+pill.W/2, pill.Y+1); got != s.Colour.Standing["on-hold"].Back {
 		t.Errorf("the standing stands on %v", got)
 	}
@@ -356,16 +356,15 @@ func TestAPillTakesTheGroundAndInkOfItsTone(t *testing.T) {
 func TestEveryPillIsCentredByTheInkOfALineOfLetters(t *testing.T) {
 	box := Box{X: 10, Y: 10, W: 80, H: pillHigh}
 	var at []Box
-	noteSaid = func(_ layout.Context, _ *material.Theme, b Box, _ string, _ int, _ font.Font, _ int, _ text.Alignment) {
+	defer noting(drawingTheme(), func(_ layout.Context, _ *material.Theme, b Box, _ string, _ int, _ font.Font, _ int, _ text.Alignment) {
 		at = append(at, b)
-	}
-	defer func() { noteSaid = nil }()
+	})()
 	drawnAlone(t, 120, 40, func(k Kit) {
 		Pill{Said: "active", Tone: ToneStanding, Standing: "active"}.Draw(k, box)
 		Pill{Said: "+2"}.Draw(k, box)
 		LabelChip{Label: "gui", Colour: "mauve"}.Draw(k, box)
 	})
-	want := pillLine(Theme(), box)
+	want := pillLine(drawingTheme(), box)
 	for i, b := range at {
 		if b.Y != want.Y || b.H != want.H {
 			t.Errorf("pill %d writes at %+v, not on the line %+v", i, b, want)
@@ -515,7 +514,7 @@ func TestAKeyOnAPickedRowStandsOutFromTheRow(t *testing.T) {
 func TestACardRecordsWhereItWritesItsNumberAndItsFacts(t *testing.T) {
 	face := engine.Card{Number: 10, Title: "Write the scenario", State: "todo", Estimate: "2d"}
 	_, drawn, p := cardDrawn(t, Card{Face: face})
-	laid := CardRowOf(face, p.Number, Measured(Theme()), time.Time{}, engine.Pages{})
+	laid := CardRowOf(face, p.Number, Measured(drawingTheme()), time.Time{}, engine.Pages{})
 	number := Box{X: p.Number.X, Y: p.Number.Y, W: monoWide(laid.Number, small), H: p.Number.H}
 	for _, want := range []Drawing{{Part: "card/number", At: number}, {Part: "card/facts", At: laid.FactsAt}} {
 		if !slices.Contains(drawn, want) {

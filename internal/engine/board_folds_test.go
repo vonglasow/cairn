@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"testing"
 	"time"
 )
@@ -75,5 +76,47 @@ func TestFoundBranches_aParentMatchingStandsAsItself(t *testing.T) {
 	}
 	if every := FoundBranches(foldedTree().Goals, ""); len(every) != 5 {
 		t.Errorf("nothing typed finds %d", len(every))
+	}
+}
+
+func TestHidden_passesOverWhatIsReachedOrDroppedAndSaysEveryOther(t *testing.T) {
+	today := time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC)
+	s := Snapshot{Goals: []Goal{
+		{Number: 1, Children: []int{2, 3, 4, 5, 6}},
+		{Number: 2, Parent: 1, State: "reached", WaitsOn: []int{9}},
+		{Number: 3, Parent: 1, State: "dropped", WaitsOn: []int{9}},
+		{Number: 4, Parent: 1, Deadline: today.AddDate(0, 0, -1)},
+		{Number: 5, Parent: 1, WaitsOn: []int{9}},
+		{Number: 6, Parent: 1, Deadline: today.AddDate(0, 0, -2)},
+		{Number: 9},
+	}}
+	var got []int
+	for _, h := range s.Hidden(1, today) {
+		got = append(got, h.Goal.Number)
+	}
+	if !slices.Equal(got, []int{4, 6, 5}) {
+		t.Errorf("hidden %v, want the late 4 and 6, then 5 waiting", got)
+	}
+}
+
+func TestFoundBranches_standsEachParentHoldingAMatchOnce(t *testing.T) {
+	goals := []Goal{
+		{Number: 1, Title: "match top"},
+		{Number: 2, Title: "holder", Children: []int{3, 4}},
+		{Number: 3, Title: "match a", Parent: 2},
+		{Number: 4, Title: "match b", Parent: 2},
+		{Number: 5, Title: "match parent", Children: []int{6}},
+		{Number: 6, Title: "match child", Parent: 5},
+	}
+	var got []int
+	for i := range goals {
+		goals[i].Said = []string{goals[i].Title}
+	}
+	for _, b := range FoundBranches(goals, "match") {
+		got = append(got, b.Goal.Number)
+	}
+	slices.Sort(got)
+	if !slices.Equal(got, []int{1, 2, 3, 4, 5, 6}) {
+		t.Errorf("found %v, want each once, the holder among them", got)
 	}
 }

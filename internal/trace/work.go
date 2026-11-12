@@ -62,17 +62,16 @@ func workedFrom(acts []Act, loc *time.Location, now time.Time) work {
 	w := work{byHand: map[time.Time]map[int]time.Duration{}, undated: map[int]time.Duration{}}
 	open := map[int]time.Time{}
 	for _, f := range facts {
-		switch {
-		case starts(f):
+		if starts(f) {
 			if _, already := open[f.Task]; !already {
 				open[f.Task] = f.At
 			}
-		case f.Did == FocusReleased || f.Did == TimerStopped:
+		} else if f.Did == FocusReleased || f.Did == TimerStopped {
 			if from, was := open[f.Task]; was {
 				w.spans = append(w.spans, cutAtMidnight(f.Task, from, f.At, loc))
 				delete(open, f.Task)
 			}
-		case f.Did == TimeAdded:
+		} else if f.Did == TimeAdded {
 			w.addedByHand(f, loc)
 		}
 	}
@@ -93,10 +92,9 @@ func TimerRuns(acts []Act, task int) (runs, known bool) {
 		if f.Task != task {
 			continue
 		}
-		switch {
-		case starts(f):
+		if starts(f) {
 			runs, known = true, true
-		case f.Did == FocusTaken || f.Did == FocusReleased || f.Did == TimerStopped:
+		} else if f.Did == FocusTaken || f.Did == FocusReleased || f.Did == TimerStopped {
 			runs, known = false, true
 		}
 	}

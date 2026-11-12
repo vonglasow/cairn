@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"bytes"
 	"cairn/internal/debug"
 	"cairn/internal/engine"
 	"cairn/internal/gui"
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -163,5 +165,25 @@ func TestGuiTellsTheWindowItsStoreAndHowToReachAnotherWorkspace(t *testing.T) {
 	apart, err := here.Reach(engine.Elsewhere{Workspace: "garden"})
 	if err != nil || apart.Store != filepath.Join(home, "garden", "cairn.db") {
 		t.Errorf("reaching garden = %+v, %v", apart, err)
+	}
+}
+
+func TestGui_opensTheWindowItsRunWasHanded(t *testing.T) {
+	was := openGui
+	openGui = func(engine.Work, engine.Pages, gui.Skin, string, string, *debug.Log, int, int, gui.Here) error {
+		return errors.New("the window every other run opens")
+	}
+	t.Cleanup(func() { openGui = was })
+	opened := false
+	ctx := withWindow(context.Background(), func(engine.Work, engine.Pages, gui.Skin, string, string, *debug.Log, int, int, gui.Here) error {
+		opened = true
+		return nil
+	})
+	var out, errs bytes.Buffer
+	if code := MainIn(ctx, homeWithStore(t, storeFor(t)), []string{"gui"}, strings.NewReader(""), &out, &errs); code != exitOK {
+		t.Fatalf("gui exited %d: %s", code, errs.String())
+	}
+	if !opened {
+		t.Error("the window the run was handed was never opened")
 	}
 }

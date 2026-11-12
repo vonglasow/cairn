@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -511,16 +512,13 @@ func TestOpen_reportsAStoreItCannotCreateTheLedgerIn(t *testing.T) {
 	}
 }
 
-func knowing(t *testing.T, does, undoes string) {
-	t.Helper()
-	was := migration.Known
-	t.Cleanup(func() { migration.Known = was })
-	migration.Known = []migration.Migration{was[0], migration.Made(migration.Carried{Name: "a change written to fail half way", Does: does, Undoes: undoes})}
+func knowing(does, undoes string) []migration.Migration {
+	return []migration.Migration{migration.Known[0], migration.Made(migration.Carried{Name: "a change written to fail half way", Does: does, Undoes: undoes})}
 }
 
 func TestApply_leavesNothingOfAChangeThatFailedHalfWay(t *testing.T) {
-	knowing(t, `CREATE TABLE half (x); CREATE TABLE half (x);`, `DROP TABLE half`)
-	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	known := knowing(`CREATE TABLE half (x); CREATE TABLE half (x);`, `DROP TABLE half`)
+	s, err := OpenBehindKnowing(olderStore(t, "Write the spec"), known)
 	if err != nil {
 		t.Fatalf("OpenBehind: %v", err)
 	}
@@ -538,8 +536,8 @@ func TestApply_leavesNothingOfAChangeThatFailedHalfWay(t *testing.T) {
 }
 
 func TestApplyAll_leavesNothingOfAChangeThatFailedHalfWay(t *testing.T) {
-	knowing(t, `CREATE TABLE half (x); CREATE TABLE half (x);`, `DROP TABLE half`)
-	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	known := knowing(`CREATE TABLE half (x); CREATE TABLE half (x);`, `DROP TABLE half`)
+	s, err := OpenBehindKnowing(olderStore(t, "Write the spec"), known)
 	if err != nil {
 		t.Fatalf("OpenBehind: %v", err)
 	}
@@ -554,8 +552,8 @@ func TestApplyAll_leavesNothingOfAChangeThatFailedHalfWay(t *testing.T) {
 }
 
 func TestRollBack_leavesTheChangeWholeWhenUndoingItFailsHalfWay(t *testing.T) {
-	knowing(t, `CREATE TABLE half (x)`, `DROP TABLE half; DROP TABLE nowhere;`)
-	s, err := OpenBehind(olderStore(t, "Write the spec"))
+	known := knowing(`CREATE TABLE half (x)`, `DROP TABLE half; DROP TABLE nowhere;`)
+	s, err := OpenBehindKnowing(olderStore(t, "Write the spec"), known)
 	if err != nil {
 		t.Fatalf("OpenBehind: %v", err)
 	}
@@ -655,5 +653,36 @@ func TestCurrent_aStoreBehindSaysByHowMany(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "by 1 change(s)") {
 		t.Errorf("err = %q, want it to say by 1 change(s)", err)
+	}
+}
+
+func TestOpenKnowing_aStoreKnowingOneChangeMoreAppliesItAndLeavesOthersAlone(t *testing.T) {
+	newer := append(slices.Clone(migration.Known), migration.Made(migration.Carried{
+		Number: len(migration.Known) + 1, Name: "never heard of", Does: "SELECT 1", Undoes: "SELECT 1",
+	}))
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	made, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	_ = made.Close()
+	s, err := OpenBehindKnowing(path, newer)
+	if err != nil {
+		t.Fatalf("OpenBehindKnowing: %v", err)
+	}
+	if _, err := s.ApplyAll(); err != nil {
+		t.Fatalf("ApplyAll: %v", err)
+	}
+	_ = s.Close()
+	if _, err := Open(path); !errors.Is(err, ErrNewerStore) {
+		t.Errorf("this cairn opened a store the newer one changed: %v", err)
+	}
+	again, err := OpenKnowing(path, newer)
+	if err != nil {
+		t.Fatalf("the newer cairn opening its own store again: %v", err)
+	}
+	_ = again.Close()
+	if len(migration.Known) != len(newer)-1 {
+		t.Errorf("what this cairn knows became %d changes", len(migration.Known))
 	}
 }

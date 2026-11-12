@@ -15,7 +15,8 @@ set -euo pipefail
 
 pkg=${1:?usage: mutation-report.sh PACKAGE ROOT < report.json}
 root=${2:?usage: mutation-report.sh PACKAGE ROOT < report.json}
-dir=${pkg#./}
+dir=${pkg%@*}
+dir=${dir#./}
 said=$(cat)
 
 listed() {

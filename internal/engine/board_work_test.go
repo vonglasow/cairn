@@ -1,9 +1,11 @@
 package engine
 
 import (
+	"slices"
 	"testing"
 
 	"cairn/internal/objective"
+	"cairn/internal/task"
 )
 
 func TestAGoalIsToldItHasADescription(t *testing.T) {
@@ -27,5 +29,40 @@ func TestAGoalIsToldItHasADescription(t *testing.T) {
 	}
 	if !described.Described() {
 		t.Fatal("an objective with something written about it was said to have none")
+	}
+}
+
+func TestLook_readsEachCardWithItsStepsAndTheFocus(t *testing.T) {
+	told := task.From(aTask("Ship it"))
+	told.Numbered(1)
+	told.Described("why it matters")
+	told.Step("Write it", false)
+	told.Step("Test it", true)
+	f := newFake()
+	f.tasks = []task.Task{told.Task(), aTask("Bare")}
+	f.focus = []int{1}
+	s, err := Look(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(s.Focus, []int{1}) {
+		t.Errorf("focus = %v, want [1]", s.Focus)
+	}
+	c := s.Cards[0]
+	if c.Number != 1 || !c.InFocus || !c.Described() {
+		t.Errorf("card = %+v", c)
+	}
+	if want := []Part{{Number: 1, Title: "Write it"}, {Number: 2, Title: "Test it", Done: true}}; !slices.Equal(c.Steps, want) {
+		t.Errorf("steps = %+v, want %+v", c.Steps, want)
+	}
+	if bare := s.Cards[1]; bare.Steps != nil || bare.Described() {
+		t.Errorf("a bare card = %+v", bare)
+	}
+}
+
+func TestCardOf_saysWhereInTheFocusATaskCame(t *testing.T) {
+	c, err := cardOf(builtTask(t, 1, "a"), []int{5, 1}, nil, nil, nil)
+	if err != nil || c.Focused != 2 || !c.InFocus {
+		t.Errorf("card %+v, %v; want second in focus", c, err)
 	}
 }

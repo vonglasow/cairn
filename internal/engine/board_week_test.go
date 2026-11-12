@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/trace"
 )
 
 func dayNamed(day string) time.Time {
@@ -95,5 +96,28 @@ func TestTimesheet_worked_countsEachTaskOnce(t *testing.T) {
 	}}
 	if got := sheet.Worked(); got != 3 {
 		t.Errorf("Worked = %d, want 3", got)
+	}
+}
+
+type sheetWork struct{ sheet trace.Sheet }
+
+func (w sheetWork) Ask(Operation, Input) (Answer, error) { return Answer{Sheet: &w.sheet}, nil }
+
+func (sheetWork) Version() (int64, error) { return 0, nil }
+
+func TestReadPeriod_answersTheSheetRead(t *testing.T) {
+	w := sheetWork{trace.Sheet{Days: []trace.Day{{Day: dayNamed("2026-10-13"), Total: 90 * time.Minute}}}}
+	sheet, err := ReadPeriod(w, dayNamed("2026-10-12"), dayNamed("2026-10-18"), dayNamed("2026-10-14"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sheet.Days) != 1 || sheet.Days[0].Minutes != 90 {
+		t.Errorf("read %+v, want the one day of 90 minutes", sheet)
+	}
+}
+
+func TestATimesheetTaskSaysItWasDeleted(t *testing.T) {
+	if got := (TimesheetTask{Title: "Ship it", Deleted: true}).Shown(); got != "Ship it (deleted)" {
+		t.Errorf("Shown = %q", got)
 	}
 }

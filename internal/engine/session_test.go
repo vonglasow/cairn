@@ -122,3 +122,36 @@ func TestAnswer_asksToRenewWhateverWasCalled(t *testing.T) {
 		t.Errorf("a listing past the session's length asked %v, want one question", answer.Asked)
 	}
 }
+
+func TestSession_asksTheMinuteItsLengthIsReached(t *testing.T) {
+	taken := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
+	acts := []trace.Act{actAt(4, trace.FocusTaken, taken)}
+	if got := sessionOf(4, acts, taken.Add(time.Hour), time.Hour); got.Ask == "" {
+		t.Error("a session exactly as long as its length asks nothing")
+	}
+}
+
+func TestSession_refusesALengthOfNothingOrLess(t *testing.T) {
+	for _, said := range []string{"0s", "-1h"} {
+		e := openEngine(t)
+		e.home = homeLasting(t, "", said, 0)
+		if _, err := e.sessionLength(); !errors.Is(err, config.ErrFocus) {
+			t.Errorf("focus.session %q: err = %v, want config.ErrFocus", said, err)
+		}
+	}
+}
+
+func TestSession_sessionsAreTheOnesOfTheTasksInFocus(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "Write the spec")
+	if _, err := e.Ask(TaskFocus, given("number", "1")); err != nil {
+		t.Fatal(err)
+	}
+	got, err := e.sessions()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Task != 1 {
+		t.Errorf("sessions = %+v, want the one of task 1", got)
+	}
+}

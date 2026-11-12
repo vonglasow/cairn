@@ -31,10 +31,28 @@ type world struct {
 	board *engine.Engine
 	file  string
 	was   []byte
+
+	window   opensWindow
+	terminal opensBoard
 }
 
 func newWorld(t *testing.T) *world {
-	return &world{World: test.NewWorld(t, run)}
+	w := &world{}
+	w.World = test.NewWorld(t, func(_ *testing.T, h engine.Home, args ...string) test.Result {
+		return runWith(w.context(), h, args...)
+	})
+	return w
+}
+
+func (w *world) context() context.Context {
+	ctx := context.Background()
+	if w.window != nil {
+		ctx = withWindow(ctx, w.window)
+	}
+	if w.terminal != nil {
+		ctx = withBoard(ctx, w.terminal)
+	}
+	return ctx
 }
 
 func daysToday() []string {
@@ -697,18 +715,18 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Step("^I run `([^`]*)` with \"([^\"]*)\" and \"([^\"]*)\" on standard input$", func(line, first, second string) error {
 		var out, errs bytes.Buffer
 		stdin := strings.NewReader(first + "\n\n" + second + "\n")
-		code := Main(context.Background(), test.SplitArgs(line)[1:], stdin, &out, &errs)
+		code := MainIn(w.context(), w.Home(), test.SplitArgs(line)[1:], stdin, &out, &errs)
 		w.Line, w.Out = line, test.Result{Stdout: out.String(), Stderr: errs.String(), Code: code}
 		return nil
 	})
 
 	sc.Step("^`([^`]*)` shows \"([^\"]*)\"$", func(line, said string) error {
-		r := run(w.T, test.SplitArgs(line)[1:]...)
+		r := runWith(w.context(), w.Home(), test.SplitArgs(line)[1:]...)
 		return test.WantContains(r.Stdout, said, line)
 	})
 
 	sc.Step(`^I add a task whose description carries an escape$`, func() error {
-		w.Out = run(w.T, "task", "new", "Write the spec", "--desc", "look \x1b]52;c;aGk=\x07 here")
+		w.Out = runWith(w.context(), w.Home(), "task", "new", "Write the spec", "--desc", "look \x1b]52;c;aGk=\x07 here")
 		return nil
 	})
 

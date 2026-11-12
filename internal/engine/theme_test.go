@@ -154,3 +154,25 @@ func shownWithHome(t *testing.T, h Home) Config {
 	}
 	return *answer.Config
 }
+
+func TestSchemeOf_findsACarriedSchemeAndOneOfOnesOwnWhereEachIs(t *testing.T) {
+	nord, err := os.ReadFile(filepath.Join("..", "theme", "schemes", "nord.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	own := t.TempDir()
+	if err := os.WriteFile(filepath.Join(own, "mine.yaml"), nord, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := SchemeOf(ThemeSeen{Slug: "mine", From: filepath.Join(own, "mine.yaml")}); err != nil {
+		t.Errorf("a scheme of one's own: %v", err)
+	}
+	here := t.TempDir()
+	if err := os.WriteFile(filepath.Join(here, "nord.yaml"), []byte("not a scheme"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(here)
+	if _, err := SchemeOf(ThemeSeen{Slug: "nord", From: theme.Carried}); err != nil {
+		t.Errorf("a carried scheme was looked for beside the working folder: %v", err)
+	}
+}

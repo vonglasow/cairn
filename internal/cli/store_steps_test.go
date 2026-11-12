@@ -259,7 +259,7 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^a board is open on the store$`, func() error {
-		held, err := engine.Hold(home(), engine.Through("cli", home()))
+		held, err := engine.Hold(w.Home(), engine.Through("cli", w.Home()))
 		if err != nil {
 			return err
 		}

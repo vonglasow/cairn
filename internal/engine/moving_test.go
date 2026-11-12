@@ -1,9 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/domain"
+	"cairn/internal/task"
+	"cairn/internal/trace"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func heldIn(t *testing.T, path string) []int {
@@ -150,5 +155,131 @@ func TestFocus_isLetGoOfByATaskMovedIntoBlocked(t *testing.T) {
 	}
 	if held := heldIn(t, path); len(held) != 1 || held[0] != 2 {
 		t.Errorf("in focus after one was blocked: %v, want [2]", held)
+	}
+}
+
+func actsDone(t *testing.T, e *Engine, did string) []int {
+	t.Helper()
+	acts, err := e.since(time.Time{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var on []int
+	for _, a := range acts {
+		if c := a.Carried(); c.Did == did {
+			on = append(on, c.Task)
+		}
+	}
+	return on
+}
+
+func numbersIn(tasks []task.Task, state domain.State) []int {
+	var out []int
+	for _, t := range tasks {
+		if factsOf(t).State == state {
+			out = append(out, factsOf(t).Number)
+		}
+	}
+	return out
+}
+
+func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
+	e := openEngine(t)
+	for _, title := range []string{"one", "two", "three"} {
+		add(t, e, title)
+	}
+	for _, n := range []string{"1", "2", "3"} {
+		if _, err := e.Ask(TaskFocus, given("number", n)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a, err := e.Ask(TaskUnfocus, given("number", "2"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{1, 3}) || len(a.Held) != 2 || factsOf(a.Held[1]).Number != 3 {
+		t.Errorf("after unfocusing 2: in focus %v, held %d", a.InFocus, len(a.Held))
+	}
+	a, err = e.Ask(TaskFocus, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{1, 3}) || len(a.Held) != 2 || len(a.Sessions) != 2 {
+		t.Errorf("asking what is in focus: %v, held %d, sessions %d", a.InFocus, len(a.Held), len(a.Sessions))
+	}
+	a, err = e.Ask(TaskUnfocus, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.InFocus == nil || len(*a.InFocus) != 0 {
+		t.Errorf("after unfocusing all: %v", a.InFocus)
+	}
+	if got := actsDone(t, e, trace.FocusReleased); !slices.Equal(got, []int{2, 1, 3}) {
+		t.Errorf("focus released on %v, want 2 then 1 and 3", got)
+	}
+}
+
+func TestTaskFocus_answersWithTheTaskBroughtIntoCurrentAndTheFocus(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "one")
+	add(t, e, "two")
+	a, err := e.Ask(TaskFocus, given("number", "2"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Task == nil || factsOf(*a.Task).Number != 2 || factsOf(*a.Task).State != domain.Current {
+		t.Fatalf("answered with task %+v, want task 2 in current", a.Task)
+	}
+	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{2}) || len(a.Sessions) != 1 {
+		t.Errorf("in focus %v, sessions %d", a.InFocus, len(a.Sessions))
+	}
+}
+
+func TestMove_recordsAMoveOnlyWhenTheTaskChangedPlace(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "one")
+	add(t, e, "two")
+	for range 2 {
+		if err := e.move(2, First, 0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := actsDone(t, e, trace.Moved); !slices.Equal(got, []int{2}) {
+		t.Errorf("moves recorded on %v, want one on task 2", got)
+	}
+}
+
+func TestTaskMove_putsATaskInPlaceAndRefusesOneGivenNowhereOrTwice(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "one")
+	add(t, e, "two")
+	a, err := e.Ask(TaskMove, given("number", "2", "first", "true"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := numbersIn(a.Tasks, domain.Backlog); !slices.Equal(got, []int{2, 1}) {
+		t.Errorf("backlog is %v, want 2 then 1", got)
+	}
+	if _, err := e.Ask(TaskMove, given("number", "1")); !errors.Is(err, ErrNowhereToMove) {
+		t.Errorf("moving nowhere answered %v", err)
+	}
+	if _, err := e.Ask(TaskMove, given("number", "1", "first", "true", "last", "true", "state", "todo")); !errors.Is(err, ErrMoreThanOnePlace) {
+		t.Errorf("moving to two places answered %v", err)
+	}
+}
+
+func TestTaskMove_takesTheOthersAlongBehindItIntoItsColumn(t *testing.T) {
+	e := openEngine(t)
+	for _, title := range []string{"one", "two", "three", "four"} {
+		add(t, e, title)
+	}
+	in := given("number", "3", "state", "todo", "first", "true")
+	in.Listed = map[string][]string{"also": {"1", "2"}}
+	a, err := e.Ask(TaskMove, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := numbersIn(a.Tasks, domain.Todo); !slices.Equal(got, []int{3, 1, 2}) {
+		t.Errorf("todo is %v, want 3, 1, 2", got)
 	}
 }

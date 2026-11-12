@@ -246,3 +246,87 @@ func TestTaskList_refusesTheTasksInFocusAndTheOnesThatAreNot(t *testing.T) {
 		t.Errorf("both asked gave %v", err)
 	}
 }
+
+func TestAFilterSaysTheValuesItTakesAsTheyRead(t *testing.T) {
+	f := Filter{Values: []string{"api", "doc"}, Shown: []string{"API", "Doc"}, Ticked: []string{"api", "doc", "gone"}}
+	if got := f.TakenSays(); got != "API + Doc + gone" {
+		t.Errorf("TakenSays = %q", got)
+	}
+}
+
+func TestFilters_keepOneValueHeldAsTheOneTheyAreOn(t *testing.T) {
+	fs := Filters{several(offered("label", "label", []string{"api", "doc"}, nil))}
+	one := fs.Keeping(Filters{{Arg: "label", Ticked: []string{"doc", "gone"}}})
+	if one[0].At != 2 || one[0].Ticked != nil {
+		t.Errorf("one value held: at %d, ticked %v", one[0].At, one[0].Ticked)
+	}
+	two := fs.Keeping(Filters{{Arg: "label", Ticked: []string{"doc", "api"}}})
+	if two[0].At != 0 || !slices.Equal(two[0].Ticked, []string{"doc", "api"}) {
+		t.Errorf("two values held: at %d, ticked %v", two[0].At, two[0].Ticked)
+	}
+	none := fs.Keeping(Filters{{Arg: "label", Ticked: []string{"gone"}}})
+	if none[0].At != 0 || none[0].Ticked != nil {
+		t.Errorf("nothing held still offered: at %d, ticked %v", none[0].At, none[0].Ticked)
+	}
+}
+
+func keptNumbers(t *testing.T, fs Filters, cards []Card) []int {
+	t.Helper()
+	kept, err := fs.Kept(cards)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var numbers []int
+	for _, c := range kept {
+		numbers = append(numbers, c.Number)
+	}
+	return numbers
+}
+
+func TestFilters_keepByWhatFollowsALabel(t *testing.T) {
+	label := several(offered("label", "label", []string{"api"}, nil))
+	label.At = 1
+	priority := offered("priority", "priority", []string{"high"}, nil)
+	priority.At = 1
+	cards := []Card{{Number: 1, Labels: []string{"api"}, Priority: "high"}, {Number: 2, Labels: []string{"api"}, Priority: "low"}}
+	if got := keptNumbers(t, Filters{label, priority}, cards); !slices.Equal(got, []int{1}) {
+		t.Errorf("kept %v, want [1]", got)
+	}
+}
+
+func TestFilters_keepOnlyWhatIsDueByTheDay(t *testing.T) {
+	due := offered("deadline", "deadline-before", []string{"2026-06-14"}, nil)
+	due.At = 1
+	cards := []Card{{Number: 1, Deadline: dayNamed("2026-06-10")}, {Number: 2, Deadline: dayNamed("2026-06-20")}, {Number: 3}}
+	if got := keptNumbers(t, Filters{due}, cards); !slices.Equal(got, []int{1}) {
+		t.Errorf("kept %v, want [1]", got)
+	}
+}
+
+func TestFilters_keepNothingDueByTheDayThatAnotherFilterLeftOut(t *testing.T) {
+	priority := offered("priority", "priority", []string{"high"}, nil)
+	priority.At = 1
+	due := offered("deadline", "deadline-before", []string{"2026-06-14"}, nil)
+	due.At = 1
+	cards := []Card{{Number: 1, Priority: "high", Deadline: dayNamed("2026-06-10")}, {Number: 2, Priority: "low", Deadline: dayNamed("2026-06-10")}}
+	if got := keptNumbers(t, Filters{priority, due}, cards); !slices.Equal(got, []int{1}) {
+		t.Errorf("kept %v, want [1]", got)
+	}
+}
+
+func TestFilters_onPutsOnlyTheFilterNamedOnTheValueNamed(t *testing.T) {
+	fs := Filters{
+		{Arg: "state", Values: []string{Any, "todo", "done"}, At: 2},
+		{Arg: "priority", Values: []string{Any, "todo"}, At: 0},
+	}
+	got := fs.On("state", "todo")
+	if got[0].At != 1 || got[1].At != 0 {
+		t.Errorf("on todo: %d %d", got[0].At, got[1].At)
+	}
+	if got := fs.On("state", Any); got[0].At != 0 {
+		t.Errorf("on any: %d", got[0].At)
+	}
+	if got := fs.On("state", "never"); got[0].At != 2 {
+		t.Errorf("on a value not offered: %d", got[0].At)
+	}
+}

@@ -15,6 +15,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/io/key"
+	"gioui.org/widget/material"
 	"github.com/cucumber/godog"
 
 	"cairn/internal/domain"
@@ -1170,7 +1171,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for i := range w.w.TimeCells() {
 			cells = append(cells, TimeCellAt(w.w.Layout(), i))
 		}
-		return buttonsDrawn(w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
+		return buttonsDrawn(w.theme, w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
 	})
 	sc.Step(`^I rest the pointer on the (count of labels|title) of "([^"]*)"$`, func(what, title string) error {
 		for _, placed := range w.w.Placed() {
@@ -1491,7 +1492,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !w.w.Lighting(offer) {
 			return fmt.Errorf("the offer %q is not lit", offer)
 		}
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -1509,14 +1510,14 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		grounds := map[buttonLook]color.NRGBA{buttonPlain: Dark().Colour.Surface.Control, buttonOn: Dark().Colour.Accent.Base, buttonDanger: Dark().Colour.State.Danger}
 		for i, slot := range slots {
 			look := w.w.OfferLook(i, w.w.Offers()[i])
-			if err := buttonsDrawn(w.w, []Box{ButtonIn(slot)}, grounds[look]); err != nil {
+			if err := buttonsDrawn(w.theme, w.w, []Box{ButtonIn(slot)}, grounds[look]); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
 	sc.Then(`^the day held is drawn as a filled button$`, func() error {
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -1529,7 +1530,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^today is drawn as an edged button$`, func() error {
 		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.today()))
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -1542,7 +1543,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the other days are drawn without a box$`, func() error {
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -1561,11 +1562,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for i := range w.w.CalendarCells() {
 			cells = append(cells, CalendarCell(w.w.CalendarBox(), i))
 		}
-		return buttonsDrawn(w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
+		return buttonsDrawn(w.theme, w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
 	})
 	sc.Then(`^the calendar's month, year and arrows are drawn as buttons$`, func() error {
 		box := w.w.CalendarBox()
-		return buttonsDrawn(w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
+		return buttonsDrawn(w.theme, w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
 	})
 	sc.Then(`^the labels list "([^"]*)" carried by (\d+) tasks? and (\d+) objectives?$`, func(label string, tasks, objectives int) error {
 		if w.w.Screen() != OnLabels {
@@ -1994,7 +1995,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return fmt.Errorf("nothing is in hand")
 		}
 		inside := Box{X: ghost.X + 2, Y: ghost.Y + 2, W: ghost.W - 4, H: ghost.H - 4}
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -2343,7 +2344,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		tile := w.w.ServingCardAt(1)
 		line := RowIn(Box{X: tile.X, Y: tile.Y, W: tile.W, H: tile.H - between}, tile.Y+inset, lineHigh)
 		band := Box{X: line.X, Y: line.Y, W: line.W, H: line.H - inset}
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -2362,7 +2363,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the second tile leaves room before its frame$`, func() error {
 		tile := w.w.ServingCardAt(1)
 		edge := Box{X: tile.X + tile.W - padding, Y: tile.Y, W: padding, H: tile.H}
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -2390,7 +2391,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if frame.Y+frame.H > asked.Y {
 			return fmt.Errorf("the first field reaches %d and the question starts at %d: they overlap, so this proves nothing", frame.Y+frame.H, asked.Y)
 		}
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -2400,7 +2401,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the question stands raised, its corners rounded$`, func() error {
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -2417,7 +2418,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^what is behind the question is dimmed$`, func() error {
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -3112,7 +3113,7 @@ func (w *world) panelRuleSeen() error {
 	if len(along) == 0 {
 		return fmt.Errorf("the panel offers nothing, so it draws no rule")
 	}
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -3264,7 +3265,7 @@ func (w *world) formBehindTheList() error {
 		return fmt.Errorf("the first field reaches %d and the list starts at %d: they overlap, so this proves nothing",
 			frame.Y+frame.H, list.Y)
 	}
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -3291,7 +3292,7 @@ func (w *world) fieldDrawnByName(field string) error {
 		inside := Inside(frame)
 		from := inside.X + (len(f.Value)+2)*perGlyph
 		far := Box{X: from, Y: inside.Y, W: inside.X + inside.W - from, H: inside.H}
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -3562,7 +3563,7 @@ func (w *world) stripedWide(title string, wide int) error {
 	if err != nil {
 		return err
 	}
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -3579,8 +3580,8 @@ func (w *world) stripedWide(title string, wide int) error {
 	return nil
 }
 
-func buttonsDrawn(w Window, buttons []Box, grounds ...color.NRGBA) error {
-	shot, err := drawnInAStep(w)
+func buttonsDrawn(th *material.Theme, w Window, buttons []Box, grounds ...color.NRGBA) error {
+	shot, err := drawnInAStep(th, w)
 	if err != nil {
 		return err
 	}

@@ -27,6 +27,9 @@ func TestSeries_areKeptChangedAndDeleted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if found.Arrives != "current" {
+		t.Errorf("a series made to arrive in current arrives in %q", found.Arrives)
+	}
 	made.Labels, made.Objectives = []string{"meeting", "work"}, []int{2, 4}
 	if !reflect.DeepEqual(found, made) {
 		t.Errorf("found\n%+v\nwant\n%+v", found, made)

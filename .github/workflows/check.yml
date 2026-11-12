@@ -10,6 +10,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # release.yml calls it on the commit a tag names, and releases nothing unless
+  # every job here passed on that commit — see docs/release.md.
+  workflow_call:
 
 permissions:
   contents: read
@@ -39,10 +42,84 @@ jobs:
         run: scripts/linux-headers.sh jq
       # The prek this action was released with, checked against the sum it
       # carries: it moves when Dependabot moves the action.
+      # Every hook but the coverage floor, which the jobs below hold: run
+      # here, it ran the whole suite end to end, the window's half of it alone
+      # longer than everything else — see cairn#266.
       - uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
+        env:
+          SKIP: cover-check
         with:
           prek-version: latest-known
           extra-args: --all-files
+
+  # The suite's coverage in four parts side by side — the window, the command
+  # line, the terminal, the rest — each crediting every package it reaches,
+  # so the profile is the one a single run writes, made in the time of its
+  # longest part.
+  coverage:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [gui, cli, tui, rest]
+    env:
+      CAIRN_WINDOWLESS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: the graphics headers the window is built against, and jq
+        run: scripts/linux-headers.sh jq
+      - name: the suite's ${{ matrix.part }} part, with its profile
+        run: make coverage-part PART=${{ matrix.part }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: coverage-${{ matrix.part }}
+          path: coverage-${{ matrix.part }}.out
+          if-no-files-found: error
+
+  # The floors, on the four parts made one profile: the hook prek skipped
+  # above, judging what the commit's hooks judge.
+  coverage-floor:
+    needs: coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+      - name: the floors, in total and per package
+        run: make coverage-merge && make -o coverage.out cover-check
+
+  # The suite with the race detector, which the commit's hooks no longer run:
+  # with it the suite took more than ten minutes on a Mac — see cairn#266.
+  race:
+    runs-on: ubuntu-24.04
+    env:
+      CAIRN_WINDOWLESS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: the graphics headers the window is built against, and jq
+        run: scripts/linux-headers.sh jq
+      - name: the suite, with the race detector
+        run: make race
 
   # The packages holding the rules, as scripts/mutation.sh lists them: one job
   # each, side by side, so the sweep lasts as long as its longest package.
@@ -59,7 +136,8 @@ jobs:
     needs: gate
     runs-on: ubuntu-24.04
     # Each mutant a build and a run of its package's tests: bounded so a hang
-    # cannot hold a runner, and a package past it is one to split.
+    # cannot hold a runner, and a package past it is one to split — `split` in
+    # scripts/mutation.sh, which lists it shard by shard.
     timeout-minutes: 90
     strategy:
       fail-fast: false

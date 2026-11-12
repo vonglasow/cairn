@@ -75,16 +75,18 @@ func (w *workspaces) registerServer(sc *godog.ScenarioContext) {
 }
 
 func (w *workspaces) startServer(s *serving, args []string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	clientToServer, writtenByClient := io.Pipe()
 	writtenByServer, serverToClient := io.Pipe()
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		Main(ctx, args, clientToServer, serverToClient, io.Discard)
+		MainIn(ctx, w.Home(), args, clientToServer, serverToClient, io.Discard)
 	}()
 	client := sdk.NewClient(&sdk.Implementation{Name: "acceptance", Version: "0"}, nil)
-	session, err := client.Connect(ctx, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
+	connecting, connected := context.WithTimeout(ctx, 10*time.Second)
+	session, err := client.Connect(connecting, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
+	connected()
 	stop := func() {
 		if session != nil {
 			_ = session.Close()

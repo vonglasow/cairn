@@ -44,27 +44,72 @@ asked=("$@")
 # so the core is where a 100% without them meant least.
 logical=" internal/domain internal/engine internal/task internal/objective internal/store internal/trace internal/migration internal/config internal/build "
 
+# The packages too long for one job, and in how many shards each is judged.
+# Measured on 2026-11-11: the engine's 2558 mutants, four workers, were still
+# running when check.yml's 90 minutes ran out, and were cancelled having
+# judged nothing anybody could read. A shard is named ./pkg@i/n and judges the
+# files that fall to it, every other file of the package excluded; the files
+# are dealt by size, the largest first, each to the shard holding the fewest
+# bytes so far, so the shards last about as long as one another.
+split=" internal/engine:4 "
+
+shardsOf() {
+  local entry
+  for entry in $split; do
+    [ "${entry%%:*}" = "$1" ] && echo "${entry##*:}" && return 0
+  done
+  return 0
+}
+
+# filesOf names the production files of a shard, ./pkg@i/n: all of them for a
+# package named whole.
+filesOf() {
+  local spec=$1 dir=${1%@*}
+  dir=${dir#./}
+  if [ "$spec" = "${spec%@*}" ]; then
+    find "$dir" -maxdepth 1 -name '*.go' ! -name '*_test.go' -exec basename {} \; | sort
+    return 0
+  fi
+  local part=${spec##*@}
+  local shard=${part%/*} of=${part#*/}
+  find "$dir" -maxdepth 1 -name '*.go' ! -name '*_test.go' | while read -r f; do echo "$(wc -c <"$f") $f"; done |
+    sort -k1,1rn -k2 |
+    awk -v shard="$shard" -v of="$of" '{
+      least = 1
+      for (s = 2; s <= of; s++) if (load[s] < load[least]) least = s
+      load[least] += $1
+      if (least == shard) { n = split($2, part, "/"); print part[n] }
+    }' | sort
+}
+
 # The gate, one package a line as a JSON list: check.yml's matrix reads it
 # here and gives each package a job of its own, so a sweep is as long as its
 # longest package rather than all of them end to end, and the list is written
-# once.
+# once. A package split is listed shard by shard.
 if [ "${asked[0]:-}" = "--list" ]; then
-  for pkg in $logical; do echo "./$pkg"; done | jq -R . | jq -sc .
+  for pkg in $logical; do
+    of=$(shardsOf "$pkg")
+    if [ -z "$of" ]; then
+      echo "./$pkg"
+    else
+      for ((i = 1; i <= of; i++)); do echo "./$pkg@$i/$of"; done
+    fi
+  done | jq -R . | jq -sc .
+  exit 0
+fi
+if [ "${asked[0]:-}" = "--shard" ]; then
+  filesOf "${asked[1]:?usage: mutation.sh --shard ./pkg@i/n}"
   exit 0
 fi
 
 # Gremlins builds every mutant, and every build lands in the Go cache: one full
 # sweep left 50 to 150 GB in it, and a run that filled the disk froze the
 # machine. It gets a cache of its own, so the one the rest of the work uses
-# stays warm and small; its own is wiped past 2 GB, and after every run: a
-# colder run is slower, a full disk stops everything.
-cache=${GREMLINS_CACHE:-$(go env GOCACHE)-gremlins}
-ceiling_kb=$((2 * 1024 * 1024))
+# stays warm and small, and the cache is this run's alone, wiped when it ends:
+# a colder run is slower, a full disk stops everything. A cache shared by two
+# runs at once would be wiped by the first to end under the other.
+cache=${GREMLINS_CACHE:-$(mktemp -d "$(go env GOCACHE)-gremlins.XXXXXX")}
 mkdir -p "$cache"
-if [ "$(du -sk "$cache" | cut -f1)" -gt "$ceiling_kb" ]; then
-  echo "gremlins' cache is past 2 GB: wiping it"
-  rm -rf "$cache" && mkdir -p "$cache"
-fi
 export GOCACHE=$cache
 # Gremlins times each mutant against 30 times its baseline test run. With a warm
 # cache that baseline is a cached result, read in milliseconds, and every mutant
@@ -209,14 +254,26 @@ caught=0
 candidates=$(packages)
 judged_packages=
 if [ -n "$candidates" ]; then
-  # shellcheck disable=SC2086
-  judged_packages=$(scripts/packages.sh --tested $candidates)
+  # A shard is judged when its package would be: the test file is the
+  # package's, not the shard's.
+  for spec in $candidates; do
+    [ -z "$(scripts/packages.sh --tested "${spec%@*}")" ] || judged_packages="$judged_packages $spec"
+  done
 fi
 for pkg in $judged_packages; do
+  # A shard, ./pkg@i/n, is its package with every file outside it excluded.
+  base=${pkg%@*}
+  outside=()
+  if [ "$pkg" != "$base" ]; then
+    mine=" $(filesOf "$pkg" | tr '\n' ' ') "
+    while read -r file; do
+      [[ $mine == *" $file "* ]] || outside+=(-E "^${file//./\\.}\$")
+    done < <(filesOf "$base")
+  fi
   # The content is read once, before judging: what is compared and what is
   # written down are the same reading.
   content=
-  $changed || content=$(contentOf "$pkg")
+  $changed || content=$(contentOf "$base")
   if ! $changed && [ "$(cat "$(receiptOf "$pkg")" 2>/dev/null)" = "$content" ]; then
     echo "→ $pkg: judged clean already, and unchanged since"
     said "- \`$pkg\` — clean already, and unchanged since it was judged"
@@ -228,8 +285,9 @@ for pkg in $judged_packages; do
   args=(unleash -o "$report")
   [ -z "${MUTATION_WORKERS:-}" ] || args+=(--workers "$MUTATION_WORKERS")
   $changed && args+=(--diff "$since")
-  [[ $logical == *" ${pkg#./} "* ]] && args+=(--invert-logical --invert-loopctrl)
-  unleash "$pkg" "${args[@]}"
+  [[ $logical == *" ${base#./} "* ]] && args+=(--invert-logical --invert-loopctrl)
+  args+=(${outside[@]+"${outside[@]}"})
+  unleash "$base" "${args[@]}"
   # A package with nothing to mutate gets no report at all.
   if [ ! -f "$report" ]; then
     said "- \`$pkg\` — nothing to mutate"
@@ -245,7 +303,7 @@ for pkg in $judged_packages; do
     timedOut >"$retry"
     again=("${args[@]}")
     $changed || again+=(--diff "$since")
-    RETRYING=$retry unleash "$pkg" "${again[@]}" --timeout-coefficient 90
+    RETRYING=$retry unleash "$base" "${again[@]}" --timeout-coefficient 90
     # A retry that judged nothing wrote no report; that is a gate that did
     # not run, said as one rather than read as a pass or a crash.
     if [ ! -f "$report" ]; then

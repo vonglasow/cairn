@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cairn/internal/migration"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -22,7 +23,7 @@ func (s *Store) Within(act func(*Store) error) error {
 		return fmt.Errorf("beginning an act on the store: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	if err := act(&Store{db: s.db, on: tx, path: s.path}); err != nil {
+	if err := act(&Store{db: s.db, on: tx, path: s.path, known: s.known}); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -50,15 +51,25 @@ func addressOf(path, parameters string) string {
 }
 
 // Open opens a store that has to be up to date, and says so when it is not.
-func Open(path string) (*Store, error) { return open(path, true) }
+func Open(path string) (*Store, error) { return open(path, migration.Known, true) }
 
 // OpenBehind opens a store whatever shape it is in, for the commands whose whole job is to change that shape.
-func OpenBehind(path string) (*Store, error) { return open(path, false) }
+func OpenBehind(path string) (*Store, error) { return open(path, migration.Known, false) }
 
-func open(path string, mustBeCurrent bool) (*Store, error) {
+// OpenKnowing opens a store the way Open does, for a cairn that knows the changes given rather than this one's.
+func OpenKnowing(path string, known []migration.Migration) (*Store, error) {
+	return open(path, known, true)
+}
+
+// OpenBehindKnowing opens a store the way OpenBehind does, for a cairn that knows the changes given rather than this one's.
+func OpenBehindKnowing(path string, known []migration.Migration) (*Store, error) {
+	return open(path, known, false)
+}
+
+func open(path string, known []migration.Migration, mustBeCurrent bool) (*Store, error) {
 	giveUpAt := time.Now().Add(waitedOut())
 	for {
-		s, err := tryToOpen(path, mustBeCurrent)
+		s, err := tryToOpen(path, known, mustBeCurrent)
 		if !heldByAnother(err) || time.Now().After(giveUpAt) {
 			return s, err
 		}
@@ -73,7 +84,7 @@ func heldByAnother(err error) bool {
 
 func beingHeld(code int) bool { return code&0xff == sqlite3.SQLITE_BUSY }
 
-func tryToOpen(path string, mustBeCurrent bool) (*Store, error) {
+func tryToOpen(path string, known []migration.Migration, mustBeCurrent bool) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("making room for the store: %w", err)
 	}
@@ -87,7 +98,7 @@ func tryToOpen(path string, mustBeCurrent bool) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening the store: %w", err)
 	}
-	s := &Store{db: db, on: db, path: path}
+	s := &Store{db: db, on: db, path: path, known: known}
 	if err := s.settle(mustBeCurrent); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("%w — store: %s", err, path)

@@ -46,7 +46,7 @@ func newFixturesCmd() *cobra.Command {
 			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "fixtures %s in %s\nstore  %s\n\n%s=%s %s=%s cairn gui\n",
 				said, folder, made.Store, config.StoreVariable, made.Store, config.NotesVariable, made.Notes)
-			at := withPlaces(home(), made)
+			at := withPlaces(homeIn(cmd), made)
 			if window {
 				return openWindow(cmd, at)
 			}

@@ -8,7 +8,10 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"cairn/internal/domain"
+	"cairn/internal/objective"
 	"cairn/internal/task"
 )
 
@@ -253,4 +256,172 @@ func linkedLine(numbers []int) string {
 		parts = append(parts, "#"+strconv.Itoa(n))
 	}
 	return strings.Join(parts, ", ")
+}
+
+func TestReadExport_refusesAFileOfAnotherKind(t *testing.T) {
+	_, err := importInto(t, openEngine(t), `{"cairn": "notes", "version": 4, "tasks": []}`)
+	if !errors.Is(err, ErrNotAnExport) {
+		t.Errorf("a file of notes answered %v", err)
+	}
+}
+
+func TestTaskImport_filesEveryLabelPastOneHeldOrOneWithoutColour(t *testing.T) {
+	e := openEngine(t)
+	if _, err := e.Ask(LabelNew, given("label", "held")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := importInto(t, e, `{"cairn": "tasks", "version": 4, "tasks": [],
+		"labels": [{"label": "held"}, {"label": "idle"}, {"label": "release", "colour": "teal"}]}`); err != nil {
+		t.Fatal(err)
+	}
+	labels, err := e.labelsCarried()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var said []string
+	for _, l := range labels {
+		if l.Label == "release" {
+			said = append(said, l.Label+":"+l.Colour)
+			continue
+		}
+		said = append(said, l.Label)
+	}
+	slices.Sort(said)
+	if want := []string{"held", "idle", "release:teal"}; !slices.Equal(said, want) {
+		t.Errorf("labels %v, want %v", said, want)
+	}
+}
+
+func TestTaskImport_countsWhatItAddedAndKeepsWhatEachOneSaid(t *testing.T) {
+	e := openEngine(t)
+	held, err := importInto(t, e, `{"cairn": "tasks", "version": 4,
+		"objectives": [{"number": 1, "title": "Release", "state": "active", "priority": "normal", "labels": ["release"], "estimate": "40h"}],
+		"tasks": [{"number": 1, "title": "Ship", "state": "todo", "priority": "normal", "focused": true, "objectives": [1]},
+		  {"number": 2, "title": "Watch", "state": "watching", "priority": "normal"}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if held != (domain.Held{Tasks: 2, Objectives: 1}) {
+		t.Errorf("added %+v, want 2 tasks and 1 objective", held)
+	}
+	o, err := e.showObjective(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shape := objective.OfObjective(o); !slices.Equal(shape.Labels, []string{"release"}) || shape.Estimate != "40h" {
+		t.Errorf("objective labels %v, estimate %q", shape.Labels, shape.Estimate)
+	}
+	watched, err := e.show(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if factsOf(watched).State != domain.Watching {
+		t.Errorf("task 2 is in %s, want watching", factsOf(watched).State)
+	}
+	if held, _ := e.focus(); !slices.Equal(held, []int{1}) {
+		t.Errorf("in focus %v, want task 1", held)
+	}
+}
+
+func TestTaskImport_refusesABadObjectiveOrTaskBeforeAddingAnything(t *testing.T) {
+	const head = `{"cairn": "tasks", "version": 4, "labels": [{"label": "release"}],`
+	for _, c := range []struct{ said, file string }{
+		{"objective 1:", head + `"objectives": [{"number": 1, "title": "Release", "state": "nowhere", "priority": "normal"}], "tasks": []}`},
+		{"task 1:", head + `"objectives": [], "tasks": [{"number": 1, "title": "Ship", "state": "todo", "priority": "pressing"}]}`},
+		{"task 1:", head + `"objectives": [], "tasks": [{"number": 1, "title": "Ship", "state": "todo", "priority": "normal", "spent": {"someday": "1h"}}]}`},
+	} {
+		e := openEngine(t)
+		_, err := importInto(t, e, c.file)
+		if err == nil || !strings.HasPrefix(err.Error(), c.said) {
+			t.Errorf("importing %s answered %v, want it to start with %q", c.file, err, c.said)
+		}
+		if labels, _ := e.labelsCarried(); len(labels) != 0 {
+			t.Errorf("importing %s filed labels %v before refusing", c.file, labels)
+		}
+	}
+}
+
+func TestTaskExport_writesTimeAddedOnADayPastUnderThatDay(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "one")
+	day := domain.FormatDay(time.Now().AddDate(0, 0, -10))
+	if _, err := e.Ask(TimesheetAdd, given("number", "1", "time", "2h", "on", day)); err != nil {
+		t.Fatal(err)
+	}
+	out, err := e.exporting()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := out.Tasks[0].Spent; got[day] != "2h" || len(got) != 1 {
+		t.Errorf("spent %v, want 2h on %s", got, day)
+	}
+}
+
+func TestTaskImport_keepsALinkMadeFromTheOtherSide(t *testing.T) {
+	e := openEngine(t)
+	if _, err := importInto(t, e, `{"cairn": "tasks", "version": 4, "objectives": [],
+		"tasks": [{"number": 2, "title": "Two", "state": "backlog", "priority": "normal", "blocked_by": [], "linked": []},
+		  {"number": 1, "title": "One", "state": "backlog", "priority": "normal", "linked": [2]}]}`); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []int{1, 2} {
+		got, err := e.show(n)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if linked := factsOf(got).Linked; len(linked) != 1 {
+			t.Errorf("task %d is linked to %v, want the other one", n, linked)
+		}
+	}
+}
+
+func TestTaskImport_keepsWhatBlocksATask(t *testing.T) {
+	e := openEngine(t)
+	if _, err := importInto(t, e, `{"cairn": "tasks", "version": 4, "objectives": [],
+		"tasks": [{"number": 1, "title": "One", "state": "todo", "priority": "normal"},
+		  {"number": 2, "title": "Two", "state": "blocked", "priority": "normal", "blocked_by": [1]}]}`); err != nil {
+		t.Fatal(err)
+	}
+	got, err := e.show(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f := factsOf(got); !slices.Equal(f.Blockers, []int{1}) || f.State != domain.Blocked {
+		t.Errorf("task 2 is in %s blocked by %v, want blocked by task 1", f.State, f.Blockers)
+	}
+}
+
+func exportFile(t *testing.T, said string) string {
+	t.Helper()
+	from := filepath.Join(t.TempDir(), "held.json")
+	if err := os.WriteFile(from, []byte(said), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return from
+}
+
+func TestReadExport_refusesAnotherKindOrAVersionItDoesNotRead(t *testing.T) {
+	for _, said := range []string{
+		`{"cairn": "notes", "version": 7, "tasks": [{"number": 1, "title": "a"}]}`,
+		`{"cairn": "tasks", "version": 8, "tasks": [{"number": 1, "title": "a"}]}`,
+		`{"cairn": "tasks", "version": 0, "tasks": [{"number": 1, "title": "a"}]}`,
+	} {
+		if _, err := readExport(exportFile(t, said)); !errors.Is(err, ErrNotAnExport) {
+			t.Errorf("%s was read: %v", said, err)
+		}
+	}
+}
+
+func TestReadExport_takesAFileOfALabelAndASeries(t *testing.T) {
+	if _, err := readExport(exportFile(t, `{"cairn": "tasks", "version": 7, "tasks": [], "labels": [{"name": "x"}], "series": [{"number": 1}]}`)); err != nil {
+		t.Errorf("a label and a series are something to add: %v", err)
+	}
+}
+
+func TestImport_aLabelWithAScopeKeepsItsColour(t *testing.T) {
+	e := imported(t, `{"cairn": "tasks", "version": 7, "objectives": [], "tasks": [], "labels": [{"label": "area", "colour": "teal", "scope": "objectives"}]}`)
+	colours, err := e.store.LabelColours()
+	if err != nil || colours["area"] != "teal" {
+		t.Errorf("the colours are %v, %v", colours, err)
+	}
 }

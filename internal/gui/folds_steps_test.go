@@ -21,7 +21,7 @@ func (w *world) branchOf(title string) (engine.Branch, Box, error) {
 
 func (w *world) saidWithin(box Box) []string {
 	var said []string
-	for _, one := range textDrawn(w.w) {
+	for _, one := range textDrawnWith(w.theme, w.w) {
 		if box.In(Point{X: one.box.X + one.box.W/2, Y: one.box.Y + one.box.H/2}) {
 			said = append(said, one.said)
 		}
@@ -31,7 +31,7 @@ func (w *world) saidWithin(box Box) []string {
 
 func (w *world) chevronDrawnAt(slot Box) bool {
 	gutter := FoldAt(slot)
-	for _, d := range partsDrawn(w.w) {
+	for _, d := range partsDrawnWith(w.theme, w.w) {
 		if strings.HasSuffix(d.Part, "chevron") && d.At.X >= gutter.X && d.At.X+d.At.W <= gutter.X+gutter.W && d.At.Y >= gutter.Y && d.At.Y+d.At.H <= gutter.Y+gutter.H {
 			return true
 		}

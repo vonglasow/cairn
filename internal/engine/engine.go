@@ -9,6 +9,7 @@ import (
 
 	"cairn/internal/config"
 	"cairn/internal/domain"
+	"cairn/internal/migration"
 	"cairn/internal/store"
 	"cairn/internal/task"
 	"cairn/internal/trace"
@@ -48,6 +49,7 @@ type Engine struct {
 	notes      string
 	home       Home
 	path       string
+	known      []migration.Migration
 	turn       *sync.Mutex
 	followed   int64
 	sweepOwed  bool
@@ -55,7 +57,7 @@ type Engine struct {
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not: a command about tasks does not change the shape of the store on the way past.
-func Open(path string) (*Engine, error) { return openWith(path, store.Open) }
+func Open(path string) (*Engine, error) { return openWith(path, migration.Known, store.OpenKnowing) }
 
 // OpenAt opens the store the way OpenBehind does, whatever shape it is in, and keeps where the notes are and what they were found from, for a surface that holds an engine open — a board — rather than one per call.
 func OpenAt(at Places) (*Engine, error) {
@@ -68,14 +70,21 @@ func OpenAt(at Places) (*Engine, error) {
 }
 
 // OpenBehind opens a store whatever shape it is in, for the commands whose job is to change that shape.
-func OpenBehind(path string) (*Engine, error) { return openWith(path, store.OpenBehind) }
+func OpenBehind(path string) (*Engine, error) {
+	return openWith(path, migration.Known, store.OpenBehindKnowing)
+}
 
-func openWith(path string, open func(string) (*store.Store, error)) (*Engine, error) {
-	kept, err := open(path)
+// OpenBehindKnowing opens a store the way OpenBehind does, for a cairn that knows the changes given rather than this one's.
+func OpenBehindKnowing(path string, known []migration.Migration) (*Engine, error) {
+	return openWith(path, known, store.OpenBehindKnowing)
+}
+
+func openWith(path string, known []migration.Migration, open func(string, []migration.Migration) (*store.Store, error)) (*Engine, error) {
+	kept, err := open(path, known)
 	if err != nil {
 		return nil, storeProblem(err)
 	}
-	return (&Engine{path: path, turn: &sync.Mutex{}}).keptBy(kept), nil
+	return (&Engine{path: path, known: known, turn: &sync.Mutex{}}).keptBy(kept), nil
 }
 
 func (e *Engine) taking() func() {
@@ -91,7 +100,7 @@ func (e *Engine) following() error {
 	if err != nil || !replaced {
 		return err
 	}
-	fresh, err := store.Open(e.path)
+	fresh, err := store.OpenKnowing(e.path, e.known)
 	if err != nil {
 		return storeProblem(err)
 	}

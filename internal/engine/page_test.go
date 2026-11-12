@@ -238,3 +238,10 @@ func TestTaskSearch_aPageOfNoTaskIsRefused(t *testing.T) {
 		}
 	}
 }
+
+func TestAPageMayStartAtTheFirstTask(t *testing.T) {
+	p, err := askedPage(given("offset", "0"))
+	if err != nil || !p.asked || p.offset != 0 {
+		t.Errorf("offset 0 gave %+v, %v", p, err)
+	}
+}

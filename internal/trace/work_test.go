@@ -395,6 +395,7 @@ func TestTimerRuns_saysWhetherTheTimerOfATaskRuns(t *testing.T) {
 		{"timer started", []Act{tookWithoutATimer(1, 9, 0), timer(1, TimerStarted, 9, 30)}, true, true},
 		{"focus released", []Act{took(1, 9, 0), stopped(1, 9, 30)}, false, true},
 		{"another task's", []Act{took(2, 9, 0)}, false, false},
+		{"another task's first", []Act{took(2, 9, 0), took(1, 9, 30)}, true, true},
 	} {
 		if runs, known := TimerRuns(c.acts, 1); runs != c.runs || known != c.known {
 			t.Errorf("%s: runs %v, known %v; want %v, %v", c.name, runs, known, c.runs, c.known)

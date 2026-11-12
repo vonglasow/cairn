@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"os"
+	"os/user"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -374,5 +375,37 @@ func TestEveryOperationShowsHowItIsTyped(t *testing.T) {
 		if !strings.Contains(op.Example, "cairn "+op.Line()) {
 			t.Errorf("%s carries no example of itself: %q", op.Name(), op.Example)
 		}
+	}
+}
+
+func TestOperation_waitingNamesThePositionalArgumentsOnly(t *testing.T) {
+	op := Operation{Thing: "task", Level: Full, Takes: []Argument{
+		{Name: "number", Positional: true},
+		{Name: "state"},
+	}}
+	err := op.waiting(given("number", "3", "state", "done"))
+	if want := "task 3 " + ErrNotConfirmed.Error(); err == nil || err.Error() != want {
+		t.Errorf("err = %v, want %q", err, want)
+	}
+}
+
+func TestOperation_waitingSaysASweepOnlyWhenNothingIsNamed(t *testing.T) {
+	op := Operation{Thing: "task", Sweeps: func(Input) bool { return true }, Takes: []Argument{{Name: "number", Positional: true}}}
+	if err := op.waiting(given()); err == nil || err.Error() != "every task it reaches "+ErrNotConfirmed.Error() {
+		t.Errorf("nothing named: err = %v", err)
+	}
+	if err := op.waiting(given("number", "3")); err == nil || err.Error() != "task 3 "+ErrNotConfirmed.Error() {
+		t.Errorf("a number named: err = %v", err)
+	}
+}
+
+func TestAuthor_aNameSetEmptyIsTheOneLoggedIn(t *testing.T) {
+	me, err := user.Current()
+	if err != nil {
+		t.Skip("no user to compare with:", err)
+	}
+	empty := Home{Lookup: func(k string) (string, bool) { return "", k == AuthorVariable }}
+	if got := Author(empty); got != me.Username {
+		t.Errorf("named empty, the author is %q, want %q", got, me.Username)
 	}
 }

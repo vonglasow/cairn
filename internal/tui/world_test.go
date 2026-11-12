@@ -316,21 +316,7 @@ func (w *world) aWindow(width, high int) error {
 }
 
 func (w *world) givens() test.Givens {
-	return test.Givens{Other: func() test.Asker { return elsewhere{w} }}
-}
-
-type elsewhere struct{ w *world }
-
-func (s elsewhere) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
-	answer, err := s.w.other.Ask(op, in)
-	if !errors.Is(err, engine.ErrNewerStore) {
-		return answer, err
-	}
-	err = test.AsANewerCairn(unknownChange, func() error {
-		answer, err = s.w.other.Ask(op, in)
-		return err
-	})
-	return answer, err
+	return test.Givens{Other: func() test.Asker { return w.other }}
 }
 
 func (w *world) aStoreFromAnOlderCairn(title string) error {
@@ -372,15 +358,17 @@ func (w *world) anotherCairnRollsTheLastChangeBack() error {
 	return w.forgetBackups()
 }
 
-const unknownChange = "never heard of"
-
 func (w *world) aChangeThisCairnDoesNotKnow() error {
-	if err := test.AsANewerCairn(unknownChange, func() error {
-		_, err := w.other.Ask(engine.MigrationApply, engine.Input{})
-		return err
-	}); err != nil {
+	newer, err := test.ANewerCairn(w.path)
+	if err != nil {
 		return err
 	}
+	if _, err := newer.Ask(engine.MigrationApply, engine.Input{}); err != nil {
+		_ = newer.Close()
+		return err
+	}
+	_ = w.other.Close()
+	w.other = newer
 	return w.forgetBackups()
 }
 

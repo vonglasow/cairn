@@ -28,7 +28,7 @@ func initUpgrade(t *testing.T) func(*godog.ScenarioContext) {
 }
 
 func TestAcceptance_Upgrade(t *testing.T) {
-	runAcceptance(t, "upgrade.feature", initUpgrade(t), "")
+	runOneAtATime(t, "upgrade.feature", initUpgrade(t), "")
 }
 
 const runBefore = "the cairn that was there"

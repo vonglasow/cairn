@@ -60,17 +60,12 @@ func hexOf(c color.NRGBA) string { return fmt.Sprintf("#%02x%02x%02x", c.R, c.G,
 
 func (w *workspaces) registerThemes(sc *godog.ScenarioContext) {
 	var worn *gui.Skin
-	was := openGui
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		worn = nil
 		return ctx, nil
 	})
-	sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
-		openGui = was
-		return ctx, err
-	})
 	opening := func(line string) error {
-		openGui = func(_ engine.Work, _ engine.Pages, look gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(_ engine.Work, _ engine.Pages, look gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
 			worn = &look
 			return nil
 		}

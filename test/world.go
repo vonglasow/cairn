@@ -2,10 +2,15 @@ package test
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,14 +30,66 @@ type World struct {
 	Line      string
 
 	run  Runner
+	env  map[string]string
 	undo []func()
 }
 
 // NewWorld builds the state one scenario works against, reaching its surface through run.
 func NewWorld(t *testing.T, run Runner) *World { return &World{T: t, run: run} }
 
-// Setenv sets an environment variable for the length of the scenario.
+// Setenv sets an environment variable for this scenario alone: what it runs sees it, the process and the scenarios running beside it do not.
 func (w *World) Setenv(key, value string) {
+	if w.env == nil {
+		w.env = map[string]string{}
+	}
+	w.env[key] = value
+}
+
+// Lookup reads a variable the way what this scenario runs sees it: what the scenario set, else what the process has.
+func (w *World) Lookup(key string) (string, bool) {
+	if value, set := w.env[key]; set {
+		return value, true
+	}
+	return os.LookupEnv(key)
+}
+
+// Home is the home what this scenario runs is in, read through the scenario's own environment.
+func (w *World) Home() engine.Home {
+	dir, _ := w.Lookup(homeVariable())
+	if dir == "" {
+		return engine.Home{Missing: fmt.Errorf("$%s is not defined", homeVariable()), Lookup: w.Lookup}
+	}
+	return engine.Home{Dir: dir, Lookup: w.Lookup}
+}
+
+func homeVariable() string {
+	if runtime.GOOS == "windows" {
+		return "USERPROFILE"
+	}
+	return "HOME"
+}
+
+// Environ is the environment a program this scenario starts is handed: the process's, with what the scenario set over it.
+func (w *World) Environ() []string {
+	var env []string
+	for _, v := range os.Environ() {
+		if key, _, _ := strings.Cut(v, "="); !w.setHere(key) {
+			env = append(env, v)
+		}
+	}
+	for key, value := range w.env {
+		env = append(env, key+"="+value)
+	}
+	return env
+}
+
+func (w *World) setHere(key string) bool {
+	_, set := w.env[key]
+	return set
+}
+
+// SetProcessEnv sets a variable in the process itself, for what reads it there rather than through a home, and puts it back when the scenario ends; only a suite whose scenarios run one at a time may call it.
+func (w *World) SetProcessEnv(key, value string) {
 	previous, had := os.LookupEnv(key)
 	w.OnEnd(func() {
 		if had {
@@ -53,17 +110,21 @@ func (w *World) EndScenario() {
 		w.undo[i]()
 	}
 	w.undo = nil
+	w.env = nil
 }
 
 // Run executes a command line the way a shell would have handed it over, dropping the leading `cairn` the scenario writes for the reader's benefit.
 func (w *World) Run(line string) {
 	args := SplitArgs(line)
 	w.Line = line
-	w.Out = w.run(w.T, args[1:]...)
+	w.Out = w.run(w.T, w.Home(), args[1:]...)
 }
 
-// Seed puts cairn in a given state through the real command, so that what a precondition writes is what the command under test would have written.
+// Seed puts cairn in a given state through the real command, so that what a precondition writes is what the command under test would have written; a store the scenario points at and that is not there yet is first laid down from one this cairn made once for the whole run.
 func (w *World) Seed(line string) error {
+	if err := w.layDownTheStoreWhenThereIsNone(); err != nil {
+		return err
+	}
 	restore := w.setAsideConfig()
 	defer restore()
 
@@ -77,6 +138,40 @@ func (w *World) Seed(line string) error {
 	w.Out = before
 	return nil
 }
+
+func (w *World) layDownTheStoreWhenThereIsNone() error {
+	if at, _ := w.Lookup(config.StoreVariable); w.StorePath == "" || at != w.StorePath {
+		return nil
+	}
+	if _, err := os.Stat(w.StorePath); !errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	laid, err := anEmptyStore()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(w.StorePath), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(w.StorePath, laid, 0o600)
+}
+
+var anEmptyStore = sync.OnceValues(func() ([]byte, error) {
+	dir, err := os.MkdirTemp("", "cairn-empty-store-")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	path := filepath.Join(dir, "cairn.db")
+	made, err := engine.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := made.Close(); err != nil {
+		return nil, err
+	}
+	return os.ReadFile(path)
+})
 
 // ConfigPath is where the configuration cairn reads sits, for this scenario's home — the one place a precondition needs to know it, so it is spelled here rather than a second time wherever else asks.
 func (w *World) ConfigPath() string {
@@ -126,15 +221,15 @@ func (w *World) AStoreFromAnOlderCairn(title string) error {
 	return w.ForgetBackups()
 }
 
-// AsANewerCairn runs do as a cairn that knows one change more than this one, named name: a store that change is applied to in do comes, once do returns, from a cairn newer than this one. It changes what every cairn in the process knows while do runs, so it belongs to tests that do not run in parallel.
-func AsANewerCairn(name string, do func() error) error {
-	known := migration.Known
-	migration.Known = append(known[:len(known):len(known)], migration.Made(migration.Carried{
-		Number: len(known) + 1, Name: name, Does: "SELECT 1", Undoes: "SELECT 1",
-	}))
-	defer func() { migration.Known = known }()
-	return do()
+// ANewerCairn is a cairn that knows one change more than this one, UnknownChange, holding the store at path open whatever shape it is in; a store it applies that change to comes from a cairn newer than this one. Every other cairn in the process goes on knowing what it knew.
+func ANewerCairn(path string) (*engine.Engine, error) {
+	return engine.OpenBehindKnowing(path, append(slices.Clone(migration.Known), migration.Made(migration.Carried{
+		Name: UnknownChange, Does: "SELECT 1", Undoes: "SELECT 1",
+	})))
 }
+
+// UnknownChange is the name of the change a newer cairn knows and this one does not.
+const UnknownChange = "never heard of"
 
 // ForgetBackups removes every backup beside the store, so a scenario counts only what it caused.
 func (w *World) ForgetBackups() error {

@@ -67,6 +67,24 @@ Feature: A series, the tasks that come back
       Then it fails
       And it says on standard error "blue"
 
+    @series-grammar-refuses-a-time-too-long
+    Scenario: a time with too many figures is refused as a time
+      When I run `cairn task new Stand-up --every "every day 123:45"`
+      Then it fails
+      And it says on standard error "a time is written 10:30"
+      When I run `cairn task new Stand-up --every "every day 10:300"`
+      Then it fails
+      And it says on standard error "a time is written 10:30"
+      And `cairn task list` says "there is no task"
+
+    @series-grammar-from-years-ahead
+    Scenario: a series moved to start years ahead makes its next on that day
+      Given I ran `cairn task new Review --every "every day"`
+      And I ran `cairn series edit 1 --every "every day" --from 2031-01-01`
+      When I run `cairn task edit 1 --state done`
+      Then it succeeds
+      And the answer says "↻1 made #2 for Wed 1 Jan"
+
   Rule: One occurrence is open at a time, and the next is made when it is done or skipped
 
     @series-done-makes-the-next

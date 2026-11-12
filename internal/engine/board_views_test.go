@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/store"
 	"slices"
 	"testing"
 	"time"
@@ -175,5 +176,65 @@ func TestHolds_sayWhichFilterAViewHolds(t *testing.T) {
 	}
 	if !(Holds{Priority: "high", Objective: []int{1}, DueBefore: "+7d"}).Narrows("deadline-before") {
 		t.Error("a day due by is not held")
+	}
+}
+
+func TestHolds_narrowsByTheFocusOnlyWhenOneIsHeld(t *testing.T) {
+	if (Holds{}).Narrows("focus") || !(Holds{Focus: "in"}).Narrows("focus") {
+		t.Error("a view narrows by the focus whether it holds one or not")
+	}
+}
+
+func TestViewing_aViewOnTheFocusKeepsTheTasksInIt(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "held")
+	add(t, e, "left")
+	if _, err := e.Ask(TaskFocus, given("number", "1")); err != nil {
+		t.Fatal(err)
+	}
+	for focus, want := range map[string]int{"in": 1, "out": 2} {
+		kept, _, err := e.viewing(store.View{Name: "f", Focus: focus})
+		if err != nil || len(kept) != 1 || factsOf(kept[0]).Number != want {
+			t.Errorf("focus %s keeps %d tasks, %v; want task %d", focus, len(kept), err, want)
+		}
+	}
+}
+
+func TestHolds_narrowsByALabelOnlyWhenOneIsHeld(t *testing.T) {
+	if (Holds{}).Narrows("label") || !(Holds{Label: []string{"x"}}).Narrows("label") {
+		t.Error("a view narrows by a label whether it holds one or not")
+	}
+}
+
+func heldFilters(t *testing.T) Filters {
+	t.Helper()
+	return BoardFilters(Snapshot{Cards: []Card{{Number: 1, State: "todo", Labels: []string{"x"}}}}, time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC))
+}
+
+func TestHolding_keepsTheLabelFilteredAndNamesNoneHeldNorAsked(t *testing.T) {
+	fs := on(heldFilters(t), "label", "x")
+	in := fs.Holding(View{Name: "Home"}, "")
+	if !slices.Equal(in.Listed["label"], []string{"x"}) {
+		t.Errorf("the labels kept are %v", in.Listed["label"])
+	}
+	in = heldFilters(t).Holding(View{Name: "Home"}, "")
+	if _, there := in.Listed["label"]; there {
+		t.Errorf("no label filtered nor held names labels %v", in.Listed["label"])
+	}
+	if _, there := in.Given["focus"]; there {
+		t.Error("no focus filtered nor held names the focus")
+	}
+}
+
+func TestHolding_theFocusFilteredWinsOverTheOneHeld(t *testing.T) {
+	in := on(heldFilters(t), "focus", "in").Holding(View{Name: "Home", Holds: Holds{Focus: "out"}}, "")
+	if in.Given["focus"] != "true" || in.Given["no-focus"] != "" {
+		t.Errorf("the focus kept is %v", in.Given)
+	}
+}
+
+func TestSaving_withNoSearchTypedKeepsTheViewsOwn(t *testing.T) {
+	if in := heldFilters(t).Saving(View{Name: "Home", Holds: Holds{Search: "spec"}}, ""); in.Given["search"] != "" {
+		t.Errorf("the search saved is %q", in.Given["search"])
 	}
 }

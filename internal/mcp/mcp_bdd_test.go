@@ -27,15 +27,16 @@ import (
 	"cairn/test"
 )
 
-func run(t *testing.T, args ...string) test.Result {
+func run(t *testing.T, h engine.Home, args ...string) test.Result {
 	t.Helper()
 	var out, err bytes.Buffer
-	code := cli.Main(context.Background(), args, strings.NewReader(""), &out, &err)
+	code := cli.MainIn(context.Background(), h, args, strings.NewReader(""), &out, &err)
 	return test.Result{Stdout: out.String(), Stderr: err.String(), Code: code}
 }
 
 func runAcceptance(t *testing.T, tag string) {
 	t.Helper()
+	t.Parallel()
 	if test.Suite(t, "mcp.feature", initMCP(t), tag).Run() != 0 {
 		t.Fatalf("acceptance %s failed", tag)
 	}
@@ -58,7 +59,7 @@ func newWorld(t *testing.T) *world {
 }
 
 func (w *world) startedServe(extra ...string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	clientToServer, writtenByClient := io.Pipe()
 	writtenByServer, serverToClient := io.Pipe()
@@ -72,7 +73,7 @@ func (w *world) startedServe(extra ...string) error {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		cli.Main(ctx, append([]string{"mcp", "serve"}, extra...), clientToServer, serverToClient, io.Discard)
+		cli.MainIn(ctx, w.Home(), append([]string{"mcp", "serve"}, extra...), clientToServer, serverToClient, io.Discard)
 	}()
 
 	go func() {
@@ -80,7 +81,9 @@ func (w *world) startedServe(extra ...string) error {
 		closeAll()
 	}()
 
-	session, err := w.client().Connect(ctx, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
+	connecting, connected := context.WithTimeout(ctx, 5*time.Second)
+	session, err := w.client().Connect(connecting, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
+	connected()
 	if err != nil {
 		cancel()
 		<-done
@@ -1068,7 +1071,7 @@ func (w *world) itDoesNotOffer(name string) error {
 }
 
 func (w *world) itOffersAToolForEveryCommand() error {
-	has := engine.PagesFrom(engine.Home{Dir: w.Defaults, Lookup: os.LookupEnv})
+	has := engine.PagesFrom(w.Home())
 	for _, op := range engine.All() {
 		if !has.Offers(op) {
 			continue
@@ -1131,7 +1134,7 @@ func (w *world) startedServeAndGreetedItWithoutWaiting() error {
 	greeting := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"acceptance","version":"0"}}}`
 
 	var out, errOut bytes.Buffer
-	code := cli.Main(ctx, []string{"mcp", "serve"}, strings.NewReader(greeting+"\n"), &out, &errOut)
+	code := cli.MainIn(ctx, w.Home(), []string{"mcp", "serve"}, strings.NewReader(greeting+"\n"), &out, &errOut)
 	w.Out = test.Result{Stdout: out.String(), Stderr: errOut.String(), Code: code}
 	return nil
 }
@@ -1148,7 +1151,7 @@ func (w *world) itStopsAndSaysNothingWentWrong() error {
 
 func versionField(t *testing.T) string {
 	t.Helper()
-	first, _, _ := strings.Cut(run(t, "--version").Stdout, "\n")
+	first, _, _ := strings.Cut(run(t, engine.Home{}, "--version").Stdout, "\n")
 	_, version, _ := strings.Cut(first, " ")
 	return version
 }

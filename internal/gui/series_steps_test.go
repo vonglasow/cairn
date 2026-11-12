@@ -24,7 +24,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		for _, one := range textDrawn(w.w) {
+		for _, one := range textDrawnWith(w.theme, w.w) {
 			if one.said == rule && slot.In(Point{X: one.box.X, Y: one.box.Y}) {
 				return nil
 			}
@@ -95,7 +95,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Then(`^the series shown says "([^"]*)"$`, func(said string) error {
 		box := w.w.SeriesDetail().Box
 		var all []string
-		for _, one := range textDrawn(w.w) {
+		for _, one := range textDrawnWith(w.theme, w.w) {
 			if box.In(Point{X: one.box.X, Y: one.box.Y}) {
 				all = append(all, one.said)
 			}
@@ -226,7 +226,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 			return fmt.Errorf("the form says nothing of a series")
 		}
 		var all []string
-		for _, one := range textDrawn(w.w) {
+		for _, one := range textDrawnWith(w.theme, w.w) {
 			if box.In(Point{X: one.box.X, Y: one.box.Y}) {
 				all = append(all, one.said)
 			}
@@ -284,7 +284,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the series tab says "([^"]*)"$`, func(want string) error {
 		var all []string
-		for _, one := range textDrawn(w.w) {
+		for _, one := range textDrawnWith(w.theme, w.w) {
 			all = append(all, one.said)
 		}
 		if !strings.Contains(strings.Join(all, " "), want) {
@@ -374,7 +374,7 @@ func (w *world) readBack() string {
 		return ""
 	}
 	var said []string
-	for _, one := range textDrawn(w.w) {
+	for _, one := range textDrawnWith(w.theme, w.w) {
 		if box.In(Point{X: one.box.X, Y: one.box.Y}) {
 			said = append(said, one.said)
 		}

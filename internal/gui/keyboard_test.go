@@ -89,7 +89,7 @@ func TestTheBarUnderAQuestionKeepsTheBoardsKeys(t *testing.T) {
 const rasterSlack = 3
 
 func TestAKeyChipHasRoomForTheMarksGoMonoLacks(t *testing.T) {
-	th := Theme()
+	th := drawingTheme()
 	monoWritten := func(said string) int {
 		th.Shaper.LayoutString(text.Parameters{
 			Font: font.Font{Typeface: MonoFace, Weight: font.SemiBold}, PxPerEm: fixed.I(small),

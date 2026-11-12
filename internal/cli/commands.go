@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -35,8 +36,31 @@ func home() engine.Home {
 	return engine.Home{Dir: dir, Missing: err, Lookup: os.LookupEnv}
 }
 
+type homeKey struct{}
+
+func withHome(ctx context.Context, h engine.Home) context.Context {
+	return context.WithValue(ctx, homeKey{}, h)
+}
+
+func homeIn(cmd *cobra.Command) engine.Home {
+	if h, given := carried[engine.Home](cmd, homeKey{}); given {
+		return h
+	}
+	return home()
+}
+
+func carried[T any](cmd *cobra.Command, key any) (T, bool) {
+	var value T
+	ctx := cmd.Context()
+	if ctx == nil {
+		return value, false
+	}
+	value, given := ctx.Value(key).(T)
+	return value, given
+}
+
 func homeOf(cmd *cobra.Command) engine.Home {
-	h := home()
+	h := homeIn(cmd)
 	h.Workspace, _ = cmd.Flags().GetString(workspaceFlag)
 	h.Store, _ = cmd.Flags().GetString(storeFlag)
 	return h

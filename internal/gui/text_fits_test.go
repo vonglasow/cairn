@@ -61,10 +61,16 @@ func aFixturesBoard(t *testing.T) Window {
 	return New(onTheFixtures(t), 1200, 800).At(time.Now()).Look()
 }
 
-func textDrawn(w Window) []saidAt {
+func textDrawn(w Window) []saidAt { return textDrawnWith(drawingTheme(), w) }
+
+func noting(th *material.Theme, note sayNote) func() {
+	notesSaid.Store(th, note)
+	return func() { notesSaid.Delete(th) }
+}
+
+func textDrawnWith(th *material.Theme, w Window) []saidAt {
 	var noted []saidAt
-	was := noteSaid
-	noteSaid = func(gtx layout.Context, th *material.Theme, b Box, said string, size int, face font.Font, lines int, along text.Alignment) {
+	stop := noting(th, func(gtx layout.Context, th *material.Theme, b Box, said string, size int, face font.Font, lines int, along text.Alignment) {
 		boxed := gtx
 		boxed.Constraints = layout.Constraints{Max: image.Pt(max(b.W, 1), 1<<20)}
 		recorded := op.Record(boxed.Ops)
@@ -81,11 +87,11 @@ func textDrawn(w Window) []saidAt {
 			ink.X = b.X + (b.W-ink.W)/2
 		}
 		noted = append(noted, saidAt{box: b, ink: ink, said: said, high: laid.Y})
-	}
-	defer func() { noteSaid = was }()
+	})
+	defer stop()
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(w.width, w.height)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	Draw(NewKit(gtx, Theme(), Dark(), &Drawn{}), w)
+	Draw(NewKit(gtx, th, Dark(), &Drawn{}), w)
 	return noted
 }
 

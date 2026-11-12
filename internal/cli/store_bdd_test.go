@@ -14,6 +14,7 @@ import (
 	"cairn/test"
 
 	"cairn/internal/config"
+	"cairn/internal/engine"
 )
 
 func initStore(t *testing.T) func(*godog.ScenarioContext) {
@@ -28,7 +29,7 @@ func TestAcceptance_Store(t *testing.T) {
 	runAcceptance(t, "store.feature", initStore(t), "")
 }
 
-func atOnce(lines [][]string) (int, string) {
+func atOnce(ctx context.Context, h engine.Home, lines [][]string) (int, string) {
 	var (
 		wg    sync.WaitGroup
 		mu    sync.Mutex
@@ -40,7 +41,7 @@ func atOnce(lines [][]string) (int, string) {
 		go func(args []string) {
 			defer wg.Done()
 			var out, errs bytes.Buffer
-			code := Main(context.Background(), args, strings.NewReader(""), &out, &errs)
+			code := MainIn(ctx, h, args, strings.NewReader(""), &out, &errs)
 			mu.Lock()
 			defer mu.Unlock()
 			if code > worst {
@@ -76,7 +77,7 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		for i := 1; i <= n; i++ {
 			lines = append(lines, []string{"task", "new", fmt.Sprintf("At once %d", i)})
 		}
-		code, said := atOnce(lines)
+		code, said := atOnce(w.context(), w.Home(), lines)
 		if code != exitOK {
 			return fmt.Errorf("one of them exited %d: %s", code, said)
 		}
@@ -93,7 +94,7 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 			}
 			lines = append(lines, []string{"task", "list"})
 		}
-		code, said := atOnce(lines)
+		code, said := atOnce(w.context(), w.Home(), lines)
 		if code != exitOK {
 			return fmt.Errorf("one of them exited %d: %s", code, said)
 		}

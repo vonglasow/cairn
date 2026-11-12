@@ -116,7 +116,7 @@ func (s *Store) layDownTheShapeWhenOpeningFindsNothing() error {
 		return nil
 	}
 
-	for _, one := range migration.Known {
+	for _, one := range s.known {
 		if err := s.makeOn(making, one); err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ func (s *Store) adoptTheUnrecordedShapeWhileOpening() error {
 	if len(applied) > 0 {
 		return nil
 	}
-	return s.record(factsOfChange(migration.Known[0]).Name)
+	return s.record(factsOfChange(s.known[0]).Name)
 }
 
 func (s *Store) refuseAnUnknownChange() error {
@@ -143,14 +143,14 @@ func (s *Store) refuseAnUnknownChange() error {
 	if err != nil {
 		return err
 	}
-	known := make(map[string]bool, len(migration.Known))
-	for _, raw := range migration.Known {
+	known := make(map[string]bool, len(s.known))
+	for _, raw := range s.known {
 		known[factsOfChange(raw).Name] = true
 	}
 	for name := range applied {
 		if !known[name] {
 			return fmt.Errorf("%w: it carries %d change(s) including %q, this cairn knows %d",
-				ErrNewerStore, len(applied), name, len(migration.Known))
+				ErrNewerStore, len(applied), name, len(s.known))
 		}
 	}
 	return nil
@@ -215,8 +215,8 @@ func (s *Store) Migrations() ([]migration.Migration, error) {
 	if err != nil {
 		return nil, err
 	}
-	all := make([]migration.Migration, 0, len(migration.Known))
-	for i, raw := range migration.Known {
+	all := make([]migration.Migration, 0, len(s.known))
+	for i, raw := range s.known {
 		facts := factsOfChange(raw)
 		facts.Number = i + 1
 		facts.Made, facts.Applied = applied[facts.Name]
@@ -269,7 +269,7 @@ func (s *Store) Apply(number int) (string, error) {
 	if first := factsOfChange(waiting[0]).Number; first < number {
 		return "", fmt.Errorf("change %d: %w — apply %d first", number, ErrEarlierWaiting, first)
 	}
-	return facts.Name, s.make(migration.Known[number-1])
+	return facts.Name, s.make(s.known[number-1])
 }
 
 // ApplyAll makes every change the store is missing, oldest first.
@@ -292,7 +292,7 @@ func (s *Store) applyAll() ([]string, error) {
 	made := []string{}
 	for _, one := range waiting {
 		facts := factsOfChange(one)
-		if err := s.make(migration.Known[facts.Number-1]); err != nil {
+		if err := s.make(s.known[facts.Number-1]); err != nil {
 			return nil, err
 		}
 		made = append(made, facts.Name)
@@ -342,7 +342,7 @@ func (s *Store) rollBackFrom(all []migration.Migration) (migration.Migration, er
 		if !factsOfChange(all[i]).Applied {
 			continue
 		}
-		raw := factsOfChange(migration.Known[i])
+		raw := factsOfChange(s.known[i])
 		err := s.Within(func(kept *Store) error {
 			applied, err := appliedNamesOn(kept.on)
 			if err != nil {

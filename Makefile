@@ -23,7 +23,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(STAMPED).version=$(VERSION) -X $(STAMPED).commit=$(COMMIT) -X $(STAMPED).built=$(BUILT) -X $(STAMPED).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog package stamps help build run dev red cover cover-check tested-check rule-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures notices clean
+.PHONY: release release-check next-version changelog package stamps help build run dev red race coverage-part coverage-merge cover cover-check tested-check rule-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -84,11 +84,41 @@ red:
 #
 # The suite's output is not swallowed: this recipe is what runs during a
 # red-green loop, and a failure that names no test is a failure you debug
-# twice. `-race` costs about a second here and reports two goroutines touching
-# the same variable unsynchronised, which `-covermode=atomic` does not — atomic
-# only keeps the coverage counters themselves honest under concurrency.
-coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*.feature) $(wildcard internal/*/testdata/*) go.mod go.sum
-	@go test -race ./... -covermode=atomic -coverpkg=./... -coverprofile=$@
+# twice. It runs without `-race`: measured on 2026-11-11, the suite took 64 s
+# without it and more than ten minutes with it, the window's tests killed by
+# Go's own timeout. The race detector runs in `race`, which check.yml runs on
+# every push and pull request — see cairn#266. `-covermode=set` and not
+# `atomic`: the floors only ask whether a statement ran, never how often, and
+# set cost the window's tests 43 s where atomic cost 50.
+coverage.out: $(shell find . -name '*.go' -not -path './bin/*') $(wildcard bdd/*.feature) $(wildcard internal/*/testdata/*) go.mod go.sum Makefile
+	@go test ./... -covermode=set -coverpkg=./... -coverprofile=$@
+
+## coverage-part: one part of the suite's profile, PART=gui, cli, tui or rest
+## check.yml runs the four side by side, as long as the longest rather than
+## the sum, and coverage-merge then makes coverage.out of them. Each part
+## credits every package it reaches, as the whole run does.
+COVERAGE_ALONE := internal/gui internal/cli internal/tui
+coverage-part:
+	@case "$(PART)" in \
+		gui|cli|tui) pkgs=./internal/$(PART) ;; \
+		rest) pkgs=$$(go list ./... | grep -v $(foreach p,$(COVERAGE_ALONE),-e '/$(p)$$') | sed 's|^cairn|.|') ;; \
+		*) echo "PART is gui, cli, tui or rest, not '$(PART)'" >&2; exit 2 ;; \
+	esac; \
+	go test $$pkgs -covermode=set -coverpkg=./... -coverprofile=coverage-$(PART).out
+
+## coverage-merge: coverage.out, made of the parts coverage-part wrote
+## A block reached by any part is reached: Go's own reading of a profile keeps
+## one block however many test binaries wrote it, as it does for one run.
+coverage-merge:
+	@ls coverage-gui.out coverage-cli.out coverage-tui.out coverage-rest.out >/dev/null
+	@{ echo "mode: set"; tail -q -n +2 coverage-gui.out coverage-cli.out coverage-tui.out coverage-rest.out; } >coverage.out
+
+## race: run the suite with the race detector, as check.yml does
+## It reports two goroutines touching the same variable unsynchronised, which
+## nothing else here does. Too slow for a commit's hooks, so it runs in CI,
+## with no timeout but the job's.
+race:
+	go test -race -timeout 0 ./...
 
 ## cover: print coverage per function, then the total
 cover: coverage.out

@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -163,7 +164,7 @@ var SeriesList = Operation{
 				return Answer{}, err
 			}
 			shown := s.shape(tasks, on.Engine.today())
-			if state, named := in.Given["state"]; named && state != "" && shown.State != state {
+			if state := in.Given["state"]; state != "" && shown.State != state {
 				continue
 			}
 			if search := in.Given["search"]; search != "" && !Reaches([]string{shown.Title, shown.Rule, shown.Says, "↻" + strconv.Itoa(shown.Number)}, search) {
@@ -477,7 +478,7 @@ func (s aSeries) last() time.Time {
 		if a.Did != "made" && a.Did != "missed" {
 			continue
 		}
-		if day, err := domain.ParseDeadline(a.Day); err == nil && day.After(last) {
+		if day, err := domain.ParseDeadline(a.Day); err == nil {
 			last = day
 		}
 	}
@@ -633,8 +634,11 @@ func (e *Engine) openSeries() (map[int]bool, error) {
 		return nil, nil
 	}
 	every, err := e.store.EverySeries()
-	if err != nil || len(every) == 0 {
+	if err != nil {
 		return nil, err
+	}
+	if len(every) == 0 {
+		return nil, nil
 	}
 	tasks, err := e.everyTask()
 	if err != nil {
@@ -657,8 +661,8 @@ func (e *Engine) madeAfter(before map[int]bool) ([]MadeNext, error) {
 	if err != nil {
 		return nil, err
 	}
-	for n, was := range before {
-		if !was || after[n] {
+	for _, n := range slices.Sorted(maps.Keys(before)) {
+		if !before[n] || after[n] {
 			continue
 		}
 		if _, there := after[n]; !there {
@@ -679,7 +683,6 @@ func (e *Engine) madeAfter(before map[int]bool) ([]MadeNext, error) {
 			made = append(made, next)
 		}
 	}
-	slices.SortFunc(made, func(a, b MadeNext) int { return a.Series - b.Series })
 	return made, nil
 }
 
@@ -751,8 +754,11 @@ func (e *Engine) seriesDue() error {
 		return nil
 	}
 	every, err := e.store.EverySeries()
-	if err != nil || len(every) == 0 {
+	if err != nil {
 		return err
+	}
+	if len(every) == 0 {
+		return nil
 	}
 	tasks, err := e.everyTask()
 	if err != nil {
@@ -1161,12 +1167,11 @@ func occursText(o Occurs) string {
 		day += " " + o.At
 	}
 	then := ShortDays(o.Then)
-	switch {
-	case o.Stopped:
+	if o.Stopped {
 		then = "nothing: the series is stopped"
-	case o.after != "":
+	} else if o.after != "" {
 		then = o.after
-	case then == "":
+	} else if then == "" {
 		then = "nothing: the series ends"
 	}
 	return fmt.Sprintf("\nrepeats  ↻%d %s\nday      %s\nthen     %s\n", o.Series, o.Says, day, then)
@@ -1193,12 +1198,13 @@ func StandingSaid(s Series) string {
 
 // NextSaid is the next days of a series in words, or why there are none.
 func NextSaid(s Series) string {
-	switch {
-	case s.Ended && len(s.Next) == 0:
+	if s.Ended && len(s.Next) == 0 {
 		return "none, it has ended"
-	case len(s.Next) == 0:
+	}
+	if len(s.Next) == 0 {
 		return "none"
-	case s.State == "stopped" && len(s.Open) == 0:
+	}
+	if s.State == "stopped" && len(s.Open) == 0 {
 		return "if resumed today: " + ShortDays(s.Next)
 	}
 	return ShortDays(s.Next)

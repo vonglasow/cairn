@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/debug"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,5 +57,14 @@ func TestPlaces_keepTheDebugFolderBesideTheStore(t *testing.T) {
 	at := Places{Store: filepath.Join("/somewhere", "cairn.db")}
 	if got := at.Debug(); got != filepath.Join("/somewhere", "debug") {
 		t.Errorf("the debug folder is %q", got)
+	}
+}
+
+func TestDebugging_isOffForAVariableSetEmpty(t *testing.T) {
+	for said, on := range map[string]bool{"": false, "1": true} {
+		h := Home{Lookup: func(name string) (string, bool) { return said, name == debug.Variable }}
+		if got := Debugging(h); got != on {
+			t.Errorf("%s=%q: debugging %v, want %v", debug.Variable, said, got, on)
+		}
 	}
 }

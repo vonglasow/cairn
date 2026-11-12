@@ -9,15 +9,26 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/spf13/cobra"
 
+	"cairn/internal/build"
+	"cairn/internal/config"
 	"cairn/internal/engine"
 	"cairn/test"
 )
 
 func run(t *testing.T, args ...string) test.Result {
 	t.Helper()
+	return runIn(t, home(), args...)
+}
+
+func runIn(_ *testing.T, h engine.Home, args ...string) test.Result {
+	return runWith(context.Background(), h, args...)
+}
+
+func runWith(ctx context.Context, h engine.Home, args ...string) test.Result {
 	var out, err bytes.Buffer
-	code := Main(context.Background(), args, strings.NewReader(""), &out, &err)
+	code := MainIn(ctx, h, args, strings.NewReader(""), &out, &err)
 	return test.Result{Stdout: out.String(), Stderr: err.String(), Code: code}
 }
 
@@ -39,7 +50,20 @@ func wantErr(t *testing.T, args ...string) {
 
 func runAcceptance(t *testing.T, feature string, init func(*godog.ScenarioContext), tag string) {
 	t.Helper()
-	if test.Suite(t, feature, init, tag).Run() != 0 {
+	t.Parallel()
+	ranTo(t, test.Suite(t, feature, init, tag), tag)
+}
+
+func runOneAtATime(t *testing.T, feature string, init func(*godog.ScenarioContext), tag string) {
+	t.Helper()
+	suite := test.Suite(t, feature, init, tag)
+	suite.Options.Concurrency = 1
+	ranTo(t, suite, tag)
+}
+
+func ranTo(t *testing.T, suite godog.TestSuite, tag string) {
+	t.Helper()
+	if suite.Run() != 0 {
 		t.Fatalf("acceptance %s failed", tag)
 	}
 }
@@ -239,5 +263,59 @@ func TestAskedFor_readsAFlagAnywhereBeforeTheDoubleDash(t *testing.T) {
 		if got := askedFor(debugFlag, tc.args); got != tc.want {
 			t.Errorf("askedFor(debug, %v) = %v, want %v", tc.args, got, tc.want)
 		}
+	}
+}
+
+func homeWithStore(t *testing.T, store string) engine.Home {
+	t.Helper()
+	return engine.Home{Dir: t.TempDir(), Lookup: func(key string) (string, bool) {
+		if key == config.StoreVariable {
+			return store, true
+		}
+		return "", false
+	}}
+}
+
+func TestMainIn_runsInTheHomeItIsGiven(t *testing.T) {
+	mine, theirs := storeFor(t), storeFor(t)
+	t.Setenv(config.StoreVariable, theirs)
+	var out, errs bytes.Buffer
+	if code := MainIn(context.Background(), homeWithStore(t, mine), []string{"task", "new", "Write the spec"}, strings.NewReader(""), &out, &errs); code != exitOK {
+		t.Fatalf("task new: exit %d (%s)", code, errs.String())
+	}
+	if listed := mustRun(t, "task", "list", "--store", mine).Stdout; !strings.Contains(listed, "Write the spec") {
+		t.Errorf("the store the home names holds nothing:\n%s", listed)
+	}
+	if listed := mustRun(t, "task", "list").Stdout; strings.Contains(listed, "Write the spec") {
+		t.Errorf("the task went to the store the process names:\n%s", listed)
+	}
+}
+
+func TestHomeOf_isTheHomeMainWasHanded(t *testing.T) {
+	h := homeWithStore(t, storeFor(t))
+	cmd := &cobra.Command{}
+	cmd.Flags().String(workspaceFlag, "", "")
+	cmd.Flags().String(storeFlag, "", "")
+	if err := cmd.Flags().Set(workspaceFlag, "work"); err != nil {
+		t.Fatal(err)
+	}
+	cmd.SetContext(withHome(context.Background(), h))
+	got := homeOf(cmd)
+	if got.Dir != h.Dir || got.Workspace != "work" {
+		t.Errorf("homeOf = %q in workspace %q, want %q in workspace work", got.Dir, got.Workspace, h.Dir)
+	}
+	if store, _ := got.Lookup(config.StoreVariable); store == "" {
+		t.Error("homeOf reads the process's environment, not the home's")
+	}
+}
+
+func TestMainIn_saysTheVersionItsRunWasHanded(t *testing.T) {
+	ctx := withStamps(context.Background(), func() build.Info { return build.Stamped("9.9.9", "", "", "") })
+	var out, errs bytes.Buffer
+	if code := MainIn(ctx, home(), []string{"--version"}, strings.NewReader(""), &out, &errs); code != exitOK {
+		t.Fatalf("--version exited %d: %s", code, errs.String())
+	}
+	if !strings.Contains(out.String(), "9.9.9") {
+		t.Errorf("--version says %q, not the version its run was handed", out.String())
 	}
 }

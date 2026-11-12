@@ -264,7 +264,7 @@ var ViewDelete = Operation{
 func viewAt(views []store.View, name string) (int, error) {
 	at := slices.IndexFunc(views, func(v store.View) bool { return domain.Folded(v.Name) == domain.Folded(name) })
 	if at < 0 {
-		return -1, Refusing("no-such-view", "no view is named "+strings.TrimSpace(name))
+		return 0, Refusing("no-such-view", "no view is named "+strings.TrimSpace(name))
 	}
 	return at, nil
 }
@@ -360,12 +360,13 @@ func focusHeld(was string, in Input) (string, error) {
 	if in.Yes("focus") && in.Yes("no-focus") {
 		return was, Refusing("focus-and-not", "--focus and --no-focus keep nothing together: name one")
 	}
-	switch {
-	case in.Yes("focus"):
+	if in.Yes("focus") {
 		return "in", nil
-	case in.Yes("no-focus"):
+	}
+	if in.Yes("no-focus") {
 		return "out", nil
-	case in.Named("focus") && was == "in", in.Named("no-focus") && was == "out":
+	}
+	if in.Named("focus") && was == "in" || in.Named("no-focus") && was == "out" {
 		return "", nil
 	}
 	return was, nil
@@ -461,22 +462,18 @@ func (e *Engine) seeing(v store.View, kept *domain.Narrowing) (seen, error) {
 		return s, err
 	}
 	conditions := len(v.Objectives) + len(v.Labels)
-	for _, one := range []struct {
-		named bool
-		tell  func()
-	}{
-		{v.State != "", func() { kept.InColumn(v.State) }},
-		{v.Priority != "", func() { kept.Carrying(v.Priority) }},
-		{v.DueBefore != "", func() { kept.DueBefore(v.DueBefore) }},
-		{v.Focus != "", func() { kept.InFocus(v.Focus == "in") }},
-		{v.Archived, kept.Archived},
-		{len(s.words) > 0, func() {}},
-	} {
-		if one.named {
+	tell := func(named bool, told func()) {
+		if named {
 			conditions++
-			one.tell()
+			told()
 		}
 	}
+	tell(v.State != "", func() { kept.InColumn(v.State) })
+	tell(v.Priority != "", func() { kept.Carrying(v.Priority) })
+	tell(v.DueBefore != "", func() { kept.DueBefore(v.DueBefore) })
+	tell(v.Focus != "", func() { kept.InFocus(v.Focus == "in") })
+	tell(v.Archived, kept.Archived)
+	tell(len(s.words) > 0, func() {})
 	if v.WithArchived {
 		kept.WithArchived()
 	}

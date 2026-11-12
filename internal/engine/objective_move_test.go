@@ -124,3 +124,16 @@ func TestObjectiveMove_behindAnotherTakesItsParent(t *testing.T) {
 		t.Errorf("parent = %d, want 1, the parent of the objective it went behind", moved.Carried().Parent)
 	}
 }
+
+func TestObjectiveMove_behindASiblingUnderTheParentNamed(t *testing.T) {
+	e := openEngine(t)
+	addObjective(t, e, "Ship")
+	for _, title := range []string{"a", "b"} {
+		if _, err := e.Ask(ObjectiveNew, given("title", title, "parent", "1")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := moving(t, e, map[string]string{"number": "2", "parent": "1", "after": "3"}); err != nil {
+		t.Errorf("2 behind its sibling 3, under their parent: %v", err)
+	}
+}

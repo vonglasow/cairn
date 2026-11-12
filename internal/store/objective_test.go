@@ -115,6 +115,9 @@ func TestDeleteObjective_removesItAndSaysWhenThereIsNone(t *testing.T) {
 	if got := objectiveTitles(all); !slices.Equal(got, []string{"Stay"}) {
 		t.Errorf("left %v, want [Stay]", got)
 	}
+	if left, err := s.labelsOf(objectiveLabels, 1); err != nil || len(left) != 0 {
+		t.Errorf("the objective deleted still carries %v (%v)", left, err)
+	}
 	if err := s.DeleteObjective(1); !errors.Is(err, ErrNoSuchObjective) {
 		t.Errorf("deleting objective 1 twice answered %v", err)
 	}

@@ -262,12 +262,11 @@ func configText(c Config) string {
 	}
 	if c.Approach != nil {
 		said.WriteString("\n[approach]\n")
-		switch {
-		case c.Approach.Label != "":
+		if c.Approach.Label != "" {
 			fmt.Fprintf(&said, "label = %q%s\n", c.Approach.Label, c.from("approach.label"))
-		case slices.Contains(c.WrittenHere, "approach.label"):
+		} else if slices.Contains(c.WrittenHere, "approach.label") {
 			said.WriteString("# label is said empty in the store's settings: no label asks for the approach to be agreed first" + c.global("approach.label") + "\n")
-		default:
+		} else {
 			said.WriteString("# label is not said: no label asks for the approach to be agreed first\n")
 		}
 	}

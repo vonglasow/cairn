@@ -99,7 +99,7 @@ where the two are tied together. That is the one rule the notion-first shape
 lives or dies by, and depguard holds it.
 
 `cmd/cairn` stays one line. Everything put there is out of reach of the tests
-forever — the suite calls `cli.Main`, never the binary — so each line added
+forever — the suite calls `cli.MainIn`, as `cli.Main` does, never the binary — so each line added
 there is a line the coverage floor pays for and nothing can check.
 
 ## Every change of state goes through the engine

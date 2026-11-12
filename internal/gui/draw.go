@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -1495,14 +1496,16 @@ func sayIn(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said 
 	sayWith(gtx, th, ink, b, said, size, face, 1, along)
 }
 
-var noteSaid func(gtx layout.Context, th *material.Theme, b Box, said string, size int, face font.Font, lines int, along text.Alignment)
+type sayNote func(gtx layout.Context, th *material.Theme, b Box, said string, size int, face font.Font, lines int, along text.Alignment)
+
+var notesSaid sync.Map
 
 func sayWith(gtx layout.Context, th *material.Theme, ink color.NRGBA, b Box, said string, size int, face font.Font, lines int, along text.Alignment) {
 	if said == "" {
 		return
 	}
-	if noteSaid != nil {
-		noteSaid(gtx, th, b, said, size, face, lines, along)
+	if note, noting := notesSaid.Load(th); noting {
+		note.(sayNote)(gtx, th, b, said, size, face, lines, along)
 	}
 	clipped := clip.Rect(rect(b)).Push(gtx.Ops)
 	defer clipped.Pop()

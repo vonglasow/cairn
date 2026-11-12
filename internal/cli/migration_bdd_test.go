@@ -33,20 +33,16 @@ func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
 	opened := false
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		draft, opened = "", false
-		was := openGui
-		openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, kept, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(_ engine.Work, _ engine.Pages, _ gui.Skin, kept, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
 			draft, opened = kept, true
 			return nil
 		}
-		t.Cleanup(func() { openGui = was })
 		board = nil
-		wasTui := openTui
-		openTui = func(_ *cobra.Command, model tea.Model) error {
+		w.terminal = func(_ *cobra.Command, model tea.Model) error {
 			first, _ := model.Init()().(tea.BatchMsg)[0]().(tui.Looked)
 			board = &first
 			return nil
 		}
-		t.Cleanup(func() { openTui = wasTui })
 		return ctx, nil
 	})
 	sc.Step(`^the board is opened on that store$`, func() error {

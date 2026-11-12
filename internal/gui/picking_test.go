@@ -222,7 +222,7 @@ func TestWhereAHeldRunIsPainted(t *testing.T) {
 }
 
 func TestTheFaceMeasuresWhatItDraws(t *testing.T) {
-	th := Theme()
+	th := drawingTheme()
 	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
 		Constraints: layout.Constraints{Max: image.Pt(1000, lineHigh)}}
 	said := []rune("Write the spec")

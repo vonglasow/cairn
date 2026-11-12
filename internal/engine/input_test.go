@@ -142,3 +142,10 @@ func sameInput(a, b Input) bool {
 	}
 	return reflect.DeepEqual(norm(a), norm(b))
 }
+
+func TestRead_takesTheValueOfAFlagFromTheNextWord(t *testing.T) {
+	in, err := TaskNew.Read([]string{"Ship", "--priority", "high"})
+	if err != nil || in.Given["title"] != "Ship" || in.Given["priority"] != "high" {
+		t.Errorf("read %+v, %v", in, err)
+	}
+}

@@ -33,14 +33,21 @@ request, and anybody's by hand with `make mutation` — see below why it left
 the machine's hooks.
 
 There is no `go-unit-tests` hook. `cover-check` builds its profile from `go
-test -race ./...`, which fails the moment a test does, so a second hook running
+test ./...`, which fails the moment a test does, so a second hook running
 the suite was the same answer paid for twice. The `bdd/` scenarios are Go
 tests, so that one run covers them too.
 
+**The race detector is not a hook.** It is `check.yml`'s, on every push and
+pull request, and anybody's by hand with `make race`. Measured on 2026-11-11,
+the suite took 64 s without it and more than ten minutes with it — the
+window's tests killed by Go's own timeout, a commit refused for being slow
+rather than wrong. See cairn#266.
+
 **A hook is triggered by every file its answer depends on**, not only by Go.
 `cover-check` also runs when a scenario, a pinned frame under `testdata/`, a
-shell script, the Claude Code plugin, or `go.mod` changes — the suite runs the
-scripts and the plugin's hook; `govulncheck`, `harness-check` and `windows-check` when `go.mod` or `go.sum`
+shell script, the Claude Code plugin, `go.mod`, or the `Makefile` that holds its
+recipe changes — the suite runs the scripts and the plugin's hook, and a recipe
+changed is a profile that no longer answers for it; `govulncheck`, `harness-check` and `windows-check` when `go.mod` or `go.sum`
 does; `golangci-lint` and `rule-check` when `.golangci.yml` does. Each says so with `files` in
 `.pre-commit-config.yaml`. Filtered on Go alone they ran nothing at all for a commit that
 changed only a scenario — which the suite executes — or only a dependency.
@@ -131,12 +138,24 @@ come as one pull request per place, a major one alone. Nothing merges on its
 own.
 
 **`check.yml` runs every hook on every file of a pull request and of a push**,
-on Linux, and the mutation sweep over the packages holding the rules: a job
+on Linux — the coverage floor apart: the suite runs in four jobs side by side
+(`make coverage-part PART=gui|cli|tui|rest`), each crediting every package it
+reaches, and a last one makes them one profile (`make coverage-merge`) and
+judges the floors on it, so the suite lasts as long as the window's part
+rather than all of it end to end — the race detector, and the mutation sweep over the packages holding the rules: a job
 a package, side by side, four mutants at a time and an hour and a half at most — the engine took 57 minutes once its tests had grown to kill what its first sweep found — each
 report kept as the run's artifact. One job for them all, end to end, lasted as
 long as their sum and needed a three hour bound a run could still meet by
 accident; the list the jobs are made from is `scripts/mutation.sh --list`, the
-one the bare sweep walks. A push that follows another cancels its run. A change Dependabot
+one the bare sweep walks. **A package too long for one job is judged in
+shards**: on 2026-11-11 the engine's 2558 mutants were still running when the
+90 minutes ran out, cancelled having said nothing. `split` in
+`scripts/mutation.sh` names it and how many shards (the engine, four); each
+shard, `./internal/engine@2/4`, is a job of its own judging the files dealt to
+it by size, every other one excluded (`--exclude-files`), so each lasts about
+as long as the others. `mutation.sh --shard ./internal/engine@2/4` says which
+files those are, and `test/mutation_shard_test.go` holds that every file falls
+to exactly one shard. A push that follows another cancels its run. A change Dependabot
 made was made on no machine, so no hook judged it before this.
 
 Left to a person: Go itself, the `toolchain` line of both `go.mod`, which
@@ -328,14 +347,16 @@ Where the command itself lives:
 There is no `test` and no `lint` target: prek owns both. The one thing that
 looks like a duplicate is not one — `coverage.out` runs the suite a second
 time, on purpose, because a profile has to be produced by a run somebody
-controls. That run carries `-race` and prints what failed, so it is also the
-one to reach for by hand during a red-green loop.
+controls. That run prints what failed, so it is also the one to reach for by
+hand during a red-green loop. `race` runs the suite again with the race
+detector; it is check.yml's, not a hook's.
 
 ## Running them by hand
 
 ```sh
 make cover          # coverage per function, then the total
 make cover-check    # fail below the total floor, or below the per-package one
+make race           # the suite with the race detector, as check.yml runs it
 make tested-check   # fail if a package has no test file
 make harness-check  # fail if the binary reaches the test harness
 make windows-check  # fail if cairn or its tests no longer build for Windows
@@ -350,7 +371,7 @@ make help              # every target, and what it is for
 ```
 
 **Linux is checked by `make linux`**, which builds cairn and runs the suite —
-with `-race`, as the profile here does — in a container, as a user who is not
+with `-race`, as check.yml does — in a container, as a user who is not
 root and has the uid of whoever ran it, with the graphics headers the window
 needs there. It needs Docker, so it is not a hook; it is run before a version
 is made (see [release.md](release.md)). The first run found what nothing on a
@@ -372,7 +393,7 @@ So it runs where it hurts nobody: in `check.yml`, on every push and pull
 request, gating the packages holding the rules — domain, engine, task,
 objective, store, trace, migration, config, build; the window, the terminal
 and the command line are judged by hand, a package named. Locally it runs one
-mutant at a time, in a cache of its own wiped past 2 GB and after every run.
+mutant at a time, in a cache of its own to each run, wiped when it ends.
 That is where others run it too: Google mutates the lines a review changed,
 at review time, not before ([Practical Mutation Testing at
 Scale](https://research.google/pubs/practical-mutation-testing-at-scale-a-view-from-google/));
@@ -399,12 +420,22 @@ the split is fixed in `.pre-commit-config.yaml`, not left to whoever runs it:
   elsewhere, which is exactly what the push is there to catch, went through
   as judged.
 
-Inside a package the tests run one after another, and `t.Parallel` is
-nearly absent on purpose: most of the suite names its store through
-`CAIRN_STORE`, which `t.Setenv` sets and `t.Parallel` refuses, or swaps a
-package-level seam — the window that opens, the terminal program — that two
-tests at once would fight over. `go test` already runs the packages side by
-side.
+**The scenarios run eight at a time** (`Concurrency` in `test.Suite`), and a
+package's acceptance tests side by side (`t.Parallel` in `runAcceptance`): the
+suite took 64 s when they ran one after another. A scenario run beside others
+changes nothing the process shares. Its environment is the world's own
+(`World.Setenv`), handed to the command it runs as an `engine.Home` through
+`cli.MainIn`; the window and the board a command opens, and the version it says
+it is, travel in the run's context, not in a variable of the package. A suite
+that has to change something the process shares — the app's and the upgrade's
+seams, the debug log, the working directory — runs its scenarios one at a time
+(`runOneAtATime`) and its test is not parallel, so it runs before any other
+suite starts. `go test` already runs the packages side by side.
+
+A precondition starts from a store laid down once for the whole run
+(`World.Seed`): laying the whole shape down again for every scenario was a
+third of the CLI's time. Only a precondition does: a command under test that
+finds no store still lays one down itself.
 
 The packages are judged one after another, and that is not a lost chance to
 go faster: gremlins already runs one worker per core inside a package, and two
@@ -417,8 +448,10 @@ relative to the package, with no context lines — check a run's summary reads
 `KILLED`, not only `SKIPPED`, after touching that script.
 
 Every mutant is a build, and builds land in the Go cache — one full sweep left
-50 to 150 GB in it. Gremlins gets a cache of its own, `$(go env
-GOCACHE)-gremlins`, wiped once it passes 10 GB.
+50 to 150 GB in it. Each run of gremlins gets a cache of its own, `$(go env
+GOCACHE)-gremlins.XXXXXX`, wiped when the run ends. It was one cache shared by
+every run and wiped by each as it ended, so two runs at once took the cache
+from under each other.
 
 **One mutant runs at a time** here (`workers: 1` in `.gremlins.yaml`), four
 in CI (`MUTATION_WORKERS`), not one per core. Each one runs its package's whole suite, and the window's took 2.5 to

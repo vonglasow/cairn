@@ -222,13 +222,11 @@ func TestAReferenceCardSaysWhyItIsThereInTheLateInk(t *testing.T) {
 }
 
 func TestFiguresGiveEachFigureTheRoomItsWeightTakes(t *testing.T) {
-	th, s := Theme(), Dark()
+	th, s := drawingTheme(), Dark()
 	boxes := map[string]Box{}
-	was := noteSaid
-	noteSaid = func(_ layout.Context, _ *material.Theme, b Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
+	defer noting(th, func(_ layout.Context, _ *material.Theme, b Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
 		boxes[said] = b
-	}
-	defer func() { noteSaid = was }()
+	})()
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(600, 100)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	Figures{Said: []Figure{{Figure: "—", Word: "spent"}, {Figure: "3", Word: "left"}, {Figure: "14h50m", Word: "spent"}}}.Draw(NewKit(gtx, th, s, &Drawn{}), Box{X: 0, Y: 0, W: 600, H: FiguresHigh})

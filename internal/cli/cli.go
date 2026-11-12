@@ -25,10 +25,9 @@ import (
 var stamps = build.Read
 
 // NewRootCmd builds the whole command tree.
-func NewRootCmd() *cobra.Command { return newRootCmdFor(home()) }
+func NewRootCmd() *cobra.Command { return newRootCmdFor(home(), stamps()) }
 
-func newRootCmdFor(h engine.Home) *cobra.Command {
-	b := stamps()
+func newRootCmdFor(h engine.Home, b build.Info) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "cairn",
 		Short:         "Cairn — the markers that show the path you are on",
@@ -145,9 +144,14 @@ func valueOf(flag string, args []string) string {
 
 // Main runs the command line and returns the code the process should exit with.
 func Main(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	h := home()
+	return MainIn(ctx, home(), args, stdin, stdout, stderr)
+}
+
+// MainIn runs the command line the way Main does, in the home given rather than the process's.
+func MainIn(ctx context.Context, h engine.Home, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	ctx = withHome(ctx, h)
 	h.Workspace, h.Store = valueOf(workspaceFlag, args), valueOf(storeFlag, args)
-	root := newRootCmdFor(h)
+	root := newRootCmdFor(h, stampsIn(ctx))
 	root.SetIn(stdin)
 	root.SetOut(stdout)
 	root.SetErr(stderr)
@@ -198,6 +202,19 @@ func sayIgnored(h engine.Home, stderr io.Writer) {
 }
 
 type notedKey struct{}
+
+type stampsKey struct{}
+
+func withStamps(ctx context.Context, read func() build.Info) context.Context {
+	return context.WithValue(ctx, stampsKey{}, read)
+}
+
+func stampsIn(ctx context.Context) build.Info {
+	if read, given := ctx.Value(stampsKey{}).(func() build.Info); given {
+		return read()
+	}
+	return stamps()
+}
 
 func notedIn(ctx context.Context) *debug.Log {
 	written, _ := ctx.Value(notedKey{}).(*debug.Log)

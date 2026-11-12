@@ -142,3 +142,91 @@ func TestPlacesOfAnswer_sayWhereTheSettingsAre(t *testing.T) {
 		t.Error("an answer with no store has settings")
 	}
 }
+
+func TestValueIn_readsEveryTableTheAnswerHolds(t *testing.T) {
+	c := Config{
+		Pages:      &PagesConfig{Tasks: true, Objectives: false, Time: "hidden"},
+		Archive:    &Archive{Start: "03:00", Days: 9},
+		Focus:      &FocusConfig{Session: "2h"},
+		Approach:   &ApproachConfig{Label: "discuss"},
+		Time:       &TimeConfig{Deleted: "kept", Weekends: "shown"},
+		Window:     &WindowConfig{KeepSizes: true, Theme: "nord", Intro: "fade", Ghost: 70},
+		Recurrence: &RecurrenceConfig{On: true},
+		Workspace:  &WorkspaceConfig{Colour: "teal", Name: "mine"},
+		Plugin:     Emplacement{At: "/p"},
+	}
+	for key, want := range map[string]string{
+		"pages.tasks": "true", "pages.objectives": "false", "pages.time": "hidden",
+		"archive.start": "03:00", "archive.days": "9", "focus.session": "2h", "approach.label": "discuss",
+		"time.deleted": "kept", "time.weekends": "shown",
+		"window.keep_sizes": "true", "window.theme": "nord", "window.intro": "fade", "window.ghost": "70",
+		"series.on": "true", "workspace.colour": "teal", "workspace.name": "mine", "plugin": "/p",
+	} {
+		if got := ValueIn(c, key); got != want {
+			t.Errorf("%s is %q, want %q", key, got, want)
+		}
+	}
+	if got := ValueIn(Config{}, "pages.tasks"); got != "" {
+		t.Errorf("an answer holding no table gives pages.tasks %q", got)
+	}
+}
+
+func TestStampOf_watchesOnlyTheSchemeWornFromAFile(t *testing.T) {
+	folder := t.TempDir()
+	file, worn, other := filepath.Join(folder, "config.toml"), filepath.Join(folder, "worn.toml"), filepath.Join(folder, "other.toml")
+	for _, path := range []string{file, worn, other} {
+		if err := os.WriteFile(path, []byte("a"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	stamp := StampOf(Config{File: file, Themes: []ThemeSeen{{Slug: "o", From: other}, {Slug: "w", From: worn, InForce: true}}})
+	if err := os.WriteFile(other, []byte("bb"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, moved := stamp.Moved(); moved {
+		t.Error("a scheme not worn moved the stamp")
+	}
+	if err := os.WriteFile(worn, []byte("bb"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, moved := stamp.Moved(); !moved {
+		t.Error("the scheme worn changed and the stamp did not move")
+	}
+}
+
+func TestMoved_readsAgainOnlyWhatTheSizeOrTheTimeSaysChanged(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	at := time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)
+	wrote := func(said string, when time.Time) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(said), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chtimes(path, when, when); err != nil {
+			t.Fatal(err)
+		}
+	}
+	wrote("ab", at)
+	stamp := StampOf(Config{File: path})
+	if _, moved := stamp.Moved(); moved {
+		t.Error("a file left alone moved the stamp")
+	}
+	wrote("cd", at)
+	if _, moved := stamp.Moved(); moved {
+		t.Error("a file of the same size and time was read again")
+	}
+	wrote("ab", at.Add(time.Hour))
+	if _, moved := stamp.Moved(); moved {
+		t.Error("a file saved with nothing changed moved the stamp")
+	}
+	wrote("cd", at.Add(time.Hour))
+	if _, moved := stamp.Moved(); !moved {
+		t.Error("a file of the same size saying something else did not move the stamp")
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, moved := stamp.Moved(); !moved {
+		t.Error("a file gone did not move the stamp")
+	}
+}

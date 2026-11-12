@@ -10,16 +10,19 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
+	"gioui.org/widget/material"
 	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
 )
 
-func partsDrawn(w Window) []Drawing {
+func partsDrawn(w Window) []Drawing { return partsDrawnWith(drawingTheme(), w) }
+
+func partsDrawnWith(th *material.Theme, w Window) []Drawing {
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(w.width, w.height)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	var drawn Drawn
-	Draw(NewKit(gtx, Theme(), Dark(), &drawn), w)
+	Draw(NewKit(gtx, th, Dark(), &drawn), w)
 	return drawn.All()
 }
 
@@ -69,7 +72,7 @@ func (w *world) todayRinged(date string) error {
 	if err != nil {
 		return err
 	}
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -94,7 +97,7 @@ func (w *world) labelSearchHaloed() error {
 	if !w.w.Seeking() {
 		return fmt.Errorf("the labels are not being searched")
 	}
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -116,7 +119,7 @@ func (w *world) valueBoxed(value string, taken bool) error {
 	if at < 0 || at >= len(values) {
 		return fmt.Errorf("the filter %q lists no %q: %v", f.Name, value, f.Shown)
 	}
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -135,7 +138,7 @@ func (w *world) valueBoxed(value string, taken bool) error {
 func (w *world) paletteLinesRead() error {
 	shown := w.w
 	shown.palette.opened = shown.now.Add(-time.Hour)
-	shot, err := drawnInAStep(shown)
+	shot, err := drawnInAStep(w.theme, shown)
 	if err != nil {
 		return err
 	}
@@ -160,7 +163,7 @@ func (w *world) paletteGroupsInSentenceCase() error {
 	shown := w.w
 	shown.palette.opened = shown.now.Add(-time.Hour)
 	var said []string
-	for _, one := range textDrawn(shown) {
+	for _, one := range textDrawnWith(w.theme, shown) {
 		said = append(said, one.said)
 	}
 	heads := 0
@@ -183,7 +186,7 @@ func (w *world) placeRinged() error {
 	if w.w.Screen() != OnWorkspaces {
 		return fmt.Errorf("the switcher is not open")
 	}
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -202,7 +205,7 @@ func (w *world) stepsInAField() error {
 		}
 		_, value, rows := FormPlace(w.w.formBox(), fields, i)
 		frame := Framed(value, rows)
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -226,11 +229,11 @@ func (w *world) countWithNoRing(title string) error {
 		if p.Card.Title != title {
 			continue
 		}
-		laid := CardRowOf(p.Card, PartsOf(p.Slot).Number, Measured(Theme()), time.Time{}, w.w.pages)
+		laid := CardRowOf(p.Card, PartsOf(p.Slot).Number, Measured(w.theme), time.Time{}, w.w.pages)
 		if laid.Count == "" {
 			return fmt.Errorf("the card %q leaves no label out", title)
 		}
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -245,7 +248,7 @@ func (w *world) countWithNoRing(title string) error {
 func (w *world) paletteKeysOnChips() error {
 	shown := w.w
 	shown.palette.opened = shown.now.Add(-time.Hour)
-	shot, err := drawnInAStep(shown)
+	shot, err := drawnInAStep(w.theme, shown)
 	if err != nil {
 		return err
 	}
@@ -273,7 +276,7 @@ func (w *world) paletteKeysOnChips() error {
 
 func (w *world) emptyRounded(column string) error {
 	slot := EmptyAt(w.w.Layout().CardAt(engine.IndexOf(column), 0, 0))
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -288,7 +291,7 @@ func (w *world) emptyRounded(column string) error {
 }
 
 func (w *world) labelDotAsWide(label string) error {
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -311,7 +314,7 @@ func (w *world) labelDotAsWide(label string) error {
 }
 
 func (w *world) drawnAsAPopover(what string, box Box) error {
-	for _, d := range partsDrawn(w.w) {
+	for _, d := range partsDrawnWith(w.theme, w.w) {
 		if d.At == box {
 			if d.Part != "popover" || d.Layer != LayerPopover {
 				return fmt.Errorf("%s is drawn as a %s on layer %v", what, d.Part, d.Layer)
@@ -327,7 +330,7 @@ func (w *world) numberClearOfFacts(title string) error {
 	for i := range 7 {
 		for j, one := range w.w.DayShown(i) {
 			if w.w.DayCard(one).Title == title {
-				return numberApart(partsDrawn(w.w), PartsOf(DayCardAt(WeekDayAt(l, i), j, len(w.w.DayHeld(i).Tasks))).Panel)
+				return numberApart(partsDrawnWith(w.theme, w.w), PartsOf(DayCardAt(WeekDayAt(l, i), j, len(w.w.DayHeld(i).Tasks))).Panel)
 			}
 		}
 	}

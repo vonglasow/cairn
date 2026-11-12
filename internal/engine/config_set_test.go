@@ -233,3 +233,37 @@ func TestConfigFill_writesEveryKeyTheFileCanHoldAsACommentWithItsValueAndWhereIt
 		t.Errorf("the global file reads\n%s", global)
 	}
 }
+
+func TestWrittenFor_aServerStartedInAWorkspaceWritesItsSettings(t *testing.T) {
+	folder := t.TempDir()
+	h := Home{Dir: t.TempDir(), Kept: &Started{Workspace: "home", Store: Emplacement{At: filepath.Join(folder, "cairn.db")}}}
+	key, _ := config.KeyNamed("pages.objectives")
+	file, global, err := h.writtenFor(key, false)
+	if err != nil || global || file != config.SettingsBeside(filepath.Join(folder, "cairn.db")) {
+		t.Errorf("written to %s, global %v, %v", file, global, err)
+	}
+}
+
+func TestConfigSet_refusesASessionOfNoLength(t *testing.T) {
+	h := homeHolding(t, homeIsDefault, nil, "h")
+	if _, err := setting(h, ConfigSet, map[string]string{"key": "focus.session", "value": "0s"}); err == nil || !strings.Contains(err.Error(), "is not a duration") {
+		t.Errorf("a session of 0s: %v", err)
+	}
+}
+
+func TestConfigFill_refusesSettingsThatSayWhereTheStoreIs(t *testing.T) {
+	h := homeHolding(t, homeIsDefault, nil, "h")
+	path := settingsOf(t, h, "h", "store = \"~/x/cairn.db\"\n")
+	if _, err := setting(h, ConfigFill, map[string]string{}); err == nil {
+		t.Error("settings saying where the store is were filled")
+	}
+	if fileRead(t, path) != "store = \"~/x/cairn.db\"\n" {
+		t.Errorf("the settings became %q", fileRead(t, path))
+	}
+}
+
+func TestConfigChangedText_writesATrueOrFalseUnquoted(t *testing.T) {
+	if got := configChangedText(ConfigChanged{Set: true, Key: "window.keep_sizes", Value: "true", File: "f"}); got != "window.keep_sizes = true, written in f\n" {
+		t.Errorf("said %q", got)
+	}
+}

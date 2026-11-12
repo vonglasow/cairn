@@ -41,3 +41,10 @@ func TestAskedNamesAnEmptyNumber(t *testing.T) {
 		t.Fatal("emptying a number said nothing at all")
 	}
 }
+
+func TestAsked_passesOverAFieldThatIsNoArgument(t *testing.T) {
+	in := Asked([]Field{{Name: "note"}, {Name: "title", Arg: "title", Value: "Ship it"}}, TaskEdit)
+	if in.Given["title"] != "Ship it" {
+		t.Errorf("a field behind one that is no argument was lost: %+v", in.Given)
+	}
+}

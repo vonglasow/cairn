@@ -158,7 +158,13 @@ func (e *Engine) familyOf(n int) (objective.Family, error) {
 
 func (e *Engine) proposedBy(was *objective.Objective, now objective.Objective) (*objective.Objective, error) {
 	c := now.Carried()
-	if c.Parent == 0 || c.State != objective.Reached || was != nil && was.Carried().State == objective.Reached {
+	if c.Parent == 0 {
+		return nil, nil
+	}
+	if c.State != objective.Reached {
+		return nil, nil
+	}
+	if was != nil && was.Carried().State == objective.Reached {
 		return nil, nil
 	}
 	t, err := e.tree()
@@ -270,14 +276,15 @@ func (e *Engine) deleteObjectives(numbers []int, d deletion) (Went, error) {
 	var undecided []objective.Objective
 	for _, n := range numbers {
 		for _, c := range t.children[n] {
-			switch {
-			case slices.Contains(numbers, c):
-			case slices.Contains(d.keep, c) || !slices.Contains(d.delete, c) && d.subs == "keep":
+			if slices.Contains(numbers, c) {
+				continue
+			}
+			if slices.Contains(d.keep, c) || !slices.Contains(d.delete, c) && d.subs == "keep" {
 				went.Kept = append(went.Kept, c)
-			case slices.Contains(d.delete, c) || d.subs == "delete":
+			} else if slices.Contains(d.delete, c) || d.subs == "delete" {
 				goners = append(goners, c)
 				went.Gone = append(went.Gone, c)
-			default:
+			} else {
 				undecided = append(undecided, t.by[c])
 			}
 		}

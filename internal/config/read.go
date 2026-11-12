@@ -419,6 +419,21 @@ func passedOver(strict *toml.StrictMissingError) []string {
 	return said
 }
 
+func keysOf(key string, value any) []string {
+	table, ok := value.(map[string]any)
+	if !ok {
+		return []string{key}
+	}
+	if key == "recurrence" {
+		key = "series"
+	}
+	var keys []string
+	for inner := range table {
+		keys = append(keys, key+"."+inner)
+	}
+	return keys
+}
+
 func writtenIn(data []byte) []string {
 	var said map[string]any
 	if toml.Unmarshal(data, &said) != nil {
@@ -426,17 +441,7 @@ func writtenIn(data []byte) []string {
 	}
 	var keys []string
 	for key, value := range said {
-		table, ok := value.(map[string]any)
-		if !ok {
-			keys = append(keys, key)
-			continue
-		}
-		for inner := range table {
-			if key == "recurrence" {
-				key = "series"
-			}
-			keys = append(keys, key+"."+inner)
-		}
+		keys = append(keys, keysOf(key, value)...)
 	}
 	slices.Sort(keys)
 	return keys
@@ -457,27 +462,34 @@ func acceptedKeys() []string {
 func belongs(key string) string {
 	t := reflect.TypeFor[file]()
 	for i := range t.NumField() {
-		field := t.Field(i)
-		if field.Tag.Get("toml") == key && field.Type.Kind() == reflect.Map {
-			return fmt.Sprintf("%s is a table of its own, [%s]", key, key)
-		}
-		if field.Type.Kind() == reflect.Map {
-			continue
-		}
-		if field.Tag.Get("toml") == key && field.Type.Elem().Kind() != reflect.Struct {
-			return key + " belongs before any table"
-		}
-		if field.Type.Elem().Kind() != reflect.Struct {
-			continue
-		}
-		table := field.Type.Elem()
-		for j := range table.NumField() {
-			if table.Field(j).Tag.Get("toml") == key {
-				return fmt.Sprintf("%s belongs under [%s]", key, field.Tag.Get("toml"))
-			}
+		if said := belongsIn(t.Field(i), key); said != "" {
+			return said
 		}
 	}
 	return "cairn accepts " + strings.Join(acceptedKeys(), ", ")
+}
+
+func belongsIn(field reflect.StructField, key string) string {
+	named := field.Tag.Get("toml") == key
+	if field.Type.Kind() == reflect.Map {
+		if named {
+			return fmt.Sprintf("%s is a table of its own, [%s]", key, key)
+		}
+		return ""
+	}
+	if field.Type.Elem().Kind() != reflect.Struct {
+		if named {
+			return key + " belongs before any table"
+		}
+		return ""
+	}
+	table := field.Type.Elem()
+	for j := range table.NumField() {
+		if table.Field(j).Tag.Get("toml") == key {
+			return fmt.Sprintf("%s belongs under [%s]", key, field.Tag.Get("toml"))
+		}
+	}
+	return ""
 }
 
 // Reading is the tolerant primitive Read is a gate over: it carries the path of the file it read, and either the emplacements the file named or the problem that stood in the way — never both, since emplacements resolved alongside a rule the file broke are not emplacements worth trusting.

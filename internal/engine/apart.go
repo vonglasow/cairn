@@ -29,12 +29,13 @@ func (w Workspace) Store() string { return filepath.Join(w.Folder, storeFile) }
 
 // Name is how the place a board shows is named to a person, short, never a whole path: the workspace that names its store, the name the store's settings give it, or the folder holding the store.
 func (s WorkspaceShown) Name() string {
-	switch {
-	case s.Workspace != "":
+	if s.Workspace != "" {
 		return s.Workspace
-	case s.Own != "":
+	}
+	if s.Own != "" {
 		return s.Own
-	case s.Store == "":
+	}
+	if s.Store == "" {
 		return ""
 	}
 	return filepath.Base(filepath.Dir(s.Store))

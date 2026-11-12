@@ -26,26 +26,26 @@ func split(key string) (table, name string) {
 	return "", key
 }
 
-func regionOf(lines []string, table string) (int, int) {
+func regionOf(lines []string, table string) (int, int, bool) {
 	first := slices.IndexFunc(lines, aHeading.MatchString)
 	if first < 0 {
 		first = len(lines)
 	}
 	if table == "" {
-		return 0, first
+		return 0, first, true
 	}
 	head := slices.IndexFunc(lines, func(l string) bool {
 		m := aTableHeading.FindStringSubmatch(strings.TrimSuffix(l, "\n"))
 		return m != nil && m[1] == table
 	})
 	if head < 0 {
-		return -1, -1
+		return 0, 0, false
 	}
 	end := len(lines)
 	if next := slices.IndexFunc(lines[head+1:], aHeading.MatchString); next >= 0 {
 		end = head + 1 + next
 	}
-	return head + 1, end
+	return head + 1, end, true
 }
 
 func keyLine(name string, commented bool) *regexp.Regexp {
@@ -73,11 +73,8 @@ func valueEnds(rest string) (int, bool) {
 		end := strings.Index(rest[1:], "'")
 		return end + 2, end >= 0
 	}
-	end := len(rest)
-	if hash := strings.Index(rest, "#"); hash >= 0 {
-		end = hash
-	}
-	return len(strings.TrimRight(rest[:end], " \t\r\n")), true
+	value, _, _ := strings.Cut(rest, "#")
+	return len(strings.TrimRight(value, " \t\r\n")), true
 }
 
 func insertedAt(lines []string, start, end int) int {
@@ -101,22 +98,14 @@ func insertedAt(lines []string, start, end int) int {
 func WithKey(data []byte, key, literal string) ([]byte, error) {
 	table, name := split(key)
 	entry := name + " = " + literal + "\n"
-	var lines []string
-	if len(data) > 0 {
-		lines = linesOf(data)
+	lines := linesOf(data)
+	start, end, found := regionOf(lines, table)
+	if !found {
+		return sameButFor(data, []byte(strings.Join(withTable(lines, table), "")+entry), key, literal)
 	}
-	start, end := regionOf(lines, table)
-	var said []string
-	switch {
-	case start < 0 && len(lines) == 0:
-		said = []string{"[" + table + "]\n", entry}
-	case start < 0:
-		said = append(slices.Clone(lines), "\n", "["+table+"]\n", entry)
-	default:
-		var err error
-		if said, err = setIn(lines, start, end, name, literal, entry); err != nil {
-			return nil, err
-		}
+	said, err := setIn(lines, start, end, name, literal, entry)
+	if err != nil {
+		return nil, err
 	}
 	return sameButFor(data, []byte(strings.Join(said, "")), key, literal)
 }
@@ -125,16 +114,10 @@ func WithKey(data []byte, key, literal string) ([]byte, error) {
 func WithCommented(data []byte, key, literal, from string) []byte {
 	table, name := split(key)
 	entry := "# " + name + " = " + literal + "   # " + from + "\n"
-	var lines []string
-	if len(data) > 0 {
-		lines = linesOf(data)
-	}
-	start, end := regionOf(lines, table)
-	switch {
-	case start < 0 && len(lines) == 0:
-		return []byte("[" + table + "]\n" + entry)
-	case start < 0:
-		return []byte(strings.Join(lines, "") + "\n[" + table + "]\n" + entry)
+	lines := linesOf(data)
+	start, end, found := regionOf(lines, table)
+	if !found {
+		return []byte(strings.Join(withTable(lines, table), "") + entry)
 	}
 	for _, line := range lines[start:end] {
 		if keyLine(name, false).MatchString(line) || keyLine(name, true).MatchString(line) {
@@ -143,6 +126,14 @@ func WithCommented(data []byte, key, literal, from string) []byte {
 	}
 	at := insertedAt(lines, start, end)
 	return []byte(strings.Join(slices.Concat(lines[:at], []string{entry}, lines[at:]), ""))
+}
+
+func withTable(lines []string, table string) []string {
+	heading := "[" + table + "]\n"
+	if len(lines) == 0 {
+		return []string{heading}
+	}
+	return append(slices.Clone(lines), "\n", heading)
 }
 
 func setIn(lines []string, start, end int, name, literal, entry string) ([]string, error) {
@@ -172,9 +163,9 @@ func setIn(lines []string, start, end int, name, literal, entry string) ([]strin
 func WithoutKey(data []byte, key string) ([]byte, error) {
 	table, name := split(key)
 	lines := linesOf(data)
-	start, end := regionOf(lines, table)
+	start, end, found := regionOf(lines, table)
 	at := -1
-	if start >= 0 {
+	if found {
 		at = slices.IndexFunc(lines[start:end], keyLine(name, false).MatchString)
 	}
 	if at < 0 {
@@ -258,8 +249,8 @@ func Readable(data []byte, home string, settings bool) error {
 func LineOf(data []byte, key string) int {
 	table, name := split(key)
 	lines := linesOf(data)
-	start, end := regionOf(lines, table)
-	if start < 0 {
+	start, end, found := regionOf(lines, table)
+	if !found {
 		return 0
 	}
 	at := slices.IndexFunc(lines[start:end], keyLine(name, false).MatchString)

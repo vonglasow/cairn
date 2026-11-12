@@ -465,3 +465,21 @@ func TestConfigShow_saysWhenNoWorkspaceIsNamed(t *testing.T) {
 		t.Errorf("it says\n%s", said)
 	}
 }
+
+func TestWhy_namesTheStoreTheEnvironmentSaysAsAWholePath(t *testing.T) {
+	h := homeHolding(t, "", nil)
+	h.Lookup = func(key string) (string, bool) {
+		if key == config.StoreVariable {
+			return "~/e/cairn.db", true
+		}
+		return "", false
+	}
+	h.Store = filepath.Join(h.Dir, "x", "cairn.db")
+	answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if over := answer.WorkspaceShown.Why.Over; len(over) != 1 || over[0].Names != filepath.Join(h.Dir, "e", "cairn.db") {
+		t.Errorf("passed over %+v", over)
+	}
+}

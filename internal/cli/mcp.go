@@ -36,8 +36,9 @@ func newMCPServeCmd() *cobra.Command {
 				return err
 			}
 			h := homeOf(cmd)
-			keepingThePluginCurrent(h, cmd.ErrOrStderr())
-			server := mcp.Server{Name: cmd.Root().Name(), Version: stamps().Version, Access: level, Home: h, Noted: notedIn(cmd.Context()), Binary: os.Args[0]}
+			version := stampsIn(cmd.Context()).Version
+			keepingThePluginCurrent(h, version, cmd.ErrOrStderr())
+			server := mcp.Server{Name: cmd.Root().Name(), Version: version, Access: level, Home: h, Noted: notedIn(cmd.Context()), Binary: os.Args[0]}
 			return mcp.Serve(cmd.Context(), server, cmd.InOrStdin(), cmd.OutOrStdout())
 		},
 	}
@@ -45,17 +46,17 @@ func newMCPServeCmd() *cobra.Command {
 	return cmd
 }
 
-func keepingThePluginCurrent(h engine.Home, said io.Writer) {
+func keepingThePluginCurrent(h engine.Home, version string, said io.Writer) {
 	at, err := engine.Locate(h)
 	if err != nil {
 		return
 	}
-	rewrote, err := engine.KeepPluginCurrent(at, stamps().Version)
+	rewrote, err := engine.KeepPluginCurrent(at, version)
 	if err != nil {
-		_, _ = fmt.Fprintf(said, "cairn: the Claude Code plugin beside the store could not be brought to %s: %v\n", stamps().Version, err)
+		_, _ = fmt.Fprintf(said, "cairn: the Claude Code plugin beside the store could not be brought to %s: %v\n", version, err)
 		return
 	}
 	if rewrote {
-		_, _ = fmt.Fprintf(said, "cairn: the Claude Code plugin beside the store is now %s; it is read from the next session\n", stamps().Version)
+		_, _ = fmt.Fprintf(said, "cairn: the Claude Code plugin beside the store is now %s; it is read from the next session\n", version)
 	}
 }

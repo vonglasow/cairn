@@ -46,8 +46,10 @@ func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 			out[at].Cards = append(out[at].Cards, card)
 		}
 	}
-	if at := slices.IndexFunc(out, func(c Column) bool { return c.State == string(domain.Current) }); at >= 0 {
-		out[at].Cards = focusFirst(out[at].Cards)
+	for i := range out {
+		if out[i].State == string(domain.Current) {
+			out[i].Cards = focusFirst(out[i].Cards)
+		}
 	}
 	return out, band
 }

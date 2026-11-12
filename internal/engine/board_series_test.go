@@ -368,3 +368,48 @@ func TestSeriesFields_offerTheColumnItsOccurrencesArriveIn(t *testing.T) {
 	}
 	t.Error("the form of a series offers no column")
 }
+
+func TestOccurrenceDay_saysNothingOfAnOccurrenceWithNoDay(t *testing.T) {
+	now := time.Date(2026, 11, 12, 10, 30, 0, 0, time.UTC)
+	if text, show, _, _ := OccurrenceDay(Card{State: "todo", Series: &Occurs{}}, now); show || text != "" {
+		t.Errorf("said %q, shown %v", text, show)
+	}
+}
+
+func TestOccurrenceDay_aTimeThatIsNowIsNotPassed(t *testing.T) {
+	now := time.Date(2026, 11, 12, 10, 30, 0, 0, time.UTC)
+	if _, _, _, passed := OccurrenceDay(Card{State: "todo", Series: &Occurs{Day: "2026-11-12", At: "10:30"}}, now); passed {
+		t.Error("10:30 is passed at 10:30")
+	}
+}
+
+func TestEachSaid_saysNothingBeforeOneIsDoneWhateverWasSpent(t *testing.T) {
+	if got := EachSaid(Series{TimeSpent: "1h"}); got != "" {
+		t.Errorf("said %q", got)
+	}
+}
+
+func TestNextDaySaid_aDayOtherThanTodayCarriesNoTime(t *testing.T) {
+	now := time.Date(2026, 11, 9, 9, 0, 0, 0, time.UTC)
+	if got := NextDaySaid(Series{Rule: "every day 10:30", Next: []string{"2026-11-10"}}, now); got != "Tue 10" {
+		t.Errorf("said %q", got)
+	}
+	if got := NextDaySaid(Series{Rule: "every day", Next: []string{"2026-11-09"}}, now); got != "today" {
+		t.Errorf("said %q", got)
+	}
+}
+
+func TestSeriesFields_giveAnExampleToWhatIsTypedAndNoneToAChoice(t *testing.T) {
+	for _, f := range SeriesFields(Series{}) {
+		want := typedLike["task "+f.Arg]
+		if len(f.Choices) > 0 {
+			want = ""
+		}
+		if f.Example != want {
+			t.Errorf("%s has the example %q, want %q", f.Name, f.Example, want)
+		}
+	}
+	if fields := SeriesFields(Series{}); fields[0].Example != "Write the spec" {
+		t.Errorf("the title has the example %q", fields[0].Example)
+	}
+}

@@ -12,10 +12,12 @@ import (
 	"testing"
 
 	"gioui.org/f32"
+	"gioui.org/font"
 	"gioui.org/gpu/headless"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/cucumber/godog"
@@ -38,14 +40,14 @@ func offScreen(t *testing.T, wide, high int) *headless.Window {
 
 func drawn(t *testing.T, w Window) *image.RGBA {
 	t.Helper()
-	shot, err := rendered(offScreen(t, w.width, w.height), w)
+	shot, err := rendered(offScreen(t, w.width, w.height), drawingTheme(), w)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return shot
 }
 
-func drawnInAStep(w Window) (*image.RGBA, error) {
+func drawnInAStep(th *material.Theme, w Window) (*image.RGBA, error) {
 	window, err := headless.NewWindow(w.width, w.height)
 	if err != nil {
 		if os.Getenv(windowless) != "" {
@@ -53,7 +55,7 @@ func drawnInAStep(w Window) (*image.RGBA, error) {
 		}
 		return nil, fmt.Errorf("no headless window here: %w — set %s=1 to skip what draws, on a machine that cannot", err, windowless)
 	}
-	return rendered(window, w)
+	return rendered(window, th, w)
 }
 
 func drawsWithoutFault(th *material.Theme, w Window) (err error) {
@@ -72,7 +74,7 @@ func drawsWithoutFault(th *material.Theme, w Window) (err error) {
 	return nil
 }
 
-func rendered(window *headless.Window, w Window) (*image.RGBA, error) {
+func rendered(window *headless.Window, th *material.Theme, w Window) (*image.RGBA, error) {
 	defer window.Release()
 	var ops op.Ops
 	gtx := layout.Context{
@@ -80,7 +82,7 @@ func rendered(window *headless.Window, w Window) (*image.RGBA, error) {
 		Constraints: layout.Exact(image.Pt(w.width, w.height)),
 		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
 	}
-	Draw(NewKit(gtx, Theme(), Dark(), &Drawn{}), w)
+	Draw(NewKit(gtx, th, Dark(), &Drawn{}), w)
 	if err := window.Frame(gtx.Ops); err != nil {
 		return nil, fmt.Errorf("drawing: %w", err)
 	}
@@ -447,7 +449,7 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 		Constraints: layout.Exact(image.Pt(w.width*2, w.height*2)),
 		Metric:      unit.Metric{PxPerDp: 2, PxPerSp: 2},
 	}
-	Draw(NewKit(gtx, Theme(), Dark(), &Drawn{}), w)
+	Draw(NewKit(gtx, drawingTheme(), Dark(), &Drawn{}), w)
 	if err := window.Frame(gtx.Ops); err != nil {
 		t.Fatalf("drawing: %v", err)
 	}
@@ -558,7 +560,7 @@ func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 			Constraints: layout.Exact(image.Pt(wide, high)),
 			Metric:      unit.Metric{PxPerDp: perDp, PxPerSp: perDp},
 		}
-		Draw(NewKit(gtx, Theme(), Dark(), &Drawn{}), w)
+		Draw(NewKit(gtx, drawingTheme(), Dark(), &Drawn{}), w)
 		if err := window.Frame(gtx.Ops); err != nil {
 			t.Fatalf("drawing: %v", err)
 		}
@@ -1135,7 +1137,7 @@ func TestFits_cutsToTheRoomThereIs(t *testing.T) {
 		Constraints: layout.Exact(image.Pt(1200, 800)),
 		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
 	}
-	th := Theme()
+	th := drawingTheme()
 	long := "T090f · Ajouter une étape pour réouvrir les droits avant intervention"
 
 	if got := fits(gtx, th, "short", 400, small); got != "short" {
@@ -1466,7 +1468,7 @@ func TestARaisedPanelCastsAShadowUnderIt(t *testing.T) {
 	box := Box{X: 20, Y: 10, W: 60, H: 40}
 	shot := drawnOps(t, 100, 80, func(gtx layout.Context) {
 		fill(gtx, Box{W: 100, H: 80}, skin.Colour.Surface.Back)
-		raised(NewKit(gtx, Theme(), skin, &Drawn{}), box, skin.Radius.Panel, skin.Colour.Surface.Raised)
+		raised(NewKit(gtx, drawingTheme(), skin, &Drawn{}), box, skin.Radius.Panel, skin.Colour.Surface.Raised)
 	})
 	under := shot.RGBAAt(50, box.Y+box.H+4)
 	if under.R >= skin.Colour.Surface.Back.R && under.G >= skin.Colour.Surface.Back.G {
@@ -1599,7 +1601,7 @@ func TestALandedStoneIsNotOneFlatColour(t *testing.T) {
 	stone := []Point{{X: 10, Y: 10}, {X: 50, Y: 9}, {X: 90, Y: 10}, {X: 90, Y: 40}, {X: 50, Y: 41}, {X: 10, Y: 40}}
 	shot := drawnOps(t, 100, 50, func(gtx layout.Context) {
 		fill(gtx, Box{W: 100, H: 50}, Dark().Colour.Surface.Back)
-		Stone{Shape: stone, Shade: Dark().stoneOf(1)}.Draw(NewKit(gtx, Theme(), Dark(), &Drawn{}), Box{})
+		Stone{Shape: stone, Shade: Dark().stoneOf(1)}.Draw(NewKit(gtx, drawingTheme(), Dark(), &Drawn{}), Box{})
 	})
 	colours := map[color.RGBA]bool{}
 	for y := 14; y < 36; y++ {
@@ -1675,5 +1677,20 @@ func TestAKeyIsCentredOnItsChipWhateverItsGlyphs(t *testing.T) {
 		if top, bottom := inkGaps(shot, chip); top-bottom > 1 || bottom-top > 1 {
 			t.Errorf("%q on its chip leaves %d above and %d under", w.OfferKey(offer), top, bottom)
 		}
+	}
+}
+
+func TestSayWith_notesWhatIsSaidOnlyToTheNoteOfTheThemeSayingIt(t *testing.T) {
+	mine, other := Theme(), Theme()
+	var noted []string
+	notesSaid.Store(mine, sayNote(func(_ layout.Context, _ *material.Theme, _ Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
+		noted = append(noted, said)
+	}))
+	defer notesSaid.Delete(mine)
+	gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(200, 40)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	sayWith(gtx, other, color.NRGBA{}, Box{W: 200, H: 40}, "theirs", 12, font.Font{}, 1, text.Start)
+	sayWith(gtx, mine, color.NRGBA{}, Box{W: 200, H: 40}, "mine", 12, font.Font{}, 1, text.Start)
+	if !slices.Equal(noted, []string{"mine"}) {
+		t.Errorf("noted %q, want only what this theme said", noted)
 	}
 }

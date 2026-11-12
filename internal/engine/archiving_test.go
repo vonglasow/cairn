@@ -192,3 +192,99 @@ func TestHold_sweepsTheArchiveOnceTheStoreIsCurrent(t *testing.T) {
 		t.Error("a held engine whose store became current left a task done before the period under way on the board")
 	}
 }
+
+func TestArchive_aSweepCountsWhatItArchived(t *testing.T) {
+	path := storeAt(t, "Write the spec", "Ship it", "Unrelated")
+	for _, n := range []string{"1", "2"} {
+		if _, err := Do(TaskEdit, path, given("number", n, "state", "done")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	answer, err := Do(TaskArchive, path, confirmed(given("state", "done")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if answer.Archived == nil || *answer.Archived != 2 {
+		t.Errorf("Archived = %v, want 2", answer.Archived)
+	}
+}
+
+func archivingHome(t *testing.T) (string, Home) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	add(t, e, "Migration Jenkins")
+	if _, err := e.Ask(TaskEdit, given("number", "1", "state", "done")); err != nil {
+		t.Fatal(err)
+	}
+	ago := time.Now().AddDate(0, 0, -10)
+	if err := e.history.Record(trace.Made(trace.Carried{Task: 1, Did: trace.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
+		t.Fatal(err)
+	}
+	_ = e.Close()
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now().AddDate(0, 0, -20).Format(time.DateOnly)
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[archive]\nstart = %s\n", start), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path, Home{Dir: home, Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}
+}
+
+func TestArchiving_onlyTheListingOfTasksSweeps(t *testing.T) {
+	path, home := archivingHome(t)
+	at := Places{Store: path, Home: home}
+	for op, in := range map[*Operation]Input{&TaskShow: given("number", "1"), &ObjectiveList: given()} {
+		if _, err := DoAt(*op, at, in, Acting{Through: "cli", By: "sam"}); err != nil {
+			t.Fatal(err)
+		}
+		shown, err := Do(TaskShow, path, given("number", "1"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if factsOf(*shown.Task).Archived {
+			t.Fatalf("%s archived on its own", op.Line())
+		}
+	}
+	if _, err := DoAt(TaskList, at, given(), Acting{Through: "cli", By: "sam"}); err != nil {
+		t.Fatal(err)
+	}
+	shown, err := Do(TaskShow, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !factsOf(*shown.Task).Archived {
+		t.Error("task list left a task done before the period under way on the board")
+	}
+}
+
+func TestTheSweepArchivesEveryTaskDoneBeforeThePeriodPastOneDoneInIt(t *testing.T) {
+	e := openEngine(t)
+	e.acting = Acting{Through: "cli", By: "sam"}
+	for _, title := range []string{"Spike Argo", "Migration Jenkins", "Ship it"} {
+		add(t, e, title)
+	}
+	if _, err := e.Ask(TaskEdit, given("number", "1", "state", "done")); err != nil {
+		t.Fatal(err)
+	}
+	doneLongAgo(t, e, 2)
+	doneLongAgo(t, e, 3)
+	today := midnight(time.Now())
+	if err := e.sweptByPeriod(today.AddDate(0, 0, -20), 14, today); err != nil {
+		t.Fatal(err)
+	}
+	if archivedOnItsOwn(t, e, 1) {
+		t.Error("a task done in the period under way was archived")
+	}
+	for _, n := range []int{2, 3} {
+		if !archivedOnItsOwn(t, e, n) {
+			t.Errorf("task %d, done before the period under way, is not archived", n)
+		}
+	}
+}

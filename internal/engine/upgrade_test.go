@@ -3,6 +3,7 @@ package engine
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -106,5 +107,32 @@ func TestUpgrade_triesItsPlaceBeforeAskingTheReleases(t *testing.T) {
 	}
 	if n := asked.Load(); n != 0 {
 		t.Errorf("the releases were asked %d times", n)
+	}
+}
+
+func releasesSaying(t *testing.T, tag string) {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprintf(w, `{"tag_name":%q,"assets":[]}`, tag)
+	}))
+	t.Cleanup(server.Close)
+	was := upgrade.Latest
+	upgrade.Latest = server.URL + "/latest"
+	t.Cleanup(func() { upgrade.Latest = was })
+}
+
+func TestUpgrade_leavesTheNewestAsItIs(t *testing.T) {
+	releasesSaying(t, "v0.10.0")
+	binary := filepath.Join(t.TempDir(), "cairn")
+	got, err := Upgrade("v0.10.0", binary, "darwin/arm64")
+	if err != nil || got != (Upgraded{From: "v0.10.0", To: "v0.10.0", Binary: binary}) {
+		t.Errorf("the newest already: %+v, %v", got, err)
+	}
+}
+
+func TestUpgrade_saysAReleaseWithNothingForThisSystem(t *testing.T) {
+	releasesSaying(t, "v0.11.0")
+	if _, err := Upgrade("v0.10.0", filepath.Join(t.TempDir(), "cairn"), "darwin/arm64"); !errors.Is(err, upgrade.ErrNoBinaryHere) {
+		t.Errorf("a release with no binary here: %v", err)
 	}
 }

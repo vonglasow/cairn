@@ -21,8 +21,7 @@ type View struct {
 }
 
 const (
-	viewColumns   = `id, name, place, state, priority, due_before, focus, search, itself, archived, with_archived`
-	everyView     = `SELECT ` + viewColumns + ` FROM views ORDER BY place, id`
+	everyView     = `SELECT id, name, place, state, priority, due_before, focus, search, itself, archived, with_archived FROM views ORDER BY place, id`
 	keepView      = `INSERT INTO views (name, place, state, priority, due_before, focus, search, itself, archived, with_archived) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	viewObjective = `INSERT OR IGNORE INTO view_objectives (view_id, objective_number) VALUES (?, ?)`
 	viewLabel     = `INSERT OR IGNORE INTO view_labels (view_id, label) VALUES (?, ?)`

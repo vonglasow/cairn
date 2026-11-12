@@ -25,7 +25,7 @@ func initApp(t *testing.T) func(*godog.ScenarioContext) {
 }
 
 func TestAcceptance_App(t *testing.T) {
-	runAcceptance(t, "app.feature", initApp(t), "")
+	runOneAtATime(t, "app.feature", initApp(t), "")
 }
 
 func (w *world) registerApp(sc *godog.ScenarioContext) {
@@ -55,7 +55,7 @@ func (w *world) registerApp(sc *godog.ScenarioContext) {
 		w.Setenv("XDG_DATA_HOME", "")
 		data = filepath.Join(w.Defaults, ".local", "share")
 		tools = filepath.Join(w.Defaults, "tools")
-		w.Setenv("PATH", tools)
+		w.SetProcessEnv("PATH", tools)
 		if err := os.MkdirAll(tools, 0o755); err != nil {
 			return err
 		}

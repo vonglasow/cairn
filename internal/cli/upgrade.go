@@ -25,7 +25,7 @@ func newUpgradeCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			b := stamps()
+			b := stampsIn(cmd.Context())
 			upgraded, err := engine.Upgrade(b.Version, running, b.Platform)
 			if err != nil {
 				return err

@@ -160,3 +160,20 @@ func TestObjectiveWaitsOn_goesWithWhatIsDeleted(t *testing.T) {
 		t.Errorf("#2 still waits on %v", said.WaitsOn)
 	}
 }
+
+func TestObjectiveWaitsOn_aTaskMovedElsewhereThanCurrentWarnsOfNothing(t *testing.T) {
+	path := storeAt(t)
+	ran(t, path,
+		asked(ObjectiveNew, "title", "Home automation"),
+		asked(ObjectiveNew, "title", "Firmware"),
+		waitsOn("1", "2"),
+		asked(TaskNew, "title", "Dimmer scenes", "objective", "1"),
+	)
+	moved, err := Do(TaskMove, path, given("number", "1", "state", "todo"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if said := Of(TaskMove, moved).(Tasks); len(said.Warnings) != 0 {
+		t.Errorf("a move into todo warns %q", said.Warnings)
+	}
+}

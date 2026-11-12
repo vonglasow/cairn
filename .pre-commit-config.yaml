@@ -54,7 +54,7 @@ repos:
         pass_filenames: false
         types: [text]
         files: '(\.go|(^|/)\.golangci\.yml|^tools/go\.(mod|sum))$'
-      # No go-unit-tests here: cover-check builds its profile from `go test -race
+      # No go-unit-tests here: cover-check builds its profile from `go test
       # ./...`, which fails when a test does, so the suite ran twice for one
       # answer. The profile is rebuilt whenever a Go file, a scenario or a pinned
       # frame changes. See docs/checks.md.
@@ -152,7 +152,7 @@ repos:
         entry: make cover-check
         language: system
         pass_filenames: false
-        files: '(\.go|\.feature|\.sh|(^|/)go\.(mod|sum)|/testdata/.+|^plugin/.+|^\.claude-plugin/.+)$'
+        files: '(\.go|\.feature|\.sh|(^|/)go\.(mod|sum)|^Makefile|/testdata/.+|^plugin/.+|^\.claude-plugin/.+)$'
       # Mutation is not a hook: it froze the machine it ran on and filled its
       # disk, and a check that freezes the machine gets skipped. It runs in
       # check.yml, on every push and pull request, over the packages holding

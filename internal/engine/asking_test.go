@@ -2,11 +2,14 @@ package engine
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"cairn/internal/store"
 )
@@ -156,5 +159,34 @@ func TestAskRefusesASearchForNothing(t *testing.T) {
 		if !strings.Contains(err.Error(), "there is nothing to look for") {
 			t.Errorf("Ask(TaskSearch, %q) = %v, want it to say there is nothing to look for", named, err)
 		}
+	}
+}
+
+func homeArchivingSince(t *testing.T, daysAgo int) string {
+	t.Helper()
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now().AddDate(0, 0, -daysAgo).Format(time.DateOnly)
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[archive]\nstart = %s\n", start), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return home
+}
+
+func TestAsk_sweepsTheArchiveOwedBeforeWhatNeedsTheStore(t *testing.T) {
+	e := openEngine(t)
+	e.acting = Acting{Through: "cli", By: "sam"}
+	add(t, e, "Migration Jenkins")
+	doneLongAgo(t, e, 1)
+	e.home = Home{Dir: homeArchivingSince(t, 20)}
+	e.sweepOwed = true
+	if _, err := e.Ask(TaskList, Input{}); err != nil {
+		t.Fatal(err)
+	}
+	if !archivedOnItsOwn(t, e, 1) {
+		t.Error("a listing left the archive it owed unswept")
 	}
 }

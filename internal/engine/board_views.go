@@ -141,9 +141,11 @@ func objectiveOf(value string) (string, bool) {
 func (fs Filters) holding(in Input) Input {
 	for _, f := range fs {
 		taken := f.Taken()
-		switch {
-		case len(taken) == 0:
-		case f.Arg == "objective":
+		if len(taken) == 0 {
+			continue
+		}
+		switch f.Arg {
+		case "objective":
 			for _, value := range taken {
 				number, itself := objectiveOf(value)
 				if !slices.Contains(in.Listed["objective"], number) {
@@ -153,11 +155,11 @@ func (fs Filters) holding(in Input) Input {
 					in.Given["itself"] = "true"
 				}
 			}
-		case f.Arg == "focus":
+		case "focus":
 			delete(in.Given, "focus")
 			delete(in.Given, "no-focus")
 			in.Given[focusAsked(taken[0])] = "true"
-		case f.Arg == "label":
+		case "label":
 			for _, value := range taken {
 				if !slices.Contains(in.Listed["label"], value) {
 					in.Listed["label"] = append(in.Listed["label"], value)

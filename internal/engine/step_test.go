@@ -130,3 +130,25 @@ func TestStepList_answersAMachineTheStepsWithTheirPlaces(t *testing.T) {
 		t.Errorf("a machine reads %+v", Of(StepList, answer))
 	}
 }
+
+func TestStepNew_answersTheTaskWithItsSteps(t *testing.T) {
+	path := storeAt(t, "Ship it")
+	answer, err := Do(StepNew, path, given("number", "1", "title", "Write it"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if answer.Task == nil || len(answer.Task.Carried().Steps) != 1 {
+		t.Errorf("step new answered %+v", answer.Task)
+	}
+}
+
+func TestStepList_saysATaskHasNoSteps(t *testing.T) {
+	path := storeAt(t, "Ship it")
+	answer, err := Do(StepList, path, given("number", "1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := RenderText(StepList, answer); got != "task 1 has no steps\n" {
+		t.Errorf("step list says %q", got)
+	}
+}

@@ -85,3 +85,9 @@ func TestPages_aWeekShowsFiveDaysWhenTheConfigurationHidesTheWeekends(t *testing
 		t.Errorf("read from the file, a week shows %d days, want 5", got)
 	}
 }
+
+func TestPages_areNoneOnlyWhenEveryOneIsOff(t *testing.T) {
+	if PagesOff(PageTasks, PageTime).None() {
+		t.Error("with the objectives shown, every page was said to be off")
+	}
+}

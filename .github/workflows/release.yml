@@ -1,6 +1,7 @@
 # The release of a version, run when its tag is pushed — see docs/release.md.
 # The tag is made by hand with make release, once every check has passed; this
-# builds what is handed over and hands it over. The window needs cgo, so each
+# runs every check of check.yml again on the tagged commit, then builds what is
+# handed over and hands it over. The window needs cgo, so each
 # binary is built on the system it runs on, one job each.
 name: release
 
@@ -16,7 +17,17 @@ permissions:
   contents: read
 
 jobs:
+  # Every check of check.yml, on the commit the tag names: a version whose
+  # checks did not pass is never built, whatever was run by hand before the
+  # tag was pushed. Run by hand, the binaries are only a preview, and the
+  # checks are left to check.yml's own run.
+  checks:
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/check.yml
+
   binaries:
+    needs: checks
+    if: ${{ !cancelled() && (needs.checks.result == 'success' || github.event_name == 'workflow_dispatch') }}
     strategy:
       fail-fast: false
       matrix:

@@ -39,11 +39,15 @@ func TaskFields(c Card) []Field {
 }
 
 func opened(op Operation, fields []Field) []Field {
+	return openedAs(op, op.Thing, fields)
+}
+
+func openedAs(op Operation, like string, fields []Field) []Field {
 	for i := range fields {
 		fields[i].Was = fields[i].Value
 		fields[i].Means = meaning(op, fields[i].Arg)
 		if len(fields[i].Choices) == 0 {
-			fields[i].Example = typedLike[op.Thing+" "+fields[i].Arg]
+			fields[i].Example = typedLike[like+" "+fields[i].Arg]
 		}
 	}
 	return fields

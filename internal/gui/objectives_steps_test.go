@@ -140,7 +140,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 				from = i
 			}
 			if c.Title == child && from >= 0 && c.Depth == 1 {
-				for _, d := range partsDrawn(w.w) {
+				for _, d := range partsDrawnWith(w.theme, w.w) {
 					if strings.HasSuffix(d.Part, "row/connector") {
 						return nil
 					}
@@ -165,7 +165,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 		if got := w.w.ChoosingRefused(); got != said {
 			return fmt.Errorf("the list says %q", got)
 		}
-		for _, d := range partsDrawn(w.w) {
+		for _, d := range partsDrawnWith(w.theme, w.w) {
 			if strings.HasSuffix(d.Part, "banner") {
 				return nil
 			}
@@ -275,7 +275,7 @@ func (w *world) drawnUnder(child, parent string) error {
 	if at <= from || ItemOf(under, 1).X != ItemOf(over, 0).X+indent {
 		return fmt.Errorf("%q stands at %d, %+v, not indented under %q at %d", child, at, under, parent, from)
 	}
-	for _, d := range partsDrawn(w.w) {
+	for _, d := range partsDrawnWith(w.theme, w.w) {
 		if strings.HasSuffix(d.Part, "connector") && d.At.X+d.At.W == ItemOf(under, 1).X && d.At.Y == under.Y {
 			return nil
 		}
@@ -286,7 +286,7 @@ func (w *world) drawnUnder(child, parent string) error {
 func (w *world) detailTexts() []string {
 	d := w.w.Detail()
 	var said []string
-	for _, one := range textDrawn(w.w) {
+	for _, one := range textDrawnWith(w.theme, w.w) {
 		if d.Box.In(Point{X: one.box.X, Y: one.box.Y}) {
 			said = append(said, one.said)
 		}
@@ -299,7 +299,7 @@ func (w *world) detailHeaded(title string) error {
 		return fmt.Errorf("the detail shows %q", got)
 	}
 	heading := w.w.Detail().Heading
-	for _, one := range textDrawn(w.w) {
+	for _, one := range textDrawnWith(w.theme, w.w) {
 		if one.said == title && one.box.Y == heading.Y && one.box.X == heading.X {
 			return nil
 		}
@@ -323,7 +323,7 @@ func (w *world) tileWarns(title, warn string) error {
 		if t.Tile.Warn != warn {
 			return fmt.Errorf("the tile of %q warns %q", title, t.Tile.Warn)
 		}
-		for _, one := range textDrawn(w.w) {
+		for _, one := range textDrawnWith(w.theme, w.w) {
 			if one.said == warn && t.At.In(Point{X: one.box.X, Y: one.box.Y}) {
 				return nil
 			}
@@ -342,7 +342,7 @@ func (w *world) cardServes(title, served string) error {
 		if got := Serves(p.Card); got != served || row.ServesAt.W == 0 {
 			return fmt.Errorf("the card %q says it serves %q at %+v", title, got, row.ServesAt)
 		}
-		for _, d := range partsDrawn(w.w) {
+		for _, d := range partsDrawnWith(w.theme, w.w) {
 			if strings.HasSuffix(d.Part, "card/facts/serves") && d.At == row.MarkAt {
 				return nil
 			}
@@ -360,7 +360,7 @@ func (w *world) drawnAsAReference(title, why string) error {
 		if p.Why() != why {
 			return fmt.Errorf("%q says %q", title, p.Why())
 		}
-		for _, d := range partsDrawn(w.w) {
+		for _, d := range partsDrawnWith(w.theme, w.w) {
 			if strings.HasSuffix(d.Part, "card/dashed") && d.At == PartsOf(p.Slot).Panel {
 				return nil
 			}
@@ -371,7 +371,7 @@ func (w *world) drawnAsAReference(title, why string) error {
 }
 
 func (w *world) drawnSomewhere(said string) error {
-	for _, one := range textDrawn(w.w) {
+	for _, one := range textDrawnWith(w.theme, w.w) {
 		if strings.Contains(one.said, said) {
 			return nil
 		}
@@ -402,11 +402,11 @@ func (w *world) litUnderThePointer(slot, drawn Box) error {
 	if w.w.pointed != slot {
 		return fmt.Errorf("the pointer lights %+v, not %+v", w.w.pointed, slot)
 	}
-	lit, err := drawnInAStep(w.w)
+	lit, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
-	away, err := drawnInAStep(w.w.Away())
+	away, err := drawnInAStep(w.theme, w.w.Away())
 	if err != nil {
 		return err
 	}

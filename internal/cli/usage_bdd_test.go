@@ -12,7 +12,7 @@ import (
 
 func initUsage(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
-		w := test.NewWorld(t, run)
+		w := test.NewWorld(t, runIn)
 		w.Register(sc)
 
 		sc.Step(`^it shows how to use it$`, func() error {

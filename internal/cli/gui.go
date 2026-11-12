@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -15,9 +16,24 @@ const (
 	high = 840
 )
 
-var openGui = func(work engine.Work, pages engine.Pages, look gui.Skin, draft, sizes string, noted *debug.Log, width, height int, here gui.Here) error {
+type opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, draft, sizes string, noted *debug.Log, width, height int, here gui.Here) error
+
+var openGui opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, draft, sizes string, noted *debug.Log, width, height int, here gui.Here) error {
 	gui.Run(work, pages, look, gui.DraftsAt(draft), sizesAt(sizes), noted, width, height, here)
 	return nil
+}
+
+type windowKey struct{}
+
+func withWindow(ctx context.Context, open opensWindow) context.Context {
+	return context.WithValue(ctx, windowKey{}, open)
+}
+
+func windowFor(cmd *cobra.Command) opensWindow {
+	if open, given := carried[opensWindow](cmd, windowKey{}); given {
+		return open
+	}
+	return openGui
 }
 
 func sizesAt(path string) gui.SizesKept {
@@ -57,5 +73,5 @@ func openWindow(cmd *cobra.Command, h engine.Home) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "theme: %s\n", unworn)
 	}
 	here := gui.Here{Store: at.Store, Reach: func(to engine.Elsewhere) (engine.Apart, error) { return engine.OpenApart(held, to) }}
-	return openGui(held, engine.PagesFrom(h), gui.Skinned(worn), at.Draft(), sizes, notedIn(cmd.Context()), wide, high, here)
+	return windowFor(cmd)(held, engine.PagesFrom(h), gui.Skinned(worn), at.Draft(), sizes, notedIn(cmd.Context()), wide, high, here)
 }

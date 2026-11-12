@@ -84,7 +84,7 @@ func (r *reading) read(word string) error {
 	if n, ok := whole(word); ok {
 		return r.number(word, n)
 	}
-	if hours, minutes, ok := strings.Cut(word, ":"); ok && len(hours) <= 2 && len(minutes) == 2 {
+	if hours, minutes, ok := strings.Cut(word, ":"); ok {
 		return r.time(word, hours, minutes)
 	}
 	switch word {
@@ -114,7 +114,7 @@ func (r *reading) read(word string) error {
 
 func (r *reading) number(word string, n int) error {
 	if r.at+1 < len(r.words) && (r.words[r.at+1] == "times" || r.words[r.at+1] == "time") {
-		r.at++
+		r.next()
 		r.rule.times = n
 		if n < 1 || n > most {
 			return refused("%q: a rule ends after 1 to 999 times", word)
@@ -144,7 +144,7 @@ func whole(word string) (int, bool) {
 func (r *reading) time(word, h, m string) error {
 	hours, isHours := whole(h)
 	minutes, isMinutes := whole(m)
-	if !isHours || !isMinutes || hours > 23 || minutes > 59 {
+	if !isHours || !isMinutes || len(h) > 2 || len(m) != 2 || hours > 23 || minutes > 59 {
 		return refused("%q: a time is written 10:30", word)
 	}
 	r.rule.at = fmt.Sprintf("%02d:%02d", hours, minutes)
@@ -183,8 +183,7 @@ func (r Rule) checked() (Rule, error) {
 			return Rule{}, refused("%s: a day of the week goes with weeks", unitNames[r.unit][1])
 		}
 		r.unit = inWeeks
-		order := func(d time.Weekday) int { return (int(d) + 6) % 7 }
-		slices.SortFunc(r.days, func(a, b time.Weekday) int { return order(a) - order(b) })
+		slices.SortFunc(r.days, func(a, b time.Weekday) int { return sinceMonday(a) - sinceMonday(b) })
 		r.days = slices.Compact(r.days)
 	}
 	if r.unit == noUnit {
@@ -265,12 +264,11 @@ func (r Rule) Listed() string {
 		names = append(names, strings.ToLower(d.String()))
 	}
 	said := "every " + r.howOften()
-	switch {
-	case r.weekdaysOnly():
+	if r.weekdaysOnly() {
 		said = "every weekday"
-	case len(r.days) > 0 && r.every == 1:
+	} else if len(r.days) > 0 && r.every == 1 {
 		said = "every " + strings.Join(names, ", ")
-	case len(r.days) > 0:
+	} else if len(r.days) > 0 {
 		said += " · " + strings.Join(names, ", ")
 	}
 	if r.at != "" {
@@ -323,12 +321,13 @@ func (r Rule) anchor() string {
 }
 
 func (r Rule) end() string {
-	switch {
-	case r.times == 1:
+	if r.times == 1 {
 		return "once"
-	case r.times > 1:
+	}
+	if r.times > 0 {
 		return fmt.Sprintf("%d times", r.times)
-	case !r.until.IsZero():
+	}
+	if !r.until.IsZero() {
 		return "until " + LongDay(r.until)
 	}
 	return ""
@@ -405,16 +404,15 @@ func (r Rule) First(from time.Time) (time.Time, bool) {
 // Next is the date that follows a day: on the calendar, the first date of the rule from its start that falls after it; counted from the last one done, so long after that day.
 func (r Rule) Next(after, from time.Time) (time.Time, bool) {
 	if r.afterDone {
-		next := r.add(after, 1)
+		next := r.add(after)
 		return next, r.within(next)
 	}
-	limit := 372*r.every + 7
-	for d, i := after.AddDate(0, 0, 1), 0; i < limit; d, i = d.AddDate(0, 0, 1), i+1 {
-		if r.falls(d, from) {
-			return d, r.within(d)
-		}
+	start := after.AddDate(0, 0, 1)
+	if start.Before(from) {
+		start = from
 	}
-	return time.Time{}, false
+	next := r.onOrAfter(start, from)
+	return next, r.within(next)
 }
 
 // Dates is the next n dates on the calendar after a day; none for a rule counted from the last one done, whose dates are not known before it is.
@@ -426,7 +424,7 @@ func (r Rule) Dates(after, from time.Time, n int) []time.Time {
 	for len(out) < n {
 		next, ok := r.Next(after, from)
 		if !ok {
-			break
+			return out
 		}
 		out, after = append(out, next), next
 	}
@@ -437,14 +435,14 @@ func (r Rule) within(d time.Time) bool {
 	return r.until.IsZero() || !d.After(r.until)
 }
 
-func (r Rule) add(d time.Time, n int) time.Time {
-	switch r.unit {
-	case inWeeks:
-		return d.AddDate(0, 0, 7*r.every*n)
-	case inMonths:
-		return inMonth(d, d.Day(), r.every*n)
+func (r Rule) add(d time.Time) time.Time {
+	if r.unit == inWeeks {
+		return d.AddDate(0, 0, 7*r.every)
 	}
-	return d.AddDate(0, 0, r.every*n)
+	if r.unit == inMonths {
+		return inMonth(d, d.Day(), r.every)
+	}
+	return d.AddDate(0, 0, r.every)
 }
 
 func inMonth(start time.Time, day, months int) time.Time {
@@ -453,27 +451,52 @@ func inMonth(start time.Time, day, months int) time.Time {
 	return first.AddDate(0, 0, min(day, last)-1)
 }
 
-func (r Rule) falls(d, from time.Time) bool {
-	if d.Before(from) {
-		return false
-	}
-	between := int(d.Sub(from).Hours()+12) / 24
-	switch r.unit {
-	case inMonths:
-		months := (d.Year()-from.Year())*12 + int(d.Month()) - int(from.Month())
-		return months%r.every == 0 && d.Equal(inMonth(from, from.Day(), months))
-	case inWeeks:
-		if len(r.days) == 0 {
-			return between%(7*r.every) == 0
+func (r Rule) onOrAfter(start, from time.Time) time.Time {
+	if r.unit == inMonths {
+		months := upTo(monthsBetween(from, start), r.every)
+		if d := inMonth(from, from.Day(), months); !d.Before(start) {
+			return d
 		}
-		weeks := int(monday(d).Sub(monday(from)).Hours()+12) / (24 * 7)
-		return weeks%r.every == 0 && slices.Contains(r.days, d.Weekday())
+		return inMonth(from, from.Day(), months+r.every)
 	}
-	return between%r.every == 0
+	if r.unit == inWeeks && len(r.days) > 0 {
+		return r.weekdayOnOrAfter(start, monday(from))
+	}
+	period := r.every
+	if r.unit == inWeeks {
+		period = 7 * r.every
+	}
+	return from.AddDate(0, 0, upTo(daysBetween(from, start), period))
+}
+
+func (r Rule) weekdayOnOrAfter(start, base time.Time) time.Time {
+	week := upTo(daysBetween(base, monday(start))/7, r.every)
+	for _, day := range r.days {
+		if d := base.AddDate(0, 0, 7*week+sinceMonday(day)); !d.Before(start) {
+			return d
+		}
+	}
+	return base.AddDate(0, 0, 7*(week+r.every)+sinceMonday(r.days[0]))
+}
+
+func upTo(n, every int) int {
+	return (n + every - 1) / every * every
+}
+
+func daysBetween(from, to time.Time) int {
+	return int(to.Sub(from).Hours()+12) / 24
+}
+
+func monthsBetween(from, to time.Time) int {
+	return (to.Year()-from.Year())*12 + int(to.Month()) - int(from.Month())
 }
 
 func monday(d time.Time) time.Time {
-	return d.AddDate(0, 0, -((int(d.Weekday()) + 6) % 7))
+	return d.AddDate(0, 0, -sinceMonday(d.Weekday()))
+}
+
+func sinceMonday(d time.Weekday) int {
+	return (int(d) + 6) % 7
 }
 
 // DayOf is the calendar day a moment falls on where it was taken, as a day is kept.

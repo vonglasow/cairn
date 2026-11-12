@@ -349,3 +349,37 @@ func TestSnapshot_treeOfIsTheLevelOneObjectiveAboveIt(t *testing.T) {
 		}
 	}
 }
+
+func TestParents_leavesOutAnObjectiveWhoseParentIsNotListed(t *testing.T) {
+	s := Snapshot{Goals: []Goal{{Number: 1}, {Number: 2, Parent: 9}}}
+	if parents := s.Parents(0); len(parents) != 1 || parents[0].Number != 1 {
+		t.Errorf("the parents are %+v", parents)
+	}
+}
+
+func TestDeleting_countsTheTasksOfASubDeletedAfterOneKept(t *testing.T) {
+	s := Snapshot{
+		Goals: []Goal{{Number: 1, Children: []int{2, 3}}, {Number: 2, Parent: 1}, {Number: 3, Parent: 1}},
+		Cards: []Card{{Number: 7, Objectives: []int{2}}, {Number: 8, Objectives: []int{3}}},
+	}
+	d := s.Deleting(1).Choose(2, KeepIt).Choose(3, DeleteIt)
+	if touched := d.Touched(); len(touched) != 1 || touched[0] != 8 {
+		t.Errorf("touched %v", touched)
+	}
+	if d.FateOf(2) != KeepIt {
+		t.Errorf("the first sub's fate is %q", d.FateOf(2))
+	}
+}
+
+func TestDeleting_asksAboutSubObjectivesThatHoldNoTask(t *testing.T) {
+	s := Snapshot{Goals: []Goal{{Number: 1, Children: []int{2}}, {Number: 2, Parent: 1}}}
+	if !s.Deleting(1).Asks() {
+		t.Error("a sub-objective is not asked about")
+	}
+}
+
+func TestChoose_aDeletionWithNothingChosenYetTakesAFate(t *testing.T) {
+	if got := (Deleting{}).Choose(2, DeleteIt).FateOf(2); got != DeleteIt {
+		t.Errorf("the fate is %q", got)
+	}
+}

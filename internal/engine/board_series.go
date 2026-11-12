@@ -70,14 +70,16 @@ func OccurrenceDay(c Card, now time.Time) (text string, show, late, passed bool)
 	}
 	day = time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, now.Location())
 	days := int(math.Round(day.Sub(startOfDay(now)).Hours() / 24))
-	switch {
-	case days < 0:
+	if days < 0 {
 		return fmt.Sprintf("−%dd", -days), true, true, false
-	case days == 0 && c.Series.At != "":
+	}
+	if days == 0 && c.Series.At != "" {
 		return c.Series.At, true, false, c.Series.At < now.Format("15:04")
-	case days == 0:
+	}
+	if days == 0 {
 		return "today", true, false, false
-	case days <= occurrenceSoon:
+	}
+	if days <= occurrenceSoon {
 		return day.Format("Mon 2"), true, false, false
 	}
 	return "", false, false, false
@@ -199,7 +201,7 @@ func SeriesFields(s Series) []Field {
 	for _, title := range s.Template.Steps {
 		steps = append(steps, Part{Title: title})
 	}
-	fields := opened(SeriesEdit, []Field{
+	return openedAs(SeriesEdit, "task", []Field{
 		{Name: "title", Arg: "title", Value: s.Template.Title},
 		{Name: "priority", Arg: "priority", Value: s.Template.Priority, Choices: Priorities()},
 		{Name: "column", Arg: "state", Value: s.Template.Arrives, Choices: Arrivals},
@@ -210,12 +212,6 @@ func SeriesFields(s Series) []Field {
 		{Name: "from", Arg: "from", Value: s.From},
 		{Name: "steps", Arg: "steps", Value: PartsWritten(steps), Long: true},
 	})
-	for i := range fields {
-		if fields[i].Example == "" && len(fields[i].Choices) == 0 {
-			fields[i].Example = typedLike["task "+fields[i].Arg]
-		}
-	}
-	return fields
 }
 
 // Recurring is what a board shows of a snapshot: the whole of it while a task may come back, and no series and no occurrence marked as one while recurrence is off.

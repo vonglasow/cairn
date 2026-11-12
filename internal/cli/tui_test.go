@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -193,5 +194,23 @@ func TestTui_opensTheWorkspaceNamedAndOpensAnotherInItsPlace(t *testing.T) {
 	}
 	if !strings.Contains(said, "opened work in place of home") {
 		t.Errorf("the board says:\n%s", said)
+	}
+}
+
+func TestTui_opensTheBoardItsRunWasHanded(t *testing.T) {
+	was := openTui
+	openTui = func(*cobra.Command, tea.Model) error { return errors.New("the board every other run opens") }
+	t.Cleanup(func() { openTui = was })
+	opened := false
+	ctx := withBoard(context.Background(), func(*cobra.Command, tea.Model) error {
+		opened = true
+		return nil
+	})
+	var out, errs bytes.Buffer
+	if code := MainIn(ctx, homeWithStore(t, storeFor(t)), []string{"tui"}, strings.NewReader(""), &out, &errs); code != exitOK {
+		t.Fatalf("tui exited %d: %s", code, errs.String())
+	}
+	if !opened {
+		t.Error("the board the run was handed was never opened")
 	}
 }

@@ -170,3 +170,24 @@ func TestDropped_saysWhereAnObjectiveLetGoOverARowGoes(t *testing.T) {
 		}
 	}
 }
+
+func TestDropped_belowEveryRowIsNothingForTheLastTopObjective(t *testing.T) {
+	goals := []Goal{{Number: 1, Children: []int{3}}, {Number: 3, Parent: 1}, {Number: 2}}
+	if _, ok := Dropped(goals, 2, 0, DropAfter); ok {
+		t.Error("the last top objective let go below every row moves")
+	}
+	in, ok := Dropped(goals, 1, 0, DropAfter)
+	if want := map[string]string{"number": "1", "parent": "none", "last": "true"}; !ok || !maps.Equal(in.Given, want) {
+		t.Errorf("the first top objective let go below every row: %v %v", in.Given, ok)
+	}
+}
+
+func TestStepped_movesTheFirstDownAndNothingNotListed(t *testing.T) {
+	goals := []Goal{{Number: 1}, {Number: 2}}
+	if in, ok := Stepped(goals, 1, false); !ok || in.Given["after"] != "2" {
+		t.Errorf("the first moved down: %v, %v", in.Given, ok)
+	}
+	if _, ok := Stepped(goals, 9, false); ok {
+		t.Error("an objective not listed moved")
+	}
+}

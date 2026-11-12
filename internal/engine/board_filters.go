@@ -295,25 +295,20 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 		if len(taken) == 0 {
 			continue
 		}
-		if f.Arg == "objective" {
+		switch f.Arg {
+		case "objective":
 			for _, value := range taken {
 				serving = append(serving, f.reaching(value))
 			}
-			continue
-		}
-		if f.Arg == "label" {
+		case "label":
 			in.Listed[f.Arg] = taken
-			continue
-		}
-		if f.Arg == "series" {
+		case "series":
 			repeats = true
-			continue
-		}
-		if f.Arg == "focus" {
+		case "focus":
 			in.Given[focusAsked(taken[0])] = "true"
-			continue
+		default:
+			in.Given[f.Arg] = taken[0]
 		}
-		in.Given[f.Arg] = taken[0]
 	}
 	kept, err := keeping(in, TaskList.Takes, nil)
 	if err != nil {

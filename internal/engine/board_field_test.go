@@ -154,3 +154,18 @@ func TestTheTaskFormAsksForItsLinks(t *testing.T) {
 		t.Error("a new task's form has no links field")
 	}
 }
+
+func TestPartsIn_readsAMarkOnlyWhereItIsWhole(t *testing.T) {
+	for _, tc := range []struct {
+		said string
+		want []Part
+	}{
+		{"#3", []Part{{Title: "#3"}}},
+		{"a]b", []Part{{Title: "a]b"}}},
+		{"[ ]\nNext", []Part{{Title: "Next"}}},
+	} {
+		if got := PartsIn(tc.said); !slices.Equal(got, tc.want) {
+			t.Errorf("PartsIn(%q) = %+v, want %+v", tc.said, got, tc.want)
+		}
+	}
+}

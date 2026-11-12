@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"maps"
 	"slices"
 	"strconv"
 
@@ -206,10 +207,8 @@ func (d Deleting) Touched() []int {
 
 // Choose is the deletion with a fate chosen for one sub-objective.
 func (d Deleting) Choose(sub int, f Fate) Deleting {
-	fates := make(map[int]Fate, len(d.fates)+1)
-	for k, v := range d.fates {
-		fates[k] = v
-	}
+	fates := map[int]Fate{}
+	maps.Copy(fates, d.fates)
 	fates[sub] = f
 	d.fates = fates
 	return d

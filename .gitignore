@@ -32,3 +32,4 @@ coverage.out
 *.pem
 *.key
 .package.*/
+coverage-*.out

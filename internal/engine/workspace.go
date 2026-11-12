@@ -223,8 +223,7 @@ func (h Home) answering(p config.Places) (answering, error) {
 	gate := &placesGate{}
 	p.Tell(gate)
 	a := answering{store: gate.store, notes: gate.notes}
-	switch {
-	case h.Workspace != "":
+	if h.Workspace != "" {
 		one, err := workspaceThere(p, h.Workspace)
 		if err != nil {
 			return a, err
@@ -232,7 +231,8 @@ func (h Home) answering(p config.Places) (answering, error) {
 		a.store, a.notes = inWorkspace(one, workspaceFlagName)
 		a.workspace, a.why = one.Name, h.why(p, 0)
 		return a.named(p), nil
-	case h.Store != "":
+	}
+	if h.Store != "" {
 		at, err := config.Absolute(h.Store, h.Dir)
 		if err != nil {
 			return a, fmt.Errorf("%s %w", storeFlagName, err)
@@ -240,10 +240,12 @@ func (h Home) answering(p config.Places) (answering, error) {
 		a.store, a.why = Emplacement{At: at, By: storeFlagName}, h.why(p, 0)
 		a.why.Rung = rungStoreFlag
 		return a.ownNotes(p), nil
-	case a.store.By == byTheEnvironment:
+	}
+	if a.store.By == byTheEnvironment {
 		a.why = h.why(p, 1)
 		return a.ownNotes(p), nil
-	case h.environmentWorkspace() != "":
+	}
+	if h.environmentWorkspace() != "" {
 		name := h.environmentWorkspace()
 		one, err := workspaceThere(p, name)
 		if err != nil {
@@ -431,11 +433,8 @@ func settingsSayingNothing(folder string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := file.WriteString(config.SettingsHeader); err != nil {
-		_ = file.Close()
-		return err
-	}
-	return file.Close()
+	_, err = file.WriteString(config.SettingsHeader)
+	return errors.Join(err, file.Close())
 }
 
 // WorkspaceList lists every workspace the configuration names, the default marked.

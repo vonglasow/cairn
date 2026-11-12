@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+
+	"cairn/internal/engine"
 )
 
 // Result is what one run of a command line produced: the two streams kept apart, and the code the process would have exited with.
@@ -18,8 +20,8 @@ type Result struct {
 	Code   int
 }
 
-// A Runner runs a command line in-process and answers what it produced.
-type Runner func(t *testing.T, args ...string) Result
+// A Runner runs a command line in-process, in the home given, and answers what it produced.
+type Runner func(t *testing.T, h engine.Home, args ...string) Result
 
 const ok = 0
 
@@ -33,6 +35,7 @@ func Suite(t *testing.T, feature string, init func(*godog.ScenarioContext), tag 
 			Paths:          []string{filepath.Join("..", "..", "bdd", feature)},
 			Tags:           tag,
 			Strict:         true,
+			Concurrency:    8,
 			NoColors:       true,
 			TestingT:       t,
 			DefaultContext: context.Background(),

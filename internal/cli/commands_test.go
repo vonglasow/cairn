@@ -38,7 +38,7 @@ func recurringRoot(t *testing.T) *cobra.Command {
 	if err := os.WriteFile(filepath.Join(dir, ".config", "cairn", "config.toml"), []byte("[series]\non = true\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	return newRootCmdFor(engine.Home{Dir: dir, Lookup: func(string) (string, bool) { return "", false }})
+	return newRootCmdFor(engine.Home{Dir: dir, Lookup: func(string) (string, bool) { return "", false }}, stamps())
 }
 
 func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {

@@ -106,6 +106,23 @@ func TestList_writesEveryObjectiveAsOneRow(t *testing.T) {
 	}
 }
 
+func TestList_goesOnPastASubObjectiveToTheNextTopOne(t *testing.T) {
+	told := func(n, parent int, title string) Objective {
+		built, err := NewObjective(title)
+		if err != nil {
+			t.Fatalf("NewObjective: %v", err)
+		}
+		a := From(built)
+		a.Numbered(n)
+		a.Under(parent)
+		return a.Objective()
+	}
+	got := List([]Objective{told(1, 0, "Ship"), told(2, 1, "Write"), told(3, 0, "Rest")}, nil, nil)
+	if !strings.Contains(got, "#3  Rest") {
+		t.Errorf("the top objective after a sub-objective is missing:\n%s", got)
+	}
+}
+
 func TestServing_saysNothingIsUnderItForNoLines(t *testing.T) {
 	if got := Serving(nil); !strings.Contains(got, "nothing is under it") {
 		t.Errorf("Serving(nil) = %q, want it to say nothing is under it", got)

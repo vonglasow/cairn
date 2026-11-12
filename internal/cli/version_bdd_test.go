@@ -24,31 +24,15 @@ type versionWorld struct {
 	commit                  string
 	built                   string
 	committed               string
-	restores                []func()
 }
 
-func newVersionWorld(t *testing.T) *versionWorld {
-	t.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
-	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
-	w := &versionWorld{t: t}
-	previous := stamps
-	w.restores = append(w.restores, func() { stamps = previous })
-	stamps = w.reading
-	return w
-}
+func newVersionWorld(t *testing.T) *versionWorld { return &versionWorld{t: t} }
 
 func (w *versionWorld) reading() build.Info {
 	return build.Stamped(w.version, w.commit, w.built, w.committed)
 }
 
 func (w *versionWorld) stamp(target *string, value string) { *target = value }
-
-func (w *versionWorld) endScenario() {
-	for i := len(w.restores) - 1; i >= 0; i-- {
-		w.restores[i]()
-	}
-	w.restores = nil
-}
 
 func (w *versionWorld) binaries(version string, systems ...string) error {
 	w.version, w.archive = version, filepath.Join(w.t.TempDir(), "dist")
@@ -73,13 +57,16 @@ func root() string { return filepath.Join("..", "..") }
 // a hook runs the suite with GIT_INDEX_FILE, GIT_DIR and the like naming the
 // commit under way, and a git a scenario ran inherited them — its `git add .`
 // in a repository of its own wrote into that commit's index, and the commit
-// held the scenario's two scripts instead of the tree.
+// held the scenario's two scripts instead of the tree. Its git reads no
+// configuration but the repository's own either: on a machine that signs
+// every commit, each one asked for a passphrase.
 func apart(run *exec.Cmd) *exec.Cmd {
 	for _, v := range os.Environ() {
 		if !strings.HasPrefix(v, "GIT_") {
 			run.Env = append(run.Env, v)
 		}
 	}
+	run.Env = append(run.Env, "GIT_CONFIG_GLOBAL="+os.DevNull, "GIT_CONFIG_NOSYSTEM=1")
 	return run
 }
 
@@ -104,11 +91,6 @@ func (w *versionWorld) line(key string) string {
 func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 	return func(sc *godog.ScenarioContext) {
 		w := newVersionWorld(t)
-
-		sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
-			w.endScenario()
-			return ctx, err
-		})
 
 		sc.Step(`^a binary built with no version stamps$`, func() error {
 			w.stamp(&w.version, "")
@@ -241,7 +223,12 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		}
 		sc.Step(`^a binary archive of this repository made as version "([^"]*)" for this system$`, func(version string) error {
 			w.archive = filepath.Join(w.t.TempDir(), "dist")
-			return command(root(), "scripts/package.sh", version, w.archive)
+			pack := test.WithGoCaches(apart(exec.Command("scripts/package.sh", version, w.archive)))
+			pack.Dir = root()
+			if out, err := pack.CombinedOutput(); err != nil {
+				return fmt.Errorf("scripts/package.sh: %w\n%s", err, out)
+			}
+			return nil
 		})
 		sc.Step(`^the archive is named for version "([^"]*)" and this system$`, func(version string) error {
 			_, err := os.Stat(filepath.Join(w.archive, packed(version)))
@@ -413,7 +400,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 		})
 
 		sc.Step("^I run `cairn --version`$", func() error {
-			w.out = run(w.t, "--version")
+			w.out = runWith(withStamps(context.Background(), w.reading), home(), "--version")
 			if w.out.Code != exitOK {
 				return fmt.Errorf("exit %d (stderr: %s)", w.out.Code, w.out.Stderr)
 			}
@@ -462,22 +449,6 @@ func wantLine(w *versionWorld, key, want string) error {
 		return fmt.Errorf("%s = %q, want %q", key, got, want)
 	}
 	return nil
-}
-
-func TestVersionWorld_putsTheBuildBackWhenTheScenarioEnds(t *testing.T) {
-	found := stamps
-	t.Cleanup(func() { stamps = found })
-
-	w := newVersionWorld(t)
-	w.stamp(&w.version, "what the scenario set")
-	if got := stamps().Version; got != "what the scenario set" {
-		t.Fatalf("version = %q during the scenario", got)
-	}
-
-	w.endScenario()
-	if got := stamps().Version; got != found().Version {
-		t.Errorf("version = %q, want %q put back for the next scenario", got, found().Version)
-	}
 }
 
 func TestAcceptance_Version_DegradesCleanly(t *testing.T) {

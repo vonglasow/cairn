@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"cairn/internal/domain"
+	"cairn/internal/migration"
 	"cairn/internal/task"
 )
 
@@ -21,6 +22,7 @@ type Store struct {
 	on     runs
 	path   string
 	opened os.FileInfo
+	known  []migration.Migration
 }
 
 const taskColumns = `number, title, description, state, archived, priority, because, deadline, estimate`

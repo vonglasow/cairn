@@ -1,6 +1,7 @@
 package test
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,12 +12,14 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/config"
+	"cairn/internal/engine"
+	"cairn/internal/migration"
 )
 
 func answering(t *testing.T, answer Result) (*World, *[]string) {
 	t.Helper()
 	var asked []string
-	w := NewWorld(t, func(_ *testing.T, args ...string) Result {
+	w := NewWorld(t, func(_ *testing.T, _ engine.Home, args ...string) Result {
 		asked = append(asked, strings.Join(args, " "))
 		return answer
 	})
@@ -63,11 +66,81 @@ func TestSeed_reportsAPreconditionThatCouldNotBeMet(t *testing.T) {
 	}
 }
 
-func TestSetenv_putsBackAVariableThatWasThere(t *testing.T) {
+func TestSetenv_isSeenByWhatTheScenarioRunsAndNotByTheProcess(t *testing.T) {
+	const key = "CAIRN_A_VARIABLE_THAT_WAS_THERE"
+	t.Setenv(key, "before")
+	var seen string
+	w := NewWorld(t, func(_ *testing.T, h engine.Home, _ ...string) Result {
+		seen, _ = h.Lookup(key)
+		return Result{}
+	})
+	w.Setenv(key, "during")
+	w.Run("cairn task list")
+	if seen != "during" {
+		t.Errorf("%s = %q for what the scenario ran, want what the scenario set", key, seen)
+	}
+	if got := os.Getenv(key); got != "before" {
+		t.Errorf("%s = %q in the process: a scenario running beside this one would see it", key, got)
+	}
+}
+
+func TestSetenv_isForgottenWhenTheScenarioEnds(t *testing.T) {
+	const key = "CAIRN_A_VARIABLE_THAT_WAS_NOT_THERE"
+	w, _ := answering(t, Result{})
+	w.Setenv(key, "during")
+	w.EndScenario()
+	if _, had := w.Lookup(key); had {
+		t.Errorf("%s is still set: the next scenario starts on this one's leftovers", key)
+	}
+}
+
+func TestLookup_readsTheProcessForWhatTheScenarioLeftAlone(t *testing.T) {
+	const key = "CAIRN_A_VARIABLE_LEFT_ALONE"
+	t.Setenv(key, "the process's")
+	w, _ := answering(t, Result{})
+	if got, _ := w.Lookup(key); got != "the process's" {
+		t.Errorf("%s = %q, want the process's own", key, got)
+	}
+	w.Setenv(key, "")
+	if got, had := w.Lookup(key); !had || got != "" {
+		t.Errorf("%s = %q (set: %v), want it set and empty", key, got, had)
+	}
+}
+
+func TestHome_isTheOneTheScenarioSet(t *testing.T) {
+	w, _ := answering(t, Result{})
+	dir := t.TempDir()
+	w.Setenv(homeVariable(), dir)
+	if h := w.Home(); h.Dir != dir || h.Missing != nil {
+		t.Errorf("Home = %q (missing: %v), want %q", h.Dir, h.Missing, dir)
+	}
+	w.Setenv(homeVariable(), "")
+	if h := w.Home(); h.Missing == nil {
+		t.Errorf("Home = %q, want it missing once the scenario emptied it", h.Dir)
+	}
+}
+
+func TestEnviron_carriesWhatTheScenarioSetOverTheProcess(t *testing.T) {
+	const key = "CAIRN_A_VARIABLE_FOR_A_PROGRAM"
+	t.Setenv(key, "the process's")
+	w, _ := answering(t, Result{})
+	w.Setenv(key, "the scenario's")
+	var found []string
+	for _, v := range w.Environ() {
+		if strings.HasPrefix(v, key+"=") {
+			found = append(found, v)
+		}
+	}
+	if want := []string{key + "=the scenario's"}; fmt.Sprint(found) != fmt.Sprint(want) {
+		t.Errorf("Environ carries %v, want %v", found, want)
+	}
+}
+
+func TestSetProcessEnv_putsBackAVariableThatWasThere(t *testing.T) {
 	const key = "CAIRN_A_VARIABLE_THAT_WAS_THERE"
 	t.Setenv(key, "before")
 	w, _ := answering(t, Result{})
-	w.Setenv(key, "during")
+	w.SetProcessEnv(key, "during")
 	if got := os.Getenv(key); got != "during" {
 		t.Fatalf("%s = %q during the scenario", key, got)
 	}
@@ -77,10 +150,10 @@ func TestSetenv_putsBackAVariableThatWasThere(t *testing.T) {
 	}
 }
 
-func TestSetenv_takesAwayAVariableThatWasNotThere(t *testing.T) {
+func TestSetProcessEnv_takesAwayAVariableThatWasNotThere(t *testing.T) {
 	const key = "CAIRN_A_VARIABLE_THAT_WAS_NOT_THERE"
 	w, _ := answering(t, Result{})
-	w.Setenv(key, "during")
+	w.SetProcessEnv(key, "during")
 	w.EndScenario()
 	if _, had := os.LookupEnv(key); had {
 		t.Errorf("%s is still set: the next scenario starts on this one's leftovers", key)
@@ -222,10 +295,10 @@ func TestAHomeOfMyOwn_doesNotPointAtAStore(t *testing.T) {
 	if err := w.AHomeOfMyOwn(); err != nil {
 		t.Fatalf("AHomeOfMyOwn = %v", err)
 	}
-	if w.Defaults == "" || os.Getenv("HOME") != w.Defaults {
-		t.Fatalf("HOME = %q, Defaults = %q, want HOME pointed at a fresh Defaults", os.Getenv("HOME"), w.Defaults)
+	if w.Defaults == "" || w.Home().Dir != w.Defaults {
+		t.Fatalf("HOME = %q, Defaults = %q, want HOME pointed at a fresh Defaults", w.Home().Dir, w.Defaults)
 	}
-	if got := os.Getenv(config.StoreVariable); got != "a store nothing here should touch" {
+	if got, _ := w.Lookup(config.StoreVariable); got != "a store nothing here should touch" {
 		t.Errorf("%s = %q, want it left untouched — a home of my own names no store", config.StoreVariable, got)
 	}
 }
@@ -382,5 +455,100 @@ func TestWriteConfig_posesTheFileWhereCairnReadsIt(t *testing.T) {
 	}
 	if read, err := os.ReadFile(w.ConfigPath()); err != nil || string(read) != "notes = \"~/vault\"\n" {
 		t.Errorf("the configuration reads %q, %v", read, err)
+	}
+}
+
+func seededIn(t *testing.T, pointed bool) (*World, *bool) {
+	t.Helper()
+	there := new(bool)
+	var w *World
+	w = NewWorld(t, func(*testing.T, engine.Home, ...string) Result {
+		info, err := os.Stat(w.StorePath)
+		*there = err == nil && info.Size() > 0
+		return Result{}
+	})
+	t.Cleanup(w.EndScenario)
+	w.StorePath = filepath.Join(t.TempDir(), "mine", "cairn.db")
+	if pointed {
+		w.Setenv(config.StoreVariable, w.StorePath)
+	}
+	return w, there
+}
+
+func TestSeed_startsFromAStoreThisCairnLaidDownWhenThereIsNoneYet(t *testing.T) {
+	w, there := seededIn(t, true)
+	if err := w.Seed(`cairn task new "Write the spec"`); err != nil {
+		t.Fatal(err)
+	}
+	if !*there {
+		t.Fatal("the precondition ran on no store: each one lays the whole shape down again")
+	}
+	opened, err := engine.Open(w.StorePath)
+	if err != nil {
+		t.Fatalf("the store laid down is not one this cairn opens as current: %v", err)
+	}
+	_ = opened.Close()
+}
+
+func TestSeed_laysNothingDownForAStoreTheScenarioDoesNotPointAt(t *testing.T) {
+	w, there := seededIn(t, false)
+	if err := w.Seed(`cairn task new "Write the spec"`); err != nil {
+		t.Fatal(err)
+	}
+	if *there {
+		t.Error("a store was laid down where the command will not look")
+	}
+}
+
+func TestSeed_leavesAStoreThatIsThereAlone(t *testing.T) {
+	w, _ := seededIn(t, true)
+	if err := os.MkdirAll(filepath.Dir(w.StorePath), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(w.StorePath, []byte("a store of its own"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Seed(`cairn task new "Write the spec"`); err != nil {
+		t.Fatal(err)
+	}
+	if held, _ := os.ReadFile(w.StorePath); string(held) != "a store of its own" {
+		t.Errorf("the store there was replaced by %d bytes", len(held))
+	}
+}
+
+func TestRun_laysNoStoreDown(t *testing.T) {
+	w, there := seededIn(t, true)
+	w.Run(`cairn task new "Write the spec"`)
+	if *there {
+		t.Error("a store was laid down before the command under test: what it does with none is no longer what is tested")
+	}
+}
+
+func TestANewerCairn_knowsOneChangeMoreThanThisOne(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cairn.db")
+	made, err := engine.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = made.Close()
+	newer, err := ANewerCairn(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := newer.Ask(engine.MigrationApply, engine.Input{}); err != nil {
+		t.Fatalf("the newer cairn could not apply its change: %v", err)
+	}
+	listed, err := newer.Ask(engine.MigrationList, engine.Input{})
+	_ = newer.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := migration.OfMigration(listed.Changes[len(listed.Changes)-1])
+	if last.Name != UnknownChange || last.Number != len(migration.Known)+1 {
+		t.Errorf("the newer cairn's last change is #%d %q, want #%d %q, after every one this cairn knows",
+			last.Number, last.Name, len(migration.Known)+1, UnknownChange)
+	}
+	if _, err := engine.Open(path); !errors.Is(err, engine.ErrNewerStore) {
+		t.Errorf("this cairn opens what a newer one changed: %v", err)
 	}
 }

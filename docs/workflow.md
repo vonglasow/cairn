@@ -55,9 +55,14 @@ Conventions:
   has a one-line `runAcceptance` over it, so a failure is that package's own. A
   new feature adds a `*_bdd_test.go` holding its world and its steps — never a
   second copy of the suite.
+- **A scenario touches nothing the process shares.** Scenarios run eight at a
+  time: a variable is set with `w.Setenv`, which the commands of that scenario
+  alone see, and what a package would otherwise swap — the window, the board,
+  the version — goes in the run's context. A suite that cannot help changing
+  something shared runs with `runOneAtATime`, and says why.
 - **A scenario cleans up after itself, not after the test.** Anything a step
-  changes outside its own world — a package-level variable, a file, an
-  environment — is put back by a `sc.After` hook. `t.Cleanup` looks like the
+  changes outside its own world — a file, or what a suite run one at a time
+  changed — is put back by a `sc.After` hook. `t.Cleanup` looks like the
   place and is not: it fires when the Go test ends, so the next scenario in the
   same run starts on the previous one's leftovers.
 - **Steps live in the package they observe** — unless more than one package
@@ -65,7 +70,8 @@ Conventions:
   command line runs, `test.Givens` for what both boards say is in the store. A
   step written twice is a step that will come to mean two things.
 - **Steps drive the real surface**, not the layer below it. The CLI steps go
-  through `run(t, …)`, which calls the same `cli.Main` the binary calls — fang's
+  through the world's runner, which calls `cli.MainIn` — what the binary's
+  `cli.Main` calls, in the scenario's home rather than the process's, fang's
   error rendering included — so what a step observes is what a user observes.
 - **The two streams stay apart.** `run` returns stdout, stderr and the exit code
   separately, because a scenario that says a reason goes to standard error can

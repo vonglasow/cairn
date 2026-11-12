@@ -455,3 +455,13 @@ func TestRenderText_showsWhatATerminalWouldObey(t *testing.T) {
 		t.Errorf("RenderText = %q, want nothing a terminal would obey", got)
 	}
 }
+
+func TestOfFocus_saysEverySessionAndNoneAsAnEmptyList(t *testing.T) {
+	if got := ofFocus(nil, domain.Progress{}, nil, nil).Sessions; got == nil || len(got) != 0 {
+		t.Errorf("with no session, sessions = %#v", got)
+	}
+	held := []FocusSession{{Task: 4}}
+	if got := ofFocus(nil, domain.Progress{}, nil, held).Sessions; !slices.Equal(got, held) {
+		t.Errorf("sessions = %v, want %v", got, held)
+	}
+}

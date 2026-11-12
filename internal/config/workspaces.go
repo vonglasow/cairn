@@ -57,10 +57,11 @@ func workspacesOf(said map[string]string, home string) ([]Workspace, string, err
 	return named, said[DefaultWorkspaceKey], nil
 }
 
+const workspacesTable = "workspaces"
+
 var (
-	workspacesHeading = regexp.MustCompile(`^\s*\[\s*workspaces\s*\]\s*(#.*)?$`)
-	aHeading          = regexp.MustCompile(`^\s*\[`)
-	aDefault          = regexp.MustCompile(`^\s*default\s*=`)
+	aHeading = regexp.MustCompile(`^\s*\[`)
+	aDefault = regexp.MustCompile(`^\s*default\s*=`)
 )
 
 func blank(line string) bool   { return strings.TrimSpace(line) == "" }
@@ -75,59 +76,31 @@ func linesOf(data []byte) []string {
 	return lines
 }
 
-func tableIn(lines []string) (int, int) {
-	head := slices.IndexFunc(lines, func(l string) bool { return workspacesHeading.MatchString(strings.TrimSuffix(l, "\n")) })
-	if head < 0 {
-		return -1, -1
-	}
-	end := len(lines)
-	if next := slices.IndexFunc(lines[head+1:], aHeading.MatchString); next >= 0 {
-		end = head + 1 + next
-	}
-	return head, end
-}
-
 // WithWorkspace is the file with one more workspace in [workspaces], at the end of the table, or in a table of its own after the rest; every other byte is the file's.
 func WithWorkspace(data []byte, name, folder string) ([]byte, error) {
 	entry := fmt.Sprintf("%s = %q\n", name, folder)
-	if len(data) == 0 {
-		return checked([]byte("[workspaces]\n"+entry), data, name, folder)
-	}
 	lines := linesOf(data)
-	head, end := tableIn(lines)
-	if head < 0 {
-		return checked([]byte(strings.Join(lines, "")+"\n[workspaces]\n"+entry), data, name, folder)
+	start, end, found := regionOf(lines, workspacesTable)
+	if !found {
+		return checked([]byte(strings.Join(withTable(lines, workspacesTable), "")+entry), data, name, folder)
 	}
-	at := end
-	if end < len(lines) {
-		i := end
-		for i > head+1 && comment(lines[i-1]) {
-			i--
-		}
-		if i > head+1 && blank(lines[i-1]) {
-			at = i
-		}
-	}
-	for at > head+1 && blank(lines[at-1]) {
-		at--
-	}
-	said := slices.Insert(slices.Clone(lines), at, entry)
+	said := slices.Insert(slices.Clone(lines), insertedAt(lines, start, end), entry)
 	return checked([]byte(strings.Join(said, "")), data, name, folder)
 }
 
 // WithDefault is the file with default in [workspaces] naming the workspace given, where it was said or under the table's heading; every other byte is the file's.
 func WithDefault(data []byte, name string) ([]byte, error) {
 	lines := linesOf(data)
-	head, end := tableIn(lines)
-	if head < 0 {
+	start, end, found := regionOf(lines, workspacesTable)
+	if !found {
 		return nil, ErrNotWritten
 	}
 	entry := fmt.Sprintf("%s = %q\n", DefaultWorkspaceKey, name)
 	said := slices.Clone(lines)
-	if at := slices.IndexFunc(lines[head+1:end], aDefault.MatchString); at >= 0 {
-		said[head+1+at] = entry
+	if at := slices.IndexFunc(lines[start:end], aDefault.MatchString); at >= 0 {
+		said[start+at] = entry
 	} else {
-		said = slices.Insert(said, head+1, entry)
+		said = slices.Insert(said, start, entry)
 	}
 	return checked([]byte(strings.Join(said, "")), data, DefaultWorkspaceKey, name)
 }
@@ -145,16 +118,16 @@ func checked(said, was []byte, key, value string) ([]byte, error) {
 // WithoutWorkspace is the file with the workspace named taken out of [workspaces], its line and nothing else; every other byte is the file's.
 func WithoutWorkspace(data []byte, name string) ([]byte, error) {
 	lines := linesOf(data)
-	head, end := tableIn(lines)
-	if head < 0 {
+	start, end, found := regionOf(lines, workspacesTable)
+	if !found {
 		return nil, ErrNotWritten
 	}
 	entry := regexp.MustCompile(`^\s*` + regexp.QuoteMeta(name) + `\s*=`)
-	at := slices.IndexFunc(lines[head+1:end], entry.MatchString)
+	at := slices.IndexFunc(lines[start:end], entry.MatchString)
 	if at < 0 {
 		return nil, ErrNotWritten
 	}
-	said := []byte(strings.Join(slices.Delete(slices.Clone(lines), head+1+at, head+2+at), ""))
+	said := []byte(strings.Join(slices.Delete(slices.Clone(lines), start+at, start+at+1), ""))
 	var after struct {
 		Workspaces map[string]any `toml:"workspaces"`
 	}

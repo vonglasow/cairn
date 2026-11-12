@@ -314,7 +314,7 @@ func (e *Engine) objectivesFiled(filedAll []objectiveFiled) (map[int]int, error)
 			parent := strconv.Itoa(objectives[o.Parent])
 			c.Parent = &parent
 		}
-		if len(o.WaitsOn) > 0 {
+		if len(o.WaitsOn) != 0 {
 			on := numbered(o.WaitsOn, objectives)
 			c.WaitsOn = &on
 		}

@@ -9,13 +9,18 @@ import (
 	"cairn/test"
 )
 
-func aStoreANewerCairnChanged(t *testing.T, held *engine.Engine) {
+func aStoreANewerCairnChanged(t *testing.T, path string) {
 	t.Helper()
-	if err := test.AsANewerCairn("never heard of", func() error {
-		_, err := held.Ask(engine.MigrationApply, engine.Input{})
-		return err
-	}); err != nil {
+	newer, err := test.ANewerCairn(path)
+	if err != nil {
 		t.Fatal(err)
+	}
+	defer func() { _ = newer.Close() }()
+	if _, err := newer.Ask(engine.MigrationApply, engine.Input{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := newer.Ask(engine.TaskList, engine.Input{}); err != nil {
+		t.Errorf("the newer cairn is refused its own store: %v", err)
 	}
 }
 
@@ -26,7 +31,7 @@ func TestAsk_aStoreANewerCairnChangedIsRefusedToEverythingThatTouchesIt(t *testi
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = held.Close() })
-	aStoreANewerCairnChanged(t, held)
+	aStoreANewerCairnChanged(t, path)
 	for _, op := range []engine.Operation{engine.TaskList, engine.MigrationList} {
 		if _, err := held.Ask(op, engine.Input{}); !errors.Is(err, engine.ErrNewerStore) {
 			t.Errorf("Ask(%s) on a store a newer cairn changed = %v, want ErrNewerStore", op.Name(), err)
@@ -40,7 +45,7 @@ func TestHold_holdsAStoreFromANewerCairnRefusingEveryAsk(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	aStoreANewerCairnChanged(t, e)
+	aStoreANewerCairnChanged(t, path)
 	if err := e.Close(); err != nil {
 		t.Fatal(err)
 	}

@@ -30,9 +30,6 @@ func (e *Engine) mayWait(o objective.Objective) error {
 			return err
 		}
 	}
-	if n := o.Carried().Number; n != 0 {
-		t.by[n] = o
-	}
 	return objective.MayWaitOn(o, t.by)
 }
 

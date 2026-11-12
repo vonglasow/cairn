@@ -120,6 +120,17 @@ func List(all []Objective, along map[int]domain.Progress, spent map[int]time.Dur
 	return out.String()
 }
 
+func months(out *strings.Builder, all []Month) {
+	if len(all) == 0 {
+		out.WriteString("\nnothing was spent in the period\n")
+		return
+	}
+	out.WriteString("\nby month\n")
+	for _, m := range all {
+		fmt.Fprintf(out, "  %s  %s%s\n", m.Month.Format("2006-01"), domain.FormatDuration(m.Spent), m.splitText())
+	}
+}
+
 func row(out *strings.Builder, o Objective, along map[int]domain.Progress, spent map[int]time.Duration, first, rest string, away bool) {
 	fmt.Fprintf(out, "%s#%d  %s\n", first, o.number, o.title)
 	said := []string{string(o.state), string(o.priority), domain.FormatDay(o.deadline)}
@@ -194,15 +205,8 @@ func Report(o Objective, p domain.Progress, r Review, in Period) string {
 		{Key: spentKey, Value: said(in.Spent()) + " in the period, " + said(r.Spent) + " in all"},
 		{Key: "left", Value: r.Left.Line()},
 	})))
-	switch {
-	case r.Untimed:
-	case len(in.Months) == 0:
-		out.WriteString("\nnothing was spent in the period\n")
-	default:
-		out.WriteString("\nby month\n")
-		for _, m := range in.Months {
-			fmt.Fprintf(&out, "  %s  %s%s\n", m.Month.Format("2006-01"), domain.FormatDuration(m.Spent), m.splitText())
-		}
+	if !r.Untimed {
+		months(&out, in.Months)
 	}
 	if len(in.Done) == 0 {
 		out.WriteString("\nnothing was done in the period\n")

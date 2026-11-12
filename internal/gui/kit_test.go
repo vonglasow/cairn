@@ -10,7 +10,7 @@ import (
 
 func TestAKitRecordsWhatIsPutOnTheLayerItIsOn(t *testing.T) {
 	var drawn Drawn
-	k := NewKit(layout.Context{}, Theme(), Dark(), &drawn)
+	k := NewKit(layout.Context{}, drawingTheme(), Dark(), &drawn)
 	if k.layer != LayerBoard {
 		t.Errorf("a new kit draws on layer %v, not the board", k.layer)
 	}
@@ -27,7 +27,7 @@ func TestAKitRecordsWhatIsPutOnTheLayerItIsOn(t *testing.T) {
 
 func TestAPartDrawnInsideAnotherIsRecordedAsItsChild(t *testing.T) {
 	var drawn Drawn
-	k := NewKit(layout.Context{}, Theme(), Dark(), &drawn).on(LayerPanel)
+	k := NewKit(layout.Context{}, drawingTheme(), Dark(), &drawn).on(LayerPanel)
 	stripe := Box{X: 1, W: 5, H: 9}
 	if got := k.inside("card").put("stripe", stripe); got != stripe {
 		t.Errorf("putting a part gives back %+v, not its box %+v", got, stripe)
@@ -66,7 +66,7 @@ func TestOverlapsAreSiblingsOnOneLayerWhoseBoxesCross(t *testing.T) {
 func TestAPartDrawnWithinAClipIsRecordedAsFarAsItIsSeen(t *testing.T) {
 	var drawn Drawn
 	var ops op.Ops
-	k := NewKit(layout.Context{Ops: &ops}, Theme(), Dark(), &drawn)
+	k := NewKit(layout.Context{Ops: &ops}, drawingTheme(), Dark(), &drawn)
 	column, clipped := k.within(Box{X: 10, Y: 10, W: 100, H: 100})
 	lane, inner := column.within(Box{X: 50, Y: 0, W: 100, H: 50})
 	lane.put("card", Box{X: 40, Y: 40, W: 40, H: 40})

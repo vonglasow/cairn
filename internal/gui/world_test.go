@@ -2,7 +2,6 @@ package gui
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -11,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -54,6 +54,10 @@ type world struct {
 	spaces       *test.Spaces
 	apart        elsewhere
 }
+
+var drawingTheme = sync.OnceValue(Theme)
+
+var themes = sync.Pool{New: func() any { return Theme() }}
 
 func newWorld(t *testing.T) *world {
 	return &world{t: t, width: 1200, high: 800, spaces: &test.Spaces{}}
@@ -134,21 +138,7 @@ func (w *world) aWindow(width, high int) error {
 }
 
 func (w *world) givens() test.Givens {
-	return test.Givens{Other: func() test.Asker { return standing{w} }}
-}
-
-type standing struct{ w *world }
-
-func (s standing) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
-	answer, err := s.w.other.Ask(op, in)
-	if !errors.Is(err, engine.ErrNewerStore) {
-		return answer, err
-	}
-	err = test.AsANewerCairn(unknownChange, func() error {
-		answer, err = s.w.other.Ask(op, in)
-		return err
-	})
-	return answer, err
+	return test.Givens{Other: func() test.Asker { return w.other }}
 }
 
 func (w *world) aStoreFromAnOlderCairn(title string) error {
@@ -190,15 +180,17 @@ func (w *world) anotherCairnRollsTheLastChangeBack() error {
 	return w.forgetBackups()
 }
 
-const unknownChange = "never heard of"
-
 func (w *world) aChangeThisCairnDoesNotKnow() error {
-	if err := test.AsANewerCairn(unknownChange, func() error {
-		_, err := w.other.Ask(engine.MigrationApply, engine.Input{})
-		return err
-	}); err != nil {
+	newer, err := test.ANewerCairn(w.path)
+	if err != nil {
 		return err
 	}
+	if _, err := newer.Ask(engine.MigrationApply, engine.Input{}); err != nil {
+		_ = newer.Close()
+		return err
+	}
+	_ = w.other.Close()
+	w.other = newer
 	return w.forgetBackups()
 }
 
@@ -757,15 +749,17 @@ func (w *world) looksAgain() error {
 func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		w.reset()
+		w.theme = themes.Get().(*material.Theme)
 		return ctx, nil
+	})
+	sc.After(func(ctx context.Context, _ *godog.Scenario, err error) (context.Context, error) {
+		themes.Put(w.theme)
+		return ctx, err
 	})
 
 	sc.StepContext().After(func(ctx context.Context, _ *godog.Step, _ godog.StepResultStatus, err error) (context.Context, error) {
 		if err != nil || w.w.width == 0 {
 			return ctx, err
-		}
-		if w.theme == nil {
-			w.theme = Theme()
 		}
 		return ctx, drawsWithoutFault(w.theme, w.w)
 	})
@@ -1133,7 +1127,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		})
 	})
 	sc.Then(`^every lane's name stands as clear of its edges as a column's name does$`, func() error {
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -1177,7 +1171,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the window draws nothing but its ground$`, func() error {
-		shot, err := drawnInAStep(w.w)
+		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
@@ -1940,7 +1934,7 @@ func (w *world) answerDialog(d dialog) error {
 }
 
 func (w *world) standsApart(b Box) error {
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}
@@ -1969,7 +1963,7 @@ func (w *world) standsApart(b Box) error {
 const headClear = 5
 
 func (w *world) everyColumnsName(holds func(head, name Box) error) error {
-	shot, err := drawnInAStep(w.w)
+	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
 	}

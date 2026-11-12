@@ -101,7 +101,7 @@ func fillingConfig(h Home, global bool) (Answer, error) {
 		for _, key := range held[target] {
 			value, from := h.inForce(key)
 			literal, err := h.literal(key, value, global)
-			if err != nil || value == "" {
+			if err != nil {
 				literal = `""`
 			}
 			said = config.WithCommented(said, key.Name, literal, from)
@@ -219,10 +219,8 @@ func rewritten(path, home string, settings bool, change func([]byte) ([]byte, er
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
-	if len(was) > 0 {
-		if err := config.Readable(was, home, settings); err != nil {
-			return fmt.Errorf("%s cannot be read, and is left for the hand: %w", path, err)
-		}
+	if err := config.Readable(was, home, settings); err != nil {
+		return fmt.Errorf("%s cannot be read, and is left for the hand: %w", path, err)
 	}
 	said, err := change(was)
 	if err != nil {

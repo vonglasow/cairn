@@ -51,3 +51,9 @@ func TestOverrun_isSpentPastTheEstimate(t *testing.T) {
 		}
 	}
 }
+
+func TestAnEstimateIsOverrunOnlyByATimeSpentThatReads(t *testing.T) {
+	if overrun("1h", "soon") {
+		t.Error("a time spent that does not read overran its estimate")
+	}
+}

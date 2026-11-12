@@ -120,16 +120,17 @@ func (r RecentFolder) Said(now time.Time) string {
 		y, m, d := t.Date()
 		return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 	}
-	switch days := int(day(today).Sub(day(opened)).Hours() / 24); {
-	case days <= 0:
+	days := int(day(today).Sub(day(opened)).Hours() / 24)
+	if days <= 0 {
 		return "opened today"
-	case days == 1:
-		return "opened yesterday"
-	case opened.Year() == today.Year():
-		return "opened " + opened.Format("2 Jan")
-	default:
-		return "opened " + opened.Format("2 Jan 2006")
 	}
+	if days == 1 {
+		return "opened yesterday"
+	}
+	if opened.Year() == today.Year() {
+		return "opened " + opened.Format("2 Jan")
+	}
+	return "opened " + opened.Format("2 Jan 2006")
 }
 
 func recentText(recent []RecentFolder) string {
