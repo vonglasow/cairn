@@ -344,11 +344,47 @@ They are asked, they answer, they touch nothing. You give the moment's context
 and says why. The context is never stored, because it is true of the moment and
 not of the task.
 
-Two other roles were considered and rejected: proposing a place when a task
-arrives, and proposing a reordering to accept or ignore. Both help *build* the
-order. The one kept helps *depart* from it, which is what the question was, and
-it is the only one that cannot damage the list because it writes nothing at
-all.
+Two other roles were considered and rejected for cairn: proposing a place when
+a task arrives, and proposing a reordering to accept or ignore. Both help
+*build* the order. The one kept helps *depart* from it, which is what the
+question was, and it is the only one that cannot damage the list because it
+writes nothing at all.
+
+## cairn gives the facts; choosing is asked of an agent
+
+Decided on 2026-11-12, in #253, and built in #297, in the same version, after the order of 2026-10-15 was worked out by
+hand in four layers: bugs and the soundness of what is recorded first, then
+what unblocks, then a WSJF score, then the area of code to break ties. The
+costly layer was the second, because what a task is in the way of was computed
+nowhere.
+
+**cairn gives raw facts on each task, never a rank and never a score.** Beside
+the priority, the estimate and the time spent it already holds:
+
+| fact | what it says |
+|---|---|
+| `blocks` | how many open tasks name this one as a blocker, `⊳3` on every surface |
+| `overdue`, `due_in` | how far past or ahead of its deadline |
+| `age` | how many days it has sat in its column, read off the trace |
+| `objective_late` | whether an objective it serves is behind |
+
+They are to be fields of `task list --fields`, and `task list --blocker N` to
+list what N is in the way of. Nothing sorts by them, and nothing moves a task for them.
+
+**Choosing is the cairn skill's, when it is asked** ("what do I work on?").
+It reads those facts and the board's order, asks for the day's preference — the
+time there is, what is known from outside, the wish of the day, and above all
+the return: the least work for the most result — and proposes at most five
+tasks, each with its reason. The value it weighs is derived from the priority,
+what the task frees, the objective it serves and its deadline, and it says how;
+the cost is the estimate and the time spent. There is no value field.
+
+It may propose moves, which the person accepts one by one. That is the
+reordering rejected above, and it is not reopened: **cairn proposes nothing**;
+an agent outside it does, only when asked, and every write is a move the person
+accepted. The board's order stays the durable preference. The day's is said in
+the conversation and never stored, so a less pertinent task may come first
+today without the order saying so tomorrow.
 
 ## What the store gains
 
@@ -381,6 +417,8 @@ go of it.
 | **recurrence** | a real problem was named — sorting email never reaches `done` — and turning it into a mechanism was not asked for; weighed again on 2026-10-23 for 1-1s and weekly syncs, and left out: a meeting that comes back belongs to the calendar. Taken back in #247 as a series whose every occurrence is a task that reaches `done` — see [series.md](series.md) |
 | **the date a task was created, the date a priority was set, the date anything last changed** | four dates were offered and four were taken, which is a menu artefact. Creation nearly doubles the number, and a priority's date is a special case of the last change. One carries a signal nothing else does: how long a task has sat where it is |
 | **the criteria ordering the list themselves** | they are a force of proposal, not gospel — and nothing that writes can be that |
+| **a score or a rank computed by cairn** (Taskwarrior's urgency, WSJF as a number) | a score's top row is a next task; its inputs are a priority cairn cannot date and an estimate that fails worse than it is unreliable; and WSJF's value, urgency and confidence are judgements held nowhere. Taskwarrior's own documentation says its urgency only approximates. Weighed in #253 and left out; WSJF stays a way of thinking in a refinement |
+| **`cairn today`**, a fixed list of what to work on | it said again, in fixed sections, what the facts and the skill already say |
 
 ## Deliberately not here yet
 

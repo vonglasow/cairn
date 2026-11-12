@@ -17,6 +17,13 @@ Never the reverse. Code written first decides what the test will say, and a
 test written after the code documents what the code does rather than what was
 wanted.
 
+## A study and its build
+
+A task that studies a question ends with a decision written in `docs/`, and
+what it decides to build is a task of the same version, labelled with it. The
+two land together, never a version apart: #222 and #226 did, and a version
+shipped a decision with nothing of it built.
+
 ## Implementing a scenario
 
 Every scenario added to `bdd/` is implemented through `/contract-first`: the
