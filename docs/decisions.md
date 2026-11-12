@@ -133,7 +133,7 @@ Decided on 2026-11-09, built in #226: until then cairn does none of it.
 | packages are mutated one after another | gremlins already uses every core inside a package; two at once only made timeouts | [checks.md](checks.md#running-them-by-hand) |
 | Linux is checked by hand, in a container, before a version | it needs Docker, which no hook may assume | [release.md](release.md) |
 | the container's image is named by tag and Debian release, not digest; commitlint's own dependencies are not locked | the first is a check run by hand, not a gate, and a digest would be moved at every Go release for nothing anyone notices; the second runs only on a message, locally, and locking npm's tree would mean a lockfile in a Go repository for one hook | `scripts/linux.sh`, `.pre-commit-config.yaml` |
-| a form's commands are raced against five milliseconds in the terminal board's tests | a cursor blink is among them and is a timer nobody can wait out, and a command cannot say what it is before it runs; raising the deadline made the suite twelve times slower, as the test itself says | `internal/tui/fake_test.go`, `quickly` |
+| a form's commands are waited for in the terminal board's tests, all but the cursor's blink, passed over at once | the blink is a timer of 530 ms nobody can wait out, and its function names it before it runs; racing every command against five milliseconds, as before, dropped one a machine busy with the rest of the suite was slow to schedule (cairn#298), and raising that deadline made the suite three times slower | `internal/tui/fake_test.go`, `quickly` |
 
 ## Known and not yet answered
 

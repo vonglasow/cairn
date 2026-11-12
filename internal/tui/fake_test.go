@@ -2,10 +2,14 @@ package tui
 
 import (
 	"errors"
+	"reflect"
+	"runtime"
 	"slices"
 	"strconv"
+	"testing"
 	"time"
 
+	"charm.land/bubbles/v2/cursor"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 
@@ -152,10 +156,14 @@ func pumpOne(b Board, cmd tea.Cmd) (Board, tea.Cmd) {
 	return model.(Board), next
 }
 
-const patience = 5 * time.Millisecond
+const patience = 5 * time.Second
+
+var blinking = funcOf(func() tea.Cmd { c := cursor.New(); return c.Blink() }())
+
+func funcOf(cmd tea.Cmd) string { return runtime.FuncForPC(reflect.ValueOf(cmd).Pointer()).Name() }
 
 func quickly(cmd tea.Cmd) (tea.Msg, bool) {
-	if cmd == nil {
+	if cmd == nil || funcOf(cmd) == blinking {
 		return nil, false
 	}
 	answered := make(chan tea.Msg, 1)
@@ -286,4 +294,16 @@ func changesAsked(in engine.Input) engine.Changes {
 func heardOf(b Board, number int) Board {
 	model, _ := b.Update(b.hearing(number)())
 	return model.(Board)
+}
+
+func TestQuickly_passesOverTheCursorsBlinkAndWaitsForAnyOtherCommand(t *testing.T) {
+	c := cursor.New()
+	from := time.Now()
+	if _, answered := quickly(c.Blink()); answered || time.Since(from) > time.Second/10 {
+		t.Errorf("the cursor's blink was waited for %v", time.Since(from))
+	}
+	slow := func() tea.Msg { time.Sleep(50 * time.Millisecond); return Beat{} }
+	if msg, answered := quickly(slow); !answered || msg != (Beat{}) {
+		t.Errorf("a command slower than a busy machine schedules was dropped: %v, %v", msg, answered)
+	}
 }
