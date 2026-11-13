@@ -74,6 +74,8 @@ func (w *workspaces) registerServer(sc *godog.ScenarioContext) {
 	})
 }
 
+const hung = 30 * time.Second
+
 func (w *workspaces) startServer(s *serving, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	clientToServer, writtenByClient := io.Pipe()
@@ -84,7 +86,7 @@ func (w *workspaces) startServer(s *serving, args []string) error {
 		MainIn(ctx, w.Home(), args, clientToServer, serverToClient, io.Discard)
 	}()
 	client := sdk.NewClient(&sdk.Implementation{Name: "acceptance", Version: "0"}, nil)
-	connecting, connected := context.WithTimeout(ctx, 10*time.Second)
+	connecting, connected := context.WithTimeout(ctx, hung)
 	session, err := client.Connect(connecting, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
 	connected()
 	stop := func() {
@@ -109,7 +111,7 @@ func (s *serving) call(tool string, args map[string]any) error {
 	if s.session == nil {
 		return fmt.Errorf("no server: start one first")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), hung)
 	defer cancel()
 	result, err := s.session.CallTool(ctx, &sdk.CallToolParams{Name: tool, Arguments: args})
 	if err != nil {

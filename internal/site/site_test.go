@@ -1,7 +1,11 @@
 package site
 
 import (
+	"errors"
+	"image"
 	"image/color"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -125,5 +129,56 @@ func TestMain_refusesWhatItIsNotGiven(t *testing.T) {
 	said.Reset()
 	if code := Main([]string{}, &said, &said); code == 0 || !strings.Contains(said.String(), "--out") {
 		t.Errorf("Main ran without being told where to write: %s", said.String())
+	}
+}
+
+func TestBuild_drawsAPictureOfTheWindowInEveryScheme(t *testing.T) {
+	out := t.TempDir()
+	drawn := map[string]bool{}
+	said := Said{Version: "v0.12.0", Repo: os.DirFS(filepath.Join("..", "..")), Window: func(slug string) (image.Image, error) {
+		drawn[slug] = true
+		return image.NewRGBA(image.Rect(0, 0, 2, 2)), nil
+	}}
+	if err := Build(out, said); err != nil {
+		t.Fatal(err)
+	}
+	for _, slug := range theme.Shipped() {
+		if !drawn[slug] {
+			t.Errorf("the window was not drawn in %s", slug)
+		}
+		if _, err := os.Stat(filepath.Join(out, windowPicture(slug))); err != nil {
+			t.Errorf("no picture of the window in %s: %v", slug, err)
+		}
+	}
+	index, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(index), windowPicture(darkFirst)) {
+		t.Error("the home page shows no picture of the window")
+	}
+}
+
+func TestBuild_saysWhichSchemeTheWindowCouldNotBeDrawnIn(t *testing.T) {
+	broken := errors.New("no GPU")
+	said := Said{Version: "v0.12.0", Repo: os.DirFS(filepath.Join("..", "..")), Window: func(string) (image.Image, error) { return nil, broken }}
+	if err := Build(t.TempDir(), said); !errors.Is(err, broken) || !strings.Contains(err.Error(), "the window in") {
+		t.Errorf("Build = %v, want the scheme the window could not be drawn in", err)
+	}
+}
+
+func TestMain_refusesAChangelogItCannotRead(t *testing.T) {
+	var said strings.Builder
+	missing := filepath.Join(t.TempDir(), "CHANGELOG.md")
+	if code := Main([]string{"--out", t.TempDir(), "--changelog", missing}, &said, &said); code != 1 || !strings.Contains(said.String(), missing) {
+		t.Errorf("Main = %d, %q; want 1, naming the changelog", code, said.String())
+	}
+}
+
+func TestIDs_putCountsAnIDAlreadyGiven(t *testing.T) {
+	seen := ids{}
+	seen.Put([]byte("keys"))
+	if got := string(seen.Generate([]byte("Keys"), 0)); got != "keys-1" {
+		t.Errorf("Generate after Put = %q, want keys-1", got)
 	}
 }
