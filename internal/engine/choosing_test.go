@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"cairn/internal/trace"
 )
 
 func futureDay(days int) string { return time.Now().AddDate(0, 0, days).Format(time.DateOnly) }
@@ -187,5 +189,19 @@ func TestTaskSearch_givesTheFactsThatHelpChooseToo(t *testing.T) {
 	rows := rowsAsJSON(t, TaskSearch, doneOn(t, path, futureDay(2), TaskSearch, ask().with("named", "spec")))
 	if row := rowOn(t, rows, 1); row["blocks"] != float64(1) || row["age"] != float64(2) {
 		t.Errorf("the search row of task 1 blocks %v and is %v days old, want 1 and 2", row["blocks"], row["age"])
+	}
+}
+
+func TestTaskList_aChangeOtherThanItsColumnLeavesATasksAgeAlone(t *testing.T) {
+	e, path := engineOn(t)
+	add(t, e, "Write the spec")
+	later := time.Now().AddDate(0, 0, 2)
+	if err := e.history.Record(trace.Made(trace.Carried{Task: 1, Did: trace.Changed, Field: "title", Was: "Write the spec", Became: "Write the whole spec", At: later})); err != nil {
+		t.Fatal(err)
+	}
+	_ = e.Close()
+	rows := listedOn(t, path, futureDay(3), ask())
+	if got := rowOn(t, rows, 1)["age"]; got != float64(3) {
+		t.Errorf("task 1 is %v days in its column, want 3: only its title changed since", got)
 	}
 }

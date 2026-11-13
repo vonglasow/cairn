@@ -30,12 +30,10 @@ func (e *Engine) choosing(shown []task.Task) (map[int]Choosing, error) {
 	}
 	in := map[int][]int{}
 	for _, t := range board {
-		f := factsOf(t)
-		if f.State == domain.Done {
-			continue
-		}
-		for _, b := range f.Blockers {
-			in[b] = append(in[b], f.Number)
+		if f := factsOf(t); f.State != domain.Done {
+			for _, b := range f.Blockers {
+				in[b] = append(in[b], f.Number)
+			}
 		}
 	}
 	acts, err := e.since(time.Time{})
