@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # mutation.sh — run gremlins over the packages, and judge what it reports.
 #
-#   mutation.sh            the packages holding the rules: what check.yml runs on
-#                          every push and pull request
+#   mutation.sh            the packages holding the rules: what check.yml runs
+#                          every night
 #   mutation.sh PKG...     those packages instead, by hand
 #   mutation.sh --list     the packages holding the rules, as a JSON list
-#   mutation.sh --changed  only the lines changed since HEAD, in the packages they
-#                          are in, by hand
+#   mutation.sh --core     the packages holding the rules, one a line
+#   mutation.sh --changed [PKG...]
+#                          only the lines changed since MUTATION_SINCE (HEAD by
+#                          default), in the packages they are in, or in those of
+#                          them named: what check.yml judges a push or a pull
+#                          request on, over the packages holding the rules
 #
 # The judgement is made here and not by gremlins' own thresholds, for two
 # reasons read in its source (v0.6.0, internal/report/report.go):
@@ -47,11 +51,12 @@ logical=" internal/domain internal/engine internal/task internal/objective inter
 # The packages too long for one job, and in how many shards each is judged.
 # Measured on 2026-11-11: the engine's 2558 mutants, four workers, were still
 # running when check.yml's 90 minutes ran out, and were cancelled having
-# judged nothing anybody could read. A shard is named ./pkg@i/n and judges the
+# judged nothing anybody could read. In four shards, each still took 35 to 70
+# minutes on 2026-11-13: eight. A shard is named ./pkg@i/n and judges the
 # files that fall to it, every other file of the package excluded; the files
 # are dealt by size, the largest first, each to the shard holding the fewest
 # bytes so far, so the shards last about as long as one another.
-split=" internal/engine:4 "
+split=" internal/engine:8 "
 
 shardsOf() {
   local entry
@@ -97,6 +102,10 @@ if [ "${asked[0]:-}" = "--list" ]; then
   done | jq -R . | jq -sc .
   exit 0
 fi
+if [ "${asked[0]:-}" = "--core" ]; then
+  for pkg in $logical; do echo "./$pkg"; done
+  exit 0
+fi
 if [ "${asked[0]:-}" = "--shard" ]; then
   filesOf "${asked[1]:?usage: mutation.sh --shard ./pkg@i/n}"
   exit 0
@@ -122,8 +131,15 @@ packages() {
     # The directories holding a production file that changed. A test file has
     # no mutants of its own; a test weakened in it is what the full sweep is
     # there to catch.
+    # Narrowed to the packages named, when some are: the gate judges the
+    # core's lines, never a surface's.
+    local named=" ${asked[*]:-} "
     git diff --name-only "$since" -- '*.go' ':!*_test.go' | xargs -n1 dirname 2>/dev/null | sort -u |
-      while read -r dir; do [ -d "$dir" ] && echo "./$dir"; done
+      while read -r dir; do
+        [ -d "$dir" ] || continue
+        [ "$named" = "  " ] || [[ $named == *" ./$dir "* ]] || continue
+        echo "./$dir"
+      done
   elif [ "${#asked[@]}" -gt 0 ]; then
     printf '%s\n' "${asked[@]}"
   else

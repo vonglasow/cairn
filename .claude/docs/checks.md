@@ -28,9 +28,9 @@ here has to be remembered.
 in `.pre-commit-config.yaml`). Cheapest first: a missing import is reported in a second,
 rather than after semgrep and the suite have run for nothing.
 
-**Mutation is not a hook.** It is `check.yml`'s, on every push and pull
-request, and anybody's by hand with `make mutation` — see below why it left
-the machine's hooks.
+**Mutation is not a hook.** It is `check.yml`'s — the lines a push or a pull
+request changes, and every night the whole core — and anybody's by hand with
+`make mutation` — see below why it left the machine's hooks.
 
 There is no `go-unit-tests` hook. `cover-check` builds its profile from `go
 test ./...`, which fails the moment a test does, so a second hook running
@@ -142,18 +142,37 @@ on Linux — the coverage floor apart: the suite runs in four jobs side by side
 (`make coverage-part PART=gui|cli|tui|rest`), each crediting every package it
 reaches, and a last one makes them one profile (`make coverage-merge`) and
 judges the floors on it, so the suite lasts as long as the window's part
-rather than all of it end to end — the race detector, and the mutation sweep over the packages holding the rules: a job
-a package, side by side, four mutants at a time and an hour and a half at most — the engine took 57 minutes once its tests had grown to kill what its first sweep found — each
-report kept as the run's artifact. One job for them all, end to end, lasted as
+rather than all of it end to end — the race detector, and mutation, in two
+parts.
+
+**A push is judged on the lines it changes**: `make mutation-changed`, with
+`MUTATION_SINCE` the commit the push came after — the base of a pull request,
+or the branch's parent for a branch pushed for the first time — and `PKG` the
+packages holding the rules (`mutation.sh --core`), so a surface's line changed
+is not one. Still 100%, and still blocking; it lasts minutes, not hours.
+
+**The whole core is swept every night** (`schedule`, or by hand with
+`workflow_dispatch`), and nobody waits on it. It is what sees a test weakened
+without a line of the code it guarded changing, which no diff holds. Measured
+on 2026-11-13: in four shards, each of the engine's took 35 to 70 minutes, a
+mutant costing about twelve seconds of a worker — a build of the package and
+its whole suite, which gremlins cannot narrow to the tests reaching the line.
+A push waited over an hour on that; it waits on its own lines now. A tag,
+which a release runs `check.yml` on, is judged by neither: its commit was
+judged when it was pushed. The night's run is in a concurrency group of its
+own, so a push to main does not cancel it, and it runs only the sweep.
+
+The sweep is a job a package, side by side, four mutants at a time and an hour
+and a half at most, each report kept as the run's artifact. One job for them all, end to end, lasted as
 long as their sum and needed a three hour bound a run could still meet by
 accident; the list the jobs are made from is `scripts/mutation.sh --list`, the
 one the bare sweep walks. **A package too long for one job is judged in
 shards**: on 2026-11-11 the engine's 2558 mutants were still running when the
 90 minutes ran out, cancelled having said nothing. `split` in
-`scripts/mutation.sh` names it and how many shards (the engine, four); each
-shard, `./internal/engine@2/4`, is a job of its own judging the files dealt to
+`scripts/mutation.sh` names it and how many shards (the engine, eight); each
+shard, `./internal/engine@2/8`, is a job of its own judging the files dealt to
 it by size, every other one excluded (`--exclude-files`), so each lasts about
-as long as the others. `mutation.sh --shard ./internal/engine@2/4` says which
+as long as the others. `mutation.sh --shard ./internal/engine@2/8` says which
 files those are, and `test/mutation_shard_test.go` holds that every file falls
 to exactly one shard. A push that follows another cancels its run. A change Dependabot
 made was made on no machine, so no hook judged it before this.
@@ -267,8 +286,9 @@ what is on screen; their scenarios judge them. Estimated on 2026-11-08, one
 mutant at a time, a sweep over every package would take forty to fifty hours,
 four fifths of them the window's — each of its mutants rebuilds it and runs a
 suite of 35 seconds. The core, by hand, is two to four hours; check.yml judges
-the same on every push, side by side. So nothing waits on a sweep run here:
-`make mutation PKG=…` stays for one package somebody wants to look at.
+the lines each push changes, and the whole of it every night, side by side. So
+nothing waits on a sweep run here: `make mutation PKG=…` stays for one package
+somebody wants to look at.
 
 **A threshold is never lowered to get a commit through.** If a mutant survives,
 look at the mutant. When it is genuinely equivalent — a mutation that cannot
@@ -361,9 +381,10 @@ make tested-check   # fail if a package has no test file
 make harness-check  # fail if the binary reaches the test harness
 make windows-check  # fail if cairn or its tests no longer build for Windows
 make quiet-check    # fail if building cairn or the window's tests prints anything
-make mutation          # the packages holding the rules: what check.yml runs, two to four hours here
+make mutation          # the packages holding the rules: check.yml's night, two to four hours here
 make mutation PKG=./internal/engine  # one package, by hand
 make mutation-changed  # the lines changed since HEAD, by hand, before a push
+MUTATION_SINCE=origin/main make mutation-changed PKG="$(scripts/mutation.sh --core)"  # what check.yml judges a push on
 make check             # every hook, commit's and push's, on every file
 make release-check     # the same: what a release runs
 make linux             # build and run the suite on Linux, in a container
@@ -389,8 +410,9 @@ window's 2.5 to 3.5 GB apiece — with a cache that grew past 10 GB: the machine
 froze and its disk filled, and a check that freezes the machine gets skipped,
 which is worse than one run elsewhere. Linters cannot stand in for it: they
 judge the code, mutation judges whether the tests would notice a wrong line.
-So it runs where it hurts nobody: in `check.yml`, on every push and pull
-request, gating the packages holding the rules — domain, engine, task,
+So it runs where it hurts nobody: in `check.yml`, the lines of every push and
+pull request and the whole of them every night, gating the packages holding
+the rules — domain, engine, task,
 objective, store, trace, migration, config, build; the window, the terminal
 and the command line are judged by hand, a package named. Locally it runs one
 mutant at a time, in a cache of its own to each run, wiped when it ends.

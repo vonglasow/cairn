@@ -68,9 +68,10 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    ```
 
    `make linux` is the half of "macOS and Linux" no hook can check from a Mac.
-   **The mutation sweep is not run here**: it is `check.yml`'s, on every push
-   and pull request. A version is made from a commit whose `check` run, its
-   mutation job included, is green on GitHub.
+   **The mutation sweep is not run here**: it is `check.yml`'s, every night,
+   and a push is judged on the lines it changed. A version is made from a
+   commit whose `check` run is green on GitHub, and once the night's sweep of
+   `main` that followed it is green too.
 
 5. **Tags it**, an annotated tag named by the number, and only now: a version
    whose checks failed was never a version, and a tag made before them would
@@ -94,7 +95,8 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
 
 1. **Every check, on the commit the tag names.** The release calls
    `check.yml` itself (`workflow_call`) — the hooks on Linux, the race
-   detector, the mutation sweep — and builds nothing unless all of it passed.
+   detector — and builds nothing unless all of it passed. Mutation is not run
+   again on a tag: the lines were judged when pushed, the whole core at night.
    What step 3 above ran by hand, and the `check` run of the commit on `main`,
    are what the person looked at before tagging; this is what the release
    trusts, because it is the only run it can be sure was of that commit and

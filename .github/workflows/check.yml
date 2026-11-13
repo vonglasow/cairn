@@ -3,13 +3,19 @@
 # hook judged it; this is what does. Every hook prek has at commit, on every
 # file. On Linux, so the half of what cairn says it runs on that is not where
 # it is written is judged each time. And mutation, which no hook runs: it froze
-# the machine it ran on, so it runs here, over the packages holding the rules.
+# the machine it ran on, so it runs here — on the lines a push changes in the
+# packages holding the rules, and over the whole of them every night.
 name: check
 
 on:
   pull_request:
   push:
     branches: [main]
+  # The whole sweep, which no push waits on: the engine alone is over two
+  # hours of mutants — see .claude/docs/checks.md.
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
   # release.yml calls it on the commit a tag names, and releases nothing unless
   # every job here passed on that commit — see .claude/docs/release.md.
   workflow_call:
@@ -18,13 +24,15 @@ permissions:
   contents: read
 
 # A push that follows another takes its place: the sweep of a commit already
-# replaced says nothing anybody will act on.
+# replaced says nothing anybody will act on. The night's sweep is in a group of
+# its own, so a push to main does not cancel it.
 concurrency:
-  group: check-${{ github.ref }}
+  group: check-${{ github.ref }}-${{ github.event_name == 'schedule' }}
   cancel-in-progress: true
 
 jobs:
   prek:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     env:
       # Drawing off screen needs a GPU the runner does not have; the tests that
@@ -57,6 +65,7 @@ jobs:
   # so the profile is the one a single run writes, made in the time of its
   # longest part.
   coverage:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -105,6 +114,7 @@ jobs:
   # The suite with the race detector, which the commit's hooks no longer run:
   # with it the suite took more than ten minutes on a Mac — see cairn#266.
   race:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     env:
       CAIRN_WINDOWLESS: "1"
@@ -121,9 +131,51 @@ jobs:
       - name: the suite, with the race detector
         run: make race
 
+  # The lines a push or a pull request changes, in the packages holding the
+  # rules: what it is judged on, in minutes. A test weakened elsewhere changes
+  # no line of them; the night's sweep is what sees it. A tag, which a release
+  # runs this on, is judged by neither: its commit was judged when pushed.
+  mutation-changed:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CAIRN_WINDOWLESS: "1"
+      MUTATION_WORKERS: "4"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+      - name: the graphics headers the window is built against, and jq
+        run: scripts/linux-headers.sh jq
+      # What the branch held before: the base of a pull request, or the commit
+      # a push came after. A branch pushed for the first time, or a commit the
+      # history no longer holds, falls back to the commit's parent.
+      - id: since
+        env:
+          BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -n "$BEFORE" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "commit=$(git merge-base "$BEFORE" HEAD)" >>"$GITHUB_OUTPUT"
+          else
+            echo "commit=$(git rev-parse HEAD^)" >>"$GITHUB_OUTPUT"
+          fi
+      - name: mutation, the lines changed since ${{ steps.since.outputs.commit }} (gremlins)
+        env:
+          MUTATION_SINCE: ${{ steps.since.outputs.commit }}
+        run: make mutation-changed PKG="$(scripts/mutation.sh --core | tr '\n' ' ')"
+
   # The packages holding the rules, as scripts/mutation.sh lists them: one job
-  # each, side by side, so the sweep lasts as long as its longest package.
+  # each, side by side, so the sweep lasts as long as its longest package. Every
+  # night, or by hand.
   gate:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     outputs:
       packages: ${{ steps.list.outputs.packages }}
