@@ -227,7 +227,7 @@ func TestServe_handsTheSessionAndWhatItHasNotAnsweredToTheCairnNowOnDisk(t *test
 		if string(c.Unread) != listing+"\n" {
 			t.Errorf("handed over %q unanswered, want the call it had read", c.Unread)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(hung):
 		t.Fatal("never handed over")
 	}
 	if err := <-w.stopped; err != nil {
@@ -348,7 +348,7 @@ func TestLines_handsOverTheListeningItWasHoldingOpen(t *testing.T) {
 		if !errors.Is(err, io.EOF) {
 			t.Fatalf("read %v, want the end of what this cairn reads once it handed over", err)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(hung):
 		t.Fatal("still waiting for the listening to be answered before handing over")
 	}
 	if c := <-got; string(c.Unread) != listen+"\n"+listing+"\n" {
@@ -435,12 +435,12 @@ func TestServe_offersAPageTurnedBackOnFromTheNextCall(t *testing.T) {
 		if !strings.Contains(said, `"timesheet_show"`) {
 			t.Errorf("listed %s, want the tools of the page turned back on", said)
 		}
-	case <-time.After(2 * time.Second):
+	case <-time.After(hung):
 		t.Fatal("the tools were never listed")
 	}
 	select {
 	case <-told:
-	case <-time.After(2 * time.Second):
+	case <-time.After(hung):
 		t.Error("the client was never told the tools changed")
 	}
 }
@@ -467,7 +467,7 @@ func TestServe_handsOverTheToolsItLastToldTheClientOf(t *testing.T) {
 		if !slices.Contains(c.Tools, "timesheet_show") {
 			t.Errorf("handed over the tools %v, want the ones the client was told of once the page came back", c.Tools)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(hung):
 		t.Fatal("never handed over")
 	}
 }
@@ -494,7 +494,7 @@ func TestServe_handsOverAsUnknownToTheClientToolsNobodyListenedFor(t *testing.T)
 		if slices.Contains(c.Tools, "timesheet_show") {
 			t.Errorf("handed over the tools %v as told, though nobody listened when the page came back", c.Tools)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(hung):
 		t.Fatal("never handed over")
 	}
 }

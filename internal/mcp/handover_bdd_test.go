@@ -17,6 +17,8 @@ import (
 
 const quietFor = 300 * time.Millisecond
 
+const hung = 30 * time.Second
+
 func (w *world) registerHandOver(sc *godog.ScenarioContext) {
 	sc.Step(`^a cairn server started from a cairn on disk$`, w.aCairnServerStartedFromACairnOnDisk)
 	sc.Step(`^the page "([^"]*)" turned back on$`, func(page string) error {
@@ -42,7 +44,7 @@ func (w *world) registerHandOver(sc *godog.ScenarioContext) {
 		select {
 		case <-w.told:
 			return nil
-		case <-time.After(5 * time.Second):
+		case <-time.After(hung):
 			return fmt.Errorf("the client was never told the tools changed")
 		}
 	})

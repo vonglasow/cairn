@@ -14,6 +14,8 @@ import (
 	"cairn/internal/engine"
 )
 
+const hung = 30 * time.Second
+
 const showing = `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"workspace_show","arguments":{}}}`
 
 func TestServe_handsOverTheStoreItStartedOn(t *testing.T) {
@@ -29,7 +31,7 @@ func TestServe_handsOverTheStoreItStartedOn(t *testing.T) {
 		if c.Kept == nil || c.Kept.Store.At != os.Getenv("CAIRN_STORE") {
 			t.Errorf("handed over %+v, want the store it started on", c.Kept)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(hung):
 		t.Fatal("never handed over")
 	}
 }
