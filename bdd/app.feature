@@ -18,6 +18,12 @@ Feature: cairn as an application
       And the application carries cairn's icon and its version
       And the application was signed for this machine
 
+    @app-icon-drawn-to-the-edge
+    Scenario: the application's icon is drawn to its edges, for macOS to round
+      When I run `cairn app install`
+      Then it succeeds
+      And every image of the application's icon is opaque to its corners
+
     @app-installed-again
     Scenario: installing again replaces what was there
       Given I ran `cairn app install`

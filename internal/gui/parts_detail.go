@@ -19,6 +19,27 @@ func AskingOver(width, height, lines int) Box {
 
 const askingWide = 560
 
+const aboutLogoSide = 3 * apart
+
+// AboutLogo is where About cairn shows the logo: at the left of its lines, as tall as three of them; nothing on any other screen.
+func (w Window) AboutLogo() Box {
+	if w.screen != OnAsking || w.question != aboutCairn {
+		return Box{}
+	}
+	box := w.QuestionBox()
+	return Box{X: box.X + padding, Y: FirstRow(box), W: aboutLogoSide, H: aboutLogoSide}
+}
+
+// SaidAt is where line i of a question is written: under its heading, one apart from the next, beside the logo when About cairn shows it.
+func (w Window) SaidAt(i int) Box {
+	box := w.QuestionBox()
+	row := RowIn(box, FirstRow(box)+i*apart, lineHigh)
+	if logo := w.AboutLogo(); logo.W > 0 {
+		row.X, row.W = row.X+logo.W+padding, row.W-logo.W-padding
+	}
+	return row
+}
+
 // FirstRow is where the first line inside a panel begins: under its heading.
 func FirstRow(box Box) int {
 	ruled := Ruled(box)

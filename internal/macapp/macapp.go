@@ -102,7 +102,7 @@ var icnsSizes = []struct {
 func icns() ([]byte, error) {
 	var entries bytes.Buffer
 	for _, s := range icnsSizes {
-		png, err := logo.At(s.size)
+		png, err := logo.Edge(s.size)
 		if err != nil {
 			return nil, err
 		}

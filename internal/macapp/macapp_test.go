@@ -1,8 +1,10 @@
 package macapp
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
+	"image/png"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -153,5 +155,28 @@ func TestInstall_saysWhatItCouldNotWrite(t *testing.T) {
 	}
 	if _, err := Install(home, "/usr/local/bin/cairn", "v1"); err == nil {
 		t.Error("an application was written under a file")
+	}
+}
+
+func TestInstall_drawsTheIconToItsCornersForMacOSToRound(t *testing.T) {
+	home, _ := installedIn(t)
+	app, err := Install(home, "/usr/local/bin/cairn", "v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	icon, err := os.ReadFile(filepath.Join(app, "Contents", "Resources", "cairn.icns"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for at := 8; at < len(icon); {
+		size := int(binary.BigEndian.Uint32(icon[at+4 : at+8]))
+		drawn, err := png.Decode(bytes.NewReader(icon[at+8 : at+size]))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, _, _, alpha := drawn.At(0, 0).RGBA(); alpha != 0xffff {
+			t.Errorf("%s: its corner is not drawn", icon[at:at+4])
+		}
+		at += size
 	}
 }

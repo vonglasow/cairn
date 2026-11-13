@@ -47,3 +47,22 @@ func TestAt_isTheStencilCardOnTheWindowsGround(t *testing.T) {
 		}
 	}
 }
+
+func TestEdge_isTheLogoDrawnToItsCornersAtEverySizeAMacAsks(t *testing.T) {
+	for _, size := range []int{16, 32, 64, 128, 256, 512, 1024} {
+		drawn, err := Edge(size)
+		if err != nil {
+			t.Fatalf("%d: %v", size, err)
+		}
+		read, err := png.Decode(bytes.NewReader(drawn))
+		if err != nil || read.Bounds().Dx() != size || read.Bounds().Dy() != size {
+			t.Fatalf("%d: %v, %v", size, read.Bounds(), err)
+		}
+		if got := color.NRGBAModel.Convert(read.At(0, 0)); got != (color.NRGBA{R: 0x0C, G: 0x0D, B: 0x0F, A: 255}) {
+			t.Errorf("%d: the corner is %v, want the window's ground", size, got)
+		}
+	}
+	if _, err := Edge(48); err == nil {
+		t.Error("a size it was not drawn at was given")
+	}
+}

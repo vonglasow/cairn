@@ -1,8 +1,12 @@
 package cli
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -153,6 +157,32 @@ func (w *world) registerApp(sc *godog.ScenarioContext) {
 		icon, err := os.ReadFile(filepath.Join(installed(), "Contents", "Resources", "cairn.icns"))
 		if err != nil || !strings.HasPrefix(string(icon), "icns") {
 			return fmt.Errorf("no icns icon: %w", err)
+		}
+		return nil
+	})
+	sc.Step(`^every image of the application's icon is opaque to its corners$`, func() error {
+		icon, err := os.ReadFile(filepath.Join(installed(), "Contents", "Resources", "cairn.icns"))
+		if err != nil {
+			return err
+		}
+		images := 0
+		for at := 8; at+8 <= len(icon); {
+			length := int(binary.BigEndian.Uint32(icon[at+4 : at+8]))
+			drawn, err := png.Decode(bytes.NewReader(icon[at+8 : at+length]))
+			if err != nil {
+				return fmt.Errorf("%s: %w", icon[at:at+4], err)
+			}
+			b := drawn.Bounds()
+			for _, corner := range []image.Point{b.Min, {b.Max.X - 1, b.Min.Y}, {b.Min.X, b.Max.Y - 1}, b.Max.Sub(image.Pt(1, 1))} {
+				if _, _, _, alpha := drawn.At(corner.X, corner.Y).RGBA(); alpha != 0xffff {
+					return fmt.Errorf("%s: the corner %v is not opaque", icon[at:at+4], corner)
+				}
+			}
+			images++
+			at += length
+		}
+		if images == 0 {
+			return fmt.Errorf("the icon holds no image")
 		}
 		return nil
 	})

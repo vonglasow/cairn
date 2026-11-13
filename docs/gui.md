@@ -136,7 +136,7 @@ where it was written, which cairn it opens, and where to open it from.
 
 **On a Mac** it writes `cairn.app` in `~/Applications` (`internal/macapp`,
 `@app-installed`): an `Info.plist`, the icon made of the logo's PNGs at every
-size macOS reads, and a launcher of two lines that runs the installed cairn's
+size macOS reads — drawn to their corners (below) — and a launcher of two lines that runs the installed cairn's
 window. It is signed for this machine alone (`codesign --sign -`), so macOS
 opens it without a developer's certificate; handing it to somebody else would
 need Apple's, and is not done. Installing again replaces the application cairn
@@ -1734,6 +1734,17 @@ is what would make them crisp, and none is drawn yet.
 beside it, 16 to 1024 pixels, and the Windows resource are drawn from it by
 `scripts/logo.sh`, so a build needs no drawing tool.
 
+**The Mac application's icon is the card drawn to its corners**
+(`cairn-edge-*.png`, `logo.Edge`, `@app-icon-drawn-to-the-edge`). macOS 26
+rounds an application's icon itself, and an icon already rounded — the
+squircle with its corners clear — is not trusted: it is shrunk and set in a
+grey frame of its own, which is what `cairn app install` showed (#295). Drawn
+to the corners, the same card is rounded by macOS like any other application's,
+the mark kept at the same share of it. The script draws it from the one SVG,
+the card's outline swapped for the whole square; nothing else takes it: the
+window's Dock icon, handed at run time, and every other system keep the
+rounded card, which no system rounds again.
+
 Each system takes it its own way, and the window is known to all three as
 `cairn` (`logo.go`). Windows reads it from the `.exe`, where the resource beside
 `cmd/cairn` puts it at every size; Gio gives the window the icon the program
@@ -1979,7 +1990,9 @@ lines as one menu (`MenuButton`). Help ends on About cairn, which says which
 build this is — its version, the commit and its date, what built it for which
 system — the lines `cairn --version` prints, read from the same stamps
 (`internal/build`), and where cairn is kept, its GitHub page (`build.Home`), in a box with only Close
-(`@gui-the-version-is-shown-from-the-menu`).
+(`@gui-the-version-is-shown-from-the-menu`). The logo stands at the left of
+those lines, three of them tall (`AboutLogo`, `SaidAt`), drawn from its
+256-pixel PNG.
 
 **A line of the menu bar is offered when it can be done now.** The bar was
 one fixed list, every line there whatever was in sight, so Focus stood over

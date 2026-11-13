@@ -1,9 +1,11 @@
 package gui
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
+	"image/png"
 	"math"
 	"slices"
 	"strconv"
@@ -22,6 +24,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"cairn/internal/engine"
+	cairnlogo "cairn/internal/logo"
 )
 
 const (
@@ -127,6 +130,7 @@ func Draw(k Kit, w Window) {
 	if w.Screen() == OnAsking {
 		Veil{}.Draw(panel, Box{W: w.width, H: w.height})
 		drawSaid(panel.inside("veil"), w, w.Asks(), w.QuestionBox())
+		drawLogo(panel.inside("veil"), w.AboutLogo())
 	}
 	if w.Screen() == OnChoosing {
 		drawChoosing(popover, w)
@@ -678,18 +682,35 @@ func drawChoosing(k Kit, w Window) {
 func drawSaid(k Kit, w Window, said []Said, box Box) {
 	Panel{Head: Heads(w)}.Draw(k, box)
 	k = k.inside("panel")
-	at := FirstRow(box)
-	for _, line := range said {
-		row := RowIn(box, at, lineHigh)
+	for i, line := range said {
+		row := w.SaidAt(i)
 		for _, mark := range w.CopyMarks() {
 			if mark.Said == line.Means {
 				row = Box{X: row.X + copyRoom, Y: row.Y, W: row.W - copyRoom, H: row.H}
 			}
 		}
 		say(k.gtx, k.th, k.skin.Colour.Ink.Low, row, line.Means, reads)
-		at += apart
 	}
 	drawPanelOffers(k, box, w)
+}
+
+var logoOp = sync.OnceValue(func() paint.ImageOp {
+	raw, _ := cairnlogo.At(256)
+	drawn, _ := png.Decode(bytes.NewReader(raw))
+	return paint.NewImageOp(drawn)
+})
+
+func drawLogo(k Kit, at Box) {
+	if at.W == 0 {
+		return
+	}
+	k.put("logo", at)
+	drawn := logoOp()
+	scale := float32(at.W) / float32(drawn.Size().X)
+	placed := op.Affine(f32.AffineId().Scale(f32.Pt(0, 0), f32.Pt(scale, scale)).Offset(f32.Pt(float32(at.X), float32(at.Y)))).Push(k.gtx.Ops)
+	drawn.Add(k.gtx.Ops)
+	paint.PaintOp{}.Add(k.gtx.Ops)
+	placed.Pop()
 }
 
 func drawHelp(k Kit, w Window) {

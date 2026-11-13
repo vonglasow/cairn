@@ -63,6 +63,29 @@ func TestTheAboutBoxCopiesWhereCairnIsKept(t *testing.T) {
 	}
 }
 
+func TestTheAboutBoxShowsTheLogoBesideWhatItSays(t *testing.T) {
+	w := holding(newFake())
+	if w.AboutLogo() != (Box{}) {
+		t.Fatalf("the board shows the logo at %+v", w.AboutLogo())
+	}
+	plain := w.SaidAt(0)
+	w.screen, w.question = OnAsking, aboutCairn
+	logo, box := w.AboutLogo(), w.QuestionBox()
+	if logo.W == 0 || logo.W != logo.H || logo.X != box.X+padding || logo.Y != FirstRow(box) || logo.Y+logo.H > box.Y+box.H {
+		t.Fatalf("the logo is at %+v in the question at %+v", logo, box)
+	}
+	first := w.SaidAt(0)
+	if third := w.SaidAt(2); third.Y != FirstRow(box)+2*apart || third.X != first.X {
+		t.Errorf("the third line is at %+v, want two apart under the first at %+v", third, first)
+	}
+	if first.X != logo.X+logo.W+padding || first.X+first.W != box.X+box.W-padding || first.Y != FirstRow(box) || plain.X != w.QuestionBox().X+padding {
+		t.Errorf("the first line is at %+v beside the logo at %+v", first, logo)
+	}
+	if mark := w.CopyMarks()[0].At; mark.X < logo.X+logo.W || mark != markBefore(w.SaidAt(len(w.Asks())-1), "").At {
+		t.Errorf("the copy mark %+v is not on the last line beside the logo", mark)
+	}
+}
+
 func TestAnOpenTasksContextIsCopiedByItsMark(t *testing.T) {
 	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Context: "/h/notes/1"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("e")

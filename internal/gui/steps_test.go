@@ -905,6 +905,18 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the question says %+v, not %q", w.w.Asks(), want)
 	})
+	sc.Then(`^the question shows cairn's logo beside what it says$`, func() error {
+		logo, box := w.w.AboutLogo(), w.w.QuestionBox()
+		if logo.W == 0 || logo.W != logo.H || !box.In(Point{X: logo.X, Y: logo.Y}) || !box.In(Point{X: logo.X + logo.W - 1, Y: logo.Y + logo.H - 1}) {
+			return fmt.Errorf("the logo is at %+v, not a square inside the question at %+v", logo, box)
+		}
+		for i := range w.w.Asks() {
+			if row := w.w.SaidAt(i); row.X < logo.X+logo.W {
+				return fmt.Errorf("line %d at %+v runs over the logo at %+v", i, row, logo)
+			}
+		}
+		return nil
+	})
 	sc.Then(`^the question says nothing of how to answer it$`, func() error {
 		for _, line := range w.w.Asks() {
 			if strings.Contains(line.Means, "agree") || strings.Contains(line.Means, "Cancel") {
