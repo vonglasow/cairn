@@ -271,19 +271,6 @@ as a gate that did not run, never read as a pass. And the baseline test run is n
 (`-count=1`): read from the cache it takes milliseconds, the budget it sets
 with it, and every mutant times out.
 
-**A hang that allocates is ended before it takes the machine.** A mutant that
-turns `&&` into `||` in a loop that appends — the catch-up of a series,
-`series.go`'s `for ok && day.Before(today) && s.room(…)` — does not only run
-out its budget: it appends without end, for the three minutes of the budget
-and the nine of the retry. On 2026-11-13 two of them ran this Mac out of
-memory, and on GitHub engine shard 1/4 lost its runner twice, "starved for
-CPU or memory". The engine's tests run under `test.Guarded` (its `TestMain`),
-which ends the process the moment the heap passes 1 GiB — the whole suite
-peaks at 46 MB — so such a mutant fails its tests and is counted KILLED: in
-24 s, measured, against a hang of more than ten minutes. A limit rather than a
-rewrite of the loop: no test can fail on a loop every real rule already
-bounds, and the guard holds for the next one too.
-
 **Two mutators are on for the core only.** `invert-logical` (`&&` for `||`) and
 `invert-loopctrl` (`continue` for `break`) are off in `.gremlins.yaml` and
 turned on by `scripts/mutation.sh` for the packages where the rules are —
