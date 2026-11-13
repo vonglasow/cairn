@@ -419,12 +419,15 @@ func TestServe_offersAPageTurnedBackOnFromTheNextCall(t *testing.T) {
 	w.answerTo(1)
 	pagesSaid(t, s, "[pages]\ntime = true\n")
 	w.say(`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`)
-	listed, told := make(chan string, 1), make(chan struct{})
+	listed, told := make(chan string, 1), make(chan struct{}, 1)
 	go func() {
 		for w.out.Scan() {
 			switch said := w.out.Text(); {
 			case strings.Contains(said, listChanged):
-				close(told)
+				select {
+				case told <- struct{}{}:
+				default:
+				}
 			case strings.Contains(said, `"id":2`):
 				listed <- said
 			}
