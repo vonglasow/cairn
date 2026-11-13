@@ -19,6 +19,8 @@ const quietFor = 300 * time.Millisecond
 
 const hung = 30 * time.Second
 
+var beforeSubscriptions = &sdk.ClientSessionOptions{ProtocolVersion: "2025-11-25"}
+
 func (w *world) registerHandOver(sc *godog.ScenarioContext) {
 	sc.Step(`^a cairn server started from a cairn on disk$`, w.aCairnServerStartedFromACairnOnDisk)
 	sc.Step(`^the page "([^"]*)" turned back on$`, func(page string) error {
@@ -73,7 +75,7 @@ func (w *world) aCairnServerStartedFromACairnOnDisk() error {
 	cmd.Stderr = io.Discard
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	session, err := client.Connect(ctx, &sdk.CommandTransport{Command: cmd}, nil)
+	session, err := client.Connect(ctx, &sdk.CommandTransport{Command: cmd}, beforeSubscriptions)
 	if err != nil {
 		return err
 	}

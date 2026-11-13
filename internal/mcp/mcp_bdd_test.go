@@ -82,7 +82,7 @@ func (w *world) startedServe(extra ...string) error {
 	}()
 
 	connecting, connected := context.WithTimeout(ctx, 5*time.Second)
-	session, err := w.client().Connect(connecting, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, nil)
+	session, err := w.client().Connect(connecting, &sdk.IOTransport{Reader: writtenByServer, Writer: writtenByClient}, beforeSubscriptions)
 	connected()
 	if err != nil {
 		cancel()
