@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"image"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -71,13 +72,16 @@ func TestInstall_writesAnIconMacOSReads(t *testing.T) {
 	seen := map[string]bool{}
 	for at := 8; at < len(icon); {
 		kind, size := string(icon[at:at+4]), int(binary.BigEndian.Uint32(icon[at+4:at+8]))
-		if size < 8 || at+size > len(icon) || string(icon[at+9:at+12]) != "PNG" {
-			t.Fatalf("entry %q at %d is %d bytes, not a PNG", kind, at, size)
+		if size < 8 || at+size > len(icon) || string(icon[at+9:at+12]) != "PNG" && string(icon[at+8:at+12]) != "ARGB" {
+			t.Fatalf("entry %q at %d is %d bytes, neither a PNG nor ARGB", kind, at, size)
+		}
+		if argb := string(icon[at+8:at+12]) == "ARGB"; argb != (kind == "ic04" || kind == "ic05") {
+			t.Errorf("entry %q is ARGB %v: only ic04 and ic05 are, as iconutil writes them", kind, argb)
 		}
 		seen[kind] = true
 		at += size
 	}
-	for _, kind := range []string{"icp4", "icp5", "icp6", "ic07", "ic08", "ic09", "ic10"} {
+	for _, kind := range []string{"ic04", "ic05", "ic11", "ic12", "ic07", "ic13", "ic08", "ic14", "ic09", "ic10"} {
 		if !seen[kind] {
 			t.Errorf("no %s entry: %v", kind, seen)
 		}
@@ -170,6 +174,13 @@ func TestInstall_drawsTheIconToItsCornersForMacOSToRound(t *testing.T) {
 	}
 	for at := 8; at < len(icon); {
 		size := int(binary.BigEndian.Uint32(icon[at+4 : at+8]))
+		if string(icon[at+8:at+12]) == "ARGB" {
+			if icon[at+13] != 0xff {
+				t.Errorf("%s: its corner is not drawn", icon[at:at+4])
+			}
+			at += size
+			continue
+		}
 		drawn, err := png.Decode(bytes.NewReader(icon[at+8 : at+size]))
 		if err != nil {
 			t.Fatal(err)
@@ -178,5 +189,36 @@ func TestInstall_drawsTheIconToItsCornersForMacOSToRound(t *testing.T) {
 			t.Errorf("%s: its corner is not drawn", icon[at:at+4])
 		}
 		at += size
+	}
+}
+
+func TestPacked_writesARunOfThreeOrMoreAsOneAndTheRestAsItIs(t *testing.T) {
+	for _, c := range []struct{ plane, want []byte }{
+		{[]byte{5, 5, 5, 5, 1, 2}, []byte{0x81, 5, 0x01, 1, 2}},
+		{[]byte{7, 7, 7}, []byte{0x80, 7}},
+		{[]byte{1, 2, 2, 3}, []byte{0x03, 1, 2, 2, 3}},
+		{bytes.Repeat([]byte{9}, 131), []byte{0xff, 9, 0x00, 9}},
+		{bytes.Repeat([]byte{1, 2}, 65), append([]byte{0x7f}, append(bytes.Repeat([]byte{1, 2}, 64), 0x01, 1, 2)...)},
+	} {
+		if got := packed(c.plane); !bytes.Equal(got, c.want) {
+			t.Errorf("packed(%v) = %v, want %v", c.plane, got, c.want)
+		}
+	}
+}
+
+func TestARGB_isTheAlphaThenTheRedTheGreenAndTheBlueOfEveryPixelPacked(t *testing.T) {
+	drawn := image.NewNRGBA(image.Rect(0, 0, 2, 2))
+	copy(drawn.Pix, []byte{1, 5, 9, 255, 2, 6, 9, 255, 3, 7, 9, 255, 4, 8, 9, 255})
+	var said bytes.Buffer
+	if err := png.Encode(&said, drawn); err != nil {
+		t.Fatal(err)
+	}
+	got, err := argb(said.Bytes())
+	want := []byte{'A', 'R', 'G', 'B', 0x81, 255, 0x03, 1, 2, 3, 4, 0x03, 5, 6, 7, 8, 0x81, 9}
+	if err != nil || !bytes.Equal(got, want) {
+		t.Errorf("argb = %v, %v; want %v", got, err, want)
+	}
+	if _, err := argb([]byte("not a picture")); err == nil {
+		t.Error("argb read what is not a PNG")
 	}
 }

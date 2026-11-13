@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"image"
+	"image/color"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 
 	"cairn/internal/build"
 	"cairn/internal/linuxapp"
+	"cairn/internal/logo"
 	"cairn/internal/macapp"
 	"cairn/test"
 )
@@ -161,28 +163,65 @@ func (w *world) registerApp(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^every image of the application's icon is opaque to its corners$`, func() error {
-		icon, err := os.ReadFile(filepath.Join(installed(), "Contents", "Resources", "cairn.icns"))
+		images, err := iconImages(filepath.Join(installed(), "Contents", "Resources", "cairn.icns"))
 		if err != nil {
 			return err
 		}
-		images := 0
-		for at := 8; at+8 <= len(icon); {
-			length := int(binary.BigEndian.Uint32(icon[at+4 : at+8]))
-			drawn, err := png.Decode(bytes.NewReader(icon[at+8 : at+length]))
-			if err != nil {
-				return fmt.Errorf("%s: %w", icon[at:at+4], err)
-			}
+		if len(images) == 0 {
+			return fmt.Errorf("the icon holds no image")
+		}
+		for kind, drawn := range images {
 			b := drawn.Bounds()
 			for _, corner := range []image.Point{b.Min, {b.Max.X - 1, b.Min.Y}, {b.Min.X, b.Max.Y - 1}, b.Max.Sub(image.Pt(1, 1))} {
 				if _, _, _, alpha := drawn.At(corner.X, corner.Y).RGBA(); alpha != 0xffff {
-					return fmt.Errorf("%s: the corner %v is not opaque", icon[at:at+4], corner)
+					return fmt.Errorf("%s: the corner %v is not opaque", kind, corner)
 				}
 			}
-			images++
-			at += length
 		}
-		if images == 0 {
-			return fmt.Errorf("the icon holds no image")
+		return nil
+	})
+	sc.Step(`^the application's icon holds an image for every size macOS draws an application at, from 16 points to 512, at one and two pixels a point$`, func() error {
+		images, err := iconImages(filepath.Join(installed(), "Contents", "Resources", "cairn.icns"))
+		if err != nil {
+			return err
+		}
+		for kind := range macOSKinds {
+			if _, ok := images[kind]; !ok {
+				return fmt.Errorf("the icon has no %s, the %d pixels macOS reads from it", kind, macOSKinds[kind])
+			}
+		}
+		for kind := range images {
+			if _, ok := macOSKinds[kind]; !ok {
+				return fmt.Errorf("the icon holds %s, which macOS does not read as an image of an application", kind)
+			}
+		}
+		return nil
+	})
+	sc.Step(`^each image of the application's icon is the logo at the size its kind says$`, func() error {
+		images, err := iconImages(filepath.Join(installed(), "Contents", "Resources", "cairn.icns"))
+		if err != nil {
+			return err
+		}
+		for kind, drawn := range images {
+			side := macOSKinds[kind]
+			raw, err := logo.Edge(side)
+			if err != nil {
+				return fmt.Errorf("%s: %w", kind, err)
+			}
+			want, err := png.Decode(bytes.NewReader(raw))
+			if err != nil {
+				return err
+			}
+			if drawn.Bounds() != want.Bounds() {
+				return fmt.Errorf("%s is %v, want the logo's %d pixels", kind, drawn.Bounds(), side)
+			}
+			for y := range side {
+				for x := range side {
+					if !sameColour(drawn.At(x, y), want.At(x, y)) {
+						return fmt.Errorf("%s at %d,%d is %v, the logo is %v there", kind, x, y, drawn.At(x, y), want.At(x, y))
+					}
+				}
+			}
 		}
 		return nil
 	})
@@ -195,4 +234,65 @@ func (w *world) registerApp(sc *godog.ScenarioContext) {
 	sc.Step(`^it says an application is installed on a Mac or a Linux desktop only$`, func() error {
 		return test.WantContains(w.Out.Stderr, "only on a Mac or a Linux desktop", "the refusal")
 	})
+}
+
+var macOSKinds = map[string]int{
+	"ic04": 16, "ic05": 32, "ic11": 32, "ic12": 64, "ic07": 128,
+	"ic13": 256, "ic08": 256, "ic14": 512, "ic09": 512, "ic10": 1024,
+}
+
+func sameColour(a, b color.Color) bool {
+	ar, ag, ab, aa := a.RGBA()
+	br, bg, bb, ba := b.RGBA()
+	return ar>>8 == br>>8 && ag>>8 == bg>>8 && ab>>8 == bb>>8 && aa>>8 == ba>>8
+}
+
+func iconImages(path string) (map[string]image.Image, error) {
+	icon, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	images := map[string]image.Image{}
+	for at := 8; at+8 <= len(icon); {
+		kind, length := string(icon[at:at+4]), int(binary.BigEndian.Uint32(icon[at+4:at+8]))
+		data := icon[at+8 : at+length]
+		var drawn image.Image
+		if bytes.HasPrefix(data, []byte("ARGB")) {
+			drawn, err = unpackedARGB(data[4:], macOSKinds[kind])
+		} else {
+			drawn, err = png.Decode(bytes.NewReader(data))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", kind, err)
+		}
+		images[kind] = drawn
+		at += length
+	}
+	return images, nil
+}
+
+func unpackedARGB(packed []byte, side int) (image.Image, error) {
+	planes := make([]byte, 0, 4*side*side)
+	for i := 0; i < len(packed); {
+		c := int(packed[i])
+		switch {
+		case c >= 0x80 && i+1 < len(packed):
+			planes = append(planes, bytes.Repeat(packed[i+1:i+2], c-125)...)
+			i += 2
+		case c < 0x80 && i+1+c+1 <= len(packed):
+			planes = append(planes, packed[i+1:i+2+c]...)
+			i += c + 2
+		default:
+			return nil, fmt.Errorf("the packed planes end inside a run")
+		}
+	}
+	if len(planes) != 4*side*side {
+		return nil, fmt.Errorf("the planes unpack to %d bytes, want %d", len(planes), 4*side*side)
+	}
+	drawn := image.NewNRGBA(image.Rect(0, 0, side, side))
+	n := side * side
+	for p := range n {
+		drawn.Pix[4*p], drawn.Pix[4*p+1], drawn.Pix[4*p+2], drawn.Pix[4*p+3] = planes[n+p], planes[2*n+p], planes[3*n+p], planes[p]
+	}
+	return drawn, nil
 }

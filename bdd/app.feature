@@ -24,6 +24,13 @@ Feature: cairn as an application
       Then it succeeds
       And every image of the application's icon is opaque to its corners
 
+    @app-icon-read-at-every-size
+    Scenario: the application's icon reads as the logo at every size macOS draws it, however small
+      When I run `cairn app install`
+      Then it succeeds
+      And the application's icon holds an image for every size macOS draws an application at, from 16 points to 512, at one and two pixels a point
+      And each image of the application's icon is the logo at the size its kind says
+
     @app-installed-again
     Scenario: installing again replaces what was there
       Given I ran `cairn app install`

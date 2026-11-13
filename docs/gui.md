@@ -1745,6 +1745,14 @@ the card's outline swapped for the whole square; nothing else takes it: the
 window's Dock icon, handed at run time, and every other system keep the
 rounded card, which no system rounds again.
 
+**Its `.icns` holds what `iconutil` itself writes** (`@app-icon-read-at-every-size`):
+16 and 32 pixels as ARGB planes, run-length packed, under `ic04` and `ic05`, and
+every other size as a PNG under `ic07` to `ic14` — ten images, from 16 points to
+512 at one and two pixels a point. It held them under `icp4`, `icp5` and
+`icp6` before, whose PNG macOS does not read: the Applications folder, which
+draws the icon large, showed the logo, and Raycast or a list, which draw it
+small, showed stripes (#301).
+
 Each system takes it its own way, and the window is known to all three as
 `cairn` (`logo.go`). Windows reads it from the `.exe`, where the resource beside
 `cmd/cairn` puts it at every size; Gio gives the window the icon the program

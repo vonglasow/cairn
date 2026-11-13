@@ -6,6 +6,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"image"
+	"image/draw"
+	"image/png"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -97,22 +100,77 @@ const plist = `<?xml version="1.0" encoding="UTF-8"?>
 var icnsSizes = []struct {
 	kind string
 	size int
-}{{"icp4", 16}, {"icp5", 32}, {"icp6", 64}, {"ic07", 128}, {"ic08", 256}, {"ic09", 512}, {"ic10", 1024}}
+	argb bool
+}{
+	{"ic04", 16, true}, {"ic05", 32, true}, {"ic11", 32, false}, {"ic12", 64, false}, {"ic07", 128, false},
+	{"ic13", 256, false}, {"ic08", 256, false}, {"ic14", 512, false}, {"ic09", 512, false}, {"ic10", 1024, false},
+}
 
 func icns() ([]byte, error) {
 	var entries bytes.Buffer
 	for _, s := range icnsSizes {
-		png, err := logo.Edge(s.size)
+		drawn, err := logo.Edge(s.size)
 		if err != nil {
 			return nil, err
 		}
+		if s.argb {
+			if drawn, err = argb(drawn); err != nil {
+				return nil, err
+			}
+		}
 		entries.WriteString(s.kind)
-		_ = binary.Write(&entries, binary.BigEndian, uint32(8+len(png)))
-		entries.Write(png)
+		_ = binary.Write(&entries, binary.BigEndian, uint32(8+len(drawn)))
+		entries.Write(drawn)
 	}
 	var out bytes.Buffer
 	out.WriteString("icns")
 	_ = binary.Write(&out, binary.BigEndian, uint32(8+entries.Len()))
 	out.Write(entries.Bytes())
 	return out.Bytes(), nil
+}
+
+func argb(drawn []byte) ([]byte, error) {
+	decoded, err := png.Decode(bytes.NewReader(drawn))
+	if err != nil {
+		return nil, err
+	}
+	b := decoded.Bounds()
+	pixels := image.NewNRGBA(b)
+	draw.Draw(pixels, b, decoded, b.Min, draw.Src)
+	n := b.Dx() * b.Dy()
+	out := []byte("ARGB")
+	for _, channel := range []int{3, 0, 1, 2} {
+		plane := make([]byte, n)
+		for p := range n {
+			plane[p] = pixels.Pix[4*p+channel]
+		}
+		out = append(out, packed(plane)...)
+	}
+	return out, nil
+}
+
+func packed(plane []byte) []byte {
+	var out, literal []byte
+	flush := func() {
+		for len(literal) > 0 {
+			take := min(len(literal), 128)
+			out = append(append(out, byte(take-1)), literal[:take]...)
+			literal = literal[take:]
+		}
+	}
+	for i := 0; i < len(plane); {
+		run := 1
+		for i+run < len(plane) && plane[i+run] == plane[i] && run < 130 {
+			run++
+		}
+		if run >= 3 {
+			flush()
+			out = append(out, byte(0x80+run-3), plane[i])
+		} else {
+			literal = append(literal, plane[i:i+run]...)
+		}
+		i += run
+	}
+	flush()
+	return out
 }

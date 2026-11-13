@@ -229,7 +229,10 @@ linters:
         # cairn written as a Mac application: its bundle, its icon, its
         # signature. It knows nobody of ours but the logo, like linuxapp: the
         # engine decides whether to install and hands it where. An allow-list,
-        # like linuxapp: running codesign belongs here and nowhere else.
+        # like linuxapp: running codesign belongs here and nowhere else. It
+        # reads the logo's PNGs back as pixels for the two sizes an .icns keeps
+        # as ARGB planes, as iconutil writes them: the format is the bundle's,
+        # so the logo still hands out bytes and draws nothing.
         macapp:
           files: ["**/internal/macapp/**", "!**/internal/macapp/*_test.go"]
           allow:
@@ -238,6 +241,9 @@ linters:
             - encoding/binary
             - errors
             - fmt
+            - image
+            - image/draw
+            - image/png
             - os
             - os/exec
             - path/filepath
