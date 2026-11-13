@@ -358,11 +358,28 @@ when the commands differ — tools twice over, harmless to the hook, noisy for
 the model. `INSTALL.md` says to declare it with the plugin's command, or to
 remove it.
 
-## A repository that names its workspace
+## A session answers from its project's workspace
 
 A server keeps the workspace it started on, and no tool switches it
-([mcp.md](mcp.md)). A repository points its sessions at a workspace in the
-environment Claude Code starts them with — its `.claude/settings.json`:
+([mcp.md](mcp.md)). Claude Code starts the plugin's server in the project the
+session works in, and the hook goes there too — it works in the `cwd` its
+event names — so both find the workspace whose folder the project holds, its
+`.cairn` say, as the command line does from there
+([config.md](config.md#the-order-and-why-the-environment-is-not-part-of-it)):
+the session's entries are written in that workspace's notes
+(`@claude-session-the-hook-follows-the-project`), the line said at the
+session's start names it `because the current directory`
+(`@claude-session-start-says-the-workspace-of-the-project`), and the server's
+`workspace_show` says `when this server started, the current directory`
+(`@workspace-a-server-started-in-a-project-answers-from-its-workspace`).
+Before, only a shell that set `CAIRN_STORE` and `CAIRN_NOTES` reached the
+repository's board: the server and the hook did not see those variables, and
+wrote into `~/.cairn` (#299).
+
+## A repository that names its workspace
+
+A repository whose folder holds no workspace's points its sessions at one in
+the environment Claude Code starts them with — its `.claude/settings.json`:
 
 ```json
 {

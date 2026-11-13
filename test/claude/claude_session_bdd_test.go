@@ -37,13 +37,14 @@ type sessionWorld struct {
 	failed error
 	waits  string
 	plugin string
+	here   string
 }
 
 func (w *sessionWorld) reset() {
 	home := w.t.TempDir()
 	w.notes = filepath.Join(home, "notes")
 	w.tasks = 0
-	w.said, w.failed = "", nil
+	w.said, w.failed, w.here = "", nil, ""
 	w.env = append(os.Environ(),
 		"HOME="+home,
 		"PATH="+cairnOnPath(w.t)+string(os.PathListSeparator)+os.Getenv("PATH"),
@@ -73,7 +74,7 @@ func (w *sessionWorld) idleOver(session string) error {
 
 func (w *sessionWorld) cairn(args ...string) (string, error) {
 	run := exec.Command(filepath.Join(cairnOnPath(w.t), "cairn"), args...)
-	run.Env = w.env
+	run.Env, run.Dir = w.env, w.here
 	out, err := run.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("cairn %v: %w\n%s", args, err, out)
@@ -267,6 +268,43 @@ func (w *sessionWorld) theWorkspaceTheEnvironmentNames(name string) error {
 	return os.WriteFile(file, fmt.Appendf(said, "%s = %q\n", name, folder), 0o600)
 }
 
+func (w *sessionWorld) home() string {
+	var home string
+	for _, kv := range w.env {
+		if said, ok := strings.CutPrefix(kv, "HOME="); ok {
+			home = said
+		}
+	}
+	return home
+}
+
+func (w *sessionWorld) expand(place string) string {
+	if rest, ok := strings.CutPrefix(place, "~"); ok {
+		return filepath.Join(w.home(), rest)
+	}
+	return place
+}
+
+func (w *sessionWorld) twoWorkspaces(first, at, second, there string) error {
+	kept := w.env[:0:0]
+	for _, kv := range w.env {
+		if !strings.HasPrefix(kv, "CAIRN_STORE=") && !strings.HasPrefix(kv, "CAIRN_NOTES=") {
+			kept = append(kept, kv)
+		}
+	}
+	w.env = kept
+	for _, folder := range []string{at, there, strings.TrimSuffix(there, "/.cairn"), strings.TrimSuffix(at, "/.cairn")} {
+		if err := os.MkdirAll(w.expand(folder), 0o700); err != nil {
+			return err
+		}
+	}
+	file := filepath.Join(w.home(), ".config", "cairn", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(file), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(file, fmt.Appendf(nil, "[workspaces]\n%s = %q\n%s = %q\n", first, at, second, there), 0o600)
+}
+
 func (w *sessionWorld) theDefaultWorkspace(name string) error {
 	var home string
 	kept := w.env[:0:0]
@@ -310,6 +348,10 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Given(`^session "([^"]*)" holds task (\d+)$`, w.holds)
 
 		sc.When(`^session "([^"]*)", working in "([^"]*)", puts task (\d+) in focus$`, func(session, cwd string, n int) error {
+			cwd = w.expand(cwd)
+			if _, err := os.Stat(cwd); err == nil {
+				w.here = cwd
+			}
 			if _, err := w.cairn("task", "focus", strconv.Itoa(n)); err != nil {
 				return err
 			}
@@ -406,6 +448,34 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 				return err
 			}
 			w.env = append(w.env, "CAIRN_WORKSPACE=play")
+			return nil
+		})
+		sc.Given(`^the workspaces "([^"]*)" at "([^"]*)" and "([^"]*)" at "([^"]*)", with no default$`, w.twoWorkspaces)
+		sc.Given(`^a task numbered (\d+) in the workspace "([^"]*)"$`, func(n int, name string) error {
+			for w.tasks < n {
+				w.tasks++
+				if _, err := w.cairn("task", "new", "Task "+strconv.Itoa(w.tasks), "--workspace", name); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+		sc.Then(`^the notes of task (\d+) in the workspace "([^"]*)" hold an open entry for session "([^"]*)"$`, func(n int, name, session string) error {
+			shown, err := w.cairn("workspace", "show", "--workspace", name, "--json")
+			if err != nil {
+				return err
+			}
+			var where struct {
+				Notes string `json:"notes"`
+			}
+			if err := json.Unmarshal([]byte(shown), &where); err != nil {
+				return err
+			}
+			w.notes = where.Notes
+			return w.openEntry(session, n)
+		})
+		sc.When(`^session "([^"]*)", working in "([^"]*)", starts$`, func(session, cwd string) error {
+			w.hook(map[string]any{"hook_event_name": "SessionStart", "session_id": session, "source": "startup", "cwd": w.expand(cwd)})
 			return nil
 		})
 		sc.When(`^session "([^"]*)" starts$`, func(session string) error {

@@ -547,6 +547,14 @@ Feature: Workspaces, each a folder holding a store and its notes
       Then `cairn task list --workspace work` says "Write the spec"
       And no store was written to "~/cairn/home/cairn.db"
 
+    @workspace-a-server-started-in-a-project-answers-from-its-workspace
+    Scenario: a server started in a project answers from that project's workspace, and says why
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", the default being "home"
+      And I am in "~/code/cairn"
+      And a cairn server started with `cairn mcp serve --access full`
+      When I ask the server for `workspace_show`
+      Then the server says the workspace "cairn" answers, why "when this server started, the current directory — over the default, home"
+
     @workspace-a-server-keeps-the-workspace-it-was-given
     Scenario: a server started with --workspace answers from it, whatever the default
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"

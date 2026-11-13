@@ -8,6 +8,9 @@ idle=${CAIRN_IDLE_SECONDS:-600}
 input=$(cat)
 field() { jq -r "$1 // empty" <<<"$input"; }
 session=$(field .session_id)
+# cairn answers from the workspace of the project the session works in, as
+# the session's MCP server does, started there.
+cd "$(field .cwd)" 2>/dev/null || true
 # What the hook does to the board is written down as the session's doing.
 export CAIRN_AUTHOR="claude session $session"
 notes=$(cairn config show --json 2>/dev/null | jq -r .notes.at)

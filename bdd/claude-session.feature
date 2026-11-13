@@ -126,6 +126,21 @@ Feature: A Claude Code session tied to a cairn task
       When session "s1", working in "/work/project", puts task 1 in focus
       Then the notes of task 1 hold an open entry for session "s1"
 
+    @claude-session-the-hook-follows-the-project
+    Scenario: a session in a project writes its entry in that project's workspace
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", with no default
+      And a task numbered 1 in the workspace "cairn"
+      When session "s1", working in "~/code/cairn", puts task 1 in focus
+      Then the notes of task 1 in the workspace "cairn" hold an open entry for session "s1"
+
+    @claude-session-start-says-the-workspace-of-the-project
+    Scenario: the start of a session in a project names that project's workspace, and why
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", with no default
+      When session "s1", working in "~/code/cairn", starts
+      Then the hook says "the workspace cairn"
+      And the hook says "because the current directory"
+      And the hook succeeded
+
     @claude-session-start-says-nothing-when-the-environment-names-no-workspace
     Scenario: the start of a session says nothing when the workspace CAIRN_WORKSPACE names is refused
       Given the environment names a workspace nobody named
