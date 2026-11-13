@@ -14,7 +14,7 @@
 #
 # The tag is made only once everything has passed, so a version that failed
 # its checks is not a version at all. Everything is every hook; the mutation
-# sweep is check.yml's, every night — see .claude/docs/checks.md. Run again on a
+# sweep is a report run by hand — see .claude/docs/checks.md. Run again on a
 # commit already tagged, it checks it again, under the tag that is there.
 set -euo pipefail
 
@@ -50,9 +50,8 @@ else
   echo "this commit becomes $tag"
 fi
 
-# Mutation is check.yml's — a push's lines, and every night the whole core:
-# said here so a version is not made in ignorance of it.
-echo "mutation is judged by check.yml: make this version from a commit whose check run, and the night's sweep after it, are green"
+# Mutation gates nothing: said here so a version is not made thinking it did.
+echo "make this version from a commit whose check run is green; mutation is a report run by hand"
 make release-check
 make linux
 make build

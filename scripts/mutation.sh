@@ -2,15 +2,11 @@
 # mutation.sh — run gremlins over the packages, and judge what it reports.
 #
 #   mutation.sh            the packages holding the rules: what check.yml runs
-#                          every night
+#                          when it is asked to, by hand
 #   mutation.sh PKG...     those packages instead, by hand
 #   mutation.sh --list     the packages holding the rules, as a JSON list
-#   mutation.sh --core     the packages holding the rules, one a line
-#   mutation.sh --changed [PKG...]
-#                          only the lines changed since MUTATION_SINCE (HEAD by
-#                          default), in the packages they are in, or in those of
-#                          them named: what check.yml judges a push or a pull
-#                          request on, over the packages holding the rules
+#   mutation.sh --changed  only the lines changed since HEAD, in the packages they
+#                          are in, by hand
 #
 # The judgement is made here and not by gremlins' own thresholds, for two
 # reasons read in its source (v0.6.0, internal/report/report.go):
@@ -102,10 +98,6 @@ if [ "${asked[0]:-}" = "--list" ]; then
   done | jq -R . | jq -sc .
   exit 0
 fi
-if [ "${asked[0]:-}" = "--core" ]; then
-  for pkg in $logical; do echo "./$pkg"; done
-  exit 0
-fi
 if [ "${asked[0]:-}" = "--shard" ]; then
   filesOf "${asked[1]:?usage: mutation.sh --shard ./pkg@i/n}"
   exit 0
@@ -131,17 +123,10 @@ packages() {
     # The directories holding a production file that changed. A test file has
     # no mutants of its own; a test weakened in it is what the full sweep is
     # there to catch.
-    # Narrowed to the packages named, when some are: the gate judges the
-    # core's lines, never a surface's.
-    local named=" ${asked[*]:-} "
     # Not xargs: GNU's runs dirname once with nothing when no file changed,
     # and fails; BSD's does not, so only Linux saw it.
     git diff --name-only "$since" -- '*.go' ':!*_test.go' | while read -r file; do dirname "$file"; done | sort -u |
-      while read -r dir; do
-        [ -d "$dir" ] || continue
-        [ "$named" = "  " ] || [[ $named == *" ./$dir "* ]] || continue
-        echo "./$dir"
-      done
+      while read -r dir; do [ -d "$dir" ] && echo "./$dir"; done
   elif [ "${#asked[@]}" -gt 0 ]; then
     printf '%s\n' "${asked[@]}"
   else

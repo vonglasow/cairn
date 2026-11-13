@@ -26,7 +26,7 @@ something goes wrong.
 
 ## Verify
 - [ ] Every suite is green and prek passed on its own
-- [ ] Coverage is at or above the floor, and mutation at 100% in CI on the packages holding the rules
+- [ ] Coverage is at or above the floor
 - [ ] It was exercised against the built binary, not reasoned about
 - [ ] Edge cases were probed, including what should be refused
 

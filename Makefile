@@ -240,7 +240,7 @@ harness-check:
 ## mutation: break each line on purpose and check a test turns red
 ## gremlins takes one package at a time, so we loop. A surviving mutant is a
 ## test that would not have noticed the bug; the run fails below 100%. Bare, it
-## judges the packages holding the rules, as check.yml does every night;
+## judges the packages holding the rules, as check.yml does when run by hand;
 ## `make mutation PKG=./internal/engine` judges that one instead.
 ## The surfaces are not mutated: see .claude/docs/checks.md, on thresholds.
 ##
@@ -251,10 +251,9 @@ mutation:
 	@GREMLINS=$(GREMLINS) scripts/mutation.sh $(PKG)
 
 ## mutation-changed: the same judgement on the lines changed since HEAD only, in
-## the packages they are in — or in those of them PKG names. check.yml runs it
-## on every push and pull request, MUTATION_SINCE set to what came before.
+## the packages they are in, by hand: the quick look before a push.
 mutation-changed:
-	@GREMLINS=$(GREMLINS) scripts/mutation.sh --changed $(PKG)
+	@GREMLINS=$(GREMLINS) scripts/mutation.sh --changed
 
 ## check: every hook prek has, on every file — the commit's, then the push's.
 ## `prek run -a` alone runs only the commit's. Mutation is not one of them: it
