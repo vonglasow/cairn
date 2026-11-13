@@ -13,7 +13,7 @@ import (
 	"cairn/internal/domain"
 )
 
-// Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, the workspace or the store its command line named, where a server kept answering from since it started, and the version of the cairn running, its stamps' when none is given.
+// Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, the workspace or the store its command line named, where a server kept answering from since it started, the version of the cairn running, its stamps' when none is given, and the directory it runs in, which may sit under a workspace's folder.
 type Home struct {
 	Dir       string
 	Missing   error
@@ -22,6 +22,7 @@ type Home struct {
 	Store     string
 	Kept      *Started
 	Version   string
+	Here      string
 }
 
 func (h Home) version() string {
@@ -82,7 +83,7 @@ func Ignored(h Home) []string {
 	return read.Ignored()
 }
 
-// Locate works out where the store and the notes live: a flag, then the environment, then the default workspace, then the configuration file, then the default place under the home, in that order.
+// Locate works out where the store and the notes live: a flag, then the environment, then the workspace the current directory sits under, then the default workspace, then the configuration file, then main, under the home, in that order.
 func Locate(h Home) (Places, error) {
 	if h.Dir == "" {
 		if said, ok := h.lookup()(config.StoreVariable); !ok || said == "" {
@@ -105,6 +106,7 @@ func Locate(h Home) (Places, error) {
 }
 
 func (h Home) configuration() (config.Places, error) {
+	_, _ = UpgradeConfiguration(h)
 	found, err := config.Read(h.Dir, h.lookup())
 	if err != nil {
 		return config.Places{}, refusedOrUnusable(err)
@@ -135,7 +137,7 @@ func (h Home) settled() (config.Places, answering, error) {
 }
 
 func refusedOrUnusable(err error) error {
-	for _, theirs := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute, config.ErrMachineKey, config.ErrEmpty} {
+	for _, theirs := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute, config.ErrNotAWorkspace, config.ErrMachineKey, config.ErrEmpty} {
 		if errors.Is(err, theirs) {
 			return err
 		}

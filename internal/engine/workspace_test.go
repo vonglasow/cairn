@@ -176,8 +176,8 @@ func TestWorkspaceShow_saysWhichAnswersAndWhy(t *testing.T) {
 		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, "", rungStoreFlag, true},
 		{"the store flag on a workspace", nil, "", "~/h/cairn.db", twoWorkspaces, "home", rungStoreFlag, false},
 		{"the environment", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, "", config.StoreVariable, true},
-		{"the file", nil, "", "", "store = \"~/s/cairn.db\"\n", "", rungFile, true},
-		{"nothing", nil, "", "", "", "", rungNothing, true},
+		{"the file", nil, "", "", "store = \"~/s/tasks.db\"\n", "", rungFile, true},
+		{"nothing", nil, "", "", "", "main", rungNothing, false},
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")
 		h.Workspace, h.Store = c.workspace, c.store
@@ -267,13 +267,13 @@ func adding(name, folder string) Input {
 }
 
 func TestWorkspaceAdd_writesItAndMakesItsFolder(t *testing.T) {
-	h := homeHolding(t, "notes = \"~/vault\"\n", nil)
+	h := homeHolding(t, "plugin = \"~/plug\"\n", nil)
 	answer, err := WorkspaceAdd.Run(On{Home: h}, adding("play", "~/p"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	read, _ := os.ReadFile(config.FileIn(h.Dir))
-	if want := "notes = \"~/vault\"\n\n[workspaces]\nplay = \"~/p\"\n"; string(read) != want {
+	if want := "plugin = \"~/plug\"\n\n[workspaces]\nplay = \"~/p\"\n"; string(read) != want {
 		t.Errorf("the file reads %q, want %q", read, want)
 	}
 	if info, err := os.Stat(filepath.Join(h.Dir, "p", "notes")); err != nil || !info.IsDir() {

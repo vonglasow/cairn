@@ -29,7 +29,7 @@ func TestTheCatalogueHoldsEveryKeyTheExampleWrites(t *testing.T) {
 	}
 	var catalogued []string
 	for _, key := range Keys() {
-		if !key.Store {
+		if !key.Store && !key.Answered {
 			catalogued = append(catalogued, key.Name)
 		}
 	}
@@ -37,6 +37,14 @@ func TestTheCatalogueHoldsEveryKeyTheExampleWrites(t *testing.T) {
 	slices.Sort(catalogued)
 	if !slices.Equal(written, catalogued) {
 		t.Errorf("the example writes %v, the catalogue holds %v", written, catalogued)
+	}
+}
+
+func TestTheCatalogueSaysThePlacesTheWorkspaceAnsweringGives(t *testing.T) {
+	for name, want := range map[string]bool{"store": true, "notes": true, "plugin": false} {
+		if key, ok := KeyNamed(name); !ok || key.Answered != want {
+			t.Errorf("%s: %+v, want answered %v", name, key, want)
+		}
 	}
 }
 

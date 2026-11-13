@@ -19,11 +19,169 @@ Feature: Workspaces, each a folder holding a store and its notes
       And I run `cairn task show 1`
       Then it says the context lives at "~/cairn/work/notes/1"
 
-    @workspace-no-default-changes-nothing
-    Scenario: workspaces named without a default change nothing
+
+  Rule: A workspace always answers; with none named, main, in ~/.cairn
+
+    @workspace-main-when-none
+    Scenario: nothing configured, the workspace main answers from ~/.cairn
+      When I run `cairn workspace show`
+      Then it says the workspace is "main", at "~/.cairn"
+
+    @workspace-no-default-answers-main
+    Scenario: workspaces named, none default and none above the directory, main answers
       Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", with no default
       When I add a task titled "Write the spec"
       Then the task was written to "~/.cairn/cairn.db"
+
+  Rule: The workspace whose folder the current directory sits under answers, under the flag and the environment
+
+    @workspace-the-directory-names-it
+    Scenario: in a project holding a workspace's folder, that workspace answers
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", with no default
+      And I am in "~/code/cairn/internal/engine"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/code/cairn/.cairn/cairn.db"
+
+    @workspace-the-nearest-folder-wins
+    Scenario: two workspaces above the current directory, the nearest answers
+      Given the workspaces "code" at "~/code/.cairn" and "cairn" at "~/code/cairn/.cairn", with no default
+      And I am in "~/code/cairn/docs"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/code/cairn/.cairn/cairn.db"
+
+    @workspace-the-directory-inside-a-folder
+    Scenario: inside a workspace's folder that is not a project's, that workspace answers
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      And I am in "~/cairn/home/notes"
+      When I add a task titled "Buy bread"
+      Then the task was written to "~/cairn/home/cairn.db"
+
+    @workspace-the-home-is-no-project
+    Scenario: a workspace's folder sitting in the home answers only from inside it, not from everywhere under the home
+      Given the workspaces "home" at "~/.cairn" and "work" at "~/cairn/work", the default being "work"
+      And I am in "~/letters"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/cairn/work/cairn.db"
+
+    @workspace-the-directory-under-the-environment
+    Scenario: CAIRN_WORKSPACE wins over the directory
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", with no default
+      And I am in "~/code/cairn"
+      And the environment names the workspace "home"
+      When I add a task titled "Buy bread"
+      Then the task was written to "~/.cairn/cairn.db"
+
+    @workspace-the-directory-above-the-default
+    Scenario: the directory wins over the default
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", the default being "home"
+      And I am in "~/code/cairn"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/code/cairn/.cairn/cairn.db"
+
+    @workspace-show-says-the-directory
+    Scenario: showing the workspace says the directory chose it
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", with no default
+      And I am in "~/code/cairn"
+      When I run `cairn workspace show`
+      Then it says the workspace is "cairn", because the current directory is under its folder
+
+    @workspace-cairn-store-overrides-the-chosen
+    Scenario: CAIRN_STORE replaces the store of the workspace chosen, for one run
+      Given the workspaces "home" at "~/.cairn" and "cairn" at "~/code/cairn/.cairn", with no default
+      And I am in "~/code/cairn"
+      And the environment says the store lives at "~/loose/cairn.db"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/loose/cairn.db"
+
+  Rule: A workspace may name its notes; <folder>/notes otherwise
+
+    @workspace-names-its-notes
+    Scenario: a workspace's notes are where the configuration says
+      Given the workspace "cairn" at "~/code/cairn/.cairn", its notes at "~/vaults/cairn", the default being "cairn"
+      When I add a task titled "Write the spec"
+      And I run `cairn task show 1`
+      Then it says the context lives at "~/vaults/cairn/1"
+
+    @workspace-short-form-keeps-its-notes
+    Scenario: a workspace written the short way keeps its notes in its folder
+      Given the workspaces "work" at "~/cairn/work" and "home" at "~/cairn/home", the default being "work"
+      When I add a task titled "Write the spec"
+      And I run `cairn task show 1`
+      Then it says the context lives at "~/cairn/work/notes/1"
+
+  Rule: A configuration of v0.11.0 is turned into workspaces on its own, the places it used kept as they were
+
+    @workspace-old-configuration-upgraded
+    Scenario: the top-level places become the workspace main, the default, and it says so
+      Given a configuration that says the store lives at "~/data/cairn.db" and the notes at "~/data/notes"
+      When I add a task titled "Write the spec"
+      Then the task was written to "~/data/cairn.db"
+      And the configuration names the workspace "main" at "~/data", its notes at "~/data/notes", the default
+      And the configuration names no top-level store or notes
+      And the configuration as it was is kept in "config.toml.v0.11.0"
+      And it says on standard error what it changed, and where the old configuration is
+
+    @workspace-old-configuration-keeps-the-notes-in-use
+    Scenario: notes the old configuration did not name stay where they were used
+      Given a configuration that says the store lives at "~/data/cairn.db"
+      When I add a task titled "Write the spec"
+      Then the configuration names the notes of "main" at "~/.cairn/notes"
+      And nothing was moved on disk
+
+    @workspace-old-configuration-joins-a-workspace-at-the-same-place
+    Scenario: a top-level store already a workspace's becomes that workspace, not a second one
+      Given the workspace "home" at "~/.cairn", with no default
+      And a configuration that says the store lives at "~/.cairn/cairn.db"
+      When I add a task titled "Write the spec"
+      Then the configuration names the workspace "home" the default, and no workspace "main"
+
+    @workspace-old-configuration-upgraded-by-the-server
+    Scenario: the MCP server upgrades it too
+      Given a configuration that says the store lives at "~/data/cairn.db"
+      When the MCP server starts
+      Then the configuration names the workspace "main" at "~/data", the default
+
+    @workspace-old-configuration-upgraded-once
+    Scenario: once upgraded, nothing more is said
+      Given a configuration that says the store lives at "~/data/cairn.db"
+      And I added a task titled "Write the spec"
+      When I add a task titled "Buy bread"
+      Then it writes nothing to standard error
+
+  Rule: Notes a workspace was moved away from are offered to follow, in a terminal
+
+    @workspace-notes-changed-offered-to-move
+    Scenario: the notes changed in the configuration, cairn offers to move them
+      Given the workspace "cairn" whose notes were at "~/code/cairn/.cairn/notes", holding task 1's folder
+      And the configuration now names its notes at "~/vaults/cairn"
+      When I run `cairn task list` in a terminal, and answer "y"
+      Then "~/vaults/cairn/1" is there
+      And "~/code/cairn/.cairn/notes" is gone
+
+    @workspace-notes-changed-left-on-no
+    Scenario: on no, nothing is moved, and the next run asks again
+      Given the workspace "cairn" whose notes were at "~/code/cairn/.cairn/notes", holding task 1's folder
+      And the configuration now names its notes at "~/vaults/cairn"
+      When I run `cairn task list` in a terminal, and answer "n"
+      Then nothing was moved
+      When I run `cairn task list` in a terminal
+      Then it asks whether to move the notes
+
+    @workspace-notes-changed-without-a-person
+    Scenario: with nobody to answer, nothing is moved and it is said
+      Given the workspace "cairn" whose notes were at "~/code/cairn/.cairn/notes", holding task 1's folder
+      And the configuration now names its notes at "~/vaults/cairn"
+      When the MCP server starts
+      Then nothing was moved
+      And it says on standard error that a run of cairn in a terminal will offer to move them
+
+    @workspace-notes-not-moved-onto-others
+    Scenario: notes are not moved into a folder that already holds something
+      Given the workspace "cairn" whose notes were at "~/code/cairn/.cairn/notes", holding task 1's folder
+      And the configuration now names its notes at "~/vaults/cairn", which holds "Inbox.md"
+      When I run `cairn task list` in a terminal
+      Then it says it cannot move them there, naming "~/vaults/cairn"
+      And nothing was moved
 
   Rule: A flag on the command replaces everything, the environment included
 

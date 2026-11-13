@@ -90,7 +90,7 @@ func (w Window) Title() string {
 func (w Window) PlaceSays() string { return w.switcher.place.Name() }
 
 // Loose says whether the store the window shows is one no workspace names.
-func (w Window) Loose() bool { return w.switcher.place.Workspace == "" }
+func (w Window) Loose() bool { return w.switcher.place.Configured() == "" }
 
 func (w Window) placeAt(l Layout) Box {
 	return Box{X: l.Tabs.X, Y: l.Tabs.Y + between, W: placeRoom + w.placeTextWide(), H: l.Tabs.H - between}
@@ -315,8 +315,8 @@ func (w Window) actsSaid() []SwitcherAct {
 	if line, ok := w.chosenLine(); ok && line.keeps != "" {
 		acts = append(acts, SwitcherAct{Said: KeepAsWorkspaceSays})
 	}
-	if w.switcher.place.Workspace != "" {
-		acts = append(acts, SwitcherAct{Said: "Settings of " + w.switcher.place.Workspace + "…", Key: Pretty("cmd+,")})
+	if name := w.switcher.place.Configured(); name != "" {
+		acts = append(acts, SwitcherAct{Said: "Settings of " + name + "…", Key: Pretty("cmd+,")})
 	} else {
 		acts = append(acts, SwitcherAct{Said: "Settings…", Key: Pretty("cmd+,")})
 	}

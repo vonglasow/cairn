@@ -37,7 +37,7 @@ func HeadsOn(w Window, screen Screen) string {
 		if w.introsOpen {
 			return "Intro of " + w.hereName()
 		}
-		if name := w.switcher.place.Workspace; name != "" {
+		if name := w.switcher.place.Configured(); name != "" {
 			return "Settings of " + name
 		}
 		return "Settings"

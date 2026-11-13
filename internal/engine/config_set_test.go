@@ -267,3 +267,12 @@ func TestConfigChangedText_writesATrueOrFalseUnquoted(t *testing.T) {
 		t.Errorf("said %q", got)
 	}
 }
+
+func TestConfigSet_aPlaceTheWorkspaceGivesIsRefused(t *testing.T) {
+	h := homeHolding(t, homeIsDefault, nil, "h")
+	for _, key := range []string{"store", "notes"} {
+		if _, err := setting(h, ConfigSet, map[string]string{"key": key, "value": "~/elsewhere"}); !errors.Is(err, errAnsweredKey) {
+			t.Errorf("config set %s = %v, want it refused as the workspace's", key, err)
+		}
+	}
+}

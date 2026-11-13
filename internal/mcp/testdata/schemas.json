@@ -604,6 +604,10 @@
               "folder": {
                 "type": "string"
               },
+              "notes": {
+                "type": "string",
+                "description": "the notes the configuration names for it; \u003cfolder\u003e/notes when it names none"
+              },
               "default": {
                 "type": "boolean"
               },
@@ -11675,6 +11679,10 @@
               "folder": {
                 "type": "string"
               },
+              "notes": {
+                "type": "string",
+                "description": "the notes the configuration names for it; \u003cfolder\u003e/notes when it names none"
+              },
               "default": {
                 "type": "boolean"
               },
@@ -11755,6 +11763,10 @@
         "workspace": {
           "type": "string"
         },
+        "implicit": {
+          "type": "boolean",
+          "description": "main, in ~/.cairn, answering because nothing else did and no configuration names it"
+        },
         "folder": {
           "type": "string"
         },
@@ -11763,7 +11775,7 @@
           "properties": {
             "rung": {
               "type": "string",
-              "description": "--workspace, --store, CAIRN_STORE, CAIRN_WORKSPACE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"
+              "description": "--workspace, --store, CAIRN_STORE, CAIRN_WORKSPACE, the current directory (under a workspace's folder, or the project its .cairn folder sits in), the default (the default workspace), the file (its store key), or where cairn keeps a store by default (the workspace main)"
             },
             "over": {
               "type": [

@@ -155,15 +155,6 @@ way.
 <summary>The whole file</summary>
 
 ```toml
-# Where cairn keeps your tasks when [workspaces] names no default: a file.
-# Absolute, or under ~. The default workspace, below, comes before it.
-# store = "~/.cairn/cairn.db"
-
-# Where cairn looks for the notes of each task when [workspaces] names no
-# default: a folder, one per task inside it (~/.cairn/notes/12 for task 12).
-# Absolute, or under ~.
-# notes = "~/.cairn/notes"
-
 # Where cairn writes its Claude Code plugin, and keeps it at its own version:
 # a folder. Beside the store when it is not said. Absolute, or under ~.
 plugin = "~/.cairn/claude-plugin"
@@ -227,17 +218,23 @@ ghost = 65
 on = false
 
 # Workspaces: each a name, and the folder holding its own store and notes
-# (<folder>/cairn.db and <folder>/notes). Absolute, or under ~. default names
-# the one used when nothing else says; it comes before store and notes above,
-# and CAIRN_WORKSPACE, CAIRN_STORE, --workspace and --store come before it.
-# main is the folder cairn has always used. cairn workspace add, use and
-# remove write here for you. The colour a workspace wears is its own
-# settings.toml's to say, under [workspace].
+# (<folder>/cairn.db and <folder>/notes), or a table of its own naming its
+# folder and the notes it keeps elsewhere, a vault say. Absolute, or under ~.
+# One always answers: --workspace, CAIRN_WORKSPACE, the one whose folder the
+# current directory sits under — or the project its .cairn folder sits in —
+# then default, then main in ~/.cairn. CAIRN_STORE, CAIRN_NOTES and --store
+# name a store or notes over it. cairn workspace add, use and remove write
+# here for you. The colour a workspace wears is its own settings.toml's to
+# say, under [workspace].
 [workspaces]
 default = "main"
 main = "~/.cairn"
 # work = "~/cairn/work"
 # home = "~/cairn/home"
+#
+# [workspaces.cairn]
+# folder = "~/code/cairn/.cairn"
+# notes = "~/vaults/cairn"
 ```
 
 </details>

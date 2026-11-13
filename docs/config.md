@@ -14,18 +14,24 @@ same way, so there is one rule to know rather than two. The scenarios are in
 ```
 1  a flag                 --workspace <name>, or --store <path>
 2  the environment        CAIRN_STORE, CAIRN_NOTES, then CAIRN_WORKSPACE
-3  the default workspace  [workspaces] default, when it is said
-4  the file               ~/.config/cairn/config.toml: store, notes
-5  the default            ~/.cairn/cairn.db   ~/.cairn/notes
+3  the current directory  under a workspace's folder, or the project its .cairn sits in
+4  the default workspace  [workspaces] default, when it is said
+5  main                   ~/.cairn/cairn.db   ~/.cairn/notes
                           the first rung that says something answers,
                           and every rung under it is passed over
 ```
 
 Five rungs, read from the top, and the first one that names a store answers.
-The three lower ones are the configuration: the default workspace and the
-file's two keys are choices made and kept, and the default is what a choice
-looks like when nobody made one — the same on every machine, so "where are my
-tasks" never depends on which one you are sitting at.
+**A workspace always answers**: the three lower rungs each name one, and the
+places follow from it — its store, its notes, its settings. The directory and
+the default are choices made and kept, and `main`, in `~/.cairn`, is what a
+choice looks like when nobody made one — the same on every machine, so "where
+are my tasks" never depends on which one you are sitting at
+(`@workspace-main-when-none`, `@workspace-no-default-answers-main`).
+Until v0.12.0 the file named a `store` and `notes` of its own at its top, as a
+fourth rung; a file still written that way is turned into workspaces the first
+time cairn reads it (see below), and the rung `the file` is only ever said of
+a store no workspace's folder could hold.
 
 The two upper ones are passing choices, and that is why the environment is
 not one more rung of the configuration. Another store for one command, another
@@ -44,17 +50,28 @@ every rung under it that named a store too and was passed over:
 which rungs above it said nothing — `the default (no --workspace, no
 CAIRN_STORE)` — and a server says it as it was when it started
 (`@workspace-show-why-names-the-rungs-passed-over`, `@workspace-show-why-as-json`).
-A `store` the file still writes under a default workspace is named among the
-rungs passed over, since nothing else would say it is no longer read.
+**The current directory names the workspace of the work in front of you.**
+A command run from inside a workspace's folder, or from inside the project a
+`.cairn` folder sits in, answers from that workspace
+(`@workspace-the-directory-names-it`, `@workspace-the-directory-inside-a-folder`);
+the nearest folder wins when two hold the directory
+(`@workspace-the-nearest-folder-wins`). It comes under the environment and
+over the default (`@workspace-the-directory-under-the-environment`,
+`@workspace-the-directory-above-the-default`), and `workspace show` says `the
+current directory — over the default, home`
+(`@workspace-show-says-the-directory`). It is what makes the shell, the
+plugin's MCP server and its hook agree without a variable: each starts in the
+project, so each finds the same workspace. A `.cairn` folder sitting in the
+home itself is no project's — the home holds everything, and its workspace
+would answer from everywhere under it, the default never again — so it
+answers only from inside that folder (`@workspace-the-home-is-no-project`).
+A folder gone names nothing, and the rungs below answer.
 
-**The default workspace is a choice kept, made over the file's two keys.**
-Once `[workspaces]` names a default, the store and the notes are in its folder,
-and `store` and `notes` are not read for the places
+**The default workspace is a choice kept.** Once `[workspaces]` names a
+default, the store and the notes are its own
 (`@workspace-the-default-answers`, `@workspace-its-notes-are-in-its-folder`).
-Without a default, a table of workspaces changes nothing
-(`@workspace-no-default-changes-nothing`), and a machine with no table
-answers exactly as it did before workspaces existed. The environment still
-replaces it, as it replaces the file (`@workspace-the-environment-replaces-the-default`).
+Without one, `main` answers. The environment still replaces it
+(`@workspace-the-environment-replaces-the-default`).
 
 **`CAIRN_WORKSPACE` names a workspace, under the places the environment
 names.** `CAIRN_WORKSPACE=<name>` gives both places of that workspace, as
@@ -97,14 +114,14 @@ not understood together (`@workspace-one-flag-or-the-other`).
 `CAIRN_NOTES` still replaces the notes alone. A store named by `--store` or
 `CAIRN_STORE` keeps its own notes: `CAIRN_NOTES` when it is said; otherwise,
 when that store is a workspace's `<folder>/cairn.db`, that workspace's notes;
-otherwise the file's `notes` or the default, as before workspaces existed —
-never the default workspace's (`@workspace-a-store-named-keeps-its-own-notes`).
+otherwise the notes of `main` — those the configuration names for it, or
+`~/.cairn/notes` — never the default workspace's
+(`@workspace-a-store-named-keeps-its-own-notes`). `CAIRN_STORE` and `--store`
+replace the store of the workspace chosen however it was chosen, the directory
+included (`@workspace-cairn-store-overrides-the-chosen`).
 Taking the default's notes beside a store from elsewhere would write one
 board's notes into another's folder.
 
-**This changes something that already worked.** Before, the store was the
-environment or the default, with nothing in between. The file is a new rung, and
-a machine with a file now answers differently than it did.
 
 ## Workspaces, each a folder holding a store and its notes
 
@@ -375,22 +392,60 @@ off the workspace's name`, and its JSON carries it as `workspace.colour`
 (`@settings-config-show-says-the-colour`). A store no workspace names and whose
 settings say no colour has none, and the table is left out.
 
-## Two places, and their names
+## A workspace's notes, where it says
 
 ```toml
-# where cairn keeps your tasks
-store = "~/.cairn/cairn.db"
+[workspaces]
+default = "cairn"
+work = "~/cairn/work"
 
-# where cairn looks for notes taken elsewhere
-notes = "~/.cairn/notes"
+[workspaces.cairn]
+folder = "~/code/cairn/.cairn"
+notes = "~/vaults/cairn"
 ```
 
-`store` and `notes`. Both name the place itself and not a folder to compose
-something into: `store` is the file, `notes` is the directory task directories
-sit under.
+A workspace written the short way keeps its notes in its folder,
+`<folder>/notes` (`@workspace-short-form-keeps-its-notes`). Written as a table
+of its own, it names its `folder` and the `notes` it keeps elsewhere — a vault
+a notes tool opens, one per workspace (`@workspace-names-its-notes`). The two
+forms sit in one file. A table naming no folder, or a key other than those
+two, is refused naming it. `store` and `notes` are not keys of the file any
+more: they are what the workspace answering gives, shown by `config show` as
+comments and by the window as read when cairn opens, and `config set` refuses
+them, naming `[workspaces]` and the variables.
 
-They fall under one folder by default, `~/.cairn`, so what cairn keeps stays
-together and one directory is enough to move or back up by hand.
+## From v0.11.0, on its own
+
+A configuration of v0.11.0 names its `store` and `notes` at its top. The first
+command of v0.12.0, whatever the surface — the command line, a board, the MCP
+server, the plugin's hook — rewrites it, without asking: the two places
+become the workspace `main`, the default, or the workspace already at that
+folder (`@workspace-old-configuration-upgraded`,
+`@workspace-old-configuration-joins-a-workspace-at-the-same-place`,
+`@workspace-old-configuration-upgraded-by-the-server`). **Nothing moves on
+disk**: the workspace is written with the notes in use, even those nobody
+named (`@workspace-old-configuration-keeps-the-notes-in-use`), and a place
+can be changed afterwards by hand. A default already named stays the default,
+and `main` is written beside it, since the top-level places were passed over.
+The file as it was is kept beside it, `config.toml.v0.11.0`; what changed is
+said once on standard error, and nothing is said after
+(`@workspace-old-configuration-upgraded-once`). A store not called `cairn.db`
+cannot be any workspace's: it is left at the top of the file, read as before,
+and said. Asking first was weighed and set aside: the answer could only be
+yes, and a no would have left every surface asking again.
+
+## Notes moved by hand
+
+Changing a workspace's `notes` in the file leaves the notes where they were.
+cairn remembers, beside the store (`cairn.db.notes.json`), where it last found
+them, so it knows both places: run in a terminal, it offers to move them,
+`[y/N]` (`@workspace-notes-changed-offered-to-move`); on no nothing moves and
+the next run asks again (`@workspace-notes-changed-left-on-no`). With nobody to
+answer — the MCP server, the hook, a pipe — nothing moves and standard error
+says a run in a terminal will offer it (`@workspace-notes-changed-without-a-person`).
+A folder that already holds something is never moved into
+(`@workspace-notes-not-moved-onto-others`). Notes the environment names are
+nobody's to move.
 
 ## Written for you
 
@@ -399,13 +454,11 @@ explained, set to what cairn uses when nothing is said
 (`@config-init-writes-every-key`). **It names one workspace, `main`, on
 `~/.cairn`, and makes it the default**, its folder made as `workspace add`
 makes one (`@config-init-names-one-workspace-the-default`): the store and the
-notes are where they always were, `~/.cairn/cairn.db` and `~/.cairn/notes`, so a
-machine that never heard of workspaces reads as before, and the next
-`workspace add` joins a table already there. It is not called `default`, as
-the study proposed, because `default` is the key naming the default and so a
-name no workspace can take. `store` and `notes` are written commented, since
-the default workspace would pass them over; a file written before, with no
-`[workspaces]`, is read exactly as it was
+notes are where they always were, `~/.cairn/cairn.db` and `~/.cairn/notes`,
+and the next `workspace add` joins a table already there. It is not called
+`default`, as the study proposed, because `default` is the key naming the
+default and so a name no workspace can take. A file of v0.11.0, with no
+`[workspaces]`, keeps the places it used
 (`@config-a-file-without-workspaces-reads-as-before`). **Every table is written out of its
 comment**, and only a key that has no value of its own — the day archiving
 counts from, how long a focus session lasts — is commented, under its table.

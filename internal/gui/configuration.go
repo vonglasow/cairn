@@ -111,7 +111,7 @@ func (w Window) writingConfiguration() Window {
 
 // HereOffered says whether the settings of the store shown are a scope of their own: the store is a workspace's, or settings are already beside it.
 func (w Window) HereOffered() bool {
-	return w.switcher.place.Workspace != "" || w.configured.Settings != ""
+	return w.switcher.place.Configured() != "" || w.configured.Settings != ""
 }
 
 // SettingsScope is the scope the settings write: the workspace's name, the folder of the store, or Global.

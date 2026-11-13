@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -152,6 +153,8 @@ func MainIn(ctx context.Context, h engine.Home, args []string, stdin io.Reader, 
 	h.Version = stampsIn(ctx).Version
 	ctx = withHome(ctx, h)
 	h.Workspace, h.Store = valueOf(workspaceFlag, args), valueOf(storeFlag, args)
+	sayUpgraded(h, stderr)
+	offerNotes(ctx, h, stdin, stderr)
 	root := newRootCmdFor(h, stampsIn(ctx))
 	root.SetIn(stdin)
 	root.SetOut(stdout)
@@ -194,6 +197,53 @@ func MainIn(ctx context.Context, h engine.Home, args []string, stdin io.Reader, 
 			saidToAPerson(w, styles, err)
 		}))
 	return codeFor(err)
+}
+
+func sayUpgraded(h engine.Home, stderr io.Writer) {
+	if said, err := engine.UpgradeConfiguration(h); said != "" {
+		_, _ = fmt.Fprintf(stderr, "config: %s\n", said)
+	} else if err != nil {
+		_, _ = fmt.Fprintf(stderr, "config: the configuration of v0.11.0 was left as it is: %s\n", err)
+	}
+}
+
+func offerNotes(ctx context.Context, h engine.Home, stdin io.Reader, stderr io.Writer) {
+	move, found, err := engine.NotesToMove(h)
+	if err != nil || !found {
+		return
+	}
+	where := fmt.Sprintf("the notes of the workspace %q were at %s, and the configuration now names %s", move.Workspace, move.From, move.To)
+	switch {
+	case move.Blocked:
+		_, _ = fmt.Fprintf(stderr, "cairn: %s, which already holds something: cairn cannot move them there, and nothing was moved\n", where)
+	case !asking(ctx, stdin, stderr):
+		_, _ = fmt.Fprintf(stderr, "cairn: %s; nothing was moved: a run of cairn in a terminal will offer to move them\n", where)
+	default:
+		_, _ = fmt.Fprintf(stderr, "cairn: %s. Move them there? [y/N] ", where)
+		answer, _ := bufio.NewReader(stdin).ReadString('\n')
+		if !strings.EqualFold(strings.TrimSpace(answer), "y") {
+			_, _ = fmt.Fprintln(stderr, "nothing was moved; the next run asks again")
+			return
+		}
+		if err := engine.MoveNotes(h, move); err != nil {
+			_, _ = fmt.Fprintf(stderr, "the notes were not moved: %s\n", err)
+			return
+		}
+		_, _ = fmt.Fprintf(stderr, "the notes are now at %s\n", move.To)
+	}
+}
+
+type askingKey struct{}
+
+func withAsking(ctx context.Context, terminal bool) context.Context {
+	return context.WithValue(ctx, askingKey{}, terminal)
+}
+
+func asking(ctx context.Context, stdin io.Reader, stderr io.Writer) bool {
+	if terminal, said := ctx.Value(askingKey{}).(bool); said {
+		return terminal
+	}
+	return needsATerminal(stdin, stderr) == nil
 }
 
 func sayIgnored(h engine.Home, stderr io.Writer) {

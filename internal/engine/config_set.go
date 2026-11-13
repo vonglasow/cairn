@@ -25,6 +25,8 @@ type ConfigChanged struct {
 	Set    bool   `json:"set" jsonschema:"true when the key was set, false when it was taken out"`
 }
 
+var errAnsweredKey = errors.New("is the workspace's to say: name it in [workspaces], or set CAIRN_STORE or CAIRN_NOTES for one run")
+
 var errStoreKey = errors.New("belongs to a store: it is said in the settings beside it, never in the global configuration")
 
 var errEmptyGlobal = errors.New("is said empty only in a store's settings, for no label there: take it out of the global configuration instead")
@@ -158,6 +160,9 @@ func (h Home) writtenFor(key config.Key, global bool) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
+	if key.Answered {
+		return "", false, fmt.Errorf("%s %w", key.Name, errAnsweredKey)
+	}
 	if global && key.Store {
 		return "", false, fmt.Errorf("%s %w", key.Name, errStoreKey)
 	}
@@ -176,7 +181,7 @@ func (h Home) writtenFor(key config.Key, global bool) (string, bool, error) {
 
 func (h Home) settingsHere() (string, bool, error) {
 	if k := h.Kept; k != nil {
-		return config.SettingsBeside(k.Store.At), k.Workspace != "", nil
+		return config.SettingsBeside(k.Store.At), k.Workspace != "" && !k.Implicit, nil
 	}
 	found, err := h.configuration()
 	if err != nil {
@@ -186,7 +191,7 @@ func (h Home) settingsHere() (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	return config.SettingsBeside(a.store.At), a.workspace != "", nil
+	return config.SettingsBeside(a.store.At), a.workspace != "" && !a.implicit(), nil
 }
 
 func (h Home) literal(key config.Key, value string, global bool) (string, error) {

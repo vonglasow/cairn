@@ -28,6 +28,7 @@ type World struct {
 	StorePath string
 	Defaults  string
 	Line      string
+	Here      string
 
 	run  Runner
 	env  map[string]string
@@ -59,7 +60,7 @@ func (w *World) Home() engine.Home {
 	if dir == "" {
 		return engine.Home{Missing: fmt.Errorf("$%s is not defined", homeVariable()), Lookup: w.Lookup}
 	}
-	return engine.Home{Dir: dir, Lookup: w.Lookup}
+	return engine.Home{Dir: dir, Lookup: w.Lookup, Here: w.Here}
 }
 
 func homeVariable() string {

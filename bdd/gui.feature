@@ -5295,7 +5295,7 @@ Feature: The desktop board
 
     @gui-the-configuration-is-shown
     Scenario: ⌘, shows the configuration in use, key by key, and where each comes from
-      Given a configuration file naming the store
+      Given a configuration file that names no workspace
       When I open the window
       And I press "cmd+,"
       Then the panel is headed "Settings"
@@ -5306,7 +5306,7 @@ Feature: The desktop board
 
     @gui-the-configuration-file-is-opened-from-the-window
     Scenario: the file is handed to the system to open
-      Given a configuration file naming the store
+      Given a configuration file that names no workspace
       When I open the window
       And I press "cmd+,"
       And I choose "Open config.toml"

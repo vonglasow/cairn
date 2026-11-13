@@ -20,6 +20,7 @@ const (
 	byTheEnvironment  = "the environment"
 	workspaceFlagName = "--workspace"
 	storeFlagName     = "--store"
+	rungDirectory     = "the current directory"
 	rungDefault       = "the default"
 	rungFile          = "the file"
 	rungNothing       = "where cairn keeps a store by default"
@@ -34,7 +35,7 @@ const (
 // WorkspaceVariable is the environment variable naming a workspace: under CAIRN_STORE and CAIRN_NOTES, which name places, and over the default workspace.
 const WorkspaceVariable = "CAIRN_WORKSPACE"
 
-var rungs = []string{rungWorkspaceFlag, rungEnvironment, WorkspaceVariable, rungDefault, rungFile, rungNothing}
+var rungs = []string{rungWorkspaceFlag, rungEnvironment, WorkspaceVariable, rungDirectory, rungDefault, rungFile, rungNothing}
 
 // ErrNoSuchWorkspace is returned when a workspace is named that the configuration does not name.
 var ErrNoSuchWorkspace = errors.New("no workspace by that name")
@@ -57,6 +58,7 @@ var plainName = regexp.MustCompile(`^[a-z0-9-]+$`)
 type Workspace struct {
 	Name     string `json:"name"`
 	Folder   string `json:"folder"`
+	Notes    string `json:"notes,omitempty" jsonschema:"the notes the configuration names for it; <folder>/notes when it names none"`
 	Default  bool   `json:"default,omitempty"`
 	Colour   string `json:"colour" jsonschema:"one of the label colours: the one its settings say, or one read off its name"`
 	NotFound bool   `json:"not_found,omitempty"`
@@ -71,7 +73,7 @@ type Rung struct {
 
 // Why is why a store answers: the rung that named it, the rungs under it that named another and were passed over, those over it that said nothing, and whether it was settled when a server started.
 type Why struct {
-	Rung    string   `json:"rung" jsonschema:"--workspace, --store, CAIRN_STORE, CAIRN_WORKSPACE, the default (the default workspace), the file (its store key), or where cairn keeps a store by default"`
+	Rung    string   `json:"rung" jsonschema:"--workspace, --store, CAIRN_STORE, CAIRN_WORKSPACE, the current directory (under a workspace's folder, or the project its .cairn folder sits in), the default (the default workspace), the file (its store key), or where cairn keeps a store by default (the workspace main)"`
 	Over    []Rung   `json:"over,omitempty" jsonschema:"the rungs under it that named a store too, and were passed over"`
 	Unsaid  []string `json:"unsaid,omitempty" jsonschema:"the rungs over it that named nothing"`
 	Started bool     `json:"started,omitempty" jsonschema:"settled when this server started, and kept since"`
@@ -108,6 +110,7 @@ type WorkspaceUsed struct {
 // WorkspaceShown is how workspace show answers: which workspace answers, if one does, why, the places this command uses, and how to name them as a workspace when none does.
 type WorkspaceShown struct {
 	Workspace string   `json:"workspace,omitempty"`
+	Implicit  bool     `json:"implicit,omitempty" jsonschema:"main, in ~/.cairn, answering because nothing else did and no configuration names it"`
 	Folder    string   `json:"folder,omitempty"`
 	Why       Why      `json:"why"`
 	Store     string   `json:"store"`
@@ -125,6 +128,7 @@ type WorkspaceShown struct {
 // Started is where a server answers from, settled when it started and kept whatever the configuration names afterwards.
 type Started struct {
 	Workspace string      `json:"workspace,omitempty"`
+	Implicit  bool        `json:"implicit,omitempty"`
 	Folder    string      `json:"folder,omitempty"`
 	Why       Why         `json:"why"`
 	Store     Emplacement `json:"store"`
@@ -138,6 +142,7 @@ type answering struct {
 	workspace    string
 	folder       string
 	why          Why
+	unnamed      bool
 }
 
 // Keep settles where h answers from, once, so that a server started on it answers from there whatever the configuration names afterwards; what cannot be settled yet is left to be found at each call.
@@ -147,7 +152,7 @@ func Keep(h Home) Home {
 	}
 	_, a, _ := h.settled()
 	a.why.Started = true
-	h.Kept = &Started{Workspace: a.workspace, Folder: a.folder, Why: a.why, Store: a.store, Notes: a.notes}
+	h.Kept = &Started{Workspace: a.workspace, Implicit: a.unnamed, Folder: a.folder, Why: a.why, Store: a.store, Notes: a.notes}
 	return h
 }
 
@@ -162,7 +167,7 @@ func workspacesIn(p config.Places) []Workspace {
 	var listed []Workspace
 	for _, one := range p.Workspaces() {
 		store := filepath.Join(one.Folder, storeFile)
-		w := Workspace{Name: one.Name, Folder: one.Folder, Default: one.Name == p.DefaultWorkspace(), Colour: colourOf(one.Name, store)}
+		w := Workspace{Name: one.Name, Folder: one.Folder, Notes: one.Notes, Default: one.Name == p.DefaultWorkspace(), Colour: colourOf(one.Name, store)}
 		w.NotFound = !w.Found()
 		if own, err := p.WithSettings(config.SettingsBeside(store)); err == nil && own.TimeMode() != config.TimeOn {
 			w.Time = own.TimeMode()
@@ -210,12 +215,60 @@ func workspaceThere(p config.Places, name string) (config.Workspace, error) {
 }
 
 func inWorkspace(one config.Workspace, by string) (Emplacement, Emplacement) {
-	return Emplacement{At: filepath.Join(one.Folder, storeFile), By: by}, Emplacement{At: filepath.Join(one.Folder, notesFolder), By: by}
+	notes := one.Notes
+	if notes == "" {
+		notes = filepath.Join(one.Folder, notesFolder)
+	}
+	return Emplacement{At: filepath.Join(one.Folder, storeFile), By: by}, Emplacement{At: notes, By: by}
+}
+
+func (h Home) directoryWorkspace(p config.Places) (config.Workspace, bool) {
+	if h.Here == "" {
+		return config.Workspace{}, false
+	}
+	var chosen config.Workspace
+	deepest := 0
+	for _, one := range p.Workspaces() {
+		if _, err := os.Stat(one.Folder); err != nil {
+			continue
+		}
+		for _, root := range h.rootsOf(one) {
+			if within(h.Here, root) && len(root) > deepest {
+				chosen, deepest = one, len(root)
+			}
+		}
+	}
+	return chosen, deepest > 0
+}
+
+func (h Home) rootsOf(one config.Workspace) []string {
+	roots := []string{one.Folder}
+	if project := filepath.Dir(one.Folder); filepath.Base(one.Folder) == config.DefaultFolder && project != h.Dir {
+		roots = append(roots, project)
+	}
+	return roots
+}
+
+func within(dir, root string) bool {
+	for _, pair := range [][2]string{{dir, root}, {resolved(dir), resolved(root)}} {
+		rel, err := filepath.Rel(pair[1], pair[0])
+		if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return true
+		}
+	}
+	return false
+}
+
+func resolved(path string) string {
+	if real, err := filepath.EvalSymlinks(path); err == nil {
+		return real
+	}
+	return path
 }
 
 func (h Home) answering(p config.Places) (answering, error) {
 	if k := h.Kept; k != nil {
-		return answering{store: k.Store, notes: k.Notes, workspace: k.Workspace, folder: k.Folder, why: k.Why}, nil
+		return answering{store: k.Store, notes: k.Notes, workspace: k.Workspace, folder: k.Folder, why: k.Why, unnamed: k.Implicit}, nil
 	}
 	if h.Workspace != "" && h.Store != "" {
 		return answering{}, Misread(fmt.Errorf("%s and %s both name the store: give one or the other", workspaceFlagName, storeFlagName))
@@ -254,16 +307,20 @@ func (h Home) answering(p config.Places) (answering, error) {
 		a.why = h.why(p, 2)
 		return a.inside(p, one, fmt.Sprintf("%s, %q", WorkspaceVariable, name)), nil
 	}
-	a.why = h.why(p, 5)
+	if one, found := h.directoryWorkspace(p); found {
+		a.why = h.why(p, 3)
+		return a.inside(p, one, fmt.Sprintf("the current directory, under the workspace %q", one.Name)), nil
+	}
+	a.why = h.why(p, 6)
 	if a.store.By == "the file" {
-		a.why = h.why(p, 4)
+		a.why = h.why(p, 5)
 	}
 	if name := p.DefaultWorkspace(); name != "" {
 		one, err := workspaceThere(p, name)
 		if err != nil {
 			return a, err
 		}
-		a.why = h.why(p, 3)
+		a.why = h.why(p, 4)
 		return a.inside(p, one, fmt.Sprintf("the default workspace, %q", name)), nil
 	}
 	return a.named(p), nil
@@ -285,10 +342,25 @@ func (a answering) inside(p config.Places, one config.Workspace, by string) answ
 
 func (a answering) ownNotes(p config.Places) answering {
 	a = a.named(p)
-	if a.workspace != "" && a.notes.By != byTheEnvironment {
-		_, a.notes = inWorkspace(config.Workspace{Name: a.workspace, Folder: a.folder}, fmt.Sprintf("the workspace %q", a.workspace))
+	if a.notes.By == byTheEnvironment {
+		return a
+	}
+	if one, err := workspaceNamed(p, a.workspace); err == nil {
+		_, a.notes = inWorkspace(one, fmt.Sprintf("the workspace %q", a.workspace))
+	} else if main, err := workspaceNamed(p, config.UpgradedMain); a.workspace == "" && err == nil {
+		_, a.notes = inWorkspace(main, fmt.Sprintf("the workspace %q, which no other names", config.UpgradedMain))
 	}
 	return a
+}
+
+func (a answering) implicit() bool { return a.unnamed }
+
+// Configured is the workspace answering when the configuration names it; nothing for a store no workspace names, and for main answering because nothing named any.
+func (s WorkspaceShown) Configured() string {
+	if s.Implicit {
+		return ""
+	}
+	return s.Workspace
 }
 
 func (a answering) named(p config.Places) answering {
@@ -299,6 +371,9 @@ func (a answering) named(p config.Places) answering {
 		if one.Name == a.workspace {
 			a.folder = one.Folder
 		}
+	}
+	if a.workspace == "" && a.why.Rung == rungNothing {
+		a.workspace, a.folder, a.unnamed = config.UpgradedMain, filepath.Dir(a.store.At), true
 	}
 	return a
 }
@@ -314,8 +389,8 @@ func nameOf(p config.Places, store string) string {
 
 func (h Home) why(p config.Places, from int) Why {
 	why := Why{Rung: rungs[from]}
-	if from >= 3 {
-		why.Unsaid = slices.DeleteFunc(slices.Clone(rungs[:from]), func(rung string) bool { return rung == WorkspaceVariable })
+	if from >= 4 {
+		why.Unsaid = slices.DeleteFunc(slices.Clone(rungs[:from]), func(rung string) bool { return rung == WorkspaceVariable || rung == rungDirectory })
 	}
 	if said, ok := h.lookup()(config.StoreVariable); from < 1 && ok && said != "" {
 		at, err := config.Absolute(said, h.Dir)
@@ -331,10 +406,13 @@ func (h Home) why(p config.Places, from int) Why {
 	if name := h.environmentWorkspace(); from < 2 && name != "" {
 		why.Over = append(why.Over, Rung{Rung: WorkspaceVariable, Names: name})
 	}
-	if name := p.DefaultWorkspace(); from < 3 && name != "" {
+	if one, found := h.directoryWorkspace(p); from < 3 && found {
+		why.Over = append(why.Over, Rung{Rung: rungDirectory, Names: one.Name})
+	}
+	if name := p.DefaultWorkspace(); from < 4 && name != "" {
 		why.Over = append(why.Over, Rung{Rung: rungDefault, Names: name})
 	}
-	if store := p.FileStore(); from < 4 && store != "" {
+	if store := p.FileStore(); from < 5 && store != "" {
 		why.Over = append(why.Over, Rung{Rung: rungFile, Names: store})
 	}
 	return why
@@ -385,7 +463,7 @@ func InWords(items []string) string {
 
 func (a answering) shown() WorkspaceShown {
 	own, _ := config.NameIn(config.SettingsBeside(a.store.At))
-	shown := WorkspaceShown{Workspace: a.workspace, Folder: a.folder, Why: a.why, Store: a.store.At, Notes: a.notes.At, Own: own, Colour: colourOf(a.workspace, a.store.At)}
+	shown := WorkspaceShown{Workspace: a.workspace, Implicit: a.implicit(), Folder: a.folder, Why: a.why, Store: a.store.At, Notes: a.notes.At, Own: own, Colour: colourOf(a.workspace, a.store.At)}
 	if a.workspace == "" {
 		shown.Add = "cairn workspace add <name> <folder>"
 		if filepath.Base(a.store.At) == storeFile {
@@ -677,7 +755,14 @@ func workspacesTable(listed []Workspace) string {
 		}
 	}
 	for _, one := range listed {
-		fmt.Fprintf(&said, "%s = %q\n", one.Name, one.Folder)
+		if one.Notes == "" {
+			fmt.Fprintf(&said, "%s = %q\n", one.Name, one.Folder)
+		}
+	}
+	for _, one := range listed {
+		if one.Notes != "" {
+			fmt.Fprintf(&said, "\n[workspaces.%s]\nfolder = %q\nnotes = %q\n", one.Name, one.Folder, one.Notes)
+		}
 	}
 	return said.String()
 }

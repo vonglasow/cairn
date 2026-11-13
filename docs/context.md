@@ -46,10 +46,12 @@ task — its number, the one cairn already gave it and never gives again — und
 root the person configures once. The path is derived rather than recorded.
 Nothing can go stale, because nothing was written down.
 
-`notes` is one of the two keys in `~/.config/cairn/config.toml`, and it is the
-only thing cairn knows about any of this. A machine that never set it is not a
-machine with no notes: said nowhere means `~/.cairn/notes`, beside the store, so
-the tree has a place from the first command. [config.md](config.md) says how
+The root is the notes of the workspace answering, said in
+`~/.config/cairn/config.toml`, and it is the only thing cairn knows about any
+of this: `<folder>/notes` for a workspace written the short way, or the
+`notes` its own table names — a vault, one per workspace. A machine that never
+set it is not a machine with no notes: said nowhere means `~/.cairn/notes`,
+the notes of `main`, so the tree has a place from the first command. [config.md](config.md) says how
 that place is found, and what the environment does to it.
 
 Material can exist before the task does. It does not need a holding pen for

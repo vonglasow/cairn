@@ -33,7 +33,8 @@ var groupShort = map[string]string{
 
 func home() engine.Home {
 	dir, err := os.UserHomeDir()
-	return engine.Home{Dir: dir, Missing: err, Lookup: os.LookupEnv}
+	here, _ := os.Getwd()
+	return engine.Home{Dir: dir, Missing: err, Lookup: os.LookupEnv, Here: here}
 }
 
 type homeKey struct{}

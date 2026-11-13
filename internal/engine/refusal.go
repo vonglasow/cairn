@@ -161,6 +161,7 @@ var reasons = []reason{
 	{config.ErrValue, KindRefused, "config-value"},
 	{config.ErrNotEdited, KindRefused, "config-not-edited"},
 	{errStoreKey, KindRefused, "config-store-key"},
+	{errAnsweredKey, KindRefused, "config-answered-key"},
 	{errEmptyGlobal, KindRefused, "config-empty-global"},
 	{config.ErrNotSet, KindRefused, "config-not-set"},
 	{ErrNoSuchWorkspace, KindRefused, "no-such-workspace"},
@@ -168,6 +169,9 @@ var reasons = []reason{
 	{ErrWorkspaceKnown, KindRefused, "workspace-known"},
 	{ErrNotAWorkspaceName, KindRefused, "not-a-workspace-name"},
 	{ErrRemovingTheDefault, KindRefused, "removing-the-default"},
+	{config.ErrNotAWorkspace, KindRefused, "config-not-a-workspace"},
+	{config.ErrNotAWorkspaceStore, KindRefused, "config-not-a-workspace-store"},
+	{ErrNotesNotMoved, KindRefused, "notes-not-moved"},
 	{ErrNotThere, KindRefused, "not-there"},
 }
 

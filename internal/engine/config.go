@@ -219,8 +219,8 @@ func configText(c Config) string {
 		)
 	}
 	places := [][2]string{
-		{fmt.Sprintf("store = %q", c.Store.At), c.Store.By},
-		{fmt.Sprintf("notes = %q", c.Notes.At), c.Notes.By},
+		{fmt.Sprintf("# store = %q", c.Store.At), c.Store.By},
+		{fmt.Sprintf("# notes = %q", c.Notes.At), c.Notes.By},
 		{fmt.Sprintf("plugin = %q", c.Plugin.At), c.Plugin.By},
 	}
 	wide := 0
@@ -234,7 +234,11 @@ func configText(c Config) string {
 	}
 	said.WriteString("\n")
 	for _, p := range places {
-		fmt.Fprintf(&said, "%-*s   # named by %s\n", wide, p[0], p[1])
+		named := "# named by "
+		if strings.HasPrefix(p[0], "#") {
+			named = "  named by "
+		}
+		fmt.Fprintf(&said, "%-*s   %s%s\n", wide, p[0], named, p[1])
 	}
 	for _, ignored := range c.Ignored {
 		fmt.Fprintf(&said, "# ignored: %s\n", ignored)

@@ -4,17 +4,17 @@ Feature: Where cairn looks for its own places
     Given a home of my own, made for this run
     And nothing configured anywhere yet
 
-  Rule: One file says both places, at the place configuration lives
+  Rule: One file names the workspaces, at the place configuration lives
 
     @config-is-found-where-configuration-lives
     Scenario: the file is found without being named
-      Given a configuration that says the store lives at "~/work/cairn.db"
+      Given a configuration whose default workspace is "work" at "~/work"
       When I add a task titled "Write the spec"
       Then the task was written to "~/work/cairn.db"
 
     @config-says-where-the-notes-live
     Scenario: the file says where the notes are looked for
-      Given a configuration that says the notes live at "~/vault"
+      Given a configuration whose default workspace is "main" at "~/.cairn", its notes at "~/vault"
       And I added a task titled "Write the spec"
       When I run `cairn task show 1`
       Then it says the context lives at "~/vault/1"
@@ -38,14 +38,14 @@ Feature: Where cairn looks for its own places
 
     @config-the-environment-overrides-the-file-for-the-store
     Scenario: the environment overrides a store the file named
-      Given a configuration that says the store lives at "~/work/cairn.db"
+      Given a configuration whose default workspace is "work" at "~/work"
       And the environment says the store lives at "~/elsewhere/cairn.db"
       When I add a task titled "Write the spec"
       Then the task was written to "~/elsewhere/cairn.db"
 
     @config-the-environment-overrides-the-file-for-the-notes
     Scenario: the environment overrides notes the file named
-      Given a configuration that says the notes live at "~/vault"
+      Given a configuration whose default workspace is "main" at "~/.cairn", its notes at "~/vault"
       And the environment says the notes live at "~/elsewhere"
       And I added a task titled "Write the spec"
       When I run `cairn task show 1`
@@ -61,10 +61,10 @@ Feature: Where cairn looks for its own places
 
     @config-the-environment-leaves-the-file-as-it-was
     Scenario: a passing choice does not settle into the file
-      Given a configuration that says the notes live at "~/vault"
+      Given a configuration whose default workspace is "main" at "~/.cairn", its notes at "~/vault"
       And the environment says the notes live at "~/elsewhere"
       When I add a task titled "Write the spec"
-      Then the configuration still says the notes live at "~/vault"
+      Then the configuration names the notes of "main" at "~/vault"
 
   Rule: A configuration can be written for you, every key in it
 
@@ -90,7 +90,7 @@ Feature: Where cairn looks for its own places
       Then it says the context lives at "~/.cairn/notes/1"
 
     @config-a-file-without-workspaces-reads-as-before
-    Scenario: a configuration that names no workspace reads as it did before workspaces
+    Scenario: a configuration of v0.11.0, naming no workspace, keeps the places it used
       Given a configuration that says the notes live at "~/vault"
       When I add a task titled "Write the spec"
       Then the task was written to "~/.cairn/cairn.db"
@@ -121,12 +121,12 @@ Feature: Where cairn looks for its own places
 
     @config-init-leaves-a-file-alone
     Scenario: config init never writes over a configuration already there
-      Given a configuration that says the store lives at "~/work/cairn.db"
+      Given a configuration whose default workspace is "work" at "~/work"
       When I run `cairn config init`
       Then it fails
       And it says a configuration is already there
       When I run `cairn config show`
-      Then it says the store is at "~/work/cairn.db", named by the file
+      Then it says the store is at "~/work/cairn.db", named by the default workspace, "work"
 
   Rule: The Claude Code plugin is written where the file says, or beside the store
 
@@ -141,7 +141,7 @@ Feature: Where cairn looks for its own places
 
     @config-nothing-said-puts-the-plugin-beside-the-store
     Scenario: nothing said, the plugin is written beside the store
-      Given a configuration that says the store lives at "~/work/cairn.db"
+      Given a configuration whose default workspace is "work" at "~/work"
       When I run `cairn config show`
       Then it says the plugin is at "~/work/claude-plugin", named by nothing
 
@@ -156,7 +156,7 @@ Feature: Where cairn looks for its own places
 
     @config-a-place-that-is-not-absolute-is-refused
     Scenario Outline: a place that is not absolute is refused, and named
-      Given a configuration that says the notes live at "<place>"
+      Given a configuration whose default workspace is "main" at "~/.cairn", its notes at "<place>"
       And I added a task titled "Write the spec"
       When I run `cairn task show 1`
       Then it refuses, and says the place must be absolute
@@ -169,7 +169,7 @@ Feature: Where cairn looks for its own places
         | ../vault     |
 
     @config-a-store-that-is-not-absolute-is-refused
-    Scenario: a store that is not absolute is refused, and named
+    Scenario: a store of v0.11.0 that is not absolute is refused, and named
       Given a configuration that says the store lives at "./cairn.db"
       When I add a task titled "Write the spec"
       Then it refuses, and says the place must be absolute
@@ -209,7 +209,7 @@ Feature: Where cairn looks for its own places
 
     @config-an-unknown-name-is-passed-over
     Scenario: a name cairn does not know is passed over, said, and the rest of the file used
-      Given a configuration that says the notes live at "~/elsewhere"
+      Given a configuration whose default workspace is "main" at "~/.cairn", its notes at "~/elsewhere"
       And that same configuration says something under "vault"
       And I added a task titled "Write the spec"
       When I run `cairn task show 1`
@@ -217,7 +217,7 @@ Feature: Where cairn looks for its own places
       And it says on standard error that "vault" is ignored
       And it says on standard error what it accepts instead
       When I run `cairn config show`
-      Then it says the notes are at "~/elsewhere", named by the file
+      Then it says the notes are at "~/elsewhere", named by the default workspace, "main"
       And it says "vault" is ignored
 
     @config-a-key-from-a-newer-cairn
@@ -415,8 +415,8 @@ Feature: Where cairn looks for its own places
       When I run `cairn config show`
       Then it says every key of the configuration, under its table:
         | table   | line                |
-        |         | store = "           |
-        |         | notes = "           |
+        |         | # store = "         |
+        |         | # notes = "         |
         |         | plugin = "          |
         | pages   | tasks = true        |
         | pages   | objectives = true   |
@@ -455,16 +455,16 @@ Feature: Where cairn looks for its own places
 
     @config-show-names-the-file-it-reads
     Scenario: it says which file it read
-      Given a configuration that says the store lives at "~/work/cairn.db"
+      Given a configuration whose default workspace is "work" at "~/work"
       When I run `cairn config show`
       Then it names the file it read
 
     @config-show-says-what-named-each-place
     Scenario: it says what named each place
-      Given a configuration that says the store lives at "~/work/cairn.db"
+      Given a configuration whose default workspace is "work" at "~/work"
       And the environment says the notes live at "~/vault"
       When I run `cairn config show`
-      Then it says the store is at "~/work/cairn.db", named by the file
+      Then it says the store is at "~/work/cairn.db", named by the default workspace, "work"
       And it says the notes are at "~/vault", named by the environment
 
     @config-show-says-when-nothing-named-a-place
@@ -474,7 +474,7 @@ Feature: Where cairn looks for its own places
 
     @config-show-travels-in-the-json
     Scenario: an agent gets the same facts in the shape a machine reads
-      Given a configuration that says the store lives at "~/work/cairn.db"
+      Given a configuration whose default workspace is "work" at "~/work"
       When I run `cairn config show --json`
       Then the structured answer carries the file it read, each place, and what named it
 

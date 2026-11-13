@@ -28,16 +28,17 @@ const (
 	KindPercent  Kind = "percent"
 )
 
-// Key is one key of the configuration as a person sets it: its dotted name, the kind of value it takes and the words it takes when it takes words, whether it belongs to the machine or to a store alone, and the section and words a surface names it by.
+// Key is one key of the configuration as a person sets it: its dotted name, the kind of value it takes and the words it takes when it takes words, whether it belongs to the machine or to a store alone, whether it is a place the workspace answering gives, shown and never written, and the section and words a surface names it by.
 type Key struct {
-	Name    string
-	Kind    Kind
-	Words   []string
-	Machine bool
-	Store   bool
-	Section string
-	Says    string
-	Unit    string
+	Name     string
+	Kind     Kind
+	Words    []string
+	Machine  bool
+	Store    bool
+	Answered bool
+	Section  string
+	Says     string
+	Unit     string
 }
 
 // The sections the keys are shown under, in the order they are shown.
@@ -72,8 +73,8 @@ var keys = []Key{
 	{Name: "archive.start", Kind: KindDay, Section: SectionArchive, Says: "Archive on its own, counting from"},
 	{Name: "archive.days", Kind: KindNumber, Section: SectionArchive, Says: "In periods of", Unit: "days"},
 	{Name: "approach.label", Kind: KindText, Section: SectionAgents, Says: "Label asking for the approach first"},
-	{Name: "store", Kind: KindPath, Machine: true, Section: SectionPlaces, Says: "Store"},
-	{Name: "notes", Kind: KindPath, Machine: true, Section: SectionPlaces, Says: "Notes"},
+	{Name: "store", Kind: KindPath, Machine: true, Answered: true, Section: SectionPlaces, Says: "Store"},
+	{Name: "notes", Kind: KindPath, Machine: true, Answered: true, Section: SectionPlaces, Says: "Notes"},
 	{Name: "plugin", Kind: KindPath, Machine: true, Section: SectionPlaces, Says: "Claude Code plugin"},
 }
 

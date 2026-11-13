@@ -17,10 +17,11 @@ const DefaultWorkspaceKey = "default"
 // ErrNotWritten is returned when the file says its workspaces in a way cairn cannot change without breaking it, or is not TOML to begin with.
 var ErrNotWritten = errors.New("cairn cannot change the workspaces of this file without breaking it; change it by hand")
 
-// Workspace is one entry of [workspaces]: a name, and the folder holding its store and its notes, ~ expanded.
+// Workspace is one entry of [workspaces]: a name, the folder holding its store, and its notes when it names them, ~ expanded.
 type Workspace struct {
 	Name   string
 	Folder string
+	Notes  string
 }
 
 // Workspaces is every workspace the file names, by name, the default key left out.
@@ -41,20 +42,56 @@ func Absolute(said, home string) (string, error) {
 	return expanded, nil
 }
 
-func workspacesOf(said map[string]string, home string) ([]Workspace, string, error) {
+// ErrNotAWorkspace is returned when an entry of [workspaces] is neither a folder nor a table naming a folder and, at most, its notes.
+var ErrNotAWorkspace = errors.New(`is a folder, or a table of folder and notes`)
+
+func workspacesOf(said map[string]any, home string) ([]Workspace, string, error) {
 	var named []Workspace
-	for name, folder := range said {
+	chosen, _ := said[DefaultWorkspaceKey].(string)
+	for name, value := range said {
 		if name == DefaultWorkspaceKey {
 			continue
 		}
-		at, err := Absolute(folder, home)
+		one, err := workspaceOf(name, value, home)
 		if err != nil {
-			return nil, "", fmt.Errorf("workspaces.%s %w", name, err)
+			return nil, "", err
 		}
-		named = append(named, Workspace{Name: name, Folder: at})
+		named = append(named, one)
 	}
 	slices.SortFunc(named, func(a, b Workspace) int { return strings.Compare(a.Name, b.Name) })
-	return named, said[DefaultWorkspaceKey], nil
+	return named, chosen, nil
+}
+
+func workspaceOf(name string, value any, home string) (Workspace, error) {
+	folder, notes := value, any(nil)
+	if table, ok := value.(map[string]any); ok {
+		folder, notes = table["folder"], table["notes"]
+		for key := range table {
+			if key != "folder" && key != "notes" {
+				return Workspace{}, fmt.Errorf("workspaces.%s.%s: %w", name, key, ErrUnknownKey)
+			}
+		}
+	}
+	said, ok := folder.(string)
+	if !ok {
+		return Workspace{}, fmt.Errorf("workspaces.%s %w", name, ErrNotAWorkspace)
+	}
+	at, err := Absolute(said, home)
+	if err != nil {
+		return Workspace{}, fmt.Errorf("workspaces.%s %w", name, err)
+	}
+	one := Workspace{Name: name, Folder: at}
+	if notes == nil {
+		return one, nil
+	}
+	saidNotes, ok := notes.(string)
+	if !ok {
+		return Workspace{}, fmt.Errorf("workspaces.%s.notes %w", name, ErrNotAWorkspace)
+	}
+	if one.Notes, err = Absolute(saidNotes, home); err != nil {
+		return Workspace{}, fmt.Errorf("workspaces.%s.notes %w", name, err)
+	}
+	return one, nil
 }
 
 const workspacesTable = "workspaces"

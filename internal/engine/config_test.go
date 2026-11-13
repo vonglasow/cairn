@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -156,7 +157,10 @@ func TestConfigText_saysEveryKeyUnderItsTable(t *testing.T) {
 }
 
 func TestConfigText_readsBackAsTheSameConfiguration(t *testing.T) {
-	first := shownWith(t, "notes = \"/x/notes\"\n[pages]\nobjectives = false\n[archive]\nstart = 2026-10-21\ndays = 10\n[focus]\nsession = \"45m\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
+	first := shownWith(t, fmt.Sprintf("[workspaces]\ndefault = \"main\"\n\n[workspaces.main]\nfolder = %q\nnotes = \"/x/notes\"\n\n[pages]\nobjectives = false\n", t.TempDir())+"[archive]\nstart = 2026-10-21\ndays = 10\n[focus]\nsession = \"45m\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
+	if first.Notes.At != "/x/notes" {
+		t.Fatalf("the notes are at %q, want those of main", first.Notes.At)
+	}
 	again := shownWith(t, configText(first))
 	if again.Problem != "" {
 		t.Fatalf("what config show says is refused as a configuration: %s\n%s", again.Problem, configText(first))

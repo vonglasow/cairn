@@ -103,8 +103,31 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		return nil
 	})
 
+	sc.Step(`^a configuration whose default workspace is "([^"]*)" at "([^"]*)"(?:, its notes at "([^"]*)")?$`, func(name, folder, notes string) error {
+		if filepath.IsAbs(w.expand(folder)) {
+			if err := os.MkdirAll(w.expand(folder), 0o700); err != nil {
+				return err
+			}
+		}
+		if notes == "" {
+			return w.WriteConfig(fmt.Sprintf("[workspaces]\ndefault = %q\n%s = %q\n", name, name, folder))
+		}
+		return w.WriteConfig(withNotes(name, folder, notes, name))
+	})
+	sc.Step(`^the configuration names the notes of "([^"]*)" at "([^"]*)"$`, func(name, notes string) error {
+		said, err := w.workspacesSaid()
+		if err != nil {
+			return err
+		}
+		if w.expand(said.notes[name]) != w.expand(notes) {
+			return fmt.Errorf("the notes of %q are at %q, want %q:\n%s", name, said.notes[name], notes, said.text)
+		}
+		return nil
+	})
+
 	sc.Step(`^a configuration that says the store lives at "([^"]*)"$`, func(place string) error {
-		return w.WriteConfig(fmt.Sprintf("store = %q\n", place))
+		was, _ := os.ReadFile(w.configPath())
+		return w.WriteConfig(fmt.Sprintf("store = %q\n", place) + string(was))
 	})
 
 	sc.Step(`^the environment says the store lives at "([^"]*)"$`, func(place string) error {
@@ -167,7 +190,11 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^that same configuration says something under "([^"]*)"$`, func(name string) error {
-		return w.appendConfig(fmt.Sprintf("%s = \"something\"\n", name))
+		read, err := os.ReadFile(w.configPath())
+		if err != nil {
+			return err
+		}
+		return w.WriteConfig(fmt.Sprintf("%s = \"something\"\n", name) + string(read))
 	})
 
 	sc.Step(`^it refuses, and names the file it could not make sense of$`, func() error {

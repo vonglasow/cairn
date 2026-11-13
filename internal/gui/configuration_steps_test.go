@@ -49,12 +49,12 @@ func (w *world) settingInSight(key string) (SettingRow, error) {
 }
 
 func (w *world) configurationSteps(sc *godog.ScenarioContext) {
-	sc.Given(`^a configuration file naming the store$`, func() error {
+	sc.Given(`^a configuration file that names no workspace$`, func() error {
 		path := config.FileIn(w.home)
 		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 			return err
 		}
-		return os.WriteFile(path, []byte(fmt.Sprintf("store = %q\n", w.path)), 0o600)
+		return os.WriteFile(path, []byte("[pages]\ntasks = true\n"), 0o600)
 	})
 	sc.Then(`^the configuration reads "([^"]*)" (set here|from the global configuration|from its default|from the file|read when cairn opens)$`, func(key, from string) error {
 		row, err := w.settingRow(key)

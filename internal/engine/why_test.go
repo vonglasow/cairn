@@ -30,8 +30,8 @@ func TestWorkspaceShow_whyNamesTheRungAndThoseItPassedOver(t *testing.T) {
 		{"the flag over CAIRN_WORKSPACE", map[string]string{WorkspaceVariable: "home"}, "work", "", twoWorkspaces, Why{Rung: rungWorkspaceFlag, Over: []Rung{{Rung: WorkspaceVariable, Names: "home"}, {Rung: rungDefault, Names: "work"}}}, "--workspace — over CAIRN_WORKSPACE (home) and the default (work)"},
 		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, Why{Rung: rungStoreFlag, Over: []Rung{{Rung: rungDefault, Names: "work"}}}, "--store — over the default, work"},
 		{"the environment on no workspace", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "~/x/cairn.db", "", Why{Rung: rungStoreFlag, Over: []Rung{{Rung: config.StoreVariable, Names: "~/e/cairn.db"}}}, "--store — over CAIRN_STORE, ~/e/cairn.db"},
-		{"the default over the file", nil, "", "", "store = \"~/s/cairn.db\"\n" + twoWorkspaces, Why{Rung: rungDefault, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable}, Over: []Rung{{Rung: rungFile, Names: "~/s/cairn.db"}}}, "the default (no --workspace, no CAIRN_STORE) — over the file, ~/s/cairn.db"},
-		{"the file", nil, "", "", "store = \"~/s/cairn.db\"\n", Why{Rung: rungFile, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable, rungDefault}}, "the file (no --workspace, no CAIRN_STORE, no default)"},
+		{"the default over the file", nil, "", "", "store = \"~/s/tasks.db\"\n" + twoWorkspaces, Why{Rung: rungDefault, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable}, Over: []Rung{{Rung: rungFile, Names: "~/s/tasks.db"}}}, "the default (no --workspace, no CAIRN_STORE) — over the file, ~/s/tasks.db"},
+		{"the file", nil, "", "", "store = \"~/s/tasks.db\"\n", Why{Rung: rungFile, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable, rungDefault}}, "the file (no --workspace, no CAIRN_STORE, no default)"},
 		{"nothing", nil, "", "", "", Why{Rung: rungNothing, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable, rungDefault, rungFile}}, "where cairn keeps a store by default (no --workspace, no CAIRN_STORE, no default, no store in the file)"},
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")

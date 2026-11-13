@@ -160,19 +160,19 @@ type Places struct {
 }
 
 type file struct {
-	Store      *string           `toml:"store"`
-	Notes      *string           `toml:"notes"`
-	Plugin     *string           `toml:"plugin"`
-	Pages      *pages            `toml:"pages"`
-	Archive    *archive          `toml:"archive"`
-	Focus      *focus            `toml:"focus"`
-	Approach   *approach         `toml:"approach"`
-	Time       *timed            `toml:"time"`
-	Window     *window           `toml:"window"`
-	Recurrence *recurrence       `toml:"recurrence"`
-	Series     *recurrence       `toml:"series"`
-	Workspace  *workspace        `toml:"workspace"`
-	Workspaces map[string]string `toml:"workspaces"`
+	Store      *string        `toml:"store"`
+	Notes      *string        `toml:"notes"`
+	Plugin     *string        `toml:"plugin"`
+	Pages      *pages         `toml:"pages"`
+	Archive    *archive       `toml:"archive"`
+	Focus      *focus         `toml:"focus"`
+	Approach   *approach      `toml:"approach"`
+	Time       *timed         `toml:"time"`
+	Window     *window        `toml:"window"`
+	Recurrence *recurrence    `toml:"recurrence"`
+	Series     *recurrence    `toml:"series"`
+	Workspace  *workspace     `toml:"workspace"`
+	Workspaces map[string]any `toml:"workspaces"`
 }
 
 type workspace struct {

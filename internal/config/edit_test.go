@@ -65,10 +65,6 @@ func TestAKeyWrittenCommentedIsTakenOutOfItsCommentInPlace(t *testing.T) {
 	if want := strings.Replace(Example, "[focus]\n# session = \"1h\"\n", "[focus]\nsession = \"45m\"\n", 1); string(got) != want {
 		t.Errorf("the example became\n%s", got)
 	}
-	got, err = WithKey([]byte(Example), "store", `"~/elsewhere/cairn.db"`)
-	if err != nil || !strings.Contains(string(got), "# Absolute, or under ~. The default workspace, below, comes before it.\nstore = \"~/elsewhere/cairn.db\"\n") {
-		t.Errorf("the store became %v\n%s", err, got)
-	}
 }
 
 func TestAKeyBeforeAnyTableJoinsTheHeadOfTheFile(t *testing.T) {
@@ -304,5 +300,12 @@ func TestTheFirstWorkspaceOfAFileStartingWithTheTableIsTakenOut(t *testing.T) {
 func TestAWorkspaceWrittenOtherThanAskedIsRefused(t *testing.T) {
 	if _, err := checked([]byte("[workspaces]\nhome = \"~/a\"\n"), nil, "home", "~/b"); !errors.Is(err, ErrNotWritten) {
 		t.Errorf("a workspace written to another folder passed: %v", err)
+	}
+}
+
+func TestAKeyWrittenCommentedUnderAnotherIsTakenOutOfItsCommentWhereItStands(t *testing.T) {
+	got, err := WithKey([]byte("[pages]\ntasks = true\n\n[archive]\ndays = 7\n# start = 2026-10-21\n"), "archive.start", "2026-11-01")
+	if want := "[pages]\ntasks = true\n\n[archive]\ndays = 7\nstart = 2026-11-01\n"; err != nil || string(got) != want {
+		t.Errorf("WithKey = %q, %v; want %q", got, err, want)
 	}
 }

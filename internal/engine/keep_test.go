@@ -40,7 +40,7 @@ func TestKeep_saysWhyAsItWasWhenTheServerStarted(t *testing.T) {
 		{"the flag", nil, "home", "", twoWorkspaces, rungWorkspaceFlag},
 		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, rungStoreFlag},
 		{"the environment", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, config.StoreVariable},
-		{"the file", nil, "", "", "store = \"~/s/cairn.db\"\n", rungFile},
+		{"the file", nil, "", "", "store = \"~/s/tasks.db\"\n", rungFile},
 		{"nothing", nil, "", "", "", rungNothing},
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")
