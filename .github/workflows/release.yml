@@ -1,4 +1,4 @@
-# The release of a version, run when its tag is pushed — see docs/release.md.
+# The release of a version, run when its tag is pushed — see .claude/docs/release.md.
 # The tag is made by hand with make release, once every check has passed; this
 # runs every check of check.yml again on the tagged commit, then builds what is
 # handed over and hands it over. The window needs cgo, so each

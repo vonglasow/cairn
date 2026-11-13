@@ -31,7 +31,7 @@ something goes wrong.
 - [ ] Edge cases were probed, including what should be refused
 
 ## Document
-- [ ] README and docs/ say what cairn now does
+- [ ] README and docs/ say what cairn now does, and .claude/docs/ why
 
 ## Deliver
 - [ ] The commit is atomic and leaves the suite green alone

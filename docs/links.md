@@ -1,79 +1,54 @@
 # Links
 
 Two tasks can be linked. A link has no kind and no direction: it is the same
-link read from either task, and `task show` says it on both.
+link read from either task, and `task show` names it on both.
 
 ```sh
 cairn task new "It does not hold" --link 105 --label bug
 cairn task edit 120 --link +107 --link -105
+cairn task edit 120 --link =107          # the links become exactly these
 ```
+
+A plain number or `+3` adds a link, `-3` takes one away, and `=3` says what the
+set becomes; an `=` is not mixed with a sign. Linking two tasks already linked
+changes nothing. A task cannot be linked to itself or to a task that does not
+exist. Any column will do, `done` and archived included.
 
 ## A task done is not reopened
 
-A task done whose work turns out not to hold stays done. A new task is opened
-for the defect, linked to it. Reopening one took it out of the period its
-objective counted it finished in, mixed the time of the fix with the time of
-the feature, gave the defect the feature's priority, and rewrote a story its
-notes already told.
+When the work of a task done turns out not to hold, the task stays done: open a
+new task for the defect, linked to it, and put the `bug` label on it. Reopening
+it would take it out of the period its objective counted it finished in, mix
+the time of the fix with the time of the feature, and rewrite what its notes
+already say.
 
-Moving a task out of `done` stays possible, with no reason asked: it is for a
-task put there by mistake, its work never committed.
+Moving a task out of `done` is still possible, for a task put there by mistake.
 
-## Opening one from a task
+## Opening a linked task
 
-Every surface opens a task already linked:
+Every surface opens a new task already linked to the one you are on, in `todo`
+whatever that one's column:
 
-- the command line and the MCP: `task new "…" --link 105`, `task_new` with
-  `link` (`@mcp-a-task-opened-with-a-link`);
-- the board in the terminal: `o` on a card, in insert mode, opens the form of a
-  new task in `todo` with `links` already holding the card
-  (`@tui-o-opens-a-linked-task`);
-- the window: `o` on a chosen card, or New linked task in its right-click menu,
-  right after Edit (`@gui-o-opens-a-linked-task`,
-  `@gui-a-cards-menu-opens-a-linked-task`).
+- the command line: `cairn task new "…" --link 105`;
+- the terminal board: `o` on a card, in insert mode, opens the form with the
+  card already in `links`;
+- the window: `o` on a chosen card, or **New linked task** in its right-click
+  menu;
+- an agent: `task_new` with `link`.
 
-It opens in `todo` whatever the card's column: what comes of a task done is
-work to pick up, not a task done. Both forms carry a `links` field, under the
-blockers in the terminal and first in the LINKS section of the window, so a
-link is put or taken away there as any field is (`@tui-the-form-links-a-task`,
-`@gui-the-form-links-a-task`). The cairn skill tells an agent the same
-(`@plugin-the-skill-says-open-a-linked-task`).
+Nothing else is carried over: labels and objectives are put by hand. Both
+forms have a `links` field, so a link is put or taken away there like any
+other field.
 
-## No kind, no direction
+## What a link does not do
 
-A link does not say "found in", "duplicates" or "follows". The task's labels
-already say which of the two is the defect, and a kind would say it twice — or,
-worse, disagree. Nothing is carried over when a linked task is opened: labels
-and objectives are put by hand, because what was wanted automatic is the link,
-not the rest.
+- It has no kind — "duplicates", "found in", "follows". The labels already say
+  which task is the defect.
+- A search does not reach links, and no listing narrows by them.
+- The boards show a task's links in its form only, and draw no line between
+  two cards.
+- An objective has no links.
 
-## What it is held as
-
-`--link` follows the grammar of `--blocker`: on a change, a plain number or `+3`
-adds one, `-3` takes one away, `=3` says what the set becomes, and an `=` is not
-mixed with a sign. The set named after an `=` replaces the task's links on the
-other tasks too (`@task-link-replaced`).
-
-- One row per pair, the lower number first, so a pair is held once whichever
-  side put it (`links` in `internal/migration/known.go`). Linking two tasks
-  already linked changes nothing and writes nothing (`@task-link-twice`).
-- A task cannot be linked to itself, nor to a task that is not there
-  (`@task-link-itself`, `@task-link-nothing`). Nothing is refused for its
-  column: a task done or archived is linked like any other
-  (`@task-link-any-column`).
-- Deleting a task takes its links away from the others
-  (`@task-link-gone-with-the-task`).
-- A link is written in the trace of both tasks — the one act cairn writes on a
-  task nobody named. See [trace.md](trace.md#the-act-is-traced-not-its-consequences).
-- An export carries `linked` on both tasks; an import adds them once every task
-  of the file exists, at its new number, and refuses a file whose task is
-  linked to one it does not hold (`@exchange-a-link-comes-with-its-tasks`,
-  `@exchange-a-link-outside-the-file`). The file's version went to 3: an older
-  cairn would have read it and dropped its links without a word.
-
-## Deliberately not there yet
-
-- A search does not reach links, and no listing is narrowed by them.
-- The boards show a task's links in its form only: neither detail shows them,
-  as neither shows its blockers, and no line is drawn between two cards.
-- An objective is not linked.
+Deleting a task takes its links away from the other tasks. A link is written in
+the trace of both tasks. An export carries the links on both sides, and an
+import links the tasks again at their new numbers.

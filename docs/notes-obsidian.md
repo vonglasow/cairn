@@ -1,9 +1,8 @@
 # A task's notes in Obsidian
 
-Read this to open the notes of a workspace in Obsidian, or as the shape a page
-for another note tool follows. cairn knows no tool: everything below is set up
-in the configuration and in Obsidian, and nothing in cairn changes for it.
-Why cairn stays loosely tied to its notes is in [context.md](context.md).
+How to open the notes of a workspace in Obsidian. cairn knows no note tool:
+everything below is set up in the configuration and in Obsidian. What a task's
+notes are is in [A task's notes](context.md).
 
 ## The notes inside the vault
 
@@ -11,7 +10,7 @@ A vault is a folder. Obsidian skips folders whose name starts with a dot, so
 the default notes, `~/.cairn/notes` or `<project>/.cairn/notes`, are not
 seen from a vault holding them. Name the workspace's notes inside the vault
 instead, in `~/.config/cairn/config.toml`
-([config.md](config.md#a-workspaces-notes-where-it-says)):
+([configuration](config.md#a-workspaces-notes)):
 
 ```toml
 [workspaces.cairn]
@@ -21,12 +20,12 @@ notes = "~/vaults/work/cairn"
 
 The next run of cairn in a terminal offers to move the notes already there,
 `[y/N]`; nothing is moved without that yes, and nothing is moved into a
-folder that already holds something ([config.md](config.md#notes-moved-by-hand)).
+folder that already holds something ([configuration](config.md#notes-moved-by-hand)).
 One workspace's notes are one folder of the vault: several workspaces may
 share a vault, each in a folder of its own, so two boards never write into
 the same task's folder. The store stays in the workspace's `folder`, outside
 the vault: a database synced as a file by a vault's sync is a database two
-machines may write at once ([sharing.md](sharing.md)).
+machines may write at once.
 
 **No symlink.** A link from the vault to `.cairn/notes` was weighed and set
 aside: Obsidian supports links of the kind without recommending them

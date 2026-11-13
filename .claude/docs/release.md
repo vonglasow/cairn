@@ -211,12 +211,11 @@ it.
 tagging. It is a Go program, `cmd/site` over `internal/site`, and nothing of
 it is in the binary. **Nothing on it is written twice:**
 
-- a page of `docs/` written for the person using cairn is published, its
-  links taken to the page they name, or to the file on GitHub at the version's
-  tag when it is not published; a page only whoever develops cairn reads —
-  workflow, checks, the definition of done, architecture, design principles,
-  development, dependencies, this one, debug — is not, and a page of `docs/`
-  that is neither published nor named as a developer's fails the suite;
+- every page of `docs/` is published — `docs/` is written for the person
+  using cairn — its links taken to the page they name, or to the file on
+  GitHub at the version's tag when it is not published; what only whoever
+  develops cairn reads is in `.claude/docs/` and never published, and a page
+  of `docs/` the site does not publish fails the suite;
 - the reference is read off cairn itself: every command from the command
   tree with every page on, every MCP tool from the server's own definitions,
   the configuration from what `cairn config init` writes, every scheme from

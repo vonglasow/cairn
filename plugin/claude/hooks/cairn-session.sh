@@ -2,7 +2,7 @@
 # Claude Code hook: tie this session to its cairn task through a session entry
 # in the task's notes, and hold or release that task's focus. It never blocks
 # Claude Code: it prints nothing but, at a session's start, which workspace
-# cairn answers from, and always exits 0. See docs/claude-code.md.
+# cairn answers from, and always exits 0. See .claude/docs/claude-code.md.
 
 idle=${CAIRN_IDLE_SECONDS:-600}
 input=$(cat)

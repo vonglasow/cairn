@@ -23,7 +23,7 @@ palette:
   base0F: "#d65d0e"
 # What cairn wears beside the palette. Each token below is moved from what
 # the palette gives, the least it takes, until the scheme meets every
-# check cairn holds a scheme to (docs/gui.md, a theme sets tokens).
+# check cairn holds a scheme to (.claude/docs/gui.md, a theme sets tokens).
 cairn:
   tokens:
     line.edge: "#908975"

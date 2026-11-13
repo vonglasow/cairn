@@ -1,4 +1,4 @@
-// Package site builds cairn's documentation site: the pages of docs/ written
+// Package site builds cairn's documentation site: every page of docs/, written
 // for a person using cairn, and a reference read off cairn itself.
 package site
 
@@ -25,16 +25,10 @@ var published = []source{
 	{"docs/trace.md", "Guide", "guide"},
 	{"docs/context.md", "Guide", "guide"},
 	{"docs/notes-obsidian.md", "Guide", "guide"},
-	{"docs/sharing.md", "Guide", "guide"},
 	{"docs/claude-code.md", "Guide", "guide"},
 	{"docs/mcp.md", "Reference", "reference"},
 	{"docs/config.md", "Reference", "config"},
 	{"docs/decisions.md", "Project", "decisions"},
-}
-
-var developers = []string{
-	"docs/workflow.md", "docs/checks.md", "docs/definition-of-done.md", "docs/architecture.md",
-	"docs/design-principles.md", "docs/development.md", "docs/dependencies.md", "docs/release.md", "docs/debug.md",
 }
 
 const (
@@ -48,8 +42,6 @@ const (
 )
 
 var groups = []string{"Start", "Guide", "Reference", "Project"}
-
-func forDevelopers() []string { return developers }
 
 func pageFor(from string) (string, bool) {
 	for _, s := range published {

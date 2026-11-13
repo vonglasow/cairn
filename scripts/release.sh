@@ -8,13 +8,13 @@
 # The one way a version is made. Its number is not chosen by hand: svu reads
 # it off the commits since the last version — a fix moves the patch, a
 # feature the minor, a BREAKING CHANGE the major once there is a 1.0 — the
-# rules docs/release.md writes down, kept by the commit messages commitlint
+# rules .claude/docs/release.md writes down, kept by the commit messages commitlint
 # already holds to. A number typed by hand is a number somebody misread the
 # history for.
 #
 # The tag is made only once everything has passed, so a version that failed
 # its checks is not a version at all. Everything is every hook; the mutation
-# sweep is check.yml's, on every push — see docs/checks.md. Run again on a
+# sweep is check.yml's, on every push — see .claude/docs/checks.md. Run again on a
 # commit already tagged, it checks it again, under the tag that is there.
 set -euo pipefail
 

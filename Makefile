@@ -10,14 +10,14 @@ BUILT   ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 STAMPED  = cairn/internal/build
 # Every tool the checks and the release run is a Go program named, at its
 # version, in tools/go.mod, and run from there: nothing installed by hand to
-# drift from it, and one file Dependabot moves (docs/checks.md). A module of its
+# drift from it, and one file Dependabot moves (.claude/docs/checks.md). A module of its
 # own, so what the tools are built from never enters cairn's graph.
 TOOL     = go tool -modfile=$(CURDIR)/tools/go.mod
 # gremlins is handed to scripts/mutation.sh as a path, built the first time it
 # is asked for.
 GREMLINS ?= $(shell $(TOOL) -n gremlins)
 # The two coverage floors, in total and per package. Why each is where it is,
-# and why the second sits below the first, is said once, in docs/checks.md.
+# and why the second sits below the first, is said once, in .claude/docs/checks.md.
 # Raise them deliberately; never lower them to get a commit through.
 COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
@@ -61,7 +61,7 @@ dev:
 
 ## site: build the documentation site into dist/site, as a release publishes it
 ## Its pages are read off docs/ and off cairn itself, its pictures drawn over
-## the fixtures — see docs/release.md. NEXT is the version the changelog ends
+## the fixtures — see .claude/docs/release.md. NEXT is the version the changelog ends
 ## with: the next one by default, the tag itself when a release builds it.
 site:
 	@mkdir -p dist
@@ -84,7 +84,7 @@ red:
 
 # Every test credits every package it runs (-coverpkg=./...), scenarios
 # included; cover-check counts each block once, however many test binaries
-# reached it. See docs/checks.md.
+# reached it. See .claude/docs/checks.md.
 #
 # The profile is a real artifact, so both `cover` and `cover-check` read it
 # instead of each running the suite themselves. It is rebuilt whenever a Go
@@ -141,7 +141,7 @@ cover: coverage.out
 ## while. Measured — a package added at 0% cost eight points of the total and
 ## only then broke the floor.
 ##
-## `cmd/` is left out of the per-package floor — docs/checks.md says why.
+## `cmd/` is left out of the per-package floor — .claude/docs/checks.md says why.
 cover-check: coverage.out
 	@failed=0; \
 	total=$$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%","",$$NF); print $$NF}'); \
@@ -180,7 +180,7 @@ tested-check:
 	echo "✓ every package has a test file"
 
 ## rule-check: fail if a package under internal/ has no depguard rule
-## docs/architecture.md asks for a package's rule in the commit that adds it,
+## .claude/docs/architecture.md asks for a package's rule in the commit that adds it,
 ## and two packages, logo and macapp, went in without one and nothing said so.
 ## A rule is found by the glob it is written with, `"**/internal/<name>/**"`,
 ## which is how every rule in .golangci.yml names its package. Cheap, like
@@ -242,7 +242,7 @@ harness-check:
 ## test that would not have noticed the bug; the run fails below 100%. Bare, it
 ## judges the packages holding the rules, as check.yml does on every push and
 ## pull request; `make mutation PKG=./internal/engine` judges that one instead.
-## The surfaces are not mutated: see docs/checks.md, on thresholds.
+## The surfaces are not mutated: see .claude/docs/checks.md, on thresholds.
 ##
 ## The thresholds live in .gremlins.yaml, not here: gremlins ignores them when
 ## they are passed as flags. That is measured, not assumed — see the comment
@@ -284,7 +284,7 @@ linux:
 ## release: make a version — refuse what is not one, check everything, tag it, and make its archive
 ## The one way a version is made: its number is read off the commits by svu,
 ## the tag is made only once every check has passed, and the archive lands in
-## ./dist. What each step is, and why, is docs/release.md; the steps are
+## ./dist. What each step is, and why, is .claude/docs/release.md; the steps are
 ## scripts/release.sh.
 release:
 	@scripts/release.sh
@@ -299,7 +299,7 @@ package: notices
 	@scripts/package.sh $(VERSION) dist bin/THIRD_PARTY_NOTICES
 
 ## notices: write the licences of what the binary is built from, beside it
-## What travels with a binary handed to somebody — see docs/release.md.
+## What travels with a binary handed to somebody — see .claude/docs/release.md.
 notices:
 	@mkdir -p bin && scripts/notices.sh > bin/THIRD_PARTY_NOTICES
 

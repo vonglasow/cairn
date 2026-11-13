@@ -3,7 +3,7 @@
 #   prek install -t pre-commit -t commit-msg -t pre-push
 #
 # Written in pre-commit's YAML rather than prek's TOML so Dependabot, which
-# reads only this file, moves the hooks pinned below (docs/checks.md).
+# reads only this file, moves the hooks pinned below (.claude/docs/checks.md).
 
 # A hook runs at commit unless it says otherwise. Without this every hook would
 # run again at push, which is the whole commit gate a second time for nothing.
@@ -18,7 +18,7 @@ fail_fast: true
 # tag can be moved, and a hook whose own behaviour changed under a commit
 # nobody made fails — or passes — for a reason that is not in this repository.
 # What the tools find stays current; what the tools are does not move on its
-# own (docs/checks.md). The tag stays in the comment beside each, for
+# own (.claude/docs/checks.md). The tag stays in the comment beside each, for
 # Dependabot and for whoever updates it by hand (`prek update --freeze`).
 
 repos:
@@ -57,7 +57,7 @@ repos:
       # No go-unit-tests here: cover-check builds its profile from `go test
       # ./...`, which fails when a test does, so the suite ran twice for one
       # answer. The profile is rebuilt whenever a Go file, a scenario or a pinned
-      # frame changes. See docs/checks.md.
+      # frame changes. See .claude/docs/checks.md.
 
   # Shell scripts: the release, the checks, and the hook Claude Code runs on
   # every message — where a quoting slip is a fault on somebody else's machine.
@@ -72,7 +72,7 @@ repos:
   # `--config auto`, which reported home to choose them — and with metrics off,
   # which auto would not allow. They are fetched as they stand on the day: a
   # rule that is new today found something already true yesterday, which is the
-  # right way round (docs/checks.md). The tool running them is pinned below.
+  # right way round (.claude/docs/checks.md). The tool running them is pinned below.
   - repo: https://github.com/semgrep/pre-commit
     rev: e85cc41d57d8c4cc95d97c8813051744e51bd061 # frozen: v1.184.0
     hooks:
@@ -156,7 +156,7 @@ repos:
       # Mutation is not a hook: it froze the machine it ran on and filled its
       # disk, and a check that freezes the machine gets skipped. It runs in
       # check.yml, on every push and pull request, over the packages holding
-      # the rules, and by hand with `make mutation PKG=…`. See docs/checks.md.
+      # the rules, and by hand with `make mutation PKG=…`. See .claude/docs/checks.md.
 
   # Conventional-commit message linting (runs on commit-msg).
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook

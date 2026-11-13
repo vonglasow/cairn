@@ -94,9 +94,10 @@ is in it.
 ## Contributing
 
 cairn is written scenario first, then test, then code, and every commit passes
-the checks. Start with [docs/development.md](docs/development.md),
-[docs/workflow.md](docs/workflow.md) and [docs/checks.md](docs/checks.md);
-[docs/release.md](docs/release.md) says how a version is made.
+the checks. What whoever develops cairn reads is in `.claude/docs/`: start with
+[development](.claude/docs/development.md), [workflow](.claude/docs/workflow.md)
+and [checks](.claude/docs/checks.md); [release](.claude/docs/release.md) says
+how a version is made.
 
 ## License
 

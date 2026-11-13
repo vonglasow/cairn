@@ -23,7 +23,7 @@ linters:
     # expensive later — a codebase that has already compared errors with == in
     # forty places does not turn this on.
     - errorlint
-    # Enforces the layering described in docs/architecture.md. Without it the
+    # Enforces the layering described in .claude/docs/architecture.md. Without it the
     # layering is a wish: a command could reach the database directly and
     # nothing would notice until the second surface needed the same rule.
     - depguard

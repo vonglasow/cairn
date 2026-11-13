@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 
@@ -52,7 +51,8 @@ func initSite(sc *godog.ScenarioContext) {
 	sc.Step(`^the site is built for version "([^"]*)"$`, w.theSiteIsBuiltForVersion)
 	sc.Step(`^the site has a page for "([^"]*)"$`, w.theSiteHasAPageFor)
 	sc.Step(`^the site has no page for "([^"]*)"$`, w.theSiteHasNoPageFor)
-	sc.Step(`^every page of docs/ is published or named as a developer's$`, w.everyPageOfDocsIsPlaced)
+	sc.Step(`^the site has no page for any page of \.claude/docs/$`, w.theSiteHasNoDeveloperPage)
+	sc.Step(`^every page of docs/ is published$`, w.everyPageOfDocsIsPublished)
 	sc.Step(`^every link from one page of the site to another lands on a page that exists$`, w.everyLinkLandsOnAPage)
 	sc.Step(`^every link to a heading lands on a heading of that page$`, w.everyLinkLandsOnAHeading)
 	sc.Step(`^no link on the site points at a Markdown file of its own$`, w.noLinkPointsAtMarkdown)
@@ -151,15 +151,31 @@ func (w *siteWorld) theSiteHasNoPageFor(source string) error {
 	return nil
 }
 
-func (w *siteWorld) everyPageOfDocsIsPlaced() error {
+func (w *siteWorld) theSiteHasNoDeveloperPage() error {
+	pages, err := filepath.Glob(filepath.Join("..", "..", ".claude", "docs", "*.md"))
+	if err != nil {
+		return err
+	}
+	if len(pages) == 0 {
+		return fmt.Errorf("there is no page in .claude/docs/")
+	}
+	for _, page := range pages {
+		source := ".claude/docs/" + filepath.Base(page)
+		if name, ok := pageFor(source); ok {
+			return fmt.Errorf("%s is published as %s", source, name)
+		}
+	}
+	return nil
+}
+
+func (w *siteWorld) everyPageOfDocsIsPublished() error {
 	docs, err := filepath.Glob(filepath.Join("..", "..", "docs", "*.md"))
 	if err != nil {
 		return err
 	}
 	for _, doc := range docs {
-		source := "docs/" + filepath.Base(doc)
-		if _, ok := pageFor(source); !ok && !slices.Contains(forDevelopers(), source) {
-			return fmt.Errorf("%s is neither published nor named as a developer's", source)
+		if _, ok := pageFor("docs/" + filepath.Base(doc)); !ok {
+			return fmt.Errorf("docs/%s is not published", filepath.Base(doc))
 		}
 	}
 	return nil

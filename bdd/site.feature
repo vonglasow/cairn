@@ -19,7 +19,7 @@ Feature: the documentation site
       """
     When the site is built for version "v0.12.0"
 
-  Rule: A page of docs/ is published when it is for the person using cairn
+  Rule: docs/ is written for the person using cairn, and the site publishes it whole
 
     @site-pages
     Scenario: the pages for a person using cairn are published
@@ -31,20 +31,12 @@ Feature: the documentation site
       And the site has a page for "docs/decisions.md"
 
     @site-developer-pages
-    Scenario: a page only whoever develops cairn reads is not published
-      Then the site has no page for "docs/workflow.md"
-      And the site has no page for "docs/checks.md"
-      And the site has no page for "docs/definition-of-done.md"
-      And the site has no page for "docs/architecture.md"
-      And the site has no page for "docs/design-principles.md"
-      And the site has no page for "docs/development.md"
-      And the site has no page for "docs/dependencies.md"
-      And the site has no page for "docs/release.md"
-      And the site has no page for "docs/debug.md"
+    Scenario: what only whoever develops cairn reads is kept out of docs/, and off the site
+      Then the site has no page for any page of .claude/docs/
 
     @site-every-page-placed
-    Scenario: every page of docs/ is either published or kept for developers
-      Then every page of docs/ is published or named as a developer's
+    Scenario: every page of docs/ is published
+      Then every page of docs/ is published
 
     @site-links
     Scenario: a link between two pages lands on a page and a heading that exist
@@ -54,7 +46,7 @@ Feature: the documentation site
     @site-links-out
     Scenario: a link to what the site does not publish goes to it on GitHub
       Then no link on the site points at a Markdown file of its own
-      And the link from "docs/tui.md" to "docs/architecture.md" goes to it on GitHub
+      And the link from "docs/decisions.md" to ".claude/docs/sharing.md" goes to it on GitHub
 
   Rule: The reference is read off cairn itself
 

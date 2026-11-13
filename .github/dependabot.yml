@@ -1,5 +1,5 @@
 # What proposes the versions everything here is pinned at, once a week — see
-# docs/checks.md. Each update waits three days after its release, so a version
+# .claude/docs/checks.md. Each update waits three days after its release, so a version
 # withdrawn by its makers is seldom proposed; a security update does not wait.
 # Minor and patch updates come as one pull request per ecosystem, a major one
 # on its own.

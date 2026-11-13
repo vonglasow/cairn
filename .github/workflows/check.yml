@@ -1,5 +1,5 @@
 # The checks a commit runs, run again on every pull request — see
-# docs/checks.md. A change Dependabot proposes was made on no machine, so no
+# .claude/docs/checks.md. A change Dependabot proposes was made on no machine, so no
 # hook judged it; this is what does. Every hook prek has at commit, on every
 # file. On Linux, so the half of what cairn says it runs on that is not where
 # it is written is judged each time. And mutation, which no hook runs: it froze
@@ -11,7 +11,7 @@ on:
   push:
     branches: [main]
   # release.yml calls it on the commit a tag names, and releases nothing unless
-  # every job here passed on that commit — see docs/release.md.
+  # every job here passed on that commit — see .claude/docs/release.md.
   workflow_call:
 
 permissions:

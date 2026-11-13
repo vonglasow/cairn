@@ -1,7 +1,7 @@
 # Working on cairn
 
 How to try cairn by hand without touching your own tasks, and where the rules
-for changing it are. Building it is in [INSTALL.md](../INSTALL.md); `make help`
+for changing it are. Building it is in [INSTALL.md](../../INSTALL.md); `make help`
 lists every target.
 
 ## Trying it by hand
@@ -129,6 +129,6 @@ export CAIRN_STORE=$(mktemp -d)/cairn.db
 
 ## Working on it
 
-[CLAUDE.md](../CLAUDE.md) carries the rules, `docs/` the detail. `prek` runs the
+[CLAUDE.md](../../CLAUDE.md) carries the rules, `docs/` the detail. `prek` runs the
 checks at every commit — [docs/checks.md](checks.md) says what they are
 and how to install them.
