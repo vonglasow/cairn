@@ -119,6 +119,45 @@ model to stop following it, which is the failure this would have been built to
 avoid. Answered to a harness that always looks, it costs nothing and teaches
 nothing, because no judgement is being asked of the reader.
 
+## Any file, any author, any tool
+
+A task's resources are one set: what was done, decided and looked into, its
+working sessions, and anything else tied to it — a contract, a PDF, an
+export, not only Markdown. Several authors write them: an agent while it
+works, the plugin's hook for the sessions, the person with whatever tool
+they use. Several tools read and edit them, and they depend on none.
+
+- **They are ordinary files**, in a folder the person chooses — the notes of
+  the workspace, which a workspace may name anywhere, a vault say
+  ([config.md](config.md#a-workspaces-notes-where-it-says)). Nothing in them
+  needs cairn or any tool to be read.
+- **The task's folder is the link.** Everything in `<notes>/<n>/` serves task
+  `n`: from the task, `task show` names the folder and so all of it; from a
+  file, the folder it sits in names the task, whatever the file is called and
+  however it is renamed inside it. **Moving a file out of the folder detaches
+  it**, as moving it in attaches it — a person's act, seen in any file
+  manager.
+- **One source of truth.** A task's resources are not split across folders:
+  one workspace, one notes root, one folder per task, the hook and the
+  server writing where the command line reads
+  ([claude-code.md](claude-code.md#a-session-answers-from-its-projects-workspace)).
+- **A note that must live elsewhere** — a meeting's notes filed by date, say —
+  may carry, at its top, an optional header naming the task:
+
+  ```markdown
+  ---
+  cairn: 42
+  ---
+  ```
+
+  It is the agent's to look for, when it is asked to gather a task's
+  resources, never cairn's: cairn reads no file, and a header nobody wrote
+  costs nothing.
+- **A tool is added without changing the format.** What a tool needs on top
+  — its own settings folder, its links — is its own layer, in its own files;
+  cairn ignores it. How a tool is set up over the notes is on a page of its
+  own: [Obsidian](notes-obsidian.md), first.
+
 ## One place per task, and three reserved names
 
 Everything from here to the end is convention, and cairn knows none of it. It

@@ -42,6 +42,26 @@ start.
 A missing file is not an error: a task new to this is a task with no summary
 yet.
 
+## Gathering a task's resources — only when asked
+
+Everything in the task's notes directory serves the task, whatever the file
+is — a PDF, an export, a note written in another tool. A file moved out of
+it no longer does. The names above (`summary.md`, dated entries,
+`ticket.md`) are conventions of this skill, not rules of cairn.
+
+When the person asks for everything tied to a task ("tout ce qui concerne
+cairn#42"), list its directory, then look in the folders they point you to
+for notes carrying, at their top:
+
+```markdown
+---
+cairn: 42
+---
+```
+
+cairn reads no file and finds none of these: you do. Say which ones you
+found and where.
+
 ## A focus session that asks to be renewed
 
 An answer may end with "this focus session has been up 2h: renew it by

@@ -407,7 +407,8 @@ notes = "~/vaults/cairn"
 A workspace written the short way keeps its notes in its folder,
 `<folder>/notes` (`@workspace-short-form-keeps-its-notes`). Written as a table
 of its own, it names its `folder` and the `notes` it keeps elsewhere — a vault
-a notes tool opens, one per workspace (`@workspace-names-its-notes`). The two
+a notes tool opens, one per workspace (`@workspace-names-its-notes`; for
+Obsidian, [notes-obsidian.md](notes-obsidian.md)). The two
 forms sit in one file. A table naming no folder, or a key other than those
 two, is refused naming it. `store` and `notes` are not keys of the file any
 more: they are what the workspace answering gives, shown by `config show` as
