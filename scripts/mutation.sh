@@ -134,7 +134,9 @@ packages() {
     # Narrowed to the packages named, when some are: the gate judges the
     # core's lines, never a surface's.
     local named=" ${asked[*]:-} "
-    git diff --name-only "$since" -- '*.go' ':!*_test.go' | xargs -n1 dirname 2>/dev/null | sort -u |
+    # Not xargs: GNU's runs dirname once with nothing when no file changed,
+    # and fails; BSD's does not, so only Linux saw it.
+    git diff --name-only "$since" -- '*.go' ':!*_test.go' | while read -r file; do dirname "$file"; done | sort -u |
       while read -r dir; do
         [ -d "$dir" ] || continue
         [ "$named" = "  " ] || [[ $named == *" ./$dir "* ]] || continue
