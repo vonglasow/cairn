@@ -133,6 +133,9 @@ func (s Scheme) Light() bool {
 	return lit(s.palette[0]) > lit(s.palette[5])
 }
 
+// Slots is the scheme's sixteen colours, base00 to base0F, in order.
+func (s Scheme) Slots() [16]color.NRGBA { return s.palette }
+
 func mix(a, b color.NRGBA, t float64) color.NRGBA {
 	toward := func(x, y uint8) uint8 { return uint8(math.Floor(float64(x) + (float64(y)-float64(x))*t + 0.5)) }
 	return color.NRGBA{R: toward(a.R, b.R), G: toward(a.G, b.G), B: toward(a.B, b.B), A: 255}

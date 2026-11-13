@@ -54,6 +54,8 @@ all of them.
 | `internal/tui` | the board on a terminal | everything below but `cli`, `mcp` and `gui` |
 | `internal/gui` | the same board in a window | everything below but `cli`, `mcp` and `tui` |
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
+| `internal/site` | the documentation site: the pages of `docs/` for a person using cairn, and a reference read off every surface, its boards drawn over the fixtures | everything below but the store |
+| `cmd/site` | hands the process to `site.Main`; built by `make site`, never part of the binary | `site` |
 | `test` | the acceptance world the surfaces share, and the givens both boards write | `engine`, `config`, the notions |
 
 **A surface is an entry point and nothing more.** The command line, the agent's

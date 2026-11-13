@@ -91,6 +91,42 @@ jobs:
           path: dist/Formula
           if-no-files-found: error
 
+  # The documentation site, built from the tagged commit once the version is
+  # released, so the site out always describes the version out. On macOS,
+  # where the window is drawn off screen for its pictures. GitHub Pages takes
+  # it from the artifact; its source is set to "GitHub Actions" once, by hand.
+  site:
+    needs: release
+    runs-on: macos-15
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: the tag itself, which the changelog is read up to
+        run: git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - run: make site VERSION="$TAG" NEXT="$TAG"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
+        with:
+          path: dist/site
+
+  pages:
+    needs: site
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346
+
   tap:
     needs: release
     runs-on: ubuntu-24.04

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if eq .Page.Name "index.html"}}cairn — objectives and tasks on one board{{else}}{{.Page.Title}} · cairn {{.Version}}{{end}}</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<script>
+(function () {
+  var known = {{.Known}}, s = null;
+  try { s = localStorage.getItem("cairn-theme"); } catch (e) {}
+  if (known.indexOf(s) < 0) { s = matchMedia("(prefers-color-scheme: dark)").matches ? {{.Dark}} : {{.Light}}; }
+  document.documentElement.setAttribute("data-scheme", s);
+})();
+</script>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="bar"><div class="bar-in">
+  <button class="tool menu-btn" id="menuBtn" aria-label="Sections">☰</button>
+  <a class="brand" href="index.html"><img src="logo.svg" width="28" height="28" alt="">cairn</a>
+  <nav class="topnav">
+    <a href="install.html"{{if eq .Page.Top "install"}} class="on"{{end}}>Install</a>
+    <a href="usage.html"{{if eq .Page.Top "guide"}} class="on"{{end}}>Guide</a>
+    <a href="commands.html"{{if eq .Page.Top "reference"}} class="on"{{end}}>Reference</a>
+    <a href="config.html"{{if eq .Page.Top "config"}} class="on"{{end}}>Configuration</a>
+    <a href="decisions.html"{{if eq .Page.Top "decisions"}} class="on"{{end}}>Decisions</a>
+    <a href="changelog.html"{{if eq .Page.Top "changelog"}} class="on"{{end}}>Changelog</a>
+  </nav>
+  <div class="bar-tools">
+    <button class="tool" id="searchBtn" aria-label="Search"><span>⌕</span><span class="search-label">Search</span><kbd>/</kbd></button>
+    <button class="tool" id="themeBtn" aria-haspopup="true" aria-expanded="false"><span>◐</span><span id="themeName">Theme</span></button>
+    <a class="ver" href="{{.Source}}" title="Source on GitHub">{{.Version}} · GitHub</a>
+  </div>
+</div></header>
+<div class="theme-pop" id="themePop" role="dialog" aria-label="Theme">
+{{range .Schemes}}<button data-pick="{{.Slug}}" aria-pressed="false"><span class="dots">{{range .Dots}}<i style="background:{{.}}"></i>{{end}}</span>{{.Name}}</button>
+{{end}}<small>Every scheme cairn carries. Kept in this browser only.</small>
+</div>
+<div class="search" id="search" role="dialog" aria-label="Search">
+  <div class="search-box"><input id="q" placeholder="Search the documentation" autocomplete="off"><ul id="results"></ul></div>
+</div>
+{{if .Page.Wide}}<main class="home"><article>{{.Body}}</article></main>{{else}}
+<div class="shell">
+  <nav class="side" id="side">
+  {{range .Groups}}<h4>{{.Name}}</h4>
+  {{range .Pages}}<a href="{{.Name}}"{{if or (eq .Name $.Page.Name) (eq .Name $.Page.Parent)}} class="on"{{end}}>{{.Title}}</a>
+  {{end}}{{end}}
+  </nav>
+  <article>
+    <h1>{{.Page.Title}}</h1>
+    {{.Body}}
+    {{if .Page.Source}}<p class="src">From <a href="{{.Source}}/blob/main/{{.Page.Source}}">{{.Page.Source}}</a> · cairn {{.Version}}</p>{{end}}
+  </article>
+  {{if .Page.Toc}}<nav class="toc"><b>On this page</b>
+  {{range .Page.Toc}}<a href="#{{.ID}}">{{.Title}}</a>
+  {{end}}</nav>{{end}}
+</div>{{end}}
+<footer class="foot"><div class="foot-in">
+  <span>cairn {{.Version}}</span>
+  <span><a href="changelog.html">Changelog</a> · <a href="{{.Source}}">Source</a> · <a href="{{.Source}}/issues">Issues</a></span>
+</div></footer>
+<script src="search.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

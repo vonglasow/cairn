@@ -346,3 +346,10 @@ func TestAColourIsWrittenWithOrWithoutItsHashAndItsAlpha(t *testing.T) {
 		}
 	}
 }
+
+func TestASchemeHandsItsSixteenSlotsInOrder(t *testing.T) {
+	slots := parsed(t, gruvbox).Slots()
+	if slots[0] != rgb("#282828") || slots[5] != rgb("#ebdbb2") || slots[10] != rgb("#fabd2f") || slots[15] != rgb("#d65d0e") {
+		t.Errorf("Slots() = %v, want base00 to base0F in order", slots)
+	}
+}

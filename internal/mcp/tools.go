@@ -20,6 +20,15 @@ func offered(access engine.Level, pages engine.Pages) []engine.Operation {
 	return ops
 }
 
+// Tools is every tool the server can offer: at full access, with every page on.
+func Tools() []*sdk.Tool {
+	var tools []*sdk.Tool
+	for _, op := range offered(engine.Full, engine.Pages{}) {
+		tools = append(tools, toolFor(op))
+	}
+	return tools
+}
+
 func toolFor(op engine.Operation) *sdk.Tool {
 	destructive := op.Level == engine.Full || op.Overwrites
 	openWorld := false

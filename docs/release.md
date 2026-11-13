@@ -90,7 +90,7 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
 
 ## What pushing the tag does
 
-`.github/workflows/release.yml` runs on a pushed tag `vX.Y.Z`, in four jobs:
+`.github/workflows/release.yml` runs on a pushed tag `vX.Y.Z`, in five steps:
 
 1. **Every check, on the commit the tag names.** The release calls
    `check.yml` itself (`workflow_call`) — the hooks on Linux, the race
@@ -123,6 +123,8 @@ made: there is no tag typed by hand anywhere in this. It does, in this order:
    every minor (`@version-brew-formula-for-its-minor`), so
    `brew install vonglasow/tap/cairn` takes the latest and
    `brew install vonglasow/tap/cairn@0.4` an older one.
+5. **The documentation site**, built from the tagged commit once the version
+   is released and published to GitHub Pages — see [the site](#the-site).
 
 **The Claude Code plugin is installed from the version's tag.**
 `cairn plugin show` prints the commands for the binary's own version, and
@@ -195,6 +197,42 @@ workflow's own token.
 but the formula cannot fetch a binary from it without a token, so
 `brew install` fails for anybody: the repository goes public once everything
 else is wired.
+
+## The site
+
+The documentation is published as a site, at
+`https://vonglasow.github.io/cairn`, with each version: the version out and
+the site describing it are one, and only the latest is published. Its source
+on GitHub Pages is "GitHub Actions", set once by hand in the repository's
+settings; the release's `site` job builds it on macOS and `pages` publishes
+it.
+
+`make site` builds it into `dist/site`, the same way, to look at before
+tagging. It is a Go program, `cmd/site` over `internal/site`, and nothing of
+it is in the binary. **Nothing on it is written twice:**
+
+- a page of `docs/` written for the person using cairn is published, its
+  links taken to the page they name, or to the file on GitHub at the version's
+  tag when it is not published; a page only whoever develops cairn reads —
+  workflow, checks, the definition of done, architecture, design principles,
+  development, dependencies, this one, debug — is not, and a page of `docs/`
+  that is neither published nor named as a developer's fails the suite;
+- the reference is read off cairn itself: every command from the command
+  tree with every page on, every MCP tool from the server's own definitions,
+  the configuration from what `cairn config init` writes, every scheme from
+  `internal/theme/schemes`;
+- the boards are drawn by cairn over its fixtures: the terminal board as
+  text, coloured by the scheme the site wears as a base16 terminal would be,
+  and the window off screen in every scheme, a picture each;
+- the changelog is `scripts/changelog.sh`'s.
+
+The site wears every scheme cairn carries. The one picked is kept in the
+visitor's browser, under `cairn-theme`, and read before the page is drawn;
+a first visit follows the system, cairn's own in the dark and Catppuccin
+Latte in the light. It loads nothing from anywhere else: no font, no script,
+no counter.
+
+`bdd/site.feature` holds it to all of that.
 
 ## What a version is not
 

@@ -28,7 +28,14 @@ var stamps = build.Read
 // NewRootCmd builds the whole command tree.
 func NewRootCmd() *cobra.Command { return newRootCmdFor(home(), stamps()) }
 
+// Reference is the whole command tree with every page on, whatever this machine's configuration says, and no build's version: what the documentation describes.
+func Reference() *cobra.Command { return newRootCmdWith(engine.Pages{}, build.Info{}) }
+
 func newRootCmdFor(h engine.Home, b build.Info) *cobra.Command {
+	return newRootCmdWith(engine.PagesFrom(h), b)
+}
+
+func newRootCmdWith(pages engine.Pages, b build.Info) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "cairn",
 		Short:         "Cairn — the markers that show the path you are on",
@@ -55,7 +62,7 @@ func newRootCmdFor(h engine.Home, b build.Info) *cobra.Command {
 	root.PersistentFlags().Bool(debugFlag, false, "write down what this run does, beside the store, as CAIRN_DEBUG=1 does")
 	root.PersistentFlags().String(workspaceFlag, "", "the workspace this command uses, whatever the environment says")
 	root.PersistentFlags().String(storeFlag, "", "the store this command uses, whatever the environment says")
-	root.AddCommand(newActionGroups(engine.PagesFrom(h))...)
+	root.AddCommand(newActionGroups(pages)...)
 	root.AddCommand(newMCPCmd())
 	root.AddCommand(newTuiCmd())
 	root.AddCommand(newGuiCmd())

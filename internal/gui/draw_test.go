@@ -40,22 +40,26 @@ func offScreen(t *testing.T, wide, high int) *headless.Window {
 
 func drawn(t *testing.T, w Window) *image.RGBA {
 	t.Helper()
-	shot, err := rendered(offScreen(t, w.width, w.height), drawingTheme(), w)
-	if err != nil {
-		t.Fatal(err)
+	shot, err := Shot(w, drawingTheme(), Dark())
+	if err == nil {
+		return shot
 	}
-	return shot
+	if os.Getenv(windowless) != "" {
+		t.Skipf("%v", err)
+	}
+	t.Fatalf("%v — set %s=1 to skip what draws, on a machine that cannot", err, windowless)
+	return nil
 }
 
 func drawnInAStep(th *material.Theme, w Window) (*image.RGBA, error) {
-	window, err := headless.NewWindow(w.width, w.height)
-	if err != nil {
-		if os.Getenv(windowless) != "" {
-			return nil, godog.ErrSkip
-		}
-		return nil, fmt.Errorf("no headless window here: %w — set %s=1 to skip what draws, on a machine that cannot", err, windowless)
+	shot, err := Shot(w, th, Dark())
+	if err != nil && os.Getenv(windowless) != "" {
+		return nil, godog.ErrSkip
 	}
-	return rendered(window, th, w)
+	if err != nil {
+		return nil, fmt.Errorf("%w — set %s=1 to skip what draws, on a machine that cannot", err, windowless)
+	}
+	return shot, nil
 }
 
 func drawsWithoutFault(th *material.Theme, w Window) (err error) {
@@ -72,25 +76,6 @@ func drawsWithoutFault(th *material.Theme, w Window) (err error) {
 	}
 	Draw(NewKit(gtx, th, Dark(), &Drawn{}), w)
 	return nil
-}
-
-func rendered(window *headless.Window, th *material.Theme, w Window) (*image.RGBA, error) {
-	defer window.Release()
-	var ops op.Ops
-	gtx := layout.Context{
-		Ops:         &ops,
-		Constraints: layout.Exact(image.Pt(w.width, w.height)),
-		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
-	}
-	Draw(NewKit(gtx, th, Dark(), &Drawn{}), w)
-	if err := window.Frame(gtx.Ops); err != nil {
-		return nil, fmt.Errorf("drawing: %w", err)
-	}
-	shot := image.NewRGBA(image.Rect(0, 0, w.width, w.height))
-	if err := window.Screenshot(shot); err != nil {
-		return nil, fmt.Errorf("reading the pixels back: %w", err)
-	}
-	return shot, nil
 }
 
 func ink(shot *image.RGBA, b Box, back color.NRGBA) int {

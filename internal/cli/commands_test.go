@@ -185,3 +185,16 @@ func shellWords(line string) ([]string, error) {
 	}
 	return words, nil
 }
+
+func TestReference_isEveryCommandWhateverThePagesOfThisMachine(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	root := Reference()
+	for _, line := range [][]string{{"series", "edit"}, {"timesheet", "show"}, {"workspace", "add"}, {"tui"}} {
+		if found, _, err := root.Find(line); err != nil || found.Name() != line[len(line)-1] {
+			t.Errorf("Reference() has no %v", line)
+		}
+	}
+	if root.Version != "" {
+		t.Errorf("Reference() says version %q, which belongs to a build and not to the reference", root.Version)
+	}
+}

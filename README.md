@@ -257,6 +257,10 @@ description is replaced by a fingerprint and a length. See
 
 ## Documentation
 
+Published with each version at
+[vonglasow.github.io/cairn](https://vonglasow.github.io/cairn), the same pages
+as these.
+
 - [Using cairn](docs/usage.md): tasks, objectives, focus and time, labels,
   backups
 - [Installing in detail](INSTALL.md): each system, and what a build needs

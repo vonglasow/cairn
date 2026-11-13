@@ -543,6 +543,19 @@ linters:
             - pkg: cairn/internal/gui
               desc: two surfaces do not reach each other
 
+        # The documentation site: built beside cairn, never part of it. It reads
+        # every surface to describe it — the command tree, the tools, both
+        # boards drawn over the fixtures — so it may import them, which no
+        # surface may; and like them it reaches the store only through the
+        # engine. Nothing imports it but cmd/site.
+        site:
+          files: ["**/internal/site/**"]
+          deny:
+            - pkg: cairn/internal/store
+              desc: the site draws through the engine, never behind it
+            - pkg: database/sql
+              desc: the site never opens a database
+
         # What the binary is made of is never a test. The harness under test/
         # is the one place outside a _test.go file that is one, deliberately and
         # with nowhere else to go; `make harness-check` keeps the binary from

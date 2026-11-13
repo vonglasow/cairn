@@ -350,3 +350,14 @@ func TestOffered_takesNoRuleWhileRecurrenceIsOff(t *testing.T) {
 		t.Error("with recurrence on, a tool takes no rule")
 	}
 }
+
+func TestTools_isEveryToolTheServerCanOffer(t *testing.T) {
+	tools := Tools()
+	names := map[string]string{}
+	for _, tool := range tools {
+		names[tool.Name] = tool.Description
+	}
+	if len(tools) != len(engine.All()) || names["task_delete"] != engine.TaskDelete.Does || names["series_edit"] == "" {
+		t.Errorf("Tools() = %d tools, want every one of the %d operations, series and deleting included", len(tools), len(engine.All()))
+	}
+}
