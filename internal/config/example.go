@@ -1,6 +1,6 @@
 package config
 
-// Example is the whole configuration file, every table written and every key explained and set to what cairn uses when the file says nothing — a key with no such value is commented under its own table, so taking the comment off lands it there: what config init writes, and what the README shows.
+// Example is the whole configuration file, every table written and every key explained and set to what cairn uses when the file says nothing — a key with no such value is commented under its own table, so taking the comment off lands it there: what config init writes, and what the documentation site prints.
 const Example = `# Where cairn writes its Claude Code plugin, and keeps it at its own version:
 # a folder. Beside the store when it is not said. Absolute, or under ~.
 plugin = "~/.cairn/claude-plugin"

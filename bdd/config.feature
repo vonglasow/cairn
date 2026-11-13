@@ -73,7 +73,7 @@ Feature: Where cairn looks for its own places
       When I run `cairn config init`
       Then it succeeds
       And it names the file it wrote
-      And the file it wrote is the configuration the README shows
+      And the file it wrote is the configuration the documentation shows
       When I run `cairn config show`
       Then it says the store is at "~/.cairn/cairn.db", named by the default workspace, "main"
       And it says the plugin is at "~/.cairn/claude-plugin", named by the file

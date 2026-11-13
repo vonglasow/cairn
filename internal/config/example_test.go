@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -141,5 +142,39 @@ func TestTheExample_writesTheTimeAsAWordAndNamesTheThree(t *testing.T) {
 		if !strings.Contains(Example, word) {
 			t.Errorf("the example does not name the time %s:\n%s", word, Example)
 		}
+	}
+}
+
+func TestTheExampleHoldsEveryKeyCairnReads(t *testing.T) {
+	block := Example
+	keys := acceptedKeys()
+	tables := reflect.TypeFor[file]()
+	for i := range tables.NumField() {
+		table := tables.Field(i)
+		if table.Type.Kind() != reflect.Pointer || table.Type.Elem().Kind() != reflect.Struct || table.Name == "Workspace" {
+			continue
+		}
+		for j := range table.Type.Elem().NumField() {
+			keys = append(keys, table.Type.Elem().Field(j).Tag.Get("toml")+" = ")
+		}
+	}
+	for _, key := range keys {
+		if key == "recurrence" {
+			continue
+		}
+		if !strings.Contains(block, key) {
+			t.Errorf("the example says nothing of %q", key)
+		}
+	}
+	home := t.TempDir()
+	dir := filepath.Join(home, ".config", "cairn")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(block), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(home, func(string) (string, bool) { return "", false }); err != nil {
+		t.Errorf("the example is not a configuration cairn reads: %v", err)
 	}
 }

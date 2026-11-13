@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{if eq .Page.Name "index.html"}}cairn — objectives and tasks on one board{{else}}{{.Page.Title}} · cairn {{.Version}}{{end}}</title>
+<link rel="canonical" href="{{.Home}}{{if ne .Page.Name "index.html"}}{{.Page.Name}}{{end}}">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <script>
 (function () {

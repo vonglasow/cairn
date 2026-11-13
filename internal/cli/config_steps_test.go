@@ -161,7 +161,7 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	sc.Step(`^it names the file it wrote$`, func() error {
 		return test.WantContains(w.Out.Stdout, w.ConfigPath(), "the answer")
 	})
-	sc.Step(`^the file it wrote is the configuration the README shows$`, func() error {
+	sc.Step(`^the file it wrote is the configuration the documentation shows$`, func() error {
 		written, err := os.ReadFile(w.ConfigPath())
 		if err != nil {
 			return err

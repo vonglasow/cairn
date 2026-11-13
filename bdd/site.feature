@@ -102,3 +102,10 @@ Feature: the documentation site
     Scenario: the terminal board is shown as text, coloured by the scheme worn
       Then the home page shows the terminal board drawn over the fixtures
       And each scheme gives the terminal its sixteen colours
+
+  Rule: The README starts somebody, and sends them to the site for the rest
+
+    @site-readme-points-to-the-site
+    Scenario: every link from the README to the site lands on one of its pages
+      Then the README links to the site's page for "docs/config.md"
+      And every link from the README to the site lands on a page of the site

@@ -71,6 +71,8 @@ func initSite(sc *godog.ScenarioContext) {
 	sc.Step(`^each picture is drawn on the back of its own scheme$`, w.eachPictureOnItsOwnBack)
 	sc.Step(`^the home page shows the terminal board drawn over the fixtures$`, w.theHomePageShowsTheTerminal)
 	sc.Step(`^each scheme gives the terminal its sixteen colours$`, w.eachSchemeGivesTheTerminalItsColours)
+	sc.Step(`^the README links to the site's page for "([^"]*)"$`, w.theReadmeLinksToThePageFor)
+	sc.Step(`^every link from the README to the site lands on a page of the site$`, w.everyReadmeLinkLandsOnAPage)
 }
 
 func (w *siteWorld) aChangelogThatSays(said *godog.DocString) error {
@@ -497,6 +499,49 @@ func (w *siteWorld) eachSchemeGivesTheTerminalItsColours() error {
 			if !strings.Contains(rules, want) {
 				return fmt.Errorf("%s does not give the terminal %s", slug, want)
 			}
+		}
+	}
+	return nil
+}
+
+var toTheSite = regexp.MustCompile(regexp.QuoteMeta(address) + `([^)#"\s]*)`)
+
+func readme() (string, error) {
+	said, err := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	return string(said), err
+}
+
+func (w *siteWorld) theReadmeLinksToThePageFor(source string) error {
+	said, err := readme()
+	if err != nil {
+		return err
+	}
+	name, ok := pageFor(source)
+	if !ok {
+		return fmt.Errorf("%s is not published", source)
+	}
+	if !strings.Contains(said, "("+address+name) {
+		return fmt.Errorf("the README has no link to %s%s", address, name)
+	}
+	return nil
+}
+
+func (w *siteWorld) everyReadmeLinkLandsOnAPage() error {
+	said, err := readme()
+	if err != nil {
+		return err
+	}
+	links := toTheSite.FindAllStringSubmatch(said, -1)
+	if len(links) == 0 {
+		return fmt.Errorf("the README has no link to the site")
+	}
+	for _, link := range links {
+		page := link[1]
+		if page == "" {
+			page = "index.html"
+		}
+		if _, err := os.Stat(filepath.Join(w.out, page)); err != nil {
+			return fmt.Errorf("the README links to %s%s, which is not on the site", address, link[1])
 		}
 	}
 	return nil

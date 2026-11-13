@@ -471,9 +471,11 @@ read where it stands (`@config-init-a-key-uncommented-is-read-under-its-table`,
 the example out of its comment in turn. A key cairn knows written under the
 wrong table is refused with the table it belongs under
 (`@config-a-key-under-the-wrong-table-names-its-own`). Writing one by hand meant finding its keys
-here and in the README first. It is the README's example to the
-byte — one constant, `config.Example`, that a test holds the README to, and
-that another holds to every key the reader accepts — so neither can drift.
+here first. It is the reference's example to the byte — one constant,
+`config.Example`, that the documentation site prints whole
+(`@site-configuration`), and that a test holds to every key the reader
+accepts — so neither can drift. The README no longer shows it: it links to
+the site's configuration page (`@site-readme-points-to-the-site`).
 It never writes over a file already there, which may hold choices nobody
 would want reset (`@config-init-leaves-a-file-alone`); and it writes what is
 used when nothing is said, not what the environment says right now, because

@@ -55,6 +55,7 @@ type shown struct {
 	Dark    string
 	Light   string
 	Source  string
+	Home    string
 }
 
 type pick struct {
@@ -202,7 +203,7 @@ func (s shown) nav(pages []page) shown {
 // Build writes the site into the folder: every page, its style, its search, and the pictures of the window.
 func Build(to string, said Said) error {
 	var schemes []theme.Scheme
-	common := shown{Version: said.Version, Dark: darkFirst, Light: lightFirst, Source: repository}
+	common := shown{Version: said.Version, Dark: darkFirst, Light: lightFirst, Source: repository, Home: address}
 	for _, slug := range theme.Shipped() {
 		s, err := theme.Find("", slug)
 		if err != nil {

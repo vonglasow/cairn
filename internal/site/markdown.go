@@ -16,7 +16,10 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-const repository = "https://github.com/vonglasow/cairn"
+const (
+	repository = "https://github.com/vonglasow/cairn"
+	address    = "https://vonglasow.github.io/cairn/"
+)
 
 var (
 	aTag      = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
