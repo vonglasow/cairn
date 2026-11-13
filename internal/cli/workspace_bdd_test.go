@@ -110,9 +110,6 @@ func (w *workspaces) registerWorkspace(sc *godog.ScenarioContext) {
 	sc.Step(`^it says the (store|notes) (?:is|are) at "([^"]*)"$`, func(place, at string) error {
 		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%-9s  %s\n", place, w.expand(at)), "the answer")
 	})
-	sc.Step(`^it says "([^"]*)"$`, func(said string) error {
-		return test.WantContains(w.Out.Stdout, said, "the answer")
-	})
 }
 
 func (w *workspaces) twoWorkspaces(first, at, second, there, _, chosen string) error {

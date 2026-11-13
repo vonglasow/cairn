@@ -3917,6 +3917,16 @@ Feature: The desktop board
       And the card for task 2 says "1/1"
       And the card for task 2 is not marked as described
 
+    @gui-a-card-says-what-it-blocks
+    Scenario: a card says how many tasks it is in the way of
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Announce it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 3 with the blocker "1"
+      When I open the window
+      Then the card for task 1 says "⊳2"
+
     @gui-labels-show-on-the-card
     Scenario: a card says what it is labelled without being opened
       Given I added a task titled "Write the spec"

@@ -41,9 +41,18 @@ type Card struct {
 	InFocus     bool
 	Focused     int
 	Freed       bool
+	Blocks      int
 	Context     string
 	Said        []string
 	Series      *Occurs
+}
+
+// BlocksSaid is how many open tasks the task is in the way of, as a card writes it; nothing when it is in nobody's way.
+func (c Card) BlocksSaid() string {
+	if c.Blocks == 0 {
+		return ""
+	}
+	return task.BlocksSaid(c.Blocks)
 }
 
 // Described says whether anything is written about the task.
@@ -133,6 +142,7 @@ func Look(w Work) (Snapshot, error) {
 		if o, is := listed.Occurring[card.Number]; is {
 			card.Series = &o
 		}
+		card.Blocks = len(listed.Choosing[card.Number].Blocks)
 		found.Cards = append(found.Cards, card)
 	}
 	by := map[int]objective.Objective{}

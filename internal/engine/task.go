@@ -79,7 +79,7 @@ cairn task list --count state`,
 	Level:   Read,
 	Needs:   AStore,
 	Answers: Tasks{},
-	Takes:   append(append(slices.Clone(taskNarrowing), viewArgument, numbersArgument, fieldsArgument, countArgument, inSeriesArgument), pageArguments...),
+	Takes:   append(append(slices.Clone(taskNarrowing), blockerArgument, viewArgument, numbersArgument, fieldsArgument, countArgument, inSeriesArgument), pageArguments...),
 	Run:     listing,
 }
 
@@ -149,7 +149,11 @@ var TaskShow = Operation{
 			return Answer{}, err
 		}
 		occurring, err := on.Engine.occurring([]int{n})
-		return Answer{Task: &shown, Progress: p, Context: on.contextOf(n), StoodSince: since, Occurring: occurring}, err
+		if err != nil {
+			return Answer{}, err
+		}
+		chosen, err := on.Engine.choosing([]task.Task{shown})
+		return Answer{Task: &shown, Progress: p, Context: on.contextOf(n), StoodSince: since, Occurring: occurring, Choosing: chosen}, err
 	},
 }
 
@@ -458,7 +462,8 @@ cairn task search spec --limit 50 --offset 100`,
 			terms = onPage(terms, found)
 		}
 		answer.Matched, answer.Terms = found, terms
-		return answer, nil
+		answer.Choosing, err = on.Engine.choosing(found)
+		return answer, err
 	},
 }
 
@@ -589,6 +594,10 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
+	blocker, byBlocker, err := askedBlocker(in)
+	if err != nil {
+		return Answer{}, err
+	}
 	cut, err := askedPage(in)
 	if err != nil {
 		return Answer{}, err
@@ -616,6 +625,9 @@ func listing(on On, in Input) (Answer, error) {
 		tasks = seen.kept(tasks)
 	}
 	tasks = occurrences.kept(tasks)
+	if byBlocker {
+		tasks = inTheWayOf(tasks, blocker)
+	}
 	var unknown []int
 	if numbers != nil {
 		if tasks, unknown, err = on.Engine.numbered(tasks, numbers); err != nil {
@@ -637,7 +649,7 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	narrows := kept.Narrows() || numbers != nil || seen != nil || occurrences.of != nil
+	narrows := kept.Narrows() || numbers != nil || seen != nil || occurrences.of != nil || byBlocker
 	along, _, err := on.Engine.alongEvery(tasks, !narrows && !cut.asked)
 	if err != nil {
 		return Answer{}, err
@@ -655,7 +667,11 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown, Counts: counts, Offset: cut.offset, Occurring: occurring}
+	chosen, err := on.Engine.choosing(tasks)
+	if err != nil {
+		return Answer{}, err
+	}
+	answer := Answer{InFocus: &held, NothingBlocks: free, Along: along, Contexts: contexts, Fields: fields, Unknown: unknown, Counts: counts, Offset: cut.offset, Occurring: occurring, Choosing: chosen}
 	if counting != "" || cut.asked {
 		answer.Total = &total
 	}

@@ -662,6 +662,14 @@ was asked for. Called without `fields`, a row still carries every one
 `engine.Row` as before, and only its `required` is dropped, in `internal/mcp`,
 where the schema is made.
 
+A row of `task_list` and `task_search` carries, beside a task's facts, the
+ones cairn works out to help choose — `blocks`, `overdue`, `due_in`, `age`,
+`objective_late` (`@mcp-a-listing-carries-the-facts-that-help-choose`) — and
+`task_list` takes `blocker` to keep what one task is in the way of; what each
+means is in [listing.md](listing.md#a-row-carries-the-facts-that-help-choose-computed-and-never-stored).
+`overdue` and `due_in` are null rather than left out when there is no
+distance to say, so a row asked for them carries them.
+
 A list argument that takes a closed set says it on its items: `fields` is an
 array whose items are an `enum` of the fields a row carries
 (`@mcp-names-the-fields-it-can-answer`), where a single value says it on

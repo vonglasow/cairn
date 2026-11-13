@@ -520,6 +520,16 @@ Feature: The board
       When I open the board
       Then the card for task 2 says "nothing blocks it"
 
+    @tui-a-card-says-what-it-blocks
+    Scenario: a card says how many tasks it is in the way of
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Announce it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 3 with the blocker "1"
+      When I open the board
+      Then the card for task 1 says "⊳2"
+
     @tui-an-archived-card-is-marked
     Scenario: what was archived is told apart from what is on the board
       Given I added a task titled "Write the spec"

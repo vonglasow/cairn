@@ -266,3 +266,26 @@ func TestLines_saysHowOftenAnOccurrenceComesBack(t *testing.T) {
 		t.Errorf("Lines = %q, want %q", got, want)
 	}
 }
+
+func TestText_namesTheTasksItIsInTheWayOfBelowWhatIsInItsOwn(t *testing.T) {
+	got := Text(spec(t), domain.Progress{}, true, 2, 3)
+	if !strings.Contains(got, "blocked by   —\nblocks       ⊳2  #2, #3\nlinked") {
+		t.Errorf("text does not name tasks 2 and 3 below what blocks it:\n%s", got)
+	}
+}
+
+func TestText_saysNothingOfWhatItBlocksWhenItBlocksNothing(t *testing.T) {
+	if got := Text(spec(t), domain.Progress{}, true); strings.Contains(got, "blocks ") || strings.Contains(got, BlocksMark) {
+		t.Errorf("text speaks of what it blocks:\n%s", got)
+	}
+}
+
+func TestLines_marksHowManyTasksEachIsInTheWayOf(t *testing.T) {
+	got := Lines([]Task{spec(t)}, Marks{Blocks: map[int]int{1: 2}})
+	if got != "#1  Write the spec  · backlog  · normal  · ⊳2\n" {
+		t.Errorf("Lines = %q, want task 1 marked ⊳2", got)
+	}
+	if got := Lines([]Task{spec(t)}, Marks{Blocks: map[int]int{1: 0}}); strings.Contains(got, BlocksMark) {
+		t.Errorf("Lines = %q, want no mark for a task blocking nothing", got)
+	}
+}

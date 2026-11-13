@@ -53,6 +53,10 @@ func facts(c engine.Card, g Glyphs, s Skin, now time.Time, width int) string {
 		return s.Faint.Render(Clip(inTheWay(c, g), width))
 	}
 	var told, dressed []string
+	if blocks := c.BlocksSaid(); blocks != "" {
+		told = append(told, blocks)
+		dressed = append(dressed, s.Bright.Render(blocks))
+	}
 	if text, show, late, passed := engine.OccurrenceDay(c, now); show {
 		told = append(told, text)
 		switch {

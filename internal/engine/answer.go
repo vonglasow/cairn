@@ -16,6 +16,7 @@ type Task struct {
 	Progress   *domain.ProgressShape `json:"progress"`
 	Context    string                `json:"context,omitempty"`
 	StoodSince *time.Time            `json:"in_column_since,omitempty"`
+	Blocking   []int                 `json:"blocking,omitempty" jsonschema:"the numbers of the open tasks naming it as a blocker; left out when none does"`
 	Added      *Sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
 	TakenOff   *Sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 	Warnings   []string              `json:"warnings,omitempty" jsonschema:"what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"`
@@ -31,9 +32,14 @@ func OfTask(t task.Task, p domain.Progress) Task {
 // Row is a task as a listing carries it: its facts, and whether it says anything — not what it says; only the fields asked for, when some were.
 type Row struct {
 	task.Facts
-	Described bool `json:"described"`
-	Series    int  `json:"series" jsonschema:"the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"`
-	kept      []string
+	Described     bool `json:"described"`
+	Series        int  `json:"series" jsonschema:"the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"`
+	Blocks        int  `json:"blocks" jsonschema:"how many open tasks name it as a blocker"`
+	Overdue       *int `json:"overdue" jsonschema:"how many days past its deadline it is; null when it has none, is done, or is not past it"`
+	DueIn         *int `json:"due_in" jsonschema:"how many days are left before its deadline, 0 on the day; null when it has none, is done, or is past it"`
+	Age           int  `json:"age" jsonschema:"how many days it has sat in its column"`
+	ObjectiveLate bool `json:"objective_late" jsonschema:"true when an objective it serves is past its deadline, neither reached nor dropped"`
+	kept          []string
 }
 
 func rowOf(t task.Task, kept []string) Row {
@@ -246,6 +252,7 @@ func Of(op Operation, a Answer) any {
 		if !a.StoodSince.IsZero() {
 			said.StoodSince = &a.StoodSince
 		}
+		said.Blocking = a.Choosing[said.Number].Blocks
 		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
 		said.Warnings = a.Warnings
 		if o, is := a.Occurring[said.Number]; is {
@@ -273,6 +280,9 @@ func Of(op Operation, a Answer) any {
 		said.View, said.Gone, said.Outside = a.InView, a.Lost, a.Outside
 		for i, row := range said.Tasks {
 			said.Tasks[i].Series = a.Occurring[row.Number].Series
+			c := a.Choosing[row.Number]
+			said.Tasks[i].Blocks, said.Tasks[i].Overdue, said.Tasks[i].DueIn = len(c.Blocks), c.Overdue, c.DueIn
+			said.Tasks[i].Age, said.Tasks[i].ObjectiveLate = c.Age, c.ObjectiveLate
 		}
 		said.Made = a.Followed
 		return said

@@ -1357,6 +1357,110 @@ Feature: Tasks
       Then it succeeds
       And it says task 2 was waiting on it
 
+  Rule: A task gives the facts that help choose it, and ranks nothing
+
+    @task-says-how-many-it-blocks
+    Scenario: a task says how many open tasks it is in the way of
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Announce it"
+      And I added a task titled "Thank the reviewers"
+      And I edited task 2 with the blocker "1"
+      And I edited task 3 with the blocker "1"
+      And I edited task 4 with the blocker "1"
+      And I edited task 4 with the state "done"
+      When I run `cairn task list --json --fields number --fields blocks`
+      Then the JSON row of task 1 gives "blocks" as 2
+      And the JSON row of task 2 gives "blocks" as 0
+
+    @task-list-marks-what-it-blocks
+    Scenario: a listing marks how many tasks one is in the way of
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Announce it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 3 with the blocker "1"
+      When I run `cairn task list`
+      Then it says "#1  Write the spec  · backlog  · normal  · ⊳2"
+
+    @task-show-says-what-it-blocks
+    Scenario: showing a task names the tasks it is in the way of
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Announce it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 3 with the blocker "1"
+      When I run `cairn task show 1`
+      Then it says "⊳2  #2, #3"
+
+    @task-list-what-a-task-is-in-the-way-of
+    Scenario: a listing keeps the tasks one task is in the way of
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I added a task titled "Announce it"
+      And I edited task 2 with the blocker "1"
+      And I edited task 3 with the blocker "1"
+      When I run `cairn task list --blocker 1`
+      Then it lists 2 tasks
+      And it lists task 2 titled "Ship it"
+      And it lists task 3 titled "Announce it"
+
+    @task-says-how-far-its-deadline-is
+    Scenario Outline: a task says how far it is from its deadline
+      Given today is "2026-11-13"
+      And I added a task titled "Ship it"
+      And I edited task 1 with the deadline "<deadline>"
+      When I run `cairn task list --json`
+      Then the JSON row of task 1 gives "overdue" as <overdue>
+      And the JSON row of task 1 gives "due_in" as <due in>
+
+      Examples:
+        | deadline   | overdue | due in |
+        | 2026-11-10 | 3       | null   |
+        | 2026-11-13 | null    | 0      |
+        | 2026-11-18 | null    | 5      |
+
+    @task-done-or-undated-is-no-distance-from-a-deadline
+    Scenario: a task done, or with no deadline, is neither overdue nor due
+      Given today is "2026-11-13"
+      And I added a task titled "Ship it" with the state "done"
+      And I edited task 1 with the deadline "2026-11-10"
+      And I added a task titled "Rest"
+      When I run `cairn task list --json`
+      Then the JSON row of task 1 gives "overdue" as null
+      And the JSON row of task 1 gives "due_in" as null
+      And the JSON row of task 2 gives "overdue" as null
+      And the JSON row of task 2 gives "due_in" as null
+
+    @task-says-how-long-it-sat-in-its-column
+    Scenario: a task says how many days it has sat in its column
+      Given I added a task titled "Ship it"
+      And it is 3 days from now
+      When I run `cairn task list --json`
+      Then the JSON row of task 1 gives "age" as 3
+
+    @task-says-an-objective-it-serves-is-late
+    Scenario: a task says when an objective it serves is past its deadline unreached
+      Given today is "2026-11-13"
+      And I added an objective titled "Launch" with the deadline "2026-11-10"
+      And I added an objective titled "Polish" with the deadline "2026-11-20"
+      And I added a task titled "Ship it" serving objective 1
+      And I added a task titled "Tidy up" serving objective 2
+      And I added a task titled "Rest"
+      When I run `cairn task list --json`
+      Then the JSON row of task 1 gives "objective_late" as true
+      And the JSON row of task 2 gives "objective_late" as false
+      And the JSON row of task 3 gives "objective_late" as false
+
+    @task-an-objective-reached-is-not-late
+    Scenario: an objective reached past its deadline is not late
+      Given today is "2026-11-13"
+      And I added an objective titled "Launch" with the deadline "2026-11-10"
+      And I added a task titled "Ship it" serving objective 1
+      And I edited objective 1 with the state "reached"
+      When I run `cairn task list --json`
+      Then the JSON row of task 1 gives "objective_late" as false
+
   Rule: A task can be deleted
 
     @task-delete

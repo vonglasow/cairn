@@ -157,6 +157,9 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	w.Register(sc)
 	w.registerStep(sc)
 	w.registerSession(sc)
+	sc.Step(`^it says "([^"]*)"$`, func(said string) error {
+		return test.WantContains(w.Out.Stdout, said, "the answer")
+	})
 
 	sc.Step(`^it is (\d{2}):(\d{2}) on (\d{4})-(\d{2})-(\d{2})$`, func(hour, minute, year, month, day int) error {
 		at := time.Date(year, time.Month(month), day, hour, minute, 0, 0, time.Local)
@@ -230,6 +233,10 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		func(title, attribute, value string) error {
 			return w.Seed(fmt.Sprintf(`cairn task new "%s" %s "%s"`, title, flagFor(attribute), value))
 		})
+
+	sc.Step(`^I added a task titled "([^"]*)" serving objective (\d+)$`, func(title string, n int) error {
+		return w.Seed(fmt.Sprintf(`cairn task new "%s" --objective %d`, title, n))
+	})
 
 	sc.Step(`^I edited task (\d+) with the labels "([^"]*)" and "([^"]*)"$`,
 		func(n int, first, second string) error {

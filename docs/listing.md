@@ -57,6 +57,7 @@ says the word; `--priority high` is still there for the exact question.
 | number | ✓ (`task list`) | ✓ |
 | archived | ✓ | |
 | deadline, as a range | ✓ | |
+| the task it waits on (`--blocker N`) | ✓ (`task list`) | |
 
 A closed set can be matched exactly, so it is narrowed by; everything a task
 says, closed or not, is looked in as a substring.
@@ -471,6 +472,32 @@ A task carrying none of them is the number and the title and nothing else, so
 the shape does not grow for work that has not been filled in yet. An
 objective's row says where it stands the same way — `reached` and `dropped`
 were invisible in a listing of objectives.
+
+A task in somebody's way says so at the end of its row, `· ⊳2` for two open
+tasks waiting on it (`@task-list-marks-what-it-blocks`); a task in nobody's
+way says nothing of it.
+
+## A row carries the facts that help choose, computed and never stored
+
+Beside what it carries, a row of `task list` and `task search` holds five
+facts cairn works out as it answers (`@task-says-how-many-it-blocks`,
+`@task-says-how-far-its-deadline-is`, `@task-says-how-long-it-sat-in-its-column`,
+`@task-says-an-objective-it-serves-is-late`):
+
+| field | what it says |
+|---|---|
+| `blocks` | how many tasks not done, on the board, name it as a blocker — counted over the whole board, whatever the listing kept |
+| `overdue` | how many days past its deadline; null with no deadline, done, or not past it |
+| `due_in` | how many days left before it, 0 on the day; null with no deadline, done, or past it (`@task-done-or-undated-is-no-distance-from-a-deadline`) |
+| `age` | how many days since it last changed column, read off the trace |
+| `objective_late` | an objective it serves directly is past its deadline, neither reached nor dropped (`@task-an-objective-reached-is-not-late`) |
+
+`overdue` and `due_in` are two fields rather than one signed number, so a
+machine reading `due_in` never has to know that a negative one means late.
+`task list --blocker N` keeps the tasks N is in the way of
+(`@task-list-what-a-task-is-in-the-way-of`), the list behind `blocks`. Nothing
+sorts by any of them, and nothing moves a task for them: why is in
+[ordering.md](ordering.md#cairn-gives-the-facts-choosing-is-asked-of-an-agent).
 
 ## The focus is a flag on a task
 

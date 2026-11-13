@@ -346,6 +346,9 @@ func factsOf(c engine.Card, now time.Time, pages engine.Pages) []fact {
 		return []fact{{said: FreedMark, warn: true}}
 	}
 	var pieces []fact
+	if blocks := c.BlocksSaid(); blocks != "" {
+		pieces = append(pieces, fact{said: blocks})
+	}
 	if text, show, late, passed := engine.OccurrenceDay(c, now); show {
 		pieces = append(pieces, fact{said: text, warn: late || passed})
 	} else if due, late := Due(c, now); due != "" && c.Series == nil {

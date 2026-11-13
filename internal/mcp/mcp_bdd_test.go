@@ -1249,6 +1249,9 @@ func initMCP(t *testing.T) func(*godog.ScenarioContext) {
 			_ = w.callTool("task_edit", map[string]any{"number": n, "label": []string{label}})
 			return nil
 		})
+		sc.Step(`^I edited task (\d+) with the blocker "([^"]*)"$`, func(n int, blocker string) error {
+			return w.Seed(fmt.Sprintf(`cairn task edit %d --blocker %s`, n, blocker))
+		})
 		sc.Step(`^I added a task titled "([^"]*)" with the labels "([^"]*)" and "([^"]*)"$`, func(title, first, second string) error {
 			return w.Seed(fmt.Sprintf(`cairn task new "%s" --label "%s" --label "%s"`, title, first, second))
 		})

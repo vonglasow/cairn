@@ -66,3 +66,20 @@ func TestCardOf_saysWhereInTheFocusATaskCame(t *testing.T) {
 		t.Errorf("card %+v, %v; want second in focus", c, err)
 	}
 }
+
+func TestLook_saysOnEachCardHowManyTasksItIsInTheWayOf(t *testing.T) {
+	told := task.From(aTask("Write the spec"))
+	told.Numbered(1)
+	other := task.From(aTask("Ship it"))
+	other.Numbered(2)
+	f := newFake()
+	f.tasks = []task.Task{told.Task(), other.Task()}
+	f.chosen = map[int]Choosing{1: {Blocks: []int{2, 3}}}
+	s, err := Look(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Cards[0].BlocksSaid() != "⊳2" || s.Cards[1].BlocksSaid() != "" {
+		t.Errorf("cards say %q and %q, want ⊳2 and nothing", s.Cards[0].BlocksSaid(), s.Cards[1].BlocksSaid())
+	}
+}

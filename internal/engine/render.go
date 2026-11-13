@@ -2,6 +2,7 @@ package engine
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -146,7 +147,7 @@ func rendered(op Operation, a Answer) string {
 }
 
 func cardText(a Answer) string {
-	said := task.Text(*a.Task, a.Progress, !a.Untimed) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
+	said := task.Text(*a.Task, a.Progress, !a.Untimed, a.Choosing[factsOf(*a.Task).Number].Blocks...) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
 	if o, is := a.Occurring[factsOf(*a.Task).Number]; is {
 		said += occursText(o)
 	}
@@ -160,11 +161,15 @@ func stoodText(t task.Task, since time.Time) string {
 	return fmt.Sprintf("\nin %s since %s · %s\n", factsOf(t).State, domain.FormatDay(since.Local()), daysSince(since, time.Now()))
 }
 
-func daysSince(since, now time.Time) string {
+func daysFrom(since, now time.Time) int {
 	from, to := since.Local(), now.Local()
 	first := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.Local)
 	last := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, time.Local)
-	days := int(last.Sub(first).Hours()+12) / 24
+	return int(math.Round(last.Sub(first).Hours() / 24))
+}
+
+func daysSince(since, now time.Time) string {
+	days := daysFrom(since, now)
 	if days == 0 {
 		return "today"
 	}
@@ -213,7 +218,7 @@ func foundText(tasks []task.Task, a Answer) string {
 }
 
 func marksOf(a Answer) task.Marks {
-	return task.Marks{InFocus: heldOr(a.InFocus), NothingBlocks: a.NothingBlocks, Repeats: repeatsOf(a.Occurring)}
+	return task.Marks{Blocks: blocksOf(a.Choosing), InFocus: heldOr(a.InFocus), NothingBlocks: a.NothingBlocks, Repeats: repeatsOf(a.Occurring)}
 }
 
 func linesOf(tasks []task.Task) []string {

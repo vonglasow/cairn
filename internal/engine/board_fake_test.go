@@ -15,6 +15,7 @@ type fake struct {
 	goals        []objective.Objective
 	focus        []int
 	freed        []int
+	chosen       map[int]Choosing
 	context      string
 	along        map[int]domain.Progress
 	goalsAlong   map[int]domain.Progress
@@ -49,7 +50,7 @@ func (f *fake) Ask(op Operation, in Input) (Answer, error) {
 			contexts[task.OfTask(t).Number] = f.context
 		}
 		return Answer{Tasks: f.tasks, InFocus: &f.focus, NothingBlocks: f.freed,
-			Contexts: contexts, Along: f.along}, nil
+			Contexts: contexts, Along: f.along, Choosing: f.chosen}, nil
 	case "objective list":
 		spent := map[int]time.Duration{}
 		for _, t := range f.tasks {

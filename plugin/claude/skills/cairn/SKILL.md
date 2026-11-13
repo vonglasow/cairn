@@ -81,16 +81,31 @@ label, no access: say so, and carry on without it.
 
 ## Choosing — "sur quoi je travaille ?"
 
+cairn gives the facts and ranks nothing; the choosing is yours, only when
+asked, and nothing you propose is written without the person's yes.
+
 1. List each column on its own, `todo` then `current` — a listing takes one
-   column, and `todo,current` is refused — asking only for what you read:
-   - `task_list {"state": "todo", "fields": ["number", "title", "blocked_by", "deadline"]}`
-   - `task_list {"state": "current", "fields": ["number", "title", "blocked_by", "deadline"]}`
-2. Keep the first five that are not blocked (`blocked_by` empty), `todo`'s
-   before `current`'s and each in the order its list gives — the board's order
-   is the priority, and you rank nothing. A deadline already passed may be
-   pointed out; it moves nothing.
-3. Show each as `cairn#<n> — <title>`.
-4. The person picks one: attach to it as above.
+   column, and `todo,current` is refused — asking only for what you weigh:
+   - `task_list {"state": "todo", "fields": ["number", "title", "priority", "blocked_by", "blocks", "deadline", "overdue", "due_in", "age", "objective_late", "estimate", "time_spent"]}`
+   - the same with `"state": "current"`.
+   `blocks` is how many open tasks it is in the way of (`task_list
+   {"blocker": N}` names them), `overdue`/`due_in` how far from its deadline,
+   `age` the days in its column, `objective_late` an objective it serves past
+   its deadline unreached.
+2. Ask the day's preference, in one question: the time there is, what is
+   known from outside, the wish of the day — and above all the return, the
+   least work for the most result. Do not store the answer anywhere.
+3. Set aside what is blocked (`blocked_by` not empty). Weigh the value — the
+   priority, what it frees (`blocks`), an objective late, a deadline near or
+   passed — against the cost — the estimate, and the time already spent.
+   The board's order is the durable preference: between two close ones, the
+   one higher in its column comes first.
+4. Propose at most five, each as `cairn#<n> — <title>` and one line of why,
+   naming the facts it rests on ("frees 3 tasks, 1h estimated").
+5. A move — a task up its column, another into `todo` — may be proposed, one
+   at a time, each done only on the person's yes (`task_move`). Never reorder
+   the board on your own.
+6. The person picks one: attach to it as above.
 
 ## Steps — splitting the work
 

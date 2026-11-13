@@ -8,8 +8,14 @@ import (
 	"cairn/internal/domain"
 )
 
-// Text renders a task in full, empty attributes included, the way a person reads it; the time spent only while the time is shown.
-func Text(t Task, p domain.Progress, timed bool) string {
+// BlocksMark is what stands before how many open tasks a task is in the way of.
+const BlocksMark = "⊳"
+
+// BlocksSaid is how many open tasks a task is in the way of, as every surface writes it.
+func BlocksSaid(n int) string { return fmt.Sprintf("%s%d", BlocksMark, n) }
+
+// Text renders a task in full, empty attributes included, the way a person reads it; the time spent only while the time is shown, and the open tasks it is in the way of only when there are some.
+func Text(t Task, p domain.Progress, timed bool, blocks ...int) string {
 	c := t.Carried()
 	rows := []domain.Fact{{Key: "state", Value: string(c.State)}}
 	if c.Archived {
@@ -33,6 +39,15 @@ func Text(t Task, p domain.Progress, timed bool) string {
 		domain.Fact{Key: "description", Value: c.Description},
 		domain.Fact{Key: "labels", Value: strings.Join(c.Labels, ", ")},
 		domain.Fact{Key: "blocked by", Value: strings.Join(blocked, ", ")},
+	)
+	if len(blocks) > 0 {
+		var refs []string
+		for _, n := range blocks {
+			refs = append(refs, domain.Ref(n))
+		}
+		rows = append(rows, domain.Fact{Key: "blocks", Value: BlocksSaid(len(blocks)) + "  " + strings.Join(refs, ", ")})
+	}
+	rows = append(rows,
 		domain.Fact{Key: "linked", Value: strings.Join(linked, ", ")},
 		domain.Fact{Key: "deadline", Value: domain.FormatDay(c.Deadline)},
 		domain.Fact{Key: "estimate", Value: domain.FormatDuration(c.Estimate)},
@@ -73,8 +88,9 @@ const InFocusMark = "  (in focus)"
 // NothingBlocksMark is what sets apart a blocked task whose every named blocker is done — the one thing a listing says about blocking, because it is the one thing that needs acting on.
 const NothingBlocksMark = "  (nothing blocks it)"
 
-// Marks are what a listing says about a task that the task does not carry itself: which one is being worked on, which ones are waiting on nothing any more, and how often an occurrence of a series comes back.
+// Marks are what a listing says about a task that the task does not carry itself: how many open tasks each is in the way of, which one is being worked on, which ones are waiting on nothing any more, and how often an occurrence of a series comes back.
 type Marks struct {
+	Blocks        map[int]int
 	InFocus       []int
 	NothingBlocks []int
 	Repeats       map[int]string
@@ -93,6 +109,9 @@ func Lines(tasks []Task, marks Marks) string {
 func marked(t Task, marks Marks) string {
 	line := Line(t)
 	number := t.number
+	if n := marks.Blocks[number]; n > 0 {
+		line += "  · " + BlocksSaid(n)
+	}
 	if repeats, ok := marks.Repeats[number]; ok {
 		line += "  · " + repeats
 	}

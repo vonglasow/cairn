@@ -368,8 +368,12 @@ the priority, the estimate and the time spent it already holds:
 | `age` | how many days it has sat in its column, read off the trace |
 | `objective_late` | whether an objective it serves is behind |
 
-They are to be fields of `task list --fields`, and `task list --blocker N` to
-list what N is in the way of. Nothing sorts by them, and nothing moves a task for them.
+They are fields of every row of `task list` and `task search`, and so of
+`--fields`, and `task list --blocker N` lists what N is in the way of
+([listing.md](listing.md#a-row-carries-the-facts-that-help-choose-computed-and-never-stored)).
+`blocks` is also on every card of both boards, `⊳2`, on the end of a listing's
+row, and in `task show`, which names the tasks. Nothing sorts by them, and
+nothing moves a task for them.
 
 **Choosing is the cairn skill's, when it is asked** ("what do I work on?").
 It reads those facts and the board's order, asks for the day's preference — the

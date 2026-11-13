@@ -274,3 +274,14 @@ func TestALongPartIsCutToItsPanel(t *testing.T) {
 		t.Fatalf("a panel holding one long part is %d rows tall, want 4:\n%s", got, under[0])
 	}
 }
+
+func TestFactsSayFirstHowManyTasksItIsInTheWayOf(t *testing.T) {
+	c := engine.Card{State: "todo", Blocks: 2, Labels: []string{"spec"}}
+	got := facts(c, GlyphsFor(Unicode), plainSkin, today, 40)
+	if !strings.HasPrefix(got, "⊳2  ") {
+		t.Fatalf("the facts row %q does not lead with ⊳2", got)
+	}
+	if got := facts(engine.Card{State: "todo"}, GlyphsFor(Unicode), plainSkin, today, 40); strings.Contains(got, "⊳") {
+		t.Fatalf("a card blocking nothing says %q", got)
+	}
+}

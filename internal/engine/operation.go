@@ -383,6 +383,7 @@ type Answer struct {
 	KeepsNothing      bool
 	Outside           []Outside
 	Occurring         map[int]Occurs
+	Choosing          map[int]Choosing
 	Followed          []MadeNext
 	SeriesShown       *Series
 	SeriesKept        *SeriesListed

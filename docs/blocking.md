@@ -149,6 +149,22 @@ those words has said the thing is out of the way, so that erasure takes the task
 back to `todo` like any other last thing. One is a guess cairn is not allowed to
 make; the other is a sentence somebody typed.
 
+## What a task is in the way of, said from its side
+
+A blocker is written on the task that waits. Read from the other end — what
+this task holds up — it was computed nowhere, and choosing what to work on
+needs it most: the task that frees three others. So every surface says it,
+`⊳2` for two open tasks waiting on it — a card of either board, a listing's
+row, the `blocks` field of a row (`@task-says-how-many-it-blocks`,
+`@tui-a-card-says-what-it-blocks`, `@gui-a-card-says-what-it-blocks`) — and
+`task show` names them, `blocks  ⊳2  #2, #3` (`@task-show-says-what-it-blocks`).
+`task list --blocker 1` lists them. A task done, or archived, waits on nobody
+and is not counted. A task done that others still name goes on saying so,
+since nothing takes a blocker off on its own (above).
+
+On a stopped card of the terminal board, the line that says what is in its own
+way stays as it was, and says nothing of what it holds up.
+
 ## What cannot be recorded
 
 - **A task cannot block itself.**

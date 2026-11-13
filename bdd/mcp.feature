@@ -199,6 +199,17 @@ Feature: Answering a machine over MCP
       And every row of it carries "number", "state" and "title", and nothing else
       And its answer holds to the shape the tool described
 
+    @mcp-a-listing-carries-the-facts-that-help-choose
+    Scenario: an agent reads the facts that help choose a task
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      And a cairn server started with `--access read`
+      When I call `task_list` asking for the fields "number", "blocks" and "age"
+      Then it answers with 2 tasks
+      And every row of it carries "number", "blocks" and "age", and nothing else
+      And its answer holds to the shape the tool described
+
     @mcp-a-search-carries-the-fields-asked-for
     Scenario: a search carries only the fields an agent asked for
       Given I added a task titled "Write the spec"

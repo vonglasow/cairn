@@ -13,6 +13,7 @@ func initTask(t *testing.T) func(*godog.ScenarioContext) {
 		w.registerBlocking(sc)
 		w.registerLinking(sc)
 		w.registerTimesheet(sc)
+		w.registerObjective(sc)
 	}
 }
 

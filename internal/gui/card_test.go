@@ -340,3 +340,10 @@ func TestTheFactsGiveTheirLastPiecesUpBeforeTheyCoverTheNumber(t *testing.T) {
 		}
 	}
 }
+
+func TestCardFactsSayFirstHowManyTasksItIsInTheWayOf(t *testing.T) {
+	now := time.Date(2026, 11, 13, 9, 0, 0, 0, time.Local)
+	if said, warn := CardFacts(engine.Card{Blocks: 2, Serves: []string{"Launch"}}, now, engine.Pages{}); said != "⊳2  Launch" || warn {
+		t.Errorf("CardFacts = %q, %v; want ⊳2 before what it serves, and no warning", said, warn)
+	}
+}

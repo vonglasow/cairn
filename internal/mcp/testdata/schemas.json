@@ -6057,6 +6057,16 @@
                 "string"
               ]
             },
+            "blocking": {
+              "type": [
+                "null",
+                "array"
+              ],
+              "items": {
+                "type": "integer"
+              },
+              "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
+            },
             "added": {
               "type": [
                 "null",
@@ -6693,6 +6703,16 @@
             "string"
           ]
         },
+        "blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
+        },
         "added": {
           "type": [
             "null",
@@ -7169,6 +7189,16 @@
                   "string"
                 ]
               },
+              "blocking": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
+              },
               "added": {
                 "type": [
                   "null",
@@ -7618,6 +7648,10 @@
           "description": "keep only the archived tasks, instead of the ones still on the board",
           "type": "boolean"
         },
+        "blocker": {
+          "description": "keep only the tasks this task is in the way of",
+          "type": "integer"
+        },
         "count": {
           "description": "answer no row, only how many of the tasks kept sit in each column (state) or carry each label (label), and under total how many there are in all",
           "enum": [
@@ -7631,7 +7665,7 @@
           "type": "string"
         },
         "fields": {
-          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described, series; every one when it is not named",
+          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described, series, blocks, overdue, due_in, age, objective_late; every one when it is not named",
           "items": {
             "enum": [
               "number",
@@ -7648,7 +7682,12 @@
               "time_spent",
               "objectives",
               "described",
-              "series"
+              "series",
+              "blocks",
+              "overdue",
+              "due_in",
+              "age",
+              "objective_late"
             ],
             "type": "string"
           },
@@ -7834,6 +7873,32 @@
               "series": {
                 "type": "integer",
                 "description": "the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"
+              },
+              "blocks": {
+                "type": "integer",
+                "description": "how many open tasks name it as a blocker"
+              },
+              "overdue": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "how many days past its deadline it is; null when it has none, is done, or is not past it"
+              },
+              "due_in": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "how many days are left before its deadline, 0 on the day; null when it has none, is done, or is past it"
+              },
+              "age": {
+                "type": "integer",
+                "description": "how many days it has sat in its column"
+              },
+              "objective_late": {
+                "type": "boolean",
+                "description": "true when an objective it serves is past its deadline, neither reached nor dropped"
               }
             },
             "additionalProperties": false
@@ -8185,6 +8250,32 @@
               "series": {
                 "type": "integer",
                 "description": "the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"
+              },
+              "blocks": {
+                "type": "integer",
+                "description": "how many open tasks name it as a blocker"
+              },
+              "overdue": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "how many days past its deadline it is; null when it has none, is done, or is not past it"
+              },
+              "due_in": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "how many days are left before its deadline, 0 on the day; null when it has none, is done, or is past it"
+              },
+              "age": {
+                "type": "integer",
+                "description": "how many days it has sat in its column"
+              },
+              "objective_late": {
+                "type": "boolean",
+                "description": "true when an objective it serves is past its deadline, neither reached nor dropped"
               }
             },
             "additionalProperties": false
@@ -8674,6 +8765,16 @@
             "string"
           ]
         },
+        "blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
+        },
         "added": {
           "type": [
             "null",
@@ -8921,7 +9022,7 @@
           "type": "string"
         },
         "fields": {
-          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described, series; every one when it is not named",
+          "description": "the fields each task's row carries in the JSON answer, among number, title, state, archived, priority, labels, blocked_by, linked, because, deadline, estimate, time_spent, objectives, described, series, blocks, overdue, due_in, age, objective_late; every one when it is not named",
           "items": {
             "enum": [
               "number",
@@ -8938,7 +9039,12 @@
               "time_spent",
               "objectives",
               "described",
-              "series"
+              "series",
+              "blocks",
+              "overdue",
+              "due_in",
+              "age",
+              "objective_late"
             ],
             "type": "string"
           },
@@ -9115,6 +9221,32 @@
               "series": {
                 "type": "integer",
                 "description": "the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"
+              },
+              "blocks": {
+                "type": "integer",
+                "description": "how many open tasks name it as a blocker"
+              },
+              "overdue": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "how many days past its deadline it is; null when it has none, is done, or is not past it"
+              },
+              "due_in": {
+                "type": [
+                  "null",
+                  "integer"
+                ],
+                "description": "how many days are left before its deadline, 0 on the day; null when it has none, is done, or is past it"
+              },
+              "age": {
+                "type": "integer",
+                "description": "how many days it has sat in its column"
+              },
+              "objective_late": {
+                "type": "boolean",
+                "description": "true when an objective it serves is past its deadline, neither reached nor dropped"
               }
             },
             "additionalProperties": false
@@ -9507,6 +9639,16 @@
             "null",
             "string"
           ]
+        },
+        "blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
         },
         "added": {
           "type": [
@@ -9923,6 +10065,16 @@
             "string"
           ]
         },
+        "blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
+        },
         "added": {
           "type": [
             "null",
@@ -10337,6 +10489,16 @@
             "null",
             "string"
           ]
+        },
+        "blocking": {
+          "type": [
+            "null",
+            "array"
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
         },
         "added": {
           "type": [
@@ -10758,6 +10920,16 @@
                   "null",
                   "string"
                 ]
+              },
+              "blocking": {
+                "type": [
+                  "null",
+                  "array"
+                ],
+                "items": {
+                  "type": "integer"
+                },
+                "description": "the numbers of the open tasks naming it as a blocker; left out when none does"
               },
               "added": {
                 "type": [

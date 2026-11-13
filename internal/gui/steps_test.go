@@ -630,9 +630,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if line := Carried(c, Marks()); !strings.Contains(line, said) {
-			return fmt.Errorf("the card for task %d reads %q beside its number, and says nothing of %q",
-				n, line, said)
+		line := Carried(c, Marks())
+		facts, _ := CardFacts(c, time.Now(), engine.Pages{})
+		if !strings.Contains(line, said) && !strings.Contains(facts, said) {
+			return fmt.Errorf("the card for task %d reads %q beside its number and %q in its facts, and says nothing of %q",
+				n, line, facts, said)
 		}
 		return nil
 	})
