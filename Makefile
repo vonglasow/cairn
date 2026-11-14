@@ -23,7 +23,7 @@ COVERAGE_MIN ?= 90
 PACKAGE_COVERAGE_MIN ?= 85
 LDFLAGS  = -X $(STAMPED).version=$(VERSION) -X $(STAMPED).commit=$(COMMIT) -X $(STAMPED).built=$(BUILT) -X $(STAMPED).committed=$(COMMIT_DATE)
 
-.PHONY: release release-check next-version changelog package stamps help build run dev site red race coverage-part coverage-merge cover cover-check tested-check rule-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures notices clean
+.PHONY: release release-check next-version changelog package stamps help build run dev site race coverage-part coverage-merge cover cover-check tested-check rule-check harness-check windows-check quiet-check mutation mutation-changed check linux fixtures notices clean
 
 ## help: say what every target here does, read off the comment above it
 ## The first line of each `## target:` comment, so a target added with one is
@@ -67,20 +67,6 @@ site:
 	@mkdir -p dist
 	scripts/changelog.sh "$${NEXT:-$$($(TOOL) svu next --v0)}" >dist/CHANGELOG.md
 	go run ./cmd/site --out dist/site --version $(VERSION) --changelog dist/CHANGELOG.md
-
-## red: run PKG's tests, and record the failure so production code may be written
-## Nothing else mints the receipt that .claude/hooks/red-first.sh looks for, and
-## nothing mints one from a suite that passed. What it attests is not that a
-## test exists — coverage already says that — but that its failure was seen.
-##
-## MOVING is the one way past a suite that passes, and it is for code leaving a
-## package: there is no absent behaviour to write a test for, so there is no
-## failure to see. It demands a sentence, keeps it in the receipt, and marks the
-## receipt as a move — so a write let through this way stays legible afterwards.
-##
-##   make red PKG=./internal/tui MOVING="askedFrom moves to internal/engine"
-red:
-	@.claude/hooks/red.sh "$(PKG)" "$(RUN)" "$(MOVING)"
 
 # Every test credits every package it runs (-coverpkg=./...), scenarios
 # included; cover-check counts each block once, however many test binaries

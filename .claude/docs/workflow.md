@@ -13,6 +13,9 @@ Read this before starting any piece of work.
    test that is miswired.
 3. **Code last**, and only enough to turn the test green.
 
+A refactoring changes no behaviour, so it has no test to see fail: the suite
+is green before it and after it.
+
 Never the reverse. Code written first decides what the test will say, and a
 test written after the code documents what the code does rather than what was
 wanted.

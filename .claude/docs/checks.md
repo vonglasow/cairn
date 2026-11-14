@@ -52,35 +52,6 @@ does; `golangci-lint` and `rule-check` when `.golangci.yml` does. Each says so w
 `.pre-commit-config.yaml`. Filtered on Go alone they ran nothing at all for a commit that
 changed only a scenario — which the suite executes — or only a dependency.
 
-## Before the commit: a test seen red
-
-Two hooks under `.claude/hooks` hold "scenario, then test, then code" while an
-agent works, before prek ever sees a commit.
-
-- `red-first.sh` refuses any write to a production `.go` file under
-  `internal/` — through Write, Edit, a redirection, an in-place editor, a copy
-  or move into place, a checkout or a patch — unless that package holds a
-  receipt younger than thirty minutes. It needs `jq`, and refuses everything
-  when `jq` is missing rather than letting everything through.
-- `make red PKG=./internal/<package> [RUN=TestName]` is the only thing that
-  mints a receipt, and it mints one only when a test failed, or when a test
-  does not build yet — its error located in a `_test.go` file, the honest
-  first red of a function that does not exist. A package that does not exist,
-  an invalid `RUN` pattern, a suite that passes, or production code that does
-  not compile all mint nothing.
-
-`make red PKG=… MOVING="what moves, and where to"` is the one door that runs no
-test: code moving out of a package asks for no new behaviour, so it has nothing
-to fail. The sentence is kept in the receipt, which says `moving` rather than
-naming a failing test, so a write let through this way is visible to anyone
-reading `.claude/red`. What it owes is that the suite still passes once the
-move is done.
-
-**On a fresh clone there are no receipts**: `.claude/red` is ignored by git,
-and a receipt says a failure was seen on this machine, which no clone can
-inherit. The first piece of work starts like every other — a failing test,
-then `make red PKG=…` — and nothing has to be set up first.
-
 ## Getting them
 
 Without these, the hooks cannot run and nothing can be committed:
@@ -98,7 +69,7 @@ by hand drifts from what the repository says. A module of its own, so what the
 tools are built from never enters cairn's graph and govulncheck does not judge
 cairn by it.
 
-`jq` is read by `scripts/mutation.sh` and by both hooks under `.claude/hooks`.
+`jq` is read by `scripts/mutation.sh`.
 
 Two are not built from `tools/go.mod`: prek builds `semgrep`, `shellcheck` and
 `commitlint` in environments of its own, from the revisions pinned in
