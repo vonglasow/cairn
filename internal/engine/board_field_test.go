@@ -29,7 +29,7 @@ func TestGoalFieldsAreFewerAndSayNothingOfBlockers(t *testing.T) {
 			t.Fatalf("an objective was given a field it has not got: %q", f.Name)
 		}
 	}
-	if len(fields) >= len(TaskFields(Card{})) {
+	if len(fields) >= len(taskFields(Card{})) {
 		t.Fatal("an objective's form is not shorter than a task's")
 	}
 }
@@ -111,7 +111,7 @@ func TestATaskWithNoPartsSaysNothing(t *testing.T) {
 }
 
 func TestFields_giveAnExampleOfWhatIsTypedInThem(t *testing.T) {
-	for _, fields := range [][]Field{TaskFields(Card{}), GoalFields(Goal{}), AddingFields("todo")} {
+	for _, fields := range [][]Field{taskFields(Card{}), GoalFields(Goal{}), AddingFields("todo")} {
 		for _, f := range fields {
 			typed := len(f.Choices) == 0 && f.Name != "description" && f.Name != "objectives"
 			if typed && f.Example == "" {
@@ -123,7 +123,7 @@ func TestFields_giveAnExampleOfWhatIsTypedInThem(t *testing.T) {
 		}
 	}
 	for name, want := range map[string]string{"deadline": "2026-12-25", "estimate": "1h30m"} {
-		for _, f := range TaskFields(Card{}) {
+		for _, f := range taskFields(Card{}) {
 			if f.Name == name && f.Example != want {
 				t.Errorf("the field %q gives the example %q, want %q", name, f.Example, want)
 			}

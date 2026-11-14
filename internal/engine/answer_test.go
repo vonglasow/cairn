@@ -41,7 +41,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	built := a.Task()
 	progress := domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}}
 
-	encoded, err := json.Marshal(OfTask(built, progress))
+	encoded, err := json.Marshal(ofTask(built, progress))
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 
 	t.Run("a count of tasks with no step under it does not carry steps too", func(t *testing.T) {
-		encoded, err := json.Marshal(OfTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}))
+		encoded, err := json.Marshal(ofTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -101,7 +101,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	})
 
 	t.Run("nothing under it reads as null, not as zeroes", func(t *testing.T) {
-		encoded, err := json.Marshal(OfTask(built, domain.Progress{}))
+		encoded, err := json.Marshal(ofTask(built, domain.Progress{}))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -135,10 +135,10 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 			in   Answer
 			want any
 		}{
-			{"a task", TaskShow, Answer{Task: &built, Progress: progress}, OfTask(built, progress)},
+			{"a task", TaskShow, Answer{Task: &built, Progress: progress}, ofTask(built, progress)},
 			{"a list of tasks", TaskList, Answer{Tasks: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built, nil)}}},
 			{"what a search found, the same shape as a list of tasks", TaskSearch, Answer{Matched: []task.Task{built}}, Tasks{Tasks: []Row{rowOf(built, nil)}}},
-			{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, Objective{
+			{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, objectiveRow{
 				Shape: objective.Shape{
 					Number: 5, Title: "Ship it", State: "active", Priority: "normal",
 					Description: "", Labels: []string{}, Deadline: "", Estimate: "",
@@ -150,19 +150,19 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 				WaitsOn:    []int{},
 				WaitedOnBy: []int{},
 			}},
-			{"a list of objectives", ObjectiveList, Answer{Objectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
-			{"what a search found among objectives", ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{obj}}, Objectives{Objectives: []Objective{OfObjective(obj, nil, domain.Progress{})}}},
-			{"a backup with what it holds", BackupShow, Answer{Backup: &backup, Holds: &held}, OfBackup(backup, &held)},
-			{"a list of backups", BackupList, Answer{Backups: []domain.Backup{backup}}, Kept{Backups: []BackupShape{OfBackup(backup, nil)}}},
-			{"a change", MigrationShow, Answer{Change: &change}, migration.OfMigration(change)},
-			{"a list of changes", MigrationList, Answer{Changes: []migration.Migration{change}}, Ledger{Changes: []migration.Shape{migration.OfMigration(change)}}},
+			{"a list of objectives", objectiveList, Answer{Objectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, domain.Progress{})}}},
+			{"what a search found among objectives", ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, domain.Progress{})}}},
+			{"a backup with what it holds", backupShow, Answer{Backup: &backup, Holds: &held}, ofBackup(backup, &held)},
+			{"a list of backups", BackupList, Answer{Backups: []domain.Backup{backup}}, kept{Backups: []BackupShape{ofBackup(backup, nil)}}},
+			{"a change", migrationShow, Answer{Change: &change}, migration.OfMigration(change)},
+			{"a list of changes", MigrationList, Answer{Changes: []migration.Migration{change}}, ledger{Changes: []migration.Shape{migration.OfMigration(change)}}},
 			{"a rollback names what it undid, not a change in full", MigrationRollback, Answer{RolledBack: &change}, migration.OfRolledBack(change)},
 			{"a number deleted", TaskDelete, Answer{Deleted: &one}, Deleted{Deleted: one}},
-			{"a number restored", BackupRestore, Answer{Restored: &putBack}, Restored{Restored: putBack}},
-			{"nothing waiting reads as an empty list, not null", MigrationApply, Answer{Applied: []string{}}, Applied{Applied: []string{}}},
-			{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, Applied{Applied: []string{"add labels"}}},
-			{"a sweep says how many it took off", TaskArchive, Answer{Archived: &one}, Swept{Archived: one}},
-			{"one archived by number is a sweep of one, and says which", TaskArchive, Answer{Archived: of(1), Task: &built}, Swept{Archived: 1, Task: of(OfTask(built, domain.Progress{}))}},
+			{"a number restored", BackupRestore, Answer{Restored: &putBack}, restored{Restored: putBack}},
+			{"nothing waiting reads as an empty list, not null", MigrationApply, Answer{Applied: []string{}}, applied{Applied: []string{}}},
+			{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, applied{Applied: []string{"add labels"}}},
+			{"a sweep says how many it took off", TaskArchive, Answer{Archived: &one}, swept{Archived: one}},
+			{"one archived by number is a sweep of one, and says which", TaskArchive, Answer{Archived: of(1), Task: &built}, swept{Archived: 1, Task: of(ofTask(built, domain.Progress{}))}},
 		}
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
@@ -222,13 +222,13 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 			task.Line(built) + "\n",
 		},
 		{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress, objective.Review{}, objective.Family{}) + objective.Serving(nil)},
-		{"an empty list of objectives says so", ObjectiveList, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
-		{"a list of objectives", ObjectiveList, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj}, nil, nil)},
-		{"a backup with what it holds", BackupShow, Answer{Backup: &backup, Holds: &held}, backupLine(backup, held)},
+		{"an empty list of objectives says so", objectiveList, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
+		{"a list of objectives", objectiveList, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj}, nil, nil)},
+		{"a backup with what it holds", backupShow, Answer{Backup: &backup, Holds: &held}, backupLine(backup, held)},
 		{"an empty list of backups says so", BackupList, Answer{Backups: []domain.Backup{}}, "there is no backup\n"},
 		{"a list of backups", BackupList, Answer{Backups: []domain.Backup{backup}}, backupsText([]domain.Backup{backup})},
 		{"a rollback names what it undid, not a change in full", MigrationRollback, Answer{RolledBack: &change}, migration.RolledBackText(change)},
-		{"a change in full", MigrationShow, Answer{Change: &change}, migration.Text(change)},
+		{"a change in full", migrationShow, Answer{Change: &change}, migration.Text(change)},
 		{"a list of changes", MigrationList, Answer{Changes: []migration.Migration{change}, Holds: &held}, migration.List([]migration.Migration{change}, held)},
 		{"a number deleted, named by the operation", TaskDelete, Answer{Deleted: &deleted}, "task 7 was deleted\n"},
 		{"a number restored", BackupRestore, Answer{Restored: &putBack}, "backup 9 was restored\n"},
@@ -278,9 +278,9 @@ func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
 }
 
 func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
-	none, ok := Of(TaskUnfocus, Answer{InFocus: list()}).(Focus)
+	none, ok := Of(taskUnfocus, Answer{InFocus: list()}).(Focus)
 	if !ok {
-		t.Fatalf("Of with nothing held = %T, want Focus", Of(TaskUnfocus, Answer{InFocus: list()}))
+		t.Fatalf("Of with nothing held = %T, want Focus", Of(taskUnfocus, Answer{InFocus: list()}))
 	}
 	if none.InFocus == nil || len(none.InFocus) != 0 {
 		t.Errorf("in_focus = %v, want an empty list", none.InFocus)
@@ -326,7 +326,7 @@ func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
 }
 
 func TestRenderText_saysNothingIsInFocus(t *testing.T) {
-	got := RenderText(TaskUnfocus, Answer{InFocus: list()})
+	got := RenderText(taskUnfocus, Answer{InFocus: list()})
 	if got != "nothing is in focus\n" {
 		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
 	}
@@ -384,7 +384,7 @@ func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
 func TestRenderText_saysWhatASessionPastItsLengthAsks(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	ask := "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
-	got := RenderText(TaskFocus, Answer{Held: []task.Task{first}, InFocus: list(1), Sessions: []FocusSession{{Task: 1, Ask: ask}}})
+	got := RenderText(TaskFocus, Answer{Held: []task.Task{first}, InFocus: list(1), Sessions: []focusSession{{Task: 1, Ask: ask}}})
 	if !strings.Contains(got, ask) {
 		t.Errorf("the answer does not ask to renew the session:\n%s", got)
 	}
@@ -460,7 +460,7 @@ func TestOfFocus_saysEverySessionAndNoneAsAnEmptyList(t *testing.T) {
 	if got := ofFocus(nil, domain.Progress{}, nil, nil).Sessions; got == nil || len(got) != 0 {
 		t.Errorf("with no session, sessions = %#v", got)
 	}
-	held := []FocusSession{{Task: 4}}
+	held := []focusSession{{Task: 4}}
 	if got := ofFocus(nil, domain.Progress{}, nil, held).Sessions; !slices.Equal(got, held) {
 		t.Errorf("sessions = %v, want %v", got, held)
 	}

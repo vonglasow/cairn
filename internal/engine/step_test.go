@@ -11,7 +11,7 @@ import (
 
 func stepsOf(t *testing.T, path string, number string) []task.Step {
 	t.Helper()
-	answer, err := Do(StepList, path, given("number", number))
+	answer, err := Do(stepList, path, given("number", number))
 	if err != nil {
 		t.Fatalf("step list: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestStepEdit_refusesDoneAndNotDoneAtOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := Do(StepEdit, path, given("number", "1", "step", "1", "done", "true", "not-done", "true"))
-	if !errors.Is(err, ErrDoneAndNotDone) {
+	if !errors.Is(err, errDoneAndNotDone) {
 		t.Fatalf("both at once = %v, want ErrDoneAndNotDone", err)
 	}
 }
@@ -121,13 +121,13 @@ func TestStepList_answersAMachineTheStepsWithTheirPlaces(t *testing.T) {
 	if _, err := Do(StepNew, path, given("number", "1", "title", "Write the spec", "done", "true")); err != nil {
 		t.Fatal(err)
 	}
-	answer, err := Do(StepList, path, given("number", "1"))
+	answer, err := Do(stepList, path, given("number", "1"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	said, ok := Of(StepList, answer).(Steps)
-	if !ok || said.Task != 1 || len(said.Steps) != 1 || said.Steps[0] != (StepShape{Place: 1, Title: "Write the spec", Done: true}) {
-		t.Errorf("a machine reads %+v", Of(StepList, answer))
+	said, ok := Of(stepList, answer).(steps)
+	if !ok || said.Task != 1 || len(said.Steps) != 1 || said.Steps[0] != (stepShape{Place: 1, Title: "Write the spec", Done: true}) {
+		t.Errorf("a machine reads %+v", Of(stepList, answer))
 	}
 }
 
@@ -144,11 +144,11 @@ func TestStepNew_answersTheTaskWithItsSteps(t *testing.T) {
 
 func TestStepList_saysATaskHasNoSteps(t *testing.T) {
 	path := storeAt(t, "Ship it")
-	answer, err := Do(StepList, path, given("number", "1"))
+	answer, err := Do(stepList, path, given("number", "1"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := RenderText(StepList, answer); got != "task 1 has no steps\n" {
+	if got := RenderText(stepList, answer); got != "task 1 has no steps\n" {
 		t.Errorf("step list says %q", got)
 	}
 }

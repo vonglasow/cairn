@@ -15,13 +15,13 @@ func waitsOn(number string, on ...string) func() (Operation, Input) {
 	}
 }
 
-func shownObjective(t *testing.T, path, number string) (Answer, Objective) {
+func shownObjective(t *testing.T, path, number string) (Answer, objectiveRow) {
 	t.Helper()
 	shown, err := Do(ObjectiveShow, path, given("number", number))
 	if err != nil {
 		t.Fatal(err)
 	}
-	said, _ := Of(ObjectiveShow, shown).(Objective)
+	said, _ := Of(ObjectiveShow, shown).(objectiveRow)
 	return shown, said
 }
 
@@ -51,11 +51,11 @@ func TestObjectiveWaitsOn_isChangedTheWayASetIs(t *testing.T) {
 	if _, said = shownObjective(t, path, "3"); !slices.Equal(said.WaitsOn, []int{2}) {
 		t.Errorf("#3 waits on %v once #1 is taken off", said.WaitsOn)
 	}
-	listed, err := Do(ObjectiveList, path, Input{})
+	listed, err := Do(objectiveList, path, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if all := Of(ObjectiveList, listed).(Objectives).Objectives; !slices.Equal(all[1].WaitedOnBy, []int{3}) || !slices.Equal(all[2].WaitsOn, []int{2}) {
+	if all := Of(objectiveList, listed).(objectivesListed).Objectives; !slices.Equal(all[1].WaitedOnBy, []int{3}) || !slices.Equal(all[2].WaitsOn, []int{2}) {
 		t.Errorf("the listing reads %+v", all)
 	}
 }
@@ -73,12 +73,12 @@ func TestObjectiveWaitsOn_refusesWhatCannotBe(t *testing.T) {
 	}{
 		{waitsOn("1", "1"), objective.ErrWaitsOnItself},
 		{waitsOn("1", "2"), objective.ErrWaitsOnItself},
-		{waitsOn("1", "9"), ErrNoSuchObjective},
-		{waitsOn("1", "x"), ErrWaitsOnRequired},
-		{waitsOn("1", "=2", "+1"), ErrWaitsOnBothWays},
+		{waitsOn("1", "9"), errNoSuchObjective},
+		{waitsOn("1", "x"), errWaitsOnRequired},
+		{waitsOn("1", "=2", "+1"), errWaitsOnBothWays},
 		{func() (Operation, Input) {
 			return ObjectiveNew, Input{Given: map[string]string{"title": "Other"}, Listed: map[string][]string{"waits-on": {"+1"}}}
-		}, ErrWaitsOnSignAtBirth},
+		}, errWaitsOnSignAtBirth},
 	} {
 		op, in := c.ask()
 		if _, err := Do(op, path, in); !errors.Is(err, c.want) {

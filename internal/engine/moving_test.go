@@ -44,8 +44,8 @@ func TestFocus_isNeverHeldByATaskInDone(t *testing.T) {
 	if held := heldIn(t, path); len(held) != 0 {
 		t.Errorf("in focus after both were done: %v, want nothing", held)
 	}
-	if _, err := Do(TaskFocus, path, given("number", "1")); !errors.Is(err, ErrDoneHoldsNoFocus) {
-		t.Errorf("focusing a task in done: %v, want %v", err, ErrDoneHoldsNoFocus)
+	if _, err := Do(TaskFocus, path, given("number", "1")); !errors.Is(err, errDoneHoldsNoFocus) {
+		t.Errorf("focusing a task in done: %v, want %v", err, errDoneHoldsNoFocus)
 	}
 	if held := heldIn(t, path); len(held) != 0 {
 		t.Errorf("in focus after the refusal: %v, want nothing", held)
@@ -193,7 +193,7 @@ func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	a, err := e.Ask(TaskUnfocus, given("number", "2"))
+	a, err := e.Ask(taskUnfocus, given("number", "2"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
 	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{1, 3}) || len(a.Held) != 2 || len(a.Sessions) != 2 {
 		t.Errorf("asking what is in focus: %v, held %d, sessions %d", a.InFocus, len(a.Held), len(a.Sessions))
 	}
-	a, err = e.Ask(TaskUnfocus, Input{})
+	a, err = e.Ask(taskUnfocus, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,10 +260,10 @@ func TestTaskMove_putsATaskInPlaceAndRefusesOneGivenNowhereOrTwice(t *testing.T)
 	if got := numbersIn(a.Tasks, domain.Backlog); !slices.Equal(got, []int{2, 1}) {
 		t.Errorf("backlog is %v, want 2 then 1", got)
 	}
-	if _, err := e.Ask(TaskMove, given("number", "1")); !errors.Is(err, ErrNowhereToMove) {
+	if _, err := e.Ask(TaskMove, given("number", "1")); !errors.Is(err, errNowhereToMove) {
 		t.Errorf("moving nowhere answered %v", err)
 	}
-	if _, err := e.Ask(TaskMove, given("number", "1", "first", "true", "last", "true", "state", "todo")); !errors.Is(err, ErrMoreThanOnePlace) {
+	if _, err := e.Ask(TaskMove, given("number", "1", "first", "true", "last", "true", "state", "todo")); !errors.Is(err, errMoreThanOnePlace) {
 		t.Errorf("moving to two places answered %v", err)
 	}
 }

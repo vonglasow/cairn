@@ -18,7 +18,7 @@ func TestWorkspaceRemove_dropsTheEntryAndTouchesNoFile(t *testing.T) {
 	if err := os.WriteFile(store, []byte("kept"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	answer, err := DoFrom(WorkspaceRemove, h, removing("home"), Acting{})
+	answer, err := DoFrom(workspaceRemove, h, removing("home"), Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,22 +33,22 @@ func TestWorkspaceRemove_dropsTheEntryAndTouchesNoFile(t *testing.T) {
 	if removed.Name != "home" || removed.Folder != filepath.Join(h.Dir, "h") || removed.Written != config.FileIn(h.Dir) {
 		t.Errorf("WorkspaceRemoved = %+v", removed)
 	}
-	if text := RenderText(WorkspaceRemove, answer); !strings.Contains(text, "home") || !strings.Contains(text, removed.Folder+" is left as it was") {
+	if text := RenderText(workspaceRemove, answer); !strings.Contains(text, "home") || !strings.Contains(text, removed.Folder+" is left as it was") {
 		t.Errorf("it says\n%s", text)
 	}
-	if got := Of(WorkspaceRemove, answer).(WorkspaceRemoved); got != removed {
+	if got := Of(workspaceRemove, answer).(workspaceRemoved); got != removed {
 		t.Errorf("Of = %+v", got)
 	}
 }
 
 func TestWorkspaceRemove_refusesAnUnknownNameAndTheDefault(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	if _, err := DoFrom(WorkspaceRemove, h, removing("play"), Acting{}); !errors.Is(err, ErrNoSuchWorkspace) {
-		t.Errorf("removing play = %v; want %v", err, ErrNoSuchWorkspace)
+	if _, err := DoFrom(workspaceRemove, h, removing("play"), Acting{}); !errors.Is(err, errNoSuchWorkspace) {
+		t.Errorf("removing play = %v; want %v", err, errNoSuchWorkspace)
 	}
-	_, err := DoFrom(WorkspaceRemove, h, removing("work"), Acting{})
-	if !errors.Is(err, ErrRemovingTheDefault) || !strings.Contains(err.Error(), `"work"`) || !strings.Contains(err.Error(), "cairn workspace use") {
-		t.Errorf("removing work = %v; want %v, naming it and how to choose another", err, ErrRemovingTheDefault)
+	_, err := DoFrom(workspaceRemove, h, removing("work"), Acting{})
+	if !errors.Is(err, errRemovingTheDefault) || !strings.Contains(err.Error(), `"work"`) || !strings.Contains(err.Error(), "cairn workspace use") {
+		t.Errorf("removing work = %v; want %v, naming it and how to choose another", err, errRemovingTheDefault)
 	}
 	if said, _ := os.ReadFile(config.FileIn(h.Dir)); string(said) != twoWorkspaces {
 		t.Errorf("the configuration reads %q; want it as it was", said)
@@ -56,12 +56,12 @@ func TestWorkspaceRemove_refusesAnUnknownNameAndTheDefault(t *testing.T) {
 }
 
 func TestWorkspaceRemove_isForAPersonOnly(t *testing.T) {
-	if _, found := Called(WorkspaceRemove.Thing, WorkspaceRemove.Verb); found {
+	if _, found := called(workspaceRemove.Thing, workspaceRemove.Verb); found {
 		t.Error("workspace remove is among All(), so offered to an agent")
 	}
 	for _, op := range ForAPersonOnly() {
-		if op.Name() == WorkspaceRemove.Name() {
-			if op.Level != Write || op.Needs != AConfiguration {
+		if op.Name() == workspaceRemove.Name() {
+			if op.Level != write || op.Needs != aConfiguration {
 				t.Errorf("workspace remove is at %v, needing %v", op.Level, op.Needs)
 			}
 			return

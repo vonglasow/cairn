@@ -7,11 +7,11 @@ import (
 	"cairn/internal/task"
 )
 
-// ErrNoSuchObjective is the name the engine answers with when an objective is asked for by a number nothing carries.
-var ErrNoSuchObjective = store.ErrNoSuchObjective
+// errNoSuchObjective is the name the engine answers with when an objective is asked for by a number nothing carries.
+var errNoSuchObjective = store.ErrNoSuchObjective
 
-// ErrObjectiveCarriesTasks is why an objective with work under it is not deleted: the tasks would be left pointing at a number nothing carries.
-var ErrObjectiveCarriesTasks = objective.ErrObjectiveCarriesTasks
+// errObjectiveCarriesTasks is why an objective with work under it is not deleted: the tasks would be left pointing at a number nothing carries.
+var errObjectiveCarriesTasks = objective.ErrObjectiveCarriesTasks
 
 type objectives interface {
 	KeepObjective(objective.Objective) (objective.Objective, error)
@@ -79,7 +79,7 @@ func (e *Engine) showObjective(number int) (objective.Objective, error) {
 
 func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Objective, error) {
 	if !c.named() {
-		return objective.Objective{}, ErrNothingToChange
+		return objective.Objective{}, errNothingToChange
 	}
 	was, err := e.objectives.FindObjective(number)
 	if err != nil {
@@ -134,7 +134,7 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 		a.Parent = parent
 	}
 	if c.WaitsOn != nil {
-		on, err := changedNumbers(*c.WaitsOn, a.WaitsOn, atCreation, ErrWaitsOnRequired, ErrWaitsOnBothWays, ErrWaitsOnSignAtBirth)
+		on, err := changedNumbers(*c.WaitsOn, a.WaitsOn, atCreation, errWaitsOnRequired, errWaitsOnBothWays, errWaitsOnSignAtBirth)
 		if err != nil {
 			return objective.Objective{}, err
 		}
@@ -241,22 +241,22 @@ var objectiveAttributes = []Argument{
 	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Outside: objective.ErrNotAnObjectiveState, Means: "where the objective stands"},
 	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all"},
-	{Name: "deadline", Kind: Day, Means: "the day it is due"},
-	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
+	{Name: "deadline", Kind: day, Means: "the day it is due"},
+	{Name: "estimate", Kind: duration, Means: "how long it should take"},
 	{Name: "parent", Kind: Text, Of: "an objective", Means: "the number of the objective it sits under, two levels deep at most; none to stand on its own"},
 	{Name: "waits-on", Kind: List, Of: "an objective", Means: "the number of an objective it waits on, which warns when work starts on it and never blocks; when changing, 6 or +6 adds one, -6 takes one away, =6 replaces them all"},
 }
 
 func objectiveChanges(in Input) ObjectiveChanges {
 	var c ObjectiveChanges
-	c.Description = in.Change("desc")
-	c.State = in.Change("state")
-	c.Priority = in.Change("priority")
-	c.Labels = in.Changed("label")
-	c.Deadline = in.Change("deadline")
-	c.Estimate = in.Change("estimate")
-	c.Parent = in.Change("parent")
-	c.WaitsOn = in.Changed("waits-on")
+	c.Description = in.change("desc")
+	c.State = in.change("state")
+	c.Priority = in.change("priority")
+	c.Labels = in.changed("label")
+	c.Deadline = in.change("deadline")
+	c.Estimate = in.change("estimate")
+	c.Parent = in.change("parent")
+	c.WaitsOn = in.changed("waits-on")
 	return c
 }
 
@@ -291,16 +291,16 @@ var ObjectiveNew = Operation{
 	Short:   "Make a new objective",
 	Does:    "Make a new objective, carrying whatever of its attributes were given.",
 	Example: "cairn objective new \"Ship cairn 1.0\" --deadline 2026-12-01",
-	Level:   Write,
-	Needs:   AStore,
-	Again:   DoesItAgain,
-	Answers: Objective{},
+	Level:   write,
+	Needs:   aStore,
+	Again:   doesItAgain,
+	Answers: objectiveRow{},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the objective is called"},
 	}, objectiveAttributes...),
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		title := ""
-		if given := in.Change("title"); given != nil {
+		if given := in.change("title"); given != nil {
 			title = *given
 		}
 		o, err := on.Engine.addObjective(title, objectiveChanges(in))
@@ -316,8 +316,8 @@ var ObjectiveNew = Operation{
 	},
 }
 
-// ObjectiveList names every objective, or only the ones carrying what was named.
-var ObjectiveList = Operation{
+// objectiveList names every objective, or only the ones carrying what was named.
+var objectiveList = Operation{
 	Thing: "objective",
 	Verb:  "list",
 	Short: "List objectives, all of them or only some",
@@ -325,10 +325,10 @@ var ObjectiveList = Operation{
 	Example: `cairn objective list
 cairn objective list --state reached`,
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Objectives{},
+	Needs:   aStore,
+	Answers: objectivesListed{},
 	Takes:   objectiveNarrowing,
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		kept, err := keeping(in, objectiveNarrowing, nil)
 		if err != nil {
 			return Answer{}, err
@@ -370,13 +370,13 @@ var ObjectiveShow = Operation{
 	Does:    "Show what an objective carries, what tasks serve it and how far along it is.",
 	Example: "cairn objective show 1",
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Objective{},
+	Needs:   aStore,
+	Answers: objectiveRow{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		return readObjective(on.Engine, n)
 	},
 }
@@ -388,20 +388,20 @@ var ObjectiveEdit = Operation{
 	Short:      "Change what an objective carries",
 	Does:       "Change what an objective carries.",
 	Example:    "cairn objective edit 1 --state reached",
-	Level:      Write,
-	Needs:      AStore,
+	Level:      write,
+	Needs:      aStore,
 	Again:      ChangesNothingMore,
 	Overwrites: true,
-	Answers:    Objective{},
+	Answers:    objectiveRow{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "title", Kind: Text, Means: "what the objective is called"},
 	}, append(objectiveAttributes, replaceArguments...)...),
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		changes := objectiveChanges(in)
-		changes.Replace, changes.By = in.Change("replace"), in.Change("by")
-		changes.Title = in.Change("title")
+		changes.Replace, changes.By = in.change("replace"), in.change("by")
+		changes.Title = in.change("title")
 		was, _ := on.Engine.showObjective(n)
 		edited, err := on.Engine.editObjective(n, changes)
 		if err != nil {
@@ -429,13 +429,13 @@ var ObjectiveSearch = Operation{
 	Does:    "List every objective carrying everything named, wherever among its facts each one sits.",
 	Example: "cairn objective search ship",
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Objectives{},
+	Needs:   aStore,
+	Answers: objectivesListed{},
 	Takes: []Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		named := in.Changed("named")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		named := in.changed("named")
 		all, err := on.Engine.listObjectives()
 		if err != nil {
 			return Answer{}, err
@@ -461,14 +461,14 @@ var ObjectiveDelete = Operation{
 cairn objective delete 4 --sub-objectives keep --tasks detach --yes
 cairn objective delete 4 --keep 5,7 --delete 6 --tasks delete --yes`,
 	Level:   Full,
-	Needs:   AStore,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Answers: Deleted{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		alsoOf("an objective"),
 	}, deletionChoices...),
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		numbers, err := together(in)
 		if err != nil {
 			return Answer{}, err

@@ -42,7 +42,7 @@ func (e *Engine) historyOf(number int) ([]trace.Act, error) {
 		return nil, err
 	}
 	if len(acts) == 0 {
-		return nil, fmt.Errorf("task %d: %w", number, ErrNoSuchTask)
+		return nil, fmt.Errorf("task %d: %w", number, errNoSuchTask)
 	}
 	return acts, nil
 }

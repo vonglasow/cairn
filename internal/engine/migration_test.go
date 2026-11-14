@@ -15,7 +15,7 @@ func factsOfChange(m migration.Migration) migration.Carried {
 func TestMigrationShow_saysWhatAChangeDoes(t *testing.T) {
 	path := storeAt(t)
 
-	answer, err := Do(MigrationShow, path, Input{Given: map[string]string{"number": strconv.Itoa(1)}})
+	answer, err := Do(migrationShow, path, Input{Given: map[string]string{"number": strconv.Itoa(1)}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}

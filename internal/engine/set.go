@@ -36,7 +36,7 @@ func settled(numbers []int) []int {
 
 // What a change to what a task serves can be turned down for.
 var (
-	ErrObjectiveRequired    = errors.New("an objective number is expected")
-	ErrObjectivesBothWays   = errors.New("the objectives are either replaced or changed, not both")
-	ErrObjectiveSignAtBirth = errors.New("an objective is added or taken away only when changing a task")
+	errObjectiveRequired    = errors.New("an objective number is expected")
+	errObjectivesBothWays   = errors.New("the objectives are either replaced or changed, not both")
+	errObjectiveSignAtBirth = errors.New("an objective is added or taken away only when changing a task")
 )

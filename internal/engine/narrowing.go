@@ -42,36 +42,36 @@ func keeping(in Input, taken []Argument, e *Engine) (*domain.Narrowing, error) {
 	if due, named := in.Given["deadline-before"]; named {
 		kept.DueBefore(due)
 	}
-	if serving := in.Changed("objective"); serving != nil {
+	if serving := in.changed("objective"); serving != nil {
 		for _, one := range *serving {
 			number, err := strconv.Atoi(strings.TrimSpace(one))
 			if err != nil || number <= 0 {
-				return nil, fmt.Errorf("%q: %w", one, ErrObjectiveRequired)
+				return nil, fmt.Errorf("%q: %w", one, errObjectiveRequired)
 			}
-			reached, err := reaching(e, number, in.Yes("itself"))
+			reached, err := reaching(e, number, in.yes("itself"))
 			if err != nil {
 				return nil, err
 			}
 			kept.Serving(reached)
 		}
 	}
-	if labels := in.Changed("label"); labels != nil {
+	if labels := in.changed("label"); labels != nil {
 		written, err := domain.ParseLabels(*labels)
 		if err != nil {
 			return nil, err
 		}
 		kept.Labelled(written)
 	}
-	if in.Yes("focus") && in.Yes("no-focus") {
+	if in.yes("focus") && in.yes("no-focus") {
 		return nil, Refusing("focus-and-not", "--focus and --no-focus keep nothing together: name one")
 	}
-	if in.Yes("focus") || in.Yes("no-focus") {
-		kept.InFocus(in.Yes("focus"))
+	if in.yes("focus") || in.yes("no-focus") {
+		kept.InFocus(in.yes("focus"))
 	}
-	if in.Yes("archived") {
+	if in.yes("archived") {
 		kept.Archived()
 	}
-	if in.Yes("with-archived") {
+	if in.yes("with-archived") {
 		kept.WithArchived()
 	}
 	return kept, nil
@@ -92,13 +92,13 @@ func accepted(in Input, argument Argument) error {
 		if argument.Outside != nil {
 			return fmt.Errorf("%q: %w — %s", given, argument.Outside, strings.Join(argument.OneOf, ", "))
 		}
-		return fmt.Errorf("%q: %w %s", given, ErrNotOneOf, strings.Join(argument.OneOf, ", "))
+		return fmt.Errorf("%q: %w %s", given, errNotOneOf, strings.Join(argument.OneOf, ", "))
 	}
 	return nil
 }
 
-// ErrNotOneOf is returned when a value falls outside the closed set its argument accepts.
-var ErrNotOneOf = errors.New("not one of")
+// errNotOneOf is returned when a value falls outside the closed set its argument accepts.
+var errNotOneOf = errors.New("not one of")
 
 func heldAmong(tasks []task.Task, inFocus []int) []int {
 	kept := make([]int, 0, len(inFocus))

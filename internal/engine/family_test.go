@@ -39,7 +39,7 @@ func TestNamesOnly_refusesATopObjectiveAsASubObjective(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := (deletion{keep: []int{2}}).namesOnly([]int{1}, tr); !errors.Is(err, ErrNotASubObjective) {
+	if err := (deletion{keep: []int{2}}).namesOnly([]int{1}, tr); !errors.Is(err, errNotASubObjective) {
 		t.Errorf("a top objective kept as a sub-objective of 1: %v", err)
 	}
 }
@@ -55,7 +55,7 @@ func TestNamesOnly_refusesASubObjectiveOfAnotherObjective(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := (deletion{keep: []int{3}}).namesOnly([]int{1}, tr); !errors.Is(err, ErrNotASubObjective) {
+	if err := (deletion{keep: []int{3}}).namesOnly([]int{1}, tr); !errors.Is(err, errNotASubObjective) {
 		t.Errorf("a sub-objective of 2 kept as one of 1: %v", err)
 	}
 }

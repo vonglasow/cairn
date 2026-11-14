@@ -11,9 +11,9 @@ import (
 
 // What a change to what an objective waits on can be turned down for.
 var (
-	ErrWaitsOnRequired    = errors.New("what an objective waits on is an objective number")
-	ErrWaitsOnBothWays    = errors.New("what an objective waits on is either replaced or changed, not both")
-	ErrWaitsOnSignAtBirth = errors.New("what an objective waits on is added or taken away only when changing it")
+	errWaitsOnRequired    = errors.New("what an objective waits on is an objective number")
+	errWaitsOnBothWays    = errors.New("what an objective waits on is either replaced or changed, not both")
+	errWaitsOnSignAtBirth = errors.New("what an objective waits on is added or taken away only when changing it")
 )
 
 func (e *Engine) mayWait(o objective.Objective) error {

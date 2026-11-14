@@ -23,11 +23,11 @@ const (
 	beforeSteps     = 1
 )
 
-// ErrNotAnExport is what reading a file that does not hold tasks written by task export is refused with.
-var ErrNotAnExport = errors.New("the file holds no tasks written by cairn task export")
+// errNotAnExport is what reading a file that does not hold tasks written by task export is refused with.
+var errNotAnExport = errors.New("the file holds no tasks written by cairn task export")
 
-// ErrExportPointsOutside is what reading a file whose tasks point at a task or an objective it does not hold is refused with.
-var ErrExportPointsOutside = errors.New("the file points outside itself")
+// errExportPointsOutside is what reading a file whose tasks point at a task or an objective it does not hold is refused with.
+var errExportPointsOutside = errors.New("the file points outside itself")
 
 type exchanged struct {
 	Cairn      string           `json:"cairn"`
@@ -58,14 +58,14 @@ type filed struct {
 	Focused bool              `json:"focused,omitempty"`
 }
 
-// Exported says which file the tasks were written to, and what it holds.
-type Exported struct {
+// exported says which file the tasks were written to, and what it holds.
+type exported struct {
 	Exported string       `json:"exported"`
 	Holds    *domain.Held `json:"holds"`
 }
 
-// Imported says which file was read in, and how much of it was added.
-type Imported struct {
+// importedFile says which file was read in, and how much of it was added.
+type importedFile struct {
 	Imported string      `json:"imported"`
 	Added    domain.Held `json:"added"`
 }
@@ -77,14 +77,14 @@ var TaskExport = Operation{
 	Short:   "Write every task to a file, with every objective",
 	Does:    "Write every task, archived ones included, to a JSON file of your choosing, with every objective, served by a task or not, and the views, for task import to read into another store. A file already there is never written over.",
 	Example: "cairn task export ~/Desktop/tasks.json",
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Exported{},
+	Answers: exported{},
 	Takes: []Argument{
 		{Name: "to", Kind: Text, Positional: true, Required: true, Means: "the file to write the tasks to"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		to := in.Given["to"]
 		out, err := on.Engine.exporting()
 		if err != nil {
@@ -105,14 +105,14 @@ var TaskImport = Operation{
 	Short:   "Add the tasks of a file written by task export",
 	Does:    "Add the tasks of a file written by task export, as new tasks numbered after the ones already here, with the objectives they serve as new objectives and the views after the ones here. Nothing already here is replaced or merged, so a file read twice is added twice, and a view whose name one here has is left out. A file that is not one, that holds nothing to add, or whose tasks point outside it, is refused before anything is added.",
 	Example: "cairn task import ~/Downloads/tasks.json",
-	Level:   Write,
-	Needs:   AStore,
-	Again:   DoesItAgain,
-	Answers: Imported{},
+	Level:   write,
+	Needs:   aStore,
+	Again:   doesItAgain,
+	Answers: importedFile{},
 	Takes: []Argument{
 		{Name: "from", Kind: Text, Positional: true, Required: true, Means: "the file holding the tasks to add"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		from := in.Given["from"]
 		read, err := readExport(from)
 		if err != nil {
@@ -198,13 +198,13 @@ func readExport(from string) (exchanged, error) {
 	}
 	var read exchanged
 	if err := json.Unmarshal(held, &read); err != nil || read.Cairn != exchangeKind {
-		return exchanged{}, ErrNotAnExport
+		return exchanged{}, errNotAnExport
 	}
 	if read.Version < beforeSteps || read.Version > exchangeVersion {
-		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d to %d", ErrNotAnExport, read.Version, beforeSteps, exchangeVersion)
+		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d to %d", errNotAnExport, read.Version, beforeSteps, exchangeVersion)
 	}
 	if len(read.Tasks)+len(read.Objectives)+len(read.Labels)+len(read.Series)+len(read.Views) == 0 {
-		return exchanged{}, fmt.Errorf("%w: it holds nothing to add", ErrNotAnExport)
+		return exchanged{}, fmt.Errorf("%w: it holds nothing to add", errNotAnExport)
 	}
 	return read, nil
 }
@@ -222,7 +222,7 @@ func stepsOfSubTasks(read exchanged) (exchanged, error) {
 			continue
 		}
 		if !byNumber[t.Parent] {
-			return exchanged{}, fmt.Errorf("%w: task %d names task %d — task %d is not in the file", ErrExportPointsOutside, t.Number, t.Parent, t.Parent)
+			return exchanged{}, fmt.Errorf("%w: task %d names task %d — task %d is not in the file", errExportPointsOutside, t.Number, t.Parent, t.Parent)
 		}
 		step := task.Step{Title: t.Title, Done: t.State == string(domain.Done)}
 		if step.Done {
@@ -369,7 +369,7 @@ func checked(read exchanged) ([]filed, error) {
 	objectives := map[int]bool{}
 	for _, o := range read.Objectives {
 		if objectives[o.Number] {
-			return nil, fmt.Errorf("%w: objective %d is in the file twice", ErrNotAnExport, o.Number)
+			return nil, fmt.Errorf("%w: objective %d is in the file twice", errNotAnExport, o.Number)
 		}
 		objectives[o.Number] = true
 		made, err := objective.NewObjective(o.Title)
@@ -383,7 +383,7 @@ func checked(read exchanged) ([]filed, error) {
 	for _, o := range read.Objectives {
 		for _, n := range append(slices.Clone(o.WaitsOn), o.Parent) {
 			if n != 0 && !objectives[n] {
-				return nil, fmt.Errorf("%w: objective %d names objective %d — objective %d is not in the file", ErrExportPointsOutside, o.Number, n, n)
+				return nil, fmt.Errorf("%w: objective %d names objective %d — objective %d is not in the file", errExportPointsOutside, o.Number, n, n)
 			}
 		}
 	}
@@ -396,7 +396,7 @@ func checked(read exchanged) ([]filed, error) {
 	byNumber := map[int]filed{}
 	for _, t := range read.Tasks {
 		if _, twice := byNumber[t.Number]; twice {
-			return nil, fmt.Errorf("%w: task %d is in the file twice", ErrNotAnExport, t.Number)
+			return nil, fmt.Errorf("%w: task %d is in the file twice", errNotAnExport, t.Number)
 		}
 		byNumber[t.Number] = t
 	}
@@ -410,7 +410,7 @@ func checked(read exchanged) ([]filed, error) {
 
 func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error {
 	outside := func(what string, n int) error {
-		return fmt.Errorf("%w: task %d names %s %d — %s %d is not in the file", ErrExportPointsOutside, t.Number, what, n, what, n)
+		return fmt.Errorf("%w: task %d names %s %d — %s %d is not in the file", errExportPointsOutside, t.Number, what, n, what, n)
 	}
 	for _, b := range slices.Concat(t.BlockedBy, t.Linked) {
 		if _, in := byNumber[b]; !in {

@@ -31,23 +31,23 @@ func RenderText(op Operation, a Answer) string {
 
 func rendered(op Operation, a Answer) string {
 	switch op.Answers.(type) {
-	case ConfigChanged:
+	case configChanged:
 		return configChangedText(*a.ConfigChanged)
 	case Config:
 		return configText(*a.Config)
 	case Workspaces:
 		return workspacesText(a.Workspaces.Workspaces) + recentText(a.Workspaces.Recent)
-	case WorkspaceRemoved:
+	case workspaceRemoved:
 		return workspaceRemovedText(*a.WorkspaceRemoved)
-	case WorkspaceAdded:
+	case workspaceAdded:
 		return workspaceAddedText(*a.WorkspaceAdded)
-	case WorkspaceUsed:
+	case workspaceUsed:
 		return workspaceUsedText(*a.WorkspaceUsed)
 	case WorkspaceShown:
 		return workspaceShownText(*a.WorkspaceShown)
 	case Timesheet:
 		return trace.SheetText(*a.Sheet, namedAsShown(a.Named, a.Gone))
-	case Review:
+	case review:
 		return objective.Report(*a.Objective, a.Progress, a.review(), *a.Period)
 	case Focus:
 		if a.Task != nil {
@@ -59,7 +59,7 @@ func rendered(op Operation, a Answer) string {
 			return fmt.Sprintf("#%d skipped\n", factsOf(*a.Task).Number)
 		}
 		return cardText(a) + movedText(a.Moved) + warningsText(a.Warnings)
-	case Swept:
+	case swept:
 		if a.Task != nil {
 			return cardText(a)
 		}
@@ -72,26 +72,26 @@ func rendered(op Operation, a Answer) string {
 			return lostText(a) + foundText(a.Matched, a) + pageText(a, len(a.Matched)) + outsideText(a.Outside)
 		}
 		return lostText(a) + crossedText(a.Crossed) + warningsText(a.Warnings) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks)) + outsideText(a.Outside)
-	case Objective:
+	case objectiveRow:
 		return objectiveText(a) + movedText(a.Moved)
-	case Objectives:
+	case objectivesListed:
 		if a.MatchedObjectives != nil {
 			return objectivesText(a.MatchedObjectives, a)
 		}
 		return objectivesText(a.Objectives, a)
 	case BackupShape:
 		return backupLine(*a.Backup, *a.Holds)
-	case Kept:
+	case kept:
 		return backupsText(a.Backups)
 	case migration.RolledBack:
 		return migration.RolledBackText(*a.RolledBack)
 	case migration.Shape:
 		return migration.Text(*a.Change)
-	case Ledger:
+	case ledger:
 		return migration.List(a.Changes, *a.Holds)
-	case Labelled:
+	case labelled:
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
-	case Labels:
+	case labelList:
 		return labelsText(*a.Labels) + warningsText(a.Warnings)
 	case View:
 		if a.Viewed.Outside != nil {
@@ -102,17 +102,17 @@ func rendered(op Operation, a Answer) string {
 		return viewsText(a.ViewsKept.Views)
 	case Series:
 		return seriesActedText(op.Verb, a)
-	case SeriesListed:
+	case seriesListed:
 		return seriesListText(a.SeriesKept.Series)
-	case SeriesDeleted:
+	case seriesDeleted:
 		return seriesDeletedText(*a.SeriesGone)
-	case ViewDeleted:
+	case viewDeleted:
 		return "deleted view " + *a.ViewGone + " · no task changed\n"
-	case ConfigWritten:
+	case configWritten:
 		return configWrittenText(*a.Written)
-	case DebugReported:
+	case debugReported:
 		return fmt.Sprintf("debug report written to %s, %d debug file(s) in it\n", *a.Written, *a.Packed)
-	case Steps:
+	case steps:
 		return stepsText(*a.Task)
 	case Deleted:
 		said := fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
@@ -123,21 +123,21 @@ func rendered(op Operation, a Answer) string {
 			said += fmt.Sprintf("task %d was waiting on it, and nothing names what stops it now\n", n)
 		}
 		return said + wentText(a.Went)
-	case Restored:
+	case restored:
 		return fmt.Sprintf("backup %d was restored\n", *a.Restored)
-	case PluginWritten:
+	case pluginWritten:
 		return pluginText(*a.Plugin)
-	case PluginShown:
+	case pluginShown:
 		return pluginShownText(*a.Install)
-	case AppInstalled:
-		return appText(Of(op, a).(AppInstalled))
-	case Exported:
+	case appInstalled:
+		return appText(Of(op, a).(appInstalled))
+	case exported:
 		return *a.Exported + " " + domain.HeldText(*a.Holds) + "\n"
-	case Imported:
+	case importedFile:
 		return fmt.Sprintf("%d task(s) and %d objective(s) were added from %s\n", a.Holds.Tasks, a.Holds.Objectives, *a.Imported)
-	case Applied:
+	case applied:
 		return appliedText(a.Applied)
-	case Acts:
+	case acts:
 		if a.Since != nil {
 			return trace.List(a.Since)
 		}
@@ -179,7 +179,7 @@ func daysSince(since, now time.Time) string {
 	return fmt.Sprintf("%d days", days)
 }
 
-func crossedText(c *Crossed) string {
+func crossedText(c *crossed) string {
 	if c == nil {
 		return ""
 	}
@@ -193,7 +193,7 @@ func heldText(held []task.Task, a Answer) string {
 	return task.Lines(held, marksOf(a))
 }
 
-func sessionAsksText(sessions []FocusSession) string {
+func sessionAsksText(sessions []focusSession) string {
 	var b strings.Builder
 	for _, s := range sessions {
 		if s.Ask != "" {

@@ -37,8 +37,8 @@ const WorkspaceVariable = "CAIRN_WORKSPACE"
 
 var rungs = []string{rungWorkspaceFlag, rungEnvironment, WorkspaceVariable, rungDirectory, rungDefault, rungFile, rungNothing}
 
-// ErrNoSuchWorkspace is returned when a workspace is named that the configuration does not name.
-var ErrNoSuchWorkspace = errors.New("no workspace by that name")
+// errNoSuchWorkspace is returned when a workspace is named that the configuration does not name.
+var errNoSuchWorkspace = errors.New("no workspace by that name")
 
 // ErrWorkspaceNotThere is returned when the folder of the workspace asked for is not there.
 var ErrWorkspaceNotThere = errors.New("the folder of this workspace is not there")
@@ -46,11 +46,11 @@ var ErrWorkspaceNotThere = errors.New("the folder of this workspace is not there
 // ErrWorkspaceKnown is returned when a workspace is added under a name the configuration already gives one.
 var ErrWorkspaceKnown = errors.New("a workspace by that name is already there")
 
-// ErrRemovingTheDefault is returned when the workspace asked to be removed is the default, which every command would then be refused for naming nobody.
-var ErrRemovingTheDefault = errors.New("is the default: make another the default first, with cairn workspace use")
+// errRemovingTheDefault is returned when the workspace asked to be removed is the default, which every command would then be refused for naming nobody.
+var errRemovingTheDefault = errors.New("is the default: make another the default first, with cairn workspace use")
 
-// ErrNotAWorkspaceName is returned when a workspace is added under a name that is not lowercase letters, digits and dashes, or is the one name kept for the default.
-var ErrNotAWorkspaceName = errors.New("a workspace is named in lowercase letters, digits and dashes, and is not called default")
+// errNotAWorkspaceName is returned when a workspace is added under a name that is not lowercase letters, digits and dashes, or is the one name kept for the default.
+var errNotAWorkspaceName = errors.New("a workspace is named in lowercase letters, digits and dashes, and is not called default")
 
 var plainName = regexp.MustCompile(`^[a-z0-9-]+$`)
 
@@ -65,8 +65,8 @@ type Workspace struct {
 	Time     string `json:"time,omitempty" jsonschema:"hidden or off, as its own settings over the global configuration say; nothing when the time is on"`
 }
 
-// Rung is one of the places that may name the store, passed over, and what it named there: a workspace, or a path.
-type Rung struct {
+// rung is one of the places that may name the store, passed over, and what it named there: a workspace, or a path.
+type rung struct {
 	Rung  string `json:"rung"`
 	Names string `json:"names"`
 }
@@ -74,7 +74,7 @@ type Rung struct {
 // Why is why a store answers: the rung that named it, the rungs under it that named another and were passed over, those over it that said nothing, and whether it was settled when a server started.
 type Why struct {
 	Rung    string   `json:"rung" jsonschema:"--workspace, --store, CAIRN_STORE, CAIRN_WORKSPACE, the current directory (under a workspace's folder, or the project its .cairn folder sits in), the default (the default workspace), the file (its store key), or where cairn keeps a store by default (the workspace main)"`
-	Over    []Rung   `json:"over,omitempty" jsonschema:"the rungs under it that named a store too, and were passed over"`
+	Over    []rung   `json:"over,omitempty" jsonschema:"the rungs under it that named a store too, and were passed over"`
 	Unsaid  []string `json:"unsaid,omitempty" jsonschema:"the rungs over it that named nothing"`
 	Started bool     `json:"started,omitempty" jsonschema:"settled when this server started, and kept since"`
 }
@@ -85,15 +85,15 @@ type Workspaces struct {
 	Recent     []RecentFolder `json:"recent,omitempty"`
 }
 
-// WorkspaceRemoved is how workspace forget answers: the workspace the configuration no longer names, its folder, left as it was, and the file it was taken out of.
-type WorkspaceRemoved struct {
+// workspaceRemoved is how workspace forget answers: the workspace the configuration no longer names, its folder, left as it was, and the file it was taken out of.
+type workspaceRemoved struct {
 	Name    string `json:"name"`
 	Folder  string `json:"folder"`
 	Written string `json:"written"`
 }
 
-// WorkspaceAdded is how workspace add answers: the workspace written, its two places, and the file it was written in.
-type WorkspaceAdded struct {
+// workspaceAdded is how workspace add answers: the workspace written, its two places, and the file it was written in.
+type workspaceAdded struct {
 	Name    string `json:"name"`
 	Folder  string `json:"folder"`
 	Store   string `json:"store"`
@@ -101,8 +101,8 @@ type WorkspaceAdded struct {
 	Written string `json:"written"`
 }
 
-// WorkspaceUsed is how workspace use answers: the default now, and the one it was, if any.
-type WorkspaceUsed struct {
+// workspaceUsed is how workspace use answers: the default now, and the one it was, if any.
+type workspaceUsed struct {
 	Default string `json:"default"`
 	Was     string `json:"was,omitempty"`
 }
@@ -158,7 +158,7 @@ func Keep(h Home) Home {
 
 func (h Home) file() (string, error) {
 	if h.Dir == "" {
-		return "", fmt.Errorf("%w: %w", ErrStore, h.Missing)
+		return "", fmt.Errorf("%w: %w", errStore, h.Missing)
 	}
 	return config.FileIn(h.Dir), nil
 }
@@ -200,7 +200,7 @@ func workspaceNamed(p config.Places, name string) (config.Workspace, error) {
 	if len(names) > 0 {
 		there = "the workspaces are " + strings.Join(names, ", ")
 	}
-	return config.Workspace{}, fmt.Errorf("%q: %w; %s", name, ErrNoSuchWorkspace, there)
+	return config.Workspace{}, fmt.Errorf("%q: %w; %s", name, errNoSuchWorkspace, there)
 }
 
 func workspaceThere(p config.Places, name string) (config.Workspace, error) {
@@ -401,19 +401,19 @@ func (h Home) why(p config.Places, from int) Why {
 		if named == "" {
 			named = at
 		}
-		why.Over = append(why.Over, Rung{Rung: rungEnvironment, Names: named})
+		why.Over = append(why.Over, rung{Rung: rungEnvironment, Names: named})
 	}
 	if name := h.environmentWorkspace(); from < 2 && name != "" {
-		why.Over = append(why.Over, Rung{Rung: WorkspaceVariable, Names: name})
+		why.Over = append(why.Over, rung{Rung: WorkspaceVariable, Names: name})
 	}
 	if one, found := h.directoryWorkspace(p); from < 3 && found {
-		why.Over = append(why.Over, Rung{Rung: rungDirectory, Names: one.Name})
+		why.Over = append(why.Over, rung{Rung: rungDirectory, Names: one.Name})
 	}
 	if name := p.DefaultWorkspace(); from < 4 && name != "" {
-		why.Over = append(why.Over, Rung{Rung: rungDefault, Names: name})
+		why.Over = append(why.Over, rung{Rung: rungDefault, Names: name})
 	}
 	if store := p.FileStore(); from < 5 && store != "" {
-		why.Over = append(why.Over, Rung{Rung: rungFile, Names: store})
+		why.Over = append(why.Over, rung{Rung: rungFile, Names: store})
 	}
 	return why
 }
@@ -523,9 +523,9 @@ var WorkspaceList = Operation{
 	Does:    "List every workspace the configuration names: its name and the folder holding its store and its notes, the default marked.",
 	Example: "cairn workspace list",
 	Level:   Read,
-	Needs:   AConfiguration,
+	Needs:   aConfiguration,
 	Answers: Workspaces{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		read, err := on.Home.configuration()
 		if err != nil {
 			return Answer{}, err
@@ -541,18 +541,18 @@ var WorkspaceAdd = Operation{
 	Short:   "Name a workspace, a folder holding a store and its notes",
 	Does:    "Name a workspace in the configuration file, writing the file when there is none and leaving the rest of it as it was, and make its folder with an empty notes folder in it and settings.toml saying nothing yet. Its store is cairn.db in the folder, its notes the notes folder; cairn workspace use makes it the default.",
 	Example: "cairn workspace add work ~/cairn/work",
-	Level:   Write,
-	Needs:   AConfiguration,
+	Level:   write,
+	Needs:   aConfiguration,
 	Again:   ChangesNothingMore,
-	Answers: WorkspaceAdded{},
+	Answers: workspaceAdded{},
 	Takes: []Argument{
 		{Name: "name", Kind: Text, Positional: true, Required: true, Means: "the workspace's name: lowercase letters, digits and dashes"},
 		{Name: "folder", Kind: Text, Positional: true, Required: true, Means: "the folder holding its store and its notes: absolute, or under ~"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		name, folder := in.Given["name"], in.Given["folder"]
 		if !plainName.MatchString(name) || name == config.DefaultWorkspaceKey {
-			return Answer{}, fmt.Errorf("%q: %w", name, ErrNotAWorkspaceName)
+			return Answer{}, fmt.Errorf("%q: %w", name, errNotAWorkspaceName)
 		}
 		at, err := config.Absolute(folder, on.Home.Dir)
 		if err != nil {
@@ -573,7 +573,7 @@ var WorkspaceAdd = Operation{
 		}
 		store, notes := inWorkspace(config.Workspace{Name: name, Folder: at}, "")
 		path, _ := on.Home.file()
-		return Answer{WorkspaceAdded: &WorkspaceAdded{Name: name, Folder: at, Store: store.At, Notes: notes.At, Written: path}}, nil
+		return Answer{WorkspaceAdded: &workspaceAdded{Name: name, Folder: at, Store: store.At, Notes: notes.At, Written: path}}, nil
 	},
 }
 
@@ -584,15 +584,15 @@ var WorkspaceUse = Operation{
 	Short:   "Make a workspace the default",
 	Does:    "Make a workspace the default, the one used when neither a flag nor the environment names another, and say which one it was.",
 	Example: "cairn workspace use home",
-	Level:   Write,
-	Needs:   AConfiguration,
+	Level:   write,
+	Needs:   aConfiguration,
 	Again:   ChangesNothingMore,
-	Answers: WorkspaceUsed{},
+	Answers: workspaceUsed{},
 	Takes: []Argument{
 		{Name: "name", Kind: Text, Positional: true, Required: true, Means: "the workspace's name"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		used := WorkspaceUsed{Default: in.Given["name"]}
+	Run: func(on workedOn, in Input) (Answer, error) {
+		used := workspaceUsed{Default: in.Given["name"]}
 		err := withConfiguration(on.Home, func(was []byte, read config.Places) ([]byte, error) {
 			if _, err := workspaceThere(read, used.Default); err != nil {
 				return nil, err
@@ -607,28 +607,28 @@ var WorkspaceUse = Operation{
 	},
 }
 
-// WorkspaceRemove takes a workspace out of the configuration, and leaves its folder as it is.
-var WorkspaceRemove = Operation{
+// workspaceRemove takes a workspace out of the configuration, and leaves its folder as it is.
+var workspaceRemove = Operation{
 	Thing:   "workspace",
 	Verb:    "forget",
 	Short:   "Forget a workspace, leaving its folder as it is",
 	Does:    "Take a workspace out of the configuration file, leaving the rest of the file as it was and its folder, its store and its notes untouched; the default is refused until another is made the default. A folder moved is named again with cairn workspace add.",
 	Example: "cairn workspace forget play",
-	Level:   Write,
-	Needs:   AConfiguration,
-	Answers: WorkspaceRemoved{},
+	Level:   write,
+	Needs:   aConfiguration,
+	Answers: workspaceRemoved{},
 	Takes: []Argument{
 		{Name: "name", Kind: Text, Positional: true, Required: true, Means: "the workspace's name"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		removed := WorkspaceRemoved{Name: in.Given["name"]}
+	Run: func(on workedOn, in Input) (Answer, error) {
+		removed := workspaceRemoved{Name: in.Given["name"]}
 		err := withConfiguration(on.Home, func(was []byte, read config.Places) ([]byte, error) {
 			one, err := workspaceNamed(read, removed.Name)
 			if err != nil {
 				return nil, err
 			}
 			if read.DefaultWorkspace() == removed.Name {
-				return nil, fmt.Errorf("%q %w", removed.Name, ErrRemovingTheDefault)
+				return nil, fmt.Errorf("%q %w", removed.Name, errRemovingTheDefault)
 			}
 			removed.Folder = one.Folder
 			return config.WithoutWorkspace(was, removed.Name)
@@ -649,9 +649,9 @@ var WorkspaceShow = Operation{
 	Does:    "Say which workspace answers this command and why — the rung that named its store, a flag, the environment, the default workspace, the file or cairn's own default, and the rungs under it it passed over — the store and notes it uses, its time and the pages that are on, each with where it is said; a store no workspace names is said, with how to name it.",
 	Example: "cairn workspace show\ncairn workspace show --workspace home",
 	Level:   Read,
-	Needs:   AConfiguration,
+	Needs:   aConfiguration,
 	Answers: WorkspaceShown{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		read, answers, err := on.Home.settled()
 		if err != nil {
 			return Answer{}, err
@@ -696,16 +696,16 @@ func workspacesText(listed []Workspace) string {
 	return said.String()
 }
 
-func workspaceAddedText(added WorkspaceAdded) string {
+func workspaceAddedText(added workspaceAdded) string {
 	return fmt.Sprintf("workspace %s is %s, written in %s\nits store is %s, its notes %s\ncairn workspace use %s makes it the default\n",
 		added.Name, added.Folder, added.Written, added.Store, added.Notes, added.Name)
 }
 
-func workspaceRemovedText(removed WorkspaceRemoved) string {
+func workspaceRemovedText(removed workspaceRemoved) string {
 	return fmt.Sprintf("workspace %s is no longer named, in %s\n%s is left as it was; cairn workspace add names it again\n", removed.Name, removed.Written, removed.Folder)
 }
 
-func workspaceUsedText(used WorkspaceUsed) string {
+func workspaceUsedText(used workspaceUsed) string {
 	was := "there was none"
 	if used.Was != "" {
 		was = fmt.Sprintf("it was %q", used.Was)

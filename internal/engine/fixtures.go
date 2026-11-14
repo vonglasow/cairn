@@ -15,8 +15,8 @@ var fixtures []byte
 
 const fixturesMark = ".made-by-cairn-fixtures"
 
-// ErrNotMadeByFixtures is returned when the folder named for the fixtures holds something cairn fixtures did not put there: it is never emptied.
-var ErrNotMadeByFixtures = errors.New("the folder was not made by cairn fixtures, and is left alone")
+// errNotMadeByFixtures is returned when the folder named for the fixtures holds something cairn fixtures did not put there: it is never emptied.
+var errNotMadeByFixtures = errors.New("the folder was not made by cairn fixtures, and is left alone")
 
 // Fixtures says where the fixtures are, and whether they were made just now rather than opened as they were left.
 type Fixtures struct {
@@ -40,7 +40,7 @@ func MakeFixtures(folder, from string, fresh bool) (Fixtures, error) {
 	}
 	_, marked := os.Stat(filepath.Join(folder, fixturesMark))
 	if len(entries) > 0 && marked != nil {
-		return Fixtures{}, fmt.Errorf("%s: %w", folder, ErrNotMadeByFixtures)
+		return Fixtures{}, fmt.Errorf("%s: %w", folder, errNotMadeByFixtures)
 	}
 	if len(entries) > 0 && !fresh {
 		return at, nil
@@ -63,7 +63,7 @@ func MakeFixtures(folder, from string, fresh bool) (Fixtures, error) {
 			return Fixtures{}, err
 		}
 	}
-	if _, err := DoAt(TaskImport, Places{Store: at.Store, Notes: at.Notes}, Input{Given: map[string]string{"from": from}}, Acting{Through: "fixtures"}); err != nil {
+	if _, err := doThere(TaskImport, Places{Store: at.Store, Notes: at.Notes}, Input{Given: map[string]string{"from": from}}, Acting{Through: "fixtures"}); err != nil {
 		return Fixtures{}, err
 	}
 	at.Made = true

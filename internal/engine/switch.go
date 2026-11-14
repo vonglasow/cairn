@@ -10,8 +10,8 @@ import (
 	"cairn/internal/config"
 )
 
-// ErrNotThere is returned when a board is asked to open a folder, or a store, that is not there: opening it would start an empty board where nobody looks.
-var ErrNotThere = errors.New("is not there")
+// errNotThere is returned when a board is asked to open a folder, or a store, that is not there: opening it would start an empty board where nobody looks.
+var errNotThere = errors.New("is not there")
 
 // Elsewhere is where a board is asked to go in place of the store it holds: a workspace by its name, a folder typed, or a store a board opened before.
 type Elsewhere struct {
@@ -28,12 +28,12 @@ func (to Elsewhere) from(h Home) (Home, error) {
 			return h, err
 		}
 		if info, err := os.Stat(at); err != nil || !info.IsDir() {
-			return h, fmt.Errorf("%s %w", at, ErrNotThere)
+			return h, fmt.Errorf("%s %w", at, errNotThere)
 		}
 		h.Store = filepath.Join(at, storeFile)
 	}
 	if _, err := os.Stat(h.Store); to.Store != "" && err != nil {
-		return h, fmt.Errorf("%s %w", to.Store, ErrNotThere)
+		return h, fmt.Errorf("%s %w", to.Store, errNotThere)
 	}
 	return h, nil
 }

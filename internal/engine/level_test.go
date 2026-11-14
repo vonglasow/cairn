@@ -9,7 +9,7 @@ import (
 func TestParseLevel_acceptsTheThreeLevels(t *testing.T) {
 	for name, want := range map[string]Level{
 		"read":  Read,
-		"write": Write,
+		"write": write,
 		"full":  Full,
 	} {
 		got, err := ParseLevel(name)
@@ -25,7 +25,7 @@ func TestParseLevel_acceptsTheThreeLevels(t *testing.T) {
 
 func TestParseLevel_refusesWhatItCannotMakeSenseOf(t *testing.T) {
 	_, err := ParseLevel("sideways")
-	if !errors.Is(err, ErrNotALevel) {
+	if !errors.Is(err, errNotALevel) {
 		t.Fatalf("ParseLevel(sideways) err = %v, want ErrNotALevel", err)
 	}
 	got := err.Error()

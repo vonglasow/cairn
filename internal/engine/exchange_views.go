@@ -35,12 +35,12 @@ func checkedViews(read []viewFiled, objectives map[int]bool) error {
 	seen := map[string]bool{}
 	for _, v := range read {
 		if seen[domain.Folded(v.Name)] {
-			return fmt.Errorf("%w: view %q is in the file twice", ErrNotAnExport, v.Name)
+			return fmt.Errorf("%w: view %q is in the file twice", errNotAnExport, v.Name)
 		}
 		seen[domain.Folded(v.Name)] = true
 		for _, o := range v.Objective {
 			if !objectives[o] {
-				return fmt.Errorf("%w: view %s names objective %d — objective %d is not in the file", ErrExportPointsOutside, v.Name, o, o)
+				return fmt.Errorf("%w: view %s names objective %d — objective %d is not in the file", errExportPointsOutside, v.Name, o, o)
 			}
 		}
 		if _, err := viewOfFile(v); err != nil {
@@ -61,11 +61,11 @@ func viewOfFile(v viewFiled) (store.View, error) {
 			in.Given[argument] = said
 		}
 	}
-	if err := ViewNew.Check(in); err != nil {
+	if err := ViewNew.check(in); err != nil {
 		return store.View{}, err
 	}
 	if v.Focus != "" && v.Focus != "in" && v.Focus != "out" {
-		return store.View{}, fmt.Errorf("%w: view %s keeps the focus %q — in or out", ErrNotAnExport, v.Name, v.Focus)
+		return store.View{}, fmt.Errorf("%w: view %s keeps the focus %q — in or out", errNotAnExport, v.Name, v.Focus)
 	}
 	for _, argument := range viewFilters {
 		if err := accepted(in, argument); err != nil {

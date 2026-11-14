@@ -31,8 +31,8 @@ func TestSwitch_aFolderNotAbsoluteOrNotThereIsRefusedAndTheStoreHeldStays(t *tes
 		t.Errorf("Switch to a relative folder = %v; want %v", err, config.ErrNotAbsolute)
 	}
 	gone := filepath.Join(h.Dir, "gone")
-	if _, err := Switch(held, Elsewhere{Folder: gone}); !errors.Is(err, ErrNotThere) {
-		t.Errorf("Switch to a folder not there = %v; want %v", err, ErrNotThere)
+	if _, err := Switch(held, Elsewhere{Folder: gone}); !errors.Is(err, errNotThere) {
+		t.Errorf("Switch to a folder not there = %v; want %v", err, errNotThere)
 	}
 	if _, err := os.Stat(gone); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the folder not there was made: %v", err)
@@ -56,8 +56,8 @@ func TestSwitch_aStoreOpenedBeforeOpensAgainAndOneGoneIsRefused(t *testing.T) {
 		t.Errorf("Switch to the store opened before = %v", err)
 	}
 	gone := filepath.Join(h.Dir, "trip", "cairn.db")
-	if _, err := Switch(held, Elsewhere{Store: gone}); !errors.Is(err, ErrNotThere) {
-		t.Errorf("Switch to a store gone = %v; want %v", err, ErrNotThere)
+	if _, err := Switch(held, Elsewhere{Store: gone}); !errors.Is(err, errNotThere) {
+		t.Errorf("Switch to a store gone = %v; want %v", err, errNotThere)
 	}
 	if _, err := os.Stat(filepath.Dir(gone)); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the folder of the store gone was made: %v", err)

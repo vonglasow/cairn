@@ -122,10 +122,10 @@ func TestFromJSON_refusesWhatItCannotRead(t *testing.T) {
 }
 
 func TestCalled_findsTheOperationTwoWordsName(t *testing.T) {
-	if op, found := Called("task", "show"); !found || op.Name() != TaskShow.Name() {
+	if op, found := called("task", "show"); !found || op.Name() != TaskShow.Name() {
 		t.Errorf("Called(task, show) = %s, %v", op.Name(), found)
 	}
-	if _, found := Called("task", "fly"); found {
+	if _, found := called("task", "fly"); found {
 		t.Error("Called(task, fly) found something")
 	}
 }

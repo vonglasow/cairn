@@ -22,14 +22,14 @@ const (
 	_ Level = iota
 	// Read is level one: listing and showing, nothing that changes anything.
 	Read
-	// Write is level two: also adding and changing, and what sets a backup aside first.
-	Write
+	// write is level two: also adding and changing, and what sets a backup aside first.
+	write
 	// Full is level three: also what loses work already done.
 	Full
 )
 
-// ErrNotALevel is the reason a level is refused: what was given spelled none of "read", "write" or "full".
-var ErrNotALevel = errors.New("not one of the access levels")
+// errNotALevel is the reason a level is refused: what was given spelled none of "read", "write" or "full".
+var errNotALevel = errors.New("not one of the access levels")
 
 // ParseLevel reads a level by name, the way a person types it when starting a server.
 func ParseLevel(name string) (Level, error) {
@@ -37,37 +37,37 @@ func ParseLevel(name string) (Level, error) {
 	case "read":
 		return Read, nil
 	case "write":
-		return Write, nil
+		return write, nil
 	case "full":
 		return Full, nil
 	}
-	return 0, fmt.Errorf("%q: expected \"read\", \"write\" or \"full\": %w", name, ErrNotALevel)
+	return 0, fmt.Errorf("%q: expected \"read\", \"write\" or \"full\": %w", name, errNotALevel)
 }
 
-// Again is what calling an operation a second time, with the same arguments, does to the store.
-type Again int
+// again is what calling an operation a second time, with the same arguments, does to the store.
+type again int
 
 const (
-	_ Again = iota
+	_ again = iota
 	// ChangesNothingMore is a second call leaving the store as the first did — or being refused for having nothing left to do.
 	ChangesNothingMore
-	// DoesItAgain is a second call adding again — another task, another backup, more time spent, one more change undone.
-	DoesItAgain
+	// doesItAgain is a second call adding again — another task, another backup, more time spent, one more change undone.
+	doesItAgain
 )
 
-// Needs says which way the store has to be opened.
-type Needs int
+// needs says which way the store has to be opened.
+type needs int
 
 const (
-	_ Needs = iota
-	// AStore refuses a store behind this cairn: a request about what it holds does not change its shape on the way past.
-	AStore
-	// AStoreBehind opens the store whatever shape it is in, for the operations whose job is to change that shape.
-	AStoreBehind
-	// NoStore opens nothing at all, for what is reachable without the store — a backup is most needed exactly when the store cannot be opened.
-	NoStore
-	// AConfiguration opens no store and has no use for its path either: it reads the configuration itself, as config show and the workspace commands do, so a store the configuration cannot find yet stops none of them.
-	AConfiguration
+	_ needs = iota
+	// aStore refuses a store behind this cairn: a request about what it holds does not change its shape on the way past.
+	aStore
+	// aStoreBehind opens the store whatever shape it is in, for the operations whose job is to change that shape.
+	aStoreBehind
+	// noStore opens nothing at all, for what is reachable without the store — a backup is most needed exactly when the store cannot be opened.
+	noStore
+	// aConfiguration opens no store and has no use for its path either: it reads the configuration itself, as config show and the workspace commands do, so a store the configuration cannot find yet stops none of them.
+	aConfiguration
 )
 
 // Kind is what sort of value an argument carries.
@@ -79,10 +79,10 @@ const (
 	Text
 	// Number is a whole number.
 	Number
-	// Day is a calendar day.
-	Day
-	// Duration is a length of time.
-	Duration
+	// day is a calendar day.
+	day
+	// duration is a length of time.
+	duration
 	// List is more than one string.
 	List
 	// Bool is named or not named, and carries nothing else.
@@ -103,8 +103,8 @@ type Argument struct {
 	Bare       string
 }
 
-// Answered is the one shape an operation's answer takes — an empty value of it, carried so a surface can read the shape off the type.
-type Answered any
+// answerShape is the one shape an operation's answer takes — an empty value of it, carried so a surface can read the shape off the type.
+type answerShape any
 
 // Input is what a caller handed over, one entry per Argument.Name that was actually named.
 type Input struct {
@@ -122,11 +122,11 @@ func (in Input) Named(name string) bool {
 	return named
 }
 
-// Yes reports whether a Kind: Bool argument was named as true.
-func (in Input) Yes(name string) bool { return in.Given[name] == "true" }
+// yes reports whether a Kind: Bool argument was named as true.
+func (in Input) yes(name string) bool { return in.Given[name] == "true" }
 
-// Change answers what to hand Changes for a name: nothing when it was not named, and what it was named as otherwise.
-func (in Input) Change(name string) *string {
+// change answers what to hand Changes for a name: nothing when it was not named, and what it was named as otherwise.
+func (in Input) change(name string) *string {
 	given, named := in.Given[name]
 	if !named {
 		return nil
@@ -134,8 +134,8 @@ func (in Input) Change(name string) *string {
 	return &given
 }
 
-// Changed answers what to hand Changes for a list of strings, on the same three states as Change.
-func (in Input) Changed(name string) *[]string {
+// changed answers what to hand Changes for a list of strings, on the same three states as Change.
+func (in Input) changed(name string) *[]string {
 	listed, named := in.Listed[name]
 	if !named {
 		return nil
@@ -143,8 +143,8 @@ func (in Input) Changed(name string) *[]string {
 	return &listed
 }
 
-// Whole answers the number that was named for a Kind: Number argument, and whether it was named at all.
-func (in Input) Whole(name string) (int, bool) {
+// whole answers the number that was named for a Kind: Number argument, and whether it was named at all.
+func (in Input) whole(name string) (int, bool) {
 	given, named := in.Given[name]
 	if !named {
 		return 0, false
@@ -161,12 +161,12 @@ type Operation struct {
 	Does       string
 	Example    string
 	Level      Level
-	Needs      Needs
-	Again      Again
+	Needs      needs
+	Again      again
 	Overwrites bool
 	Takes      []Argument
-	Run        func(On, Input) (Answer, error)
-	Answers    Answered
+	Run        func(workedOn, Input) (Answer, error)
+	Answers    answerShape
 	Sweeps     func(Input) bool
 	Finishes   bool
 	Repeats    bool
@@ -178,29 +178,26 @@ func Agreed(in Input) Input {
 	return in
 }
 
-// ErrNotConfirmed is an act that asks first, asked for without saying yes.
-var ErrNotConfirmed = Refusing("not-confirmed", "needs --yes to confirm")
+// errNotConfirmed is an act that asks first, asked for without saying yes.
+var errNotConfirmed = Refusing("not-confirmed", "needs --yes to confirm")
 
 // ErrStepStillOpen is returned when a task is put in done while one of its steps is not, and the act was not confirmed.
 var ErrStepStillOpen = task.ErrStepStillOpen
 
-// ErrNoSuchStep is re-exported so a surface can recognise it.
-var ErrNoSuchStep = task.ErrNoSuchStep
-
-// AsksFirst says whether an act waits to be confirmed: one that loses work, or one that sweeps up whatever a narrowing reaches.
-func (o Operation) AsksFirst(in Input) bool {
+// asksFirst says whether an act waits to be confirmed: one that loses work, or one that sweeps up whatever a narrowing reaches.
+func (o Operation) asksFirst(in Input) bool {
 	return o.Level == Full || o.Sweeps != nil && o.Sweeps(in)
 }
 
 func (o Operation) admitted(in Input) error {
-	if err := o.Check(in); err != nil {
+	if err := o.check(in); err != nil {
 		return err
 	}
 	return o.waiting(in)
 }
 
 func (o Operation) waiting(in Input) error {
-	if !o.AsksFirst(in) || in.Confirmed {
+	if !o.asksFirst(in) || in.Confirmed {
 		return nil
 	}
 	var named []string
@@ -216,7 +213,7 @@ func (o Operation) waiting(in Input) error {
 	for _, more := range in.Listed["also"] {
 		target += ", " + o.Thing + " " + strings.TrimSpace(more)
 	}
-	return fmt.Errorf("%s %w", target, ErrNotConfirmed)
+	return fmt.Errorf("%s %w", target, errNotConfirmed)
 }
 
 // Name is how an operation is named as a command or a tool: "task_new".
@@ -229,30 +226,30 @@ func (o Operation) Line() string { return o.Thing + " " + o.Verb }
 func All() []Operation {
 	return []Operation{
 		TaskNew, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
-		TaskArchive, TaskUnarchive, TaskLabel,
-		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport, TaskSkip,
-		StepNew, StepList, StepEdit, StepDelete,
-		ObjectiveNew, ObjectiveList, ObjectiveShow, ObjectiveReport, ObjectiveEdit, ObjectiveMove, ObjectiveDelete, ObjectiveSearch,
-		BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore,
-		MigrationList, MigrationShow, MigrationApply, MigrationRollback,
-		LabelList, LabelNew, LabelColour, LabelScope, LabelDelete, LabelRename,
+		TaskArchive, taskUnarchive, TaskLabel,
+		TaskMove, TaskFocus, taskUnfocus, TaskExport, TaskImport, TaskSkip,
+		StepNew, stepList, StepEdit, StepDelete,
+		ObjectiveNew, objectiveList, ObjectiveShow, objectiveReport, ObjectiveEdit, ObjectiveMove, ObjectiveDelete, ObjectiveSearch,
+		BackupNew, BackupList, backupShow, backupDelete, BackupRestore,
+		MigrationList, migrationShow, MigrationApply, MigrationRollback,
+		LabelList, LabelNew, LabelColour, labelScope, LabelDelete, LabelRename,
 		ViewList,
-		SeriesList, SeriesShow, SeriesEdit, SeriesStop, SeriesResume, SeriesDelete,
-		TraceShow, TraceList,
+		seriesList, SeriesShow, SeriesEdit, SeriesStop, SeriesResume, SeriesDelete,
+		TraceShow, traceList,
 		TimesheetShow, TimesheetAdd,
-		ConfigShow, ConfigInit, DebugReport,
+		ConfigShow, ConfigInit, debugReport,
 		WorkspaceList, WorkspaceShow,
-		PluginWrite, PluginShow, AppInstall,
+		pluginWrite, pluginShow, appInstall,
 	}
 }
 
 // ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes; a view is how the person looks at their work, so an agent reads the views and keeps, changes or deletes none.
 func ForAPersonOnly() []Operation {
-	return []Operation{WorkspaceAdd, WorkspaceUse, WorkspaceRemove, ViewNew, ViewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill}
+	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill}
 }
 
-// Check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
-func (o Operation) Check(in Input) error {
+// check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
+func (o Operation) check(in Input) error {
 	takes := map[string]bool{}
 	for _, arg := range o.Takes {
 		takes[arg.Name] = true
@@ -286,7 +283,7 @@ func (o Operation) Check(in Input) error {
 			if _, err := strconv.Atoi(given); err != nil {
 				return Misread(fmt.Errorf("%q: %s number is expected", given, arg.Of))
 			}
-		case Day:
+		case day:
 			if _, err := domain.ParseDeadline(given); err != nil {
 				return err
 			}
@@ -295,10 +292,10 @@ func (o Operation) Check(in Input) error {
 	return nil
 }
 
-// On is what an operation was given to work on.
-type On struct {
+// workedOn is what an operation was given to work on.
+type workedOn struct {
 	Engine  *Engine
-	Backups *Backups
+	Backups *backups
 	Path    string
 	Notes   string
 	Plugin  string
@@ -308,7 +305,7 @@ type On struct {
 // Answer is what an operation answered.
 type Answer struct {
 	Task              *task.Task
-	Sessions          []FocusSession
+	Sessions          []focusSession
 	Asked             []string
 	Context           string
 	StoodSince        time.Time
@@ -316,7 +313,7 @@ type Answer struct {
 	Matched           []task.Task
 	Terms             map[string][]int
 	Unknown           []int
-	Counts            []Count
+	Counts            []count
 	Total             *int
 	Offset            int
 	Fields            []string
@@ -327,7 +324,7 @@ type Answer struct {
 	Warnings          []string
 	Spent             map[int]time.Duration
 	Proposes          *objective.Objective
-	Went              *Went
+	Went              *wentWith
 	Objective         *objective.Objective
 	Objectives        []objective.Objective
 	MatchedObjectives []objective.Objective
@@ -345,7 +342,7 @@ type Answer struct {
 	Exported          *string
 	Imported          *string
 	Plugin            *string
-	Install           *PluginShown
+	Install           *pluginShown
 	Written           *string
 	Archived          *int
 	Labelled          *int
@@ -359,21 +356,21 @@ type Answer struct {
 	Along             map[int]domain.Progress
 	Contexts          map[int]string
 	Config            *Config
-	ConfigChanged     *ConfigChanged
+	ConfigChanged     *configChanged
 	Sheet             *trace.Sheet
 	Period            *objective.Period
 	Named             map[int]string
 	Gone              map[int]bool
 	Packed            *int
-	Moved             *Moved
-	Crossed           *Crossed
+	Moved             *moves
+	Crossed           *crossed
 	Installed         *string
 	Runs              *string
 	OpenedFrom        *string
 	Workspaces        *Workspaces
-	WorkspaceAdded    *WorkspaceAdded
-	WorkspaceUsed     *WorkspaceUsed
-	WorkspaceRemoved  *WorkspaceRemoved
+	WorkspaceAdded    *workspaceAdded
+	WorkspaceUsed     *workspaceUsed
+	WorkspaceRemoved  *workspaceRemoved
 	WorkspaceShown    *WorkspaceShown
 	Viewed            *View
 	ViewsKept         *Views
@@ -381,19 +378,19 @@ type Answer struct {
 	InView            string
 	Lost              []string
 	KeepsNothing      bool
-	Outside           []Outside
+	Outside           []outside
 	Occurring         map[int]Occurs
-	Choosing          map[int]Choosing
-	Followed          []MadeNext
+	Choosing          map[int]choosing
+	Followed          []madeNext
 	SeriesShown       *Series
-	SeriesKept        *SeriesListed
-	SeriesGone        *SeriesDeleted
+	SeriesKept        *seriesListed
+	SeriesGone        *seriesDeleted
 	Untimed           bool
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.
 func Do(op Operation, path string, in Input) (Answer, error) {
-	return DoAt(op, Places{Store: path}, in, Acting{})
+	return doThere(op, Places{Store: path}, in, Acting{})
 }
 
 // Acting is where an act comes from, written down with it: the surface it came through, and who did it.
@@ -405,8 +402,8 @@ type Acting struct {
 // AuthorVariable is the variable that names who acts, for a script or a session to say it is the one acting.
 const AuthorVariable = "CAIRN_AUTHOR"
 
-// Author is who the acts of a surface are written down as: the one the environment names, or else the one logged in.
-func Author(h Home) string {
+// author is who the acts of a surface are written down as: the one the environment names, or else the one logged in.
+func author(h Home) string {
 	if named, ok := h.lookup()(AuthorVariable); ok && named != "" {
 		return named
 	}
@@ -417,10 +414,10 @@ func Author(h Home) string {
 }
 
 // Through is a surface acting for the one its home names.
-func Through(surface string, h Home) Acting { return Acting{Through: surface, By: Author(h)} }
+func Through(surface string, h Home) Acting { return Acting{Through: surface, By: author(h)} }
 
-// DoAt runs an operation at the places a surface found, and says which surface asked, so what it changes is written down as that surface's doing.
-func DoAt(op Operation, at Places, in Input, acting Acting) (answer Answer, err error) {
+// doThere runs an operation at the places a surface found, and says which surface asked, so what it changes is written down as that surface's doing.
+func doThere(op Operation, at Places, in Input, acting Acting) (answer Answer, err error) {
 	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
 	if err := op.admitted(in); err != nil {
 		return Answer{}, err
@@ -430,12 +427,12 @@ func DoAt(op Operation, at Places, in Input, acting Acting) (answer Answer, err 
 
 func doAt(op Operation, at Places, in Input, acting Acting) (Answer, error) {
 	switch op.Needs {
-	case AStoreBehind:
+	case aStoreBehind:
 		return doWith(OpenBehind, op, at, in, acting)
-	case AStore:
+	case aStore:
 		return doWith(Open, op, at, in, acting)
 	default:
-		return op.Run(On{Backups: BackupsAt(at.Store), Path: at.Store, Notes: at.Notes, Plugin: at.Plugin, Home: at.Home}, in)
+		return op.Run(workedOn{Backups: backupsAt(at.Store), Path: at.Store, Notes: at.Notes, Plugin: at.Plugin, Home: at.Home}, in)
 	}
 }
 
@@ -458,7 +455,7 @@ func doWith(
 			return Answer{}, storeProblem(err)
 		}
 	}
-	if op.Needs == AStore {
+	if op.Needs == aStore {
 		if err := eng.timerKept(); err != nil {
 			return Answer{}, storeProblem(err)
 		}
@@ -467,7 +464,7 @@ func doWith(
 		}
 	}
 	answer, err = eng.run(op, in)
-	if err != nil || op.Needs != AStore {
+	if err != nil || op.Needs != aStore {
 		return answer, err
 	}
 	answer.Asked, err = eng.asked()

@@ -87,7 +87,7 @@ func Ignored(h Home) []string {
 func Locate(h Home) (Places, error) {
 	if h.Dir == "" {
 		if said, ok := h.lookup()(config.StoreVariable); !ok || said == "" {
-			return Places{}, fmt.Errorf("%w: %w", ErrStore, h.Missing)
+			return Places{}, fmt.Errorf("%w: %w", errStore, h.Missing)
 		}
 	}
 	found, answers, err := h.settled()
@@ -142,7 +142,7 @@ func refusedOrUnusable(err error) error {
 			return err
 		}
 	}
-	return fmt.Errorf("%w: %w", ErrStore, err)
+	return fmt.Errorf("%w: %w", errStore, err)
 }
 
 // DoFrom runs an operation for a surface that knows only its home: it refuses what it cannot read first, then finds the places, then runs it there.
@@ -151,7 +151,7 @@ func DoFrom(op Operation, h Home, in Input, acting Acting) (answer Answer, err e
 	if err := op.admitted(in); err != nil {
 		return Answer{}, err
 	}
-	if op.Needs == AConfiguration {
+	if op.Needs == aConfiguration {
 		return doAt(op, Places{Home: h}, in, acting)
 	}
 	at, err := Locate(h)

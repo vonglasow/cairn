@@ -33,21 +33,21 @@ func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
 }
 
 func TestArchive_aNumberNamedAsNothingNamesNoTask(t *testing.T) {
-	if _, err := Do(TaskArchive, storeAt(t, "one"), given("number", "")); !errors.Is(err, ErrNothingToArchive) {
+	if _, err := Do(TaskArchive, storeAt(t, "one"), given("number", "")); !errors.Is(err, errNothingToArchive) {
 		t.Errorf("err = %v, want ErrNothingToArchive", err)
 	}
 }
 
 func TestStoreProblem_passesOnAStoreOfTheWrongAgeAsItIs(t *testing.T) {
 	for _, kind := range []error{ErrStoreBehind, ErrNewerStore} {
-		if err := storeProblem(fmt.Errorf("opening: %w", kind)); errors.Is(err, ErrStore) {
+		if err := storeProblem(fmt.Errorf("opening: %w", kind)); errors.Is(err, errStore) {
 			t.Errorf("%v was said as a store that cannot be read: %v", kind, err)
 		}
 	}
 }
 
 func TestCheck_readsPastAnArgumentLeftOut(t *testing.T) {
-	if err := TaskArchive.Check(given("deadline-before", "soon")); !errors.Is(err, domain.ErrNotADay) {
+	if err := TaskArchive.check(given("deadline-before", "soon")); !errors.Is(err, domain.ErrNotADay) {
 		t.Errorf("Check = %v, want the day refused", err)
 	}
 }
@@ -69,7 +69,7 @@ func TestCreation_writesDownWhatComesAfterAnEmptyAttribute(t *testing.T) {
 
 func TestLocate_refusesAVariableNamingNothing(t *testing.T) {
 	h := Home{Lookup: func(string) (string, bool) { return "", true }, Missing: errors.New("no home")}
-	if _, err := Locate(h); !errors.Is(err, ErrStore) {
+	if _, err := Locate(h); !errors.Is(err, errStore) {
 		t.Errorf("Locate = %v, want ErrStore", err)
 	}
 }

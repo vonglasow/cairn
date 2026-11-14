@@ -123,7 +123,7 @@ func TestLocate_anUnknownWorkspaceIsRefusedWithTheOnesThereAre(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	h.Workspace = "play"
 	_, err := Locate(h)
-	if !errors.Is(err, ErrNoSuchWorkspace) || !strings.Contains(err.Error(), `"play"`) || !strings.Contains(err.Error(), "home, work") {
+	if !errors.Is(err, errNoSuchWorkspace) || !strings.Contains(err.Error(), `"play"`) || !strings.Contains(err.Error(), "home, work") {
 		t.Errorf("Locate = %v, want play refused, naming home and work", err)
 	}
 }
@@ -131,14 +131,14 @@ func TestLocate_anUnknownWorkspaceIsRefusedWithTheOnesThereAre(t *testing.T) {
 func TestLocate_anUnknownWorkspaceWithNoneNamedSaysSo(t *testing.T) {
 	h := homeHolding(t, "", nil)
 	h.Workspace = "play"
-	if _, err := Locate(h); !errors.Is(err, ErrNoSuchWorkspace) || !strings.Contains(err.Error(), "none is named") {
+	if _, err := Locate(h); !errors.Is(err, errNoSuchWorkspace) || !strings.Contains(err.Error(), "none is named") {
 		t.Errorf("Locate = %v, want play refused, saying none is named", err)
 	}
 }
 
 func TestLocate_aDefaultNamingNoWorkspaceIsRefused(t *testing.T) {
 	h := homeHolding(t, "[workspaces]\ndefault = \"play\"\nwork = \"~/w\"\n", nil, "w")
-	if _, err := Locate(h); !errors.Is(err, ErrNoSuchWorkspace) || !strings.Contains(err.Error(), `"play"`) {
+	if _, err := Locate(h); !errors.Is(err, errNoSuchWorkspace) || !strings.Contains(err.Error(), `"play"`) {
 		t.Errorf("Locate = %v, want the default play refused", err)
 	}
 }
@@ -156,7 +156,7 @@ func TestLocate_aConfigurationThatCannotBeReadIsRefusedAsBefore(t *testing.T) {
 	if _, err := Locate(h); !errors.Is(err, config.ErrNotAbsolute) {
 		t.Errorf("Locate = %v, want the folder refused as not absolute", err)
 	}
-	if _, err := WorkspaceList.Run(On{Home: h}, Input{}); !errors.Is(err, config.ErrNotAbsolute) {
+	if _, err := WorkspaceList.Run(workedOn{Home: h}, Input{}); !errors.Is(err, config.ErrNotAbsolute) {
 		t.Errorf("workspace list = %v, want the same refusal", err)
 	}
 }
@@ -181,7 +181,7 @@ func TestWorkspaceShow_saysWhichAnswersAndWhy(t *testing.T) {
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")
 		h.Workspace, h.Store = c.workspace, c.store
-		answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+		answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue
@@ -199,7 +199,7 @@ func TestWorkspaceShow_saysWhichAnswersAndWhy(t *testing.T) {
 
 func TestWorkspaceShow_suggestsTheFolderOfAStoreNamedCairnDB(t *testing.T) {
 	h := homeHolding(t, "", map[string]string{config.StoreVariable: "~/e/cairn.db"})
-	answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+	answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestWorkspaceShow_suggestsTheFolderOfAStoreNamedCairnDB(t *testing.T) {
 		t.Errorf("it says\n%s\nwant it suggesting %q", said, want)
 	}
 	h = homeHolding(t, "", map[string]string{config.StoreVariable: "~/e/tasks.db"})
-	answer, _ = WorkspaceShow.Run(On{Home: h}, Input{})
+	answer, _ = WorkspaceShow.Run(workedOn{Home: h}, Input{})
 	if answer.WorkspaceShown.Add != "cairn workspace add <name> <folder>" {
 		t.Errorf("suggests %q for a store not named cairn.db", answer.WorkspaceShown.Add)
 	}
@@ -216,7 +216,7 @@ func TestWorkspaceShow_suggestsTheFolderOfAStoreNamedCairnDB(t *testing.T) {
 
 func TestWorkspaceShow_saysWhyTheWorkspaceItShowsAnswers(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+	answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,14 +225,14 @@ func TestWorkspaceShow_saysWhyTheWorkspaceItShowsAnswers(t *testing.T) {
 		t.Errorf("it says\n%s", said)
 	}
 	h.Workspace = "play"
-	if _, err := WorkspaceShow.Run(On{Home: h}, Input{}); !errors.Is(err, ErrNoSuchWorkspace) {
+	if _, err := WorkspaceShow.Run(workedOn{Home: h}, Input{}); !errors.Is(err, errNoSuchWorkspace) {
 		t.Errorf("workspace show = %v, want play refused", err)
 	}
 }
 
 func TestWorkspaceList_namesEachAndTheDefault(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil)
-	answer, err := WorkspaceList.Run(On{Home: h}, Input{})
+	answer, err := WorkspaceList.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,7 +253,7 @@ func TestWorkspaceList_namesEachAndTheDefault(t *testing.T) {
 }
 
 func TestWorkspaceList_saysWhenNoneIsNamed(t *testing.T) {
-	answer, err := WorkspaceList.Run(On{Home: homeHolding(t, "", nil)}, Input{})
+	answer, err := WorkspaceList.Run(workedOn{Home: homeHolding(t, "", nil)}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,7 +268,7 @@ func adding(name, folder string) Input {
 
 func TestWorkspaceAdd_writesItAndMakesItsFolder(t *testing.T) {
 	h := homeHolding(t, "plugin = \"~/plug\"\n", nil)
-	answer, err := WorkspaceAdd.Run(On{Home: h}, adding("play", "~/p"))
+	answer, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,14 +286,14 @@ func TestWorkspaceAdd_writesItAndMakesItsFolder(t *testing.T) {
 	if said := RenderText(WorkspaceAdd, answer); !strings.Contains(said, "cairn workspace use play") || !strings.Contains(said, added.Store) {
 		t.Errorf("it says\n%s", said)
 	}
-	if Of(WorkspaceAdd, answer).(WorkspaceAdded) != added {
+	if Of(WorkspaceAdd, answer).(workspaceAdded) != added {
 		t.Error("Of does not answer what was added")
 	}
 }
 
 func TestWorkspaceAdd_writesTheFileWhenThereIsNone(t *testing.T) {
 	h := homeHolding(t, "", nil)
-	if _, err := WorkspaceAdd.Run(On{Home: h}, adding("play", "~/p")); err != nil {
+	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p")); err != nil {
 		t.Fatal(err)
 	}
 	if read, _ := os.ReadFile(config.FileIn(h.Dir)); !strings.HasPrefix(string(read), "[workspaces]\nplay = ") {
@@ -307,15 +307,15 @@ func TestWorkspaceAdd_refusesWhatItCannotName(t *testing.T) {
 		want         error
 		names        string
 	}{
-		{"Work", "~/p", ErrNotAWorkspaceName, `"Work"`},
-		{"my_work", "~/p", ErrNotAWorkspaceName, `"my_work"`},
-		{"", "~/p", ErrNotAWorkspaceName, `""`},
-		{"default", "~/p", ErrNotAWorkspaceName, `"default"`},
+		{"Work", "~/p", errNotAWorkspaceName, `"Work"`},
+		{"my_work", "~/p", errNotAWorkspaceName, `"my_work"`},
+		{"", "~/p", errNotAWorkspaceName, `""`},
+		{"default", "~/p", errNotAWorkspaceName, `"default"`},
 		{"work", "~/p", ErrWorkspaceKnown, `"work"`},
 		{"play", "p", config.ErrNotAbsolute, `"p"`},
 	} {
 		h := homeHolding(t, twoWorkspaces, nil)
-		if _, err := WorkspaceAdd.Run(On{Home: h}, adding(c.name, c.folder)); !errors.Is(err, c.want) || !strings.Contains(err.Error(), c.names) {
+		if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding(c.name, c.folder)); !errors.Is(err, c.want) || !strings.Contains(err.Error(), c.names) {
 			t.Errorf("add %q %q = %v, want %v naming it", c.name, c.folder, err, c.want)
 		}
 		if read, _ := os.ReadFile(config.FileIn(h.Dir)); string(read) != twoWorkspaces {
@@ -329,7 +329,7 @@ func TestWorkspaceAdd_refusesWhatItCannotName(t *testing.T) {
 
 func TestWorkspaceAdd_refusesAFileItCannotChange(t *testing.T) {
 	h := homeHolding(t, "workspaces = { work = \"/w\" }\n", nil)
-	if _, err := WorkspaceAdd.Run(On{Home: h}, adding("play", "~/p")); !errors.Is(err, config.ErrNotWritten) {
+	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p")); !errors.Is(err, config.ErrNotWritten) {
 		t.Errorf("add = %v, want it refused", err)
 	}
 	if _, err := os.Stat(filepath.Join(h.Dir, "p")); err == nil {
@@ -340,7 +340,7 @@ func TestWorkspaceAdd_refusesAFileItCannotChange(t *testing.T) {
 func TestWorkspaceAddAndUse_needAHome(t *testing.T) {
 	missing := errors.New("no home")
 	for _, op := range []Operation{WorkspaceAdd, WorkspaceUse} {
-		if _, err := op.Run(On{Home: Home{Missing: missing}}, adding("play", "/p")); !errors.Is(err, ErrStore) || !errors.Is(err, missing) {
+		if _, err := op.Run(workedOn{Home: Home{Missing: missing}}, adding("play", "/p")); !errors.Is(err, errStore) || !errors.Is(err, missing) {
 			t.Errorf("%s = %v, want the missing home said", op.Name(), err)
 		}
 	}
@@ -350,11 +350,11 @@ func using(name string) Input { return Input{Given: map[string]string{"name": na
 
 func TestWorkspaceUse_makesItTheDefaultAndSaysWhatItWas(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	answer, err := WorkspaceUse.Run(On{Home: h}, using("home"))
+	answer, err := WorkspaceUse.Run(workedOn{Home: h}, using("home"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if *answer.WorkspaceUsed != (WorkspaceUsed{Default: "home", Was: "work"}) {
+	if *answer.WorkspaceUsed != (workspaceUsed{Default: "home", Was: "work"}) {
 		t.Errorf("used %+v", *answer.WorkspaceUsed)
 	}
 	read, _ := os.ReadFile(config.FileIn(h.Dir))
@@ -364,14 +364,14 @@ func TestWorkspaceUse_makesItTheDefaultAndSaysWhatItWas(t *testing.T) {
 	if said := RenderText(WorkspaceUse, answer); said != "the default workspace is now \"home\"; it was \"work\"\n" {
 		t.Errorf("it says %q", said)
 	}
-	if Of(WorkspaceUse, answer).(WorkspaceUsed).Default != "home" {
+	if Of(WorkspaceUse, answer).(workspaceUsed).Default != "home" {
 		t.Error("Of does not answer the default")
 	}
 }
 
 func TestWorkspaceUse_saysWhenThereWasNoDefault(t *testing.T) {
 	h := homeHolding(t, "[workspaces]\nwork = \"~/w\"\n", nil, "w")
-	answer, err := WorkspaceUse.Run(On{Home: h}, using("work"))
+	answer, err := WorkspaceUse.Run(workedOn{Home: h}, using("work"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,54 +382,54 @@ func TestWorkspaceUse_saysWhenThereWasNoDefault(t *testing.T) {
 
 func TestWorkspaceUse_refusesAWorkspaceNotThere(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w")
-	if _, err := WorkspaceUse.Run(On{Home: h}, using("play")); !errors.Is(err, ErrNoSuchWorkspace) {
+	if _, err := WorkspaceUse.Run(workedOn{Home: h}, using("play")); !errors.Is(err, errNoSuchWorkspace) {
 		t.Errorf("use play = %v", err)
 	}
-	if _, err := WorkspaceUse.Run(On{Home: h}, using("home")); !errors.Is(err, ErrWorkspaceNotThere) {
+	if _, err := WorkspaceUse.Run(workedOn{Home: h}, using("home")); !errors.Is(err, ErrWorkspaceNotThere) {
 		t.Errorf("use home = %v", err)
 	}
 	if read, _ := os.ReadFile(config.FileIn(h.Dir)); string(read) != twoWorkspaces {
 		t.Errorf("the file was changed: %q", read)
 	}
-	if _, err := WorkspaceUse.Run(On{Home: homeHolding(t, "[workspaces]\n", nil)}, using("x")); !errors.Is(err, ErrNoSuchWorkspace) {
+	if _, err := WorkspaceUse.Run(workedOn{Home: homeHolding(t, "[workspaces]\n", nil)}, using("x")); !errors.Is(err, errNoSuchWorkspace) {
 		t.Errorf("use x = %v", err)
 	}
 }
 
 func TestWorkspaceUse_refusesAFileItCannotChange(t *testing.T) {
 	h := homeHolding(t, "workspaces = { work = \"~/w\" }\n", nil, "w")
-	if _, err := WorkspaceUse.Run(On{Home: h}, using("work")); !errors.Is(err, config.ErrNotWritten) {
+	if _, err := WorkspaceUse.Run(workedOn{Home: h}, using("work")); !errors.Is(err, config.ErrNotWritten) {
 		t.Errorf("use = %v, want it refused", err)
 	}
 }
 
 func TestWorkspaces_areDescribedForEverySurface(t *testing.T) {
 	for _, op := range []Operation{WorkspaceList, WorkspaceAdd, WorkspaceUse, WorkspaceShow} {
-		if op.Needs != AConfiguration || op.Thing != "workspace" {
+		if op.Needs != aConfiguration || op.Thing != "workspace" {
 			t.Errorf("%s needs %v", op.Name(), op.Needs)
 		}
 	}
 	for _, op := range []Operation{WorkspaceList, WorkspaceShow} {
-		if _, found := Called(op.Thing, op.Verb); !found {
+		if _, found := called(op.Thing, op.Verb); !found {
 			t.Errorf("%s is not among All(), so not offered to an agent", op.Name())
 		}
 	}
 	for _, op := range []Operation{WorkspaceAdd, WorkspaceUse} {
-		if _, found := Called(op.Thing, op.Verb); found {
+		if _, found := called(op.Thing, op.Verb); found {
 			t.Errorf("%s is among All(), so offered to an agent", op.Name())
 		}
 	}
-	if typed := ForAPersonOnly(); len(typed) != 10 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() || typed[2].Name() != WorkspaceRemove.Name() || typed[3].Name() != ViewNew.Name() || typed[6].Name() != ViewDelete.Name() || typed[8].Name() != ConfigUnset.Name() || typed[9].Name() != ConfigFill.Name() {
+	if typed := ForAPersonOnly(); len(typed) != 10 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() || typed[2].Name() != workspaceRemove.Name() || typed[3].Name() != ViewNew.Name() || typed[6].Name() != ViewDelete.Name() || typed[8].Name() != ConfigUnset.Name() || typed[9].Name() != ConfigFill.Name() {
 		t.Errorf("ForAPersonOnly() = %d operations, want workspace add, use and remove, then the views but their list, then setting a key and taking it out", len(typed))
 	}
-	if WorkspaceList.Level != Read || WorkspaceShow.Level != Read || WorkspaceAdd.Level != Write || WorkspaceUse.Level != Write {
+	if WorkspaceList.Level != Read || WorkspaceShow.Level != Read || WorkspaceAdd.Level != write || WorkspaceUse.Level != write {
 		t.Error("listing and showing read, adding and using write")
 	}
 }
 
 func TestConfigShow_saysTheWorkspacesAndWhatNamedEachPlace(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	answer, err := ConfigShow.Run(On{Home: h}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -445,19 +445,19 @@ func TestConfigShow_saysTheWorkspacesAndWhatNamedEachPlace(t *testing.T) {
 		t.Errorf("it says\n%s", said)
 	}
 	h.Workspace = "play"
-	answer, err = ConfigShow.Run(On{Home: h}, Input{})
+	answer, err = ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil || !strings.Contains(answer.Config.Problem, "play") {
 		t.Errorf("config show = %+v, %v; want the workspace said as the problem", answer.Config, err)
 	}
 	h.Workspace, h.Store = "home", ""
-	answer, _ = ConfigShow.Run(On{Home: h}, Input{})
+	answer, _ = ConfigShow.Run(workedOn{Home: h}, Input{})
 	if answer.Config.Store.By != "--workspace" {
 		t.Errorf("store named by %q", answer.Config.Store.By)
 	}
 }
 
 func TestConfigShow_saysWhenNoWorkspaceIsNamed(t *testing.T) {
-	answer, err := ConfigShow.Run(On{Home: homeHolding(t, "", nil)}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: homeHolding(t, "", nil)}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +475,7 @@ func TestWhy_namesTheStoreTheEnvironmentSaysAsAWholePath(t *testing.T) {
 		return "", false
 	}
 	h.Store = filepath.Join(h.Dir, "x", "cairn.db")
-	answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+	answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}

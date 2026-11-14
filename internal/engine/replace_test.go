@@ -34,9 +34,9 @@ func TestTaskEdit_refusesAPieceItCannotReplace(t *testing.T) {
 	}{
 		{given("number", "1", "replace", "develop", "by", "x"), domain.ErrReplacedNowhere},
 		{given("number", "1", "replace", "main", "by", "x"), domain.ErrReplacedMoreThanOnce},
-		{given("number", "1", "replace", "main"), ErrReplaceAlone},
-		{given("number", "1", "by", "main"), ErrReplaceAlone},
-		{given("number", "1", "desc", "other", "replace", "main", "by", "x"), ErrDescriptionBothWays},
+		{given("number", "1", "replace", "main"), errReplaceAlone},
+		{given("number", "1", "by", "main"), errReplaceAlone},
+		{given("number", "1", "desc", "other", "replace", "main", "by", "x"), errDescriptionBothWays},
 	} {
 		e := describedTask(t, "main into main")
 		if _, err := e.Ask(TaskEdit, tc.in); !errors.Is(err, tc.want) {

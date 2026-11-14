@@ -26,9 +26,9 @@ func TestOf_crossesAHistoryAndAPeriodAsActs(t *testing.T) {
 		in   Answer
 	}{
 		{"a task's history", TraceShow, Answer{Acts: []trace.Act{anAct(1, trace.Created)}}},
-		{"a period", TraceList, Answer{Since: []trace.Act{anAct(1, trace.FocusTaken)}}},
+		{"a period", traceList, Answer{Since: []trace.Act{anAct(1, trace.FocusTaken)}}},
 	} {
-		crossed, ok := Of(tc.op, tc.in).(Acts)
+		crossed, ok := Of(tc.op, tc.in).(acts)
 		if !ok {
 			t.Errorf("%s: Of = %T, want a listing of acts", tc.what, Of(tc.op, tc.in))
 			continue
@@ -50,7 +50,7 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 	e := openEngine(t)
 	found := []objective.Objective{addObjective(t, e, "Ship cairn 1.0")}
 
-	crossed, ok := Of(ObjectiveSearch, Answer{MatchedObjectives: found}).(Objectives)
+	crossed, ok := Of(ObjectiveSearch, Answer{MatchedObjectives: found}).(objectivesListed)
 	if !ok {
 		t.Fatalf("Of = %T, want a listing of objectives", Of(ObjectiveSearch, Answer{MatchedObjectives: found}))
 	}
@@ -70,7 +70,7 @@ func TestOfObjective_namesTheTasksUnderIt(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	crossed := OfObjective(served, []task.Task{under}, domain.Progress{})
+	crossed := ofObjective(served, []task.Task{under}, domain.Progress{})
 	if len(crossed.Tasks) != 1 || crossed.Tasks[0] != factsOf(under).Number {
 		t.Errorf("it names %v, want the one task under it", crossed.Tasks)
 	}
@@ -101,7 +101,7 @@ func TestCheck_refusesWhatNoOperationCanMakeSenseOf(t *testing.T) {
 			"was not given one",
 		},
 	} {
-		err := TaskShow.Check(tc.in)
+		err := TaskShow.check(tc.in)
 		if err == nil {
 			t.Errorf("%s: Check said nothing", tc.what)
 			continue

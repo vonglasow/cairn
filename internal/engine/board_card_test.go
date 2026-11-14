@@ -20,7 +20,7 @@ func TestADeadlineIsWrittenOnlyWhenItIsLateOrWithinAWeek(t *testing.T) {
 		{on(soon), "7d", true, false},
 		{on(soon + 1), "", false, false},
 	} {
-		text, show, late := Deadline(tc.due, now)
+		text, show, late := deadline(tc.due, now)
 		if text != tc.text || show != tc.show || late != tc.late {
 			t.Errorf("Deadline(%v) = %q, %v, %v, want %q, %v, %v", tc.due, text, show, late, tc.text, tc.show, tc.late)
 		}
@@ -40,7 +40,7 @@ func TestACardDoneSaysNothingOfItsDay(t *testing.T) {
 
 func TestStepsAreTalliedLeftAndDone(t *testing.T) {
 	parts := []Part{{Title: "a", Done: true}, {Title: "b"}, {Title: "c"}}
-	if left, done := Tally(parts); left != 2 || done != 1 {
+	if left, done := tally(parts); left != 2 || done != 1 {
 		t.Errorf("Tally = %d left, %d done, want 2 and 1", left, done)
 	}
 	if got := Tallied(parts); got != "2 left · 1 done" {

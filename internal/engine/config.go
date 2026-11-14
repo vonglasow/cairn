@@ -198,9 +198,9 @@ var ConfigShow = Operation{
 	Does:    "Show the whole configuration cairn uses, written as the file is: every key under its table with the value in force — what the file says, or what is used when it says nothing — the file read, and what named each place: the file, the environment, or nothing.",
 	Example: "cairn config show",
 	Level:   Read,
-	Needs:   AConfiguration,
+	Needs:   aConfiguration,
 	Answers: Config{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		reading, err := config.NewReading(on.Home.Dir, on.Home.lookup())
 		if err != nil {
 			return Answer{}, err
@@ -362,11 +362,11 @@ func saidWhere(written, here []string, keys ...string) string {
 	return "by default"
 }
 
-// ErrConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.
-var ErrConfigAlreadyThere = errors.New("a configuration is already there; change it, or move it away first")
+// errConfigAlreadyThere is returned when config init finds a configuration already written: it is never written over.
+var errConfigAlreadyThere = errors.New("a configuration is already there; change it, or move it away first")
 
-// ConfigWritten says where config init wrote the configuration.
-type ConfigWritten struct {
+// configWritten says where config init wrote the configuration.
+type configWritten struct {
 	Written string `json:"written"`
 }
 
@@ -377,11 +377,11 @@ var ConfigInit = Operation{
 	Short:   "Write the configuration file, every key in it",
 	Does:    "Write the configuration file where cairn reads it, every key commented and set to what cairn uses when nothing is said, to change from there, with one workspace, main, on ~/.cairn, the default, its folder made. A configuration already there is never written over.",
 	Example: "cairn config init",
-	Level:   Write,
-	Needs:   AConfiguration,
+	Level:   write,
+	Needs:   aConfiguration,
 	Again:   ChangesNothingMore,
-	Answers: ConfigWritten{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Answers: configWritten{},
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		path, err := on.Home.file()
 		if err != nil {
 			return Answer{}, err
@@ -391,7 +391,7 @@ var ConfigInit = Operation{
 		}
 		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 		if errors.Is(err, fs.ErrExist) {
-			return Answer{}, fmt.Errorf("%s: %w", path, ErrConfigAlreadyThere)
+			return Answer{}, fmt.Errorf("%s: %w", path, errConfigAlreadyThere)
 		}
 		if err != nil {
 			return Answer{}, err

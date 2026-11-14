@@ -11,8 +11,8 @@ import (
 	"cairn/internal/domain"
 )
 
-// ErrNoSuchLabel is returned when a label named is carried by no task and no objective.
-var ErrNoSuchLabel = errors.New("nothing carries that label")
+// errNoSuchLabel is returned when a label named is carried by no task and no objective.
+var errNoSuchLabel = errors.New("nothing carries that label")
 
 // LabelCarried is one label and how many tasks and objectives carry it.
 type LabelCarried struct {
@@ -23,8 +23,8 @@ type LabelCarried struct {
 	Scope      string `json:"scope" jsonschema:"what it may be put on: tasks, objectives or both"`
 }
 
-// Labels is how the labels answer: every one, in alphabetical order, with what carries it.
-type Labels struct {
+// labelList is how the labels answer: every one, in alphabetical order, with what carries it.
+type labelList struct {
 	Labels   []LabelCarried `json:"labels"`
 	Warnings []string       `json:"warnings,omitempty" jsonschema:"what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"`
 }
@@ -165,7 +165,7 @@ func (e *Engine) carriersOf(given string) (string, carriers, error) {
 	}
 	found, there := held[label]
 	if !there {
-		return "", carriers{}, fmt.Errorf("%q: %w", label, ErrNoSuchLabel)
+		return "", carriers{}, fmt.Errorf("%q: %w", label, errNoSuchLabel)
 	}
 	return label, found, nil
 }
@@ -184,9 +184,9 @@ func (e *Engine) relabel(c carriers, change []string) error {
 	return nil
 }
 
-func listedLabels(on On) (Answer, error) { return offeredLabels(on, "") }
+func listedLabels(on workedOn) (Answer, error) { return offeredLabels(on, "") }
 
-func offeredLabels(on On, onto string) (Answer, error) {
+func offeredLabels(on workedOn, onto string) (Answer, error) {
 	listed, err := on.Engine.labelsCarried()
 	if err != nil {
 		return Answer{}, err
@@ -208,12 +208,12 @@ var LabelList = Operation{
 	Example: `cairn label list
 cairn label list --for objectives`,
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Labels{},
+	Needs:   aStore,
+	Answers: labelList{},
 	Takes: []Argument{
 		{Name: "for", Kind: Text, OneOf: oneOf([]domain.Bearer{domain.OnTasks, domain.OnObjectives}), Outside: domain.ErrNoSuchScope, Means: "keep only the labels that may be put on tasks, or on objectives"},
 	},
-	Run: func(on On, in Input) (Answer, error) { return offeredLabels(on, in.Given["for"]) },
+	Run: func(on workedOn, in Input) (Answer, error) { return offeredLabels(on, in.Given["for"]) },
 }
 
 // LabelDelete takes a label off every task and every objective carrying it.
@@ -224,13 +224,13 @@ var LabelDelete = Operation{
 	Does:    "Take a label off every task and every objective carrying it, each change written in its task's trace. Answers the labels left.",
 	Example: "cairn label delete sp26-20 --yes",
 	Level:   Full,
-	Needs:   AStore,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Labels{},
+	Answers: labelList{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to take off everything"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		label, found, err := on.Engine.carriersOf(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
@@ -260,15 +260,15 @@ var LabelRename = Operation{
 	Short:   "Rename a label on everything carrying it",
 	Does:    "Rename a label on every task and every objective carrying it, the new name written the one way a label is; renamed to one already there, the two become one. Answers the labels there are.",
 	Example: "cairn label rename sp26-20 sprint-20",
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Labels{},
+	Answers: labelList{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to rename"},
 		{Name: "to", Kind: Text, Positional: true, Required: true, Means: "the name it takes"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		label, found, err := on.Engine.carriersOf(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
@@ -300,15 +300,15 @@ var LabelNew = Operation{
 	Does:  "Make a label before any task or objective carries it, written the one way a label is, for tasks, objectives or both; it is listed and offered until it is deleted, carried or not. Answers the labels there are.",
 	Example: `cairn label new release-train
 cairn label new area --scope objectives`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Labels{},
+	Answers: labelList{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to make"},
 		scopeArgument,
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		label, err := oneLabel(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
@@ -325,22 +325,22 @@ cairn label new area --scope objectives`,
 	},
 }
 
-// LabelScope says what a label may be put on: tasks, objectives, or both.
-var LabelScope = Operation{
+// labelScope says what a label may be put on: tasks, objectives, or both.
+var labelScope = Operation{
 	Thing:   "label",
 	Verb:    "scope",
 	Short:   "Say what a label may be put on",
 	Does:    "Say what a label may be put on: tasks, objectives, or both, which a label nobody scoped is for. Narrowed to one, it is refused while the other carries it, and putting it on the other is refused after. Answers the labels there are.",
 	Example: "cairn label scope area objectives",
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Labels{},
+	Answers: labelList{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to scope"},
 		{Name: "scope", Kind: Text, Positional: true, Required: true, OneOf: scopeArgument.OneOf, Outside: domain.ErrNoSuchScope, Means: scopeArgument.Means},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		if err := on.Engine.scope(in.Given["label"], in.Given["scope"]); err != nil {
 			return Answer{}, err
 		}
@@ -355,15 +355,15 @@ var LabelColour = Operation{
 	Short:   "Choose the colour a label wears",
 	Does:    "Choose the colour a label wears wherever it is drawn, one of rosewater, flamingo, pink, mauve, red, maroon, peach, yellow, green, teal, sky, sapphire, blue and lavender; a label nobody chose one for wears one read off its name. Answers the labels there are.",
 	Example: "cairn label colour sp26-20 peach",
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Labels{},
+	Answers: labelList{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to colour"},
 		{Name: "colour", Kind: Text, Positional: true, Required: true, Means: "the colour it wears"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		label, _, err := on.Engine.carriersOf(in.Given["label"])
 		if err != nil {
 			return Answer{}, err

@@ -76,10 +76,10 @@ func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 		in   Input
 		want error
 	}{
-		{"a day to come", given("number", "1", "time", "1h", "on", "2099-01-01"), ErrDayToCome},
-		{"a length nobody can read", given("number", "1", "time", "long"), ErrNotATime},
-		{"no time at all", given("number", "1", "time", "0m"), ErrNotATime},
-		{"a task that is not there", given("number", "9", "time", "1h"), ErrNoSuchTask},
+		{"a day to come", given("number", "1", "time", "1h", "on", "2099-01-01"), errDayToCome},
+		{"a length nobody can read", given("number", "1", "time", "long"), errNotATime},
+		{"no time at all", given("number", "1", "time", "0m"), errNotATime},
+		{"a task that is not there", given("number", "9", "time", "1h"), errNoSuchTask},
 	} {
 		if _, err := Do(TimesheetAdd, path, c.in); !errors.Is(err, c.want) {
 			t.Errorf("%s: %v, want %v", c.what, err, c.want)
@@ -88,8 +88,8 @@ func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 }
 
 func TestFocus_isTakenAndLetGoNowAndAtNoOtherMoment(t *testing.T) {
-	for _, op := range []Operation{TaskFocus, TaskUnfocus} {
-		if err := op.Check(given("number", "1", "at", "09:00")); err == nil {
+	for _, op := range []Operation{TaskFocus, taskUnfocus} {
+		if err := op.check(given("number", "1", "at", "09:00")); err == nil {
 			t.Errorf("%s takes a moment", op.Line())
 		}
 	}

@@ -23,20 +23,20 @@ func TestWorkspaceShow_whyNamesTheRungAndThoseItPassedOver(t *testing.T) {
 		says             string
 	}{
 		{"the default", nil, "", "", twoWorkspaces, Why{Rung: rungDefault, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable}}, "the default (no --workspace, no CAIRN_STORE)"},
-		{"the environment on a workspace", map[string]string{config.StoreVariable: "~/h/cairn.db"}, "", "", twoWorkspaces, Why{Rung: config.StoreVariable, Over: []Rung{{Rung: rungDefault, Names: "work"}}}, "CAIRN_STORE — over the default, work"},
-		{"the flag", map[string]string{config.StoreVariable: "~/h/cairn.db"}, "home", "", twoWorkspaces, Why{Rung: rungWorkspaceFlag, Over: []Rung{{Rung: config.StoreVariable, Names: "home"}, {Rung: rungDefault, Names: "work"}}}, "--workspace — over CAIRN_STORE (home) and the default (work)"},
-		{"CAIRN_WORKSPACE", map[string]string{WorkspaceVariable: "home"}, "", "", twoWorkspaces, Why{Rung: WorkspaceVariable, Over: []Rung{{Rung: rungDefault, Names: "work"}}}, "CAIRN_WORKSPACE — over the default, work"},
-		{"CAIRN_STORE over CAIRN_WORKSPACE", map[string]string{config.StoreVariable: "~/e/cairn.db", WorkspaceVariable: "home"}, "", "", twoWorkspaces, Why{Rung: config.StoreVariable, Over: []Rung{{Rung: WorkspaceVariable, Names: "home"}, {Rung: rungDefault, Names: "work"}}}, "CAIRN_STORE — over CAIRN_WORKSPACE (home) and the default (work)"},
-		{"the flag over CAIRN_WORKSPACE", map[string]string{WorkspaceVariable: "home"}, "work", "", twoWorkspaces, Why{Rung: rungWorkspaceFlag, Over: []Rung{{Rung: WorkspaceVariable, Names: "home"}, {Rung: rungDefault, Names: "work"}}}, "--workspace — over CAIRN_WORKSPACE (home) and the default (work)"},
-		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, Why{Rung: rungStoreFlag, Over: []Rung{{Rung: rungDefault, Names: "work"}}}, "--store — over the default, work"},
-		{"the environment on no workspace", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "~/x/cairn.db", "", Why{Rung: rungStoreFlag, Over: []Rung{{Rung: config.StoreVariable, Names: "~/e/cairn.db"}}}, "--store — over CAIRN_STORE, ~/e/cairn.db"},
-		{"the default over the file", nil, "", "", "store = \"~/s/tasks.db\"\n" + twoWorkspaces, Why{Rung: rungDefault, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable}, Over: []Rung{{Rung: rungFile, Names: "~/s/tasks.db"}}}, "the default (no --workspace, no CAIRN_STORE) — over the file, ~/s/tasks.db"},
+		{"the environment on a workspace", map[string]string{config.StoreVariable: "~/h/cairn.db"}, "", "", twoWorkspaces, Why{Rung: config.StoreVariable, Over: []rung{{Rung: rungDefault, Names: "work"}}}, "CAIRN_STORE — over the default, work"},
+		{"the flag", map[string]string{config.StoreVariable: "~/h/cairn.db"}, "home", "", twoWorkspaces, Why{Rung: rungWorkspaceFlag, Over: []rung{{Rung: config.StoreVariable, Names: "home"}, {Rung: rungDefault, Names: "work"}}}, "--workspace — over CAIRN_STORE (home) and the default (work)"},
+		{"CAIRN_WORKSPACE", map[string]string{WorkspaceVariable: "home"}, "", "", twoWorkspaces, Why{Rung: WorkspaceVariable, Over: []rung{{Rung: rungDefault, Names: "work"}}}, "CAIRN_WORKSPACE — over the default, work"},
+		{"CAIRN_STORE over CAIRN_WORKSPACE", map[string]string{config.StoreVariable: "~/e/cairn.db", WorkspaceVariable: "home"}, "", "", twoWorkspaces, Why{Rung: config.StoreVariable, Over: []rung{{Rung: WorkspaceVariable, Names: "home"}, {Rung: rungDefault, Names: "work"}}}, "CAIRN_STORE — over CAIRN_WORKSPACE (home) and the default (work)"},
+		{"the flag over CAIRN_WORKSPACE", map[string]string{WorkspaceVariable: "home"}, "work", "", twoWorkspaces, Why{Rung: rungWorkspaceFlag, Over: []rung{{Rung: WorkspaceVariable, Names: "home"}, {Rung: rungDefault, Names: "work"}}}, "--workspace — over CAIRN_WORKSPACE (home) and the default (work)"},
+		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, Why{Rung: rungStoreFlag, Over: []rung{{Rung: rungDefault, Names: "work"}}}, "--store — over the default, work"},
+		{"the environment on no workspace", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "~/x/cairn.db", "", Why{Rung: rungStoreFlag, Over: []rung{{Rung: config.StoreVariable, Names: "~/e/cairn.db"}}}, "--store — over CAIRN_STORE, ~/e/cairn.db"},
+		{"the default over the file", nil, "", "", "store = \"~/s/tasks.db\"\n" + twoWorkspaces, Why{Rung: rungDefault, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable}, Over: []rung{{Rung: rungFile, Names: "~/s/tasks.db"}}}, "the default (no --workspace, no CAIRN_STORE) — over the file, ~/s/tasks.db"},
 		{"the file", nil, "", "", "store = \"~/s/tasks.db\"\n", Why{Rung: rungFile, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable, rungDefault}}, "the file (no --workspace, no CAIRN_STORE, no default)"},
 		{"nothing", nil, "", "", "", Why{Rung: rungNothing, Unsaid: []string{rungWorkspaceFlag, config.StoreVariable, rungDefault, rungFile}}, "where cairn keeps a store by default (no --workspace, no CAIRN_STORE, no default, no store in the file)"},
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")
 		h.Workspace, h.Store = c.workspace, c.store
-		answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+		answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 		if err != nil {
 			t.Errorf("%s: %v", c.name, err)
 			continue
@@ -60,7 +60,7 @@ func TestWorkspaceShow_aServerSaysWhyAsItWasWhenItStarted(t *testing.T) {
 	if kept.Kept == nil || !kept.Kept.Why.Started || kept.Kept.Why.Rung != rungWorkspaceFlag {
 		t.Fatalf("kept %+v, want why --workspace, settled as the server started", kept.Kept)
 	}
-	answer, err := WorkspaceShow.Run(On{Home: kept}, Input{})
+	answer, err := WorkspaceShow.Run(workedOn{Home: kept}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestWorkspaceShow_saysThePagesOnAndWhereThatIsSaid(t *testing.T) {
 		if c.settings != "" {
 			settingsIn(t, filepath.Join(h.Dir, "w"), c.settings)
 		}
-		answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+		answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -108,7 +108,7 @@ func TestWorkspaceList_marksTheTimeEachWorkspaceKeeps(t *testing.T) {
 	h := homeHolding(t, "[pages]\ntime = \"hidden\"\n"+twoWorkspaces+"play = \"~/p\"\n", nil, "w", "h", "p")
 	settingsIn(t, filepath.Join(h.Dir, "h"), "[pages]\ntime = \"off\"\n")
 	settingsIn(t, filepath.Join(h.Dir, "p"), "[pages]\ntime = \"on\"\n")
-	answer, err := WorkspaceList.Run(On{Home: h}, Input{})
+	answer, err := WorkspaceList.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestWorkspaceList_marksTheTimeEachWorkspaceKeeps(t *testing.T) {
 func TestWorkspaceList_leavesUnmarkedTheTimeOfSettingsItCannotRead(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	settingsIn(t, filepath.Join(h.Dir, "h"), "not toml [")
-	answer, err := WorkspaceList.Run(On{Home: h}, Input{})
+	answer, err := WorkspaceList.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestWorkspaceList_leavesUnmarkedTheTimeOfSettingsItCannotRead(t *testing.T)
 func TestConfigShow_saysWhatTheGlobalConfigurationGivesBesideAKeySetHere(t *testing.T) {
 	h := homeHolding(t, "[focus]\nsession = \"1h\"\n[approach]\nlabel = \"discuss\"\n", map[string]string{config.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "[focus]\nsession = \"25m\"\n[time]\nweekends = \"hidden\"\n[approach]\nlabel = \"\"\n[archive]\nstart = 2026-01-01\ndays = 30\n[pages]\ntasks = false\ntime = \"off\"\n[window]\nkeep_sizes = true\n[workspace]\ncolour = \"teal\"\n")
-	answer, err := ConfigShow.Run(On{Home: h}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ func TestConfigShow_saysWhatTheGlobalConfigurationGivesBesideAKeySetHere(t *test
 
 func TestConfigShow_saysTheColourOfTheWorkspaceAndWhereItComesFrom(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	answer, err := ConfigShow.Run(On{Home: h}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +193,7 @@ func TestConfigShow_saysTheColourOfTheWorkspaceAndWhereItComesFrom(t *testing.T)
 		t.Errorf("config show says\n%s", said)
 	}
 	loose := homeHolding(t, "", map[string]string{config.StoreVariable: "~/s/cairn.db"})
-	answer, err = ConfigShow.Run(On{Home: loose}, Input{})
+	answer, err = ConfigShow.Run(workedOn{Home: loose}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestConfigShow_saysTheColourOfTheWorkspaceAndWhereItComesFrom(t *testing.T)
 
 func TestConfigInit_namesOneWorkspaceTheDefaultAndMakesItsFolder(t *testing.T) {
 	home := t.TempDir()
-	if _, err := ConfigInit.Run(On{Home: Home{Dir: home}}, Input{}); err != nil {
+	if _, err := ConfigInit.Run(workedOn{Home: Home{Dir: home}}, Input{}); err != nil {
 		t.Fatal(err)
 	}
 	at, err := Locate(Home{Dir: home})

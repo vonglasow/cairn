@@ -140,7 +140,7 @@ func TestTaskImport_refusesAViewItCannotReadBeforeAnythingIsAdded(t *testing.T) 
 		if err == nil || !strings.Contains(err.Error(), c.says) {
 			t.Errorf("%s: err = %v, want it to say %q", c.view, err, c.says)
 		}
-		if c.outside && !errors.Is(err, ErrExportPointsOutside) {
+		if c.outside && !errors.Is(err, errExportPointsOutside) {
 			t.Errorf("%s: err = %v, want ErrExportPointsOutside", c.view, err)
 		}
 		if tasks, _ := e.store.All(); len(tasks) != 0 {

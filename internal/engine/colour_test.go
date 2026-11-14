@@ -47,7 +47,7 @@ func TestWorkspaceList_aColourTheSettingsCannotSayIsReadOffTheName(t *testing.T)
 func TestWorkspaceList_theColourOfTheStoreInUseIsNotLentToAnother(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	settingsIn(t, filepath.Join(h.Dir, "w"), "[workspace]\ncolour = \"green\"\n")
-	answer, err := ConfigShow.Run(On{Home: h}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}

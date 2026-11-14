@@ -91,7 +91,7 @@ func givenIn(l *debug.Log, op Operation, in Input) string {
 
 func shown(l *debug.Log, a Argument, value string) string {
 	switch a.Kind {
-	case Number, Day, Duration, Bool:
+	case Number, day, duration, Bool:
 		return value
 	}
 	switch value {
@@ -209,7 +209,7 @@ func storeInNumbers(at Places) [][2]string {
 	if err != nil {
 		return unreadable(err)
 	}
-	goals, _ := held.run(ObjectiveList, Input{})
+	goals, _ := held.run(objectiveList, Input{})
 	columns := map[string]int{}
 	labels := map[string]bool{}
 	archived := 0
@@ -254,27 +254,27 @@ func unreadable(err error) [][2]string {
 	return [][2]string{{"store", "cannot be read: " + RefusalOf(err).Reason}}
 }
 
-// DebugReported says where debug report wrote its archive, and how many debug files it packed.
-type DebugReported struct {
+// debugReported says where debug report wrote its archive, and how many debug files it packed.
+type debugReported struct {
 	Written string `json:"written"`
 	Files   int    `json:"files"`
 }
 
-// DebugReport packs every file debug mode kept, and a header made at that moment, into one archive to send.
-var DebugReport = Operation{
+// debugReport packs every file debug mode kept, and a header made at that moment, into one archive to send.
+var debugReport = Operation{
 	Thing:   "debug",
 	Verb:    "report",
 	Short:   "Pack what debug mode wrote down into one archive to send",
 	Does:    "Pack every file debug mode kept beside the store, and a header saying what this machine and this store are now, into one zip archive, written in the folder named or the current one, to send to whoever looks into a bug. Nothing a person wrote is in it: debug mode masks every text.",
 	Example: "cairn debug report",
-	Level:   Write,
-	Needs:   NoStore,
-	Again:   DoesItAgain,
+	Level:   write,
+	Needs:   noStore,
+	Again:   doesItAgain,
 	Takes: []Argument{
 		{Name: "to", Kind: Text, Means: "the folder to write the archive in; the current one when not said"},
 	},
-	Answers: DebugReported{},
-	Run: func(on On, in Input) (Answer, error) {
+	Answers: debugReported{},
+	Run: func(on workedOn, in Input) (Answer, error) {
 		to := in.Given["to"]
 		if to == "" {
 			here, err := os.Getwd()

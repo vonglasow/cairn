@@ -15,17 +15,17 @@ import (
 	"cairn/internal/trace"
 )
 
-// ErrNothingToChange is returned when an edit names nothing to change.
-var ErrNothingToChange = errors.New("nothing was named to change")
+// errNothingToChange is returned when an edit names nothing to change.
+var errNothingToChange = errors.New("nothing was named to change")
 
-// ErrStore is returned when the store itself cannot be used — as opposed to a request the store understood and refused.
-var ErrStore = errors.New("the store cannot be read")
+// errStore is returned when the store itself cannot be used — as opposed to a request the store understood and refused.
+var errStore = errors.New("the store cannot be read")
 
-// ErrLabelSignAtCreation is returned when a task is created with a label carrying a + or a -.
-var ErrLabelSignAtCreation = errors.New("a label is added or taken away only when changing a task")
+// errLabelSignAtCreation is returned when a task is created with a label carrying a + or a -.
+var errLabelSignAtCreation = errors.New("a label is added or taken away only when changing a task")
 
-// ErrNoSuchTask is re-exported so a surface can recognise it: a surface asks the engine and may not import the store, so the engine is where the name it answers with has to live.
-var ErrNoSuchTask = store.ErrNoSuchTask
+// errNoSuchTask is re-exported so a surface can recognise it: a surface asks the engine and may not import the store, so the engine is where the name it answers with has to live.
+var errNoSuchTask = store.ErrNoSuchTask
 
 type tasks interface {
 	Keep(task.Task) (task.Task, error)
@@ -120,7 +120,7 @@ func storeProblem(err error) error {
 	if errors.Is(err, ErrStoreBehind) || errors.Is(err, ErrNewerStore) {
 		return err
 	}
-	return fmt.Errorf("%w: %w", ErrStore, err)
+	return fmt.Errorf("%w: %w", errStore, err)
 }
 
 // Close releases the store.
@@ -300,7 +300,7 @@ func (e *Engine) waitingOn(number int) ([]int, error) {
 
 func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if !c.named() {
-		return task.Task{}, ErrNothingToChange
+		return task.Task{}, errNothingToChange
 	}
 	was, err := e.tasks.Find(number)
 	if err != nil {

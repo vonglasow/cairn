@@ -20,7 +20,7 @@ func TestKeep_aServerKeepsTheDefaultItStartedOn(t *testing.T) {
 	if err != nil || at.Store != filepath.Join(h.Dir, "w", "cairn.db") || at.Notes != filepath.Join(h.Dir, "w", "notes") {
 		t.Errorf("Locate = %+v, %v; want work's places, the default it started on", at, err)
 	}
-	answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+	answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestKeep_whatCannotBeSettledIsFoundAtEachCall(t *testing.T) {
 	if kept := Keep(h); kept.Kept != nil {
 		t.Errorf("kept %+v from a default whose folder is not there", kept.Kept)
 	}
-	if kept := Keep(Home{Missing: ErrStore}); kept.Kept != nil {
+	if kept := Keep(Home{Missing: errStore}); kept.Kept != nil {
 		t.Errorf("kept %+v with no home", kept.Kept)
 	}
 }
@@ -88,7 +88,7 @@ func TestWorkspaceShow_saysTheTimeAndWhereItIsSaid(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		answer, err := WorkspaceShow.Run(On{Home: h}, Input{})
+		answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -107,7 +107,7 @@ func TestWorkspaceShow_refusesSettingsItCannotRead(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(h.Dir, "w", config.SettingsFile), []byte("not toml ["), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := WorkspaceShow.Run(On{Home: h}, Input{}); err == nil {
+	if _, err := WorkspaceShow.Run(workedOn{Home: h}, Input{}); err == nil {
 		t.Error("workspace show answered over settings that are not TOML")
 	}
 }
@@ -115,7 +115,7 @@ func TestWorkspaceShow_refusesSettingsItCannotRead(t *testing.T) {
 func TestWorkspaceShow_aServerSaysSwitchingIsNotDoneThere(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	h.Workspace = "home"
-	answer, err := WorkspaceShow.Run(On{Home: Keep(h)}, Input{})
+	answer, err := WorkspaceShow.Run(workedOn{Home: Keep(h)}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}

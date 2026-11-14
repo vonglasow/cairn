@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// Asked turns a form's fields into what the operation takes, a list saying the whole of what it becomes.
-func Asked(fields []Field, op Operation) Input {
+// inputOfFields turns a form's fields into what the operation takes, a list saying the whole of what it becomes.
+func inputOfFields(fields []Field, op Operation) Input {
 	kinds := map[string]Kind{}
 	for _, argument := range op.Takes {
 		kinds[argument.Name] = argument.Kind
@@ -20,7 +20,7 @@ func Asked(fields []Field, op Operation) Input {
 		case List:
 			in.Listed[field.Arg] = append([]string{"="}, Words(field.Value)...)
 		case Number:
-			if _, ok := NumberOf(field.Value); ok {
+			if _, ok := numberIn(field.Value); ok {
 				in.Given[field.Arg] = strings.TrimSpace(field.Value)
 			}
 		default:
@@ -30,8 +30,8 @@ func Asked(fields []Field, op Operation) Input {
 	return in
 }
 
-// NumberOf reads a field back as a task number, and says when there was nothing to read.
-func NumberOf(s string) (int, bool) {
+// numberIn reads a field back as a task number, and says when there was nothing to read.
+func numberIn(s string) (int, bool) {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return 0, true

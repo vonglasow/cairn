@@ -26,7 +26,7 @@ func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
 	if ConfigShow.Level != Read {
 		t.Errorf("Level = %v, want Read", ConfigShow.Level)
 	}
-	if ConfigShow.Needs != AConfiguration {
+	if ConfigShow.Needs != aConfiguration {
 		t.Errorf("Needs = %v, want AConfiguration", ConfigShow.Needs)
 	}
 	if kind := reflect.TypeOf(ConfigShow.Answers).Kind(); kind != reflect.Struct {
@@ -48,7 +48,7 @@ func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
 		}
 		return "", false
 	}
-	answer, err := ConfigShow.Run(On{Home: Home{Dir: home, Lookup: env}}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: Home{Dir: home, Lookup: env}}, Input{})
 	if err != nil {
 		t.Fatalf("Run returned an error: %v", err)
 	}
@@ -67,11 +67,11 @@ func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
 }
 
 func TestConfigShow_asksForAConfigurationRatherThanAStore(t *testing.T) {
-	if ConfigShow.Needs != AConfiguration {
+	if ConfigShow.Needs != aConfiguration {
 		t.Errorf("ConfigShow.Needs = %v, want AConfiguration", ConfigShow.Needs)
 	}
-	for _, op := range []Operation{BackupNew, BackupList, BackupShow, BackupDelete, BackupRestore} {
-		if op.Needs != NoStore {
+	for _, op := range []Operation{BackupNew, BackupList, backupShow, backupDelete, BackupRestore} {
+		if op.Needs != noStore {
 			t.Errorf("%s %s: Needs = %v, want NoStore unchanged", op.Thing, op.Verb, op.Needs)
 		}
 	}
@@ -79,7 +79,7 @@ func TestConfigShow_asksForAConfigurationRatherThanAStore(t *testing.T) {
 
 func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
 	home := t.TempDir()
-	answer, err := ConfigInit.Run(On{Home: Home{Dir: home}}, Input{})
+	answer, err := ConfigInit.Run(workedOn{Home: Home{Dir: home}}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,10 +93,10 @@ func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
 	if said := RenderText(ConfigInit, answer); !strings.Contains(said, config.FileIn(home)) {
 		t.Errorf("it says %q", said)
 	}
-	if _, err := ConfigInit.Run(On{Home: Home{Dir: home}}, Input{}); !errors.Is(err, ErrConfigAlreadyThere) {
+	if _, err := ConfigInit.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, errConfigAlreadyThere) {
 		t.Errorf("writing it again = %v, want ErrConfigAlreadyThere", err)
 	}
-	if ConfigInit.Level != Write || ConfigInit.Needs != AConfiguration {
+	if ConfigInit.Level != write || ConfigInit.Needs != aConfiguration {
 		t.Errorf("config init is level %v and needs %v", ConfigInit.Level, ConfigInit.Needs)
 	}
 }
@@ -113,7 +113,7 @@ func shownWith(t *testing.T, content string) Config {
 			t.Fatal(err)
 		}
 	}
-	answer, err := ConfigShow.Run(On{Home: Home{Dir: home, Lookup: func(string) (string, bool) { return "", false }}}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: Home{Dir: home, Lookup: func(string) (string, bool) { return "", false }}}, Input{})
 	if err != nil || answer.Config == nil {
 		t.Fatalf("config show: %v", err)
 	}

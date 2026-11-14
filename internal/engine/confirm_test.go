@@ -16,7 +16,7 @@ func TestAnActThatLosesWorkWaitsToBeConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := Do(TaskDelete, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}})
-	if !errors.Is(err, ErrNotConfirmed) {
+	if !errors.Is(err, errNotConfirmed) {
 		t.Fatalf("an unconfirmed deletion answered %v", err)
 	}
 	if !strings.Contains(err.Error(), "task 1, task 2") {
@@ -33,17 +33,17 @@ func TestAnActThatLosesWorkWaitsToBeConfirmed(t *testing.T) {
 func TestASweepWaitsToBeConfirmed(t *testing.T) {
 	sweep := Input{Given: map[string]string{"state": "done"}}
 	one := Input{Given: map[string]string{"number": "1"}}
-	if !TaskArchive.AsksFirst(sweep) {
+	if !TaskArchive.asksFirst(sweep) {
 		t.Error("a sweep does not ask first")
 	}
-	if TaskArchive.AsksFirst(one) {
+	if TaskArchive.asksFirst(one) {
 		t.Error("archiving one named task asks first")
 	}
-	if !TaskDelete.AsksFirst(one) || TaskNew.AsksFirst(one) {
+	if !TaskDelete.asksFirst(one) || TaskNew.asksFirst(one) {
 		t.Error("only what loses work asks first")
 	}
 	e := openEngine(t)
-	if _, err := e.Ask(TaskArchive, sweep); !errors.Is(err, ErrNotConfirmed) {
+	if _, err := e.Ask(TaskArchive, sweep); !errors.Is(err, errNotConfirmed) {
 		t.Errorf("an unconfirmed sweep through the engine answered %v", err)
 	}
 }

@@ -95,7 +95,7 @@ func (p Pages) Shaped(op Operation) Operation {
 
 // Called is the act a thing and a verb name, when there is one and it is offered.
 func (p Pages) Called(thing, verb string) (Operation, bool) {
-	op, found := Called(thing, verb)
+	op, found := called(thing, verb)
 	if !found || !p.Offers(op) {
 		return Operation{}, false
 	}

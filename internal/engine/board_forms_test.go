@@ -71,7 +71,7 @@ func TestAdded_isTheNumberOfTheTaskAdded(t *testing.T) {
 }
 
 func TestSaved_editingSendsOnlyWhatWasChanged(t *testing.T) {
-	fields := TaskFields(Card{Title: "Ship it", Priority: "normal", Spent: "1h"})
+	fields := taskFields(Card{Title: "Ship it", Priority: "normal", Spent: "1h"})
 	for i := range fields {
 		if fields[i].Name == "priority" {
 			fields[i].Value = "high"
@@ -98,7 +98,7 @@ func TestFields_sayWhatEachOneIs(t *testing.T) {
 			}
 		}
 	}
-	for _, f := range TaskFields(Card{}) {
+	for _, f := range taskFields(Card{}) {
 		if f.Name == "estimate" && f.Means != "how long it should take" {
 			t.Errorf("the estimate says %q", f.Means)
 		}

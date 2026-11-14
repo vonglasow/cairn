@@ -10,7 +10,7 @@ import (
 
 func listedPage(t *testing.T, e *Engine, given map[string]string) (Answer, []int) {
 	t.Helper()
-	answer, err := TaskList.Run(On{Engine: e}, Input{Given: given})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Given: given})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestTaskList_aPageIsCutFromWhatIsKept(t *testing.T) {
 	add(t, e, "First")
 	add(t, e, "Second")
 	add(t, e, "Third")
-	if _, err := TaskEdit.Run(On{Engine: e}, Input{Given: map[string]string{"number": "2", "state": "todo"}}); err != nil {
+	if _, err := TaskEdit.Run(workedOn{Engine: e}, Input{Given: map[string]string{"number": "2", "state": "todo"}}); err != nil {
 		t.Fatalf("TaskEdit: %v", err)
 	}
 
@@ -94,7 +94,7 @@ func TestTaskList_noPageSaysNoTotal(t *testing.T) {
 func TestTaskList_aPageOfNoTaskIsRefused(t *testing.T) {
 	e := openEngine(t)
 	for _, given := range []map[string]string{{"limit": "0"}, {"limit": "-1"}, {"offset": "-1"}} {
-		_, err := TaskList.Run(On{Engine: e}, Input{Given: given})
+		_, err := TaskList.Run(workedOn{Engine: e}, Input{Given: given})
 		if !errors.Is(err, errMisread) {
 			t.Errorf("%v: err = %v, want it misread", given, err)
 		}
@@ -107,7 +107,7 @@ func TestTaskList_countsByStateInTheBoardsOrder(t *testing.T) {
 	add(t, e, "Second")
 	add(t, e, "Third")
 	for number, state := range map[string]string{"1": "done", "3": "todo"} {
-		if _, err := TaskEdit.Run(On{Engine: e}, Input{Given: map[string]string{"number": number, "state": state}}); err != nil {
+		if _, err := TaskEdit.Run(workedOn{Engine: e}, Input{Given: map[string]string{"number": number, "state": state}}); err != nil {
 			t.Fatalf("TaskEdit: %v", err)
 		}
 	}
@@ -131,7 +131,7 @@ func TestTaskList_countsByLabelAmongWhatIsKept(t *testing.T) {
 	add(t, e, "Second")
 	add(t, e, "Third")
 	for number, labels := range map[string][]string{"1": {"team", "spec"}, "2": {"team"}} {
-		if _, err := TaskEdit.Run(On{Engine: e}, Input{Given: map[string]string{"number": number}, Listed: map[string][]string{"label": labels}}); err != nil {
+		if _, err := TaskEdit.Run(workedOn{Engine: e}, Input{Given: map[string]string{"number": number}, Listed: map[string][]string{"label": labels}}); err != nil {
 			t.Fatalf("TaskEdit: %v", err)
 		}
 	}
@@ -144,7 +144,7 @@ func TestTaskList_countsByLabelAmongWhatIsKept(t *testing.T) {
 		t.Errorf("it read %q, want each label by name, then how many in all", text)
 	}
 
-	answer, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"count": "label"}, Listed: map[string][]string{"number": {"2", "9"}}})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"count": "label"}, Listed: map[string][]string{"number": {"2", "9"}}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -161,20 +161,20 @@ func TestTaskList_countingRefusesWhatShapesARow(t *testing.T) {
 		{Given: map[string]string{"count": "state", "offset": "0"}},
 		{Given: map[string]string{"count": "state"}, Listed: map[string][]string{"fields": {"number"}}},
 	} {
-		_, err := TaskList.Run(On{Engine: e}, in)
+		_, err := TaskList.Run(workedOn{Engine: e}, in)
 		if !errors.Is(err, errMisread) {
 			t.Errorf("%v: err = %v, want it misread", in, err)
 		}
 	}
-	_, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"count": "priority"}})
-	if !errors.Is(err, ErrNotOneOf) || !strings.Contains(err.Error(), "state, label") {
+	_, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"count": "priority"}})
+	if !errors.Is(err, errNotOneOf) || !strings.Contains(err.Error(), "state, label") {
 		t.Errorf("err = %v, want it not one of state, label", err)
 	}
 }
 
 func searchedPage(t *testing.T, e *Engine, in Input) (Answer, []int) {
 	t.Helper()
-	answer, err := TaskSearch.Run(On{Engine: e}, in)
+	answer, err := TaskSearch.Run(workedOn{Engine: e}, in)
 	if err != nil {
 		t.Fatalf("TaskSearch: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestTaskSearch_aPageSaysWhatMatchedOnlyOfItsRows(t *testing.T) {
 func TestTaskSearch_aPageOfNoTaskIsRefused(t *testing.T) {
 	e := openEngine(t)
 	for _, given := range []map[string]string{{"limit": "0"}, {"limit": "-1"}, {"offset": "-1"}} {
-		_, err := TaskSearch.Run(On{Engine: e}, Input{Given: given, Listed: map[string][]string{"named": {"spec"}}})
+		_, err := TaskSearch.Run(workedOn{Engine: e}, Input{Given: given, Listed: map[string][]string{"named": {"spec"}}})
 		if !errors.Is(err, errMisread) {
 			t.Errorf("%v: err = %v, want it misread", given, err)
 		}

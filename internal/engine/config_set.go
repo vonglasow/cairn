@@ -15,8 +15,8 @@ import (
 	"cairn/internal/theme"
 )
 
-// ConfigChanged is what setting a key or taking it out answers: the key, the value in force now and where it comes from, the file written, whether it was the global configuration, and whether the key was set rather than taken out.
-type ConfigChanged struct {
+// configChanged is what setting a key or taking it out answers: the key, the value in force now and where it comes from, the file written, whether it was the global configuration, and whether the key was set rather than taken out.
+type configChanged struct {
 	Key    string `json:"key"`
 	Value  string `json:"value" jsonschema:"the value in force now"`
 	From   string `json:"from" jsonschema:"where the value in force comes from: set in the store's settings, from the global configuration, or by default"`
@@ -44,14 +44,14 @@ var ConfigSet = Operation{
 	Short:   "Set a key of the configuration, one line of its file",
 	Does:    "Set one key of the configuration to a value it takes, in the settings of the store in use when its workspace or the settings beside it say so, otherwise in the global configuration; --global writes the global one. The file is edited line by line, every comment kept, and nothing is written unless it reads back as meant. A key of the machine goes in the global configuration, the colour a workspace wears in its settings.",
 	Example: "cairn config set pages.time hidden",
-	Level:   Write,
-	Needs:   AConfiguration,
+	Level:   write,
+	Needs:   aConfiguration,
 	Again:   ChangesNothingMore,
-	Answers: ConfigChanged{},
+	Answers: configChanged{},
 	Takes: append(append([]Argument{}, configKeyArguments...),
 		Argument{Name: "value", Kind: Text, Positional: true, Required: true, Means: "the value, as the key takes it: a word, true or false, a duration, a day, a number, a path"},
 		configGlobal),
-	Run: func(on On, in Input) (Answer, error) { return changingConfig(on.Home, in, true) },
+	Run: func(on workedOn, in Input) (Answer, error) { return changingConfig(on.Home, in, true) },
 }
 
 // ConfigUnset takes one key out of the settings of the store in use or out of the global configuration, its line and nothing else, so the value under it answers again.
@@ -61,12 +61,12 @@ var ConfigUnset = Operation{
 	Short:   "Take a key out of the configuration, its line and nothing else",
 	Does:    "Take one key out of the settings of the store in use, or out of the global configuration with --global, so the value under it answers again: the global one, or the default. Its line goes and nothing else; a comment above it stays.",
 	Example: "cairn config unset pages.time",
-	Level:   Write,
-	Needs:   AConfiguration,
+	Level:   write,
+	Needs:   aConfiguration,
 	Again:   ChangesNothingMore,
-	Answers: ConfigChanged{},
+	Answers: configChanged{},
 	Takes:   append(append([]Argument{}, configKeyArguments...), configGlobal),
-	Run:     func(on On, in Input) (Answer, error) { return changingConfig(on.Home, in, false) },
+	Run:     func(on workedOn, in Input) (Answer, error) { return changingConfig(on.Home, in, false) },
 }
 
 // ConfigFill writes into a file of the configuration every key it can hold and does not say yet, as a comment carrying the value in force and where it comes from, so the file shows what can be changed in it.
@@ -76,12 +76,12 @@ var ConfigFill = Operation{
 	Short:   "Write every key a file can hold, as comments",
 	Does:    "Write into the settings of the store in use, or into the global configuration with --global, every key the file can hold and does not say yet, as a comment carrying the value in force and where it comes from; uncommenting a line sets it. Lines and comments already there stay as they are.",
 	Example: "cairn config fill --global",
-	Level:   Write,
-	Needs:   AConfiguration,
+	Level:   write,
+	Needs:   aConfiguration,
 	Again:   ChangesNothingMore,
-	Answers: ConfigWritten{},
+	Answers: configWritten{},
 	Takes:   []Argument{configGlobal},
-	Run:     func(on On, in Input) (Answer, error) { return fillingConfig(on.Home, in.Yes("global")) },
+	Run:     func(on workedOn, in Input) (Answer, error) { return fillingConfig(on.Home, in.yes("global")) },
 }
 
 func fillingConfig(h Home, global bool) (Answer, error) {
@@ -121,7 +121,7 @@ func changingConfig(h Home, in Input, set bool) (Answer, error) {
 	if !ok {
 		return Answer{}, fmt.Errorf("%q %w: %s", in.Given["key"], config.ErrNotAKey, keysSaid())
 	}
-	path, global, err := h.writtenFor(key, in.Yes("global"))
+	path, global, err := h.writtenFor(key, in.yes("global"))
 	if err != nil {
 		return Answer{}, err
 	}
@@ -142,7 +142,7 @@ func changingConfig(h Home, in Input, set bool) (Answer, error) {
 	if err := rewritten(path, h.Dir, !global, change); err != nil {
 		return Answer{}, err
 	}
-	changed := ConfigChanged{Key: key.Name, File: path, Global: global, Set: set}
+	changed := configChanged{Key: key.Name, File: path, Global: global, Set: set}
 	changed.Value, changed.From = h.inForce(key)
 	return Answer{ConfigChanged: &changed}, nil
 }
@@ -292,7 +292,7 @@ func placeOf(read config.Places, name string) string {
 	return read.Plugin()
 }
 
-func configChangedText(c ConfigChanged) string {
+func configChangedText(c configChanged) string {
 	if c.Set {
 		key, _ := config.KeyNamed(c.Key)
 		value := c.Value

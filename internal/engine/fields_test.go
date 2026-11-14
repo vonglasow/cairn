@@ -28,7 +28,7 @@ func TestTaskList_carriesOnlyTheFieldsAskedFor(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
 
-	answer, err := TaskList.Run(On{Engine: e}, Input{Listed: map[string][]string{"fields": {"title", "number", "title"}}})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"fields": {"title", "number", "title"}}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestTaskList_writesTheFieldsInTheOrderARowCarriesThem(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
 
-	answer, err := TaskList.Run(On{Engine: e}, Input{Listed: map[string][]string{"fields": {"state", "number"}}})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"fields": {"state", "number"}}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestTaskSearch_carriesOnlyTheFieldsAskedFor(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
 
-	answer, err := TaskSearch.Run(On{Engine: e}, Input{Listed: map[string][]string{"named": {"spec"}, "fields": {"described"}}})
+	answer, err := TaskSearch.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"named": {"spec"}, "fields": {"described"}}})
 	if err != nil {
 		t.Fatalf("TaskSearch: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestTaskList_withoutFieldsCarriesEveryOne(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
 
-	answer, err := TaskList.Run(On{Engine: e}, Input{})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -90,8 +90,8 @@ func TestTaskList_refusesAFieldARowDoesNotCarry(t *testing.T) {
 	e := openEngine(t)
 
 	for _, op := range []Operation{TaskList, TaskSearch} {
-		_, err := op.Run(On{Engine: e}, Input{Listed: map[string][]string{"named": {"spec"}, "fields": {"number", "description"}}})
-		if !errors.Is(err, ErrNotAField) {
+		_, err := op.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"named": {"spec"}, "fields": {"number", "description"}}})
+		if !errors.Is(err, errNotAField) {
 			t.Fatalf("%s: err = %v, want ErrNotAField", op.Name(), err)
 		}
 		if !strings.Contains(err.Error(), `"description"`) || !strings.Contains(err.Error(), strings.Join(rowFields(), ", ")) {
@@ -103,7 +103,7 @@ func TestTaskList_refusesAFieldARowDoesNotCarry(t *testing.T) {
 func TestTaskList_refusesAnEmptyListOfFields(t *testing.T) {
 	e := openEngine(t)
 
-	_, err := TaskList.Run(On{Engine: e}, Input{Listed: map[string][]string{"fields": {}}})
+	_, err := TaskList.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"fields": {}}})
 	if err == nil || RefusalOf(err).Kind != KindUsage {
 		t.Fatalf("err = %v, want it not understood", err)
 	}

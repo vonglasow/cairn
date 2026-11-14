@@ -12,7 +12,7 @@ func TestTaskSearch_anyKeepsATaskCarryingOneOfWhatIsNamed(t *testing.T) {
 	add(t, e, "Merge T013 and T022")
 	add(t, e, "Write the spec")
 
-	answer, err := TaskSearch.Run(On{Engine: e}, Input{
+	answer, err := TaskSearch.Run(workedOn{Engine: e}, Input{
 		Given:  map[string]string{"any": "true"},
 		Listed: map[string][]string{"named": {"T022", "T010", "T013", "T999", "T010"}},
 	})
@@ -35,11 +35,11 @@ func TestTaskSearch_anyIsNarrowedLikeEverySearch(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Port T010")
 	add(t, e, "Merge T013")
-	if _, err := TaskEdit.Run(On{Engine: e}, Input{Given: map[string]string{"number": "2", "state": "todo"}}); err != nil {
+	if _, err := TaskEdit.Run(workedOn{Engine: e}, Input{Given: map[string]string{"number": "2", "state": "todo"}}); err != nil {
 		t.Fatalf("TaskEdit: %v", err)
 	}
 
-	answer, err := TaskSearch.Run(On{Engine: e}, Input{
+	answer, err := TaskSearch.Run(workedOn{Engine: e}, Input{
 		Given:  map[string]string{"any": "true", "state": "todo"},
 		Listed: map[string][]string{"named": {"T010", "T013"}},
 	})
@@ -55,7 +55,7 @@ func TestTaskSearch_everythingNamedSaysNoTerm(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Port T010")
 
-	answer, err := TaskSearch.Run(On{Engine: e}, Input{Listed: map[string][]string{"named": {"T010"}}})
+	answer, err := TaskSearch.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"named": {"T010"}}})
 	if err != nil {
 		t.Fatalf("TaskSearch: %v", err)
 	}

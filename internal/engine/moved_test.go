@@ -90,7 +90,7 @@ func TestObjectiveEdit_saysWhichLabelsWereTakenOff(t *testing.T) {
 
 func TestRenderText_saysWhatWasAddedAndTakenOff(t *testing.T) {
 	one := builtTask(t, 3, "Ship it")
-	moved := &Moved{Added: Sets{Labels: []string{"urgent", "team"}, Links: []int{4}}, TakenOff: Sets{Blockers: []int{1, 2}, Objectives: []int{5}}}
+	moved := &moves{Added: sets{Labels: []string{"urgent", "team"}, Links: []int{4}}, TakenOff: sets{Blockers: []int{1, 2}, Objectives: []int{5}}}
 	got := RenderText(TaskEdit, Answer{Task: &one, Moved: moved})
 	for _, want := range []string{"labels added      urgent, team\n", "links added       #4\n", "blockers taken off  #1, #2\n", "objectives taken off  #5\n"} {
 		if !strings.Contains(got, want) {
@@ -104,7 +104,7 @@ func TestRenderText_saysWhatWasAddedAndTakenOff(t *testing.T) {
 
 func TestRenderText_saysWhichLabelsAnObjectiveLost(t *testing.T) {
 	o := builtObjective(t, 1, "Ship it")
-	got := RenderText(ObjectiveEdit, Answer{Objective: &o, Moved: &Moved{TakenOff: Sets{Labels: []string{"perso"}}}})
+	got := RenderText(ObjectiveEdit, Answer{Objective: &o, Moved: &moves{TakenOff: sets{Labels: []string{"perso"}}}})
 	if !strings.Contains(got, "labels taken off  perso\n") {
 		t.Errorf("the answer does not say perso was taken off:\n%s", got)
 	}
@@ -112,7 +112,7 @@ func TestRenderText_saysWhichLabelsAnObjectiveLost(t *testing.T) {
 
 func TestOf_carriesWhatWasAddedAndTakenOff(t *testing.T) {
 	one := builtTask(t, 3, "Ship it")
-	moved := &Moved{Added: Sets{Labels: []string{"urgent"}}, TakenOff: Sets{Blockers: []int{1}}}
+	moved := &moves{Added: sets{Labels: []string{"urgent"}}, TakenOff: sets{Blockers: []int{1}}}
 	shaped, _ := Of(TaskEdit, Answer{Task: &one, Moved: moved}).(Task)
 	if shaped.Added == nil || !slices.Equal(shaped.Added.Labels, []string{"urgent"}) ||
 		shaped.TakenOff == nil || !slices.Equal(shaped.TakenOff.Blockers, []int{1}) {
@@ -122,7 +122,7 @@ func TestOf_carriesWhatWasAddedAndTakenOff(t *testing.T) {
 		t.Errorf("Of without a change = %+v %+v, want nothing said", plain.Added, plain.TakenOff)
 	}
 	o := builtObjective(t, 1, "Ship it")
-	goal, _ := Of(ObjectiveEdit, Answer{Objective: &o, Moved: &Moved{TakenOff: Sets{Labels: []string{"perso"}}}}).(Objective)
+	goal, _ := Of(ObjectiveEdit, Answer{Objective: &o, Moved: &moves{TakenOff: sets{Labels: []string{"perso"}}}}).(objectiveRow)
 	if goal.TakenOff == nil || !slices.Equal(goal.TakenOff.Labels, []string{"perso"}) {
 		t.Errorf("Of an objective = %+v, want perso taken off", goal.TakenOff)
 	}
@@ -147,7 +147,7 @@ func TestEngine_takesWhatAnEqualsSignSaysAtCreation(t *testing.T) {
 }
 
 func TestAsked_replacesWhatAListHeld(t *testing.T) {
-	in := Asked([]Field{{Name: "labels", Arg: "label", Value: "api urgent"}}, TaskEdit)
+	in := inputOfFields([]Field{{Name: "labels", Arg: "label", Value: "api urgent"}}, TaskEdit)
 	if got := in.Listed["label"]; !slices.Equal(got, []string{"=", "api", "urgent"}) {
 		t.Errorf("label = %v, want the form's labels replacing the ones there", got)
 	}
@@ -165,10 +165,10 @@ func builtObjective(t *testing.T, number int, title string) objective.Objective 
 }
 
 func TestSets_areEmptyOnlyWhenNothingMoved(t *testing.T) {
-	if !(Sets{}).empty() {
+	if !(sets{}).empty() {
 		t.Error("nothing at all is not empty")
 	}
-	for _, one := range []Sets{{Labels: []string{"spec"}}, {Blockers: []int{1}}, {Links: []int{1}}, {Objectives: []int{1}}} {
+	for _, one := range []sets{{Labels: []string{"spec"}}, {Blockers: []int{1}}, {Links: []int{1}}, {Objectives: []int{1}}} {
 		if one.empty() {
 			t.Errorf("%+v is empty", one)
 		}

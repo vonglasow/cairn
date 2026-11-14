@@ -8,23 +8,23 @@ import (
 	claudeplugin "cairn/plugin/claude"
 )
 
-// PluginWritten says where the plugin was written, which is what a person hands Claude Code next.
-type PluginWritten struct {
+// pluginWritten says where the plugin was written, which is what a person hands Claude Code next.
+type pluginWritten struct {
 	Plugin string `json:"plugin"`
 }
 
-// PluginWrite writes the Claude Code plugin the binary carries, as a marketplace Claude Code installs from.
-var PluginWrite = Operation{
+// pluginWrite writes the Claude Code plugin the binary carries, as a marketplace Claude Code installs from.
+var pluginWrite = Operation{
 	Thing:   "plugin",
 	Verb:    "write",
 	Short:   "Write the Claude Code plugin this cairn carries",
 	Does:    "Write the Claude Code plugin this cairn carries, as a marketplace Claude Code installs from: where the configuration's plugin key says, beside the store when it says nothing. Writing it again replaces what was written before, and the MCP server writes it again whenever another version of cairn wrote it.",
 	Example: `cairn plugin write`,
-	Level:   Write,
-	Needs:   NoStore,
-	Again:   DoesItAgain,
-	Answers: PluginWritten{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Level:   write,
+	Needs:   noStore,
+	Again:   doesItAgain,
+	Answers: pluginWritten{},
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		dir := on.Plugin
 		if dir == "" {
 			dir = PluginBeside(on.Path)
@@ -36,24 +36,24 @@ var PluginWrite = Operation{
 	},
 }
 
-// PluginShown says the version of the cairn running and the commands that install its plugin in Claude Code from its tag on GitHub, none when no tag holds it.
-type PluginShown struct {
+// pluginShown says the version of the cairn running and the commands that install its plugin in Claude Code from its tag on GitHub, none when no tag holds it.
+type pluginShown struct {
 	Version string   `json:"version"`
 	Install []string `json:"install,omitempty" jsonschema:"the commands to type in Claude Code, in order; none when this cairn is no version released"`
 }
 
-// PluginShow says how Claude Code installs the plugin of the version of this cairn, from its tag on GitHub.
-var PluginShow = Operation{
+// pluginShow says how Claude Code installs the plugin of the version of this cairn, from its tag on GitHub.
+var pluginShow = Operation{
 	Thing:   "plugin",
 	Verb:    "show",
 	Short:   "Say how to install the Claude Code plugin of this cairn's version",
 	Does:    "Say the commands that install, in Claude Code, the plugin of this cairn's version from its tag on GitHub; the first removes a plugin of another version, and is left out the first time. A cairn that is no version released has no tag: its plugin is written with cairn plugin write.",
 	Example: `cairn plugin show`,
 	Level:   Read,
-	Needs:   NoStore,
-	Answers: PluginShown{},
-	Run: func(on On, _ Input) (Answer, error) {
-		shown := PluginShown{Version: on.Home.version(), Install: installFromTag(on.Home.version())}
+	Needs:   noStore,
+	Answers: pluginShown{},
+	Run: func(on workedOn, _ Input) (Answer, error) {
+		shown := pluginShown{Version: on.Home.version(), Install: installFromTag(on.Home.version())}
 		return Answer{Install: &shown}, nil
 	},
 }
@@ -74,7 +74,7 @@ func installText(install []string) string {
 		"  " + strings.Join(install, "\n  ") + "\n"
 }
 
-func pluginShownText(shown PluginShown) string {
+func pluginShownText(shown pluginShown) string {
 	if len(shown.Install) == 0 {
 		return "cairn " + shown.Version + " is no version released, and no tag on GitHub holds its plugin:\n" +
 			"cairn plugin write writes the plugin it carries, and says how to install it\n"

@@ -13,19 +13,19 @@ import (
 
 // What upgrading leaves to whoever keeps the cairn that was run.
 var (
-	ErrBuiltFromSource = errors.New("this cairn was built from its source, not taken from a release: build the newer one the same way")
-	ErrKeptByHomebrew  = errors.New("this cairn was installed by Homebrew: run brew upgrade cairn")
+	errBuiltFromSource = errors.New("this cairn was built from its source, not taken from a release: build the newer one the same way")
+	errKeptByHomebrew  = errors.New("this cairn was installed by Homebrew: run brew upgrade cairn")
 )
 
-// Upgraded says which cairn was run, which one is in its place now, and where that place is.
-type Upgraded struct {
+// upgraded says which cairn was run, which one is in its place now, and where that place is.
+type upgraded struct {
 	From   string `json:"from"`
 	To     string `json:"to"`
 	Binary string `json:"binary"`
 }
 
 // String says what upgrading did, in a line.
-func (u Upgraded) String() string {
+func (u upgraded) String() string {
 	if u.From == u.To {
 		return "cairn " + u.From + " is the newest already, in " + u.Binary + "\n"
 	}
@@ -34,32 +34,32 @@ func (u Upgraded) String() string {
 }
 
 // Upgrade puts the newest release of cairn, made for platform, in the place of binary, the cairn that was run at version; one already the newest is left as it is.
-func Upgrade(version, binary, platform string) (Upgraded, error) {
+func Upgrade(version, binary, platform string) (upgraded, error) {
 	running, ok := releaseOf(version)
 	if !ok {
-		return Upgraded{}, fmt.Errorf("%s: %w", version, ErrBuiltFromSource)
+		return upgraded{}, fmt.Errorf("%s: %w", version, errBuiltFromSource)
 	}
 	if strings.Contains(binary, string(filepath.Separator)+"Cellar"+string(filepath.Separator)) {
-		return Upgraded{}, fmt.Errorf("%s: %w", binary, ErrKeptByHomebrew)
+		return upgraded{}, fmt.Errorf("%s: %w", binary, errKeptByHomebrew)
 	}
 	if err := upgrade.Writable(binary); err != nil {
-		return Upgraded{}, err
+		return upgraded{}, err
 	}
 	release, err := upgrade.Newest()
 	if err != nil {
-		return Upgraded{}, err
+		return upgraded{}, err
 	}
 	newest, ok := releaseOf(release.Tag)
 	if !ok {
-		return Upgraded{}, fmt.Errorf("%w: the newest is tagged %q", upgrade.ErrOutOfReach, release.Tag)
+		return upgraded{}, fmt.Errorf("%w: the newest is tagged %q", upgrade.ErrOutOfReach, release.Tag)
 	}
 	if !newer(newest, running) {
-		return Upgraded{From: version, To: version, Binary: binary}, nil
+		return upgraded{From: version, To: version, Binary: binary}, nil
 	}
 	if err := release.Install(binary, platform); err != nil {
-		return Upgraded{}, err
+		return upgraded{}, err
 	}
-	return Upgraded{From: version, To: release.Tag, Binary: binary}, nil
+	return upgraded{From: version, To: release.Tag, Binary: binary}, nil
 }
 
 func releaseOf(said string) ([3]int, bool) {

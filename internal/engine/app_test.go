@@ -27,7 +27,7 @@ func installing(t *testing.T, mac, linux bool, running string) string {
 func TestAppInstall_writesTheApplicationRunningThisCairn(t *testing.T) {
 	running := "/usr/local/bin/cairn"
 	home := installing(t, true, false, running)
-	answer, err := AppInstall.Run(On{Home: Home{Dir: home}}, Input{})
+	answer, err := appInstall.Run(workedOn{Home: Home{Dir: home}}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,14 +38,14 @@ func TestAppInstall_writesTheApplicationRunningThisCairn(t *testing.T) {
 	if launcher, _ := os.ReadFile(filepath.Join(app, "Contents", "MacOS", "cairn")); !strings.Contains(string(launcher), running) {
 		t.Errorf("the launcher runs %q, not %s", launcher, running)
 	}
-	said := RenderText(AppInstall, answer)
+	said := RenderText(appInstall, answer)
 	if !strings.Contains(said, app) || !strings.Contains(said, running) || !strings.Contains(said, "Spotlight") {
 		t.Errorf("it says %q", said)
 	}
-	if shaped, ok := Of(AppInstall, answer).(AppInstalled); !ok || shaped.Installed != app || shaped.Runs != running || !strings.Contains(shaped.OpenedFrom, "Spotlight") {
-		t.Errorf("a machine is told %#v", Of(AppInstall, answer))
+	if shaped, ok := Of(appInstall, answer).(appInstalled); !ok || shaped.Installed != app || shaped.Runs != running || !strings.Contains(shaped.OpenedFrom, "Spotlight") {
+		t.Errorf("a machine is told %#v", Of(appInstall, answer))
 	}
-	if _, err := AppInstall.Run(On{}, Input{}); err == nil {
+	if _, err := appInstall.Run(workedOn{}, Input{}); err == nil {
 		t.Error("with no home, it installed somewhere")
 	}
 }
@@ -54,7 +54,7 @@ func TestAppInstall_writesTheDesktopEntryOnLinux(t *testing.T) {
 	running := "/usr/bin/cairn"
 	home := installing(t, false, true, running)
 	data := filepath.Join(home, "data")
-	answer, err := AppInstall.Run(On{Home: Home{Dir: home, Lookup: func(key string) (string, bool) { return data, key == "XDG_DATA_HOME" }}}, Input{})
+	answer, err := appInstall.Run(workedOn{Home: Home{Dir: home, Lookup: func(key string) (string, bool) { return data, key == "XDG_DATA_HOME" }}}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,14 +65,14 @@ func TestAppInstall_writesTheDesktopEntryOnLinux(t *testing.T) {
 	if said, _ := os.ReadFile(entry); !strings.Contains(string(said), "Exec="+running+" gui") {
 		t.Errorf("the entry says %q", said)
 	}
-	if said := RenderText(AppInstall, answer); !strings.Contains(said, entry) || !strings.Contains(said, "applications menu") {
+	if said := RenderText(appInstall, answer); !strings.Contains(said, entry) || !strings.Contains(said, "applications menu") {
 		t.Errorf("it says %q", said)
 	}
 }
 
 func TestAppInstall_refusesWhereThereIsNoApplicationToInstall(t *testing.T) {
 	home := installing(t, false, false, "/usr/local/bin/cairn")
-	if _, err := AppInstall.Run(On{Home: Home{Dir: home}}, Input{}); !errors.Is(err, ErrNoApplicationHere) {
+	if _, err := appInstall.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, errNoApplicationHere) {
 		t.Errorf("elsewhere: %v", err)
 	}
 }
@@ -80,7 +80,7 @@ func TestAppInstall_refusesWhereThereIsNoApplicationToInstall(t *testing.T) {
 func TestAppInstall_refusesACairnThatWillNotStay(t *testing.T) {
 	for _, mac := range []bool{true, false} {
 		home := installing(t, mac, !mac, filepath.Join(os.TempDir(), "go-build123", "b001", "exe", "cairn"))
-		if _, err := AppInstall.Run(On{Home: Home{Dir: home}}, Input{}); !errors.Is(err, ErrPassing) {
+		if _, err := appInstall.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, errPassing) {
 			t.Errorf("a go run build, mac %v: %v", mac, err)
 		}
 	}

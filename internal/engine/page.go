@@ -23,8 +23,8 @@ var countArgument = Argument{
 	Means: "answer no row, only how many of the tasks kept sit in each column (state) or carry each label (label), and under total how many there are in all",
 }
 
-// Count is how many of the tasks a listing kept sit in one column, or carry one label.
-type Count struct {
+// count is how many of the tasks a listing kept sit in one column, or carry one label.
+type count struct {
 	Of    string
 	Tasks int
 }
@@ -36,13 +36,13 @@ type page struct {
 
 func askedPage(in Input) (page, error) {
 	var p page
-	if limit, named := in.Whole("limit"); named {
+	if limit, named := in.whole("limit"); named {
 		if limit <= 0 {
 			return page{}, Misread(fmt.Errorf("%q: %q is at least 1", in.Given["limit"], "limit"))
 		}
 		p.asked, p.limit = true, limit
 	}
-	if offset, named := in.Whole("offset"); named {
+	if offset, named := in.whole("offset"); named {
 		if offset < 0 {
 			return page{}, Misread(fmt.Errorf("%q: %q is 0 or more", in.Given["offset"], "offset"))
 		}
@@ -74,7 +74,7 @@ func askedCount(in Input, fields []string, p page) (string, error) {
 	return by, nil
 }
 
-func countedBy(tasks []task.Task, by string) []Count {
+func countedBy(tasks []task.Task, by string) []count {
 	tally := map[string]int{}
 	for _, t := range tasks {
 		f := factsOf(t)
@@ -90,14 +90,14 @@ func countedBy(tasks []task.Task, by string) []Count {
 	if by == "state" {
 		order = slices.DeleteFunc(oneOf(domain.States), func(state string) bool { return tally[state] == 0 })
 	}
-	counts := make([]Count, 0, len(order))
+	counts := make([]count, 0, len(order))
 	for _, group := range order {
-		counts = append(counts, Count{Of: group, Tasks: tally[group]})
+		counts = append(counts, count{Of: group, Tasks: tally[group]})
 	}
 	return counts
 }
 
-func ofCounts(counts []Count) *map[string]int {
+func ofCounts(counts []count) *map[string]int {
 	if counts == nil {
 		return nil
 	}
@@ -108,7 +108,7 @@ func ofCounts(counts []Count) *map[string]int {
 	return &said
 }
 
-func countsText(counts []Count, total int) string {
+func countsText(counts []count, total int) string {
 	width := 0
 	for _, c := range counts {
 		width = max(width, utf8.RuneCountInString(c.Of))

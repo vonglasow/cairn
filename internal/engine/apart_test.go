@@ -41,14 +41,14 @@ func TestOpenApart_aFolderOrAStoreIsNamedByItsStore(t *testing.T) {
 func TestOpenApart_whatIsNotThereIsRefused(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w")
 	held := heldOn(t, h)
-	if _, err := OpenApart(held, Elsewhere{Folder: filepath.Join(h.Dir, "gone")}); !errors.Is(err, ErrNotThere) {
-		t.Errorf("a folder not there = %v; want %v", err, ErrNotThere)
+	if _, err := OpenApart(held, Elsewhere{Folder: filepath.Join(h.Dir, "gone")}); !errors.Is(err, errNotThere) {
+		t.Errorf("a folder not there = %v; want %v", err, errNotThere)
 	}
 	if _, err := OpenApart(held, Elsewhere{Workspace: "home"}); !errors.Is(err, ErrWorkspaceNotThere) {
 		t.Errorf("a workspace whose folder is gone = %v; want %v", err, ErrWorkspaceNotThere)
 	}
-	if _, err := OpenApart(held, Elsewhere{Workspace: "garden"}); !errors.Is(err, ErrNoSuchWorkspace) {
-		t.Errorf("a workspace nobody named = %v; want %v", err, ErrNoSuchWorkspace)
+	if _, err := OpenApart(held, Elsewhere{Workspace: "garden"}); !errors.Is(err, errNoSuchWorkspace) {
+		t.Errorf("a workspace nobody named = %v; want %v", err, errNoSuchWorkspace)
 	}
 }
 

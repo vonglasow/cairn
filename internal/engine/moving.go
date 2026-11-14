@@ -10,20 +10,17 @@ import (
 	"cairn/internal/trace"
 )
 
-// The reasons a move is refused, re-exported so a surface can recognise them: a surface asks the engine and may not import the task, so the names it answers with have to live here too.
-var (
-	ErrMovedBehindItself = task.ErrMovedBehindItself
-	ErrOtherColumn       = task.ErrOtherColumn
-)
+// ErrOtherColumn is re-exported so a surface, which may not import the task, can recognise it.
+var ErrOtherColumn = task.ErrOtherColumn
 
-// ErrNowhereToMove is returned when a move names no place to go.
-var ErrNowhereToMove = errors.New("a task is moved to the first place, behind another, or to the last")
+// errNowhereToMove is returned when a move names no place to go.
+var errNowhereToMove = errors.New("a task is moved to the first place, behind another, or to the last")
 
-// ErrMoreThanOnePlace is returned when a move names several places at once.
-var ErrMoreThanOnePlace = errors.New("a task is moved to one place, not several")
+// errMoreThanOnePlace is returned when a move names several places at once.
+var errMoreThanOnePlace = errors.New("a task is moved to one place, not several")
 
-// ErrDoneHoldsNoFocus is returned when a task already done is put in focus: there is nothing left to work on.
-var ErrDoneHoldsNoFocus = errors.New("a task that is done cannot be in focus")
+// errDoneHoldsNoFocus is returned when a task already done is put in focus: there is nothing left to work on.
+var errDoneHoldsNoFocus = errors.New("a task that is done cannot be in focus")
 
 // Place is where a move puts a task among the ones it sits with.
 type Place int
@@ -110,7 +107,7 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if factsOf(t).State == domain.Done {
-		return task.Task{}, ErrDoneHoldsNoFocus
+		return task.Task{}, errDoneHoldsNoFocus
 	}
 	held, err := e.places.Focus()
 	if err != nil {
@@ -204,8 +201,8 @@ var TaskMove = Operation{
 cairn task move 3 --after 1
 cairn task move 3 --state todo --after 1`,
 	Finishes: true,
-	Level:    Write,
-	Needs:    AStore,
+	Level:    write,
+	Needs:    aStore,
 	Again:    ChangesNothingMore,
 	Answers:  Tasks{},
 	Takes: []Argument{
@@ -216,15 +213,15 @@ cairn task move 3 --state todo --after 1`,
 		{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column to move it into first, in the same act"},
 		alsoOf("a task"),
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		numbers, err := together(in)
 		if err != nil {
 			return Answer{}, err
 		}
 		n := numbers[0]
 		at, target, placed := placeFrom(in)
-		into := in.Change("state")
-		if placed != nil && (into == nil || !errors.Is(placed, ErrNowhereToMove)) {
+		into := in.change("state")
+		if placed != nil && (into == nil || !errors.Is(placed, errNowhereToMove)) {
 			return Answer{}, placed
 		}
 		was, err := on.Engine.tasks.Find(n)
@@ -265,19 +262,19 @@ cairn task move 3 --state todo --after 1`,
 	},
 }
 
-// Crossed is the column a move took a task out of, and the one it took it into.
-type Crossed struct {
+// crossed is the column a move took a task out of, and the one it took it into.
+type crossed struct {
 	Task int    `json:"task" jsonschema:"the number of the task that changed column"`
 	From string `json:"from" jsonschema:"the column it was in"`
 	To   string `json:"to" jsonschema:"the column it is in now"`
 }
 
-func (e *Engine) crossed(was task.Task) (*Crossed, error) {
+func (e *Engine) crossed(was task.Task) (*crossed, error) {
 	now, err := e.tasks.Find(factsOf(was).Number)
 	if err != nil || factsOf(now).State == factsOf(was).State {
 		return nil, err
 	}
-	return &Crossed{Task: factsOf(was).Number, From: string(factsOf(was).State), To: string(factsOf(now).State)}, nil
+	return &crossed{Task: factsOf(was).Number, From: string(factsOf(was).State), To: string(factsOf(now).State)}, nil
 }
 
 func (e *Engine) columnOf(number int) (*string, error) {
@@ -315,15 +312,15 @@ var TaskFocus = Operation{
 	Does:  "Put a task in focus alongside whatever else is being worked on, or name every task in focus. Several can be at once. A task waiting in backlog, todo or paused goes into current, at its head, as it takes the focus; one blocked or watching stays where it is, and one done is refused. Each task in focus says how long its session has been up; focusing one already in focus renews its session once it is past the length the configuration gives.",
 	Example: `cairn task focus 3
 cairn task focus`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Answers: Focus{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to focus, or nothing to name every task in focus"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, named := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, named := in.whole("number")
 		if !named {
 			return whatIsInFocus(on)
 		}
@@ -355,23 +352,23 @@ cairn task focus`,
 	},
 }
 
-// TaskUnfocus leaves nothing in focus.
-var TaskUnfocus = Operation{
+// taskUnfocus leaves nothing in focus.
+var taskUnfocus = Operation{
 	Thing: "task",
 	Verb:  "unfocus",
 	Short: "Unfocus a task in focus, or all of them",
 	Does:  "Unfocus one task and keep the rest in focus, or every task in focus when no number is given. Unfocusing nothing is not a failure.",
 	Example: `cairn task unfocus 3
 cairn task unfocus`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Answers: Focus{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to unfocus, or nothing to unfocus them all"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, named := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, named := in.whole("number")
 		if named {
 			if err := on.Engine.letGoOf(n); err != nil {
 				return Answer{}, err
@@ -386,26 +383,26 @@ cairn task unfocus`,
 func placeFrom(in Input) (Place, int, error) {
 	named := make([]Place, 0, 3)
 	target := 0
-	if in.Yes("first") {
+	if in.yes("first") {
 		named = append(named, First)
 	}
 	if in.Given["after"] != "" {
 		named = append(named, Behind)
-		target, _ = in.Whole("after")
+		target, _ = in.whole("after")
 	}
-	if in.Yes("last") {
+	if in.yes("last") {
 		named = append(named, Last)
 	}
 	if len(named) == 0 {
-		return 0, 0, ErrNowhereToMove
+		return 0, 0, errNowhereToMove
 	}
 	if len(named) > 1 {
-		return 0, 0, ErrMoreThanOnePlace
+		return 0, 0, errMoreThanOnePlace
 	}
 	return named[0], target, nil
 }
 
-func whatIsInFocus(on On) (Answer, error) {
+func whatIsInFocus(on workedOn) (Answer, error) {
 	held, numbers, err := on.Engine.inFocus()
 	if err != nil {
 		return Answer{}, err

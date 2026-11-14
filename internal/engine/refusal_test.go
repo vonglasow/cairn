@@ -18,9 +18,9 @@ func TestRefusalOf_namesWhatKindOfAnswerAFailureIs(t *testing.T) {
 		kind, reason string
 	}{
 		{fmt.Errorf("a task %w", domain.ErrTitleRequired), "refused", "title-required"},
-		{fmt.Errorf("task 4: %w", ErrNoSuchTask), "refused", "no-such-task"},
+		{fmt.Errorf("task 4: %w", errNoSuchTask), "refused", "no-such-task"},
 		{fmt.Errorf("%w — run it", ErrStoreBehind), "store", "store-behind"},
-		{fmt.Errorf("%w: disk", ErrStore), "store", "store-unreadable"},
+		{fmt.Errorf("%w: disk", errStore), "store", "store-unreadable"},
 		{Misread(errors.New("unknown flag: --colour")), "usage", "not-understood"},
 		{errors.New("something nobody foresaw"), "failed", ""},
 	} {
@@ -40,7 +40,7 @@ func TestRefusalOf_readsWhatCheckRefusesAsNotUnderstood(t *testing.T) {
 		"a number that is not":    {Given: map[string]string{"number": "four"}},
 		"nothing it needs":        {},
 	} {
-		err := TaskShow.Check(in)
+		err := TaskShow.check(in)
 		if got := RefusalOf(err); got.Kind != "usage" {
 			t.Errorf("%s: RefusalOf(%v).Kind = %q, want usage", what, err, got.Kind)
 		}
@@ -110,7 +110,7 @@ func TestEveryFailureCairnForesawHasAReason(t *testing.T) {
 			}
 			for _, found := range named.FindAllStringSubmatch(string(source), -1) {
 				name := found[1]
-				if !regexp.MustCompile(`[{.]` + name + `,`).Match(listed) {
+				if !regexp.MustCompile(`[{.][Ee]` + name[1:] + `,`).Match(listed) {
 					t.Errorf("%s declares %s and refusal.go gives it no reason", file, name)
 				}
 			}
@@ -129,7 +129,7 @@ func TestRefusalOf_givesOneReasonForAValueOutsideItsSet(t *testing.T) {
 		{TaskEdit, given("number", "1", "state", "bogus"), "not-a-state"},
 		{TaskList, given("priority", "urgent"), "not-a-priority"},
 		{TaskEdit, given("number", "1", "priority", "urgent"), "not-a-priority"},
-		{ObjectiveList, given("state", "bogus"), "not-an-objective-state"},
+		{objectiveList, given("state", "bogus"), "not-an-objective-state"},
 	} {
 		_, err := Do(c.op, path, c.in)
 		if got := RefusalOf(err).Reason; got != c.reason {
@@ -155,7 +155,7 @@ func TestAgreeingTo_aStepStillOpenIsAgreedToByTheSameActConfirmed(t *testing.T) 
 	}{
 		"an act that does not finish": {Operation{Thing: "task", Verb: "show"}, asked, open},
 		"an act already confirmed":    {finishing, Agreed(asked), open},
-		"another refusal":             {finishing, asked, ErrNoSuchTask},
+		"another refusal":             {finishing, asked, errNoSuchTask},
 		"no refusal":                  {finishing, asked, nil},
 	} {
 		if got, ok := AgreeingTo(c.op, c.in, c.err); ok || got.Reason != "" || got.In.Confirmed {

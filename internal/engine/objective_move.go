@@ -7,11 +7,11 @@ import (
 	"cairn/internal/objective"
 )
 
-// ErrObjectiveNowhereToGo is returned when an objective is asked to go behind itself.
-var ErrObjectiveNowhereToGo = errors.New("an objective goes first, last, behind another, or under a parent")
+// errObjectiveNowhereToGo is returned when an objective is asked to go behind itself.
+var errObjectiveNowhereToGo = errors.New("an objective goes first, last, behind another, or under a parent")
 
-// ErrObjectiveParentAndAfter is returned when the parent named is not the one of the objective it is to go behind.
-var ErrObjectiveParentAndAfter = errors.New("an objective behind another sits under that one's parent")
+// errObjectiveParentAndAfter is returned when the parent named is not the one of the objective it is to go behind.
+var errObjectiveParentAndAfter = errors.New("an objective behind another sits under that one's parent")
 
 // ObjectiveMove changes where an objective sits: its place among its siblings, and the parent it sits under, in one act.
 var ObjectiveMove = Operation{
@@ -23,10 +23,10 @@ var ObjectiveMove = Operation{
 cairn objective move 3 --after 1
 cairn objective move 10 --parent 1 --last
 cairn objective move 13 --parent none`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Objectives{},
+	Answers: objectivesListed{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
@@ -34,12 +34,12 @@ cairn objective move 13 --parent none`,
 		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
 		{Name: "parent", Kind: Text, Of: "an objective", Means: "the objective to sit under, none to stand on its own; last there unless a place is named"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		if err := on.Engine.moveObjective(n, in); err != nil {
 			return Answer{}, err
 		}
-		return ObjectiveList.Run(on, Input{})
+		return objectiveList.Run(on, Input{})
 	},
 }
 
@@ -49,26 +49,26 @@ func (e *Engine) moveObjective(n int, in Input) error {
 		return err
 	}
 	parent := was.Carried().Parent
-	if named := in.Change("parent"); named != nil {
+	if named := in.change("parent"); named != nil {
 		if parent, err = parentNamed(*named); err != nil {
 			return err
 		}
 	}
 	at := -1
-	if in.Yes("first") {
+	if in.yes("first") {
 		at = 0
 	}
-	if after, given := in.Whole("after"); given {
+	if after, given := in.whole("after"); given {
 		if after == n {
-			return fmt.Errorf("objective %d: %w", n, ErrObjectiveNowhereToGo)
+			return fmt.Errorf("objective %d: %w", n, errObjectiveNowhereToGo)
 		}
 		behind, err := e.objectives.FindObjective(after)
 		if err != nil {
 			return err
 		}
 		its := behind.Carried().Parent
-		if in.Change("parent") != nil && its != parent {
-			return fmt.Errorf("objective %d behind %d: %w", n, after, ErrObjectiveParentAndAfter)
+		if in.change("parent") != nil && its != parent {
+			return fmt.Errorf("objective %d behind %d: %w", n, after, errObjectiveParentAndAfter)
 		}
 		parent, at = its, after
 	}

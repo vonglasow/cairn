@@ -16,13 +16,13 @@ var TraceShow = Operation{
 	Does:    "Show everything done to a task, oldest first, with what each change went from and to.",
 	Example: "cairn trace show 1",
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Acts{},
+	Needs:   aStore,
+	Answers: acts{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		acts, err := on.Engine.historyOf(n)
 		if err != nil {
 			return Answer{}, err
@@ -31,8 +31,8 @@ var TraceShow = Operation{
 	},
 }
 
-// TraceList says what was done over a period, across every task.
-var TraceList = Operation{
+// traceList says what was done over a period, across every task.
+var traceList = Operation{
 	Thing: "trace",
 	Verb:  "list",
 	Short: "List what was done over a period",
@@ -42,14 +42,14 @@ cairn trace list --since 2026-09-01
 cairn trace list --since 2026-09-29 --until 2026-09-29
 cairn trace list --by sam`,
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Acts{},
+	Needs:   aStore,
+	Answers: acts{},
 	Takes: []Argument{
-		{Name: "since", Kind: Day, Means: "the first day to look at; today when left out"},
-		{Name: "until", Kind: Day, Means: "the last day to look at, the whole of it; no end when left out"},
+		{Name: "since", Kind: day, Means: "the first day to look at; today when left out"},
+		{Name: "until", Kind: day, Means: "the last day to look at, the whole of it; no end when left out"},
 		{Name: "by", Kind: Text, Means: "keep only what this author did: a name, a login, an agent, a Claude session"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		from, err := sinceWhen(in)
 		if err != nil {
 			return Answer{}, err

@@ -37,7 +37,7 @@ func TestTaskExport_writesTheSeriesTheirTemplateAndTheirTrace(t *testing.T) {
 	if len(first.Acts) != 2 || first.Acts[0].Did != "made" || first.Acts[0].Task != 1 || first.Acts[1].Task != 2 || first.Acts[0].At == "" {
 		t.Errorf("its acts read %+v", first.Acts)
 	}
-	if second.Stopped == "" || !slices.ContainsFunc(second.Acts, func(a SeriesAct) bool { return a.Did == "stopped" }) {
+	if second.Stopped == "" || !slices.ContainsFunc(second.Acts, func(a seriesAct) bool { return a.Did == "stopped" }) {
 		t.Errorf("the second series reads %+v", second)
 	}
 	if len(read.Objectives) != 1 || read.Objectives[0].Number != 1 {
@@ -136,7 +136,7 @@ func TestTaskImport_refusesASeriesItCannotRead(t *testing.T) {
 	if err == nil {
 		_, err = openEngine(t).importing(read)
 	}
-	if !errors.Is(err, ErrNotAnExport) {
+	if !errors.Is(err, errNotAnExport) {
 		t.Errorf("a series in the file twice reads %v", err)
 	}
 }
@@ -146,7 +146,7 @@ func TestTaskImport_aFileOfVersion8IsRefused(t *testing.T) {
 	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 8, "objectives": [], "tasks": []}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readExport(from); !errors.Is(err, ErrNotAnExport) {
+	if _, err := readExport(from); !errors.Is(err, errNotAnExport) {
 		t.Errorf("a file of version 8 reads %v", err)
 	}
 }
@@ -156,7 +156,7 @@ func TestTaskImport_aFileHoldingNothingToAddIsRefused(t *testing.T) {
 	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 7, "tasks": []}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readExport(from); !errors.Is(err, ErrNotAnExport) {
+	if _, err := readExport(from); !errors.Is(err, errNotAnExport) {
 		t.Errorf("a file holding nothing reads %v", err)
 	}
 	for what, held := range map[string]string{

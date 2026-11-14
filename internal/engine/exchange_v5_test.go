@@ -69,7 +69,7 @@ func TestTaskImport_refusesATreeOrAWaitOutsideTheFile(t *testing.T) {
 		if err == nil {
 			_, err = openEngine(t).importing(read)
 		}
-		if !errors.Is(err, ErrExportPointsOutside) {
+		if !errors.Is(err, errExportPointsOutside) {
 			t.Errorf("%s reads %v", file, err)
 		}
 	}

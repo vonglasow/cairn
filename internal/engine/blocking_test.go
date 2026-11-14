@@ -11,7 +11,7 @@ import (
 func TestBlocking_aBlockerFurtherAlongTheChainMakesACycle(t *testing.T) {
 	further := map[int][]int{2: {3}, 3: {1}}
 	err := mayBlock(1, []int{2}, func(one int) ([]int, error) { return further[one], nil })
-	if !errors.Is(err, ErrBlockingCycle) {
+	if !errors.Is(err, errBlockingCycle) {
 		t.Errorf("err = %v, want ErrBlockingCycle", err)
 	}
 }
@@ -31,7 +31,7 @@ func TestBlocking_anEditClosingACycleIsRefused(t *testing.T) {
 	if _, err := e.edit(2, Changes{Blocker: of([]string{"1"})}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.edit(1, Changes{Blocker: of([]string{"2"})}); !errors.Is(err, ErrBlockingCycle) {
+	if _, err := e.edit(1, Changes{Blocker: of([]string{"2"})}); !errors.Is(err, errBlockingCycle) {
 		t.Errorf("err = %v, want ErrBlockingCycle", err)
 	}
 }
@@ -65,7 +65,7 @@ func blockedBy(blocking map[int][]int) func(int) ([]int, error) {
 }
 
 func TestMayBlock_findsACycleBehindABlockerReachedTwice(t *testing.T) {
-	if err := mayBlock(1, []int{2, 3}, blockedBy(map[int][]int{2: {4}, 3: {4}, 4: {1}})); !errors.Is(err, ErrBlockingCycle) {
+	if err := mayBlock(1, []int{2, 3}, blockedBy(map[int][]int{2: {4}, 3: {4}, 4: {1}})); !errors.Is(err, errBlockingCycle) {
 		t.Errorf("1 waits on 4 through 2 and 3, and 4 on 1: %v", err)
 	}
 }

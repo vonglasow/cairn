@@ -8,7 +8,7 @@ import (
 )
 
 func TestStepsIn_readsEveryLine(t *testing.T) {
-	steps, err := StepsIn("[x] A\n[ ] B")
+	steps, err := stepsIn("[x] A\n[ ] B")
 	if err != nil {
 		t.Fatal(err)
 	}

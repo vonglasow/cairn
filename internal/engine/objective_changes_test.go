@@ -64,7 +64,7 @@ func TestEngine_refusesAnObjectiveStateItCannotMakeSenseOf(t *testing.T) {
 func TestEngine_refusesALabelSignWhenCreatingAnObjective(t *testing.T) {
 	e := openEngine(t)
 	_, err := e.addObjective("Ship cairn 1.0", ObjectiveChanges{Labels: of([]string{"+urgent"})})
-	if !errors.Is(err, ErrLabelSignAtCreation) {
+	if !errors.Is(err, errLabelSignAtCreation) {
 		t.Errorf("err = %v, want ErrLabelSignAtCreation", err)
 	}
 }
@@ -96,7 +96,7 @@ func TestEngine_showsAnObjectiveByItsNumber(t *testing.T) {
 }
 
 func TestEngine_saysWhenTheObjectiveShownDoesNotExist(t *testing.T) {
-	if _, err := openEngine(t).showObjective(99); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := openEngine(t).showObjective(99); !errors.Is(err, errNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -126,7 +126,7 @@ func TestEngine_changesWhatWasNamedOnAnObjective(t *testing.T) {
 func TestEngine_refusesAnObjectiveEditThatNamesNothing(t *testing.T) {
 	e := openEngine(t)
 	o := addObjective(t, e, "Ship cairn 1.0")
-	if _, err := e.editObjective(factsOfObjective(o).Number, ObjectiveChanges{}); !errors.Is(err, ErrNothingToChange) {
+	if _, err := e.editObjective(factsOfObjective(o).Number, ObjectiveChanges{}); !errors.Is(err, errNothingToChange) {
 		t.Errorf("err = %v, want ErrNothingToChange", err)
 	}
 }
@@ -152,7 +152,7 @@ func TestEngine_deletesAnObjective(t *testing.T) {
 	if _, err := e.deleteObjectives([]int{factsOfObjective(o).Number}, deletion{}); err != nil {
 		t.Fatalf("DeleteObjective: %v", err)
 	}
-	if _, err := e.showObjective(factsOfObjective(o).Number); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := e.showObjective(factsOfObjective(o).Number); !errors.Is(err, errNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -162,7 +162,7 @@ func TestEngine_refusesToDeleteAnObjectiveCarryingTasks(t *testing.T) {
 	o := addObjective(t, e, "Ship cairn 1.0")
 	task := serving(t, e, "Write the spec", factsOfObjective(o).Number)
 
-	if _, err := e.deleteObjectives([]int{factsOfObjective(o).Number}, deletion{}); !errors.Is(err, ErrObjectiveCarriesTasks) {
+	if _, err := e.deleteObjectives([]int{factsOfObjective(o).Number}, deletion{}); !errors.Is(err, errObjectiveCarriesTasks) {
 		t.Errorf("err = %v, want ErrObjectiveCarriesTasks", err)
 	}
 	if _, err := e.showObjective(factsOfObjective(o).Number); err != nil {
@@ -174,7 +174,7 @@ func TestEngine_refusesToDeleteAnObjectiveCarryingTasks(t *testing.T) {
 }
 
 func TestEngine_saysWhenTheObjectiveDeletedDoesNotExist(t *testing.T) {
-	if _, err := openEngine(t).deleteObjectives([]int{99}, deletion{}); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := openEngine(t).deleteObjectives([]int{99}, deletion{}); !errors.Is(err, errNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }

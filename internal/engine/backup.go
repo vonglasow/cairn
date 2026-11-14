@@ -4,8 +4,8 @@ import (
 	"cairn/internal/domain"
 )
 
-func resolveBackup(vault *Backups, in Input) (domain.Backup, error) {
-	n, named := in.Whole("number")
+func resolveBackup(vault *backups, in Input) (domain.Backup, error) {
+	n, named := in.whole("number")
 	if !named {
 		return vault.Latest()
 	}
@@ -19,11 +19,11 @@ var BackupNew = Operation{
 	Short:   "Make a new backup of the store as it stands",
 	Does:    "Make a new backup of the store as it stands.",
 	Example: "cairn backup new",
-	Level:   Write,
-	Needs:   NoStore,
-	Again:   DoesItAgain,
+	Level:   write,
+	Needs:   noStore,
+	Again:   doesItAgain,
 	Answers: BackupShape{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		held, err := on.Backups.HoldsStore()
 		if err != nil {
 			return Answer{}, err
@@ -44,9 +44,9 @@ var BackupList = Operation{
 	Does:    "List every backup.",
 	Example: "cairn backup list",
 	Level:   Read,
-	Needs:   NoStore,
-	Answers: Kept{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Needs:   noStore,
+	Answers: kept{},
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		all, err := on.Backups.All()
 		if err != nil {
 			return Answer{}, err
@@ -58,21 +58,21 @@ var BackupList = Operation{
 	},
 }
 
-// BackupShow says when a backup was made and what it holds.
-var BackupShow = Operation{
+// backupShow says when a backup was made and what it holds.
+var backupShow = Operation{
 	Thing:   "backup",
 	Verb:    "show",
 	Short:   "Say when a backup was made and what it holds",
 	Does:    "Say when a backup was made and what it holds.",
 	Example: "cairn backup show 3",
 	Level:   Read,
-	Needs:   NoStore,
+	Needs:   noStore,
 	Answers: BackupShape{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		one, err := on.Backups.Find(n)
 		if err != nil {
 			return Answer{}, err
@@ -85,22 +85,22 @@ var BackupShow = Operation{
 	},
 }
 
-// BackupDelete removes a backup.
-var BackupDelete = Operation{
+// backupDelete removes a backup.
+var backupDelete = Operation{
 	Thing:   "backup",
 	Verb:    "delete",
 	Short:   "Delete a backup",
 	Does:    "Delete a backup.",
 	Example: "cairn backup delete 3 --yes",
 	Level:   Full,
-	Needs:   NoStore,
+	Needs:   noStore,
 	Again:   ChangesNothingMore,
 	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a backup", Means: "the number of the backup"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		if err := on.Backups.Delete(n); err != nil {
 			return Answer{}, err
 		}
@@ -117,13 +117,13 @@ var BackupRestore = Operation{
 	Example: `cairn backup restore --yes
 cairn backup restore 3 --yes`,
 	Level:   Full,
-	Needs:   NoStore,
-	Again:   DoesItAgain,
-	Answers: Restored{},
+	Needs:   noStore,
+	Again:   doesItAgain,
+	Answers: restored{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a backup", Means: "the number of the backup"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		one, err := resolveBackup(on.Backups, in)
 		if err != nil {
 			return Answer{}, err

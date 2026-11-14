@@ -46,7 +46,7 @@ func changedLabels(given, current []string, atCreation bool) ([]string, error) {
 		return nil, err
 	}
 	if atCreation && change.Signed() {
-		return nil, ErrLabelSignAtCreation
+		return nil, errLabelSignAtCreation
 	}
 	return change.Apply(current)
 }
@@ -98,8 +98,8 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		a.Steps = *c.Steps
 	}
 	if c.Objective != nil {
-		served, err := changedNumbers(*c.Objective, a.Objectives, atCreation, ErrObjectiveRequired,
-			ErrObjectivesBothWays, ErrObjectiveSignAtBirth)
+		served, err := changedNumbers(*c.Objective, a.Objectives, atCreation, errObjectiveRequired,
+			errObjectivesBothWays, errObjectiveSignAtBirth)
 		if err != nil {
 			return task.Task{}, err
 		}
@@ -123,16 +123,16 @@ type carriedChanges struct {
 
 // What a change to a piece of a description can be turned down for.
 var (
-	ErrReplaceAlone        = errors.New("--replace and --by go together: what to replace, and what to put instead")
-	ErrDescriptionBothWays = errors.New("the description is changed whole or in part, not both")
+	errReplaceAlone        = errors.New("--replace and --by go together: what to replace, and what to put instead")
+	errDescriptionBothWays = errors.New("the description is changed whole or in part, not both")
 )
 
 func replaced(description string, c carriedChanges) (string, error) {
 	if (c.replace == nil) != (c.by == nil) {
-		return "", ErrReplaceAlone
+		return "", errReplaceAlone
 	}
 	if c.description != nil {
-		return "", ErrDescriptionBothWays
+		return "", errDescriptionBothWays
 	}
 	said, err := domain.ReplaceOnce(description, *c.replace, *c.by)
 	if err != nil {

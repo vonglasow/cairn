@@ -104,7 +104,7 @@ func TestObjectiveReport_reviewsTheTimeAndTheTasksDoneInThePeriod(t *testing.T) 
 	if _, err := e.Ask(TaskEdit, given("number", "1", "state", "done")); err != nil {
 		t.Fatal(err)
 	}
-	a, err := e.Ask(ObjectiveReport, given("number", "1", "since", domain.FormatDay(time.Now().AddDate(0, 0, -7)), "until", today))
+	a, err := e.Ask(objectiveReport, given("number", "1", "since", domain.FormatDay(time.Now().AddDate(0, 0, -7)), "until", today))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestFinishedIn_leavesOutATaskPutInDoneBeforeThePeriod(t *testing.T) {
 func TestOfReview_saysTheParentItselfAndEverySubObjective(t *testing.T) {
 	month := objective.Month{Month: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC), Spent: 2 * time.Hour,
 		Split: []objective.Part{{Number: 0, Spent: time.Hour}, {Number: 2, Spent: time.Hour}}}
-	r := OfReview(builtObjective(t, 1, "Ship"), nil, domain.Progress{}, objective.Period{Months: []objective.Month{month}})
+	r := ofReview(builtObjective(t, 1, "Ship"), nil, domain.Progress{}, objective.Period{Months: []objective.Month{month}})
 	if len(r.Months) != 1 || r.Months[0].Itself != "1h" || len(r.Months[0].SubObjectives) != 1 || r.Months[0].SubObjectives[0].Number != 2 {
 		t.Errorf("the months read %+v", r.Months)
 	}

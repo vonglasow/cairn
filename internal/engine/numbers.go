@@ -47,7 +47,7 @@ func (e *Engine) numbered(tasks []task.Task, numbers []int) ([]task.Task, []int,
 	}
 	var unknown []int
 	for _, number := range numbers {
-		if _, err := e.show(number); errors.Is(err, ErrNoSuchTask) {
+		if _, err := e.show(number); errors.Is(err, errNoSuchTask) {
 			unknown = append(unknown, number)
 		} else if err != nil {
 			return nil, nil, err

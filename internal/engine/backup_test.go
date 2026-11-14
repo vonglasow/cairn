@@ -49,7 +49,7 @@ func TestBackupShow_saysWhenABackupWasMadeAndWhatItHolds(t *testing.T) {
 		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
-	answer, err := Do(BackupShow, path, Input{Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
+	answer, err := Do(backupShow, path, Input{Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestBackupDelete_deletesABackup(t *testing.T) {
 		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
-	answer, err := Do(BackupDelete, path, Input{Confirmed: true, Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
+	answer, err := Do(backupDelete, path, Input{Confirmed: true, Given: map[string]string{"number": strconv.Itoa(made.Backup.Number)}})
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
@@ -95,8 +95,8 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
-	if _, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "99"}}); !errors.Is(err, ErrNoSuchBackup) {
-		t.Fatalf("err = %v, want %v", err, ErrNoSuchBackup)
+	if _, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "99"}}); !errors.Is(err, errNoSuchBackup) {
+		t.Fatalf("err = %v, want %v", err, errNoSuchBackup)
 	}
 
 	answer, err := Do(BackupRestore, path, Input{Confirmed: true})
@@ -152,7 +152,7 @@ func TestOfBackup_carriesWhatItHeldWhenCounted(t *testing.T) {
 	backup := domain.Backup{Number: 2, Made: madeAt}
 	held := domain.Held{Tasks: 3, Objectives: 1}
 
-	got := OfBackup(backup, &held)
+	got := ofBackup(backup, &held)
 
 	want := BackupShape{Number: 2, Made: domain.FormatMoment(madeAt), Holds: &domain.Held{Tasks: 3, Objectives: 1}}
 	if got.Number != want.Number || got.Made != want.Made {
@@ -164,7 +164,7 @@ func TestOfBackup_carriesWhatItHeldWhenCounted(t *testing.T) {
 }
 
 func TestOfBackup_leavesHoldsOutWhenNothingWasCounted(t *testing.T) {
-	got := OfBackup(domain.Backup{Number: 1, Made: madeAt}, nil)
+	got := ofBackup(domain.Backup{Number: 1, Made: madeAt}, nil)
 	if got.Holds != nil {
 		t.Errorf("Holds = %+v, want nil: nothing was counted", got.Holds)
 	}

@@ -14,9 +14,9 @@ var MigrationList = Operation{
 	Does:    "Name every change to the store, applied or waiting.",
 	Example: "cairn migration list",
 	Level:   Read,
-	Needs:   AStoreBehind,
-	Answers: Ledger{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Needs:   aStoreBehind,
+	Answers: ledger{},
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		all, err := on.Engine.migrations()
 		if err != nil {
 			return Answer{}, err
@@ -29,21 +29,21 @@ var MigrationList = Operation{
 	},
 }
 
-// MigrationShow says what a change does, and what undoing it does.
-var MigrationShow = Operation{
+// migrationShow says what a change does, and what undoing it does.
+var migrationShow = Operation{
 	Thing:   "migration",
 	Verb:    "show",
 	Short:   "Say what a change does, and what undoing it does",
 	Does:    "Say what a change does, and what undoing it does.",
 	Example: "cairn migration show 4",
 	Level:   Read,
-	Needs:   AStoreBehind,
+	Needs:   aStoreBehind,
 	Answers: migration.Shape{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a migration", Means: "the number of the change"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		one, err := on.Engine.change(n)
 		if err != nil {
 			return Answer{}, err
@@ -60,18 +60,18 @@ var MigrationApply = Operation{
 	Does:  "Make the changes the store is missing, or one of them.",
 	Example: `cairn migration apply
 cairn migration apply 4`,
-	Level:   Write,
-	Needs:   AStoreBehind,
+	Level:   write,
+	Needs:   aStoreBehind,
 	Again:   ChangesNothingMore,
-	Answers: Applied{},
+	Answers: applied{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a migration", Means: "the number of the change"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, named := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, named := in.whole("number")
 		if !named {
 			made, err := on.Engine.applyAll(on.Path)
-			if errors.Is(err, ErrNothingWaiting) {
+			if errors.Is(err, errNothingWaiting) {
 				return Answer{Applied: []string{}}, nil
 			}
 			if err != nil {
@@ -95,10 +95,10 @@ var MigrationRollback = Operation{
 	Does:    "Unmake the last change applied to the store.",
 	Example: "cairn migration rollback --yes",
 	Level:   Full,
-	Needs:   AStoreBehind,
-	Again:   DoesItAgain,
+	Needs:   aStoreBehind,
+	Again:   doesItAgain,
 	Answers: migration.RolledBack{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		rolled, err := on.Engine.rollBack(on.Path)
 		if err != nil {
 			return Answer{}, err

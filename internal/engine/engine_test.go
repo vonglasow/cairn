@@ -190,7 +190,7 @@ func TestEngine_refusesToEmptyATitle(t *testing.T) {
 func TestEngine_saysWhenNothingWasNamedToChange(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.edit(factsOf(kept).Number, Changes{}); !errors.Is(err, ErrNothingToChange) {
+	if _, err := e.edit(factsOf(kept).Number, Changes{}); !errors.Is(err, errNothingToChange) {
 		t.Errorf("err = %v, want ErrNothingToChange", err)
 	}
 }
@@ -302,7 +302,7 @@ func TestEngine_takesALabelAwayFromTheOnesAlreadyThere(t *testing.T) {
 
 func TestEngine_refusesASignedLabelAtCreation(t *testing.T) {
 	_, err := openEngine(t).add("Write the spec", Changes{Labels: of([]string{"+urgent"})})
-	if !errors.Is(err, ErrLabelSignAtCreation) {
+	if !errors.Is(err, errLabelSignAtCreation) {
 		t.Errorf("err = %v, want ErrLabelSignAtCreation: a new task has nothing to add to", err)
 	}
 }
@@ -475,7 +475,7 @@ func TestArchive_takesSeveralTogetherOrNone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if said := Of(TaskArchive, answer).(Swept); said.Archived != 2 {
+	if said := Of(TaskArchive, answer).(swept); said.Archived != 2 {
 		t.Errorf("Of = %+v, want two archived", said)
 	}
 }
@@ -493,7 +493,7 @@ func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	if _, err := Do(ObjectiveDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}}); err != nil {
 		t.Fatal(err)
 	}
-	if listed, _ := Do(ObjectiveList, path, Input{}); len(listed.Objectives) != 0 {
+	if listed, _ := Do(objectiveList, path, Input{}); len(listed.Objectives) != 0 {
 		t.Errorf("a deletion of both left %d objectives", len(listed.Objectives))
 	}
 }
@@ -501,7 +501,7 @@ func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 func TestArchive_refusesAlsoWithoutANumber(t *testing.T) {
 	path := storeAt(t, "First", "Second")
 	_, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"state": "backlog"}, Listed: map[string][]string{"also": {"2"}}})
-	if !errors.Is(err, ErrAlsoWithoutNumber) {
+	if !errors.Is(err, errAlsoWithoutNumber) {
 		t.Errorf("err = %v, want ErrAlsoWithoutNumber", err)
 	}
 	if _, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"two"}}}); err == nil {

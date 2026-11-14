@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// ErrNotAField is what a field a row of a listing does not carry is refused with.
-var ErrNotAField = errors.New("not a field a row carries")
+// errNotAField is what a field a row of a listing does not carry is refused with.
+var errNotAField = errors.New("not a field a row carries")
 
 func rowFields() []string {
 	var names []string
@@ -29,7 +29,7 @@ var fieldsArgument = Argument{
 	Name:    "fields",
 	Kind:    List,
 	OneOf:   rowFields(),
-	Outside: ErrNotAField,
+	Outside: errNotAField,
 	Means:   fmt.Sprintf("the fields each task's row carries in the JSON answer, among %s; every one when it is not named", strings.Join(rowFields(), ", ")),
 }
 

@@ -148,7 +148,7 @@ func TestConfigShow_saysWhyTheSchemeNamedIsNotWorn(t *testing.T) {
 
 func shownWithHome(t *testing.T, h Home) Config {
 	t.Helper()
-	answer, err := ConfigShow.Run(On{Home: h}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil || answer.Config == nil {
 		t.Fatalf("config show: %v", err)
 	}

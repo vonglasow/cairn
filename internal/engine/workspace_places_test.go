@@ -194,14 +194,14 @@ func TestNotesToMove_notesTheEnvironmentNamesAreNotTheWorkspaces(t *testing.T) {
 }
 
 func TestWorkspaceShow_mainNobodyConfiguredIsSaidAndConfiguresNothing(t *testing.T) {
-	answer, err := WorkspaceShow.Run(On{Home: homeHolding(t, "", nil)}, Input{})
+	answer, err := WorkspaceShow.Run(workedOn{Home: homeHolding(t, "", nil)}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if shown := answer.WorkspaceShown; shown.Workspace != config.UpgradedMain || !shown.Implicit || shown.Configured() != "" {
 		t.Errorf("shown %+v, want main, said implicit, configuring nothing", shown)
 	}
-	answer, err = WorkspaceShow.Run(On{Home: homeHolding(t, twoWorkspaces, nil, "w", "h")}, Input{})
+	answer, err = WorkspaceShow.Run(workedOn{Home: homeHolding(t, twoWorkspaces, nil, "w", "h")}, Input{})
 	if err != nil || answer.WorkspaceShown.Implicit || answer.WorkspaceShown.Configured() != "work" {
 		t.Errorf("shown %+v, %v; want work, configured", answer.WorkspaceShown, err)
 	}

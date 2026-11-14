@@ -20,8 +20,8 @@ type Field struct {
 	Example string
 }
 
-// TaskFields is every field of a task, in the order a form lays them out: what it is called first, and the two that are read far more often than they are written last.
-func TaskFields(c Card) []Field {
+// taskFields is every field of a task, in the order a form lays them out: what it is called first, and the two that are read far more often than they are written last.
+func taskFields(c Card) []Field {
 	return opened(TaskEdit, []Field{
 		{Name: "title", Arg: "title", Value: c.Title},
 		{Name: "description", Arg: "desc", Value: c.Description, Long: true},
@@ -84,7 +84,7 @@ func GoalFields(g Goal) []Field {
 	return opened(ObjectiveEdit, []Field{
 		{Name: "title", Arg: "title", Value: g.Title},
 		{Name: "description", Arg: "desc", Value: g.Description, Long: true},
-		{Name: "state", Arg: "state", Value: g.State, Choices: Standings},
+		{Name: "state", Arg: "state", Value: g.State, Choices: standings},
 		{Name: "priority", Arg: "priority", Value: g.Priority, Choices: Priorities()},
 		{Name: "labels", Arg: "label", Value: strings.Join(g.Labels, " ")},
 		{Name: "parent", Arg: "parent", Value: parentWritten(g.Parent)},

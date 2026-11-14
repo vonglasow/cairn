@@ -5,7 +5,7 @@ import (
 )
 
 func TestAskedNamesEveryFieldByItsEngineArgument(t *testing.T) {
-	fields := TaskFields(Card{
+	fields := taskFields(Card{
 		Title:       "One",
 		Description: "why it matters",
 		State:       "todo",
@@ -13,7 +13,7 @@ func TestAskedNamesEveryFieldByItsEngineArgument(t *testing.T) {
 		Labels:      []string{"api", "urgent"},
 	})
 
-	in := Asked(fields, TaskEdit)
+	in := inputOfFields(fields, TaskEdit)
 	if in.Given["desc"] != "why it matters" {
 		t.Errorf("desc = %q, want the description", in.Given["desc"])
 	}
@@ -31,19 +31,19 @@ func TestAskedNamesEveryFieldByItsEngineArgument(t *testing.T) {
 }
 
 func TestAskedLeavesANumberNobodyCanReadUnnamed(t *testing.T) {
-	if in := Asked([]Field{{Name: "after", Arg: "after", Value: "nine"}}, TaskMove); in.Named("after") {
+	if in := inputOfFields([]Field{{Name: "after", Arg: "after", Value: "nine"}}, TaskMove); in.Named("after") {
 		t.Fatal("a number nobody can read was passed to the engine anyway")
 	}
 }
 
 func TestAskedNamesAnEmptyNumber(t *testing.T) {
-	if in := Asked([]Field{{Name: "after", Arg: "after", Value: "  "}}, TaskMove); !in.Named("after") {
+	if in := inputOfFields([]Field{{Name: "after", Arg: "after", Value: "  "}}, TaskMove); !in.Named("after") {
 		t.Fatal("emptying a number said nothing at all")
 	}
 }
 
 func TestAsked_passesOverAFieldThatIsNoArgument(t *testing.T) {
-	in := Asked([]Field{{Name: "note"}, {Name: "title", Arg: "title", Value: "Ship it"}}, TaskEdit)
+	in := inputOfFields([]Field{{Name: "note"}, {Name: "title", Arg: "title", Value: "Ship it"}}, TaskEdit)
 	if in.Given["title"] != "Ship it" {
 		t.Errorf("a field behind one that is no argument was lost: %+v", in.Given)
 	}

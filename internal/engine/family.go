@@ -14,11 +14,11 @@ import (
 	"cairn/internal/task"
 )
 
-// ErrObjectiveHoldsSubObjectives is why an objective holding sub-objectives is not deleted until it is said what becomes of them.
-var ErrObjectiveHoldsSubObjectives = objective.ErrObjectiveHoldsSubObjectives
+// errObjectiveHoldsSubObjectives is why an objective holding sub-objectives is not deleted until it is said what becomes of them.
+var errObjectiveHoldsSubObjectives = objective.ErrObjectiveHoldsSubObjectives
 
-// ErrNotASubObjective is returned when a deletion names, to keep or to delete, an objective that is not a sub-objective of what is deleted.
-var ErrNotASubObjective = errors.New("only a sub-objective of what is deleted is kept or deleted on its own")
+// errNotASubObjective is returned when a deletion names, to keep or to delete, an objective that is not a sub-objective of what is deleted.
+var errNotASubObjective = errors.New("only a sub-objective of what is deleted is kept or deleted on its own")
 
 type tree struct {
 	by       map[int]objective.Objective
@@ -85,7 +85,7 @@ func parentNamed(said string) (int, error) {
 	}
 	n, err := strconv.Atoi(trimmed)
 	if err != nil || n <= 0 {
-		return 0, fmt.Errorf("%q: %w, or none", said, ErrObjectiveRequired)
+		return 0, fmt.Errorf("%q: %w, or none", said, errObjectiveRequired)
 	}
 	return n, nil
 }
@@ -129,7 +129,7 @@ func (e *Engine) familyOf(n int) (objective.Family, error) {
 	}
 	o, found := t.by[n]
 	if !found {
-		return objective.Family{}, fmt.Errorf("objective %d: %w", n, ErrNoSuchObjective)
+		return objective.Family{}, fmt.Errorf("objective %d: %w", n, errNoSuchObjective)
 	}
 	var f objective.Family
 	if parent := o.Carried().Parent; parent != 0 {
@@ -217,8 +217,8 @@ func (t tree) waiters() map[int][]int {
 	return out
 }
 
-// Went is what a deletion took with it: the sub-objectives kept, each standing on its own, those deleted, and the tasks detached or deleted.
-type Went struct {
+// wentWith is what a deletion took with it: the sub-objectives kept, each standing on its own, those deleted, and the tasks detached or deleted.
+type wentWith struct {
 	Kept     []int
 	Gone     []int
 	Detached []int
@@ -250,7 +250,7 @@ func deletionOf(in Input) (deletion, error) {
 		for _, raw := range in.Listed[name] {
 			n, err := strconv.Atoi(strings.TrimSpace(raw))
 			if err != nil {
-				return deletion{}, fmt.Errorf("%q: %w", raw, ErrObjectiveRequired)
+				return deletion{}, fmt.Errorf("%q: %w", raw, errObjectiveRequired)
 			}
 			*into = append(*into, n)
 		}
@@ -258,21 +258,21 @@ func deletionOf(in Input) (deletion, error) {
 	return d, nil
 }
 
-func (e *Engine) deleteObjectives(numbers []int, d deletion) (Went, error) {
+func (e *Engine) deleteObjectives(numbers []int, d deletion) (wentWith, error) {
 	t, err := e.tree()
 	if err != nil {
-		return Went{}, err
+		return wentWith{}, err
 	}
 	for _, n := range numbers {
 		if _, found := t.by[n]; !found {
-			return Went{}, fmt.Errorf("objective %d: %w", n, ErrNoSuchObjective)
+			return wentWith{}, fmt.Errorf("objective %d: %w", n, errNoSuchObjective)
 		}
 	}
 	if err := d.namesOnly(numbers, t); err != nil {
-		return Went{}, err
+		return wentWith{}, err
 	}
 	goners := slices.Clone(numbers)
-	var went Went
+	var went wentWith
 	var undecided []objective.Objective
 	for _, n := range numbers {
 		for _, c := range t.children[n] {
@@ -291,18 +291,18 @@ func (e *Engine) deleteObjectives(numbers []int, d deletion) (Went, error) {
 	}
 	touched, err := e.objectives.TasksServing(goners...)
 	if err != nil {
-		return Went{}, err
+		return wentWith{}, err
 	}
 	views, err := e.store.Views()
 	if err != nil {
-		return Went{}, err
+		return wentWith{}, err
 	}
 	naming := viewsNaming(views, goners)
 	if len(undecided) > 0 || len(touched) > 0 && d.tasks == "" || len(naming) > 0 && d.views == "" {
-		return Went{}, e.asking(numbers, undecided, touched, naming, d)
+		return wentWith{}, e.asking(numbers, undecided, touched, naming, d)
 	}
 	if err := e.carryOut(goners, went.Kept, touched, d.tasks, &went); err != nil {
-		return Went{}, err
+		return wentWith{}, err
 	}
 	if len(naming) == 0 {
 		return went, nil
@@ -317,16 +317,16 @@ func (d deletion) namesOnly(numbers []int, t tree) error {
 	}
 	for _, c := range append(slices.Clone(d.keep), d.delete...) {
 		if !held(c) {
-			return fmt.Errorf("#%d is not a sub-objective of %s; %w", c, domain.Ref(numbers[0]), ErrNotASubObjective)
+			return fmt.Errorf("#%d is not a sub-objective of %s; %w", c, domain.Ref(numbers[0]), errNotASubObjective)
 		}
 		if slices.Contains(d.keep, c) && slices.Contains(d.delete, c) {
-			return fmt.Errorf("#%d is both kept and deleted; %w", c, ErrNotASubObjective)
+			return fmt.Errorf("#%d is both kept and deleted; %w", c, errNotASubObjective)
 		}
 	}
 	return nil
 }
 
-func (e *Engine) carryOut(goners, kept []int, touched []task.Task, tasks string, went *Went) error {
+func (e *Engine) carryOut(goners, kept []int, touched []task.Task, tasks string, went *wentWith) error {
 	for _, c := range kept {
 		o, err := e.objectives.FindObjective(c)
 		if err != nil {
@@ -374,11 +374,11 @@ type askingWhatGoes struct {
 func (a *askingWhatGoes) Error() string { return a.said }
 
 func (a *askingWhatGoes) Is(target error) bool {
-	return target == ErrObjectiveCarriesTasks && a.carries || target == ErrObjectiveHoldsSubObjectives && a.holds || target == ErrObjectiveNamedByAView && a.named
+	return target == errObjectiveCarriesTasks && a.carries || target == errObjectiveHoldsSubObjectives && a.holds || target == errObjectiveNamedByAView && a.named
 }
 
-// ErrObjectiveNamedByAView is why an objective a view names is not deleted until it is said what becomes of the view.
-var ErrObjectiveNamedByAView = errors.New("a view names it")
+// errObjectiveNamedByAView is why an objective a view names is not deleted until it is said what becomes of the view.
+var errObjectiveNamedByAView = errors.New("a view names it")
 
 func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched []task.Task, naming []string, d deletion) error {
 	a := &askingWhatGoes{holds: len(undecided) > 0, carries: len(touched) > 0, named: len(naming) > 0 && d.views == ""}
@@ -403,9 +403,9 @@ func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched 
 	if !a.holds && d.tasks != "" {
 		a.carries = false
 	}
-	what := ErrObjectiveHoldsSubObjectives.Error()
+	what := errObjectiveHoldsSubObjectives.Error()
 	if a.carries {
-		what = ErrObjectiveCarriesTasks.Error()
+		what = errObjectiveCarriesTasks.Error()
 	}
 	var flags []string
 	if a.holds {
@@ -421,9 +421,9 @@ func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched 
 		for _, name := range naming {
 			lines = append(lines, "  view "+name)
 		}
-		what += " and " + ErrObjectiveNamedByAView.Error()
+		what += " and " + errObjectiveNamedByAView.Error()
 		if !a.holds && !a.carries {
-			what = ErrObjectiveNamedByAView.Error()
+			what = errObjectiveNamedByAView.Error()
 		}
 		flags = append(flags, "--views off|delete")
 	}
@@ -432,7 +432,7 @@ func (e *Engine) asking(numbers []int, undecided []objective.Objective, touched 
 	return a
 }
 
-func wentText(w *Went) string {
+func wentText(w *wentWith) string {
 	if w == nil {
 		return ""
 	}

@@ -118,7 +118,7 @@ func TestTiming_aTaskNotInFocusHasNoTimerToStop(t *testing.T) {
 	path := storeAt(t, "one")
 	nine := time.Date(2026, 9, 29, 9, 0, 0, 0, time.Local)
 	ranAt(t, TaskFocus, timeRecorded(t, path, nine), given("number", "1"))
-	ranAt(t, TaskUnfocus, timeRecorded(t, path, nine.Add(time.Minute)), given("number", "1"))
+	ranAt(t, taskUnfocus, timeRecorded(t, path, nine.Add(time.Minute)), given("number", "1"))
 	ranAt(t, TaskList, timeOff(t, path, nine.Add(time.Hour)), given())
 	if got := timerActs(t, path); len(got) != 2 {
 		t.Errorf("the timer acts are %q, want the focus taken and released alone", got)
@@ -161,7 +161,7 @@ func TestAnswer_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 			if said := RenderText(ObjectiveShow, objective); strings.Contains(said, "time spent") {
 				t.Errorf("objective show says the time spent:\n%s", said)
 			}
-			if listed := ranAt(t, ObjectiveList, not, given()); len(listed.Spent) != 0 {
+			if listed := ranAt(t, objectiveList, not, given()); len(listed.Spent) != 0 {
 				t.Errorf("objective list says %v spent", listed.Spent)
 			}
 			if spent := factsOf(*ranAt(t, TaskShow, on, given("number", "1")).Task).Spent; spent != 2*time.Hour {

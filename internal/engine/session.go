@@ -22,15 +22,15 @@ func (h Home) now() time.Time {
 	return time.Now()
 }
 
-// FocusSession is how long a task has been in focus since the focus was taken or last renewed, and, once past the length the configuration gives a session, the question it asks.
-type FocusSession struct {
+// focusSession is how long a task has been in focus since the focus was taken or last renewed, and, once past the length the configuration gives a session, the question it asks.
+type focusSession struct {
 	Task  int       `json:"task"`
 	Since time.Time `json:"since" jsonschema:"when the focus was taken, or last renewed"`
 	Up    string    `json:"up" jsonschema:"how long the session has been up, as 1h30m; empty under a minute"`
 	Ask   string    `json:"ask,omitempty" jsonschema:"once the session is past its length: whether to renew it or end it"`
 }
 
-func sessionOf(number int, acts []trace.Act, now time.Time, length time.Duration) FocusSession {
+func sessionOf(number int, acts []trace.Act, now time.Time, length time.Duration) focusSession {
 	var since time.Time
 	for _, a := range acts {
 		c := a.Carried()
@@ -39,7 +39,7 @@ func sessionOf(number int, acts []trace.Act, now time.Time, length time.Duration
 		}
 	}
 	up := now.Sub(since).Truncate(time.Minute)
-	session := FocusSession{Task: number, Since: since, Up: domain.FormatDuration(up)}
+	session := focusSession{Task: number, Since: since, Up: domain.FormatDuration(up)}
 	if length > 0 && up >= length {
 		session.Ask = fmt.Sprintf("this focus session has been up %s: renew it by focusing task %d again, or end it by unfocusing task %d",
 			session.Up, number, number)
@@ -66,9 +66,9 @@ func (e *Engine) sessionLength() (time.Duration, error) {
 	return length, nil
 }
 
-func (e *Engine) sessionsOf(held []int, length time.Duration) ([]FocusSession, error) {
+func (e *Engine) sessionsOf(held []int, length time.Duration) ([]focusSession, error) {
 	now := e.home.now()
-	out := make([]FocusSession, 0, len(held))
+	out := make([]focusSession, 0, len(held))
 	for _, number := range held {
 		acts, err := e.history.ActsOn(number)
 		if err != nil {
@@ -79,7 +79,7 @@ func (e *Engine) sessionsOf(held []int, length time.Duration) ([]FocusSession, e
 	return out, nil
 }
 
-func (e *Engine) sessions() ([]FocusSession, error) {
+func (e *Engine) sessions() ([]focusSession, error) {
 	length, err := e.sessionLength()
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func (e *Engine) renewed(number int) error {
 		return err
 	}
 	sessions, err := e.sessionsOf([]int{number}, length)
-	if err != nil || !slices.ContainsFunc(sessions, func(s FocusSession) bool { return s.Ask != "" }) {
+	if err != nil || !slices.ContainsFunc(sessions, func(s focusSession) bool { return s.Ask != "" }) {
 		return err
 	}
 	return e.record(number, trace.FocusRenewed, "", "", "")

@@ -42,10 +42,10 @@ func noted(t *testing.T, l *debug.Log) string {
 func TestNoteTo_writesAnOperationOnceWithWhatItWasGivenMasked(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	l := debugLog(t)
-	if _, err := DoAt(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Write the spec", "priority": "high"}}, Acting{}); err != nil {
+	if _, err := doThere(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Write the spec", "priority": "high"}}, Acting{}); err != nil {
 		t.Fatal(err)
 	}
-	_, _ = DoAt(TaskShow, Places{Store: path}, Input{Given: map[string]string{"number": "99"}}, Acting{})
+	_, _ = doThere(TaskShow, Places{Store: path}, Input{Given: map[string]string{"number": "99"}}, Acting{})
 	said := noted(t, l)
 	if strings.Count(said, "engine task new") != 1 || !strings.Contains(said, "priority=high") || !strings.Contains(said, "title=‹text ") {
 		t.Errorf("the file reads:\n%s", said)
@@ -74,7 +74,7 @@ func TestNoteTo_writesTheVersionABoardReadsOnlyWhenItChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := DoAt(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Ship it"}}, Acting{}); err != nil {
+	if _, err := doThere(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Ship it"}}, Acting{}); err != nil {
 		t.Fatal(err)
 	}
 	_, _ = held.Version()
@@ -87,7 +87,7 @@ func TestNoteTo_writesTheVersionABoardReadsOnlyWhenItChanges(t *testing.T) {
 func TestDebugHeader_saysTheBuildTheConfigurationAndTheStoreInNumbers(t *testing.T) {
 	home := t.TempDir()
 	at := Places{Store: filepath.Join(home, ".cairn", "cairn.db"), Home: Home{Dir: home}}
-	if _, err := DoAt(TaskNew, at, Input{Given: map[string]string{"title": "Write the spec", "state": "todo"}}, Acting{}); err != nil {
+	if _, err := doThere(TaskNew, at, Input{Given: map[string]string{"title": "Write the spec", "state": "todo"}}, Acting{}); err != nil {
 		t.Fatal(err)
 	}
 	facts := map[string][]string{}
@@ -121,7 +121,7 @@ func TestDebugReport_packsEveryFileKeptAndAHeader(t *testing.T) {
 		_ = l.Close()
 	}
 	to := t.TempDir()
-	answer, err := DoAt(DebugReport, Places{Store: store, Home: Home{Dir: home}}, Input{Given: map[string]string{"to": to}}, Acting{})
+	answer, err := doThere(debugReport, Places{Store: store, Home: Home{Dir: home}}, Input{Given: map[string]string{"to": to}}, Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestDebugReport_packsEveryFileKeptAndAHeader(t *testing.T) {
 
 func TestSummary_saysEachFieldSetOnceAndNothingElse(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
-	made, err := DoAt(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Write the spec"}}, Acting{})
+	made, err := doThere(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Write the spec"}}, Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,8 +190,8 @@ func TestShown_masksOnlyWhatAPersonWrote(t *testing.T) {
 		plain bool
 	}{
 		{Argument{Kind: Number}, "abc", true},
-		{Argument{Kind: Day}, "abc", true},
-		{Argument{Kind: Duration}, "abc", true},
+		{Argument{Kind: day}, "abc", true},
+		{Argument{Kind: duration}, "abc", true},
 		{Argument{Kind: Bool}, "abc", true},
 		{Argument{Kind: Text, OneOf: []string{"abc"}}, "abc", true},
 		{Argument{Kind: Text}, "true", true},
@@ -239,7 +239,7 @@ func TestStoreInNumbers_countsTheArchivedAndTheChangesApplied(t *testing.T) {
 		if given["number"] != "" {
 			op = TaskArchive
 		}
-		if _, err := DoAt(op, at, Input{Given: given}, Acting{}); err != nil {
+		if _, err := doThere(op, at, Input{Given: given}, Acting{}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -266,7 +266,7 @@ func TestStoreInNumbers_saysAStoreThatCannotBeOpened(t *testing.T) {
 func TestDebugReport_writesInTheCurrentFolderWhenNoneIsSaid(t *testing.T) {
 	here := t.TempDir()
 	t.Chdir(here)
-	answer, err := DoAt(DebugReport, Places{Store: filepath.Join(t.TempDir(), "cairn.db"), Home: Home{Dir: t.TempDir()}}, Input{}, Acting{})
+	answer, err := doThere(debugReport, Places{Store: filepath.Join(t.TempDir(), "cairn.db"), Home: Home{Dir: t.TempDir()}}, Input{}, Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +292,7 @@ func TestDebugReport_saysADebugFolderThatCannotBeRead(t *testing.T) {
 	if err := os.WriteFile(Places{Store: store}.Debug(), []byte("a file"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := DoAt(DebugReport, Places{Store: store, Home: Home{Dir: t.TempDir()}}, Input{Given: map[string]string{"to": t.TempDir()}}, Acting{}); err == nil {
+	if _, err := doThere(debugReport, Places{Store: store, Home: Home{Dir: t.TempDir()}}, Input{Given: map[string]string{"to": t.TempDir()}}, Acting{}); err == nil {
 		t.Error("a debug folder that is a file is packed without a word")
 	}
 }
@@ -308,7 +308,7 @@ func TestDebugReport_packsTheLogFilesWholeAndNothingElse(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	answer, err := DoAt(DebugReport, Places{Store: store, Home: Home{Dir: t.TempDir()}}, Input{Given: map[string]string{"to": t.TempDir()}}, Acting{})
+	answer, err := doThere(debugReport, Places{Store: store, Home: Home{Dir: t.TempDir()}}, Input{Given: map[string]string{"to": t.TempDir()}}, Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}

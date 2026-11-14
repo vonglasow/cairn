@@ -11,8 +11,8 @@ import (
 	"cairn/internal/trace"
 )
 
-// ObjectiveReport writes an objective's review over a period.
-var ObjectiveReport = Operation{
+// objectiveReport writes an objective's review over a period.
+var objectiveReport = Operation{
 	Thing: "objective",
 	Verb:  "report",
 	Short: "Report on an objective over a period",
@@ -20,15 +20,15 @@ var ObjectiveReport = Operation{
 	Example: `cairn objective report 6 --since 2026-07-01
 cairn objective report 6 --since 2026-07-01 --until 2026-09-30`,
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Review{},
+	Needs:   aStore,
+	Answers: review{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
-		{Name: "since", Kind: Day, Required: true, Means: "the first day of the period"},
-		{Name: "until", Kind: Day, Means: "the last day of the period; today when left out"},
+		{Name: "since", Kind: day, Required: true, Means: "the first day of the period"},
+		{Name: "until", Kind: day, Means: "the last day of the period; today when left out"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		now := time.Now()
 		first, err := dayOf(in, "since", now)
 		if err != nil {
@@ -55,60 +55,60 @@ cairn objective report 6 --since 2026-07-01 --until 2026-09-30`,
 	},
 }
 
-// Review is how an objective's review crosses: the objective as show gives it, the period, the time spent on its tasks in the period and month by month, and the tasks done in it.
-type Review struct {
-	Objective Objective    `json:"objective"`
+// review is how an objective's review crosses: the objective as show gives it, the period, the time spent on its tasks in the period and month by month, and the tasks done in it.
+type review struct {
+	Objective objectiveRow `json:"objective"`
 	Since     string       `json:"since"`
 	Until     string       `json:"until"`
 	TimeSpent string       `json:"time_spent" jsonschema:"the time spent on its tasks in the period, as 1h30m; empty when none was"`
-	Months    []MonthShape `json:"months"`
-	Done      []DoneShape  `json:"done"`
+	Months    []monthShape `json:"months"`
+	Done      []doneShape  `json:"done"`
 }
 
-// MonthShape is the time spent in one month of the period, and for a parent how it splits over its sub-objectives and itself.
-type MonthShape struct {
+// monthShape is the time spent in one month of the period, and for a parent how it splits over its sub-objectives and itself.
+type monthShape struct {
 	Month         string      `json:"month" jsonschema:"the month, as 2026-08"`
 	TimeSpent     string      `json:"time_spent"`
-	SubObjectives []PartShape `json:"sub_objectives,omitempty" jsonschema:"the time spent through each sub-objective that month; left out for an objective holding none"`
+	SubObjectives []partShape `json:"sub_objectives,omitempty" jsonschema:"the time spent through each sub-objective that month; left out for an objective holding none"`
 	Itself        string      `json:"itself,omitempty" jsonschema:"the time spent on the tasks put on the parent itself that month; left out when none was"`
 }
 
-// PartShape is the time a month spent through one sub-objective.
-type PartShape struct {
+// partShape is the time a month spent through one sub-objective.
+type partShape struct {
 	Number    int    `json:"number"`
 	TimeSpent string `json:"time_spent"`
 }
 
-// DoneShape is a task put in done within the period, and the day it was.
-type DoneShape struct {
+// doneShape is a task put in done within the period, and the day it was.
+type doneShape struct {
 	Number int    `json:"number"`
 	Title  string `json:"title"`
 	On     string `json:"on"`
 }
 
-// OfReview turns an objective's review into what crosses.
-func OfReview(o objective.Objective, under []task.Task, p domain.Progress, in objective.Period) Review {
-	r := Review{
-		Objective: OfObjective(o, under, p),
+// ofReview turns an objective's review into what crosses.
+func ofReview(o objective.Objective, under []task.Task, p domain.Progress, in objective.Period) review {
+	r := review{
+		Objective: ofObjective(o, under, p),
 		Since:     domain.FormatDay(in.Since),
 		Until:     domain.FormatDay(in.Until),
 		TimeSpent: domain.FormatDuration(in.Spent()),
-		Months:    []MonthShape{},
-		Done:      []DoneShape{},
+		Months:    []monthShape{},
+		Done:      []doneShape{},
 	}
 	for _, m := range in.Months {
-		month := MonthShape{Month: m.Month.Format("2006-01"), TimeSpent: domain.FormatDuration(m.Spent)}
+		month := monthShape{Month: m.Month.Format("2006-01"), TimeSpent: domain.FormatDuration(m.Spent)}
 		for _, part := range m.Split {
 			if part.Number == 0 {
 				month.Itself = domain.FormatDuration(part.Spent)
 				continue
 			}
-			month.SubObjectives = append(month.SubObjectives, PartShape{Number: part.Number, TimeSpent: domain.FormatDuration(part.Spent)})
+			month.SubObjectives = append(month.SubObjectives, partShape{Number: part.Number, TimeSpent: domain.FormatDuration(part.Spent)})
 		}
 		r.Months = append(r.Months, month)
 	}
 	for _, f := range in.Done {
-		r.Done = append(r.Done, DoneShape{Number: f.Number, Title: f.Title, On: domain.FormatDay(f.On)})
+		r.Done = append(r.Done, doneShape{Number: f.Number, Title: f.Title, On: domain.FormatDay(f.On)})
 	}
 	return r
 }

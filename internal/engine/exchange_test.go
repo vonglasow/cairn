@@ -60,7 +60,7 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if got := RenderText(TaskExport, answer); got != to+" holds 2 task(s) and 2 objective(s)\n" {
 		t.Errorf("it says %q", got)
 	}
-	if shape, ok := Of(TaskExport, answer).(Exported); !ok || shape.Exported != to || shape.Holds.Tasks != 2 {
+	if shape, ok := Of(TaskExport, answer).(exported); !ok || shape.Exported != to || shape.Holds.Tasks != 2 {
 		t.Errorf("a machine reads %#v", Of(TaskExport, answer))
 	}
 	written, err := os.ReadFile(to)
@@ -78,7 +78,7 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if _, err := Do(TaskExport, path, Input{Given: map[string]string{"to": to}}); !errors.Is(err, os.ErrExist) {
 		t.Errorf("exporting onto it again answered %v", err)
 	}
-	if TaskExport.Level != Write || TaskImport.Level != Write {
+	if TaskExport.Level != write || TaskImport.Level != write {
 		t.Errorf("export is level %v and import %v", TaskExport.Level, TaskImport.Level)
 	}
 }
@@ -106,7 +106,7 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 	if got := RenderText(TaskImport, answer); got != "3 task(s) and 1 objective(s) were added from "+file+"\n" {
 		t.Errorf("it says %q", got)
 	}
-	if shape, ok := Of(TaskImport, answer).(Imported); !ok || shape.Imported != file || shape.Added.Tasks != 3 || shape.Added.Objectives != 1 {
+	if shape, ok := Of(TaskImport, answer).(importedFile); !ok || shape.Imported != file || shape.Added.Tasks != 3 || shape.Added.Objectives != 1 {
 		t.Errorf("a machine reads %#v", Of(TaskImport, answer))
 	}
 	show := func(n string) string {
@@ -242,7 +242,7 @@ func TestAnImportBringsTheLinksAtTheirNewNumbers(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := Do(TaskImport, path, Input{Given: map[string]string{"from": outside}})
-	if !errors.Is(err, ErrExportPointsOutside) || !strings.Contains(err.Error(), "task 9 is not in the file") {
+	if !errors.Is(err, errExportPointsOutside) || !strings.Contains(err.Error(), "task 9 is not in the file") {
 		t.Errorf("it answered %v", err)
 	}
 	if listed, _ := Do(TaskList, path, Input{}); len(listed.Tasks) != 4 {
@@ -260,7 +260,7 @@ func linkedLine(numbers []int) string {
 
 func TestReadExport_refusesAFileOfAnotherKind(t *testing.T) {
 	_, err := importInto(t, openEngine(t), `{"cairn": "notes", "version": 4, "tasks": []}`)
-	if !errors.Is(err, ErrNotAnExport) {
+	if !errors.Is(err, errNotAnExport) {
 		t.Errorf("a file of notes answered %v", err)
 	}
 }
@@ -406,7 +406,7 @@ func TestReadExport_refusesAnotherKindOrAVersionItDoesNotRead(t *testing.T) {
 		`{"cairn": "tasks", "version": 8, "tasks": [{"number": 1, "title": "a"}]}`,
 		`{"cairn": "tasks", "version": 0, "tasks": [{"number": 1, "title": "a"}]}`,
 	} {
-		if _, err := readExport(exportFile(t, said)); !errors.Is(err, ErrNotAnExport) {
+		if _, err := readExport(exportFile(t, said)); !errors.Is(err, errNotAnExport) {
 			t.Errorf("%s was read: %v", said, err)
 		}
 	}

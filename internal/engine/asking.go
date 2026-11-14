@@ -17,15 +17,15 @@ func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
 	if err := e.following(); err != nil {
 		return Answer{}, Told(err)
 	}
-	if e.refused != nil && op.Needs != NoStore {
+	if e.refused != nil && op.Needs != noStore {
 		return Answer{}, Told(e.refused)
 	}
-	if op.Needs != NoStore {
-		if err := e.store.Current(); err != nil && (op.Needs == AStore || errors.Is(err, ErrNewerStore)) {
+	if op.Needs != noStore {
+		if err := e.store.Current(); err != nil && (op.Needs == aStore || errors.Is(err, ErrNewerStore)) {
 			return Answer{}, Told(err)
 		}
 	}
-	if op.Needs == AStore {
+	if op.Needs == aStore {
 		if err := e.sweepIfOwed(); err != nil {
 			return Answer{}, Told(err)
 		}
@@ -48,7 +48,7 @@ func (e *Engine) run(op Operation, in Input) (Answer, error) {
 }
 
 func (e *Engine) acted(op Operation, in Input) (Answer, error) {
-	if op.Level == Read || op.Needs != AStore {
+	if op.Level == Read || op.Needs != aStore {
 		return op.Run(e.on(), in)
 	}
 	var answer Answer
@@ -68,6 +68,6 @@ func (e *Engine) acted(op Operation, in Input) (Answer, error) {
 	return answer, err
 }
 
-func (e *Engine) on() On {
-	return On{Engine: e, Backups: BackupsAt(e.path), Path: e.path, Notes: e.notes, Home: e.home}
+func (e *Engine) on() workedOn {
+	return workedOn{Engine: e, Backups: backupsAt(e.path), Path: e.path, Notes: e.notes, Home: e.home}
 }

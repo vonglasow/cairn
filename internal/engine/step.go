@@ -8,8 +8,8 @@ import (
 	"cairn/internal/task"
 )
 
-// ErrDoneAndNotDone is returned when a step is asked to be ticked and unticked in one go.
-var ErrDoneAndNotDone = errors.New("a step is done or not done, not both")
+// errDoneAndNotDone is returned when a step is asked to be ticked and unticked in one go.
+var errDoneAndNotDone = errors.New("a step is done or not done, not both")
 
 var (
 	stepOfTask  = Argument{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"}
@@ -44,7 +44,7 @@ func (e *Engine) stepsAnswer(number int) (Answer, error) {
 }
 
 func placed(steps []task.Step, in Input) (int, error) {
-	at, _ := in.Whole("step")
+	at, _ := in.whole("step")
 	if at < 1 || at > len(steps) {
 		return 0, fmt.Errorf("step %d: %w", at, task.ErrNoSuchStep)
 	}
@@ -59,18 +59,18 @@ var StepNew = Operation{
 	Does:  "Add a step to a task, behind the steps it already has: a smaller piece of it, done or not. A step is not a task — it has no number, column, focus or time of its own. Answers the task's steps.",
 	Example: `cairn step new 3 "Write the spec"
 cairn step new 3 "Plan it" --done`,
-	Level:   Write,
-	Needs:   AStore,
-	Again:   DoesItAgain,
-	Answers: Steps{},
+	Level:   write,
+	Needs:   aStore,
+	Again:   doesItAgain,
+	Answers: steps{},
 	Takes: []Argument{
 		stepOfTask,
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the step is called"},
 		{Name: "done", Kind: Bool, Means: "add it already done"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
-		step, err := task.NewStep(in.Given["title"], in.Yes("done"))
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
+		step, err := task.NewStep(in.Given["title"], in.yes("done"))
 		if err != nil {
 			return Answer{}, err
 		}
@@ -88,10 +88,10 @@ var StepEdit = Operation{
 	Does:  "Tick a step of a task, untick it, or rename it, the step named by its place in the task. Answers the task's steps.",
 	Example: `cairn step edit 3 1 --done
 cairn step edit 3 2 --title "Write the tests first"`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Steps{},
+	Answers: steps{},
 	Takes: []Argument{
 		stepOfTask,
 		stepAtPlace,
@@ -99,27 +99,27 @@ cairn step edit 3 2 --title "Write the tests first"`,
 		{Name: "done", Kind: Bool, Means: "tick it"},
 		{Name: "not-done", Kind: Bool, Means: "untick it"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		if in.Yes("done") && in.Yes("not-done") {
-			return Answer{}, ErrDoneAndNotDone
+	Run: func(on workedOn, in Input) (Answer, error) {
+		if in.yes("done") && in.yes("not-done") {
+			return Answer{}, errDoneAndNotDone
 		}
 		if !in.Named("title") && !in.Named("done") && !in.Named("not-done") {
-			return Answer{}, ErrNothingToChange
+			return Answer{}, errNothingToChange
 		}
-		n, _ := in.Whole("number")
+		n, _ := in.whole("number")
 		return on.Engine.changingSteps(n, func(steps []task.Step) ([]task.Step, error) {
 			at, err := placed(steps, in)
 			if err != nil {
 				return nil, err
 			}
 			step := steps[at]
-			if given := in.Change("title"); given != nil {
+			if given := in.change("title"); given != nil {
 				if step, err = task.NewStep(*given, step.Done); err != nil {
 					return nil, err
 				}
 			}
-			if in.Yes("done") || in.Yes("not-done") {
-				step.Done = in.Yes("done")
+			if in.yes("done") || in.yes("not-done") {
+				step.Done = in.yes("done")
 			}
 			steps[at] = step
 			return steps, nil
@@ -134,13 +134,13 @@ var StepDelete = Operation{
 	Short:   "Take a step away from a task",
 	Does:    "Take a step away from a task, the step named by its place in the task; the ones behind it move up a place. Answers the task's steps.",
 	Example: "cairn step delete 3 2",
-	Level:   Write,
-	Needs:   AStore,
-	Again:   DoesItAgain,
-	Answers: Steps{},
+	Level:   write,
+	Needs:   aStore,
+	Again:   doesItAgain,
+	Answers: steps{},
 	Takes:   []Argument{stepOfTask, stepAtPlace},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		return on.Engine.changingSteps(n, func(steps []task.Step) ([]task.Step, error) {
 			at, err := placed(steps, in)
 			if err != nil {
@@ -151,40 +151,40 @@ var StepDelete = Operation{
 	},
 }
 
-// StepList names the steps of a task, each with its place.
-var StepList = Operation{
+// stepList names the steps of a task, each with its place.
+var stepList = Operation{
 	Thing:   "step",
 	Verb:    "list",
 	Short:   "Name the steps of a task",
 	Does:    "Name the steps of a task, in their order, each with its place and whether it is done.",
 	Example: "cairn step list 3",
 	Level:   Read,
-	Needs:   AStore,
-	Answers: Steps{},
+	Needs:   aStore,
+	Answers: steps{},
 	Takes:   []Argument{stepOfTask},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		return on.Engine.stepsAnswer(n)
 	},
 }
 
-// Steps is how a task's steps cross to a machine: the task they belong to, and each step with its place.
-type Steps struct {
+// steps is how a task's steps cross to a machine: the task they belong to, and each step with its place.
+type steps struct {
 	Task  int         `json:"task"`
-	Steps []StepShape `json:"steps"`
+	Steps []stepShape `json:"steps"`
 }
 
-// StepShape is one step as it crosses, with the place it is named by.
-type StepShape struct {
+// stepShape is one step as it crosses, with the place it is named by.
+type stepShape struct {
 	Place int    `json:"place"`
 	Title string `json:"title"`
 	Done  bool   `json:"done"`
 }
 
-func ofSteps(t task.Task) Steps {
-	said := Steps{Task: factsOf(t).Number, Steps: []StepShape{}}
+func ofSteps(t task.Task) steps {
+	said := steps{Task: factsOf(t).Number, Steps: []stepShape{}}
 	for i, s := range t.Carried().Steps {
-		said.Steps = append(said.Steps, StepShape{Place: i + 1, Title: s.Title, Done: s.Done})
+		said.Steps = append(said.Steps, stepShape{Place: i + 1, Title: s.Title, Done: s.Done})
 	}
 	return said
 }

@@ -5,7 +5,7 @@ import "strings"
 // FocusOp is what one key does to a card's focus: takes it up, or lets it go when it is already being worked on.
 func FocusOp(c Card) Operation {
 	if c.InFocus {
-		return TaskUnfocus
+		return taskUnfocus
 	}
 	return TaskFocus
 }
@@ -13,7 +13,7 @@ func FocusOp(c Card) Operation {
 // AwayOp is what one key does to a card's place on the board: takes it off, or brings it back when it is already off.
 func AwayOp(c Card) Operation {
 	if c.Archived {
-		return TaskUnarchive
+		return taskUnarchive
 	}
 	return TaskArchive
 }

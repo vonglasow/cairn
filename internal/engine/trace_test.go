@@ -43,7 +43,7 @@ func TestTraceList_untilADayKeepsTheWholeOfItAndNothingAfter(t *testing.T) {
 	addedAt(t, path, "Tuesday's first", time.Date(2026, 9, 29, 0, 0, 0, 0, time.Local))
 	addedAt(t, path, "Tuesday's last", time.Date(2026, 9, 29, 23, 59, 0, 0, time.Local))
 	addedAt(t, path, "Wednesday's", time.Date(2026, 9, 30, 0, 0, 0, 0, time.Local))
-	listed, err := Do(TraceList, path, Input{Given: map[string]string{"since": "2026-09-29", "until": "2026-09-29"}})
+	listed, err := Do(traceList, path, Input{Given: map[string]string{"since": "2026-09-29", "until": "2026-09-29"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestTraceList_untilADayKeepsTheWholeOfItAndNothingAfter(t *testing.T) {
 func TestTraceList_untilSomethingThatIsNotADayIsRefused(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	addedAt(t, path, "Monday's", time.Date(2026, 9, 28, 9, 0, 0, 0, time.Local))
-	_, err := Do(TraceList, path, given("until", "pasunjour"))
+	_, err := Do(traceList, path, given("until", "pasunjour"))
 	if !errors.Is(err, domain.ErrNotADay) {
 		t.Errorf("err = %v, want it refused as not a day", err)
 	}

@@ -39,7 +39,7 @@ func (a Answer) untimed() Answer {
 	}
 	if a.Viewed != nil {
 		v := *a.Viewed
-		v.Objectives = append([]ViewObjective(nil), v.Objectives...)
+		v.Objectives = append([]viewObjective(nil), v.Objectives...)
 		for i := range v.Objectives {
 			v.Objectives[i].TimeSpent = ""
 		}
@@ -50,7 +50,7 @@ func (a Answer) untimed() Answer {
 		a.SeriesShown = &s
 	}
 	if a.SeriesKept != nil {
-		kept := SeriesListed{Series: make([]Series, 0, len(a.SeriesKept.Series))}
+		kept := seriesListed{Series: make([]Series, 0, len(a.SeriesKept.Series))}
 		for _, s := range a.SeriesKept.Series {
 			kept.Series = append(kept.Series, s.untimed())
 		}

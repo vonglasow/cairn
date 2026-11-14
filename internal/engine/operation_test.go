@@ -34,8 +34,8 @@ func walFileGone(t *testing.T, path string) bool {
 func TestDo_opensTheStoreAndClosesItAgain(t *testing.T) {
 	path := storeAt(t)
 	op := Operation{
-		Needs: AStore,
-		Run: func(on On, _ Input) (Answer, error) {
+		Needs: aStore,
+		Run: func(on workedOn, _ Input) (Answer, error) {
 			if on.Engine == nil {
 				t.Fatal("on.Engine is nil, want an engine open on the store")
 			}
@@ -59,8 +59,8 @@ func TestDo_needsAStoreBehind_opensTheStoreWhateverShapeItIsIn(t *testing.T) {
 	path := behindStore(t)
 	called := false
 	op := Operation{
-		Needs: AStoreBehind,
-		Run: func(on On, _ Input) (Answer, error) {
+		Needs: aStoreBehind,
+		Run: func(on workedOn, _ Input) (Answer, error) {
 			called = true
 			if on.Engine == nil {
 				t.Fatal("on.Engine is nil, want an engine open on the store")
@@ -83,8 +83,8 @@ func TestDo_needsAStoreBehind_opensTheStoreWhateverShapeItIsIn(t *testing.T) {
 func TestDo_needsAStore_reportsWhenTheStoreIsBehind(t *testing.T) {
 	path := behindStore(t)
 	op := Operation{
-		Needs: AStore,
-		Run: func(On, Input) (Answer, error) {
+		Needs: aStore,
+		Run: func(workedOn, Input) (Answer, error) {
 			t.Fatal("Run was called on a store that should have been refused")
 			return Answer{}, nil
 		},
@@ -102,8 +102,8 @@ func TestDo_needsAStore_reportsWhenTheStoreIsBehind(t *testing.T) {
 func TestDo_needsAStore_passesThroughAnErrorThatIsNotAboutBeingBehind(t *testing.T) {
 	path := garbageStore(t)
 	op := Operation{
-		Needs: AStore,
-		Run: func(On, Input) (Answer, error) {
+		Needs: aStore,
+		Run: func(workedOn, Input) (Answer, error) {
 			t.Fatal("Run was called on a store that could not be opened")
 			return Answer{}, nil
 		},
@@ -121,8 +121,8 @@ func TestDo_needsAStore_passesThroughAnErrorThatIsNotAboutBeingBehind(t *testing
 func TestDo_needsNoStore_opensNothingButHandsBackBackups(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	op := Operation{
-		Needs: NoStore,
-		Run: func(on On, _ Input) (Answer, error) {
+		Needs: noStore,
+		Run: func(on workedOn, _ Input) (Answer, error) {
 			if on.Engine != nil {
 				t.Errorf("on.Engine = %v, want nil: nothing should have been opened", on.Engine)
 			}
@@ -142,8 +142,8 @@ func TestDo_closesTheStoreEvenWhenRunFails(t *testing.T) {
 	path := storeAt(t)
 	failure := errors.New("boom")
 	op := Operation{
-		Needs: AStore,
-		Run: func(on On, _ Input) (Answer, error) {
+		Needs: aStore,
+		Run: func(on workedOn, _ Input) (Answer, error) {
 			if on.Engine == nil {
 				t.Fatal("on.Engine is nil, want an engine open on the store")
 			}
@@ -166,9 +166,9 @@ func TestDo_closesTheStoreEvenWhenRunFails(t *testing.T) {
 func TestDo_refusesANumberThatDoesNotParseBeforeOpeningTheStore(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	op := Operation{
-		Needs: AStore,
+		Needs: aStore,
 		Takes: []Argument{{Name: "number", Kind: Number, Of: "a task"}},
-		Run: func(On, Input) (Answer, error) {
+		Run: func(workedOn, Input) (Answer, error) {
 			t.Fatal("Run was called on a number that does not parse")
 			return Answer{}, nil
 		},
@@ -198,20 +198,20 @@ func TestInput_tellsNotNamedFromNamedAsNothing(t *testing.T) {
 		}
 	}
 
-	if got := in.Change("priority"); got != nil {
+	if got := in.change("priority"); got != nil {
 		t.Errorf(`Change("priority") = %q, want nothing: it was never named`, *got)
 	}
-	if got := in.Change("desc"); got == nil || *got != "" {
+	if got := in.change("desc"); got == nil || *got != "" {
 		t.Errorf(`Change("desc") = %v, want a pointer to "": it was named as nothing`, got)
 	}
-	if got := in.Change("state"); got == nil || *got != "todo" {
+	if got := in.change("state"); got == nil || *got != "todo" {
 		t.Errorf(`Change("state") = %v, want "todo"`, got)
 	}
 
-	if got := in.Changed("priority"); got != nil {
+	if got := in.changed("priority"); got != nil {
 		t.Errorf(`Changed("priority") = %v, want nothing: it was never named`, *got)
 	}
-	if got := in.Changed("label"); got == nil || len(*got) != 0 {
+	if got := in.changed("label"); got == nil || len(*got) != 0 {
 		t.Errorf(`Changed("label") = %v, want an empty set: it was named as nothing`, got)
 	}
 }
@@ -260,7 +260,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"task_export":        {{Exported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(domain.Held{})}},
 		"task_import":        {{Imported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(domain.Held{})}},
 		"plugin_write":       {{Plugin: func() *string { s := "/claude-plugin"; return &s }()}},
-		"plugin_show":        {{Install: &PluginShown{Version: "v0.12.0", Install: installFromTag("v0.12.0")}}},
+		"plugin_show":        {{Install: &pluginShown{Version: "v0.12.0", Install: installFromTag("v0.12.0")}}},
 		"app_install":        {{Installed: func() *string { s := "/Applications/cairn.app"; return &s }(), Runs: func() *string { s := "/usr/local/bin/cairn"; return &s }(), OpenedFrom: func() *string { s := "the Dock"; return &s }()}},
 		"migration_list":     {{Changes: []migration.Migration{}, Holds: of(domain.Held{})}},
 		"migration_show":     {{Change: of(migration.Migration{})}},
@@ -269,8 +269,8 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"config_show":        {{Config: &Config{}}},
 		"config_init":        {{Written: func() *string { s := "/config.toml"; return &s }()}},
 		"workspace_list":     {{Workspaces: &Workspaces{}}},
-		"workspace_add":      {{WorkspaceAdded: &WorkspaceAdded{}}},
-		"workspace_use":      {{WorkspaceUsed: &WorkspaceUsed{}}},
+		"workspace_add":      {{WorkspaceAdded: &workspaceAdded{}}},
+		"workspace_use":      {{WorkspaceUsed: &workspaceUsed{}}},
 		"workspace_show":     {{WorkspaceShown: &WorkspaceShown{}}},
 		"debug_report":       {{Written: func() *string { s := "/cairn-debug.zip"; return &s }(), Packed: of(2)}},
 		"timesheet_show":     {{Sheet: &trace.Sheet{}}},
@@ -283,12 +283,12 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"label_rename":       {{Labels: &[]LabelCarried{}}},
 		"view_list":          {{ViewsKept: &Views{}}},
 		"task_skip":          {{Task: of(task.Task{})}},
-		"series_list":        {{SeriesKept: &SeriesListed{}}},
+		"series_list":        {{SeriesKept: &seriesListed{}}},
 		"series_show":        {{SeriesShown: &Series{}}},
 		"series_edit":        {{SeriesShown: &Series{}}},
 		"series_stop":        {{SeriesShown: &Series{}}},
 		"series_resume":      {{SeriesShown: &Series{}}},
-		"series_delete":      {{SeriesGone: &SeriesDeleted{}}},
+		"series_delete":      {{SeriesGone: &seriesDeleted{}}},
 		"step_new":           {{Task: of(task.Task{})}},
 		"step_list":          {{Task: of(task.Task{})}},
 		"step_edit":          {{Task: of(task.Task{})}},
@@ -323,10 +323,10 @@ func TestAnswers_everyOperationAnswersAnObject(t *testing.T) {
 
 func TestCheck_refusesARequiredListGivenEmpty(t *testing.T) {
 	for _, op := range []Operation{TaskSearch, ObjectiveSearch} {
-		if err := op.Check(Input{Listed: map[string][]string{"named": {}}}); err == nil {
+		if err := op.check(Input{Listed: map[string][]string{"named": {}}}); err == nil {
 			t.Errorf("%s accepted an empty list of things to look for", op.Name())
 		}
-		if err := op.Check(Input{Listed: map[string][]string{"named": {"spec"}}}); err != nil {
+		if err := op.check(Input{Listed: map[string][]string{"named": {"spec"}}}); err != nil {
 			t.Errorf("%s refused something to look for: %v", op.Name(), err)
 		}
 	}
@@ -334,7 +334,7 @@ func TestCheck_refusesARequiredListGivenEmpty(t *testing.T) {
 
 func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
 	e := openEngine(t)
-	if _, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, domain.ErrNotAState) {
+	if _, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, domain.ErrNotAState) {
 		t.Errorf("task list --state bogus = %v, want ErrNotAState, as an edit answers", err)
 	}
 }
@@ -342,15 +342,15 @@ func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
 func TestCheck_refusesADayThatIsNotOne(t *testing.T) {
 	op := Operation{
 		Thing: "task", Verb: "list",
-		Takes: []Argument{{Name: "deadline-before", Kind: Day, Means: "due on or before this day"}},
+		Takes: []Argument{{Name: "deadline-before", Kind: day, Means: "due on or before this day"}},
 	}
-	if err := op.Check(Input{Given: map[string]string{"deadline-before": "soon"}}); err == nil {
+	if err := op.check(Input{Given: map[string]string{"deadline-before": "soon"}}); err == nil {
 		t.Error("a day that is not one was allowed through")
 	}
-	if err := op.Check(Input{Given: map[string]string{"deadline-before": "2026-10-01"}}); err != nil {
+	if err := op.check(Input{Given: map[string]string{"deadline-before": "2026-10-01"}}); err != nil {
 		t.Errorf("a day that is one was refused: %v", err)
 	}
-	if err := op.Check(Input{Given: map[string]string{"deadline-before": ""}}); err != nil {
+	if err := op.check(Input{Given: map[string]string{"deadline-before": ""}}); err != nil {
 		t.Errorf("an empty day was refused: %v", err)
 	}
 }
@@ -361,7 +361,7 @@ func TestEveryWriteSaysWhatCallingItAgainDoes(t *testing.T) {
 			t.Errorf("%s writes and does not say what calling it again does", op.Name())
 		}
 	}
-	for op, want := range map[*Operation]Again{&TaskNew: DoesItAgain, &TaskEdit: ChangesNothingMore, &TimesheetAdd: DoesItAgain} {
+	for op, want := range map[*Operation]again{&TaskNew: doesItAgain, &TaskEdit: ChangesNothingMore, &TimesheetAdd: doesItAgain} {
 		if op.Again != want {
 			t.Errorf("%s: Again = %v, want %v", op.Name(), op.Again, want)
 		}
@@ -385,17 +385,17 @@ func TestOperation_waitingNamesThePositionalArgumentsOnly(t *testing.T) {
 		{Name: "state"},
 	}}
 	err := op.waiting(given("number", "3", "state", "done"))
-	if want := "task 3 " + ErrNotConfirmed.Error(); err == nil || err.Error() != want {
+	if want := "task 3 " + errNotConfirmed.Error(); err == nil || err.Error() != want {
 		t.Errorf("err = %v, want %q", err, want)
 	}
 }
 
 func TestOperation_waitingSaysASweepOnlyWhenNothingIsNamed(t *testing.T) {
 	op := Operation{Thing: "task", Sweeps: func(Input) bool { return true }, Takes: []Argument{{Name: "number", Positional: true}}}
-	if err := op.waiting(given()); err == nil || err.Error() != "every task it reaches "+ErrNotConfirmed.Error() {
+	if err := op.waiting(given()); err == nil || err.Error() != "every task it reaches "+errNotConfirmed.Error() {
 		t.Errorf("nothing named: err = %v", err)
 	}
-	if err := op.waiting(given("number", "3")); err == nil || err.Error() != "task 3 "+ErrNotConfirmed.Error() {
+	if err := op.waiting(given("number", "3")); err == nil || err.Error() != "task 3 "+errNotConfirmed.Error() {
 		t.Errorf("a number named: err = %v", err)
 	}
 }
@@ -406,7 +406,7 @@ func TestAuthor_aNameSetEmptyIsTheOneLoggedIn(t *testing.T) {
 		t.Skip("no user to compare with:", err)
 	}
 	empty := Home{Lookup: func(k string) (string, bool) { return "", k == AuthorVariable }}
-	if got := Author(empty); got != me.Username {
+	if got := author(empty); got != me.Username {
 		t.Errorf("named empty, the author is %q, want %q", got, me.Username)
 	}
 }

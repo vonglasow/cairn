@@ -11,11 +11,11 @@ import (
 	"cairn/internal/trace"
 )
 
-// ErrDayToCome is returned when a day has not happened yet: work cannot be said to have been done tomorrow.
-var ErrDayToCome = errors.New("that has not happened yet")
+// errDayToCome is returned when a day has not happened yet: work cannot be said to have been done tomorrow.
+var errDayToCome = errors.New("that has not happened yet")
 
-// ErrNotATime is returned when time added by hand is not a length of time, or is none at all.
-var ErrNotATime = errors.New("time added is an amount and a unit, as in 1h or 45m — less than nothing, as in -30m, takes some back")
+// errNotATime is returned when time added by hand is not a length of time, or is none at all.
+var errNotATime = errors.New("time added is an amount and a unit, as in 1h or 45m — less than nothing, as in -30m, takes some back")
 
 func dayOf(in Input, name string, now time.Time) (time.Time, error) {
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -29,7 +29,7 @@ func dayOf(in Input, name string, now time.Time) (time.Time, error) {
 	}
 	day := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, now.Location())
 	if day.After(today) {
-		return time.Time{}, fmt.Errorf("%q: %w", given, ErrDayToCome)
+		return time.Time{}, fmt.Errorf("%q: %w", given, errDayToCome)
 	}
 	return day, nil
 }
@@ -56,7 +56,7 @@ func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, map[
 	titles, gone := map[int]string{}, map[int]bool{}
 	for _, number := range slices.Sorted(maps.Keys(worked)) {
 		t, err := e.tasks.Find(number)
-		if errors.Is(err, ErrNoSuchTask) {
+		if errors.Is(err, errNoSuchTask) {
 			titles[number], gone[number] = trace.TitleWent(acts, number), true
 			continue
 		}
@@ -77,13 +77,13 @@ var TimesheetShow = Operation{
 	Example: `cairn timesheet show
 cairn timesheet show --since 2026-09-01 --until 2026-09-07`,
 	Level:   Read,
-	Needs:   AStore,
+	Needs:   aStore,
 	Answers: Timesheet{},
 	Takes: []Argument{
-		{Name: "since", Kind: Day, Means: "the first day to say; today when left out"},
-		{Name: "until", Kind: Day, Means: "the last day to say; today when left out"},
+		{Name: "since", Kind: day, Means: "the first day to say; today when left out"},
+		{Name: "until", Kind: day, Means: "the last day to say; today when left out"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		now := time.Now()
 		first, err := dayOf(in, "since", now)
 		if err != nil {
@@ -109,20 +109,20 @@ var TimesheetAdd = Operation{
 	Does:  "Add time spent on a task without it being in focus — a meeting, an afternoon nobody focused — to the day it was spent. Less than nothing takes some back. Answers that day's timesheet.",
 	Example: `cairn timesheet add 3 1h30m
 cairn timesheet add 3 --on 2026-09-01 -- -30m`,
-	Level:   Write,
-	Needs:   AStore,
-	Again:   DoesItAgain,
+	Level:   write,
+	Needs:   aStore,
+	Again:   doesItAgain,
 	Answers: Timesheet{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the task the time was spent on"},
 		{Name: "time", Kind: Text, Positional: true, Required: true, Means: "how long: 1h, 45m, 1h30m; a length under zero, -30m, takes some back"},
-		{Name: "on", Kind: Day, Means: "the day it was spent; today when left out"},
+		{Name: "on", Kind: day, Means: "the day it was spent; today when left out"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		length, err := time.ParseDuration(in.Given["time"])
 		if err != nil || length == 0 {
-			return Answer{}, fmt.Errorf("%q: %w", in.Given["time"], ErrNotATime)
+			return Answer{}, fmt.Errorf("%q: %w", in.Given["time"], errNotATime)
 		}
 		day, err := dayOf(in, "on", time.Now())
 		if err != nil {

@@ -9,8 +9,8 @@ import (
 	"cairn/internal/domain"
 )
 
-// Any is the value a filter opens on: it narrows nothing.
-const Any = "any"
+// anyValue is the value a filter opens on: it narrows nothing.
+const anyValue = "any"
 
 // Filter is one of the narrowings a board offers on top of its search: what it is called, the argument of task list it stands for, the values it walks through and how each reads, the one it is on, and for a filter that takes several, the values ticked together.
 type Filter struct {
@@ -47,8 +47,8 @@ func (f Filter) shownOf(value string) string {
 	return value
 }
 
-// Value is what the filter is on.
-func (f Filter) Value() string { return f.Values[f.At] }
+// value is what the filter is on.
+func (f Filter) value() string { return f.Values[f.At] }
 
 // Says is how what the filter is on reads.
 func (f Filter) Says() string { return f.Shown[f.At] }
@@ -118,7 +118,7 @@ func offered(name, arg string, values, shown []string) Filter {
 	if shown == nil {
 		shown = values
 	}
-	return Filter{Name: name, Arg: arg, Values: append([]string{Any}, values...), Shown: append([]string{Any}, shown...)}
+	return Filter{Name: name, Arg: arg, Values: append([]string{anyValue}, values...), Shown: append([]string{anyValue}, shown...)}
 }
 
 // On is the filters with the one standing for an argument put on a value it offers.

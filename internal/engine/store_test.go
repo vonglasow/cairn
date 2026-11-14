@@ -28,7 +28,7 @@ func storeAt(t *testing.T, titles ...string) string {
 }
 
 func TestBackups_makesListsAndFindsABackup(t *testing.T) {
-	vault := BackupsAt(storeAt(t, "Write the spec"))
+	vault := backupsAt(storeAt(t, "Write the spec"))
 
 	made, err := vault.Make()
 	if err != nil {
@@ -72,7 +72,7 @@ func TestBackups_makesListsAndFindsABackup(t *testing.T) {
 }
 
 func TestBackups_deletesABackup(t *testing.T) {
-	vault := BackupsAt(storeAt(t, "Write the spec"))
+	vault := backupsAt(storeAt(t, "Write the spec"))
 	made, err := vault.Make()
 	if err != nil {
 		t.Fatalf("Make: %v", err)
@@ -80,14 +80,14 @@ func TestBackups_deletesABackup(t *testing.T) {
 	if err := vault.Delete(made.Number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if _, err := vault.Find(made.Number); !errors.Is(err, ErrNoSuchBackup) {
+	if _, err := vault.Find(made.Number); !errors.Is(err, errNoSuchBackup) {
 		t.Errorf("err = %v, want ErrNoSuchBackup", err)
 	}
 }
 
 func TestBackups_putsABackupBack(t *testing.T) {
 	path := storeAt(t, "Write the spec")
-	vault := BackupsAt(path)
+	vault := backupsAt(path)
 	made, err := vault.Make()
 	if err != nil {
 		t.Fatalf("Make: %v", err)
@@ -122,7 +122,7 @@ func TestBackups_putsABackupBack(t *testing.T) {
 }
 
 func TestBackups_saysThereIsNoBackupToPutBack(t *testing.T) {
-	if _, err := BackupsAt(storeAt(t)).Latest(); !errors.Is(err, ErrNoBackup) {
+	if _, err := backupsAt(storeAt(t)).Latest(); !errors.Is(err, errNoBackup) {
 		t.Errorf("err = %v, want ErrNoBackup", err)
 	}
 }
@@ -187,7 +187,7 @@ func behindStore(t *testing.T) string {
 
 func TestEngine_rollsBackTheLastChangeAndBackupsFirst(t *testing.T) {
 	path := behindStore(t)
-	backups, err := BackupsAt(path).All()
+	backups, err := backupsAt(path).All()
 	if err != nil {
 		t.Fatalf("All: %v", err)
 	}
@@ -274,7 +274,7 @@ func TestTold_saysWhatToRunAboutAStoreThatIsBehind(t *testing.T) {
 }
 
 func TestTold_leavesEveryOtherErrorAlone(t *testing.T) {
-	for _, err := range []error{ErrNewerStore, ErrNotAStore, errors.New("something else")} {
+	for _, err := range []error{ErrNewerStore, errNotAStore, errors.New("something else")} {
 		if got := Told(err); got.Error() != err.Error() {
 			t.Errorf("Told(%v) = %v, want it left alone", err, got)
 		}

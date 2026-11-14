@@ -60,13 +60,13 @@ func TestLinkIsAppliedToTheTask(t *testing.T) {
 func TestLinkToItselfOrToNothingIsRefused(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "1")
-	if _, err := e.edit(1, linking(t, "1")); !errors.Is(err, ErrLinkedToItself) {
+	if _, err := e.edit(1, linking(t, "1")); !errors.Is(err, errLinkedToItself) {
 		t.Errorf("edit 1 link 1: %v, want ErrLinkedToItself", err)
 	}
-	if _, err := e.edit(1, linking(t, "9")); !errors.Is(err, ErrNoSuchTask) {
+	if _, err := e.edit(1, linking(t, "9")); !errors.Is(err, errNoSuchTask) {
 		t.Errorf("edit 1 link 9: %v, want ErrNoSuchTask", err)
 	}
-	if _, err := e.add("x", linking(t, "9")); !errors.Is(err, ErrNoSuchTask) {
+	if _, err := e.add("x", linking(t, "9")); !errors.Is(err, errNoSuchTask) {
 		t.Errorf("add link 9: %v, want ErrNoSuchTask", err)
 	}
 	if all, err := e.tasks.All(); err != nil || len(all) != 1 {

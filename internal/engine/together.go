@@ -13,7 +13,7 @@ func alsoOf(of string) Argument {
 }
 
 func together(in Input) ([]int, error) {
-	first, _ := in.Whole("number")
+	first, _ := in.whole("number")
 	numbers := []int{first}
 	for _, raw := range in.Listed["also"] {
 		more, err := strconv.Atoi(strings.TrimSpace(raw))

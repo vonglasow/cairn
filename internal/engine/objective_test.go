@@ -67,7 +67,7 @@ func TestObjective_newAndListAnswerTheObjectives(t *testing.T) {
 	if made.Objective == nil {
 		t.Fatal("a new objective answers none")
 	}
-	listed, err := Do(ObjectiveList, path, given())
+	listed, err := Do(objectiveList, path, given())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestObjectiveDelete_carryingTasksIsNotNamedByAView(t *testing.T) {
 	addObjective(t, e, "Ship")
 	serving(t, e, "one", 1)
 	err := objectiveDeleted(e, map[string]string{"number": "1"})
-	if !errors.Is(err, ErrObjectiveCarriesTasks) || errors.Is(err, ErrObjectiveNamedByAView) {
+	if !errors.Is(err, errObjectiveCarriesTasks) || errors.Is(err, errObjectiveNamedByAView) {
 		t.Errorf("refused as %v", err)
 	}
 }
@@ -153,7 +153,7 @@ func TestObjectiveDelete_aSubObjectiveCarryingTasksAsksForThem(t *testing.T) {
 		t.Fatal(err)
 	}
 	serving(t, e, "one", 2)
-	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, ErrObjectiveCarriesTasks) {
+	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, errObjectiveCarriesTasks) {
 		t.Errorf("refused as %v", err)
 	}
 }
@@ -185,7 +185,7 @@ func TestObjectiveDelete_aSubObjectiveWithNoTaskAsksOnlyForItself(t *testing.T) 
 	if _, err := e.Ask(ObjectiveNew, given("title", "Write", "parent", "1")); err != nil {
 		t.Fatal(err)
 	}
-	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, ErrObjectiveHoldsSubObjectives) || errors.Is(err, ErrObjectiveCarriesTasks) {
+	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, errObjectiveHoldsSubObjectives) || errors.Is(err, errObjectiveCarriesTasks) {
 		t.Errorf("refused as %v", err)
 	}
 }

@@ -56,7 +56,7 @@ func TestLocate_aFlagComesBeforeTheWorkspaceTheEnvironmentNames(t *testing.T) {
 func TestLocate_anUnknownWorkspaceInTheEnvironmentIsRefusedNamingTheVariable(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, map[string]string{WorkspaceVariable: "play"}, "w", "h")
 	_, err := Locate(h)
-	if !errors.Is(err, ErrNoSuchWorkspace) || !strings.Contains(err.Error(), WorkspaceVariable) || !strings.Contains(err.Error(), `"play"`) || !strings.Contains(err.Error(), "home, work") {
+	if !errors.Is(err, errNoSuchWorkspace) || !strings.Contains(err.Error(), WorkspaceVariable) || !strings.Contains(err.Error(), `"play"`) || !strings.Contains(err.Error(), "home, work") {
 		t.Errorf("Locate = %v, want CAIRN_WORKSPACE play refused, naming home and work", err)
 	}
 }

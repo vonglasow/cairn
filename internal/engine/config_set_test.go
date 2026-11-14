@@ -263,7 +263,7 @@ func TestConfigFill_refusesSettingsThatSayWhereTheStoreIs(t *testing.T) {
 }
 
 func TestConfigChangedText_writesATrueOrFalseUnquoted(t *testing.T) {
-	if got := configChangedText(ConfigChanged{Set: true, Key: "window.keep_sizes", Value: "true", File: "f"}); got != "window.keep_sizes = true, written in f\n" {
+	if got := configChangedText(configChanged{Set: true, Key: "window.keep_sizes", Value: "true", File: "f"}); got != "window.keep_sizes = true, written in f\n" {
 		t.Errorf("said %q", got)
 	}
 }

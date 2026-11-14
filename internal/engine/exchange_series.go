@@ -16,7 +16,7 @@ type seriesFiled struct {
 	From     string      `json:"from"`
 	Stopped  string      `json:"stopped,omitempty"`
 	Template Template    `json:"template"`
-	Acts     []SeriesAct `json:"acts,omitempty"`
+	Acts     []seriesAct `json:"acts,omitempty"`
 }
 
 var seriesDid = []string{"made", "missed", "skipped", "changed", "stopped", "resumed", "deleted"}
@@ -64,12 +64,12 @@ func checkedSeries(read []seriesFiled, objectives map[int]bool) error {
 	seen := map[int]bool{}
 	for _, s := range read {
 		if seen[s.Number] {
-			return fmt.Errorf("%w: series %d is in the file twice", ErrNotAnExport, s.Number)
+			return fmt.Errorf("%w: series %d is in the file twice", errNotAnExport, s.Number)
 		}
 		seen[s.Number] = true
 		for _, o := range s.Template.Objectives {
 			if !objectives[o] {
-				return fmt.Errorf("%w: series %d names objective %d — objective %d is not in the file", ErrExportPointsOutside, s.Number, o, o)
+				return fmt.Errorf("%w: series %d names objective %d — objective %d is not in the file", errExportPointsOutside, s.Number, o, o)
 			}
 		}
 		if _, err := templateFiled(s); err != nil {
@@ -116,9 +116,9 @@ func templateFiled(s seriesFiled) (store.Series, error) {
 		Estimate: estimate, Steps: listed(s.Template.Steps), Labels: labels, Arrives: arrivalOf(domain.State(s.Template.Arrives))}, nil
 }
 
-func actFiled(a SeriesAct) (store.SeriesAct, error) {
+func actFiled(a seriesAct) (store.SeriesAct, error) {
 	if !slices.Contains(seriesDid, a.Did) {
-		return store.SeriesAct{}, fmt.Errorf("%w: %q is nothing a series does — %v", ErrNotAnExport, a.Did, seriesDid)
+		return store.SeriesAct{}, fmt.Errorf("%w: %q is nothing a series does — %v", errNotAnExport, a.Did, seriesDid)
 	}
 	if _, err := domain.ParseDeadline(a.Day); err != nil {
 		return store.SeriesAct{}, err
@@ -127,7 +127,7 @@ func actFiled(a SeriesAct) (store.SeriesAct, error) {
 	if a.At != "" {
 		read, err := time.Parse(time.RFC3339, a.At)
 		if err != nil {
-			return store.SeriesAct{}, fmt.Errorf("%w: the moment %q is written %s", ErrNotAnExport, a.At, time.RFC3339)
+			return store.SeriesAct{}, fmt.Errorf("%w: the moment %q is written %s", errNotAnExport, a.At, time.RFC3339)
 		}
 		at = read
 	}

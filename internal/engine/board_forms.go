@@ -10,7 +10,7 @@ import (
 
 // NewTaskFields is the form of a task about to be added on a column: that column already filled in — a task added there belongs there, and asking again would be asking something the board already knows — and normal priority, which is what a task carries when nothing is said.
 func NewTaskFields(state string) []Field {
-	return TaskFields(Card{State: state, Priority: string(domain.Normal)})
+	return taskFields(Card{State: state, Priority: string(domain.Normal)})
 }
 
 // LinkedTaskFields is the form of a task about to be added linked to another: in todo, where a task that came of one done starts again, and the link already written.
@@ -53,7 +53,7 @@ func NewSubGoalFields(parent int) []Field {
 
 // EditFields is the form of a task being changed, its steps included.
 func EditFields(c Card) []Field {
-	return append(TaskFields(c), stepsField(PartsWritten(Hanging(c))))
+	return append(taskFields(c), stepsField(PartsWritten(Hanging(c))))
 }
 
 // AddingFields is the form of a task about to be added in a window: the new task's fields and, last, its steps — empty, and the same field its edit form has — so a task whose steps were already written down goes in with them.
@@ -72,7 +72,7 @@ func Saved(fields []Field, adding bool, number int, add, edit Operation) (Operat
 	if adding {
 		op, sent = add, fields
 	}
-	asked := Asked(sent, op)
+	asked := inputOfFields(sent, op)
 	title, _ := valueOf(fields, "title")
 	asked.Given["title"] = strings.TrimSpace(title)
 	if !adding {

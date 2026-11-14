@@ -10,18 +10,18 @@ import (
 	"cairn/internal/task"
 )
 
-// Sets are the members of what a task or an objective carries that one change moved the same way.
-type Sets struct {
+// sets are the members of what a task or an objective carries that one change moved the same way.
+type sets struct {
 	Labels     []string `json:"labels,omitempty" jsonschema:"the labels, lower case"`
 	Blockers   []int    `json:"blockers,omitempty" jsonschema:"the numbers of the tasks in its way"`
 	Links      []int    `json:"links,omitempty" jsonschema:"the numbers of the tasks it is linked to"`
 	Objectives []int    `json:"objectives,omitempty" jsonschema:"the numbers of the objectives it serves"`
 }
 
-// Moved is what a change put on a task or an objective, and what it took off.
-type Moved struct {
-	Added    Sets
-	TakenOff Sets
+// moves is what a change put on a task or an objective, and what it took off.
+type moves struct {
+	Added    sets
+	TakenOff sets
 }
 
 func between[T comparable](was, now []T) (added, gone []T) {
@@ -38,9 +38,9 @@ func between[T comparable](was, now []T) (added, gone []T) {
 	return added, gone
 }
 
-func movedOf(was, now task.Task) *Moved {
+func movedOf(was, now task.Task) *moves {
 	before, after := factsOf(was), factsOf(now)
-	var m Moved
+	var m moves
 	m.Added.Labels, m.TakenOff.Labels = between(before.Labels, after.Labels)
 	m.Added.Blockers, m.TakenOff.Blockers = between(before.Blockers, after.Blockers)
 	m.Added.Links, m.TakenOff.Links = between(before.Linked, after.Linked)
@@ -48,38 +48,38 @@ func movedOf(was, now task.Task) *Moved {
 	return m.said()
 }
 
-func movedOfObjective(was, now objective.Objective) *Moved {
-	var m Moved
+func movedOfObjective(was, now objective.Objective) *moves {
+	var m moves
 	m.Added.Labels, m.TakenOff.Labels = between(factsOfObjective(was).Labels, factsOfObjective(now).Labels)
 	return m.said()
 }
 
-func (m Moved) said() *Moved {
+func (m moves) said() *moves {
 	if m.Added.empty() && m.TakenOff.empty() {
 		return nil
 	}
 	return &m
 }
 
-func (s Sets) empty() bool {
+func (s sets) empty() bool {
 	return len(s.Labels) == 0 && len(s.Blockers) == 0 && len(s.Links) == 0 && len(s.Objectives) == 0
 }
 
-func (m *Moved) added() *Sets {
+func (m *moves) added() *sets {
 	if m == nil || m.Added.empty() {
 		return nil
 	}
 	return &m.Added
 }
 
-func (m *Moved) takenOff() *Sets {
+func (m *moves) takenOff() *sets {
 	if m == nil || m.TakenOff.empty() {
 		return nil
 	}
 	return &m.TakenOff
 }
 
-func movedText(m *Moved) string {
+func movedText(m *moves) string {
 	if m == nil {
 		return ""
 	}

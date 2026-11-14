@@ -106,7 +106,7 @@ func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
 	if _, err := held.Ask(TaskNew, given("title", "Write the spec")); err != nil {
 		t.Fatal(err)
 	}
-	made, err := BackupsAt(path).Make()
+	made, err := backupsAt(path).Make()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := BackupsAt(path).Restore(made.Number); err != nil {
+	if err := backupsAt(path).Restore(made.Number); err != nil {
 		t.Fatal(err)
 	}
 	if after, err := held.Version(); err != nil || after <= before {

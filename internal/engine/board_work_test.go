@@ -17,7 +17,7 @@ func TestAGoalIsToldItHasADescription(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading it: %v", err)
 	}
-	if plainGoal.Described() {
+	if plainGoal.described() {
 		t.Fatal("an objective with nothing written about it was said to have a description")
 	}
 
@@ -27,7 +27,7 @@ func TestAGoalIsToldItHasADescription(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading it: %v", err)
 	}
-	if !described.Described() {
+	if !described.described() {
 		t.Fatal("an objective with something written about it was said to have none")
 	}
 }
@@ -74,7 +74,7 @@ func TestLook_saysOnEachCardHowManyTasksItIsInTheWayOf(t *testing.T) {
 	other.Numbered(2)
 	f := newFake()
 	f.tasks = []task.Task{told.Task(), other.Task()}
-	f.chosen = map[int]Choosing{1: {Blocks: []int{2, 3}}}
+	f.chosen = map[int]choosing{1: {Blocks: []int{2, 3}}}
 	s, err := Look(f)
 	if err != nil {
 		t.Fatal(err)

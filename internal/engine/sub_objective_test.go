@@ -51,7 +51,7 @@ func TestEngine_putsAnObjectiveUnderAnother(t *testing.T) {
 
 func TestEngine_refusesAParentThatIsNotThere(t *testing.T) {
 	e := openEngine(t)
-	if _, err := e.addObjective("Enclosure", ObjectiveChanges{Parent: of("9")}); !errors.Is(err, ErrNoSuchObjective) {
+	if _, err := e.addObjective("Enclosure", ObjectiveChanges{Parent: of("9")}); !errors.Is(err, errNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -60,7 +60,7 @@ func TestEngine_refusesAParentThatIsNoNumber(t *testing.T) {
 	e := openEngine(t)
 	addObjective(t, e, "Home automation")
 	for _, said := range []string{"home", "0", "-1"} {
-		if _, err := e.editObjective(1, ObjectiveChanges{Parent: of(said)}); !errors.Is(err, ErrObjectiveRequired) {
+		if _, err := e.editObjective(1, ObjectiveChanges{Parent: of(said)}); !errors.Is(err, errObjectiveRequired) {
 			t.Errorf("parent %q: err = %v, want ErrObjectiveRequired", said, err)
 		}
 	}
@@ -223,7 +223,7 @@ func TestObjectiveDelete_asksWhatGoesWithASubObjectiveOrATask(t *testing.T) {
 	servingAll(t, e, "Print the case", 2)
 	servingAll(t, e, "Wiring", 1)
 	_, err := deleting(t, e, map[string]string{"number": "1"}, nil)
-	if !errors.Is(err, ErrObjectiveCarriesTasks) || !errors.Is(err, ErrObjectiveHoldsSubObjectives) {
+	if !errors.Is(err, errObjectiveCarriesTasks) || !errors.Is(err, errObjectiveHoldsSubObjectives) {
 		t.Fatalf("err = %v, want it to carry tasks and hold sub-objectives", err)
 	}
 	for _, said := range []string{"#2  Enclosure", "#1  Print the case", "#2  Wiring", "--sub-objectives keep|delete", "--tasks detach|delete"} {
@@ -232,7 +232,7 @@ func TestObjectiveDelete_asksWhatGoesWithASubObjectiveOrATask(t *testing.T) {
 		}
 	}
 	_, err = deleting(t, e, map[string]string{"number": "1", "sub-objectives": "keep"}, nil)
-	if !errors.Is(err, ErrObjectiveCarriesTasks) || errors.Is(err, ErrObjectiveHoldsSubObjectives) || strings.Contains(err.Error(), "--sub-objectives") {
+	if !errors.Is(err, errObjectiveCarriesTasks) || errors.Is(err, errObjectiveHoldsSubObjectives) || strings.Contains(err.Error(), "--sub-objectives") {
 		t.Errorf("with the sub-objectives seen to: err = %v, want only the tasks asked about", err)
 	}
 	if all, _ := e.listObjectives(); len(all) != 2 {
@@ -292,13 +292,13 @@ func TestObjectiveDelete_refusesANumberThatIsNoSubObjectiveOfIt(t *testing.T) {
 	under(t, e, "Enclosure", "1")
 	addObjective(t, e, "Garden")
 	_, err := deleting(t, e, map[string]string{"number": "1", "sub-objectives": "delete"}, map[string][]string{"keep": {"3"}})
-	if !errors.Is(err, ErrNotASubObjective) || err.Error() != "#3 is not a sub-objective of #1; only a sub-objective of what is deleted is kept or deleted on its own" {
+	if !errors.Is(err, errNotASubObjective) || err.Error() != "#3 is not a sub-objective of #1; only a sub-objective of what is deleted is kept or deleted on its own" {
 		t.Errorf("err = %v, want ErrNotASubObjective", err)
 	}
-	if _, err := deleting(t, e, map[string]string{"number": "1"}, map[string][]string{"keep": {"2"}, "delete": {"2"}}); !errors.Is(err, ErrNotASubObjective) {
+	if _, err := deleting(t, e, map[string]string{"number": "1"}, map[string][]string{"keep": {"2"}, "delete": {"2"}}); !errors.Is(err, errNotASubObjective) {
 		t.Errorf("kept and deleted at once: err = %v, want it refused", err)
 	}
-	if _, err := deleting(t, e, map[string]string{"number": "1", "sub-objectives": "maybe"}, nil); !errors.Is(err, ErrNotOneOf) {
+	if _, err := deleting(t, e, map[string]string{"number": "1", "sub-objectives": "maybe"}, nil); !errors.Is(err, errNotOneOf) {
 		t.Errorf("a choice it does not know: err = %v", err)
 	}
 }
@@ -314,7 +314,7 @@ func TestObjectiveReport_splitsEachMonthBySubObjective(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	answer, err := e.Ask(ObjectiveReport, given("number", "1", "since", "2026-09-01", "until", "2026-09-30"))
+	answer, err := e.Ask(objectiveReport, given("number", "1", "since", "2026-09-01", "until", "2026-09-30"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +323,7 @@ func TestObjectiveReport_splitsEachMonthBySubObjective(t *testing.T) {
 		!slices.Equal(months[0].Split, []objective.Part{{Number: 2, Spent: 2 * time.Hour}, {Spent: 30 * time.Minute}}) {
 		t.Errorf("months = %+v", months)
 	}
-	shape := Of(ObjectiveReport, answer).(Review)
+	shape := Of(objectiveReport, answer).(review)
 	if shape.Months[0].Itself != "30m" || len(shape.Months[0].SubObjectives) != 1 || shape.Months[0].SubObjectives[0].TimeSpent != "2h" {
 		t.Errorf("the JSON month = %+v", shape.Months[0])
 	}
@@ -333,17 +333,17 @@ func TestObjective_crossesWithItsParentAndChildren(t *testing.T) {
 	e := openEngine(t)
 	addObjective(t, e, "Home automation")
 	under(t, e, "Enclosure", "1")
-	listed, err := e.Ask(ObjectiveList, Input{})
+	listed, err := e.Ask(objectiveList, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	shape := Of(ObjectiveList, listed).(Objectives)
+	shape := Of(objectiveList, listed).(objectivesListed)
 	if shape.Objectives[0].Parent != nil || !slices.Equal(shape.Objectives[0].Children, []int{2}) ||
 		shape.Objectives[1].Parent == nil || *shape.Objectives[1].Parent != 1 || shape.Objectives[1].Children == nil {
 		t.Errorf("the listing crosses as %+v", shape.Objectives)
 	}
 	shown, _ := e.Ask(ObjectiveShow, given("number", "1"))
-	if said := Of(ObjectiveShow, shown).(Objective); !slices.Equal(said.Children, []int{2}) {
+	if said := Of(ObjectiveShow, shown).(objectiveRow); !slices.Equal(said.Children, []int{2}) {
 		t.Errorf("show crosses children %v", said.Children)
 	}
 }

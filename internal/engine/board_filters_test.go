@@ -43,8 +43,8 @@ func TestFilters_offerEveryNarrowingOfAListingStartingAtAny(t *testing.T) {
 	var names []string
 	for _, f := range fs {
 		names = append(names, f.Name)
-		if f.Value() != Any {
-			t.Fatalf("%s opens on %q, not %q", f.Name, f.Value(), Any)
+		if f.value() != anyValue {
+			t.Fatalf("%s opens on %q, not %q", f.Name, f.value(), anyValue)
 		}
 	}
 	if got := strings.Join(names, ","); got != "column,priority,label,objective,deadline,focus" {
@@ -96,16 +96,16 @@ func TestFilters_keepTheCardsEveryFilterKeeps(t *testing.T) {
 func TestFilters_walkWrapsAndClearingPutsEveryOneBackOnAny(t *testing.T) {
 	fs := BoardFilters(Snapshot{Cards: filterCards()}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC))
 	walked := fs.Walked(1, -1)
-	if got := walked[1].Value(); got != "critical" {
+	if got := walked[1].value(); got != "critical" {
 		t.Fatalf("walking back from any reaches %q", got)
 	}
-	if fs[1].Value() != Any {
+	if fs[1].value() != anyValue {
 		t.Fatal("walking changed the filters it was asked of")
 	}
 	if !walked.Narrows() || walked.Said() != "priority critical" {
 		t.Fatalf("walked says %q", walked.Said())
 	}
-	if walked.Walked(1, 1)[1].Value() != Any {
+	if walked.Walked(1, 1)[1].value() != anyValue {
 		t.Fatal("walking on from the last value does not come back to any")
 	}
 	two := on(walked, "label", "backend")
@@ -121,12 +121,12 @@ func TestFilters_keepWhatTheyHeldWhenTheBoardIsReadAgain(t *testing.T) {
 	today := time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC)
 	held := on(BoardFilters(Snapshot{Cards: filterCards()}, today), "label", "sprint")
 	again := BoardFilters(Snapshot{Cards: filterCards()[:2]}, today).Keeping(held)
-	if again[2].Value() != "sprint" {
-		t.Fatalf("a label still held by a card was let go: %q", again[2].Value())
+	if again[2].value() != "sprint" {
+		t.Fatalf("a label still held by a card was let go: %q", again[2].value())
 	}
 	gone := BoardFilters(Snapshot{Cards: filterCards()[1:2]}, today).Keeping(held)
-	if gone[2].Value() != Any {
-		t.Fatalf("a label no card holds any more is still kept: %q", gone[2].Value())
+	if gone[2].value() != anyValue {
+		t.Fatalf("a label no card holds any more is still kept: %q", gone[2].value())
 	}
 }
 
@@ -226,7 +226,7 @@ func goalNumbers(goals []Goal) string {
 func TestBoardFilters_keepWhatIsInFocusOrWhatIsNot(t *testing.T) {
 	cards := []Card{{Number: 1}, {Number: 2, InFocus: true}}
 	fs := BoardFilters(Snapshot{Cards: cards}, time.Now())
-	if last := fs[len(fs)-1]; last.Arg != "focus" || !slices.Equal(last.Shown, []string{Any, "in focus", "not in focus"}) {
+	if last := fs[len(fs)-1]; last.Arg != "focus" || !slices.Equal(last.Shown, []string{anyValue, "in focus", "not in focus"}) {
 		t.Fatalf("the last filter is %+v, want focus: in focus, not in focus", last)
 	}
 	for value, want := range map[string]int{"in": 2, "out": 1} {
@@ -316,14 +316,14 @@ func TestFilters_keepNothingDueByTheDayThatAnotherFilterLeftOut(t *testing.T) {
 
 func TestFilters_onPutsOnlyTheFilterNamedOnTheValueNamed(t *testing.T) {
 	fs := Filters{
-		{Arg: "state", Values: []string{Any, "todo", "done"}, At: 2},
-		{Arg: "priority", Values: []string{Any, "todo"}, At: 0},
+		{Arg: "state", Values: []string{anyValue, "todo", "done"}, At: 2},
+		{Arg: "priority", Values: []string{anyValue, "todo"}, At: 0},
 	}
 	got := fs.On("state", "todo")
 	if got[0].At != 1 || got[1].At != 0 {
 		t.Errorf("on todo: %d %d", got[0].At, got[1].At)
 	}
-	if got := fs.On("state", Any); got[0].At != 0 {
+	if got := fs.On("state", anyValue); got[0].At != 0 {
 		t.Errorf("on any: %d", got[0].At)
 	}
 	if got := fs.On("state", "never"); got[0].At != 2 {

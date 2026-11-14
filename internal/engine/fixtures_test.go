@@ -61,7 +61,7 @@ func TestMakeFixtures_leavesAFolderItDidNotMakeAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, fresh := range []bool{false, true} {
-		if _, err := MakeFixtures(folder, "", fresh); !errors.Is(err, ErrNotMadeByFixtures) {
+		if _, err := MakeFixtures(folder, "", fresh); !errors.Is(err, errNotMadeByFixtures) {
 			t.Errorf("fresh %v: err = %v, want ErrNotMadeByFixtures", fresh, err)
 		}
 	}

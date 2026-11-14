@@ -23,7 +23,7 @@ func TestTaskList_keepsWhatTheFactsNamedHoldFor(t *testing.T) {
 		t.Fatalf("Edit: %v", err)
 	}
 
-	answer, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "todo"}})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "todo"}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestTaskList_answersNarrowedFlatAndUnnarrowedAsATree(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
 
-	whole, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{}})
+	whole, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestTaskList_answersNarrowedFlatAndUnnarrowedAsATree(t *testing.T) {
 		t.Error("a listing nobody narrowed is not answered as a tree")
 	}
 
-	narrowed, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "backlog"}})
+	narrowed, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "backlog"}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 		t.Fatalf("PutInFocus: %v", err)
 	}
 
-	narrowed, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "todo"}})
+	narrowed, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "todo"}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
 		t.Errorf("it says %v is in focus, and did not hand that task over", narrowed.InFocus)
 	}
 
-	kept, err := TaskList.Run(On{Engine: e}, Input{Given: map[string]string{"state": "current"}})
+	kept, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "current"}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -85,13 +85,13 @@ func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
 
-	if _, err := TaskList.Run(On{Engine: e}, Input{
+	if _, err := TaskList.Run(workedOn{Engine: e}, Input{
 		Given: map[string]string{"state": "nowhere"},
 	}); err == nil {
 		t.Error("a column no task can sit in was accepted")
 	}
 
-	answer, err := TaskList.Run(On{Engine: e}, Input{
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{
 		Listed: map[string][]string{"objective": {"9"}},
 	})
 	if err != nil {
@@ -104,7 +104,7 @@ func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
 
 func TestObjectiveList_isHeldToTheObjectiveStates(t *testing.T) {
 	e := openEngine(t)
-	if _, err := ObjectiveList.Run(On{Engine: e}, Input{
+	if _, err := objectiveList.Run(workedOn{Engine: e}, Input{
 		Given: map[string]string{"state": "todo"},
 	}); err == nil {
 		t.Error("an objective listing accepted a column a task sits in")
@@ -115,7 +115,7 @@ func TestTaskList_refusesAnObjectiveNothingCouldBeNumbered(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
 	for _, named := range []string{"soon", "0", "-1"} {
-		if _, err := TaskList.Run(On{Engine: e}, Input{
+		if _, err := TaskList.Run(workedOn{Engine: e}, Input{
 			Listed: map[string][]string{"objective": {named}},
 		}); err == nil {
 			t.Errorf("%q was accepted as an objective to narrow by", named)
@@ -131,7 +131,7 @@ func TestTaskList_looksForALabelWrittenTheOneWay(t *testing.T) {
 		t.Fatalf("Edit: %v", err)
 	}
 
-	answer, err := TaskList.Run(On{Engine: e}, Input{Listed: map[string][]string{"label": {"SP26_20"}}})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"label": {"SP26_20"}}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}

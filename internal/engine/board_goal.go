@@ -8,8 +8,8 @@ import (
 	"cairn/internal/objective"
 )
 
-// Standings are the four an objective can be in, in the order a list keeps them: what is being worked towards first, what was finished with last.
-var Standings = []string{string(objective.Active), string(objective.OnHold), string(objective.Reached), string(objective.Dropped)}
+// standings are the four an objective can be in, in the order a list keeps them: what is being worked towards first, what was finished with last.
+var standings = []string{string(objective.Active), string(objective.OnHold), string(objective.Reached), string(objective.Dropped)}
 
 // Stepped is what moves an objective one place up or down among its siblings, a parent with its sub-objectives; false at the first or the last, since crossing to another parent is a deliberate act.
 func Stepped(goals []Goal, n int, up bool) (Input, bool) {

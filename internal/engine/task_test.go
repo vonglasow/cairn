@@ -10,10 +10,10 @@ import (
 
 func TestTaskShow_saysSinceWhenTheTaskStands(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
-	if _, err := DoAt(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Ship it"}}, Acting{}); err != nil {
+	if _, err := doThere(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Ship it"}}, Acting{}); err != nil {
 		t.Fatal(err)
 	}
-	shown, err := DoAt(TaskShow, Places{Store: path}, Input{Given: map[string]string{"number": "1"}}, Acting{})
+	shown, err := doThere(TaskShow, Places{Store: path}, Input{Given: map[string]string{"number": "1"}}, Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestDelete_aTaskInFocusIsReleasedThenDeleted(t *testing.T) {
 func TestTask_showSaysWhereItsNotesAre(t *testing.T) {
 	path := storeAt(t, "Write the spec")
 	notes := t.TempDir()
-	shown, err := DoAt(TaskShow, Places{Store: path, Notes: notes}, given("number", "1"), Acting{})
+	shown, err := doThere(TaskShow, Places{Store: path, Notes: notes}, given("number", "1"), Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestTask_unarchiveAnswersTheTask(t *testing.T) {
 	if _, err := Do(TaskArchive, path, given("number", "1")); err != nil {
 		t.Fatal(err)
 	}
-	back, err := Do(TaskUnarchive, path, given("number", "1"))
+	back, err := Do(taskUnarchive, path, given("number", "1"))
 	if err != nil {
 		t.Fatal(err)
 	}

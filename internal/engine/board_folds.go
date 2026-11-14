@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// Hid is a sub-objective a folded parent hides that wants seeing: late, or waiting on the one named.
-type Hid struct {
+// hid is a sub-objective a folded parent hides that wants seeing: late, or waiting on the one named.
+type hid struct {
 	Goal Goal
 	Late bool
 	On   Goal
@@ -31,20 +31,20 @@ func (s Snapshot) Unreached(g Goal) (Goal, bool) {
 }
 
 // Hidden is what a parent hides once folded that wants seeing: each sub-objective late first, then each waiting on one not reached; nothing of one reached or dropped.
-func (s Snapshot) Hidden(n int, today time.Time) []Hid {
+func (s Snapshot) Hidden(n int, today time.Time) []hid {
 	parent, _ := s.Goal(n)
-	var late, waiting []Hid
+	var late, waiting []hid
 	for _, c := range parent.Children {
 		sub, ok := s.Goal(c)
 		if !ok || sub.State == "reached" || sub.State == "dropped" {
 			continue
 		}
 		if sub.LateOn(today) {
-			late = append(late, Hid{Goal: sub, Late: true})
+			late = append(late, hid{Goal: sub, Late: true})
 			continue
 		}
 		if on, waits := s.Unreached(sub); waits {
-			waiting = append(waiting, Hid{Goal: sub, On: on})
+			waiting = append(waiting, hid{Goal: sub, On: on})
 		}
 	}
 	return append(late, waiting...)

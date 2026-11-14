@@ -15,8 +15,8 @@ func Stopped(state string) bool {
 	return slices.Contains(Stalled, state)
 }
 
-// Deadline says how a day is written on a card, and whether it is written at all.
-func Deadline(due, now time.Time) (text string, show, late bool) {
+// deadline says how a day is written on a card, and whether it is written at all.
+func deadline(due, now time.Time) (text string, show, late bool) {
 	if due.IsZero() {
 		return "", false, false
 	}
@@ -35,7 +35,7 @@ func CardDeadline(c Card, now time.Time) (text string, show, late bool) {
 	if Finished(c) {
 		return "", false, false
 	}
-	return Deadline(c.Deadline, now)
+	return deadline(c.Deadline, now)
 }
 
 func startOfDay(t time.Time) time.Time {
@@ -66,8 +66,8 @@ func Hanging(c Card) []Part {
 	return append(left, done...)
 }
 
-// Tally counts what of the steps is left and what is done.
-func Tally(parts []Part) (left, done int) {
+// tally counts what of the steps is left and what is done.
+func tally(parts []Part) (left, done int) {
 	for _, p := range parts {
 		if p.Done {
 			done++
@@ -83,7 +83,7 @@ func Tallied(parts []Part) string {
 	if len(parts) == 0 {
 		return ""
 	}
-	left, done := Tally(parts)
+	left, done := tally(parts)
 	return fmt.Sprintf("%d left · %d done", left, done)
 }
 

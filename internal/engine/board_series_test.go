@@ -159,20 +159,20 @@ func withDay(fields []Field, title, day string) []Field {
 
 func TestFoundSeries_keepsWhatCarriesEveryWord(t *testing.T) {
 	all := []Series{{Number: 1, Title: "Stand-up", Rule: "every day"}, {Number: 2, Title: "Expense report", Rule: "every 4 weeks on mon"}}
-	if got := FoundSeries(all, "expense"); len(got) != 1 || got[0].Number != 2 {
+	if got := foundSeries(all, "expense"); len(got) != 1 || got[0].Number != 2 {
 		t.Errorf("expense found %v", got)
 	}
-	if got := FoundSeries(all, ""); len(got) != 2 {
+	if got := foundSeries(all, ""); len(got) != 2 {
 		t.Errorf("nothing typed found %v", got)
 	}
-	if got := FoundSeries(all, "↻1"); len(got) != 1 || got[0].Number != 1 {
+	if got := foundSeries(all, "↻1"); len(got) != 1 || got[0].Number != 1 {
 		t.Errorf("↻1 found %v", got)
 	}
 }
 
 func TestPages_withoutRecurrenceOffersNoSeries(t *testing.T) {
 	p := Pages{}.WithoutRecurrence()
-	if p.Recurs() || p.Offers(SeriesList) {
+	if p.Recurs() || p.Offers(seriesList) {
 		t.Error("recurrence turned off still offers the series")
 	}
 }
@@ -271,7 +271,7 @@ func TestRuleReadBack_saysTheRuleAndItsNextDaysOrWhyItCannot(t *testing.T) {
 	if read := RuleReadBack("every blue moon", today); read.Says != "" || !strings.Contains(read.Wrong, "blue") {
 		t.Errorf("a rule it cannot read reads back %+v", read)
 	}
-	if read := RuleReadBack("  ", today); read != (RuleRead{}) {
+	if read := RuleReadBack("  ", today); read != (ruleRead{}) {
 		t.Errorf("nothing typed reads back %+v", read)
 	}
 }
@@ -293,7 +293,7 @@ func TestSeriesSaid_theMissedDaysWhatCameBeforeAndEach(t *testing.T) {
 	s := Series{
 		Rule: "every weekday 10:30", Done: 2, TimeSpent: "30m",
 		Occurrences: []Occurrence{{Day: "2026-11-06", Task: 3}, {Day: "2026-11-05", Is: "missed"}, {Day: "2026-11-04", Is: "missed"}, {Day: "2026-11-03", Task: 1}},
-		Acts: []SeriesAct{
+		Acts: []seriesAct{
 			{Did: "made", Task: 1, Day: "2026-11-03", At: "2026-11-03T08:00:00Z"},
 			{Did: "skipped", Task: 1, Day: "2026-11-03", At: "2026-11-05T09:00:00Z"},
 			{Did: "made", Task: 3, Day: "2026-11-06", At: "2026-11-05T09:00:00Z"},

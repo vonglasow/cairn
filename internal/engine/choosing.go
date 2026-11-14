@@ -12,8 +12,8 @@ import (
 	"cairn/internal/task"
 )
 
-// Choosing is what a task says to help choose it, beside what it carries: the open tasks it is in the way of, how far it stands from its deadline, how many days it has sat in its column, and whether an objective it serves is past its deadline unreached.
-type Choosing struct {
+// choosing is what a task says to help choose it, beside what it carries: the open tasks it is in the way of, how far it stands from its deadline, how many days it has sat in its column, and whether an objective it serves is past its deadline unreached.
+type choosing struct {
 	Blocks        []int
 	Overdue       *int
 	DueIn         *int
@@ -23,7 +23,7 @@ type Choosing struct {
 
 var blockerArgument = Argument{Name: "blocker", Kind: Number, Of: "a task", Means: "keep only the tasks this task is in the way of"}
 
-func (e *Engine) choosing(shown []task.Task) (map[int]Choosing, error) {
+func (e *Engine) choosing(shown []task.Task) (map[int]choosing, error) {
 	board, err := e.narrowed(&domain.Narrowing{})
 	if err != nil {
 		return nil, err
@@ -56,10 +56,10 @@ func (e *Engine) choosing(shown []task.Task) (map[int]Choosing, error) {
 		c := o.Carried()
 		late[c.Number] = !c.Deadline.IsZero() && c.Deadline.Before(today) && (c.State == objective.Active || c.State == objective.OnHold)
 	}
-	out := map[int]Choosing{}
+	out := map[int]choosing{}
 	for _, t := range shown {
 		f := factsOf(t)
-		said := Choosing{Blocks: slices.Sorted(slices.Values(in[f.Number])), Age: daysFrom(moved[f.Number], today)}
+		said := choosing{Blocks: slices.Sorted(slices.Values(in[f.Number])), Age: daysFrom(moved[f.Number], today)}
 		if !f.Deadline.IsZero() && f.State != domain.Done {
 			days := daysFrom(today, f.Deadline)
 			if days < 0 {
@@ -82,7 +82,7 @@ func askedBlocker(in Input) (int, bool, error) {
 	}
 	n, err := strconv.Atoi(strings.TrimSpace(said))
 	if err != nil || n <= 0 {
-		return 0, false, fmt.Errorf("%q: %w", said, ErrBlockerRequired)
+		return 0, false, fmt.Errorf("%q: %w", said, errBlockerRequired)
 	}
 	return n, true, nil
 }
@@ -91,7 +91,7 @@ func inTheWayOf(tasks []task.Task, blocker int) []task.Task {
 	return slices.DeleteFunc(tasks, func(t task.Task) bool { return !slices.Contains(factsOf(t).Blockers, blocker) })
 }
 
-func blocksOf(chosen map[int]Choosing) map[int]int {
+func blocksOf(chosen map[int]choosing) map[int]int {
 	out := map[int]int{}
 	for n, c := range chosen {
 		out[n] = len(c.Blocks)

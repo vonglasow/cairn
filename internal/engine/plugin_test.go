@@ -14,7 +14,7 @@ import (
 func TestPluginWrite_writesThePluginBesideTheStoreOrWhereTheConfigurationSays(t *testing.T) {
 	home := t.TempDir()
 	store := filepath.Join(home, "cairn.db")
-	answer, err := PluginWrite.Run(On{Path: store}, Input{})
+	answer, err := pluginWrite.Run(workedOn{Path: store}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,22 +26,22 @@ func TestPluginWrite_writesThePluginBesideTheStoreOrWhereTheConfigurationSays(t 
 		t.Errorf("no marketplace beside the store: %v", err)
 	}
 	told := filepath.Join(home, "elsewhere")
-	answer, err = PluginWrite.Run(On{Path: store, Plugin: told}, Input{})
+	answer, err = pluginWrite.Run(workedOn{Path: store, Plugin: told}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if *answer.Plugin != told {
 		t.Errorf("the plugin is said to be at %s, want %s", *answer.Plugin, told)
 	}
-	if said := RenderText(PluginWrite, answer); !strings.Contains(said, "/plugin marketplace add "+told) ||
+	if said := RenderText(pluginWrite, answer); !strings.Contains(said, "/plugin marketplace add "+told) ||
 		!strings.Contains(said, "/plugin install cairn@cairn") {
 		t.Errorf("the answer reads %q", said)
 	}
-	if shaped, ok := Of(PluginWrite, answer).(PluginWritten); !ok || shaped.Plugin != told {
-		t.Errorf("a machine is told %#v", Of(PluginWrite, answer))
+	if shaped, ok := Of(pluginWrite, answer).(pluginWritten); !ok || shaped.Plugin != told {
+		t.Errorf("a machine is told %#v", Of(pluginWrite, answer))
 	}
-	if len(PluginWrite.Takes) != 0 {
-		t.Errorf("plugin write takes %v: the folder is the configuration's to say, not a command's", PluginWrite.Takes)
+	if len(pluginWrite.Takes) != 0 {
+		t.Errorf("plugin write takes %v: the folder is the configuration's to say, not a command's", pluginWrite.Takes)
 	}
 }
 
@@ -50,14 +50,14 @@ func TestPluginWrite_refusesAFolderItDidNotWrite(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "mine"), nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := PluginWrite.Run(On{Plugin: dir}, Input{}); err == nil {
+	if _, err := pluginWrite.Run(workedOn{Plugin: dir}, Input{}); err == nil {
 		t.Error("a folder of somebody else's was written into")
 	}
 }
 
 func TestPluginWrite_saysTheVersionOfThisCairn(t *testing.T) {
 	store := filepath.Join(t.TempDir(), "cairn.db")
-	if _, err := Do(PluginWrite, store, Input{}); err != nil {
+	if _, err := Do(pluginWrite, store, Input{}); err != nil {
 		t.Fatal(err)
 	}
 	held, err := os.ReadFile(filepath.Join(PluginBeside(store), "cairn", ".claude-plugin", "plugin.json"))
@@ -121,7 +121,7 @@ func TestKeepPluginCurrent_rewritesOnlyAPluginAnotherCairnWrote(t *testing.T) {
 }
 
 func TestPluginShow_aReleaseSaysHowToInstallThePluginFromItsTag(t *testing.T) {
-	answer, err := PluginShow.Run(On{Home: Home{Version: "v0.12.0"}}, Input{})
+	answer, err := pluginShow.Run(workedOn{Home: Home{Version: "v0.12.0"}}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,33 +130,33 @@ func TestPluginShow_aReleaseSaysHowToInstallThePluginFromItsTag(t *testing.T) {
 		"/plugin marketplace add vonglasow/cairn@v0.12.0",
 		"/plugin install cairn@cairn",
 	}
-	if shaped, ok := Of(PluginShow, answer).(PluginShown); !ok || shaped.Version != "v0.12.0" || !slices.Equal(shaped.Install, install) {
-		t.Errorf("a machine is told %#v", Of(PluginShow, answer))
+	if shaped, ok := Of(pluginShow, answer).(pluginShown); !ok || shaped.Version != "v0.12.0" || !slices.Equal(shaped.Install, install) {
+		t.Errorf("a machine is told %#v", Of(pluginShow, answer))
 	}
-	if said := RenderText(PluginShow, answer); !strings.Contains(said, "  "+strings.Join(install, "\n  ")+"\n") {
+	if said := RenderText(pluginShow, answer); !strings.Contains(said, "  "+strings.Join(install, "\n  ")+"\n") {
 		t.Errorf("the answer reads %q", said)
 	}
 }
 
 func TestPluginShow_aBuildThatIsNoVersionSaysToWriteThePluginItCarries(t *testing.T) {
-	answer, err := PluginShow.Run(On{Home: Home{Version: "v0.11.0-79-g616ccfc"}}, Input{})
+	answer, err := pluginShow.Run(workedOn{Home: Home{Version: "v0.11.0-79-g616ccfc"}}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if shaped := Of(PluginShow, answer).(PluginShown); shaped.Version != "v0.11.0-79-g616ccfc" || len(shaped.Install) != 0 {
+	if shaped := Of(pluginShow, answer).(pluginShown); shaped.Version != "v0.11.0-79-g616ccfc" || len(shaped.Install) != 0 {
 		t.Errorf("a machine is told %#v", shaped)
 	}
-	if said := RenderText(PluginShow, answer); !strings.Contains(said, "cairn plugin write") || strings.Contains(said, "/plugin") {
+	if said := RenderText(pluginShow, answer); !strings.Contains(said, "cairn plugin write") || strings.Contains(said, "/plugin") {
 		t.Errorf("the answer reads %q", said)
 	}
 }
 
 func TestPluginShow_saysThisCairnsVersionWhenNoneIsGiven(t *testing.T) {
-	answer, err := PluginShow.Run(On{}, Input{})
+	answer, err := pluginShow.Run(workedOn{}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if shaped := Of(PluginShow, answer).(PluginShown); shaped.Version != build.Read().Version {
+	if shaped := Of(pluginShow, answer).(pluginShown); shaped.Version != build.Read().Version {
 		t.Errorf("the version said is %q, want %q", shaped.Version, build.Read().Version)
 	}
 }

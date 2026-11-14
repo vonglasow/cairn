@@ -18,7 +18,7 @@ func TestABehindStoreNamesWhatToTypeApart(t *testing.T) {
 	if !strings.Contains(told.Error(), "run `cairn migration apply`") || !errors.Is(told, ErrStoreBehind) {
 		t.Errorf("the whole refusal reads %q, and a machine reads it whole", told)
 	}
-	if _, _, ok := ToType(ErrNoSuchTask); ok {
+	if _, _, ok := ToType(errNoSuchTask); ok {
 		t.Errorf("a refusal that names no command says one")
 	}
 }

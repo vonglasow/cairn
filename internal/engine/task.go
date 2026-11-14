@@ -21,16 +21,16 @@ var TaskNew = Operation{
 	Example: `cairn task new "Write the spec" --state todo --priority high --label spec --deadline 2026-09-01
 cairn task new "Ship it" --objective 2
 cairn task new "Write the spec" --desc - < notes.md`,
-	Level:   Write,
-	Needs:   AStore,
-	Again:   DoesItAgain,
+	Level:   write,
+	Needs:   aStore,
+	Again:   doesItAgain,
 	Answers: Task{},
 	Takes: append(append(append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the task is called"},
 	}, taskAttributes...), stepsArgument), everyArguments...),
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		title := ""
-		if given := in.Change("title"); given != nil {
+		if given := in.change("title"); given != nil {
 			title = *given
 		}
 		changes, err := taskChanges(in)
@@ -77,7 +77,7 @@ cairn task list --number 25 --number 18
 cairn task list --limit 50 --offset 100
 cairn task list --count state`,
 	Level:   Read,
-	Needs:   AStore,
+	Needs:   aStore,
 	Answers: Tasks{},
 	Takes:   append(append(slices.Clone(taskNarrowing), blockerArgument, viewArgument, numbersArgument, fieldsArgument, countArgument, inSeriesArgument), pageArguments...),
 	Run:     listing,
@@ -91,7 +91,7 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 }),
 	Argument{
 		Name:  "deadline-before",
-		Kind:  Day,
+		Kind:  day,
 		Means: "keep only the tasks due on or before this day",
 	},
 	Argument{
@@ -129,13 +129,13 @@ var TaskShow = Operation{
 	Does:    "Show what a task carries, its steps, how far along it is, and where what was written about it elsewhere lives. That directory is where a dated note of the work goes — one file per entry, added beside the others — rather than into the description, which an edit rewrites whole.",
 	Example: "cairn task show 1",
 	Level:   Read,
-	Needs:   AStore,
+	Needs:   aStore,
 	Answers: Task{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		shown, err := on.Engine.show(n)
 		if err != nil {
 			return Answer{}, err
@@ -157,7 +157,7 @@ var TaskShow = Operation{
 	},
 }
 
-func (on On) contextOf(n int) string {
+func (on workedOn) contextOf(n int) string {
 	if on.Notes == "" {
 		return ""
 	}
@@ -172,17 +172,17 @@ var TaskArchive = Operation{
 	Does:  "Archive a task. Everything it carries is kept, and it can be unarchived; deleting is the other thing.",
 	Example: `cairn task archive 1
 cairn task archive --state done`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: Swept{},
+	Answers: swept{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
 		alsoOf("a task"),
 	}, taskNarrowing...),
 	Sweeps: sweepsByNarrowing,
-	Run: func(on On, in Input) (Answer, error) {
-		if n, named := in.Whole("number"); named && n != 0 {
+	Run: func(on workedOn, in Input) (Answer, error) {
+		if n, named := in.whole("number"); named && n != 0 {
 			numbers, err := together(in)
 			if err != nil {
 				return Answer{}, err
@@ -198,14 +198,14 @@ cairn task archive --state done`,
 			return shown, err
 		}
 		if len(in.Listed["also"]) > 0 {
-			return Answer{}, ErrAlsoWithoutNumber
+			return Answer{}, errAlsoWithoutNumber
 		}
 		kept, err := keeping(in, taskNarrowing, on.Engine)
 		if err != nil {
 			return Answer{}, err
 		}
 		if !kept.Narrows() {
-			return Answer{}, ErrNothingToArchive
+			return Answer{}, errNothingToArchive
 		}
 		swept, err := on.Engine.archiveEvery(kept)
 		if err != nil {
@@ -222,17 +222,17 @@ var TaskLabel = Operation{
 	Short:      "Put a label on every task a narrowing reaches",
 	Does:       "Put a label on every task the narrowing reaches, keeping the ones each already carries.",
 	Example:    "cairn task label sprint-12 --state done",
-	Level:      Write,
-	Needs:      AStore,
+	Level:      write,
+	Needs:      aStore,
 	Again:      ChangesNothingMore,
 	Overwrites: true,
-	Answers:    Labelled{},
+	Answers:    labelled{},
 	Takes: append([]Argument{
 		{Name: "put", Kind: Text, Positional: true, Required: true, Means: "the label to put on them"},
 	}, taskNarrowing...),
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		label := ""
-		if given := in.Change("put"); given != nil {
+		if given := in.change("put"); given != nil {
 			label = *given
 		}
 		kept, err := keeping(in, taskNarrowing, on.Engine)
@@ -240,7 +240,7 @@ var TaskLabel = Operation{
 			return Answer{}, err
 		}
 		if !kept.Narrows() {
-			return Answer{}, ErrNothingToLabel
+			return Answer{}, errNothingToLabel
 		}
 		put, err := on.Engine.labelEvery(kept, label)
 		if err != nil {
@@ -250,31 +250,31 @@ var TaskLabel = Operation{
 	},
 }
 
-// ErrNothingToLabel is returned when labelling is given nothing to narrow by.
-var ErrNothingToLabel = errors.New("labelling needs something to narrow by")
+// errNothingToLabel is returned when labelling is given nothing to narrow by.
+var errNothingToLabel = errors.New("labelling needs something to narrow by")
 
-// ErrNothingToArchive is returned when archiving is given neither a number nor a narrowing.
-var ErrNothingToArchive = errors.New("archiving needs a number or something to narrow by")
+// errNothingToArchive is returned when archiving is given neither a number nor a narrowing.
+var errNothingToArchive = errors.New("archiving needs a number or something to narrow by")
 
-// ErrAlsoWithoutNumber is returned when archiving names more tasks beside a first, and no first: a narrowing already takes many, and "also" said beside one is a question about which.
-var ErrAlsoWithoutNumber = errors.New("--also names tasks beside a number, and no number was given")
+// errAlsoWithoutNumber is returned when archiving names more tasks beside a first, and no first: a narrowing already takes many, and "also" said beside one is a question about which.
+var errAlsoWithoutNumber = errors.New("--also names tasks beside a number, and no number was given")
 
-// TaskUnarchive brings one back onto the board.
-var TaskUnarchive = Operation{
+// taskUnarchive brings one back onto the board.
+var taskUnarchive = Operation{
 	Thing:   "task",
 	Verb:    "unarchive",
 	Short:   "Unarchive a task, back on the board",
 	Does:    "Unarchive a task: it is back on the board, as it was.",
 	Example: "cairn task unarchive 1",
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Answers: Task{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		if err := on.Engine.unarchive(n); err != nil {
 			return Answer{}, err
 		}
@@ -282,7 +282,7 @@ var TaskUnarchive = Operation{
 	},
 }
 
-func shownTask(on On, number int) (Answer, error) {
+func shownTask(on workedOn, number int) (Answer, error) {
 	found, err := on.Engine.show(number)
 	if err != nil {
 		return Answer{}, err
@@ -300,8 +300,8 @@ var TaskEdit = Operation{
 cairn task edit 1 --label +urgent --label -spec
 cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 	Finishes:   true,
-	Level:      Write,
-	Needs:      AStore,
+	Level:      write,
+	Needs:      aStore,
 	Again:      ChangesNothingMore,
 	Overwrites: true,
 	Answers:    Task{},
@@ -309,14 +309,14 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
 	}, taskAttributes...), append([]Argument{stepsArgument}, replaceArguments...)...), append(slices.Clone(everyArguments), seriesTooArgument)...),
-	Run: func(on On, in Input) (Answer, error) {
-		n, _ := in.Whole("number")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		n, _ := in.whole("number")
 		changes, err := taskChanges(in)
 		if err != nil {
 			return Answer{}, err
 		}
-		changes.Replace, changes.By = in.Change("replace"), in.Change("by")
-		changes.Title = in.Change("title")
+		changes.Replace, changes.By = in.change("replace"), in.change("by")
+		changes.Title = in.change("title")
 		changes.Finishing = in.Confirmed
 		every, err := on.Engine.repeating(n, in)
 		if err != nil {
@@ -333,7 +333,7 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 				return Answer{}, err
 			}
 		}
-		if in.Yes("series") {
+		if in.yes("series") {
 			if err := on.Engine.seriesFollowsTask(n, in); err != nil {
 				return Answer{}, err
 			}
@@ -364,14 +364,14 @@ var TaskDelete = Operation{
 	Example: `cairn task delete 1 --yes
 cairn task delete 1 --also 4 --also 7 --yes`,
 	Level:   Full,
-	Needs:   AStore,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Answers: Deleted{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		alsoOf("a task"),
 	},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		numbers, err := together(in)
 		if err != nil {
 			return Answer{}, err
@@ -415,14 +415,14 @@ cairn task search spec team --state todo
 cairn task search T010 T013 --any
 cairn task search spec --limit 50 --offset 100`,
 	Level:   Read,
-	Needs:   AStore,
+	Needs:   aStore,
 	Answers: Tasks{},
 	Takes: append([]Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 		{Name: "any", Kind: Bool, Means: "keep a task carrying any one of what is named rather than all of it, and say under matched which tasks each one matched"},
 	}, append(append(slices.Clone(taskNarrowing), fieldsArgument), pageArguments...)...),
-	Run: func(on On, in Input) (Answer, error) {
-		named := in.Changed("named")
+	Run: func(on workedOn, in Input) (Answer, error) {
+		named := in.changed("named")
 		if err := somethingToLookFor(named); err != nil {
 			return Answer{}, err
 		}
@@ -444,7 +444,7 @@ cairn task search spec --limit 50 --offset 100`,
 		}
 		var found []task.Task
 		var terms map[string][]int
-		if in.Yes("any") {
+		if in.yes("any") {
 			found, terms = matchingAny(tasks, *named)
 		} else {
 			found = []task.Task{}
@@ -506,7 +506,7 @@ func Reaches(said []string, typed string) bool {
 }
 
 func sweepsByNarrowing(in Input) bool {
-	if n, named := in.Whole("number"); named && n != 0 {
+	if n, named := in.whole("number"); named && n != 0 {
 		return false
 	}
 	for _, by := range taskNarrowing {
@@ -525,9 +525,9 @@ var taskAttributes = []Argument{
 	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
 	{Name: "link", Kind: List, Of: "a task", Means: "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
 	{Name: "because", Kind: Text, Means: "what is in its way and is not a task cairn holds"},
-	{Name: "deadline", Kind: Day, Means: "the day it is due"},
-	{Name: "estimate", Kind: Duration, Means: "how long it should take"},
-	{Name: "spent", Kind: Duration, Means: "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back"},
+	{Name: "deadline", Kind: day, Means: "the day it is due"},
+	{Name: "estimate", Kind: duration, Means: "how long it should take"},
+	{Name: "spent", Kind: duration, Means: "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back"},
 	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; when changing, 4 or +4 adds one, -1 takes one away, =4 replaces them all"},
 }
 
@@ -547,7 +547,7 @@ func withTypedTitle(err error, typed string) error {
 }
 
 func editReason(err error) error {
-	if errors.Is(err, ErrNothingToChange) {
+	if errors.Is(err, errNothingToChange) {
 		return fmt.Errorf("%w: name one of --title, --desc, --state, --priority, --label, --deadline, --estimate", err)
 	}
 	return err
@@ -560,19 +560,19 @@ var replaceArguments = []Argument{
 
 func taskChanges(in Input) (Changes, error) {
 	var c Changes
-	c.Description = in.Change("desc")
-	c.State = in.Change("state")
-	c.Priority = in.Change("priority")
-	c.Labels = in.Changed("label")
-	c.Blocker = in.Changed("blocker")
-	c.Link = in.Changed("link")
-	c.Because = in.Change("because")
-	c.Deadline = in.Change("deadline")
-	c.Estimate = in.Change("estimate")
-	c.Spent = in.Change("spent")
-	c.Objective = in.Changed("objective")
-	if said := in.Change("steps"); said != nil {
-		steps, err := StepsIn(*said)
+	c.Description = in.change("desc")
+	c.State = in.change("state")
+	c.Priority = in.change("priority")
+	c.Labels = in.changed("label")
+	c.Blocker = in.changed("blocker")
+	c.Link = in.changed("link")
+	c.Because = in.change("because")
+	c.Deadline = in.change("deadline")
+	c.Estimate = in.change("estimate")
+	c.Spent = in.change("spent")
+	c.Objective = in.changed("objective")
+	if said := in.change("steps"); said != nil {
+		steps, err := stepsIn(*said)
 		if err != nil {
 			return Changes{}, err
 		}
@@ -581,7 +581,7 @@ func taskChanges(in Input) (Changes, error) {
 	return c, nil
 }
 
-func listing(on On, in Input) (Answer, error) {
+func listing(on workedOn, in Input) (Answer, error) {
 	kept, err := keeping(in, taskNarrowing, on.Engine)
 	if err != nil {
 		return Answer{}, err
@@ -606,7 +606,7 @@ func listing(on On, in Input) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	if numbers != nil && !in.Yes("archived") && !in.Yes("with-archived") {
+	if numbers != nil && !in.yes("archived") && !in.yes("with-archived") {
 		kept.WithArchived()
 	}
 	seen, err := on.Engine.inView(in, kept)
@@ -635,7 +635,7 @@ func listing(on On, in Input) (Answer, error) {
 		}
 	}
 	total := len(tasks)
-	var counts []Count
+	var counts []count
 	if counting != "" {
 		counts, tasks = countedBy(tasks, counting), []task.Task{}
 	}

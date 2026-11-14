@@ -9,7 +9,7 @@ func TestEveryTaskFieldNamesAnArgumentTaskEditTakes(t *testing.T) {
 	for _, a := range TaskEdit.Takes {
 		takes[a.Name] = true
 	}
-	fields := TaskFields(Card{})
+	fields := taskFields(Card{})
 	if len(fields) == 0 {
 		t.Fatal("taskFields is empty")
 	}

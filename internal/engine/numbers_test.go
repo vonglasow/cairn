@@ -10,7 +10,7 @@ import (
 
 func listedNumbers(t *testing.T, e *Engine, given map[string]string, numbers ...string) (Answer, []int) {
 	t.Helper()
-	answer, err := TaskList.Run(On{Engine: e}, Input{Given: given, Listed: map[string][]string{"number": numbers}})
+	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Given: given, Listed: map[string][]string{"number": numbers}})
 	if err != nil {
 		t.Fatalf("TaskList: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestTaskList_numbersAreNarrowedLikeEveryListing(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "First")
 	add(t, e, "Second")
-	if _, err := TaskEdit.Run(On{Engine: e}, Input{Given: map[string]string{"number": "2", "state": "todo"}}); err != nil {
+	if _, err := TaskEdit.Run(workedOn{Engine: e}, Input{Given: map[string]string{"number": "2", "state": "todo"}}); err != nil {
 		t.Fatalf("TaskEdit: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func TestTaskList_numbersAreNarrowedLikeEveryListing(t *testing.T) {
 func TestTaskList_numbersRefuseWhatIsNoNumber(t *testing.T) {
 	e := openEngine(t)
 	for _, numbers := range [][]string{{}, {"first"}, {"0"}, {"-2"}} {
-		_, err := TaskList.Run(On{Engine: e}, Input{Listed: map[string][]string{"number": numbers}})
+		_, err := TaskList.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"number": numbers}})
 		if !errors.Is(err, errMisread) {
 			t.Errorf("%q: err = %v, want it misread", numbers, err)
 		}

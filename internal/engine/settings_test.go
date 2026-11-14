@@ -147,7 +147,7 @@ func TestIgnored_saysWhatTheGlobalFileAndTheSettingsPassOver(t *testing.T) {
 func TestConfigShow_saysWhereEachStoreKeyComesFrom(t *testing.T) {
 	h := homeHolding(t, "[focus]\nsession = \"1h\"\n[approach]\nlabel = \"discuss\"\n", map[string]string{config.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "[time]\nweekends = \"hidden\"\n[approach]\nlabel = \"\"\n")
-	answer, err := ConfigShow.Run(On{Home: h}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +183,7 @@ func TestConfigShow_saysNothingOfSettingsThatAreNotThere(t *testing.T) {
 func TestConfigShow_saysSettingsItCannotMakeSenseOfAsTheProblem(t *testing.T) {
 	h := homeHolding(t, "", map[string]string{config.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "plugin = \"~/p\"\n")
-	answer, err := ConfigShow.Run(On{Home: h}, Input{})
+	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestConfigShow_saysSettingsItCannotMakeSenseOfAsTheProblem(t *testing.T) {
 
 func TestWorkspaceAdd_writesSettingsThatSayNothing(t *testing.T) {
 	h := homeHolding(t, "", nil)
-	if _, err := WorkspaceAdd.Run(On{Home: h}, adding("play", "~/p")); err != nil {
+	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p")); err != nil {
 		t.Fatal(err)
 	}
 	if read, _ := os.ReadFile(filepath.Join(h.Dir, "p", config.SettingsFile)); string(read) != config.SettingsHeader {
@@ -205,7 +205,7 @@ func TestWorkspaceAdd_writesSettingsThatSayNothing(t *testing.T) {
 func TestWorkspaceAdd_leavesSettingsAlreadyThere(t *testing.T) {
 	h := homeHolding(t, "", nil)
 	settingsIn(t, filepath.Join(h.Dir, "p"), "[pages]\ntime = false\n")
-	if _, err := WorkspaceAdd.Run(On{Home: h}, adding("play", "~/p")); err != nil {
+	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p")); err != nil {
 		t.Fatal(err)
 	}
 	if read, _ := os.ReadFile(filepath.Join(h.Dir, "p", config.SettingsFile)); string(read) != "[pages]\ntime = false\n" {

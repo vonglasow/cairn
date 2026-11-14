@@ -80,8 +80,8 @@ type Goal struct {
 	Proposed    bool
 }
 
-// Described says whether anything is written about the objective.
-func (g Goal) Described() bool { return g.Description != "" }
+// described says whether anything is written about the objective.
+func (g Goal) described() bool { return g.Description != "" }
 
 // Snapshot is everything the board draws, read in one go.
 type Snapshot struct {
@@ -103,7 +103,7 @@ func Look(w Work) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
-	goals, err := w.Ask(ObjectiveList, Input{})
+	goals, err := w.Ask(objectiveList, Input{})
 	if err != nil {
 		return Snapshot{}, err
 	}

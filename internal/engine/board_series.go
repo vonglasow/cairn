@@ -12,7 +12,7 @@ import (
 )
 
 func lookAtSeries(w Work) ([]Series, error) {
-	listed, err := w.Ask(SeriesList, Input{})
+	listed, err := w.Ask(seriesList, Input{})
 	if err != nil && RefusalOf(err).Reason == RefusalOf(ErrRecurrenceOff).Reason {
 		return nil, nil
 	}
@@ -43,8 +43,8 @@ func (s Snapshot) SeriesOf(n int) (Series, bool) {
 	return Series{}, false
 }
 
-// FoundSeries is the series carrying every word typed in their title, their rule or their number.
-func FoundSeries(all []Series, query string) []Series {
+// foundSeries is the series carrying every word typed in their title, their rule or their number.
+func foundSeries(all []Series, query string) []Series {
 	if strings.TrimSpace(query) == "" {
 		return all
 	}
@@ -85,32 +85,32 @@ func OccurrenceDay(c Card, now time.Time) (text string, show, late, passed bool)
 	return "", false, false, false
 }
 
-// RuleRead is a rule typed in a field read back: how often, what it counts from and when it ends, then the days it comes on; or why it is no rule.
-type RuleRead struct{ Says, Next, Wrong string }
+// ruleRead is a rule typed in a field read back: how often, what it counts from and when it ends, then the days it comes on; or why it is no rule.
+type ruleRead struct{ Says, Next, Wrong string }
 
 // RuleReadBack reads back a rule typed, counted from today, the way a form shows it under its field: nothing for nothing typed.
-func RuleReadBack(typed string, today time.Time) RuleRead {
+func RuleReadBack(typed string, today time.Time) ruleRead {
 	if strings.TrimSpace(typed) == "" {
-		return RuleRead{}
+		return ruleRead{}
 	}
 	rule, err := domain.ParseRule(typed)
 	if err != nil {
 		wrong, _, _ := strings.Cut(err.Error(), " — ")
-		return RuleRead{Wrong: wrong}
+		return ruleRead{Wrong: wrong}
 	}
 	from := domain.DayOf(today)
 	first, ok := rule.First(from)
 	if !ok {
-		return RuleRead{Says: rule.Said()}
+		return ruleRead{Says: rule.Said()}
 	}
 	if rule.AfterDone() {
-		return RuleRead{Says: rule.Said(), Next: domain.ShortDay(first) + ", then " + rule.Then()}
+		return ruleRead{Says: rule.Said(), Next: domain.ShortDay(first) + ", then " + rule.Then()}
 	}
 	days := []string{domain.ShortDay(first)}
 	for _, d := range rule.Dates(first, from, 2) {
 		days = append(days, domain.ShortDay(d))
 	}
-	return RuleRead{Says: rule.Said(), Next: strings.Join(days, " · ")}
+	return ruleRead{Says: rule.Said(), Next: strings.Join(days, " · ")}
 }
 
 // SeriesStates are the states the series' tab narrows to, every series first.
@@ -204,7 +204,7 @@ func SeriesFields(s Series) []Field {
 	return openedAs(SeriesEdit, "task", []Field{
 		{Name: "title", Arg: "title", Value: s.Template.Title},
 		{Name: "priority", Arg: "priority", Value: s.Template.Priority, Choices: Priorities()},
-		{Name: "column", Arg: "state", Value: s.Template.Arrives, Choices: Arrivals},
+		{Name: "column", Arg: "state", Value: s.Template.Arrives, Choices: arrivals},
 		{Name: "labels", Arg: "label", Value: strings.Join(s.Template.Labels, " ")},
 		{Name: "estimate", Arg: "estimate", Value: s.Template.Estimate},
 		{Name: "objectives", Arg: "objective", Value: Numbers(s.Template.Objectives)},
@@ -231,7 +231,7 @@ func (p Pages) Recurring(s Snapshot) Snapshot {
 
 // ShownSeries is the series a board lists for what is typed: the active ones, then the stopped ones.
 func ShownSeries(all []Series, query string) []Series {
-	found := FoundSeries(all, query)
+	found := foundSeries(all, query)
 	out := make([]Series, 0, len(found))
 	for _, state := range []string{"active", "stopped"} {
 		for _, s := range found {

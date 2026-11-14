@@ -23,13 +23,13 @@ type View struct {
 	Of         int             `json:"of" jsonschema:"how many tasks are on the board, the archived ones left out"`
 	Done       int             `json:"done" jsonschema:"how many of the tasks it keeps are done"`
 	Gone       []string        `json:"gone" jsonschema:"each condition it holds whose objective or label is gone, which narrows nothing; empty when none is"`
-	Outside    []Outside       `json:"outside,omitempty" jsonschema:"the tasks outside it that block, wait on or are linked to one it keeps, each once; left out unless the view is shown"`
+	Outside    []outside       `json:"outside,omitempty" jsonschema:"the tasks outside it that block, wait on or are linked to one it keeps, each once; left out unless the view is shown"`
 	Was        string          `json:"was,omitempty" jsonschema:"the name it had before a change renamed it; left out otherwise"`
-	Objectives []ViewObjective `json:"objectives,omitempty" jsonschema:"each objective it holds that is still there, with its figures as the store counts them, whatever the view keeps; left out unless the view is shown"`
+	Objectives []viewObjective `json:"objectives,omitempty" jsonschema:"each objective it holds that is still there, with its figures as the store counts them, whatever the view keeps; left out unless the view is shown"`
 }
 
-// ViewObjective is an objective a view holds, with the store's figures for it: the same in a view and out of one.
-type ViewObjective struct {
+// viewObjective is an objective a view holds, with the store's figures for it: the same in a view and out of one.
+type viewObjective struct {
 	Number    int                   `json:"number"`
 	Title     string                `json:"title"`
 	Progress  *domain.ProgressShape `json:"progress" jsonschema:"how far along it is over its whole subtree, each task once; null when nothing serves it"`
@@ -55,13 +55,13 @@ type Views struct {
 	Views []View `json:"views"`
 }
 
-// ViewDeleted is how deleting a view answers: the name of the view deleted.
-type ViewDeleted struct {
+// viewDeleted is how deleting a view answers: the name of the view deleted.
+type viewDeleted struct {
 	Deleted string `json:"deleted"`
 }
 
-// Outside is a task outside a view that touches one it keeps, and every way it does.
-type Outside struct {
+// outside is a task outside a view that touches one it keeps, and every way it does.
+type outside struct {
 	Number int     `json:"number"`
 	Title  string  `json:"title"`
 	State  string  `json:"state"`
@@ -92,14 +92,14 @@ var ViewNew = Operation{
 	Does:  "Keep under a name the filters task list takes, and a search, so task list --view opens them again in one act. A name is one no view has yet, whatever its case or its accents, and a view holds at least one filter or a search. An objective is held by its number and a label by its name, kept as a label until it is deleted, so a rename follows. No task changes, and no trace is written.",
 	Example: `cairn view new "Home automation" --objective 4
 cairn view new Shopping --label shopping --state todo`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Answers: View{},
 	Takes: append([]Argument{
 		{Name: "name", Kind: Text, Positional: true, Required: true, Means: "what the view is called"},
 	}, viewFilters...),
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		views, err := on.Engine.store.Views()
 		if err != nil {
 			return Answer{}, err
@@ -124,9 +124,9 @@ var ViewList = Operation{
 	Does:    "List every view in its place, with what it holds, what of it is gone, and how many tasks it keeps today.",
 	Example: "cairn view list",
 	Level:   Read,
-	Needs:   AStore,
+	Needs:   aStore,
 	Answers: Views{},
-	Run: func(on On, _ Input) (Answer, error) {
+	Run: func(on workedOn, _ Input) (Answer, error) {
 		views, err := on.Engine.store.Views()
 		if err != nil {
 			return Answer{}, err
@@ -143,18 +143,18 @@ var ViewList = Operation{
 	},
 }
 
-// ViewShow says what a view holds, what it keeps, and the tasks outside it touching one it keeps.
-var ViewShow = Operation{
+// viewShow says what a view holds, what it keeps, and the tasks outside it touching one it keeps.
+var viewShow = Operation{
 	Thing:   "view",
 	Verb:    "show",
 	Short:   "Show what a view holds and keeps",
 	Does:    "Show what a view holds, what of it is gone, how many tasks it keeps of how many, and the tasks outside it that block, wait on or are linked to one it keeps, each once.",
 	Example: `cairn view show "Home automation"`,
 	Level:   Read,
-	Needs:   AStore,
+	Needs:   aStore,
 	Answers: View{},
 	Takes:   []Argument{viewNamed("to show")},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		views, err := on.Engine.store.Views()
 		if err != nil {
 			return Answer{}, err
@@ -185,8 +185,8 @@ var ViewEdit = Operation{
 	Does:  "Rename a view, change the filters it holds, or move it to another place, the others moving along. A filter named takes the place of the one the view held, and named empty takes it away; what is not named stays. No task changes, and no trace is written.",
 	Example: `cairn view edit Shopping --name Groceries --label shopping --label garden
 cairn view edit Groceries --place 1`,
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Answers: View{},
 	Takes: append([]Argument{
@@ -194,7 +194,7 @@ cairn view edit Groceries --place 1`,
 		{Name: "name", Kind: Text, Means: "the name it takes"},
 		{Name: "place", Kind: Number, Of: "a place", Means: "the place it moves to, from 1"},
 	}, viewFilters...),
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		views, err := on.Engine.store.Views()
 		if err != nil {
 			return Answer{}, err
@@ -204,7 +204,7 @@ cairn view edit Groceries --place 1`,
 			return Answer{}, err
 		}
 		if !slices.ContainsFunc(append([]Argument{{Name: "name"}, {Name: "place"}}, viewFilters...), func(a Argument) bool { return in.Named(a.Name) }) {
-			return Answer{}, ErrNothingToChange
+			return Answer{}, errNothingToChange
 		}
 		v, was := views[at], ""
 		if given, named := in.Given["name"]; named {
@@ -221,7 +221,7 @@ cairn view edit Groceries --place 1`,
 			return Answer{}, err
 		}
 		views[at] = v
-		if place, named := in.Whole("place"); named {
+		if place, named := in.whole("place"); named {
 			if place < 1 || place > len(views) {
 				return Answer{}, Refusing("no-such-place", fmt.Sprintf("a view's place is 1 to %d", len(views)))
 			}
@@ -239,12 +239,12 @@ var ViewDelete = Operation{
 	Short:   "Delete a view",
 	Does:    "Delete a view, the views after it moving up a place. No task, objective or label changes, and no trace is written.",
 	Example: "cairn view delete Groceries",
-	Level:   Write,
-	Needs:   AStore,
+	Level:   write,
+	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: ViewDeleted{},
+	Answers: viewDeleted{},
 	Takes:   []Argument{viewNamed("to delete")},
-	Run: func(on On, in Input) (Answer, error) {
+	Run: func(on workedOn, in Input) (Answer, error) {
 		views, err := on.Engine.store.Views()
 		if err != nil {
 			return Answer{}, err
@@ -300,7 +300,7 @@ func (e *Engine) holding(v store.View, in Input) (store.View, error) {
 	}
 	for name, into := range map[string]*bool{"itself": &v.Itself, "archived": &v.Archived, "with-archived": &v.WithArchived} {
 		if in.Named(name) {
-			*into = in.Yes(name)
+			*into = in.yes(name)
 		}
 	}
 	focus, err := focusHeld(v.Focus, in)
@@ -308,14 +308,14 @@ func (e *Engine) holding(v store.View, in Input) (store.View, error) {
 		return v, err
 	}
 	v.Focus = focus
-	if objectives := in.Changed("objective"); objectives != nil {
+	if objectives := in.changed("objective"); objectives != nil {
 		numbers, err := e.objectivesNamed(*objectives)
 		if err != nil {
 			return v, err
 		}
 		v.Objectives = numbers
 	}
-	if labels := in.Changed("label"); labels != nil {
+	if labels := in.changed("label"); labels != nil {
 		written, err := domain.ParseLabels(*labels)
 		if err != nil {
 			return v, err
@@ -345,10 +345,10 @@ func (e *Engine) objectivesNamed(given []string) ([]int, error) {
 		}
 		n, err := strconv.Atoi(strings.TrimSpace(one))
 		if err != nil {
-			return nil, fmt.Errorf("%q: %w", one, ErrObjectiveRequired)
+			return nil, fmt.Errorf("%q: %w", one, errObjectiveRequired)
 		}
 		if _, there := t.by[n]; !there {
-			return nil, fmt.Errorf("objective %d: %w", n, ErrNoSuchObjective)
+			return nil, fmt.Errorf("objective %d: %w", n, errNoSuchObjective)
 		}
 		numbers = append(numbers, n)
 	}
@@ -357,13 +357,13 @@ func (e *Engine) objectivesNamed(given []string) ([]int, error) {
 }
 
 func focusHeld(was string, in Input) (string, error) {
-	if in.Yes("focus") && in.Yes("no-focus") {
+	if in.yes("focus") && in.yes("no-focus") {
 		return was, Refusing("focus-and-not", "--focus and --no-focus keep nothing together: name one")
 	}
-	if in.Yes("focus") {
+	if in.yes("focus") {
 		return "in", nil
 	}
-	if in.Yes("no-focus") {
+	if in.yes("no-focus") {
 		return "out", nil
 	}
 	if in.Named("focus") && was == "in" || in.Named("no-focus") && was == "out" {
@@ -408,11 +408,11 @@ func (e *Engine) viewOf(views []store.View, at int) (View, []task.Task, error) {
 	}, kept, nil
 }
 
-func (e *Engine) viewObjectives(numbers []int) ([]ViewObjective, error) {
-	var out []ViewObjective
+func (e *Engine) viewObjectives(numbers []int) ([]viewObjective, error) {
+	var out []viewObjective
 	for _, n := range numbers {
 		o, err := e.showObjective(n)
-		if errors.Is(err, ErrNoSuchObjective) {
+		if errors.Is(err, errNoSuchObjective) {
 			continue
 		}
 		if err != nil {
@@ -426,7 +426,7 @@ func (e *Engine) viewObjectives(numbers []int) ([]ViewObjective, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, ViewObjective{Number: n, Title: o.Carried().Title, Progress: domain.OfProgress(p), TimeSpent: domain.FormatDuration(reviewOf(under).Spent)})
+		out = append(out, viewObjective{Number: n, Title: o.Carried().Title, Progress: domain.OfProgress(p), TimeSpent: domain.FormatDuration(reviewOf(under).Spent)})
 	}
 	return out, nil
 }
@@ -539,7 +539,7 @@ func touches(is string, outside, inside task.Carried) bool {
 	return slices.Contains(outside.Linked, inside.Number) || slices.Contains(inside.Linked, outside.Number)
 }
 
-func (e *Engine) outside(kept []task.Task) ([]Outside, error) {
+func (e *Engine) outside(kept []task.Task) ([]outside, error) {
 	board, err := e.narrowed(&domain.Narrowing{})
 	if err != nil {
 		return nil, err
@@ -548,7 +548,7 @@ func (e *Engine) outside(kept []task.Task) ([]Outside, error) {
 	for _, t := range kept {
 		inside = append(inside, t.Carried())
 	}
-	out := []Outside{}
+	out := []outside{}
 	for _, t := range board {
 		o := t.Carried()
 		if slices.ContainsFunc(inside, func(c task.Carried) bool { return c.Number == o.Number }) {
@@ -563,10 +563,10 @@ func (e *Engine) outside(kept []task.Task) ([]Outside, error) {
 			}
 		}
 		if len(why) > 0 {
-			out = append(out, Outside{Number: o.Number, Title: o.Title, State: string(o.State), Why: why})
+			out = append(out, outside{Number: o.Number, Title: o.Title, State: string(o.State), Why: why})
 		}
 	}
-	slices.SortFunc(out, func(a, b Outside) int { return a.Number - b.Number })
+	slices.SortFunc(out, func(a, b outside) int { return a.Number - b.Number })
 	return out, nil
 }
 
@@ -726,7 +726,7 @@ func viewShownText(v View) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-func storeFigures(o ViewObjective) string {
+func storeFigures(o viewObjective) string {
 	if o.Progress == nil {
 		return "nothing serves it yet"
 	}
@@ -767,7 +767,7 @@ func lostText(a Answer) string {
 	return fmt.Sprintf("view %s: %s %s\n", a.InView, strings.Join(a.Lost, " and "), verb) + hint
 }
 
-func outsideText(outside []Outside) string {
+func outsideText(outside []outside) string {
 	if len(outside) == 0 {
 		return ""
 	}

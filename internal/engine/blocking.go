@@ -10,22 +10,22 @@ import (
 
 // What a blocking change can be turned down for.
 var (
-	ErrBlockerRequired    = errors.New("a blocker is a task number")
-	ErrBlockedByItself    = errors.New("a task cannot block itself")
-	ErrBlockingCycle      = errors.New("nothing would ever be able to start")
-	ErrBlockersBothWays   = errors.New("the blockers are either replaced or changed, not both")
-	ErrBlockerSignAtBirth = errors.New("a blocker is added or taken away only when changing a task")
-	ErrStillBlocked       = task.ErrStillBlocked
+	errBlockerRequired    = errors.New("a blocker is a task number")
+	errBlockedByItself    = errors.New("a task cannot block itself")
+	errBlockingCycle      = errors.New("nothing would ever be able to start")
+	errBlockersBothWays   = errors.New("the blockers are either replaced or changed, not both")
+	errBlockerSignAtBirth = errors.New("a blocker is added or taken away only when changing a task")
+	errStillBlocked       = task.ErrStillBlocked
 )
 
 func changedBlockers(given []string, current []int, atCreation bool) ([]int, error) {
 	return changedNumbers(given, current, atCreation,
-		ErrBlockerRequired, ErrBlockersBothWays, ErrBlockerSignAtBirth)
+		errBlockerRequired, errBlockersBothWays, errBlockerSignAtBirth)
 }
 
 func mayBlock(number int, blockers []int, blocking func(int) ([]int, error)) error {
 	if slices.Contains(blockers, number) {
-		return fmt.Errorf("task %d: %w", number, ErrBlockedByItself)
+		return fmt.Errorf("task %d: %w", number, errBlockedByItself)
 	}
 	seen := map[int]bool{number: true}
 	via := map[int]int{}
@@ -40,7 +40,7 @@ func mayBlock(number int, blockers []int, blocking func(int) ([]int, error)) err
 			if one != number {
 				continue
 			}
-			return fmt.Errorf("task %d and task %d: %w", number, via[one], ErrBlockingCycle)
+			return fmt.Errorf("task %d and task %d: %w", number, via[one], errBlockingCycle)
 		}
 		seen[one] = true
 		further, err := blocking(one)

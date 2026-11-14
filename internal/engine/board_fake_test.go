@@ -15,7 +15,7 @@ type fake struct {
 	goals        []objective.Objective
 	focus        []int
 	freed        []int
-	chosen       map[int]Choosing
+	chosen       map[int]choosing
 	context      string
 	along        map[int]domain.Progress
 	goalsAlong   map[int]domain.Progress

@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// Called finds the operation two words name: the thing, then the verb.
-func Called(thing, verb string) (Operation, bool) {
+// called finds the operation two words name: the thing, then the verb.
+func called(thing, verb string) (Operation, bool) {
 	for _, op := range All() {
 		if op.Thing == thing && op.Verb == verb {
 			return op, true
@@ -78,7 +78,7 @@ func (o Operation) Read(words []string) (Input, error) {
 		}
 		in.Given[name] = value
 	}
-	if err := o.Check(in); err != nil {
+	if err := o.check(in); err != nil {
 		return Input{}, err
 	}
 	return in, nil
