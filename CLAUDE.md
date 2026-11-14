@@ -21,8 +21,8 @@ in the terminal and the same board in a window — four surfaces over one engine
 - **A refactoring changes no test's verdict**: the suite is green before and
   after.
 - **Behaviour is tested once**, in table tests in the engine. Each surface has
-  one contract test. A scenario in `bdd/` says what a person sees; it is never
-  reworded to suit the code.
+  one contract test. A scenario in `bdd/` says what a person sees; it may be
+  rewritten, what a person sees stays.
 - **No test waits on time.** Clocks and processes are injected.
 - Coverage stays at or above its floors. No threshold is lowered to pass.
 
