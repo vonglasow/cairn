@@ -94,10 +94,9 @@ is in it.
 ## Contributing
 
 cairn is written scenario first, then test, then code, and every commit passes
-the checks. What whoever develops cairn reads is in `.claude/docs/`: start with
-[development](.claude/docs/development.md), [workflow](.claude/docs/workflow.md)
-and [checks](.claude/docs/checks.md); [release](.claude/docs/release.md) says
-how a version is made.
+the checks. Whoever develops cairn reads
+[ARCHITECTURE.md](ARCHITECTURE.md), the decisions in
+[DECISIONS.md](DECISIONS.md) and the rules in [CLAUDE.md](CLAUDE.md).
 
 ## License
 

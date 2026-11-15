@@ -30,8 +30,8 @@ in the terminal and the same board in a window — four surfaces over one engine
 
 - **`docs/` is for the person using cairn**: guides by task, a glossary, and
   a reference generated from the engine. Never why cairn is built so.
-- **The developer reads `ARCHITECTURE.md` and the decision register**, one line
-  per decision. Until cairn#318 lands, that is `.claude/docs/`.
+- **The developer reads `ARCHITECTURE.md` and `DECISIONS.md`**, the register,
+  one line per decision.
 - A behaviour that changes changes both.
 
 ## Process

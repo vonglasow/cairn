@@ -66,7 +66,7 @@ func TestPageFor_namesThePageOfEverySourcePublished(t *testing.T) {
 			t.Errorf("pageFor(%q) = %q, %v; want %q", source, got, ok, want)
 		}
 	}
-	if got, ok := pageFor(".claude/docs/checks.md"); ok {
+	if got, ok := pageFor("DECISIONS.md"); ok {
 		t.Errorf("a page for whoever develops cairn is published as %s", got)
 	}
 }
