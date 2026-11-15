@@ -16,7 +16,7 @@ on = true
 Off, there is no `--every`, no `series` command and no series tool for an
 agent, and nothing is made; series already there sleep as they were, and wake
 up as they were when it is turned back on. See
-[configuration](config.md#tasks-that-come-back).
+[configuration](config.md#every-key).
 
 ## A series
 

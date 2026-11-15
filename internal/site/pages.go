@@ -26,8 +26,8 @@ var published = []source{
 	{"docs/context.md", "Guide", "guide"},
 	{"docs/notes-obsidian.md", "Guide", "guide"},
 	{"docs/claude-code.md", "Guide", "guide"},
-	{"docs/mcp.md", "Reference", "reference"},
-	{"docs/config.md", "Reference", "config"},
+	{"docs/mcp.md", "Guide", "guide"},
+	{"docs/config.md", "Guide", "guide"},
 	{"docs/decisions.md", "Project", "decisions"},
 }
 
@@ -35,6 +35,7 @@ const (
 	commandsPage  = "commands.html"
 	toolsPage     = "tools.html"
 	themesPage    = "themes.html"
+	keysPage      = "keys.html"
 	changelogPage = "changelog.html"
 	styleSheet    = "site.css"
 	searchIndex   = "search.js"

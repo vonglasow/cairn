@@ -175,8 +175,41 @@ func toolsPageOf() page {
 	return page{Name: toolsPage, Title: "MCP tools", Group: "Reference", Top: "reference", Body: body.String(), Toc: toc}
 }
 
-func configurationIntro() string {
-	return `<h2 id="the-whole-file">The whole file</h2><p>What <code>cairn config init</code> writes: every key, explained, set to what cairn uses when the file says nothing.</p><pre><code class="toml">` + e(files.Example) + `</code></pre>`
+func takes(k files.Key) string {
+	switch {
+	case len(k.Words) > 0:
+		return strings.Join(k.Words, ", ")
+	case k.Unit != "":
+		return string(k.Kind) + ", in " + k.Unit
+	}
+	return string(k.Kind)
+}
+
+func keysPageOf() page {
+	var body strings.Builder
+	toc := []heading{{ID: "the-whole-file", Title: "The whole file"}}
+	body.WriteString(`<p class="lead">Every key <code>cairn config set</code> takes, from cairn's own list of them.</p>`)
+	for _, section := range files.Sections() {
+		id := strings.ToLower(section)
+		toc = append(toc, heading{ID: id, Title: section})
+		fmt.Fprintf(&body, `<h2 id="%s">%s</h2><div class="tw"><table><tr><th>key</th><th>takes</th><th>says</th><th>kept</th></tr>`, id, e(section))
+		for _, k := range files.Keys() {
+			if k.Section != section {
+				continue
+			}
+			kept := "either; a store's settings win"
+			switch {
+			case k.Machine:
+				kept = "the global file"
+			case k.Store:
+				kept = "a store's settings"
+			}
+			fmt.Fprintf(&body, `<tr><td><code>%s</code></td><td>%s</td><td>%s</td><td>%s</td></tr>`, k.Name, e(takes(k)), e(k.Says), kept)
+		}
+		body.WriteString(`</table></div>`)
+	}
+	body.WriteString(`<h2 id="the-whole-file">The whole file</h2><p>What <code>cairn config init</code> writes: every key, explained, set to what cairn uses when the file says nothing.</p><pre><code class="toml">` + e(files.Example) + `</code></pre>`)
+	return page{Name: keysPage, Title: "Configuration keys", Group: "Reference", Top: "reference", Body: body.String(), Toc: toc}
 }
 
 func themesPageOf(schemes []theme.Scheme, pictured bool) page {

@@ -63,7 +63,7 @@ cairn task unfocus               # done with all of them
 - A focus is what the [timesheet](trace.md#how-long-the-work-took) counts.
 
 A focus that has run for a long time asks to be renewed; see
-[configuration](config.md#focus).
+[configuration](config.md#every-key).
 
 ## Choosing what to do next
 

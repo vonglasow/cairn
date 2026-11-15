@@ -37,6 +37,10 @@ Feature: the documentation site
       Then the reference lists every command cairn has, with the first line of its help
       And the page of `cairn task edit` lists each of its flags with what its help says
 
+    @site-keys
+    Scenario: every key of the configuration is in the reference, with what it takes
+      Then the reference lists every key of the configuration, with what it takes and what it says
+
   Rule: Every page says which version it documents
 
     @site-version

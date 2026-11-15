@@ -84,7 +84,7 @@ workspace it answers from, and why. Another workspace is another server.
   on a task goes in its notes, never in its description. See
   [A task's notes](context.md).
 - **A focus session past its length** adds, after every answer, the question
-  whether to renew it or end it; see [configuration](config.md#focus).
+  whether to renew it or end it; see [configuration](config.md#every-key).
 
 What an agent does is written in each task's trace under the client's name —
 `claude-code` — unless `CAIRN_AUTHOR` is set for the server.

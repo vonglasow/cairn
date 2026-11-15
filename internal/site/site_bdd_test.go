@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"cairn/internal/cli"
+	"cairn/internal/store/files"
 	"cairn/internal/theme"
 	"cairn/test"
 )
@@ -50,6 +51,7 @@ func initSite(sc *godog.ScenarioContext) {
 	sc.Step(`^the site has a page for "([^"]*)"$`, w.theSiteHasAPageFor)
 	sc.Step("^the reference lists every command cairn has, with the first line of its help$", w.theReferenceListsEveryCommand)
 	sc.Step("^the page of `cairn ([^`]*)` lists each of its flags with what its help says$", w.thePageOfACommandListsItsFlags)
+	sc.Step(`^the reference lists every key of the configuration, with what it takes and what it says$`, w.theReferenceListsEveryKey)
 	sc.Step(`^every page says "([^"]*)"$`, w.everyPageSays)
 	sc.Step(`^the site carries a picture of the window in every scheme cairn carries$`, w.aPictureOfTheWindowInEveryScheme)
 	sc.Step(`^each picture is drawn on the back of its own scheme$`, w.eachPictureOnItsOwnBack)
@@ -148,6 +150,21 @@ func (w *siteWorld) theReferenceListsEveryCommand() error {
 		}
 		if _, err := w.read(commandPage(c)); err != nil {
 			return fmt.Errorf("%s has no page of its own: %w", c.CommandPath(), err)
+		}
+	}
+	return nil
+}
+
+func (w *siteWorld) theReferenceListsEveryKey() error {
+	page, err := w.read(keysPage)
+	if err != nil {
+		return err
+	}
+	for _, k := range files.Keys() {
+		for _, said := range []string{k.Name, k.Says, takes(k)} {
+			if !strings.Contains(page, html.EscapeString(said)) {
+				return fmt.Errorf("the keys page does not say %q for %s", said, k.Name)
+			}
 		}
 	}
 	return nil

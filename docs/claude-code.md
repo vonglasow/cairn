@@ -67,7 +67,7 @@ and the work item's id as a label of digits alone. Only when you ask ("charge
 le ticket") does Claude read it and rewrite `ticket.md` from it.
 
 **An agreed approach.** When the configuration names an
-[`[approach] label`](config.md#an-approach-agreed-first), a task carrying it
+[`[approach] label`](config.md#every-key), a task carrying it
 is not coded before you agree on how: Claude writes `approach.md` in its notes
 and waits.
 
@@ -88,7 +88,7 @@ claude --resume <session-id>
 - A focus let go from a board while a session is attached is taken again at the
   session's next message.
 - A focus that has run long asks to be renewed; see
-  [configuration](config.md#focus).
+  [configuration](config.md#every-key).
 - What the hook does is written in the task's trace as
   `claude session <id>`, and what the agent does as `claude-code`.
 

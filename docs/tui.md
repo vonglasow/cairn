@@ -49,7 +49,7 @@ draw something nobody can read.
 
 Tabs, walked with `⇥`: **tasks**, **objectives**, **time** — a week, day by
 day, task by task — and **series** while recurrence is on. Each counts what it
-holds. A page turned off in the [configuration](config.md#pages) has no tab.
+holds. A page turned off in the [configuration](config.md#every-key) has no tab.
 
 ## The cursor
 

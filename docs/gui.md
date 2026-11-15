@@ -11,7 +11,7 @@ the bottom writes each key beside what it does, a key works exactly where the
 bar offers it, and whatever the pointer rests on lights up.
 
 It needs 720 by 560; below that it says so. The look follows the
-[scheme](config.md#the-window) the configuration names.
+[scheme](config.md#every-key) the configuration names.
 
 ## The board
 
@@ -44,7 +44,7 @@ Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
 - **Drag a gutter** between two columns or lanes to widen one, or the edge
   above the band to make it taller. A double-click on a gutter takes the size
   back; **Reset sizes** in the View menu takes them all back. To keep the sizes
-  from one window to the next, see [configuration](config.md#the-window).
+  from one window to the next, see [configuration](config.md#every-key).
 - The wheel scrolls what it began on.
 
 ## Keys
@@ -136,5 +136,5 @@ forward when it is already open. `⌘⇧` and a figure choose one directly.
 
 What another terminal or an agent changes turns up on its own. When the window
 opens, the board arrives by a short intro, which the configuration can
-[change](config.md#the-window). A store that is behind this cairn is offered
+[change](config.md#every-key). A store that is behind this cairn is offered
 its changes, a backup made first; one a newer cairn changed is refused.

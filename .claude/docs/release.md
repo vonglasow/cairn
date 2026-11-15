@@ -218,7 +218,8 @@ it is in the binary. **Nothing on it is written twice:**
   of `docs/` the site does not publish fails the suite;
 - the reference is read off cairn itself: every command from the command
   tree with every page on, every MCP tool from the server's own definitions,
-  the configuration from what `cairn config init` writes, every scheme from
+  every configuration key from `files.Keys`, with what `cairn config init`
+  writes, every scheme from
   `internal/theme/schemes`;
 - the boards are drawn by cairn over its fixtures: the terminal board as
   text, coloured by the scheme the site wears as a base16 terminal would be,

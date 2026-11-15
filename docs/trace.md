@@ -46,7 +46,7 @@ Deleting a task does not delete its trace, and its time stays on the
 timesheet, marked "(deleted)". Numbers are never handed out twice, so a
 trace naming task 7 always means that one task. To have a deletion take its
 time off the sheet, set `[time] deleted = "taken"`; see
-[configuration](config.md#time).
+[configuration](config.md#every-key).
 
 There is no undo, but the deletion keeps everything the task held, so it can be
 written again by hand.
@@ -84,7 +84,7 @@ time added by hand.
 ## Turning the time off
 
 `[pages] time` is `on`, `hidden` or `off`; see
-[configuration](config.md#pages).
+[configuration](config.md#every-key).
 
 - **hidden** only stops showing it: time is still counted, and every minute is
   there when it is shown again.

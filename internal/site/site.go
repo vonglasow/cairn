@@ -88,10 +88,6 @@ func docPages(said Said) ([]page, error) {
 			return nil, fmt.Errorf("%s: %w", s.from, err)
 		}
 		p := page{Name: nameOf(s.from), Title: got.title, Group: s.group, Top: s.top, Source: s.from, Body: got.body, Toc: got.toc}
-		if s.from == "docs/config.md" {
-			p.Body = configurationIntro() + p.Body
-			p.Toc = append([]heading{{ID: "the-whole-file", Title: "The whole file"}}, p.Toc...)
-		}
 		pages = append(pages, p)
 	}
 	return pages, nil
@@ -124,7 +120,7 @@ func ordered(docs []page, generated ...page) []page {
 			pages = append(pages, p)
 		}
 	}
-	for _, name := range []string{commandsPage, toolsPage, "mcp.html", "config.html", themesPage, "decisions.html", changelogPage} {
+	for _, name := range []string{commandsPage, toolsPage, keysPage, themesPage, "decisions.html", changelogPage} {
 		pages = append(pages, by[name])
 	}
 	for _, p := range generated {
@@ -228,7 +224,7 @@ func Build(to string, said Said) error {
 	if err != nil {
 		return err
 	}
-	generated := append(commandPages(), toolsPageOf(), themesPageOf(schemes, said.Window != nil), changelog, home(said, schemes))
+	generated := append(commandPages(), toolsPageOf(), keysPageOf(), themesPageOf(schemes, said.Window != nil), changelog, home(said, schemes))
 	pages := ordered(docs, generated...)
 	common = common.nav(pages)
 	if err := os.MkdirAll(to, 0o755); err != nil {
