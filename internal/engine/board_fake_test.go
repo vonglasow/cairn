@@ -1,12 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"errors"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 type fake struct {
@@ -15,10 +15,10 @@ type fake struct {
 	goals        []objective.Objective
 	focus        []int
 	freed        []int
-	chosen       map[int]choosing
+	chosen       map[int]task.Choosing
 	context      string
-	along        map[int]domain.Progress
-	goalsAlong   map[int]domain.Progress
+	along        map[int]item.Progress
+	goalsAlong   map[int]item.Progress
 	version      int64
 	fail         error
 	refuse       map[string]error

@@ -1,11 +1,10 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"fmt"
 	"slices"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 const soon = 7
@@ -93,4 +92,4 @@ func ReachesCard(c Card, query string) bool {
 }
 
 // Finished says whether a card is done.
-func Finished(c Card) bool { return c.State == string(domain.Done) }
+func Finished(c Card) bool { return c.State == string(item.Done) }

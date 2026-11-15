@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/engine/calendar"
 	"fmt"
 	"image/color"
 	"image/png"
@@ -18,12 +19,11 @@ import (
 	"gioui.org/widget/material"
 	"github.com/cucumber/godog"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 	"cairn/internal/linuxapp"
-	"cairn/internal/migration"
-	"cairn/internal/objective"
-	"cairn/internal/task"
 )
 
 func quoted(list string) []string {
@@ -1045,7 +1045,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
 	sc.Then(`^the week shown starts on "([^"]*)"$`, func(day string) error {
-		if got := domain.FormatDay(w.w.week); got != day {
+		if got := calendar.FormatDay(w.w.week); got != day {
 			return fmt.Errorf("the week shown starts on %s, want %s", got, day)
 		}
 		return nil
@@ -1079,7 +1079,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	weekday := func(day string) (int, error) {
 		for i := range 7 {
-			if domain.FormatDay(w.w.week.AddDate(0, 0, i)) == day {
+			if calendar.FormatDay(w.w.week.AddDate(0, 0, i)) == day {
 				return i, nil
 			}
 		}
@@ -1219,7 +1219,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the day shown is "([^"]*)"$`, func(day string) error {
-		if !w.w.Daily() || domain.FormatDay(w.w.week) != day {
+		if !w.w.Daily() || calendar.FormatDay(w.w.week) != day {
 			return fmt.Errorf("the time page shows %q, daily %v", TimeSays(w.w), w.w.Daily())
 		}
 		return nil
@@ -1271,7 +1271,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	dayOfMonth := func(day string) (int, error) {
 		for i, shown := range engine.MonthGrid(w.w.week) {
-			if domain.FormatDay(shown) == day {
+			if calendar.FormatDay(shown) == day {
 				return i, nil
 			}
 		}

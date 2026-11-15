@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/engine/migration"
 	"cairn/internal/gui"
 	"context"
 	"errors"
@@ -28,13 +29,13 @@ func initMigration(t *testing.T) func(*godog.ScenarioContext) {
 }
 
 func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
-	var draft string
+	var shown string
 	var board *tui.Looked
 	opened := false
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
-		draft, opened = "", false
-		w.window = func(_ engine.Work, _ engine.Pages, _ gui.Skin, kept, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
-			draft, opened = kept, true
+		shown, opened = "", false
+		w.window = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, _, _ int, here gui.Here) error {
+			shown, opened = here.Store, true
 			return nil
 		}
 		board = nil
@@ -49,7 +50,7 @@ func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
 		if board == nil {
 			return fmt.Errorf("the board was never opened:\n%s%s", w.Out.Stdout, w.Out.Stderr)
 		}
-		if !errors.Is(board.Err, engine.ErrStoreBehind) {
+		if !errors.Is(board.Err, migration.ErrStoreBehind) {
 			return fmt.Errorf("the board was not opened on a store behind: %w", board.Err)
 		}
 		return nil
@@ -58,7 +59,7 @@ func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
 		if !opened {
 			return fmt.Errorf("the window was never opened:\n%s%s", w.Out.Stdout, w.Out.Stderr)
 		}
-		return test.WantContains(draft, w.StorePath, "the draft of the window")
+		return test.WantContains(shown, w.StorePath, "the store the window shows")
 	})
 	sc.Step(`^(\d+) changes? (?:is|are) still waiting$`, func(n int) error {
 		before := w.Out

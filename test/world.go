@@ -1,6 +1,7 @@
 package test
 
 import (
+	"cairn/internal/engine/workspace"
 	"context"
 	"errors"
 	"fmt"
@@ -16,9 +17,9 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
-	"cairn/internal/migration"
+	"cairn/internal/engine/migration"
+	"cairn/internal/store/files"
 )
 
 // World carries what one scenario needs between its steps.
@@ -141,7 +142,7 @@ func (w *World) Seed(line string) error {
 }
 
 func (w *World) layDownTheStoreWhenThereIsNone() error {
-	if at, _ := w.Lookup(config.StoreVariable); w.StorePath == "" || at != w.StorePath {
+	if at, _ := w.Lookup(files.StoreVariable); w.StorePath == "" || at != w.StorePath {
 		return nil
 	}
 	if _, err := os.Stat(w.StorePath); !errors.Is(err, fs.ErrNotExist) {
@@ -255,8 +256,8 @@ func (w *World) setAsideConfig() func() {
 func (w *World) AHomeOfMyOwn() error {
 	w.Defaults = w.T.TempDir()
 	w.Setenv("HOME", w.Defaults)
-	w.Setenv(engine.StateVariable, "")
-	w.Setenv(engine.WorkspaceVariable, "")
+	w.Setenv(workspace.StateVariable, "")
+	w.Setenv(workspace.WorkspaceVariable, "")
 	return nil
 }
 
@@ -265,10 +266,10 @@ func (w *World) AStoreOfMyOwn() error {
 	mine := w.T.TempDir()
 	w.StorePath = filepath.Join(mine, "mine", "cairn.db")
 	w.Defaults = w.T.TempDir()
-	w.Setenv(config.StoreVariable, w.StorePath)
+	w.Setenv(files.StoreVariable, w.StorePath)
 	w.Setenv("HOME", w.Defaults)
-	w.Setenv(engine.StateVariable, "")
-	w.Setenv(engine.WorkspaceVariable, "")
+	w.Setenv(workspace.StateVariable, "")
+	w.Setenv(workspace.WorkspaceVariable, "")
 	return nil
 }
 
@@ -355,7 +356,7 @@ func (w *World) FocusSessionsLast(length string) error {
 
 // Recurrence turns recurrence on or off in the settings beside the store, the way a person would write them — never through cairn.
 func (w *World) Recurrence(said string) error {
-	path := config.SettingsBeside(w.StorePath)
+	path := files.SettingsBeside(w.StorePath)
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}

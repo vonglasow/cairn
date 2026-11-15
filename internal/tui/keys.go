@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/migration"
 	"strconv"
 	"strings"
 	"unicode"
@@ -147,7 +148,7 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 }
 
 func (b Board) aboutStore() bool {
-	return b.aboutReason(engine.ErrStoreBehind) || b.aboutReason(engine.ErrNewerStore)
+	return b.aboutReason(migration.ErrStoreBehind) || b.aboutReason(migration.ErrNewerStore)
 }
 
 func (b Board) aboutReason(err error) bool {
@@ -158,7 +159,7 @@ func (b Board) answeringStore(key string) (tea.Model, tea.Cmd) {
 	if key == "esc" {
 		return b, tea.Quit
 	}
-	if (key == "enter" || key == "return") && b.aboutReason(engine.ErrStoreBehind) {
+	if (key == "enter" || key == "return") && b.aboutReason(migration.ErrStoreBehind) {
 		return b, b.carry(b.agreeing.Op, b.agreeing.In)
 	}
 	return b, nil

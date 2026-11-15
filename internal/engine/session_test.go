@@ -7,20 +7,20 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/config"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/store/files"
 )
 
-func actAt(number int, did string, at time.Time) trace.Act {
-	return trace.Made(trace.Carried{Task: number, Did: did, At: at})
+func actAt(number int, did string, at time.Time) act.Act {
+	return act.Made(act.Carried{Task: number, Did: did, At: at})
 }
 
 func TestSession_isUpSinceTheFocusWasLastTakenOrRenewed(t *testing.T) {
 	taken := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
-	acts := []trace.Act{
-		actAt(4, trace.FocusTaken, taken),
-		actAt(4, trace.FocusRenewed, taken.Add(time.Hour)),
-		actAt(4, trace.Changed, taken.Add(2*time.Hour)),
+	acts := []act.Act{
+		actAt(4, act.FocusTaken, taken),
+		actAt(4, act.FocusRenewed, taken.Add(time.Hour)),
+		actAt(4, act.Changed, taken.Add(2*time.Hour)),
 	}
 	got := sessionOf(4, acts, taken.Add(150*time.Minute), 0)
 	if !got.Since.Equal(taken.Add(time.Hour)) || got.Up != "1h30m" || got.Ask != "" {
@@ -30,7 +30,7 @@ func TestSession_isUpSinceTheFocusWasLastTakenOrRenewed(t *testing.T) {
 
 func TestSession_asksOnlyOnceItsLengthIsReached(t *testing.T) {
 	taken := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
-	acts := []trace.Act{actAt(4, trace.FocusTaken, taken)}
+	acts := []act.Act{actAt(4, act.FocusTaken, taken)}
 	if got := sessionOf(4, acts, taken.Add(59*time.Minute), time.Hour); got.Ask != "" {
 		t.Errorf("within its length it asks %q", got.Ask)
 	}
@@ -75,7 +75,7 @@ func renewals(t *testing.T, path string) int {
 	}
 	n := 0
 	for _, a := range acts {
-		if a.Carried().Did == trace.FocusRenewed {
+		if a.Carried().Did == act.FocusRenewed {
 			n++
 		}
 	}
@@ -104,7 +104,7 @@ func TestFocus_againRenewsOnlyASessionPastItsLength(t *testing.T) {
 func TestFocus_refusesASessionLengthThatIsNoDuration(t *testing.T) {
 	path := storeAt(t, "one")
 	_, err := DoFrom(TaskFocus, homeLasting(t, path, "an hour", 0), given("number", "1"), Acting{})
-	if !errors.Is(err, config.ErrFocus) {
+	if !errors.Is(err, files.ErrFocus) {
 		t.Errorf("err = %v, want config.ErrFocus", err)
 	}
 }
@@ -125,7 +125,7 @@ func TestAnswer_asksToRenewWhateverWasCalled(t *testing.T) {
 
 func TestSession_asksTheMinuteItsLengthIsReached(t *testing.T) {
 	taken := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
-	acts := []trace.Act{actAt(4, trace.FocusTaken, taken)}
+	acts := []act.Act{actAt(4, act.FocusTaken, taken)}
 	if got := sessionOf(4, acts, taken.Add(time.Hour), time.Hour); got.Ask == "" {
 		t.Error("a session exactly as long as its length asks nothing")
 	}
@@ -135,7 +135,7 @@ func TestSession_refusesALengthOfNothingOrLess(t *testing.T) {
 	for _, said := range []string{"0s", "-1h"} {
 		e := openEngine(t)
 		e.home = homeLasting(t, "", said, 0)
-		if _, err := e.sessionLength(); !errors.Is(err, config.ErrFocus) {
+		if _, err := e.sessionLength(); !errors.Is(err, files.ErrFocus) {
 			t.Errorf("focus.session %q: err = %v, want config.ErrFocus", said, err)
 		}
 	}

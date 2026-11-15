@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 //go:embed fixtures/fixtures.json
@@ -54,7 +54,7 @@ func MakeFixtures(folder, from string, fresh bool) (Fixtures, error) {
 	if err := os.WriteFile(filepath.Join(folder, fixturesMark), nil, 0o600); err != nil {
 		return Fixtures{}, err
 	}
-	if err := os.WriteFile(config.SettingsBeside(at.Store), []byte("[series]\non = true\n\n[workspace]\ncolour = \"peach\"\nname = \"fixtures\"\n"), 0o600); err != nil {
+	if err := files.Kept(files.SettingsBeside(at.Store)).Keep([]byte("[series]\non = true\n\n[workspace]\ncolour = \"peach\"\nname = \"fixtures\"\n")); err != nil {
 		return Fixtures{}, err
 	}
 	if from == "" {

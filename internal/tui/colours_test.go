@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/label"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -12,8 +13,6 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
-
-	"cairn/internal/domain"
 )
 
 var hex = regexp.MustCompile(`#(%02x|[0-9a-fA-F]{3}\b|[0-9a-fA-F]{6}\b)`)
@@ -125,7 +124,7 @@ func TestTheQuietInksAreFaintAndBare(t *testing.T) {
 
 func TestEveryLabelColourIsTheNearestOfTheTerminals(t *testing.T) {
 	b := Board{skin: SkinOf(Default)}
-	for _, name := range domain.LabelColours {
+	for _, name := range label.LabelColours {
 		want := "\x1b[" + terminalColours[labelsInTheTerminal[name]] + "m●\x1b[m"
 		if got := b.wearing(name).Render("●"); got != want {
 			t.Errorf("%s is drawn %q, want %q", name, got, want)

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/engine/workspace"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,8 +11,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
-	"cairn/internal/engine"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -52,8 +52,8 @@ func (w *world) expand(place string) string {
 
 func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	sc.Step(`^nothing configured anywhere yet$`, func() error {
-		w.Setenv(config.StoreVariable, "")
-		if err := os.Unsetenv(config.StoreVariable); err != nil {
+		w.Setenv(files.StoreVariable, "")
+		if err := os.Unsetenv(files.StoreVariable); err != nil {
 			return err
 		}
 		w.Setenv("XDG_CONFIG_HOME", "")
@@ -131,17 +131,17 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^the environment says the store lives at "([^"]*)"$`, func(place string) error {
-		w.Setenv(config.StoreVariable, place)
+		w.Setenv(files.StoreVariable, place)
 		return nil
 	})
 
 	sc.Step(`^the environment names the workspace "([^"]*)"$`, func(name string) error {
-		w.Setenv(engine.WorkspaceVariable, name)
+		w.Setenv(workspace.WorkspaceVariable, name)
 		return nil
 	})
 
 	sc.Step(`^the environment says the notes live at "([^"]*)"$`, func(place string) error {
-		w.Setenv(config.NotesVariable, place)
+		w.Setenv(files.NotesVariable, place)
 		return nil
 	})
 
@@ -166,8 +166,8 @@ func (w *world) registerConfig(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if string(written) != config.Example {
-			return fmt.Errorf("it wrote:\n%s\nand the configuration cairn shows is:\n%s", written, config.Example)
+		if string(written) != files.Example {
+			return fmt.Errorf("it wrote:\n%s\nand the configuration cairn shows is:\n%s", written, files.Example)
 		}
 		return nil
 	})

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/series"
 	"errors"
 	"strconv"
 	"strings"
@@ -12,7 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func twoTasks() *fake {
@@ -238,13 +239,13 @@ func TestTheDetailShowsStepsAndHistory(t *testing.T) {
 		{Number: 1, Title: "Parent", State: "todo", SubDone: 1, SubTotal: 1, Labels: []string{"spec"}, Estimate: "3h", Spent: "1h", Deadline: on("2026-09-02"),
 			Steps: []engine.Part{{Number: 1, Title: "Child", Done: true}}},
 	}
-	var told trace.AsTold
+	var told act.AsTold
 	told.On(1)
 	told.Did("created")
 	told.Changing("title")
 	told.Became("Parent")
 	told.At(today)
-	f.acts = []trace.Act{told.Act()}
+	f.acts = []act.Act{told.Act()}
 	b := hit(standing(f), "l", "i", "enter")
 	drawn := strip(b.Draw())
 	for _, want := range []string{"STEPS", "Child", "TRACE", "created", "title"} {
@@ -914,7 +915,7 @@ func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
 
 func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
 	b := standing(newFake())
-	var told trace.AsTold
+	var told act.AsTold
 	told.On(1)
 	told.Did("changed")
 	told.Changing("priority")
@@ -932,7 +933,7 @@ func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
 
 func TestAHistoryLineSaysTheSeriesAnOccurrenceWasMadeFrom(t *testing.T) {
 	b := standing(newFake())
-	if got := strip(b.line(anAct(engine.MadeFromSeries, "↻3"))); !strings.Contains(got, "made from series  ↻3") {
+	if got := strip(b.line(anAct(series.MadeFromSeries, "↻3"))); !strings.Contains(got, "made from series  ↻3") {
 		t.Errorf("an occurrence made reads %q", got)
 	}
 }

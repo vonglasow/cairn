@@ -1,12 +1,6 @@
 package gui
 
-import (
-	"encoding/json"
-	"errors"
-	"io/fs"
-	"os"
-	"path/filepath"
-)
+import "cairn/internal/engine"
 
 // SizesKept keeps how wide and how tall the window was left, past it closing, for the next one to open with.
 type SizesKept interface {
@@ -14,35 +8,16 @@ type SizesKept interface {
 	Kept() (Sizes, error)
 }
 
-// SizesAt keeps the sizes in a file of their own.
-func SizesAt(path string) SizesKept { return fileSizes(path) }
+// SizesOf keeps the sizes through the engine holding the work, when the configuration says to.
+func SizesOf(work engine.Work) SizesKept { return askedSizes{windowKept{work, "sizes"}} }
 
-type fileSizes string
+type askedSizes struct{ windowKept }
 
-func (f fileSizes) Keep(s Sizes) error {
-	written, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(string(f)), 0o700); err != nil {
-		return err
-	}
-	return os.WriteFile(string(f), written, 0o600)
-}
+func (a askedSizes) Keep(s Sizes) error { return a.keep(s) }
 
-func (f fileSizes) Kept() (Sizes, error) {
-	read, err := os.ReadFile(string(f))
-	if errors.Is(err, fs.ErrNotExist) {
-		return Sizes{}, nil
-	}
-	if err != nil {
-		return Sizes{}, err
-	}
+func (a askedSizes) Kept() (Sizes, error) {
 	var s Sizes
-	if err := json.Unmarshal(read, &s); err != nil {
-		return Sizes{}, err
-	}
-	return s, nil
+	return s, a.read(&s)
 }
 
 type noSizes struct{}

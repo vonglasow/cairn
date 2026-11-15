@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/workspace"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,8 +15,6 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/spf13/cobra"
 
-	"cairn/internal/domain"
-	"cairn/internal/engine"
 	"cairn/test"
 )
 
@@ -23,7 +23,7 @@ const recentHeading = "recent folders"
 func (w *workspaces) registerRecent(sc *godog.ScenarioContext) {
 	sc.Step("^I open the board with `([^`]*)`$", w.openTheBoardWith)
 	sc.Step(`^the environment says XDG_STATE_HOME is "([^"]*)"$`, func(place string) error {
-		w.Setenv(engine.StateVariable, w.expand(place))
+		w.Setenv(workspace.StateVariable, w.expand(place))
 		return nil
 	})
 	sc.Step(`^ten recent folders, "~/old/1" opened first and "~/old/10" last$`, w.tenRecentFolders)
@@ -79,7 +79,7 @@ func (w *workspaces) registerRecent(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if !slices.Contains(domain.LabelColours, colour) {
+		if !slices.Contains(label.LabelColours, colour) {
 			return fmt.Errorf("%q wears %q, none of the label colours", name, colour)
 		}
 		return nil

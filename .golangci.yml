@@ -31,13 +31,14 @@ linters:
   settings:
     depguard:
       rules:
-        # The entities know nobody. This one is an allow-list, not a deny-list,
+        # What a task and an objective both have, and the calendar, know
+        # nobody. This one is an allow-list, not a deny-list,
         # because a deny-list only forbids what someone thought to name — and
         # `database/sql` finding its way into an entity is precisely the import
         # nobody would have thought to name. Everything absent here is refused,
         # so widening this list is a decision somebody makes on purpose.
-        domain:
-          files: ["**/internal/domain/**"]
+        item:
+          files: ["**/internal/engine/item/**", "**/internal/engine/calendar/**", "**/internal/engine/filter/**", "**/internal/engine/backup/**"]
           allow:
             - errors
             - fmt
@@ -56,7 +57,7 @@ linters:
 
         # The plugin the binary carries knows nobody: it is files, and the code
         # that writes them out. The engine calls it, and it calls nothing of
-        # ours. An allow-list, like domain.
+        # ours. An allow-list, like item.
         plugin:
           files: ["**/plugin/claude/**"]
           allow:
@@ -68,12 +69,12 @@ linters:
             - os
             - path/filepath
             - strings
-            # Only reachable from _test.go, as for domain.
+            # Only reachable from _test.go, as for item.
             - testing
 
         # Which build this is knows nobody, for the same reason an entity does:
         # both surfaces have to answer the question, and an identity owned by one
-        # of them is an identity the other borrows. An allow-list, like domain.
+        # of them is an identity the other borrows. An allow-list, like item.
         build:
           files: ["**/internal/build/**"]
           allow:
@@ -99,11 +100,11 @@ linters:
 
         # Where cairn finds its own places: the file, the environment, the home.
         # It reads a file and knows nobody of ours — the engine is told what it
-        # found, and a surface asks the engine. An allow-list, like domain and
+        # found, and a surface asks the engine. An allow-list, like item and
         # build: what it may reach is short and named, and an import nobody
         # thought to forbid is exactly the one that would hurt here.
         config:
-          files: ["**/internal/config/**"]
+          files: ["**/internal/store/files/**"]
           allow:
             - bytes
             - errors
@@ -118,7 +119,7 @@ linters:
             # Only reachable from _test.go: its tests sit in package
             # config_test and import it back, and the `testing` rule below
             # refuses `testing` anywhere else.
-            - cairn/internal/config
+            - cairn/internal/store/files
             - regexp
             - strconv
             - testing
@@ -147,9 +148,10 @@ linters:
             - strings
             - unicode
             - go.yaml.in/yaml/v3
-            - cairn/internal/domain
-            - cairn/internal/objective
-            # Only reachable from _test.go, as for domain.
+            - cairn/internal/engine/item
+            - cairn/internal/engine/label
+            - cairn/internal/engine/objective
+            # Only reachable from _test.go, as for item.
             - testing
 
         # What debug mode writes down, and where it keeps its files. It knows
@@ -174,7 +176,7 @@ linters:
             # differently in the next.
             - crypto/rand
             - crypto/sha256
-            # Only reachable from _test.go, as for domain.
+            # Only reachable from _test.go, as for item.
             - bytes
             - errors
             - regexp
@@ -252,7 +254,7 @@ linters:
 
         # cairn's logo, drawn once by scripts/logo.sh and carried in the binary.
         # It knows nobody, ours or not: it hands out the bytes it was built
-        # with. An allow-list, like domain, so the day it starts drawing for
+        # with. An allow-list, like item, so the day it starts drawing for
         # itself is a decision somebody makes on purpose.
         logo:
           files: ["**/internal/logo/**", "!**/internal/logo/*_test.go"]
@@ -260,20 +262,56 @@ linters:
             - embed
             - strconv
 
+        # The changes an input says, read against the calendar: what is
+        # carried and nothing more. An allow-list, like item.
+        change:
+          files: ["**/internal/engine/change/**"]
+          allow:
+            - errors
+            - fmt
+            - slices
+            - strconv
+            - strings
+            - time
+            - cairn/internal/engine/calendar
+            # Only reachable from _test.go, as for item.
+            - testing
+
+        # The other notions: labels, series, views, workspaces, export and
+        # import, cairn as an application. Each reaches the notions below it
+        # and the files it keeps, never the catalogue that asks it, nor a
+        # surface. A deny-list, like task.
+        notion:
+          files: ["**/internal/engine/label/**", "**/internal/engine/series/**", "**/internal/engine/view/**", "**/internal/engine/workspace/**", "**/internal/engine/exchange/**", "**/internal/engine/app/**"]
+          deny:
+            - pkg: cairn/internal/engine$
+              desc: a notion knows nothing of the operations run on it
+            - pkg: database/sql
+              desc: a notion that knew how it is stored would drag a database into every test that touches it
+            - pkg: cairn/internal/cli
+              desc: a notion knows nothing of how it is displayed
+            - pkg: cairn/internal/mcp
+              desc: a notion knows nothing of how it is displayed
+            - pkg: cairn/internal/tui
+              desc: a notion knows nothing of how it is displayed
+            - pkg: cairn/internal/gui
+              desc: a notion knows nothing of how it is displayed
+            - pkg: github.com/spf13/cobra
+              desc: a notion is not a surface
+
         # The task holds the task: what it carries, and the rules that keep it
-        # valid. It reaches domain, for the attributes a task carries and the
-        # title rule it shares with an objective, and nothing else — a task
+        # valid. It reaches the notions below it, and nothing else — a task
         # that knew how it is stored or displayed would drag a database or a
-        # terminal into every test that touches it, the same reason domain
+        # terminal into every test that touches it, the same reason item
         # itself knows nobody. A deny-list, like store and engine, because what
         # it must never reach is a short, named list rather than everything
         # unnamed.
         task:
-          files: ["**/internal/task/**"]
+          files: ["**/internal/engine/task/**"]
           deny:
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: a task knows nothing of how it is stored
-            - pkg: cairn/internal/engine
+            - pkg: cairn/internal/engine$
               desc: a task knows nothing of the operations run on it
             - pkg: cairn/internal/cli
               desc: a task knows nothing of how it is displayed
@@ -285,33 +323,22 @@ linters:
               desc: a task is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: a task is not a surface
-            - pkg: cairn/internal/objective
-              desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/trace
-              desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/migration
-              desc: a notion never imports another notion; store and engine are what tie them together
             - pkg: cairn/internal/tui
               desc: a task knows nothing of how it is displayed
             - pkg: cairn/internal/gui
               desc: a task knows nothing of how it is displayed
 
         # The objective holds the objective: what it carries, and the rules
-        # that keep it valid. It reaches domain, for the attributes an
-        # objective carries and the title rule it shares with a task, and
-        # nothing else — not even cairn/internal/task: an objective that knew
-        # of the task would close the circle task's own rule keeps open, and
-        # what it needs from a task (TasksServing) is store's and engine's to
-        # ask for, not its own. A deny-list, like task, because what it must
+        # that keep it valid. It reaches the notions below it, and nothing
+        # else; what it needs from a task (TasksServing) is the store's and
+        # the engine's to ask for, not its own. A deny-list, like task, because what it must
         # never reach is a short, named list rather than everything unnamed.
         objective:
-          files: ["**/internal/objective/**"]
+          files: ["**/internal/engine/objective/**"]
           deny:
-            - pkg: cairn/internal/task
-              desc: an objective knows nothing of a task; store and engine are what ties the two together
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: an objective knows nothing of how it is stored
-            - pkg: cairn/internal/engine
+            - pkg: cairn/internal/engine$
               desc: an objective knows nothing of the operations run on it
             - pkg: cairn/internal/cli
               desc: an objective knows nothing of how it is displayed
@@ -323,29 +350,24 @@ linters:
               desc: an objective is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: an objective is not a surface
-            - pkg: cairn/internal/trace
-              desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/migration
-              desc: a notion never imports another notion; store and engine are what tie them together
             - pkg: cairn/internal/tui
               desc: an objective knows nothing of how it is displayed
             - pkg: cairn/internal/gui
               desc: an objective knows nothing of how it is displayed
 
         # The migration holds the change: what it does to the shape of the
-        # store, what undoes it, and what undoing it costs. It reaches domain,
-        # for what a store holds and for writing a moment the way a person
-        # reads one, and nothing else — a change that knew how it is stored
+        # store, what undoes it, and what undoing it costs. It reaches the
+        # notions below it, and nothing else — a change that knew how it is stored
         # or displayed would drag a database or a terminal into every test
         # that touches it, the same reason task and objective know neither.
         # A deny-list, like task and objective, because what it must never
         # reach is a short, named list rather than everything unnamed.
         migration:
-          files: ["**/internal/migration/**"]
+          files: ["**/internal/engine/migration/**"]
           deny:
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: a change knows nothing of how it is stored; the store executes its SQL, it does not own the change
-            - pkg: cairn/internal/engine
+            - pkg: cairn/internal/engine$
               desc: a change knows nothing of the operations run on it
             - pkg: cairn/internal/cli
               desc: a change knows nothing of how it is displayed
@@ -357,34 +379,24 @@ linters:
               desc: a change is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: a change is not a surface
-            - pkg: cairn/internal/task
-              desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/objective
-              desc: a notion never imports another notion; store and engine are what tie them together
-            - pkg: cairn/internal/trace
-              desc: a notion never imports another notion; store and engine are what tie them together
             - pkg: cairn/internal/tui
               desc: a change knows nothing of how it is displayed
             - pkg: cairn/internal/gui
               desc: a change knows nothing of how it is displayed
 
         # The act holds one thing that was done to a task: what it was, what it
-        # became, when, and through which surface. It reaches domain, for writing
-        # a moment the way a person reads one, and nothing else — not even
-        # cairn/internal/task, which is the one worth spelling out. An act names
-        # its task by number and never carries the task: a task may be gone by
-        # the time its acts are read, and an act holding one could not outlive
-        # it. Reaching for the task would undo that.
+        # became, when, and through which surface. It reaches the notions
+        # below it, and nothing else. An act names its task by number and
+        # never carries the task: a task may be gone by the time its acts are
+        # read, and an act holding one could not outlive it.
         trace:
-          files: ["**/internal/trace/**"]
+          files: ["**/internal/engine/act/**"]
           deny:
-            - pkg: cairn/internal/task
-              desc: an act names its task by number, never carries it, so it outlives the task it describes
-            - pkg: cairn/internal/objective
+            - pkg: cairn/internal/engine/objective
               desc: an act is about a task; an objective has nothing to do with one
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: an act knows nothing of how it is kept; the store writes it down, it does not own it
-            - pkg: cairn/internal/engine
+            - pkg: cairn/internal/engine$
               desc: an act knows nothing of the operations that produced it
             - pkg: cairn/internal/cli
               desc: an act knows nothing of how it is displayed
@@ -396,8 +408,6 @@ linters:
               desc: an act is not a surface
             - pkg: github.com/charmbracelet/fang
               desc: an act is not a surface
-            - pkg: cairn/internal/migration
-              desc: a notion never imports another notion; store and engine are what tie them together
             - pkg: cairn/internal/tui
               desc: an act knows nothing of how it is displayed
             - pkg: cairn/internal/gui
@@ -406,9 +416,9 @@ linters:
         # The store is called by the engine and speaks in entities. It is the
         # only package that knows a database exists.
         store:
-          files: ["**/internal/store/**"]
+          files: ["**/internal/store/sqlite/**"]
           deny:
-            - pkg: cairn/internal/engine
+            - pkg: cairn/internal/engine$
               desc: the store is called by the engine, it never calls it
             - pkg: cairn/internal/cli
               desc: the store must not know how anything is displayed
@@ -468,7 +478,7 @@ linters:
               desc: the harness is handed a runner, it never reaches a surface
             - pkg: cairn/internal/mcp
               desc: the harness is handed a runner, it never reaches a surface
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: a scenario asks the engine, never the store
             - pkg: database/sql
               desc: a scenario never opens a database
@@ -482,7 +492,7 @@ linters:
         cli:
           files: ["**/internal/cli/**"]
           deny:
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: a surface changes state through the engine, never behind it
             - pkg: database/sql
               desc: a surface never opens a database
@@ -496,7 +506,7 @@ linters:
           deny:
             - pkg: cairn/internal/cli
               desc: the command line opens the window, the window never reads it
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: a surface changes state through the engine, never behind it
             - pkg: cairn/internal/mcp
               desc: two surfaces do not reach each other
@@ -515,7 +525,7 @@ linters:
           deny:
             - pkg: cairn/internal/cli
               desc: the command line opens the board, the board never reads it
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: a surface changes state through the engine, never behind it
             - pkg: cairn/internal/mcp
               desc: two surfaces do not reach each other
@@ -540,7 +550,7 @@ linters:
           deny:
             - pkg: cairn/internal/cli
               desc: the command line builds the server, the server never reads it
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: a surface changes state through the engine, never behind it
             - pkg: database/sql
               desc: a surface never opens a database
@@ -557,7 +567,7 @@ linters:
         site:
           files: ["**/internal/site/**"]
           deny:
-            - pkg: cairn/internal/store
+            - pkg: cairn/internal/store/sqlite
               desc: the site draws through the engine, never behind it
             - pkg: database/sql
               desc: the site never opens a database

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 var numbersArgument = Argument{
@@ -41,13 +41,13 @@ func askedNumbers(in Input) ([]int, error) {
 func (e *Engine) numbered(tasks []task.Task, numbers []int) ([]task.Task, []int, error) {
 	kept := []task.Task{}
 	for _, t := range tasks {
-		if slices.Contains(numbers, factsOf(t).Number) {
+		if slices.Contains(numbers, t.Carried().Number) {
 			kept = append(kept, t)
 		}
 	}
 	var unknown []int
 	for _, number := range numbers {
-		if _, err := e.show(number); errors.Is(err, errNoSuchTask) {
+		if _, err := e.show(number); errors.Is(err, task.ErrNoSuchTask) {
 			unknown = append(unknown, number)
 		} else if err != nil {
 			return nil, nil, err

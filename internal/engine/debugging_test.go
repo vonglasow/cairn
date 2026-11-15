@@ -2,6 +2,7 @@ package engine
 
 import (
 	"archive/zip"
+	"cairn/internal/engine/label"
 	"errors"
 	"fmt"
 	"io"
@@ -14,7 +15,7 @@ import (
 	"time"
 
 	"cairn/internal/debug"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func debugLog(t *testing.T) *debug.Log {
@@ -156,7 +157,7 @@ func TestSummary_saysEachFieldSetOnceAndNothingElse(t *testing.T) {
 		{Answer{}, ""},
 		{Answer{Task: made.Task, Tasks: []task.Task{*made.Task}}, "task #1 backlog, tasks 1"},
 		{Answer{Tasks: []task.Task{}}, ""},
-		{Answer{Labels: &[]LabelCarried{{}, {}}}, "labels 2"},
+		{Answer{Labels: &[]label.Carried{{}, {}}}, "labels 2"},
 		{Answer{Total: &total, Written: &written}, "total 3, written"},
 		{Answer{Context: "here"}, "context"},
 	} {

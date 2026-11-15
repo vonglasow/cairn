@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 func waitsOn(number string, on ...string) func() (Operation, Input) {
@@ -73,12 +73,12 @@ func TestObjectiveWaitsOn_refusesWhatCannotBe(t *testing.T) {
 	}{
 		{waitsOn("1", "1"), objective.ErrWaitsOnItself},
 		{waitsOn("1", "2"), objective.ErrWaitsOnItself},
-		{waitsOn("1", "9"), errNoSuchObjective},
-		{waitsOn("1", "x"), errWaitsOnRequired},
-		{waitsOn("1", "=2", "+1"), errWaitsOnBothWays},
+		{waitsOn("1", "9"), objective.ErrNoSuchObjective},
+		{waitsOn("1", "x"), objective.ErrWaitsOnRequired},
+		{waitsOn("1", "=2", "+1"), objective.ErrWaitsOnBothWays},
 		{func() (Operation, Input) {
 			return ObjectiveNew, Input{Given: map[string]string{"title": "Other"}, Listed: map[string][]string{"waits-on": {"+1"}}}
-		}, errWaitsOnSignAtBirth},
+		}, objective.ErrWaitsOnSignAtBirth},
 	} {
 		op, in := c.ask()
 		if _, err := Do(op, path, in); !errors.Is(err, c.want) {

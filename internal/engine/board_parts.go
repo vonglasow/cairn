@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 // Added is the number of the task an add answered with.

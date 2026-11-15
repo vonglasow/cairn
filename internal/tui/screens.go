@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/calendar"
 	"strconv"
 	"strings"
 
@@ -8,9 +9,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 func (b Board) panel(title, body string, width int) string {
@@ -290,7 +290,7 @@ func (b Board) detailBand(c engine.Card) string {
 	for _, label := range c.Labels {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
 	}
-	if day := domain.FormatDay(c.Deadline); day != "" {
+	if day := calendar.FormatDay(c.Deadline); day != "" {
 		text, show, late := engine.CardDeadline(c, b.now())
 		style := b.skin.Bright
 		if late {

@@ -1,21 +1,21 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 // NewTaskFields is the form of a task about to be added on a column: that column already filled in — a task added there belongs there, and asking again would be asking something the board already knows — and normal priority, which is what a task carries when nothing is said.
 func NewTaskFields(state string) []Field {
-	return taskFields(Card{State: state, Priority: string(domain.Normal)})
+	return taskFields(Card{State: state, Priority: string(item.Normal)})
 }
 
 // LinkedTaskFields is the form of a task about to be added linked to another: in todo, where a task that came of one done starts again, and the link already written.
 func LinkedTaskFields(number int) []Field {
-	fields := AddingFields(string(domain.Todo))
+	fields := AddingFields(string(item.Todo))
 	for i := range fields {
 		if fields[i].Name == "links" {
 			fields[i].Value = strconv.Itoa(number)
@@ -26,7 +26,7 @@ func LinkedTaskFields(number int) []Field {
 
 // ServingTaskFields is the form of a task about to be added from an objective: in todo, serving it already.
 func ServingTaskFields(objective int) []Field {
-	fields := AddingFields(string(domain.Todo))
+	fields := AddingFields(string(item.Todo))
 	for i := range fields {
 		if fields[i].Name == "objectives" {
 			fields[i].Value = strconv.Itoa(objective)
@@ -37,7 +37,7 @@ func ServingTaskFields(objective int) []Field {
 
 // NewGoalFields is the form of an objective about to be added: active, which is where an objective starts, at normal priority.
 func NewGoalFields() []Field {
-	return GoalFields(Goal{State: string(objective.Active), Priority: string(domain.Normal)})
+	return GoalFields(Goal{State: string(objective.Active), Priority: string(item.Normal)})
 }
 
 // NewSubGoalFields is the form of an objective about to be added under a parent.

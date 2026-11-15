@@ -1,9 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
 	"cmp"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -12,62 +17,18 @@ import (
 	"strconv"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
-
-const (
-	exchangeKind    = "tasks"
-	exchangeVersion = 7
-	beforeSteps     = 1
-)
-
-// errNotAnExport is what reading a file that does not hold tasks written by task export is refused with.
-var errNotAnExport = errors.New("the file holds no tasks written by cairn task export")
-
-// errExportPointsOutside is what reading a file whose tasks point at a task or an objective it does not hold is refused with.
-var errExportPointsOutside = errors.New("the file points outside itself")
 
 type exchanged struct {
-	Cairn      string           `json:"cairn"`
-	Version    int              `json:"version"`
-	Objectives []objectiveFiled `json:"objectives"`
-	Labels     []labelFiled     `json:"labels,omitempty"`
-	Tasks      []filed          `json:"tasks"`
-	Series     []seriesFiled    `json:"series,omitempty"`
-	Views      []viewFiled      `json:"views,omitempty"`
-}
-
-type labelFiled struct {
-	Label  string `json:"label"`
-	Colour string `json:"colour,omitempty"`
-	Scope  string `json:"scope,omitempty"`
-}
-
-type objectiveFiled struct {
-	objective.Shape
-	Parent  int   `json:"parent,omitempty"`
-	WaitsOn []int `json:"waits_on,omitempty"`
-}
-
-type filed struct {
-	task.Shape
-	Parent  int               `json:"parent,omitempty"`
-	Spent   map[string]string `json:"spent,omitempty"`
-	Focused bool              `json:"focused,omitempty"`
-}
-
-// exported says which file the tasks were written to, and what it holds.
-type exported struct {
-	Exported string       `json:"exported"`
-	Holds    *domain.Held `json:"holds"`
-}
-
-// importedFile says which file was read in, and how much of it was added.
-type importedFile struct {
-	Imported string      `json:"imported"`
-	Added    domain.Held `json:"added"`
+	Cairn      string                    `json:"cairn"`
+	Version    int                       `json:"version"`
+	Objectives []exchange.ObjectiveFiled `json:"objectives"`
+	Labels     []exchange.LabelFiled     `json:"labels,omitempty"`
+	Tasks      []exchange.Filed          `json:"tasks"`
+	Series     []exchange.SeriesFiled    `json:"series,omitempty"`
+	Views      []viewFiled               `json:"views,omitempty"`
 }
 
 // TaskExport writes every task to a file, with every objective.
@@ -80,7 +41,7 @@ var TaskExport = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: exported{},
+	Answers: exchange.Exported{},
 	Takes: []Argument{
 		{Name: "to", Kind: Text, Positional: true, Required: true, Means: "the file to write the tasks to"},
 	},
@@ -93,7 +54,7 @@ var TaskExport = Operation{
 		if err := writeNew(to, out); err != nil {
 			return Answer{}, err
 		}
-		held := domain.Held{Tasks: len(out.Tasks), Objectives: len(out.Objectives)}
+		held := backup.Held{Tasks: len(out.Tasks), Objectives: len(out.Objectives)}
 		return Answer{Exported: &to, Holds: &held}, nil
 	},
 }
@@ -108,7 +69,7 @@ var TaskImport = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   doesItAgain,
-	Answers: importedFile{},
+	Answers: exchange.ImportedFile{},
 	Takes: []Argument{
 		{Name: "from", Kind: Text, Positional: true, Required: true, Means: "the file holding the tasks to add"},
 	},
@@ -127,13 +88,13 @@ var TaskImport = Operation{
 }
 
 func (e *Engine) exporting() (exchanged, error) {
-	var every domain.Narrowing
+	var every filter.Narrowing
 	every.WithArchived()
 	tasks, err := e.narrowed(&every)
 	if err != nil {
 		return exchanged{}, err
 	}
-	out := exchanged{Cairn: exchangeKind, Version: exchangeVersion, Tasks: []filed{}, Objectives: []objectiveFiled{}}
+	out := exchanged{Cairn: exchange.Kind, Version: exchange.Version, Tasks: []exchange.Filed{}, Objectives: []exchange.ObjectiveFiled{}}
 	spent, err := e.spentByDay()
 	if err != nil {
 		return exchanged{}, err
@@ -147,17 +108,17 @@ func (e *Engine) exporting() (exchanged, error) {
 		return exchanged{}, err
 	}
 	for _, l := range labels {
-		filed := labelFiled{Label: l.Label, Colour: l.Colour}
-		if l.Scope != string(domain.ForBoth) {
+		filed := exchange.LabelFiled{Label: l.Label, Colour: l.Colour}
+		if l.Scope != string(label.ForBoth) {
 			filed.Scope = l.Scope
 		}
 		out.Labels = append(out.Labels, filed)
 	}
 	for _, t := range tasks {
 		shape := task.OfTask(t)
-		out.Tasks = append(out.Tasks, filed{Shape: shape, Spent: spent[shape.Number], Focused: slices.Contains(held, shape.Number)})
+		out.Tasks = append(out.Tasks, exchange.Filed{Shape: shape, Spent: spent[shape.Number], Focused: slices.Contains(held, shape.Number)})
 	}
-	slices.SortFunc(out.Tasks, func(a, b filed) int { return a.Number - b.Number })
+	slices.SortFunc(out.Tasks, func(a, b exchange.Filed) int { return a.Number - b.Number })
 	if out.Series, err = e.seriesWritten(); err != nil {
 		return exchanged{}, err
 	}
@@ -168,9 +129,9 @@ func (e *Engine) exporting() (exchanged, error) {
 	if out.Views, err = e.viewsWritten(t); err != nil {
 		return exchanged{}, err
 	}
-	for _, n := range slices.Sorted(maps.Keys(t.by)) {
-		c := t.by[n].Carried()
-		out.Objectives = append(out.Objectives, objectiveFiled{Shape: objective.OfObjective(t.by[n]), Parent: c.Parent, WaitsOn: c.WaitsOn})
+	for _, n := range slices.Sorted(maps.Keys(t.By)) {
+		c := t.By[n].Carried()
+		out.Objectives = append(out.Objectives, exchange.ObjectiveFiled{Shape: objective.OfObjective(t.By[n]), Parent: c.Parent, WaitsOn: c.WaitsOn})
 	}
 	return out, nil
 }
@@ -197,14 +158,14 @@ func readExport(from string) (exchanged, error) {
 		return exchanged{}, err
 	}
 	var read exchanged
-	if err := json.Unmarshal(held, &read); err != nil || read.Cairn != exchangeKind {
-		return exchanged{}, errNotAnExport
+	if err := json.Unmarshal(held, &read); err != nil || read.Cairn != exchange.Kind {
+		return exchanged{}, exchange.ErrNotAnExport
 	}
-	if read.Version < beforeSteps || read.Version > exchangeVersion {
-		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d to %d", errNotAnExport, read.Version, beforeSteps, exchangeVersion)
+	if read.Version < exchange.BeforeSteps || read.Version > exchange.Version {
+		return exchanged{}, fmt.Errorf("%w: it is of version %d, and this cairn reads versions %d to %d", exchange.ErrNotAnExport, read.Version, exchange.BeforeSteps, exchange.Version)
 	}
 	if len(read.Tasks)+len(read.Objectives)+len(read.Labels)+len(read.Series)+len(read.Views) == 0 {
-		return exchanged{}, fmt.Errorf("%w: it holds nothing to add", errNotAnExport)
+		return exchanged{}, fmt.Errorf("%w: it holds nothing to add", exchange.ErrNotAnExport)
 	}
 	return read, nil
 }
@@ -215,16 +176,16 @@ func stepsOfSubTasks(read exchanged) (exchanged, error) {
 		byNumber[t.Number] = true
 	}
 	var left, done = map[int][]task.Step{}, map[int][]task.Step{}
-	var work []filed
+	var work []exchange.Filed
 	for _, t := range read.Tasks {
 		if t.Parent == 0 {
 			work = append(work, t)
 			continue
 		}
 		if !byNumber[t.Parent] {
-			return exchanged{}, fmt.Errorf("%w: task %d names task %d — task %d is not in the file", errExportPointsOutside, t.Number, t.Parent, t.Parent)
+			return exchanged{}, fmt.Errorf("%w: task %d names task %d — task %d is not in the file", exchange.ErrExportPointsOutside, t.Number, t.Parent, t.Parent)
 		}
-		step := task.Step{Title: t.Title, Done: t.State == string(domain.Done)}
+		step := task.Step{Title: t.Title, Done: t.State == string(item.Done)}
 		if step.Done {
 			done[t.Parent] = append(done[t.Parent], step)
 		} else {
@@ -238,75 +199,75 @@ func stepsOfSubTasks(read exchanged) (exchanged, error) {
 	return read, nil
 }
 
-func (e *Engine) importing(read exchanged) (domain.Held, error) {
+func (e *Engine) importing(read exchanged) (backup.Held, error) {
 	read, err := stepsOfSubTasks(read)
 	if err != nil {
-		return domain.Held{}, err
+		return backup.Held{}, err
 	}
 	if read, err = countedFromToday(read, time.Now()); err != nil {
-		return domain.Held{}, err
+		return backup.Held{}, err
 	}
 	order, err := checked(read)
 	if err != nil {
-		return domain.Held{}, err
+		return backup.Held{}, err
 	}
 	if err := e.labelsFiled(read.Labels); err != nil {
-		return domain.Held{}, err
+		return backup.Held{}, err
 	}
 	objectives, err := e.objectivesFiled(read.Objectives)
 	if err != nil {
-		return domain.Held{}, err
+		return backup.Held{}, err
 	}
 	tasks := map[int]int{}
 	for _, t := range order {
 		c := fromFile(t)
-		serves := numbered(t.Objectives, objectives)
+		serves := exchange.Numbered(t.Objectives, objectives)
 		c.Objective = &serves
 		made, err := e.add(t.Title, c)
 		if err != nil {
-			return domain.Held{}, err
+			return backup.Held{}, err
 		}
 		tasks[t.Number] = task.OfTask(made).Number
 		if err := e.spentOnDays(tasks[t.Number], t.Spent); err != nil {
-			return domain.Held{}, err
+			return backup.Held{}, err
 		}
 	}
 	for _, t := range slices.Backward(order) {
 		if err := e.standing(t, tasks); err != nil {
-			return domain.Held{}, err
+			return backup.Held{}, err
 		}
 	}
 	for _, t := range order {
 		if t.Archived {
 			if err := e.archive(tasks[t.Number]); err != nil {
-				return domain.Held{}, err
+				return backup.Held{}, err
 			}
 		}
 	}
 	for _, t := range order {
 		if t.Focused {
 			if _, err := e.putInFocus(tasks[t.Number]); err != nil {
-				return domain.Held{}, err
+				return backup.Held{}, err
 			}
 		}
 	}
 	if err := e.seriesFiled(read.Series, tasks, objectives); err != nil {
-		return domain.Held{}, err
+		return backup.Held{}, err
 	}
 	if err := e.viewsFiled(read.Views, objectives); err != nil {
-		return domain.Held{}, err
+		return backup.Held{}, err
 	}
-	return domain.Held{Tasks: len(order), Objectives: len(read.Objectives)}, nil
+	return backup.Held{Tasks: len(order), Objectives: len(read.Objectives)}, nil
 }
 
-func (e *Engine) objectivesFiled(filedAll []objectiveFiled) (map[int]int, error) {
+func (e *Engine) objectivesFiled(filedAll []exchange.ObjectiveFiled) (map[int]int, error) {
 	objectives := map[int]int{}
 	for _, o := range filedAll {
 		made, err := e.addObjective(o.Title, objectiveChangesOf(o.Shape))
 		if err != nil {
 			return nil, err
 		}
-		objectives[o.Number] = numberOf(made)
+		objectives[o.Number] = exchange.NumberOf(made)
 	}
 	for _, o := range filedAll {
 		var c ObjectiveChanges
@@ -315,7 +276,7 @@ func (e *Engine) objectivesFiled(filedAll []objectiveFiled) (map[int]int, error)
 			c.Parent = &parent
 		}
 		if len(o.WaitsOn) != 0 {
-			on := numbered(o.WaitsOn, objectives)
+			on := exchange.Numbered(o.WaitsOn, objectives)
 			c.WaitsOn = &on
 		}
 		if !c.named() {
@@ -328,7 +289,7 @@ func (e *Engine) objectivesFiled(filedAll []objectiveFiled) (map[int]int, error)
 	return objectives, nil
 }
 
-func (e *Engine) standing(t filed, tasks map[int]int) error {
+func (e *Engine) standing(t exchange.Filed, tasks map[int]int) error {
 	number := tasks[t.Number]
 	now, err := e.show(number)
 	if err != nil {
@@ -340,11 +301,11 @@ func (e *Engine) standing(t filed, tasks map[int]int) error {
 		c.State = &state
 	}
 	if t.BlockedBy != nil {
-		blockers := numbered(t.BlockedBy, tasks)
+		blockers := exchange.Numbered(t.BlockedBy, tasks)
 		c.Blocker = &blockers
 	}
 	if len(t.Linked) > 0 {
-		links := plusAll(numbered(t.Linked, tasks))
+		links := exchange.PlusAll(exchange.Numbered(t.Linked, tasks))
 		c.Link = &links
 	}
 	if !c.named() {
@@ -354,22 +315,22 @@ func (e *Engine) standing(t filed, tasks map[int]int) error {
 	return err
 }
 
-func checked(read exchanged) ([]filed, error) {
+func checked(read exchanged) ([]exchange.Filed, error) {
 	for _, l := range read.Labels {
-		if _, err := oneLabel(l.Label); err != nil {
+		if _, err := label.OneLabel(l.Label); err != nil {
 			return nil, fmt.Errorf("label %q: %w", l.Label, err)
 		}
-		if l.Colour != "" && !slices.Contains(domain.LabelColours, l.Colour) {
-			return nil, fmt.Errorf("label %q: %w", l.Label, domain.ErrNoSuchColour)
+		if l.Colour != "" && !slices.Contains(label.LabelColours, l.Colour) {
+			return nil, fmt.Errorf("label %q: %w", l.Label, label.ErrNoSuchColour)
 		}
-		if _, err := domain.ParseScope(l.Scope); err != nil {
+		if _, err := label.ParseScope(l.Scope); err != nil {
 			return nil, fmt.Errorf("label %q: %w", l.Label, err)
 		}
 	}
 	objectives := map[int]bool{}
 	for _, o := range read.Objectives {
 		if objectives[o.Number] {
-			return nil, fmt.Errorf("%w: objective %d is in the file twice", errNotAnExport, o.Number)
+			return nil, fmt.Errorf("%w: objective %d is in the file twice", exchange.ErrNotAnExport, o.Number)
 		}
 		objectives[o.Number] = true
 		made, err := objective.NewObjective(o.Title)
@@ -383,7 +344,7 @@ func checked(read exchanged) ([]filed, error) {
 	for _, o := range read.Objectives {
 		for _, n := range append(slices.Clone(o.WaitsOn), o.Parent) {
 			if n != 0 && !objectives[n] {
-				return nil, fmt.Errorf("%w: objective %d names objective %d — objective %d is not in the file", errExportPointsOutside, o.Number, n, n)
+				return nil, fmt.Errorf("%w: objective %d names objective %d — objective %d is not in the file", exchange.ErrExportPointsOutside, o.Number, n, n)
 			}
 		}
 	}
@@ -393,10 +354,10 @@ func checked(read exchanged) ([]filed, error) {
 	if err := checkedViews(read.Views, objectives); err != nil {
 		return nil, err
 	}
-	byNumber := map[int]filed{}
+	byNumber := map[int]exchange.Filed{}
 	for _, t := range read.Tasks {
 		if _, twice := byNumber[t.Number]; twice {
-			return nil, fmt.Errorf("%w: task %d is in the file twice", errNotAnExport, t.Number)
+			return nil, fmt.Errorf("%w: task %d is in the file twice", exchange.ErrNotAnExport, t.Number)
 		}
 		byNumber[t.Number] = t
 	}
@@ -408,9 +369,9 @@ func checked(read exchanged) ([]filed, error) {
 	return read.Tasks, nil
 }
 
-func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error {
+func checkedTask(t exchange.Filed, byNumber map[int]exchange.Filed, objectives map[int]bool) error {
 	outside := func(what string, n int) error {
-		return fmt.Errorf("%w: task %d names %s %d — %s %d is not in the file", errExportPointsOutside, t.Number, what, n, what, n)
+		return fmt.Errorf("%w: task %d names %s %d — %s %d is not in the file", exchange.ErrExportPointsOutside, t.Number, what, n, what, n)
 	}
 	for _, b := range slices.Concat(t.BlockedBy, t.Linked) {
 		if _, in := byNumber[b]; !in {
@@ -422,7 +383,7 @@ func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error
 			return outside("objective", o)
 		}
 	}
-	if _, err := domain.ParseState(t.State); err != nil {
+	if _, err := item.ParseState(t.State); err != nil {
 		return fmt.Errorf("task %d: %w", t.Number, err)
 	}
 	made, err := task.NewTask(t.Title)
@@ -431,10 +392,10 @@ func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error
 	}
 	for day, length := range t.Spent {
 		if err == nil {
-			_, err = domain.ParseDeadline(day)
+			_, err = calendar.ParseDeadline(day)
 		}
 		if err == nil {
-			_, err = domain.ParseEstimate(length)
+			_, err = calendar.ParseEstimate(length)
 		}
 	}
 	for _, s := range t.Steps {
@@ -448,7 +409,7 @@ func checkedTask(t filed, byNumber map[int]filed, objectives map[int]bool) error
 	return nil
 }
 
-func fromFile(f filed) Changes {
+func fromFile(f exchange.Filed) Changes {
 	t := f.Shape
 	c := Changes{Description: &t.Description, Priority: &t.Priority, Because: &t.Because}
 	if len(f.Spent) == 0 && t.TimeSpent != "" {
@@ -479,21 +440,3 @@ func objectiveChangesOf(o objective.Shape) ObjectiveChanges {
 	}
 	return c
 }
-
-func numbered(old []int, now map[int]int) []string {
-	out := make([]string, 0, len(old))
-	for _, n := range old {
-		out = append(out, strconv.Itoa(now[n]))
-	}
-	return out
-}
-
-func plusAll(numbers []string) []string {
-	out := make([]string, 0, len(numbers))
-	for _, n := range numbers {
-		out = append(out, "+"+n)
-	}
-	return out
-}
-
-func numberOf(o objective.Objective) int { return objective.OfObjective(o).Number }

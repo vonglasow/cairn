@@ -1,21 +1,16 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/task"
 	"errors"
 	"fmt"
 	"maps"
 	"slices"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
-
-// errDayToCome is returned when a day has not happened yet: work cannot be said to have been done tomorrow.
-var errDayToCome = errors.New("that has not happened yet")
-
-// errNotATime is returned when time added by hand is not a length of time, or is none at all.
-var errNotATime = errors.New("time added is an amount and a unit, as in 1h or 45m — less than nothing, as in -30m, takes some back")
 
 func dayOf(in Input, name string, now time.Time) (time.Time, error) {
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -23,13 +18,13 @@ func dayOf(in Input, name string, now time.Time) (time.Time, error) {
 	if given == "" {
 		return today, nil
 	}
-	parsed, err := domain.ParseDeadline(given)
+	parsed, err := calendar.ParseDeadline(given)
 	if err != nil {
 		return time.Time{}, err
 	}
 	day := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, now.Location())
 	if day.After(today) {
-		return time.Time{}, fmt.Errorf("%q: %w", given, errDayToCome)
+		return time.Time{}, fmt.Errorf("%q: %w", given, calendar.ErrDayToCome)
 	}
 	return day, nil
 }
@@ -38,15 +33,15 @@ func (e *Engine) addTime(number int, day time.Time, length string) error {
 	if _, err := e.tasks.Find(number); err != nil {
 		return err
 	}
-	return e.record(number, trace.TimeAdded, "", domain.FormatDay(day), length)
+	return e.record(number, act.TimeAdded, "", calendar.FormatDay(day), length)
 }
 
-func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, map[int]bool, error) {
+func (e *Engine) timed(first, last time.Time) (act.Sheet, map[int]string, map[int]bool, error) {
 	acts, err := e.since(first)
 	if err != nil {
-		return trace.Sheet{}, nil, nil, err
+		return act.Sheet{}, nil, nil, err
 	}
-	sheet := trace.Timed(trace.WithoutTimeTaken(acts), first, last, time.Now())
+	sheet := act.Timed(act.WithoutTimeTaken(acts), first, last, time.Now())
 	worked := map[int]bool{}
 	for _, day := range sheet.Days {
 		for _, w := range day.Tasks {
@@ -56,14 +51,14 @@ func (e *Engine) timed(first, last time.Time) (trace.Sheet, map[int]string, map[
 	titles, gone := map[int]string{}, map[int]bool{}
 	for _, number := range slices.Sorted(maps.Keys(worked)) {
 		t, err := e.tasks.Find(number)
-		if errors.Is(err, errNoSuchTask) {
-			titles[number], gone[number] = trace.TitleWent(acts, number), true
+		if errors.Is(err, task.ErrNoSuchTask) {
+			titles[number], gone[number] = act.TitleWent(acts, number), true
 			continue
 		}
 		if err != nil {
-			return trace.Sheet{}, nil, nil, err
+			return act.Sheet{}, nil, nil, err
 		}
-		titles[number] = factsOf(t).Title
+		titles[number] = t.Carried().Title
 	}
 	return sheet, titles, gone, nil
 }
@@ -122,7 +117,7 @@ cairn timesheet add 3 --on 2026-09-01 -- -30m`,
 		n, _ := in.whole("number")
 		length, err := time.ParseDuration(in.Given["time"])
 		if err != nil || length == 0 {
-			return Answer{}, fmt.Errorf("%q: %w", in.Given["time"], errNotATime)
+			return Answer{}, fmt.Errorf("%q: %w", in.Given["time"], calendar.ErrNotATime)
 		}
 		day, err := dayOf(in, "on", time.Now())
 		if err != nil {

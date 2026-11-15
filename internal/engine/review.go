@@ -1,14 +1,15 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
 	"cmp"
 	"slices"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 // objectiveReport writes an objective's review over a period.
@@ -57,58 +58,37 @@ cairn objective report 6 --since 2026-07-01 --until 2026-09-30`,
 
 // review is how an objective's review crosses: the objective as show gives it, the period, the time spent on its tasks in the period and month by month, and the tasks done in it.
 type review struct {
-	Objective objectiveRow `json:"objective"`
-	Since     string       `json:"since"`
-	Until     string       `json:"until"`
-	TimeSpent string       `json:"time_spent" jsonschema:"the time spent on its tasks in the period, as 1h30m; empty when none was"`
-	Months    []monthShape `json:"months"`
-	Done      []doneShape  `json:"done"`
-}
-
-// monthShape is the time spent in one month of the period, and for a parent how it splits over its sub-objectives and itself.
-type monthShape struct {
-	Month         string      `json:"month" jsonschema:"the month, as 2026-08"`
-	TimeSpent     string      `json:"time_spent"`
-	SubObjectives []partShape `json:"sub_objectives,omitempty" jsonschema:"the time spent through each sub-objective that month; left out for an objective holding none"`
-	Itself        string      `json:"itself,omitempty" jsonschema:"the time spent on the tasks put on the parent itself that month; left out when none was"`
-}
-
-// partShape is the time a month spent through one sub-objective.
-type partShape struct {
-	Number    int    `json:"number"`
-	TimeSpent string `json:"time_spent"`
-}
-
-// doneShape is a task put in done within the period, and the day it was.
-type doneShape struct {
-	Number int    `json:"number"`
-	Title  string `json:"title"`
-	On     string `json:"on"`
+	Objective objectiveRow           `json:"objective"`
+	Since     string                 `json:"since"`
+	Until     string                 `json:"until"`
+	TimeSpent string                 `json:"time_spent" jsonschema:"the time spent on its tasks in the period, as 1h30m; empty when none was"`
+	Months    []objective.MonthShape `json:"months"`
+	Done      []objective.DoneShape  `json:"done"`
 }
 
 // ofReview turns an objective's review into what crosses.
-func ofReview(o objective.Objective, under []task.Task, p domain.Progress, in objective.Period) review {
+func ofReview(o objective.Objective, under []task.Task, p item.Progress, in objective.Period) review {
 	r := review{
 		Objective: ofObjective(o, under, p),
-		Since:     domain.FormatDay(in.Since),
-		Until:     domain.FormatDay(in.Until),
-		TimeSpent: domain.FormatDuration(in.Spent()),
-		Months:    []monthShape{},
-		Done:      []doneShape{},
+		Since:     calendar.FormatDay(in.Since),
+		Until:     calendar.FormatDay(in.Until),
+		TimeSpent: calendar.FormatDuration(in.Spent()),
+		Months:    []objective.MonthShape{},
+		Done:      []objective.DoneShape{},
 	}
 	for _, m := range in.Months {
-		month := monthShape{Month: m.Month.Format("2006-01"), TimeSpent: domain.FormatDuration(m.Spent)}
+		month := objective.MonthShape{Month: m.Month.Format("2006-01"), TimeSpent: calendar.FormatDuration(m.Spent)}
 		for _, part := range m.Split {
 			if part.Number == 0 {
-				month.Itself = domain.FormatDuration(part.Spent)
+				month.Itself = calendar.FormatDuration(part.Spent)
 				continue
 			}
-			month.SubObjectives = append(month.SubObjectives, partShape{Number: part.Number, TimeSpent: domain.FormatDuration(part.Spent)})
+			month.SubObjectives = append(month.SubObjectives, objective.PartShape{Number: part.Number, TimeSpent: calendar.FormatDuration(part.Spent)})
 		}
 		r.Months = append(r.Months, month)
 	}
 	for _, f := range in.Done {
-		r.Done = append(r.Done, doneShape{Number: f.Number, Title: f.Title, On: domain.FormatDay(f.On)})
+		r.Done = append(r.Done, objective.DoneShape{Number: f.Number, Title: f.Title, On: calendar.FormatDay(f.On)})
 	}
 	return r
 }
@@ -129,7 +109,7 @@ func (e *Engine) partsOf(n int, f objective.Family) ([]part, error) {
 		if number == 0 {
 			served = n
 		}
-		tasks, err := e.objectives.TasksServing(served)
+		tasks, err := e.store.TasksServing(served)
 		if err != nil {
 			return nil, err
 		}
@@ -147,11 +127,11 @@ func (e *Engine) periodOf(under []task.Task, parts []part, first, last time.Time
 	if err != nil {
 		return objective.Period{}, err
 	}
-	months := monthsOf(sheet, servingOf(under))
+	months := objective.MonthsOf(sheet, servingOf(under))
 	for i, m := range months {
 		for _, p := range parts {
 			var spent time.Duration
-			for _, pm := range monthsOf(sheet, servingOf(p.tasks)) {
+			for _, pm := range objective.MonthsOf(sheet, servingOf(p.tasks)) {
 				if pm.Month.Equal(m.Month) {
 					spent = pm.Spent
 				}
@@ -170,41 +150,19 @@ func servingOf(tasks []task.Task) map[int]bool {
 	return serving
 }
 
-func monthsOf(sheet trace.Sheet, serving map[int]bool) []objective.Month {
-	var months []objective.Month
-	for _, day := range sheet.Days {
-		var spent time.Duration
-		for _, w := range day.Tasks {
-			if serving[w.Task] {
-				spent += w.Took
-			}
-		}
-		if spent == 0 {
-			continue
-		}
-		month := time.Date(day.Day.Year(), day.Day.Month(), 1, 0, 0, 0, 0, day.Day.Location())
-		if n := len(months); n > 0 && months[n-1].Month.Equal(month) {
-			months[n-1].Spent += spent
-			continue
-		}
-		months = append(months, objective.Month{Month: month, Spent: spent})
-	}
-	return months
-}
-
-func finishedIn(acts []trace.Act, under []task.Task, first, last time.Time) []objective.Finished {
+func finishedIn(acts []act.Act, under []task.Task, first, last time.Time) []objective.Finished {
 	end := last.AddDate(0, 0, 1)
 	done := map[int]time.Time{}
 	for _, act := range acts {
 		c := act.Carried()
-		if c.Field == "column" && c.Became == string(domain.Done) && !c.At.Before(first) && c.At.Before(end) {
+		if c.Field == "column" && c.Became == string(item.Done) && !c.At.Before(first) && c.At.Before(end) {
 			done[c.Task] = c.At
 		}
 	}
 	var out []objective.Finished
 	for _, t := range under {
 		c := t.Carried()
-		if on, found := done[c.Number]; found && c.State == domain.Done {
+		if on, found := done[c.Number]; found && c.State == item.Done {
 			out = append(out, objective.Finished{Number: c.Number, Title: c.Title, On: on})
 		}
 	}

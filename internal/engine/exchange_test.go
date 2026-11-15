@@ -1,6 +1,10 @@
 package engine
 
 import (
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/item"
 	"errors"
 	"os"
 	"path/filepath"
@@ -10,9 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func ran(t *testing.T, path string, asks ...func() (Operation, Input)) {
@@ -60,7 +63,7 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if got := RenderText(TaskExport, answer); got != to+" holds 2 task(s) and 2 objective(s)\n" {
 		t.Errorf("it says %q", got)
 	}
-	if shape, ok := Of(TaskExport, answer).(exported); !ok || shape.Exported != to || shape.Holds.Tasks != 2 {
+	if shape, ok := Of(TaskExport, answer).(exchange.Exported); !ok || shape.Exported != to || shape.Holds.Tasks != 2 {
 		t.Errorf("a machine reads %#v", Of(TaskExport, answer))
 	}
 	written, err := os.ReadFile(to)
@@ -106,7 +109,7 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 	if got := RenderText(TaskImport, answer); got != "3 task(s) and 1 objective(s) were added from "+file+"\n" {
 		t.Errorf("it says %q", got)
 	}
-	if shape, ok := Of(TaskImport, answer).(importedFile); !ok || shape.Imported != file || shape.Added.Tasks != 3 || shape.Added.Objectives != 1 {
+	if shape, ok := Of(TaskImport, answer).(exchange.ImportedFile); !ok || shape.Imported != file || shape.Added.Tasks != 3 || shape.Added.Objectives != 1 {
 		t.Errorf("a machine reads %#v", Of(TaskImport, answer))
 	}
 	show := func(n string) string {
@@ -242,7 +245,7 @@ func TestAnImportBringsTheLinksAtTheirNewNumbers(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := Do(TaskImport, path, Input{Given: map[string]string{"from": outside}})
-	if !errors.Is(err, errExportPointsOutside) || !strings.Contains(err.Error(), "task 9 is not in the file") {
+	if !errors.Is(err, exchange.ErrExportPointsOutside) || !strings.Contains(err.Error(), "task 9 is not in the file") {
 		t.Errorf("it answered %v", err)
 	}
 	if listed, _ := Do(TaskList, path, Input{}); len(listed.Tasks) != 4 {
@@ -260,7 +263,7 @@ func linkedLine(numbers []int) string {
 
 func TestReadExport_refusesAFileOfAnotherKind(t *testing.T) {
 	_, err := importInto(t, openEngine(t), `{"cairn": "notes", "version": 4, "tasks": []}`)
-	if !errors.Is(err, errNotAnExport) {
+	if !errors.Is(err, exchange.ErrNotAnExport) {
 		t.Errorf("a file of notes answered %v", err)
 	}
 }
@@ -301,7 +304,7 @@ func TestTaskImport_countsWhatItAddedAndKeepsWhatEachOneSaid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if held != (domain.Held{Tasks: 2, Objectives: 1}) {
+	if held != (backup.Held{Tasks: 2, Objectives: 1}) {
 		t.Errorf("added %+v, want 2 tasks and 1 objective", held)
 	}
 	o, err := e.showObjective(1)
@@ -315,8 +318,8 @@ func TestTaskImport_countsWhatItAddedAndKeepsWhatEachOneSaid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if factsOf(watched).State != domain.Watching {
-		t.Errorf("task 2 is in %s, want watching", factsOf(watched).State)
+	if watched.Carried().State != item.Watching {
+		t.Errorf("task 2 is in %s, want watching", watched.Carried().State)
 	}
 	if held, _ := e.focus(); !slices.Equal(held, []int{1}) {
 		t.Errorf("in focus %v, want task 1", held)
@@ -344,7 +347,7 @@ func TestTaskImport_refusesABadObjectiveOrTaskBeforeAddingAnything(t *testing.T)
 func TestTaskExport_writesTimeAddedOnADayPastUnderThatDay(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "one")
-	day := domain.FormatDay(time.Now().AddDate(0, 0, -10))
+	day := calendar.FormatDay(time.Now().AddDate(0, 0, -10))
 	if _, err := e.Ask(TimesheetAdd, given("number", "1", "time", "2h", "on", day)); err != nil {
 		t.Fatal(err)
 	}
@@ -369,7 +372,7 @@ func TestTaskImport_keepsALinkMadeFromTheOtherSide(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if linked := factsOf(got).Linked; len(linked) != 1 {
+		if linked := got.Carried().Linked; len(linked) != 1 {
 			t.Errorf("task %d is linked to %v, want the other one", n, linked)
 		}
 	}
@@ -386,7 +389,7 @@ func TestTaskImport_keepsWhatBlocksATask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if f := factsOf(got); !slices.Equal(f.Blockers, []int{1}) || f.State != domain.Blocked {
+	if f := got.Carried(); !slices.Equal(f.Blockers, []int{1}) || f.State != item.Blocked {
 		t.Errorf("task 2 is in %s blocked by %v, want blocked by task 1", f.State, f.Blockers)
 	}
 }
@@ -406,7 +409,7 @@ func TestReadExport_refusesAnotherKindOrAVersionItDoesNotRead(t *testing.T) {
 		`{"cairn": "tasks", "version": 8, "tasks": [{"number": 1, "title": "a"}]}`,
 		`{"cairn": "tasks", "version": 0, "tasks": [{"number": 1, "title": "a"}]}`,
 	} {
-		if _, err := readExport(exportFile(t, said)); !errors.Is(err, errNotAnExport) {
+		if _, err := readExport(exportFile(t, said)); !errors.Is(err, exchange.ErrNotAnExport) {
 			t.Errorf("%s was read: %v", said, err)
 		}
 	}

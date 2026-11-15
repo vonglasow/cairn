@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func titlesOf(a Answer) []string {

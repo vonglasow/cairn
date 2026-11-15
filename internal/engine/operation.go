@@ -1,6 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/app"
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/series"
+	"cairn/internal/engine/view"
+	"cairn/internal/engine/workspace"
 	"errors"
 	"fmt"
 	"os/user"
@@ -8,11 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/objective"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 // Level is how far an agent may reach.
@@ -217,10 +224,10 @@ func (o Operation) waiting(in Input) error {
 }
 
 // Name is how an operation is named as a command or a tool: "task_new".
-func (o Operation) Name() string { return o.Thing + "_" + o.Verb }
+func (o Operation) Name() string { return strings.TrimPrefix(o.Thing+"_"+o.Verb, "_") }
 
 // Line is how an operation reads on the command line: "task new".
-func (o Operation) Line() string { return o.Thing + " " + o.Verb }
+func (o Operation) Line() string { return strings.TrimSpace(o.Thing + " " + o.Verb) }
 
 // All is everything cairn can be asked to do, in a stable order.
 func All() []Operation {
@@ -245,7 +252,7 @@ func All() []Operation {
 
 // ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes; a view is how the person looks at their work, so an agent reads the views and keeps, changes or deletes none.
 func ForAPersonOnly() []Operation {
-	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill}
+	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill, upgradeCairn}
 }
 
 // check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
@@ -284,7 +291,7 @@ func (o Operation) check(in Input) error {
 				return Misread(fmt.Errorf("%q: %s number is expected", given, arg.Of))
 			}
 		case day:
-			if _, err := domain.ParseDeadline(given); err != nil {
+			if _, err := calendar.ParseDeadline(given); err != nil {
 				return err
 			}
 		}
@@ -295,7 +302,7 @@ func (o Operation) check(in Input) error {
 // workedOn is what an operation was given to work on.
 type workedOn struct {
 	Engine  *Engine
-	Backups *backups
+	Backups backup.Vault
 	Path    string
 	Notes   string
 	Plugin  string
@@ -324,17 +331,17 @@ type Answer struct {
 	Warnings          []string
 	Spent             map[int]time.Duration
 	Proposes          *objective.Objective
-	Went              *wentWith
+	Went              *objective.WentWith
 	Objective         *objective.Objective
 	Objectives        []objective.Objective
 	MatchedObjectives []objective.Objective
-	Backup            *domain.Backup
-	Backups           []domain.Backup
+	Backup            *backup.Backup
+	Backups           []backup.Backup
 	Change            *migration.Migration
 	Changes           []migration.Migration
 	RolledBack        *migration.Migration
-	Progress          domain.Progress
-	Holds             *domain.Held
+	Progress          item.Progress
+	Holds             *backup.Held
 	Deleted           *int
 	Also              []int
 	Unblocked         []int
@@ -342,50 +349,52 @@ type Answer struct {
 	Exported          *string
 	Imported          *string
 	Plugin            *string
-	Install           *pluginShown
+	Install           *app.PluginShown
 	Written           *string
 	Archived          *int
 	Labelled          *int
-	Labels            *[]LabelCarried
+	Labels            *[]label.Carried
 	Applied           []string
-	Since             []trace.Act
-	Acts              []trace.Act
+	Since             []act.Act
+	Acts              []act.Act
 	InFocus           *[]int
 	Held              []task.Task
 	NothingBlocks     []int
-	Along             map[int]domain.Progress
+	Along             map[int]item.Progress
 	Contexts          map[int]string
-	Config            *Config
-	ConfigChanged     *configChanged
-	Sheet             *trace.Sheet
+	Config            *workspace.Config
+	ConfigChanged     *workspace.ConfigChanged
+	Sheet             *act.Sheet
 	Period            *objective.Period
 	Named             map[int]string
 	Gone              map[int]bool
 	Packed            *int
 	Moved             *moves
-	Crossed           *crossed
+	Crossed           *task.Crossed
 	Installed         *string
+	Upgraded          *app.Upgraded
 	Runs              *string
 	OpenedFrom        *string
-	Workspaces        *Workspaces
-	WorkspaceAdded    *workspaceAdded
-	WorkspaceUsed     *workspaceUsed
-	WorkspaceRemoved  *workspaceRemoved
-	WorkspaceShown    *WorkspaceShown
+	Workspaces        *workspace.Workspaces
+	WorkspaceAdded    *workspace.Added
+	WorkspaceUsed     *workspace.Used
+	WorkspaceRemoved  *workspace.Removed
+	WorkspaceShown    *workspace.Shown
 	Viewed            *View
 	ViewsKept         *Views
 	ViewGone          *string
 	InView            string
 	Lost              []string
 	KeepsNothing      bool
-	Outside           []outside
-	Occurring         map[int]Occurs
-	Choosing          map[int]choosing
-	Followed          []madeNext
+	Outside           []view.Outside
+	Occurring         map[int]series.Occurs
+	Choosing          map[int]task.Choosing
+	Followed          []series.MadeNext
 	SeriesShown       *Series
 	SeriesKept        *seriesListed
-	SeriesGone        *seriesDeleted
+	SeriesGone        *series.Deleted
 	Untimed           bool
+	Kept              *string
 }
 
 // Do runs an operation: it opens the store the way op.Needs says to, hands Run an engine open on it — or none, when nothing was asked for — and closes what it opened on the way out, whatever Run does.
@@ -417,12 +426,8 @@ func author(h Home) string {
 func Through(surface string, h Home) Acting { return Acting{Through: surface, By: author(h)} }
 
 // doThere runs an operation at the places a surface found, and says which surface asked, so what it changes is written down as that surface's doing.
-func doThere(op Operation, at Places, in Input, acting Acting) (answer Answer, err error) {
-	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
-	if err := op.admitted(in); err != nil {
-		return Answer{}, err
-	}
-	return doAt(op, at, in, acting)
+func doThere(op Operation, at Places, in Input, acting Acting) (Answer, error) {
+	return admittedAndNoted(op, in, func() (Answer, error) { return doAt(op, at, in, acting) })
 }
 
 func doAt(op Operation, at Places, in Input, acting Acting) (Answer, error) {

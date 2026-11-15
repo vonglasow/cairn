@@ -1316,7 +1316,7 @@ nothing good to keep yet.
 
 `PRAGMA data_version` was measured on `modernc.org/sqlite` rather than assumed:
 it moves when a second connection commits and stays put when nothing happens.
-The scenarios that hold it are in `internal/store/version_test.go`. It says
+The scenarios that hold it are in `internal/store/sqlite/version_test.go`. It says
 nothing about *what* changed, and it is not a count — two writes may move it by
 more than one. Equal means nothing happened; different means the only honest
 answer is to look again.

@@ -1,16 +1,16 @@
 package engine
 
 import (
+	"cairn/internal/engine/filter"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/task"
 )
 
 type spentTasks struct {
-	tasks
-	history history
+	task.Store
+	history act.Store
 }
 
 func (s spentTasks) spent() (map[int]time.Duration, error) {
@@ -18,7 +18,7 @@ func (s spentTasks) spent() (map[int]time.Duration, error) {
 	if err != nil {
 		return nil, err
 	}
-	return trace.Spent(acts, time.Now()), nil
+	return act.Spent(acts, time.Now()), nil
 }
 
 func (s spentTasks) told(found []task.Task, err error) ([]task.Task, error) {
@@ -42,7 +42,7 @@ func withSpent(t task.Task, spent map[int]time.Duration) task.Task {
 }
 
 func (s spentTasks) Find(number int) (task.Task, error) {
-	found, err := s.told(single(s.tasks.Find(number)))
+	found, err := s.told(single(s.Store.Find(number)))
 	if err != nil {
 		return task.Task{}, err
 	}
@@ -50,17 +50,17 @@ func (s spentTasks) Find(number int) (task.Task, error) {
 }
 
 func (s spentTasks) Keep(t task.Task) (task.Task, error) {
-	found, err := s.told(single(s.tasks.Keep(t)))
+	found, err := s.told(single(s.Store.Keep(t)))
 	if err != nil {
 		return task.Task{}, err
 	}
 	return found[0], nil
 }
 
-func (s spentTasks) All() ([]task.Task, error) { return s.told(s.tasks.All()) }
+func (s spentTasks) All() ([]task.Task, error) { return s.told(s.Store.All()) }
 
-func (s spentTasks) Narrowed(kept *domain.Narrowing) ([]task.Task, error) {
-	return s.told(s.tasks.Narrowed(kept))
+func (s spentTasks) Narrowed(kept *filter.Narrowing) ([]task.Task, error) {
+	return s.told(s.Store.Narrowed(kept))
 }
 
 func single(t task.Task, err error) ([]task.Task, error) { return []task.Task{t}, err }

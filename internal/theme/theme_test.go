@@ -1,6 +1,8 @@
 package theme
 
 import (
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
 	"errors"
 	"fmt"
 	"image/color"
@@ -10,8 +12,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"cairn/internal/domain"
 )
 
 const gruvbox = `system: "base16"
@@ -134,7 +134,7 @@ func TestEveryTokenGetsAValue(t *testing.T) {
 			t.Errorf("%s has no value", name)
 		}
 	})
-	if want := 36 + len(domain.Priorities) + 4*2 + 3*2 + len(domain.LabelColours); names != want {
+	if want := 36 + len(item.Priorities) + 4*2 + 3*2 + len(label.LabelColours); names != want {
 		t.Errorf("%d tokens, want %d", names, want)
 	}
 }

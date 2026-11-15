@@ -1,7 +1,8 @@
 package engine
 
 import (
-	"cairn/internal/config"
+	"cairn/internal/engine/workspace"
+	"cairn/internal/store/files"
 	"errors"
 	"fmt"
 	"os"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func recentOf(t *testing.T, h Home) []RecentFolder {
+func recentOf(t *testing.T, h Home) []workspace.RecentFolder {
 	t.Helper()
 	answer, err := DoFrom(WorkspaceList, h, Input{}, Acting{})
 	if err != nil {
@@ -77,8 +78,8 @@ func TestHold_tenAreKeptTheNewestFirstAndOneOpenedAgainMovesToTheHead(t *testing
 	heldOn(t, h)
 	h.Store = ""
 	recent := recentOf(t, h)
-	if len(recent) != recentKept {
-		t.Fatalf("%d recent folders are kept; want %d", len(recent), recentKept)
+	if len(recent) != workspace.RecentKept {
+		t.Fatalf("%d recent folders are kept; want %d", len(recent), workspace.RecentKept)
 	}
 	var folders []string
 	for _, one := range recent {
@@ -127,7 +128,7 @@ func TestRecent_aStoreAWorkspaceNowNamesIsLeftOut(t *testing.T) {
 
 func TestRecent_isKeptUnderXDGStateHomeWhenItIsAbsolute(t *testing.T) {
 	state := t.TempDir()
-	h := homeHolding(t, "", map[string]string{StateVariable: state})
+	h := homeHolding(t, "", map[string]string{workspace.StateVariable: state})
 	h.Store = filepath.Join(h.Dir, "loose", "cairn.db")
 	heldOn(t, h)
 	if _, err := os.Stat(filepath.Join(state, "cairn", "recent.json")); err != nil {
@@ -139,7 +140,7 @@ func TestRecent_isKeptUnderXDGStateHomeWhenItIsAbsolute(t *testing.T) {
 }
 
 func TestRecent_aRelativeXDGStateHomeIsPassedOver(t *testing.T) {
-	h := homeHolding(t, "", map[string]string{StateVariable: "state"})
+	h := homeHolding(t, "", map[string]string{workspace.StateVariable: "state"})
 	h.Store = filepath.Join(h.Dir, "loose", "cairn.db")
 	heldOn(t, h)
 	if _, err := os.Stat(filepath.Join(h.Dir, ".local", "state", "cairn", "recent.json")); err != nil {
@@ -187,16 +188,16 @@ func TestRecentFolder_saysWhenItWasOpened(t *testing.T) {
 		{time.Date(2025, 11, 3, 9, 0, 0, 0, time.Local), false, "opened 3 Nov 2025"},
 		{now, true, "not found now"},
 	} {
-		if got := (RecentFolder{Opened: c.opened, NotFound: c.gone}).Said(now); got != c.want {
+		if got := (workspace.RecentFolder{Opened: c.opened, NotFound: c.gone}).Said(now); got != c.want {
 			t.Errorf("Said(%v, gone %v) = %q; want %q", c.opened, c.gone, got, c.want)
 		}
 	}
 }
 
 func TestWorkspaceList_saysTheRecentFoldersUnderTheWorkspaces(t *testing.T) {
-	said := RenderText(WorkspaceList, Answer{Workspaces: &Workspaces{
-		Workspaces: []Workspace{{Name: "work", Folder: "/w", Default: true, Colour: "green"}},
-		Recent:     []RecentFolder{{Store: "/l/cairn.db", Folder: "/l", Opened: time.Now()}, {Store: "/t/x.db", NotFound: true}},
+	said := RenderText(WorkspaceList, Answer{Workspaces: &workspace.Workspaces{
+		Workspaces: []workspace.Workspace{{Name: "work", Folder: "/w", Default: true, Colour: "green"}},
+		Recent:     []workspace.RecentFolder{{Store: "/l/cairn.db", Folder: "/l", Opened: time.Now()}, {Store: "/t/x.db", NotFound: true}},
 	}})
 	for _, want := range []string{"work  /w  default  green\n", "\nrecent folders, opened by path:\n", "  /l  opened today\n", "  /t/x.db  not found now\n"} {
 		if !strings.Contains(said, want) {
@@ -207,10 +208,10 @@ func TestWorkspaceList_saysTheRecentFoldersUnderTheWorkspaces(t *testing.T) {
 
 func TestRecentFolder_isNamedByItsSettings(t *testing.T) {
 	folder := t.TempDir()
-	if err := os.WriteFile(filepath.Join(folder, config.SettingsFile), []byte("[workspace]\nname = \"mine\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(folder, files.SettingsFile), []byte("[workspace]\nname = \"mine\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if got := (RecentFolder{Store: filepath.Join(folder, "cairn.db"), Folder: folder}).Name(); got != "mine" {
+	if got := (workspace.RecentFolder{Store: filepath.Join(folder, "cairn.db"), Folder: folder}).Name(); got != "mine" {
 		t.Errorf("named %q", got)
 	}
 }
@@ -219,7 +220,7 @@ func TestRemember_aWorkspaceOpenedIsNotWrittenDown(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	h.Workspace = "home"
 	heldOn(t, h)
-	if kept := rememberedIn(recentPath(h)); len(kept) != 0 {
+	if kept := workspace.RememberedIn(recentPath(h)); len(kept) != 0 {
 		t.Errorf("remembered %+v", kept)
 	}
 }
@@ -243,10 +244,10 @@ func TestRecentFolder_whoseSettingsNameNothingIsNamedByItsFolder(t *testing.T) {
 	if err := os.MkdirAll(folder, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(folder, config.SettingsFile), []byte("[pages]\ntime = \"on\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(folder, files.SettingsFile), []byte("[pages]\ntime = \"on\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if got := (RecentFolder{Store: filepath.Join(folder, "cairn.db"), Folder: folder}).Name(); got != "mine" {
+	if got := (workspace.RecentFolder{Store: filepath.Join(folder, "cairn.db"), Folder: folder}).Name(); got != "mine" {
 		t.Errorf("named %q", got)
 	}
 }
@@ -255,7 +256,7 @@ func TestRemember_aStoreNamedThatIsAWorkspacesOwnIsNotWrittenDown(t *testing.T) 
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	h.Store = filepath.Join(h.Dir, "h", "cairn.db")
 	heldOn(t, h)
-	if kept := rememberedIn(recentPath(h)); len(kept) != 0 {
+	if kept := workspace.RememberedIn(recentPath(h)); len(kept) != 0 {
 		t.Errorf("remembered %+v", kept)
 	}
 }

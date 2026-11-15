@@ -1,9 +1,9 @@
 package engine
 
 import (
-	"cairn/internal/domain"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/task"
 	"errors"
 	"slices"
 	"strings"
@@ -44,8 +44,8 @@ func TestFocus_isNeverHeldByATaskInDone(t *testing.T) {
 	if held := heldIn(t, path); len(held) != 0 {
 		t.Errorf("in focus after both were done: %v, want nothing", held)
 	}
-	if _, err := Do(TaskFocus, path, given("number", "1")); !errors.Is(err, errDoneHoldsNoFocus) {
-		t.Errorf("focusing a task in done: %v, want %v", err, errDoneHoldsNoFocus)
+	if _, err := Do(TaskFocus, path, given("number", "1")); !errors.Is(err, task.ErrDoneHoldsNoFocus) {
+		t.Errorf("focusing a task in done: %v, want %v", err, task.ErrDoneHoldsNoFocus)
 	}
 	if held := heldIn(t, path); len(held) != 0 {
 		t.Errorf("in focus after the refusal: %v, want nothing", held)
@@ -70,10 +70,10 @@ func TestDone_confirmedTicksEveryStep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if state := factsOf(*shown.Task).State; state != "done" {
+	if state := (*shown.Task).Carried().State; state != "done" {
 		t.Errorf("task 1 is %s, want done", state)
 	}
-	for _, step := range factsOf(*shown.Task).Steps {
+	for _, step := range (*shown.Task).Carried().Steps {
 		if !step.Done {
 			t.Errorf("step %q is not done", step.Title)
 		}
@@ -96,8 +96,8 @@ func TestMove_takesTheOthersAlongBehindIt(t *testing.T) {
 	}
 	var order []int
 	for _, one := range listed.Tasks {
-		if factsOf(one).State == "todo" {
-			order = append(order, factsOf(one).Number)
+		if one.Carried().State == "todo" {
+			order = append(order, one.Carried().Number)
 		}
 	}
 	if len(order) != 2 || order[0] != 4 || order[1] != 2 {
@@ -124,7 +124,7 @@ func TestFocus_bringsWaitingWorkIntoCurrentAndLeavesTheRest(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := string(factsOf(*shown.Task).State); got != lands {
+		if got := string((*shown.Task).Carried().State); got != lands {
 			t.Errorf("a task in %s that takes the focus is in %s, want %s", state, got, lands)
 		}
 		if lands != "current" || state == "current" {
@@ -137,7 +137,7 @@ func TestFocus_bringsWaitingWorkIntoCurrentAndLeavesTheRest(t *testing.T) {
 		if len(listed.Tasks) == 0 {
 			t.Fatal("nothing is listed")
 		}
-		if first := factsOf(listed.Tasks[0]).Number; first != 2 {
+		if first := listed.Tasks[0].Carried().Number; first != 2 {
 			t.Errorf("a task in %s brought into current sits behind task %d, want at the head", state, first)
 		}
 	}
@@ -173,11 +173,11 @@ func actsDone(t *testing.T, e *Engine, did string) []int {
 	return on
 }
 
-func numbersIn(tasks []task.Task, state domain.State) []int {
+func numbersIn(tasks []task.Task, state item.State) []int {
 	var out []int
 	for _, t := range tasks {
-		if factsOf(t).State == state {
-			out = append(out, factsOf(t).Number)
+		if t.Carried().State == state {
+			out = append(out, t.Carried().Number)
 		}
 	}
 	return out
@@ -197,7 +197,7 @@ func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{1, 3}) || len(a.Held) != 2 || factsOf(a.Held[1]).Number != 3 {
+	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{1, 3}) || len(a.Held) != 2 || a.Held[1].Carried().Number != 3 {
 		t.Errorf("after unfocusing 2: in focus %v, held %d", a.InFocus, len(a.Held))
 	}
 	a, err = e.Ask(TaskFocus, Input{})
@@ -214,7 +214,7 @@ func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
 	if a.InFocus == nil || len(*a.InFocus) != 0 {
 		t.Errorf("after unfocusing all: %v", a.InFocus)
 	}
-	if got := actsDone(t, e, trace.FocusReleased); !slices.Equal(got, []int{2, 1, 3}) {
+	if got := actsDone(t, e, act.FocusReleased); !slices.Equal(got, []int{2, 1, 3}) {
 		t.Errorf("focus released on %v, want 2 then 1 and 3", got)
 	}
 }
@@ -227,7 +227,7 @@ func TestTaskFocus_answersWithTheTaskBroughtIntoCurrentAndTheFocus(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a.Task == nil || factsOf(*a.Task).Number != 2 || factsOf(*a.Task).State != domain.Current {
+	if a.Task == nil || (*a.Task).Carried().Number != 2 || (*a.Task).Carried().State != item.Current {
 		t.Fatalf("answered with task %+v, want task 2 in current", a.Task)
 	}
 	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{2}) || len(a.Sessions) != 1 {
@@ -240,11 +240,11 @@ func TestMove_recordsAMoveOnlyWhenTheTaskChangedPlace(t *testing.T) {
 	add(t, e, "one")
 	add(t, e, "two")
 	for range 2 {
-		if err := e.move(2, First, 0); err != nil {
+		if err := e.move(2, task.First, 0); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if got := actsDone(t, e, trace.Moved); !slices.Equal(got, []int{2}) {
+	if got := actsDone(t, e, act.Moved); !slices.Equal(got, []int{2}) {
 		t.Errorf("moves recorded on %v, want one on task 2", got)
 	}
 }
@@ -257,13 +257,13 @@ func TestTaskMove_putsATaskInPlaceAndRefusesOneGivenNowhereOrTwice(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := numbersIn(a.Tasks, domain.Backlog); !slices.Equal(got, []int{2, 1}) {
+	if got := numbersIn(a.Tasks, item.Backlog); !slices.Equal(got, []int{2, 1}) {
 		t.Errorf("backlog is %v, want 2 then 1", got)
 	}
-	if _, err := e.Ask(TaskMove, given("number", "1")); !errors.Is(err, errNowhereToMove) {
+	if _, err := e.Ask(TaskMove, given("number", "1")); !errors.Is(err, task.ErrNowhereToMove) {
 		t.Errorf("moving nowhere answered %v", err)
 	}
-	if _, err := e.Ask(TaskMove, given("number", "1", "first", "true", "last", "true", "state", "todo")); !errors.Is(err, errMoreThanOnePlace) {
+	if _, err := e.Ask(TaskMove, given("number", "1", "first", "true", "last", "true", "state", "todo")); !errors.Is(err, task.ErrMoreThanOnePlace) {
 		t.Errorf("moving to two places answered %v", err)
 	}
 }
@@ -279,7 +279,7 @@ func TestTaskMove_takesTheOthersAlongBehindItIntoItsColumn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := numbersIn(a.Tasks, domain.Todo); !slices.Equal(got, []int{3, 1, 2}) {
+	if got := numbersIn(a.Tasks, item.Todo); !slices.Equal(got, []int{3, 1, 2}) {
 		t.Errorf("todo is %v, want 3, 1, 2", got)
 	}
 }

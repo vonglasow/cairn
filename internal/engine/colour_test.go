@@ -1,21 +1,21 @@
 package engine
 
 import (
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/workspace"
 	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"cairn/internal/domain"
 )
 
-func listedBy(t *testing.T, h Home) map[string]Workspace {
+func listedBy(t *testing.T, h Home) map[string]workspace.Workspace {
 	t.Helper()
 	answer, err := DoFrom(WorkspaceList, h, Input{}, Acting{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	by := map[string]Workspace{}
+	by := map[string]workspace.Workspace{}
 	for _, one := range answer.Workspaces.Workspaces {
 		by[one.Name] = one
 	}
@@ -29,8 +29,8 @@ func TestWorkspaceList_eachWearsTheColourItsSettingsSayOrOneReadOffItsName(t *te
 	if by["home"].Colour != "green" {
 		t.Errorf("home wears %q; want the green its settings say", by["home"].Colour)
 	}
-	if by["work"].Colour != domain.ColourOf("work") {
-		t.Errorf("work wears %q; want %q, read off its name", by["work"].Colour, domain.ColourOf("work"))
+	if by["work"].Colour != label.ColourOf("work") {
+		t.Errorf("work wears %q; want %q, read off its name", by["work"].Colour, label.ColourOf("work"))
 	}
 }
 
@@ -39,7 +39,7 @@ func TestWorkspaceList_aColourTheSettingsCannotSayIsReadOffTheName(t *testing.T)
 	settingsIn(t, filepath.Join(h.Dir, "h"), "[workspace]\ncolour = \"chartreuse\"\n")
 	settingsIn(t, filepath.Join(h.Dir, "w"), "not toml at all [")
 	by := listedBy(t, h)
-	if by["home"].Colour != domain.ColourOf("home") || by["work"].Colour != domain.ColourOf("work") {
+	if by["home"].Colour != label.ColourOf("home") || by["work"].Colour != label.ColourOf("work") {
 		t.Errorf("home wears %q, work %q; want each read off its name", by["home"].Colour, by["work"].Colour)
 	}
 }
@@ -52,7 +52,7 @@ func TestWorkspaceList_theColourOfTheStoreInUseIsNotLentToAnother(t *testing.T) 
 		t.Fatal(err)
 	}
 	for _, one := range answer.Config.Workspaces {
-		if one.Name == "home" && one.Colour != domain.ColourOf("home") {
+		if one.Name == "home" && one.Colour != label.ColourOf("home") {
 			t.Errorf("home wears %q; want its own, not work's", one.Colour)
 		}
 	}
@@ -64,7 +64,7 @@ func TestWorkspaceList_aFolderGoneIsSaidNotFound(t *testing.T) {
 	if !by["home"].NotFound || by["work"].NotFound {
 		t.Errorf("home not found %v, work %v; want home alone", by["home"].NotFound, by["work"].NotFound)
 	}
-	said := workspacesText([]Workspace{{Name: "home", Folder: "/h", NotFound: true, Colour: "teal"}})
+	said := workspace.WorkspacesText([]workspace.Workspace{{Name: "home", Folder: "/h", NotFound: true, Colour: "teal"}})
 	if said != "home  /h  not found  teal\n" {
 		t.Errorf("it says %q", said)
 	}
@@ -82,7 +82,7 @@ func TestWorkspaceShow_saysTheColour(t *testing.T) {
 		t.Errorf("it says\n%s", said)
 	}
 	h.Workspace = "work"
-	if answer, _ := DoFrom(WorkspaceShow, h, Input{}, Acting{}); answer.WorkspaceShown.Colour != domain.ColourOf("work") {
+	if answer, _ := DoFrom(WorkspaceShow, h, Input{}, Acting{}); answer.WorkspaceShown.Colour != label.ColourOf("work") {
 		t.Errorf("work wears %q; want it read off its name", answer.WorkspaceShown.Colour)
 	}
 }
@@ -103,7 +103,7 @@ func TestLocate_aColourNoneOfTheLabelColoursIsRefusedNamingIt(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	settingsIn(t, filepath.Join(h.Dir, "w"), "[workspace]\ncolour = \"chartreuse\"\n")
 	_, err := Locate(h)
-	if !errors.Is(err, domain.ErrNoSuchColour) || !strings.Contains(err.Error(), "workspace.colour") || !strings.Contains(err.Error(), "chartreuse") {
+	if !errors.Is(err, label.ErrNoSuchColour) || !strings.Contains(err.Error(), "workspace.colour") || !strings.Contains(err.Error(), "chartreuse") {
 		t.Errorf("Locate = %v; want the colour refused, naming it and its key", err)
 	}
 }

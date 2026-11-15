@@ -1,11 +1,11 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
 	"fmt"
 	"strconv"
 	"strings"
-
-	"cairn/internal/domain"
 )
 
 // Field is one thing a form asks about.
@@ -31,7 +31,7 @@ func taskFields(c Card) []Field {
 		{Name: "blockers", Arg: "blocker", Value: Numbers(c.Blockers)},
 		{Name: "links", Arg: "link", Value: Numbers(c.Linked)},
 		{Name: "because", Arg: "because", Value: c.Because},
-		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(c.Deadline)},
+		{Name: "deadline", Arg: "deadline", Value: calendar.FormatDay(c.Deadline)},
 		{Name: "estimate", Arg: "estimate", Value: c.Estimate},
 		{Name: "time spent", Arg: "spent", Value: c.Spent},
 		{Name: "objectives", Arg: "objective", Value: Numbers(c.Objectives)},
@@ -89,7 +89,7 @@ func GoalFields(g Goal) []Field {
 		{Name: "labels", Arg: "label", Value: strings.Join(g.Labels, " ")},
 		{Name: "parent", Arg: "parent", Value: parentWritten(g.Parent)},
 		{Name: "waits on", Arg: "waits-on", Value: Numbers(g.WaitsOn)},
-		{Name: "deadline", Arg: "deadline", Value: domain.FormatDay(g.Deadline)},
+		{Name: "deadline", Arg: "deadline", Value: calendar.FormatDay(g.Deadline)},
 		{Name: "estimate", Arg: "estimate", Value: g.Estimate},
 	})
 }
@@ -103,8 +103,8 @@ func parentWritten(n int) string {
 
 // States is the closed set a column is picked from, read off the domain rather than listed again here.
 func States() []string {
-	out := make([]string, 0, len(domain.States))
-	for _, s := range domain.States {
+	out := make([]string, 0, len(item.States))
+	for _, s := range item.States {
 		out = append(out, string(s))
 	}
 	return out
@@ -112,8 +112,8 @@ func States() []string {
 
 // Priorities is the same, for what a task carries.
 func Priorities() []string {
-	out := make([]string, 0, len(domain.Priorities))
-	for _, p := range domain.Priorities {
+	out := make([]string, 0, len(item.Priorities))
+	for _, p := range item.Priorities {
 		out = append(out, string(p))
 	}
 	return out

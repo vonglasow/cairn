@@ -1,27 +1,29 @@
 package engine
 
 import (
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
 	"encoding/json"
 	"slices"
 	"strings"
 	"testing"
 
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
-	deadline, err := domain.ParseDeadline("2026-09-01")
+	deadline, err := calendar.ParseDeadline("2026-09-01")
 	if err != nil {
 		t.Fatalf("ParseDeadline: %v", err)
 	}
-	estimate, err := domain.ParseEstimate("90m")
+	estimate, err := calendar.ParseEstimate("90m")
 	if err != nil {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
-	spent, err := domain.ParseEstimate("30m")
+	spent, err := calendar.ParseEstimate("30m")
 	if err != nil {
 		t.Fatalf("ParseEstimate: %v", err)
 	}
@@ -31,15 +33,15 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	a.Serves(3)
 	a.Titled("Write the spec")
 	a.Described("in full")
-	a.InColumn(domain.Todo)
-	a.Carries(domain.High)
+	a.InColumn(item.Todo)
+	a.Carries(item.High)
 	a.Labelled("spec")
 	a.Labelled("team")
 	a.Due(deadline)
 	a.Estimated(estimate)
 	a.Spent(spent)
 	built := a.Task()
-	progress := domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}}
+	progress := item.Progress{Steps: item.Tally{Total: 4, Done: 1}}
 
 	encoded, err := json.Marshal(ofTask(built, progress))
 	if err != nil {
@@ -55,8 +57,8 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 		"number":      float64(1),
 		"title":       "Write the spec",
 		"description": "in full",
-		"state":       string(domain.Todo),
-		"priority":    string(domain.High),
+		"state":       string(item.Todo),
+		"priority":    string(item.High),
 		"deadline":    "2026-09-01",
 		"estimate":    "1h30m",
 		"time_spent":  "30m",
@@ -83,7 +85,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	}
 
 	t.Run("a count of tasks with no step under it does not carry steps too", func(t *testing.T) {
-		encoded, err := json.Marshal(ofTask(built, domain.Progress{Tasks: domain.Tally{Total: 2, Done: 2}}))
+		encoded, err := json.Marshal(ofTask(built, item.Progress{Tasks: item.Tally{Total: 2, Done: 2}}))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -101,7 +103,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 	})
 
 	t.Run("nothing under it reads as null, not as zeroes", func(t *testing.T) {
-		encoded, err := json.Marshal(ofTask(built, domain.Progress{}))
+		encoded, err := json.Marshal(ofTask(built, item.Progress{}))
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)
 		}
@@ -123,10 +125,10 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 		oa.Numbered(5)
 		oa.Titled("Ship it")
 		oa.Standing(objective.Active)
-		oa.Carries(domain.Normal)
+		oa.Carries(item.Normal)
 		obj := oa.Objective()
-		backup := domain.Backup{Number: 2}
-		held := domain.Held{Tasks: 3, Objectives: 1}
+		made := backup.Backup{Number: 2}
+		held := backup.Held{Tasks: 3, Objectives: 1}
 		change := migration.Made(migration.Carried{Number: 1, Name: "add labels", Does: "ALTER TABLE tasks ADD COLUMN labels", Applied: true})
 
 		cases := []struct {
@@ -144,16 +146,16 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 					Description: "", Labels: []string{}, Deadline: "", Estimate: "",
 				},
 				Tasks:      []int{},
-				Progress:   &domain.ProgressShape{Steps: &domain.Tally{Total: 4, Done: 1}, Percent: 25},
+				Progress:   &item.ProgressShape{Steps: &item.Tally{Total: 4, Done: 1}, Percent: 25},
 				Left:       []int{},
 				Children:   []int{},
 				WaitsOn:    []int{},
 				WaitedOnBy: []int{},
 			}},
-			{"a list of objectives", objectiveList, Answer{Objectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, domain.Progress{})}}},
-			{"what a search found among objectives", ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, domain.Progress{})}}},
-			{"a backup with what it holds", backupShow, Answer{Backup: &backup, Holds: &held}, ofBackup(backup, &held)},
-			{"a list of backups", BackupList, Answer{Backups: []domain.Backup{backup}}, kept{Backups: []BackupShape{ofBackup(backup, nil)}}},
+			{"a list of objectives", objectiveList, Answer{Objectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, item.Progress{})}}},
+			{"what a search found among objectives", ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, item.Progress{})}}},
+			{"a backup with what it holds", backupShow, Answer{Backup: &made, Holds: &held}, ofBackup(made, &held)},
+			{"a list of backups", BackupList, Answer{Backups: []backup.Backup{made}}, kept{Backups: []BackupShape{ofBackup(made, nil)}}},
 			{"a change", migrationShow, Answer{Change: &change}, migration.OfMigration(change)},
 			{"a list of changes", MigrationList, Answer{Changes: []migration.Migration{change}}, ledger{Changes: []migration.Shape{migration.OfMigration(change)}}},
 			{"a rollback names what it undid, not a change in full", MigrationRollback, Answer{RolledBack: &change}, migration.OfRolledBack(change)},
@@ -162,7 +164,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 			{"nothing waiting reads as an empty list, not null", MigrationApply, Answer{Applied: []string{}}, applied{Applied: []string{}}},
 			{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, applied{Applied: []string{"add labels"}}},
 			{"a sweep says how many it took off", TaskArchive, Answer{Archived: &one}, swept{Archived: one}},
-			{"one archived by number is a sweep of one, and says which", TaskArchive, Answer{Archived: of(1), Task: &built}, swept{Archived: 1, Task: of(ofTask(built, domain.Progress{}))}},
+			{"one archived by number is a sweep of one, and says which", TaskArchive, Answer{Archived: of(1), Task: &built}, swept{Archived: 1, Task: of(ofTask(built, item.Progress{}))}},
 		}
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
@@ -186,20 +188,20 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	var ta task.AsTold
 	ta.Numbered(1)
 	ta.Titled("Write the spec")
-	ta.InColumn(domain.Todo)
-	ta.Carries(domain.Normal)
+	ta.InColumn(item.Todo)
+	ta.Carries(item.Normal)
 	built := ta.Task()
-	progress := domain.Progress{Steps: domain.Tally{Total: 4, Done: 1}}
+	progress := item.Progress{Steps: item.Tally{Total: 4, Done: 1}}
 
 	var oa objective.AsTold
 	oa.Numbered(5)
 	oa.Titled("Ship it")
 	oa.Standing(objective.Active)
-	oa.Carries(domain.Normal)
+	oa.Carries(item.Normal)
 	obj := oa.Objective()
 
-	backup := domain.Backup{Number: 2}
-	held := domain.Held{Tasks: 3, Objectives: 1}
+	made := backup.Backup{Number: 2}
+	held := backup.Held{Tasks: 3, Objectives: 1}
 
 	change := migration.Made(migration.Carried{Number: 1, Name: "add labels", Does: "ALTER TABLE tasks ADD COLUMN labels", Applied: true})
 
@@ -224,9 +226,9 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress, objective.Review{}, objective.Family{}) + objective.Serving(nil)},
 		{"an empty list of objectives says so", objectiveList, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
 		{"a list of objectives", objectiveList, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj}, nil, nil)},
-		{"a backup with what it holds", backupShow, Answer{Backup: &backup, Holds: &held}, backupLine(backup, held)},
-		{"an empty list of backups says so", BackupList, Answer{Backups: []domain.Backup{}}, "there is no backup\n"},
-		{"a list of backups", BackupList, Answer{Backups: []domain.Backup{backup}}, backupsText([]domain.Backup{backup})},
+		{"a backup with what it holds", backupShow, Answer{Backup: &made, Holds: &held}, backupLine(made, held)},
+		{"an empty list of backups says so", BackupList, Answer{Backups: []backup.Backup{}}, "there is no backup\n"},
+		{"a list of backups", BackupList, Answer{Backups: []backup.Backup{made}}, backupsText([]backup.Backup{made})},
 		{"a rollback names what it undid, not a change in full", MigrationRollback, Answer{RolledBack: &change}, migration.RolledBackText(change)},
 		{"a change in full", migrationShow, Answer{Change: &change}, migration.Text(change)},
 		{"a list of changes", MigrationList, Answer{Changes: []migration.Migration{change}, Holds: &held}, migration.List([]migration.Migration{change}, held)},
@@ -235,7 +237,7 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		{"nothing waiting says so", MigrationApply, Answer{Applied: []string{}}, "there is nothing waiting to be applied\n"},
 		{"names of what was applied", MigrationApply, Answer{Applied: []string{"add labels"}}, "applied \"add labels\"\n"},
 		{"a sweep says how many", TaskArchive, Answer{Archived: &deleted}, "7 task(s) archived\n"},
-		{"one archived by number shows the card", TaskArchive, Answer{Archived: of(1), Task: &built}, task.Text(built, domain.Progress{}, true)},
+		{"one archived by number shows the card", TaskArchive, Answer{Archived: of(1), Task: &built}, task.Text(built, item.Progress{}, true)},
 		{"how many were labelled", TaskLabel, Answer{Labelled: &deleted}, "7 task(s) labelled\n"},
 		{"nothing declared, nothing said", Operation{}, Answer{Tasks: []task.Task{built}}, ""},
 	}
@@ -457,11 +459,11 @@ func TestRenderText_showsWhatATerminalWouldObey(t *testing.T) {
 }
 
 func TestOfFocus_saysEverySessionAndNoneAsAnEmptyList(t *testing.T) {
-	if got := ofFocus(nil, domain.Progress{}, nil, nil).Sessions; got == nil || len(got) != 0 {
+	if got := ofFocus(nil, item.Progress{}, nil, nil).Sessions; got == nil || len(got) != 0 {
 		t.Errorf("with no session, sessions = %#v", got)
 	}
 	held := []focusSession{{Task: 4}}
-	if got := ofFocus(nil, domain.Progress{}, nil, held).Sessions; !slices.Equal(got, held) {
+	if got := ofFocus(nil, item.Progress{}, nil, held).Sessions; !slices.Equal(got, held) {
 		t.Errorf("sessions = %v, want %v", got, held)
 	}
 }

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"cairn/internal/engine"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/migration"
 	"cairn/internal/linuxapp"
-	"cairn/internal/migration"
-	"cairn/internal/trace"
 )
 
 // Screen is what has the window.
@@ -397,10 +397,10 @@ func (w Window) Look() Window {
 
 func (w Window) agreeingTo(agreeing engine.Agreeing) Window {
 	w = w.Closing()
-	if agreeing.Reason == engine.RefusalOf(engine.ErrStoreBehind).Reason {
+	if agreeing.Reason == engine.RefusalOf(migration.ErrStoreBehind).Reason {
 		return w.applying(agreeing)
 	}
-	if agreeing.Reason == engine.RefusalOf(engine.ErrNewerStore).Reason {
+	if agreeing.Reason == engine.RefusalOf(migration.ErrNewerStore).Reason {
 		w.screen, w.question, w.agreeing, w.err = OnAsking, aboutNewer, agreeing, nil
 		return w
 	}
@@ -447,6 +447,6 @@ func (w Window) settledLane(lane, want int) int {
 	return min(most, max(0, want))
 }
 
-func line(act trace.Act) string { return engine.SaidOf(act).Line() }
+func line(act act.Act) string { return engine.SaidOf(act).Line() }
 
 func abs(n int) int { return max(n, -n) }

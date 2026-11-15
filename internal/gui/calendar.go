@@ -1,10 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"strconv"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -147,7 +147,7 @@ func (w Window) Faded(day time.Time) bool { return day.Month() != w.day.Month() 
 
 func (w Window) openingCalendar() Window {
 	w.day = w.today()
-	if held, err := domain.ParseDeadline(w.form.Fields()[w.form.On()].Value); err == nil && !held.IsZero() {
+	if held, err := calendar.ParseDeadline(w.form.Fields()[w.form.On()].Value); err == nil && !held.IsZero() {
 		w.day = engine.DayOf(held)
 	}
 	w.screen = OnCalendar
@@ -216,16 +216,16 @@ func (w Window) dated(day time.Time) Window {
 		if day.IsZero() {
 			return w.unsetting(key)
 		}
-		return w.setting(key, domain.FormatDay(day))
+		return w.setting(key, calendar.FormatDay(day))
 	}
-	w.form = w.form.Writes(Ending(domain.FormatDay(day)))
+	w.form = w.form.Writes(Ending(calendar.FormatDay(day)))
 	w.screen = OnForm
 	return w
 }
 
 func (w Window) openingCalendarFor(key, value string) Window {
 	w.day = w.today()
-	if held, err := domain.ParseDeadline(value); err == nil && !held.IsZero() {
+	if held, err := calendar.ParseDeadline(value); err == nil && !held.IsZero() {
 		w.day = engine.DayOf(held)
 	}
 	w.calendarKey, w.screen = key, OnCalendar

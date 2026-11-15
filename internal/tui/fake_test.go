@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/backup"
 	"errors"
 	"reflect"
 	"runtime"
@@ -13,10 +14,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/task"
 	"cairn/test"
 )
 
@@ -24,7 +24,7 @@ type fake struct {
 	cards []engine.Card
 	goals []engine.Goal
 	focus []int
-	acts  []trace.Act
+	acts  []act.Act
 
 	version    int64
 	fail       error
@@ -67,7 +67,7 @@ func (f *fake) failing() error {
 
 type placed struct {
 	number int
-	at     engine.Place
+	at     task.Place
 	target int
 }
 
@@ -186,8 +186,8 @@ func finish(b Board, keep bool) Board {
 	return hit(hit(b, "enter"), "enter")
 }
 
-func anAct(did, became string) trace.Act {
-	var told trace.AsTold
+func anAct(did, became string) act.Act {
+	var told act.AsTold
 	told.On(1)
 	told.Did(did)
 	told.Became(became)
@@ -195,8 +195,8 @@ func anAct(did, became string) trace.Act {
 	return told.Act()
 }
 
-func aChange(field, became string) trace.Act {
-	var told trace.AsTold
+func aChange(field, became string) act.Act {
+	var told act.AsTold
 	told.On(1)
 	told.Did("changed")
 	told.Changing(field)
@@ -258,7 +258,7 @@ func answerShaped(op engine.Operation) engine.Answer {
 	case engine.Task, engine.Focus:
 		return engine.Answer{Task: &task.Task{}}
 	case engine.BackupShape:
-		return engine.Answer{Backup: &domain.Backup{Number: 1}, Holds: &domain.Held{Tasks: 1}}
+		return engine.Answer{Backup: &backup.Backup{Number: 1}, Holds: &backup.Held{Tasks: 1}}
 	}
 	return engine.Answer{}
 }
@@ -266,12 +266,12 @@ func answerShaped(op engine.Operation) engine.Answer {
 func placedBy(number int, in engine.Input) placed {
 	switch {
 	case in.Named("first"):
-		return placed{number: number, at: engine.First}
+		return placed{number: number, at: task.First}
 	case in.Named("last"):
-		return placed{number: number, at: engine.Last}
+		return placed{number: number, at: task.Last}
 	default:
 		target, _ := strconv.Atoi(in.Given["after"])
-		return placed{number: number, at: engine.Behind, target: target}
+		return placed{number: number, at: task.Behind, target: target}
 	}
 }
 

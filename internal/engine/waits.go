@@ -1,19 +1,11 @@
 package engine
 
 import (
-	"errors"
+	"cairn/internal/engine/item"
 	"maps"
 	"slices"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-)
-
-// What a change to what an objective waits on can be turned down for.
-var (
-	errWaitsOnRequired    = errors.New("what an objective waits on is an objective number")
-	errWaitsOnBothWays    = errors.New("what an objective waits on is either replaced or changed, not both")
-	errWaitsOnSignAtBirth = errors.New("what an objective waits on is added or taken away only when changing it")
+	"cairn/internal/engine/objective"
 )
 
 func (e *Engine) mayWait(o objective.Objective) error {
@@ -30,10 +22,10 @@ func (e *Engine) mayWait(o objective.Objective) error {
 			return err
 		}
 	}
-	return objective.MayWaitOn(o, t.by)
+	return objective.MayWaitOn(o, t.By)
 }
 
-func (e *Engine) unmetEach(was map[int]domain.State) ([]string, error) {
+func (e *Engine) unmetEach(was map[int]item.State) ([]string, error) {
 	var said []string
 	for _, n := range slices.Sorted(maps.Keys(was)) {
 		more, err := e.unmet(n, was[n])
@@ -49,24 +41,24 @@ func (e *Engine) unmetEach(was map[int]domain.State) ([]string, error) {
 	return said, nil
 }
 
-func (e *Engine) statesOf(numbers []int) (map[int]domain.State, error) {
-	was := map[int]domain.State{}
+func (e *Engine) statesOf(numbers []int) (map[int]item.State, error) {
+	was := map[int]item.State{}
 	for _, n := range numbers {
 		t, err := e.tasks.Find(n)
 		if err != nil {
 			return nil, err
 		}
-		was[n] = factsOf(t).State
+		was[n] = t.Carried().State
 	}
 	return was, nil
 }
 
-func (e *Engine) unmet(number int, was domain.State) ([]string, error) {
-	if was == domain.Current {
+func (e *Engine) unmet(number int, was item.State) ([]string, error) {
+	if was == item.Current {
 		return nil, nil
 	}
 	now, err := e.tasks.Find(number)
-	if err != nil || factsOf(now).State != domain.Current {
+	if err != nil || now.Carried().State != item.Current {
 		return nil, err
 	}
 	t, err := e.tree()
@@ -74,8 +66,8 @@ func (e *Engine) unmet(number int, was domain.State) ([]string, error) {
 		return nil, err
 	}
 	var said []string
-	for _, n := range slices.Sorted(slices.Values(t.counted(factsOf(now).Objectives))) {
-		said = append(said, objective.Unmet(t.by[n], t.by)...)
+	for _, n := range slices.Sorted(slices.Values(t.Counted(now.Carried().Objectives))) {
+		said = append(said, objective.Unmet(t.By[n], t.By)...)
 	}
 	return said, nil
 }

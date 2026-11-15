@@ -1,72 +1,25 @@
 package engine
 
 import (
+	"cairn/internal/engine/backup"
 	"errors"
 	"fmt"
 
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/store"
-)
-
-// What a surface has to be able to recognise about a store and its backups.
-var (
-	errNoSuchBackup      = store.ErrNoSuchBackup
-	errNoBackup          = store.ErrNoBackup
-	errDamagedBackup     = store.ErrDamagedBackup
-	errNotAStore         = store.ErrNotAStore
-	ErrNewerStore        = store.ErrNewerStore
-	ErrStoreBehind       = store.ErrStoreBehind
-	errNoSuchChange      = store.ErrNoSuchChange
-	errNothingWaiting    = store.ErrNothingWaiting
-	errAlreadyApplied    = store.ErrAlreadyApplied
-	errNothingToRollBack = store.ErrNothingToRollBack
-	errUndoneMeanwhile   = store.ErrUndoneMeanwhile
-	errEarlierWaiting    = store.ErrEarlierWaiting
+	"cairn/internal/engine/migration"
+	"cairn/internal/store/sqlite"
 )
 
 // storeUnusable says whether an error is the store being out of reach rather than the request being wrong.
-var storeUnusable = store.Unusable
-
-// backups is the set of backups kept beside a store.
-type backups struct {
-	vault *store.Vault
-}
+var storeUnusable = sqlite.Unusable
 
 // backupsAt names the backups kept beside the store at path.
-func backupsAt(path string) *backups {
-	return &backups{vault: store.NewVault(path)}
-}
-
-// Make backups the store as it stands.
-func (c *backups) Make() (domain.Backup, error) { return c.vault.Make() }
-
-// All hands back every backup, oldest number first.
-func (c *backups) All() ([]domain.Backup, error) { return c.vault.All() }
-
-// Find hands back one backup by its number.
-func (c *backups) Find(number int) (domain.Backup, error) { return c.vault.Find(number) }
-
-// Latest hands back the most recent backup.
-func (c *backups) Latest() (domain.Backup, error) { return c.vault.Latest() }
-
-// Delete removes a backup.
-func (c *backups) Delete(number int) error { return c.vault.Delete(number) }
-
-// Restore puts a backup back, backing up first what it replaces.
-func (c *backups) Restore(number int) error { return c.vault.Restore(number) }
-
-// HoldsStore counts what the store holds, read as it lies.
-func (c *backups) HoldsStore() (domain.Held, error) { return c.vault.HoldsStore() }
-
-// Holds counts what a backup holds, without changing it.
-func (c *backups) Holds(one domain.Backup) (domain.Held, error) { return c.vault.Holds(one) }
+func backupsAt(path string) backup.Vault { return sqlite.NewVault(path) }
 
 func (e *Engine) migrations() ([]migration.Migration, error) { return e.store.Migrations() }
 
 func (e *Engine) change(number int) (migration.Migration, error) { return e.store.Change(number) }
 
-func (e *Engine) held() (domain.Held, error) { return e.store.Held() }
+func (e *Engine) held() (backup.Held, error) { return e.store.Held() }
 
 // Version says whether the store has moved since it was last asked.
 func (e *Engine) Version() (version int64, err error) {
@@ -112,7 +65,7 @@ func (e *Engine) backupFirst(path string) error {
 
 // Told adds what somebody has to type about a store that cannot be used as it stands.
 func Told(err error) error {
-	if errors.Is(err, ErrStoreBehind) {
+	if errors.Is(err, migration.ErrStoreBehind) {
 		return typed{err, "cairn migration apply"}
 	}
 	return err

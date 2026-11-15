@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 	"cairn/internal/tui"
 )
 
@@ -45,7 +45,7 @@ func newFixturesCmd() *cobra.Command {
 				said = "made"
 			}
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "fixtures %s in %s\nstore  %s\n\n%s=%s %s=%s cairn gui\n",
-				said, folder, made.Store, config.StoreVariable, made.Store, config.NotesVariable, made.Notes)
+				said, folder, made.Store, files.StoreVariable, made.Store, files.NotesVariable, made.Notes)
 			at := withPlaces(homeIn(cmd), made)
 			if window {
 				return openWindow(cmd, at)
@@ -67,9 +67,9 @@ func withPlaces(h engine.Home, made engine.Fixtures) engine.Home {
 	lookup := h.Lookup
 	h.Lookup = func(key string) (string, bool) {
 		switch key {
-		case config.StoreVariable:
+		case files.StoreVariable:
 			return made.Store, true
-		case config.NotesVariable:
+		case files.NotesVariable:
 			return made.Notes, true
 		}
 		return lookup(key)

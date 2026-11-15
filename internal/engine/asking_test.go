@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/migration"
 	"errors"
 	"fmt"
 	"os"
@@ -11,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/store"
+	"cairn/internal/store/sqlite"
 )
 
 func engineOn(t *testing.T) (*Engine, string) {
@@ -78,7 +79,7 @@ func TestEngine_isAskedThroughOperationsAlone(t *testing.T) {
 }
 
 func TestKeptBy_handsEveryDoorToTheStoreTheOneGiven(t *testing.T) {
-	kept, err := store.Open(filepath.Join(t.TempDir(), "cairn.db"))
+	kept, err := sqlite.Open(filepath.Join(t.TempDir(), "cairn.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +140,7 @@ func TestAsk_aStoreFallenBehindIsRefusedToWhatNeedsItCurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = held.Close() })
-	if _, err := held.Ask(TaskList, Input{}); !errors.Is(err, ErrStoreBehind) {
+	if _, err := held.Ask(TaskList, Input{}); !errors.Is(err, migration.ErrStoreBehind) {
 		t.Errorf("Ask(TaskList) on a store behind = %v, want ErrStoreBehind", err)
 	}
 	if _, err := held.Ask(MigrationList, Input{}); err != nil {

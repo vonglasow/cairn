@@ -1,6 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/view"
 	"errors"
 	"fmt"
 	"maps"
@@ -9,31 +15,21 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"cairn/internal/domain"
-	"cairn/internal/store"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 // View is how a view crosses to a machine: its name, its place, what it holds and how many tasks it keeps today.
 type View struct {
-	Name       string          `json:"name"`
-	Place      int             `json:"place" jsonschema:"where it stands among the views, from 1; the first nine are opened by a key"`
-	Holds      Holds           `json:"holds"`
-	Keeps      int             `json:"keeps" jsonschema:"how many tasks it keeps today"`
-	Of         int             `json:"of" jsonschema:"how many tasks are on the board, the archived ones left out"`
-	Done       int             `json:"done" jsonschema:"how many of the tasks it keeps are done"`
-	Gone       []string        `json:"gone" jsonschema:"each condition it holds whose objective or label is gone, which narrows nothing; empty when none is"`
-	Outside    []outside       `json:"outside,omitempty" jsonschema:"the tasks outside it that block, wait on or are linked to one it keeps, each once; left out unless the view is shown"`
-	Was        string          `json:"was,omitempty" jsonschema:"the name it had before a change renamed it; left out otherwise"`
-	Objectives []viewObjective `json:"objectives,omitempty" jsonschema:"each objective it holds that is still there, with its figures as the store counts them, whatever the view keeps; left out unless the view is shown"`
-}
-
-// viewObjective is an objective a view holds, with the store's figures for it: the same in a view and out of one.
-type viewObjective struct {
-	Number    int                   `json:"number"`
-	Title     string                `json:"title"`
-	Progress  *domain.ProgressShape `json:"progress" jsonschema:"how far along it is over its whole subtree, each task once; null when nothing serves it"`
-	TimeSpent string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
+	Name       string           `json:"name"`
+	Place      int              `json:"place" jsonschema:"where it stands among the views, from 1; the first nine are opened by a key"`
+	Holds      Holds            `json:"holds"`
+	Keeps      int              `json:"keeps" jsonschema:"how many tasks it keeps today"`
+	Of         int              `json:"of" jsonschema:"how many tasks are on the board, the archived ones left out"`
+	Done       int              `json:"done" jsonschema:"how many of the tasks it keeps are done"`
+	Gone       []string         `json:"gone" jsonschema:"each condition it holds whose objective or label is gone, which narrows nothing; empty when none is"`
+	Outside    []view.Outside   `json:"outside,omitempty" jsonschema:"the tasks outside it that block, wait on or are linked to one it keeps, each once; left out unless the view is shown"`
+	Was        string           `json:"was,omitempty" jsonschema:"the name it had before a change renamed it; left out otherwise"`
+	Objectives []view.Objective `json:"objectives,omitempty" jsonschema:"each objective it holds that is still there, with its figures as the store counts them, whatever the view keeps; left out unless the view is shown"`
 }
 
 // Holds is what a view holds: the filters task list takes, and a search.
@@ -53,25 +49,6 @@ type Holds struct {
 // Views is how the views cross: every one, in its place.
 type Views struct {
 	Views []View `json:"views"`
-}
-
-// viewDeleted is how deleting a view answers: the name of the view deleted.
-type viewDeleted struct {
-	Deleted string `json:"deleted"`
-}
-
-// outside is a task outside a view that touches one it keeps, and every way it does.
-type outside struct {
-	Number int     `json:"number"`
-	Title  string  `json:"title"`
-	State  string  `json:"state"`
-	Why    []Touch `json:"why"`
-}
-
-// Touch is one way a task outside a view touches one inside it: it blocks it, waits on it, or is linked to it.
-type Touch struct {
-	Is string `json:"is" jsonschema:"blocks, waits on or linked to"`
-	Of int    `json:"of" jsonschema:"the number of the task inside the view"`
 }
 
 var searchArgument = Argument{Name: "search", Kind: Text, Means: "keep only the tasks carrying every word of it, wherever among their facts, the way task search looks"}
@@ -108,7 +85,7 @@ cairn view new Shopping --label shopping --state todo`,
 		if err != nil {
 			return Answer{}, err
 		}
-		v, err := on.Engine.holding(store.View{Name: name, Objectives: []int{}, Labels: []string{}}, in)
+		v, err := on.Engine.holding(view.View{Name: name, Objectives: []int{}, Labels: []string{}}, in)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -242,7 +219,7 @@ var ViewDelete = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: viewDeleted{},
+	Answers: view.Deleted{},
 	Takes:   []Argument{viewNamed("to delete")},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		views, err := on.Engine.store.Views()
@@ -261,28 +238,28 @@ var ViewDelete = Operation{
 	},
 }
 
-func viewAt(views []store.View, name string) (int, error) {
-	at := slices.IndexFunc(views, func(v store.View) bool { return domain.Folded(v.Name) == domain.Folded(name) })
+func viewAt(views []view.View, name string) (int, error) {
+	at := slices.IndexFunc(views, func(v view.View) bool { return label.Folded(v.Name) == label.Folded(name) })
 	if at < 0 {
 		return 0, Refusing("no-such-view", "no view is named "+strings.TrimSpace(name))
 	}
 	return at, nil
 }
 
-func viewName(views []store.View, raw string, except int) (string, error) {
-	name, err := domain.Title("a view", raw)
+func viewName(views []view.View, raw string, except int) (string, error) {
+	name, err := item.Title("a view", raw)
 	if err != nil {
 		return "", err
 	}
 	for i, v := range views {
-		if i != except && domain.Folded(v.Name) == domain.Folded(name) {
+		if i != except && label.Folded(v.Name) == label.Folded(name) {
 			return "", Refusing("view-name-taken", "a view is already named "+v.Name)
 		}
 	}
 	return name, nil
 }
 
-func (e *Engine) holding(v store.View, in Input) (store.View, error) {
+func (e *Engine) holding(v view.View, in Input) (view.View, error) {
 	given := maps.Clone(in.Given)
 	maps.DeleteFunc(given, func(_, value string) bool { return value == "" })
 	for _, argument := range viewFilters {
@@ -316,17 +293,17 @@ func (e *Engine) holding(v store.View, in Input) (store.View, error) {
 		v.Objectives = numbers
 	}
 	if labels := in.changed("label"); labels != nil {
-		written, err := domain.ParseLabels(*labels)
+		written, err := label.ParseLabels(*labels)
 		if err != nil {
 			return v, err
 		}
 		v.Labels = written
 	}
-	if !narrowsAnything(v) {
+	if !view.NarrowsAnything(v) {
 		return v, Refusing("view-holds-nothing", "a view holds at least one filter or a search")
 	}
-	for _, label := range v.Labels {
-		if err := e.store.KeepLabel(label); err != nil {
+	for _, name := range v.Labels {
+		if err := e.store.KeepLabel(name); err != nil {
 			return v, err
 		}
 	}
@@ -347,8 +324,8 @@ func (e *Engine) objectivesNamed(given []string) ([]int, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%q: %w", one, errObjectiveRequired)
 		}
-		if _, there := t.by[n]; !there {
-			return nil, fmt.Errorf("objective %d: %w", n, errNoSuchObjective)
+		if _, there := t.By[n]; !there {
+			return nil, fmt.Errorf("objective %d: %w", n, objective.ErrNoSuchObjective)
 		}
 		numbers = append(numbers, n)
 	}
@@ -372,11 +349,7 @@ func focusHeld(was string, in Input) (string, error) {
 	return was, nil
 }
 
-func narrowsAnything(v store.View) bool {
-	return v.Focus != "" || v.State != "" || v.Priority != "" || v.DueBefore != "" || v.Archived || v.Search != "" || len(v.Objectives) > 0 || len(v.Labels) > 0
-}
-
-func (e *Engine) keptViews(views []store.View, at int, was string) (Answer, error) {
+func (e *Engine) keptViews(views []view.View, at int, was string) (Answer, error) {
 	if err := e.store.KeepViews(views); err != nil {
 		return Answer{}, err
 	}
@@ -385,34 +358,34 @@ func (e *Engine) keptViews(views []store.View, at int, was string) (Answer, erro
 	return Answer{Viewed: &kept}, err
 }
 
-func (e *Engine) viewOf(views []store.View, at int) (View, []task.Task, error) {
+func (e *Engine) viewOf(views []view.View, at int) (View, []task.Task, error) {
 	v := views[at]
 	kept, s, err := e.viewing(v)
 	if err != nil {
 		return View{}, nil, err
 	}
-	board, err := e.narrowed(&domain.Narrowing{})
+	board, err := e.narrowed(&filter.Narrowing{})
 	if err != nil {
 		return View{}, nil, err
 	}
 	done := 0
 	for _, t := range kept {
-		if factsOf(t).State == domain.Done {
+		if t.Carried().State == item.Done {
 			done++
 		}
 	}
 	return View{
-		Name: v.Name, Place: at + 1, Keeps: len(kept), Of: len(board), Done: done, Gone: listed(s.lost),
+		Name: v.Name, Place: at + 1, Keeps: len(kept), Of: len(board), Done: done, Gone: listed(s.Lost),
 		Holds: Holds{State: v.State, Priority: v.Priority, Label: v.Labels, Objective: v.Objectives, Itself: v.Itself,
 			DueBefore: v.DueBefore, Focus: v.Focus, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search},
 	}, kept, nil
 }
 
-func (e *Engine) viewObjectives(numbers []int) ([]viewObjective, error) {
-	var out []viewObjective
+func (e *Engine) viewObjectives(numbers []int) ([]view.Objective, error) {
+	var out []view.Objective
 	for _, n := range numbers {
 		o, err := e.showObjective(n)
-		if errors.Is(err, errNoSuchObjective) {
+		if errors.Is(err, objective.ErrNoSuchObjective) {
 			continue
 		}
 		if err != nil {
@@ -426,33 +399,26 @@ func (e *Engine) viewObjectives(numbers []int) ([]viewObjective, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, viewObjective{Number: n, Title: o.Carried().Title, Progress: domain.OfProgress(p), TimeSpent: domain.FormatDuration(reviewOf(under).Spent)})
+		out = append(out, view.Objective{Number: n, Title: o.Carried().Title, Progress: item.OfProgress(p), TimeSpent: calendar.FormatDuration(reviewOf(under).Spent)})
 	}
 	return out, nil
 }
 
-type seen struct {
-	name    string
-	lost    []string
-	nothing bool
-	words   []string
-}
-
-func (e *Engine) viewing(v store.View) ([]task.Task, seen, error) {
-	kept := &domain.Narrowing{}
+func (e *Engine) viewing(v view.View) ([]task.Task, view.Seen, error) {
+	kept := &filter.Narrowing{}
 	s, err := e.seeing(v, kept)
 	if err != nil {
-		return nil, seen{}, err
+		return nil, view.Seen{}, err
 	}
 	tasks, err := e.narrowed(kept)
 	if err != nil {
-		return nil, seen{}, err
+		return nil, view.Seen{}, err
 	}
-	return s.kept(tasks), s, nil
+	return s.Kept(tasks), s, nil
 }
 
-func (e *Engine) seeing(v store.View, kept *domain.Narrowing) (seen, error) {
-	s := seen{name: v.Name, words: strings.Fields(v.Search)}
+func (e *Engine) seeing(v view.View, kept *filter.Narrowing) (view.Seen, error) {
+	s := view.Seen{Name: v.Name, Words: strings.Fields(v.Search)}
 	t, err := e.tree()
 	if err != nil {
 		return s, err
@@ -473,44 +439,37 @@ func (e *Engine) seeing(v store.View, kept *domain.Narrowing) (seen, error) {
 	tell(v.DueBefore != "", func() { kept.DueBefore(v.DueBefore) })
 	tell(v.Focus != "", func() { kept.InFocus(v.Focus == "in") })
 	tell(v.Archived, kept.Archived)
-	tell(len(s.words) > 0, func() {})
+	tell(len(s.Words) > 0, func() {})
 	if v.WithArchived {
 		kept.WithArchived()
 	}
 	for _, n := range v.Objectives {
-		if _, there := t.by[n]; !there {
-			s.lost = append(s.lost, fmt.Sprintf("objective %d", n))
+		if _, there := t.By[n]; !there {
+			s.Lost = append(s.Lost, fmt.Sprintf("objective %d", n))
 			continue
 		}
-		reached := t.reach(n)
+		reached := t.Reach(n)
 		if v.Itself {
 			reached = []int{n}
 		}
 		kept.Serving(reached)
 	}
 	var live []string
-	for _, label := range v.Labels {
-		if _, there := held[label]; !there {
-			s.lost = append(s.lost, "label "+label)
+	for _, name := range v.Labels {
+		if _, there := held[name]; !there {
+			s.Lost = append(s.Lost, "label "+name)
 			continue
 		}
-		live = append(live, label)
+		live = append(live, name)
 	}
 	if len(live) > 0 {
 		kept.Labelled(live)
 	}
-	s.nothing = len(s.lost) == conditions
+	s.Nothing = len(s.Lost) == conditions
 	return s, nil
 }
 
-func (s seen) kept(tasks []task.Task) []task.Task {
-	if s.nothing {
-		return []task.Task{}
-	}
-	return slices.DeleteFunc(tasks, func(t task.Task) bool { return len(s.words) > 0 && !task.Matching(t, s.words) })
-}
-
-func (e *Engine) inView(in Input, kept *domain.Narrowing) (*seen, error) {
+func (e *Engine) inView(in Input, kept *filter.Narrowing) (*view.Seen, error) {
 	name, named := in.Given["view"]
 	if !named {
 		return nil, nil
@@ -527,20 +486,8 @@ func (e *Engine) inView(in Input, kept *domain.Narrowing) (*seen, error) {
 	return &s, err
 }
 
-var touching = []string{"blocks", "waits on", "linked to"}
-
-func touches(is string, outside, inside task.Carried) bool {
-	switch is {
-	case "blocks":
-		return slices.Contains(inside.Blockers, outside.Number)
-	case "waits on":
-		return slices.Contains(outside.Blockers, inside.Number)
-	}
-	return slices.Contains(outside.Linked, inside.Number) || slices.Contains(inside.Linked, outside.Number)
-}
-
-func (e *Engine) outside(kept []task.Task) ([]outside, error) {
-	board, err := e.narrowed(&domain.Narrowing{})
+func (e *Engine) outside(kept []task.Task) ([]view.Outside, error) {
+	board, err := e.narrowed(&filter.Narrowing{})
 	if err != nil {
 		return nil, err
 	}
@@ -548,36 +495,36 @@ func (e *Engine) outside(kept []task.Task) ([]outside, error) {
 	for _, t := range kept {
 		inside = append(inside, t.Carried())
 	}
-	out := []outside{}
+	out := []view.Outside{}
 	for _, t := range board {
 		o := t.Carried()
 		if slices.ContainsFunc(inside, func(c task.Carried) bool { return c.Number == o.Number }) {
 			continue
 		}
-		var why []Touch
-		for _, is := range touching {
+		var why []view.Touch
+		for _, is := range view.Touching {
 			for _, c := range inside {
-				if touches(is, o, c) {
-					why = append(why, Touch{Is: is, Of: c.Number})
+				if view.Touches(is, o, c) {
+					why = append(why, view.Touch{Is: is, Of: c.Number})
 				}
 			}
 		}
 		if len(why) > 0 {
-			out = append(out, outside{Number: o.Number, Title: o.Title, State: string(o.State), Why: why})
+			out = append(out, view.Outside{Number: o.Number, Title: o.Title, State: string(o.State), Why: why})
 		}
 	}
-	slices.SortFunc(out, func(a, b outside) int { return a.Number - b.Number })
+	slices.SortFunc(out, func(a, b view.Outside) int { return a.Number - b.Number })
 	return out, nil
 }
 
-func (e *Engine) viewsHolding(label string) (int, error) {
+func (e *Engine) viewsHolding(name string) (int, error) {
 	views, err := e.store.Views()
 	if err != nil {
 		return 0, err
 	}
 	held := 0
 	for _, v := range views {
-		if slices.Contains(v.Labels, label) {
+		if slices.Contains(v.Labels, name) {
 			held++
 		}
 	}
@@ -599,24 +546,14 @@ func (e *Engine) relabelViews(from, to string) error {
 	return e.store.KeepViews(views)
 }
 
-func viewsNaming(views []store.View, goners []int) []string {
-	var naming []string
-	for _, v := range views {
-		if slices.ContainsFunc(v.Objectives, func(n int) bool { return slices.Contains(goners, n) }) {
-			naming = append(naming, v.Name)
-		}
-	}
-	return naming
-}
-
 func (e *Engine) unview(goners []int, how string) error {
 	views, err := e.store.Views()
 	if err != nil {
 		return err
 	}
-	kept := []store.View{}
+	kept := []view.View{}
 	for _, v := range views {
-		if len(viewsNaming([]store.View{v}, goners)) == 0 {
+		if len(view.Naming([]view.View{v}, goners)) == 0 {
 			kept = append(kept, v)
 			continue
 		}
@@ -625,7 +562,7 @@ func (e *Engine) unview(goners []int, how string) error {
 		}
 		left := v
 		left.Objectives = slices.DeleteFunc(slices.Clone(v.Objectives), func(n int) bool { return slices.Contains(goners, n) })
-		if narrowsAnything(left) {
+		if view.NarrowsAnything(left) {
 			v = left
 		}
 		kept = append(kept, v)
@@ -633,18 +570,11 @@ func (e *Engine) unview(goners []int, how string) error {
 	return e.store.KeepViews(kept)
 }
 
-func cmdKey(place int) string {
-	if place <= 9 {
-		return "⌘" + strconv.Itoa(place)
-	}
-	return "place " + strconv.Itoa(place)
-}
-
 func viewKeptText(v View, said string) string {
 	if v.Was != "" {
 		said += " (was " + v.Was + ")"
 	}
-	return fmt.Sprintf("%s · %s · keeps %d of %s\n", said, cmdKey(v.Place), v.Keeps, manyOf(v.Of, "task", "tasks"))
+	return fmt.Sprintf("%s · %s · keeps %d of %s\n", said, view.CmdKey(v.Place), v.Keeps, manyOf(v.Of, "task", "tasks"))
 }
 
 // HoldsSays is what a view holds, the way a person reads it: each filter and what it is on, what of it is gone said so.
@@ -663,8 +593,8 @@ func HoldsSays(v View) string {
 		}
 		said = append(said, what)
 	}
-	for _, label := range v.Holds.Label {
-		said = append(said, gone("label "+label))
+	for _, name := range v.Holds.Label {
+		said = append(said, gone("label "+name))
 	}
 	for _, one := range []struct {
 		named bool
@@ -702,7 +632,7 @@ func viewsText(views []View) string {
 
 func viewShownText(v View) string {
 	lines := []string{
-		fmt.Sprintf("view     %s  (%s)", v.Name, cmdKey(v.Place)),
+		fmt.Sprintf("view     %s  (%s)", v.Name, view.CmdKey(v.Place)),
 		"holds    " + HoldsSays(v),
 		fmt.Sprintf("keeps    %d of %s · %d done", v.Keeps, manyOf(v.Of, "task", "tasks"), v.Done),
 	}
@@ -721,41 +651,16 @@ func viewShownText(v View) string {
 		lines = append(lines, "outside  "+strings.Join(outside, " · "))
 	}
 	for _, o := range v.Objectives {
-		lines = append(lines, fmt.Sprintf("objective #%d %s  %s", o.Number, o.Title, storeFigures(o)))
+		lines = append(lines, fmt.Sprintf("objective #%d %s  %s", o.Number, o.Title, view.StoreFigures(o)))
 	}
 	return strings.Join(lines, "\n") + "\n"
-}
-
-func storeFigures(o viewObjective) string {
-	if o.Progress == nil {
-		return "nothing serves it yet"
-	}
-	var said []string
-	if t := o.Progress.Tasks; t != nil {
-		said = append(said, fmt.Sprintf("%d/%d", t.Done, t.Total))
-	}
-	if s := o.Progress.Steps; s != nil {
-		said = append(said, fmt.Sprintf("%d/%d steps", s.Done, s.Total))
-	}
-	said = append(said, fmt.Sprintf("%d%%", o.Progress.Percent))
-	if o.TimeSpent != "" {
-		said = append(said, o.TimeSpent)
-	}
-	return strings.Join(said, " · ") + " (the store's)"
-}
-
-func typedName(name string) string {
-	if strings.ContainsAny(name, " \t'\"") {
-		return strconv.Quote(name)
-	}
-	return name
 }
 
 func lostText(a Answer) string {
 	if a.InView == "" || len(a.Lost) == 0 {
 		return ""
 	}
-	name := typedName(a.InView)
+	name := view.TypedName(a.InView)
 	hint := fmt.Sprintf("  cairn view edit %s, or cairn view delete %s\n", name, name)
 	if a.KeepsNothing {
 		return fmt.Sprintf("every condition view %s holds is gone, so it keeps nothing: %s\n", a.InView, strings.Join(a.Lost, ", ")) + hint
@@ -765,20 +670,4 @@ func lostText(a Answer) string {
 		verb = "are gone and narrow nothing"
 	}
 	return fmt.Sprintf("view %s: %s %s\n", a.InView, strings.Join(a.Lost, " and "), verb) + hint
-}
-
-func outsideText(outside []outside) string {
-	if len(outside) == 0 {
-		return ""
-	}
-	var out strings.Builder
-	out.WriteString("\noutside this view, never counted:\n")
-	for _, o := range outside {
-		said := []string{fmt.Sprintf("#%d  %s ", o.Number, o.Title), o.State}
-		for _, w := range o.Why {
-			said = append(said, fmt.Sprintf("%s #%d", w.Is, w.Of))
-		}
-		out.WriteString(strings.Join(said, " · ") + "\n")
-	}
-	return out.String()
 }

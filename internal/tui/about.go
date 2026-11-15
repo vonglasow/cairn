@@ -1,11 +1,11 @@
 package tui
 
 import (
+	"cairn/internal/engine/label"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -18,7 +18,7 @@ func (b Board) about(forObjective bool, number int) describer {
 			said := b.parentsOffered(number)
 			return func() string { return said }
 		case forObjective && field.Arg == "label":
-			said := b.skin.Faint.Render("for objectives: " + orNone(strings.Join(b.snap.LabelsFor(domain.OnObjectives), " · ")))
+			said := b.skin.Faint.Render("for objectives: " + orNone(strings.Join(b.snap.LabelsFor(label.OnObjectives), " · ")))
 			return func() string { return said }
 		case !forObjective && field.Arg == "objective":
 			return func() string { return b.servesTree(*value) }

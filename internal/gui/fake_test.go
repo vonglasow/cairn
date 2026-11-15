@@ -1,14 +1,15 @@
 package gui
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"time"
 
 	"gioui.org/io/pointer"
 
 	"cairn/internal/engine"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/task"
 	"cairn/test"
 )
 
@@ -22,15 +23,15 @@ type fake struct {
 	refuseMove   error
 	refuseDelete error
 
-	acts []trace.Act
+	acts []act.Act
 	warn []string
 
 	asked []asked
 	reads int
 
-	shown  *engine.WorkspaceShown
-	listed *engine.Workspaces
-	config *engine.Config
+	shown  *workspace.Shown
+	listed *workspace.Workspaces
+	config *workspace.Config
 }
 
 type asked struct {
@@ -178,3 +179,9 @@ func (f *fake) wrote() []asked {
 	}
 	return changed
 }
+
+type heldDrafts struct{ values map[string]string }
+
+func (h *heldDrafts) Keep(values map[string]string) error { h.values = values; return nil }
+func (h *heldDrafts) Held() (map[string]string, error)    { return h.values, nil }
+func (h *heldDrafts) Drop() error                         { h.values = nil; return nil }

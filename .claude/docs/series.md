@@ -36,9 +36,9 @@ or gone.
 
 There is no package for it, the way there is none for a view: its one rule with
 weight — which days a rule falls on — is the rule's, and lives in
-`internal/domain/rule.go` beside the days and durations; what ties a series to
+`internal/engine/series/rule.go` beside the days and durations; what ties a series to
 its tasks is the engine's (`internal/engine/series.go`), and what keeps it is
-the store's (`internal/store/series.go`).
+the store's (`internal/store/sqlite/series.go`).
 
 ## The rule, in plain words
 

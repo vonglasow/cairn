@@ -1,13 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/task"
 	"errors"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
@@ -27,19 +28,19 @@ func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !factsOf(*shown.Task).Archived {
+	if !(*shown.Task).Carried().Archived {
 		t.Error("the task after one already off the board was left on it")
 	}
 }
 
 func TestArchive_aNumberNamedAsNothingNamesNoTask(t *testing.T) {
-	if _, err := Do(TaskArchive, storeAt(t, "one"), given("number", "")); !errors.Is(err, errNothingToArchive) {
+	if _, err := Do(TaskArchive, storeAt(t, "one"), given("number", "")); !errors.Is(err, task.ErrNothingToArchive) {
 		t.Errorf("err = %v, want ErrNothingToArchive", err)
 	}
 }
 
 func TestStoreProblem_passesOnAStoreOfTheWrongAgeAsItIs(t *testing.T) {
-	for _, kind := range []error{ErrStoreBehind, ErrNewerStore} {
+	for _, kind := range []error{migration.ErrStoreBehind, migration.ErrNewerStore} {
 		if err := storeProblem(fmt.Errorf("opening: %w", kind)); errors.Is(err, errStore) {
 			t.Errorf("%v was said as a store that cannot be read: %v", kind, err)
 		}
@@ -47,7 +48,7 @@ func TestStoreProblem_passesOnAStoreOfTheWrongAgeAsItIs(t *testing.T) {
 }
 
 func TestCheck_readsPastAnArgumentLeftOut(t *testing.T) {
-	if err := TaskArchive.check(given("deadline-before", "soon")); !errors.Is(err, domain.ErrNotADay) {
+	if err := TaskArchive.check(given("deadline-before", "soon")); !errors.Is(err, calendar.ErrNotADay) {
 		t.Errorf("Check = %v, want the day refused", err)
 	}
 }

@@ -10,7 +10,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 	"cairn/internal/theme"
 )
 
@@ -50,7 +50,7 @@ func (w *world) settingInSight(key string) (SettingRow, error) {
 
 func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 	sc.Given(`^a configuration file that names no workspace$`, func() error {
-		path := config.FileIn(w.home)
+		path := files.FileIn(w.home)
 		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 			return err
 		}
@@ -77,11 +77,11 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the panel reads the settings of "([^"]*)" over the global configuration$`, func(name string) error {
-		want := config.SettingsFile + " over " + filepath.Base(config.FileIn(w.spaces.Dir))
+		want := files.SettingsFile + " over " + filepath.Base(files.FileIn(w.spaces.Dir))
 		if got := w.w.SettingsPath(); got != want {
 			return fmt.Errorf("the panel reads %q, not %q", got, want)
 		}
-		written := filepath.Join(w.spaces.FolderOf(name), config.SettingsFile)
+		written := filepath.Join(w.spaces.FolderOf(name), files.SettingsFile)
 		if !slices.ContainsFunc(w.w.CopyMarks(), func(m CopyMark) bool { return m.Said == written }) {
 			return fmt.Errorf("no mark copies %s: %+v", written, w.w.CopyMarks())
 		}
@@ -92,7 +92,7 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if row.Value != colour || row.Key.Kind != config.KindColour {
+		if row.Value != colour || row.Key.Kind != files.KindColour {
 			return fmt.Errorf("the colour reads %q", row.Value)
 		}
 		return nil
@@ -259,13 +259,13 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		if !asked {
 			return errors.New("the window asked the system to open nothing")
 		}
-		if want := config.FileIn(w.home); got != want {
+		if want := files.FileIn(w.home); got != want {
 			return fmt.Errorf("the window asks the system to open %q, not %q", got, want)
 		}
 		return nil
 	})
 	sc.Then(`^a configuration file exists$`, func() error {
-		if _, err := os.Stat(config.FileIn(w.home)); err != nil {
+		if _, err := os.Stat(files.FileIn(w.home)); err != nil {
 			return fmt.Errorf("no configuration file: %w", err)
 		}
 		return nil

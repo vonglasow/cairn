@@ -1,10 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -77,36 +77,36 @@ func TestThePointerWalksTheMonths(t *testing.T) {
 	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
 	box := w.CalendarBox()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
-	if got := domain.FormatDay(w.Click(middle(MonthAfter(box))).day); got != "2026-02-28" {
+	if got := calendar.FormatDay(w.Click(middle(MonthAfter(box))).day); got != "2026-02-28" {
 		t.Errorf("the next month is %s", got)
 	}
-	if got := domain.FormatDay(w.Click(middle(MonthBefore(box))).day); got != "2025-12-31" {
+	if got := calendar.FormatDay(w.Click(middle(MonthBefore(box))).day); got != "2025-12-31" {
 		t.Errorf("the month before is %s", got)
 	}
 	if got := w.Click(middle(MonthAfter(box))).Screen(); got != OnCalendar {
 		t.Errorf("walking a month left the window on %v", got)
 	}
 	in := middle(box)
-	if got := domain.FormatDay(w.Scroll(in, lineHigh).day); got != "2026-02-28" {
+	if got := calendar.FormatDay(w.Scroll(in, lineHigh).day); got != "2026-02-28" {
 		t.Errorf("a notch down is %s", got)
 	}
-	if got := domain.FormatDay(w.Scroll(in, -2*lineHigh).day); got != "2025-11-30" {
+	if got := calendar.FormatDay(w.Scroll(in, -2*lineHigh).day); got != "2025-11-30" {
 		t.Errorf("two notches up is %s", got)
 	}
 	if got := w.Scroll(in, lineHigh/2); !got.day.Equal(w.day) || got.spareChoosing != lineHigh/2 {
-		t.Errorf("half a notch walked to %s, keeping %d", domain.FormatDay(got.day), got.spareChoosing)
+		t.Errorf("half a notch walked to %s, keeping %d", calendar.FormatDay(got.day), got.spareChoosing)
 	}
 	if got := w.Scroll(Point{X: 1, Y: 1}, lineHigh); !got.day.Equal(w.day) {
-		t.Errorf("the wheel off the calendar walked to %s", domain.FormatDay(got.day))
+		t.Errorf("the wheel off the calendar walked to %s", calendar.FormatDay(got.day))
 	}
 }
 
 func TestTheCalendarWalksBack(t *testing.T) {
 	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	if got := domain.FormatDay(w.onCalendar("left").day); got != "2026-10-11" {
+	if got := calendar.FormatDay(w.onCalendar("left").day); got != "2026-10-11" {
 		t.Errorf("a day back is %s", got)
 	}
-	if got := domain.FormatDay(w.onCalendar("up").day); got != "2026-10-05" {
+	if got := calendar.FormatDay(w.onCalendar("up").day); got != "2026-10-05" {
 		t.Errorf("a week back is %s", got)
 	}
 	if !w.Faded(time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC)) || w.Faded(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)) {
@@ -116,11 +116,11 @@ func TestTheCalendarWalksBack(t *testing.T) {
 
 func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 	w := Window{screen: OnCalendar, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
-	if got := domain.FormatDay(w.onCalendar("shift+right").day); got != "2026-02-28" {
+	if got := calendar.FormatDay(w.onCalendar("shift+right").day); got != "2026-02-28" {
 		t.Errorf("a month on from 2026-01-31 is %s, want 2026-02-28", got)
 	}
 	w.day = time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC)
-	if got := domain.FormatDay(w.onCalendar("shift+left").day); got != "2026-02-28" {
+	if got := calendar.FormatDay(w.onCalendar("shift+left").day); got != "2026-02-28" {
 		t.Errorf("a month back from 2026-03-31 is %s, want 2026-02-28", got)
 	}
 }
@@ -136,7 +136,7 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 			t.Error("the day the keyboard is on is not outlined")
 		}
 		if !day.Equal(w.day) && outlined {
-			t.Errorf("%s is outlined, and the keyboard is not on it", domain.FormatDay(day))
+			t.Errorf("%s is outlined, and the keyboard is not on it", calendar.FormatDay(day))
 		}
 	}
 }
@@ -314,26 +314,26 @@ func TestTheCalendarsGridsAreWalkedAndLeftByTheKeyboard(t *testing.T) {
 	if got := months.CalendarCells(); len(got) != 12 || got[0] != "Jan" {
 		t.Fatalf("m offers %v, want the twelve months", got)
 	}
-	if got := domain.FormatDay(months.Key("left").Key("down").day); got != "2026-12-12" {
+	if got := calendar.FormatDay(months.Key("left").Key("down").day); got != "2026-12-12" {
 		t.Errorf("left then down in the months reach %s, want 2026-12-12", got)
 	}
-	if got := domain.FormatDay(months.Key("up").day); got != "2026-07-12" {
+	if got := calendar.FormatDay(months.Key("up").day); got != "2026-07-12" {
 		t.Errorf("up in the months reaches %s, want 2026-07-12", got)
 	}
-	if got := domain.FormatDay(months.clicked(middle(MonthAfter(months.CalendarBox()))).day); got != "2027-10-12" {
+	if got := calendar.FormatDay(months.clicked(middle(MonthAfter(months.CalendarBox()))).day); got != "2027-10-12" {
 		t.Errorf("the arrow in the months reaches %s, want a year on", got)
 	}
 	if got := months.Key("enter"); got.view != viewDays || got.Screen() != OnCalendar {
 		t.Errorf("enter on a month leaves the calendar on view %d, screen %v", got.view, got.Screen())
 	}
-	if got := months.Key("esc"); got.view != viewDays || got.Screen() != OnCalendar || domain.FormatDay(got.day) != "2026-10-12" {
+	if got := months.Key("esc"); got.view != viewDays || got.Screen() != OnCalendar || calendar.FormatDay(got.day) != "2026-10-12" {
 		t.Errorf("esc in the months leaves view %d, screen %v", got.view, got.Screen())
 	}
 	years := w.Key("y")
-	if got := domain.FormatDay(years.Key("right").Key("down").day); got != "2030-10-12" {
+	if got := calendar.FormatDay(years.Key("right").Key("down").day); got != "2030-10-12" {
 		t.Errorf("right then down in the years reach %s, want 2030-10-12", got)
 	}
-	if got := domain.FormatDay(years.clicked(middle(MonthBefore(years.CalendarBox()))).day); got != "2014-10-12" {
+	if got := calendar.FormatDay(years.clicked(middle(MonthBefore(years.CalendarBox()))).day); got != "2014-10-12" {
 		t.Errorf("the arrow in the years reaches %s, want twelve years back", got)
 	}
 	if got := years.Key("enter"); got.view != viewMonths {

@@ -1,11 +1,12 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -122,11 +123,11 @@ func (w Window) Detail() Detail {
 		d.Figures = Box{X: inside.X, Y: y, W: inside.W, H: FiguresHigh}
 		y += FiguresHigh + inset
 	}
-	d.Spent, d.Left, d.LeftSays = w.spentSaid(domain.FormatDuration(g.Spent)), "0", "left"
+	d.Spent, d.Left, d.LeftSays = w.spentSaid(calendar.FormatDuration(g.Spent)), "0", "left"
 	if left := w.snap.Left(g.Number); left.Tasks > 0 {
 		d.Left = strconv.Itoa(left.Tasks)
 		if !left.Due.IsZero() {
-			d.LeftSays += ", the next deadline " + domain.FormatDay(left.Due) + " (#" + strconv.Itoa(left.On) + ")"
+			d.LeftSays += ", the next deadline " + calendar.FormatDay(left.Due) + " (#" + strconv.Itoa(left.On) + ")"
 		}
 	}
 	if d.Subs {
@@ -252,7 +253,7 @@ func (w Window) goalFacts(g engine.Goal) string {
 		}
 	}
 	if !g.Deadline.IsZero() {
-		facts = append(facts, "deadline "+domain.FormatDay(g.Deadline))
+		facts = append(facts, "deadline "+calendar.FormatDay(g.Deadline))
 	}
 	return strings.Join(facts, " · ")
 }
@@ -291,7 +292,7 @@ func (w Window) tileOf(g engine.Goal) GoalTile {
 	}
 	t.Counts = strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " · " + strconv.Itoa(g.Percent()) + "%"
 	if g.Spent > 0 {
-		t.Counts += " · " + domain.FormatDuration(g.Spent)
+		t.Counts += " · " + calendar.FormatDuration(g.Spent)
 	}
 	for _, c := range engine.Serving(engine.OnTheBoard(w.snap.Cards, w.archived), g.Number) {
 		var also []string
@@ -314,7 +315,7 @@ func (w Window) tileOf(g engine.Goal) GoalTile {
 		t.Warn = "waits on " + strings.Join(waits, ", ")
 	}
 	if g.LateOn(w.today()) {
-		t.Warn = "late · its deadline was " + domain.ShortDay(g.Deadline)
+		t.Warn = "late · its deadline was " + series.ShortDay(g.Deadline)
 	}
 	return t
 }

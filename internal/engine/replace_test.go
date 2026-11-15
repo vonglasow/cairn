@@ -1,11 +1,11 @@
 package engine
 
 import (
+	"cairn/internal/engine/change"
 	"errors"
 	"testing"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 func describedTask(t *testing.T, said string) *Engine {
@@ -22,8 +22,8 @@ func TestTaskEdit_replacesOnePieceOfTheDescription(t *testing.T) {
 	if _, err := e.Ask(TaskEdit, given("number", "1", "replace", "abc123", "by", "def456")); err != nil {
 		t.Fatal(err)
 	}
-	if got, _ := e.show(1); factsOf(got).Description != "built on main at def456" {
-		t.Errorf("description = %q", factsOf(got).Description)
+	if got, _ := e.show(1); got.Carried().Description != "built on main at def456" {
+		t.Errorf("description = %q", got.Carried().Description)
 	}
 }
 
@@ -32,8 +32,8 @@ func TestTaskEdit_refusesAPieceItCannotReplace(t *testing.T) {
 		in   Input
 		want error
 	}{
-		{given("number", "1", "replace", "develop", "by", "x"), domain.ErrReplacedNowhere},
-		{given("number", "1", "replace", "main", "by", "x"), domain.ErrReplacedMoreThanOnce},
+		{given("number", "1", "replace", "develop", "by", "x"), change.ErrReplacedNowhere},
+		{given("number", "1", "replace", "main", "by", "x"), change.ErrReplacedMoreThanOnce},
 		{given("number", "1", "replace", "main"), errReplaceAlone},
 		{given("number", "1", "by", "main"), errReplaceAlone},
 		{given("number", "1", "desc", "other", "replace", "main", "by", "x"), errDescriptionBothWays},
@@ -42,8 +42,8 @@ func TestTaskEdit_refusesAPieceItCannotReplace(t *testing.T) {
 		if _, err := e.Ask(TaskEdit, tc.in); !errors.Is(err, tc.want) {
 			t.Errorf("%v: err = %v, want %v", tc.in.Given, err, tc.want)
 		}
-		if got, _ := e.show(1); factsOf(got).Description != "main into main" {
-			t.Errorf("%v: description became %q", tc.in.Given, factsOf(got).Description)
+		if got, _ := e.show(1); got.Carried().Description != "main into main" {
+			t.Errorf("%v: description became %q", tc.in.Given, got.Carried().Description)
 		}
 	}
 }

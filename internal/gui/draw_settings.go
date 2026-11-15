@@ -7,7 +7,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/text"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 	"cairn/internal/theme"
 )
 
@@ -123,15 +123,15 @@ func (w Window) rowSays(row SettingRow) string {
 
 func drawControl(k Kit, w Window, row SettingRow) {
 	switch {
-	case row.Key.Kind == config.KindBool:
+	case row.Key.Kind == files.KindBool:
 		Toggle{On: row.Value == "true"}.Draw(k, row.Parts[0])
-	case row.Key.Kind == config.KindWords:
+	case row.Key.Kind == files.KindWords:
 		Segmented{Said: row.Words, At: row.Parts, On: slices.Index(row.Words, row.Value), Small: true}.Draw(k, row.Control)
-	case row.Key.Kind == config.KindTheme:
+	case row.Key.Kind == files.KindTheme:
 		Picker{Said: row.Value, Strip: w.stripOf(row.Value)}.Draw(k, row.Control)
-	case row.Key.Kind == config.KindIntro:
+	case row.Key.Kind == files.KindIntro:
 		Picker{Said: row.Value}.Draw(k, row.Control)
-	case row.Key.Kind == config.KindColour:
+	case row.Key.Kind == files.KindColour:
 		Picker{Said: row.Value, Dot: row.Value}.Draw(k, row.Control)
 	case row.Fixed:
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: row.Control.X + copyRoom, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: row.Control.W - copyRoom, H: lineHigh}, row.Value, small, k.skin.Type.Mono, text.Start)
@@ -147,7 +147,7 @@ func drawControl(k Kit, w Window, row SettingRow) {
 		switch {
 		case editing:
 			writing(k.inside("field"), w.measured(), line, w.keyWritten, true, small, 1, Follow)
-		case row.Value == "" && row.Key.Kind == config.KindText:
+		case row.Value == "" && row.Key.Kind == files.KindText:
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, line, "no label here", small, font.Font{}, text.Start)
 		default:
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, line, row.Value, small, k.skin.Type.Mono, text.Start)

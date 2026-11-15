@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/task"
 	"errors"
 	"strings"
 	"testing"
@@ -76,10 +78,10 @@ func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 		in   Input
 		want error
 	}{
-		{"a day to come", given("number", "1", "time", "1h", "on", "2099-01-01"), errDayToCome},
-		{"a length nobody can read", given("number", "1", "time", "long"), errNotATime},
-		{"no time at all", given("number", "1", "time", "0m"), errNotATime},
-		{"a task that is not there", given("number", "9", "time", "1h"), errNoSuchTask},
+		{"a day to come", given("number", "1", "time", "1h", "on", "2099-01-01"), calendar.ErrDayToCome},
+		{"a length nobody can read", given("number", "1", "time", "long"), calendar.ErrNotATime},
+		{"no time at all", given("number", "1", "time", "0m"), calendar.ErrNotATime},
+		{"a task that is not there", given("number", "9", "time", "1h"), task.ErrNoSuchTask},
 	} {
 		if _, err := Do(TimesheetAdd, path, c.in); !errors.Is(err, c.want) {
 			t.Errorf("%s: %v, want %v", c.what, err, c.want)
@@ -136,7 +138,7 @@ func TestTimeSpent_isTheTimeOnTheTimesheetAndTheTimeWrittenOnTheTask(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if spent := factsOf(*shown.Task).Spent; spent != 90*time.Minute {
+	if spent := (*shown.Task).Carried().Spent; spent != 90*time.Minute {
 		t.Errorf("the task spent %s, want 1h30m", spent)
 	}
 	if _, err := Do(TaskEdit, path, given("number", "1", "spent", "2h")); err != nil {
@@ -153,7 +155,7 @@ func TestTimeSpent_isTheTimeOnTheTimesheetAndTheTimeWrittenOnTheTask(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if spent := factsOf(listed.Tasks[0]).Spent; spent != 2*time.Hour {
+	if spent := listed.Tasks[0].Carried().Spent; spent != 2*time.Hour {
 		t.Errorf("the listing says %s spent, want 2h", spent)
 	}
 }

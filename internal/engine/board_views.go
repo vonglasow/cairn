@@ -1,12 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/view"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 // Viewing is one view as a board holds it: the view, and the numbers of the tasks it keeps today.
@@ -37,7 +38,7 @@ func lookAtViews(w Work) ([]Viewing, error) {
 
 // View is the view of that name, whatever its case or its accents, and whether there is one.
 func (s Snapshot) View(name string) (Viewing, bool) {
-	at := slices.IndexFunc(s.Views, func(v Viewing) bool { return domain.Folded(v.Name) == domain.Folded(name) })
+	at := slices.IndexFunc(s.Views, func(v Viewing) bool { return label.Folded(v.Name) == label.Folded(name) })
 	if at < 0 {
 		return Viewing{}, false
 	}
@@ -84,7 +85,7 @@ func (h Holds) Narrows(arg string) bool {
 // Reference is a task a board leaves out that touches one it shows, and every way it does.
 type Reference struct {
 	Card Card
-	Why  []Touch
+	Why  []view.Touch
 }
 
 // Touching is the tasks left out that block, wait on or are linked to one shown, each once with every way it touches them: what a narrowed board keeps in sight as a reference.
@@ -95,10 +96,10 @@ func Touching(shown, all []Card) []Reference {
 			continue
 		}
 		r := Reference{Card: c}
-		for _, is := range touching {
+		for _, is := range view.Touching {
 			for _, s := range shown {
-				if touches(is, carriedOf(c), carriedOf(s)) {
-					r.Why = append(r.Why, Touch{Is: is, Of: s.Number})
+				if view.Touches(is, carriedOf(c), carriedOf(s)) {
+					r.Why = append(r.Why, view.Touch{Is: is, Of: s.Number})
 				}
 			}
 		}
@@ -119,7 +120,7 @@ func (r Reference) Says() string { return "outside this view · " + r.Touches("#
 // Touches is every way a reference touches what is shown, each kind once with every task it touches, its number after the mark a board writes before one.
 func (r Reference) Touches(mark string) string {
 	var said []string
-	for _, is := range touching {
+	for _, is := range view.Touching {
 		var of []string
 		for _, w := range r.Why {
 			if w.Is == is {

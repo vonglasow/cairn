@@ -1,15 +1,16 @@
 package gui
 
 import (
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/workspace"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"cairn/internal/build"
-	"cairn/internal/config"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 func TestTheSystemOpensAFileWithItsOwnCommand(t *testing.T) {
@@ -29,21 +30,21 @@ func TestTheSystemOpensAFileWithItsOwnCommand(t *testing.T) {
 	}
 }
 
-func configuredWith(c engine.Config) *fake {
+func configuredWith(c workspace.Config) *fake {
 	f := newFake()
 	c.File = "/h/.config/cairn/config.toml"
-	c.Store, c.Notes = engine.Emplacement{At: "/h/.cairn/cairn.db"}, engine.Emplacement{At: "/h/.cairn/notes"}
-	c.Pages, c.Archive, c.Focus = &engine.PagesConfig{Tasks: true, Objectives: true, Time: "on"}, &engine.Archive{Days: 14}, &engine.FocusConfig{}
-	c.Approach, c.Time, c.Recurrence = &engine.ApproachConfig{}, &engine.TimeConfig{Deleted: "kept", Weekends: "shown"}, &engine.RecurrenceConfig{}
+	c.Store, c.Notes = workspace.Emplacement{At: "/h/.cairn/cairn.db"}, workspace.Emplacement{At: "/h/.cairn/notes"}
+	c.Pages, c.Archive, c.Focus = &workspace.PagesConfig{Tasks: true, Objectives: true, Time: "on"}, &workspace.Archive{Days: 14}, &workspace.FocusConfig{}
+	c.Approach, c.Time, c.Recurrence = &workspace.ApproachConfig{}, &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"}, &workspace.RecurrenceConfig{}
 	if c.Window == nil {
-		c.Window = &engine.WindowConfig{Theme: "default"}
+		c.Window = &workspace.WindowConfig{Theme: "default"}
 	}
 	f.config = &c
 	return f
 }
 
 func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
-	w := holding(configuredWith(engine.Config{})).openingConfiguration().toSection(SettingSection{Name: "Places", First: 13})
+	w := holding(configuredWith(workspace.Config{})).openingConfiguration().toSection(SettingSection{Name: "Places", First: 13})
 	marks := w.CopyMarks()
 	if len(marks) != 3 {
 		t.Fatalf("the configuration offers %d paths to copy: %+v", len(marks), marks)
@@ -99,7 +100,7 @@ func TestAnOpenTasksContextIsCopiedByItsMark(t *testing.T) {
 }
 
 func TestAKeyTheStoresSettingsWriteIsSaidToComeFromThem(t *testing.T) {
-	w := holding(configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"focus.session", "time.weekends"}, WrittenHere: []string{"time.weekends"}})).openingConfiguration()
+	w := holding(configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"focus.session", "time.weekends"}, WrittenHere: []string{"time.weekends"}})).openingConfiguration()
 	from := map[string]string{}
 	for _, row := range w.SettingRows() {
 		from[row.Key.Name] = row.Comes
@@ -110,7 +111,7 @@ func TestAKeyTheStoresSettingsWriteIsSaidToComeFromThem(t *testing.T) {
 }
 
 func TestTheGlobalScopeSaysWhatTheWorkspaceSetsOfItsOwn(t *testing.T) {
-	w := holding(configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"time.weekends"}, WrittenHere: []string{"time.weekends"}, Global: map[string]string{"time.weekends": "shown"}})).openingConfiguration().scoped(true)
+	w := holding(configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"time.weekends"}, WrittenHere: []string{"time.weekends"}, Global: map[string]string{"time.weekends": "shown"}})).openingConfiguration().scoped(true)
 	for _, row := range w.SettingRows() {
 		if row.Key.Name == "time.weekends" && (row.Comes != InFile || !strings.Contains(row.Theirs, "sets its own")) {
 			t.Errorf("the weekends read %+v", row)
@@ -122,7 +123,7 @@ func TestTheGlobalScopeSaysWhatTheWorkspaceSetsOfItsOwn(t *testing.T) {
 }
 
 func TestTheConfigurationSaysTheSchemeTheWindowWears(t *testing.T) {
-	w := holding(configuredWith(engine.Config{Window: &engine.WindowConfig{Theme: "nord"}, Settings: "/h/.cairn/settings.toml", WrittenHere: []string{"window.theme"}, Global: map[string]string{"window.theme": "default"}})).openingConfiguration()
+	w := holding(configuredWith(workspace.Config{Window: &workspace.WindowConfig{Theme: "nord"}, Settings: "/h/.cairn/settings.toml", WrittenHere: []string{"window.theme"}, Global: map[string]string{"window.theme": "default"}})).openingConfiguration()
 	for _, row := range w.SettingRows() {
 		if row.Key.Name == "window.theme" {
 			if row.Value != "nord" || row.Comes != SetHere || row.Aside != "← global: default" {
@@ -135,7 +136,7 @@ func TestTheConfigurationSaysTheSchemeTheWindowWears(t *testing.T) {
 }
 
 func TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches(t *testing.T) {
-	f := configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml"})
+	f := configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml"})
 	w := holding(f).openingConfiguration()
 	row := func(w Window, name string) SettingRow {
 		for _, one := range w.SettingRows() {
@@ -155,17 +156,17 @@ func TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches(t *testing.T) {
 		t.Errorf("the day taken set %+v (%v), back on %v", in, ok, dated.Screen())
 	}
 	colouring := w.acting(row(w, "workspace.colour"), -1)
-	if got := len(colouring.ColourSwatches()); got != len(domain.LabelColours) {
-		t.Fatalf("the colour opens %d swatches, want %d", got, len(domain.LabelColours))
+	if got := len(colouring.ColourSwatches()); got != len(label.LabelColours) {
+		t.Fatalf("the colour opens %d swatches, want %d", got, len(label.LabelColours))
 	}
 	colouring.Key("right").Key("enter")
-	if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != "workspace.colour" || !slices.Contains(domain.LabelColours, in.Given["value"]) {
+	if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != "workspace.colour" || !slices.Contains(label.LabelColours, in.Given["value"]) {
 		t.Errorf("the swatch taken set %+v (%v)", in, ok)
 	}
 }
 
 func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNotSaved(t *testing.T) {
-	w := holding(configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml"})).openingConfiguration()
+	w := holding(configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml"})).openingConfiguration()
 	box := w.SettingsBox()
 	outside := Point{X: box.X / 2, Y: box.Y + box.H/2}
 	if closed := w.Click(outside); closed.Screen() != OnTheBoard {
@@ -173,7 +174,7 @@ func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNo
 	}
 	var typed Window
 	for _, row := range w.SettingRows() {
-		if row.Key.Kind == config.KindText {
+		if row.Key.Kind == files.KindText {
 			typed = w.acting(row, -1).Key("x")
 			break
 		}
@@ -191,7 +192,7 @@ func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNo
 }
 
 func TestOpeningAFileOfTheConfigurationFillsItFirst(t *testing.T) {
-	f := configuredWith(engine.Config{Settings: "/h/.cairn/settings.toml", File: "/c/config.toml"})
+	f := configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml", File: "/c/config.toml"})
 	w := holding(f).openingConfiguration().Choose(OpenSettings)
 	if in, ok := f.gave("config", "fill"); !ok || in.Given["global"] == "true" {
 		t.Errorf("opening the settings filled %+v (%v)", in, ok)

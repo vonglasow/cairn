@@ -1,18 +1,18 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"strings"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
-func anAct(task int, did string) trace.Act {
-	var a trace.AsTold
+func actOn(task int, did string) act.Act {
+	var a act.AsTold
 	a.On(task)
 	a.Did(did)
 	a.At(time.Date(2026, 3, 3, 9, 0, 0, 0, time.UTC))
@@ -25,8 +25,8 @@ func TestOf_crossesAHistoryAndAPeriodAsActs(t *testing.T) {
 		op   Operation
 		in   Answer
 	}{
-		{"a task's history", TraceShow, Answer{Acts: []trace.Act{anAct(1, trace.Created)}}},
-		{"a period", traceList, Answer{Since: []trace.Act{anAct(1, trace.FocusTaken)}}},
+		{"a task's history", TraceShow, Answer{Acts: []act.Act{actOn(1, act.Created)}}},
+		{"a period", traceList, Answer{Since: []act.Act{actOn(1, act.FocusTaken)}}},
 	} {
 		crossed, ok := Of(tc.op, tc.in).(acts)
 		if !ok {
@@ -40,8 +40,8 @@ func TestOf_crossesAHistoryAndAPeriodAsActs(t *testing.T) {
 }
 
 func TestRenderText_rendersAHistory(t *testing.T) {
-	got := RenderText(TraceShow, Answer{Acts: []trace.Act{anAct(1, trace.Created)}})
-	if !strings.Contains(got, trace.Created) {
+	got := RenderText(TraceShow, Answer{Acts: []act.Act{actOn(1, act.Created)}})
+	if !strings.Contains(got, act.Created) {
 		t.Errorf("the history does not carry what was done:\n%s", got)
 	}
 }
@@ -65,13 +65,13 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 func TestOfObjective_namesTheTasksUnderIt(t *testing.T) {
 	e := openEngine(t)
 	served := addObjective(t, e, "Ship cairn 1.0")
-	under, err := e.add("Write the spec", Changes{Objective: serves(factsOfObjective(served).Number)})
+	under, err := e.add("Write the spec", Changes{Objective: serves(served.Carried().Number)})
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
 
-	crossed := ofObjective(served, []task.Task{under}, domain.Progress{})
-	if len(crossed.Tasks) != 1 || crossed.Tasks[0] != factsOf(under).Number {
+	crossed := ofObjective(served, []task.Task{under}, item.Progress{})
+	if len(crossed.Tasks) != 1 || crossed.Tasks[0] != under.Carried().Number {
 		t.Errorf("it names %v, want the one task under it", crossed.Tasks)
 	}
 	if text := RenderText(ObjectiveShow, Answer{Objective: &served, Under: []task.Task{under}}); !strings.Contains(text, "Write the spec") {
@@ -115,12 +115,12 @@ func TestCheck_refusesWhatNoOperationCanMakeSenseOf(t *testing.T) {
 func TestEditObjective_retitlesIt(t *testing.T) {
 	e := openEngine(t)
 	added := addObjective(t, e, "Ship cairn 1.0")
-	edited, err := e.editObjective(factsOfObjective(added).Number,
+	edited, err := e.editObjective(added.Carried().Number,
 		ObjectiveChanges{Title: of("Ship cairn 1.1")})
 	if err != nil {
 		t.Fatalf("EditObjective: %v", err)
 	}
-	if got := factsOfObjective(edited).Title; got != "Ship cairn 1.1" {
+	if got := edited.Carried().Title; got != "Ship cairn 1.1" {
 		t.Errorf("the title is %q, want %q", got, "Ship cairn 1.1")
 	}
 }

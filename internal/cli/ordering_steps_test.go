@@ -1,14 +1,14 @@
 package cli
 
 import (
+	"cairn/internal/engine/item"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 	"cairn/test"
 )
 
@@ -54,7 +54,7 @@ func listedInOrder(rows []string, list string) error {
 
 func columnsNamed(said string) []string {
 	named := []string{}
-	for _, state := range domain.States {
+	for _, state := range item.States {
 		if strings.Contains(said, string(state)) {
 			named = append(named, string(state))
 		}

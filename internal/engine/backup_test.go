@@ -1,12 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
 	"errors"
 	"strconv"
 	"testing"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 func TestBackupList_listsEveryBackup(t *testing.T) {
@@ -95,8 +95,8 @@ func TestBackupRestore_resolvesBeforeRestoring(t *testing.T) {
 		t.Fatalf("Do(BackupNew): %v", err)
 	}
 
-	if _, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "99"}}); !errors.Is(err, errNoSuchBackup) {
-		t.Fatalf("err = %v, want %v", err, errNoSuchBackup)
+	if _, err := Do(BackupRestore, path, Input{Confirmed: true, Given: map[string]string{"number": "99"}}); !errors.Is(err, backup.ErrNoSuchBackup) {
+		t.Fatalf("err = %v, want %v", err, backup.ErrNoSuchBackup)
 	}
 
 	answer, err := Do(BackupRestore, path, Input{Confirmed: true})
@@ -149,12 +149,12 @@ func TestBackupAdd_countsBeforeMaking(t *testing.T) {
 var madeAt = time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)
 
 func TestOfBackup_carriesWhatItHeldWhenCounted(t *testing.T) {
-	backup := domain.Backup{Number: 2, Made: madeAt}
-	held := domain.Held{Tasks: 3, Objectives: 1}
+	made := backup.Backup{Number: 2, Made: madeAt}
+	held := backup.Held{Tasks: 3, Objectives: 1}
 
-	got := ofBackup(backup, &held)
+	got := ofBackup(made, &held)
 
-	want := BackupShape{Number: 2, Made: domain.FormatMoment(madeAt), Holds: &domain.Held{Tasks: 3, Objectives: 1}}
+	want := BackupShape{Number: 2, Made: calendar.FormatMoment(madeAt), Holds: &backup.Held{Tasks: 3, Objectives: 1}}
 	if got.Number != want.Number || got.Made != want.Made {
 		t.Errorf("OfBackup() = %+v, want %+v", got, want)
 	}
@@ -164,7 +164,7 @@ func TestOfBackup_carriesWhatItHeldWhenCounted(t *testing.T) {
 }
 
 func TestOfBackup_leavesHoldsOutWhenNothingWasCounted(t *testing.T) {
-	got := ofBackup(domain.Backup{Number: 1, Made: madeAt}, nil)
+	got := ofBackup(backup.Backup{Number: 1, Made: madeAt}, nil)
 	if got.Holds != nil {
 		t.Errorf("Holds = %+v, want nil: nothing was counted", got.Holds)
 	}

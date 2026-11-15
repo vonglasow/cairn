@@ -17,8 +17,8 @@ import (
 	"github.com/spf13/pflag"
 
 	"cairn/internal/cli"
-	"cairn/internal/config"
 	"cairn/internal/mcp"
+	"cairn/internal/store/files"
 	"cairn/internal/theme"
 	"cairn/test"
 )
@@ -336,7 +336,7 @@ func (w *siteWorld) theConfigurationShowsTheFile() error {
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(page, html.EscapeString(config.Example)) {
+	if !strings.Contains(page, html.EscapeString(files.Example)) {
 		return fmt.Errorf("%s does not show the file config init writes", name)
 	}
 	return nil

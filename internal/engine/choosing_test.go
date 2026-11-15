@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func futureDay(days int) string { return time.Now().AddDate(0, 0, days).Format(time.DateOnly) }
@@ -196,7 +196,7 @@ func TestTaskList_aChangeOtherThanItsColumnLeavesATasksAgeAlone(t *testing.T) {
 	e, path := engineOn(t)
 	add(t, e, "Write the spec")
 	later := time.Now().AddDate(0, 0, 2)
-	if err := e.history.Record(trace.Made(trace.Carried{Task: 1, Did: trace.Changed, Field: "title", Was: "Write the spec", Became: "Write the whole spec", At: later})); err != nil {
+	if err := e.history.Record(act.Made(act.Carried{Task: 1, Did: act.Changed, Field: "title", Was: "Write the spec", Became: "Write the whole spec", At: later})); err != nil {
 		t.Fatal(err)
 	}
 	_ = e.Close()

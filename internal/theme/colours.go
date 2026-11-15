@@ -2,14 +2,15 @@
 package theme
 
 import (
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
 	"fmt"
 	"image/color"
 	"reflect"
 	"strings"
 	"unicode"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 // Colours is every colour of a skin: its surfaces, lines, inks, accent and states, and the maps a name picks its colour from.
@@ -75,7 +76,7 @@ func (c *Colours) each(do func(name string, at *color.NRGBA)) {
 			do(snake(groups.Type().Field(i).Name)+"."+snake(group.Type().Field(j).Name), group.Field(j).Addr().Interface().(*color.NRGBA))
 		}
 	}
-	for _, p := range domain.Priorities {
+	for _, p := range item.Priorities {
 		if said, moved := visited(do, "priority."+string(p), c.Priority[string(p)]); moved {
 			c.Priority[string(p)] = said
 		}
@@ -94,7 +95,7 @@ func (c *Colours) each(do func(name string, at *color.NRGBA)) {
 			c.Stones[i] = Shade{Light: light, Dark: dark}
 		}
 	}
-	for _, name := range domain.LabelColours {
+	for _, name := range label.LabelColours {
 		if said, moved := visited(do, labelToken+name, c.Labels[name]); moved {
 			c.Labels[name] = said
 		}

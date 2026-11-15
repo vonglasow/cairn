@@ -1,12 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 func (w Window) autosaved() Window {
@@ -92,5 +91,5 @@ func (w Window) FormNote() string {
 	if ago < time.Minute {
 		return "saved " + strconv.Itoa(int(ago.Seconds())) + "s ago"
 	}
-	return "saved " + domain.FormatDuration(ago.Truncate(time.Minute)) + " ago"
+	return "saved " + calendar.FormatDuration(ago.Truncate(time.Minute)) + " ago"
 }

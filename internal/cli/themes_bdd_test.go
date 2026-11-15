@@ -65,7 +65,7 @@ func (w *workspaces) registerThemes(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 	opening := func(line string) error {
-		w.window = func(_ engine.Work, _ engine.Pages, look gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(_ engine.Work, _ engine.Pages, look gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
 			worn = &look
 			return nil
 		}

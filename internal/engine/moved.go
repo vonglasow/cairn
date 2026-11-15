@@ -1,13 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"fmt"
 	"slices"
 	"strings"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 // sets are the members of what a task or an objective carries that one change moved the same way.
@@ -39,7 +39,7 @@ func between[T comparable](was, now []T) (added, gone []T) {
 }
 
 func movedOf(was, now task.Task) *moves {
-	before, after := factsOf(was), factsOf(now)
+	before, after := was.Carried(), now.Carried()
 	var m moves
 	m.Added.Labels, m.TakenOff.Labels = between(before.Labels, after.Labels)
 	m.Added.Blockers, m.TakenOff.Blockers = between(before.Blockers, after.Blockers)
@@ -50,7 +50,7 @@ func movedOf(was, now task.Task) *moves {
 
 func movedOfObjective(was, now objective.Objective) *moves {
 	var m moves
-	m.Added.Labels, m.TakenOff.Labels = between(factsOfObjective(was).Labels, factsOfObjective(now).Labels)
+	m.Added.Labels, m.TakenOff.Labels = between(was.Carried().Labels, now.Carried().Labels)
 	return m.said()
 }
 
@@ -109,7 +109,7 @@ func movedLine(said string, members []string) []string {
 func refs(numbers []int) []string {
 	out := make([]string, 0, len(numbers))
 	for _, n := range numbers {
-		out = append(out, domain.Ref(n))
+		out = append(out, item.Ref(n))
 	}
 	return out
 }

@@ -1,14 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/series"
 	"fmt"
 	"math"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 func lookAtSeries(w Work) ([]Series, error) {
@@ -64,7 +64,7 @@ func OccurrenceDay(c Card, now time.Time) (text string, show, late, passed bool)
 	if c.Series == nil || Finished(c) {
 		return "", false, false, false
 	}
-	day, err := domain.ParseDeadline(c.Series.Day)
+	day, err := calendar.ParseDeadline(c.Series.Day)
 	if err != nil || day.IsZero() {
 		return "", false, false, false
 	}
@@ -93,22 +93,22 @@ func RuleReadBack(typed string, today time.Time) ruleRead {
 	if strings.TrimSpace(typed) == "" {
 		return ruleRead{}
 	}
-	rule, err := domain.ParseRule(typed)
+	rule, err := series.ParseRule(typed)
 	if err != nil {
 		wrong, _, _ := strings.Cut(err.Error(), " — ")
 		return ruleRead{Wrong: wrong}
 	}
-	from := domain.DayOf(today)
+	from := series.DayOf(today)
 	first, ok := rule.First(from)
 	if !ok {
 		return ruleRead{Says: rule.Said()}
 	}
 	if rule.AfterDone() {
-		return ruleRead{Says: rule.Said(), Next: domain.ShortDay(first) + ", then " + rule.Then()}
+		return ruleRead{Says: rule.Said(), Next: series.ShortDay(first) + ", then " + rule.Then()}
 	}
-	days := []string{domain.ShortDay(first)}
+	days := []string{series.ShortDay(first)}
 	for _, d := range rule.Dates(first, from, 2) {
-		days = append(days, domain.ShortDay(d))
+		days = append(days, series.ShortDay(d))
 	}
 	return ruleRead{Says: rule.Said(), Next: strings.Join(days, " · ")}
 }
@@ -135,7 +135,7 @@ func MissedDays(s Series) []string {
 	var out []string
 	for _, o := range s.Occurrences {
 		if o.Is == "missed" {
-			out = append(out, ShortDays([]string{o.Day}))
+			out = append(out, series.ShortDays([]string{o.Day}))
 		}
 	}
 	return out
@@ -150,23 +150,23 @@ func BeforeIn(s Series, task int) []string {
 			return out
 		}
 		at, _ := time.Parse(time.RFC3339, a.At)
-		out = append(out, domain.FormatMoment(at)+"  "+actSaid(a))
+		out = append(out, calendar.FormatMoment(at)+"  "+series.ActSaid(a))
 	}
 	return nil
 }
 
 // EachSaid is how long one occurrence took, on average over the ones done; nothing before one is.
 func EachSaid(s Series) string {
-	spent, err := domain.ParseEstimate(s.TimeSpent)
+	spent, err := calendar.ParseEstimate(s.TimeSpent)
 	if err != nil || s.Done == 0 || spent == 0 {
 		return ""
 	}
-	return domain.FormatDuration((spent / time.Duration(s.Done)).Round(time.Minute)) + " each"
+	return calendar.FormatDuration((spent / time.Duration(s.Done)).Round(time.Minute)) + " each"
 }
 
 // RuleListed is a rule the way a row of a list writes it; the words as they are when they are no rule.
 func RuleListed(words string) string {
-	rule, err := domain.ParseRule(words)
+	rule, err := series.ParseRule(words)
 	if err != nil {
 		return words
 	}
@@ -179,7 +179,7 @@ func NextDaySaid(s Series, now time.Time) string {
 		return ""
 	}
 	said := DaySaid(s.Next[0], now)
-	if rule, err := domain.ParseRule(s.Rule); err == nil && said == "today" && rule.At() != "" {
+	if rule, err := series.ParseRule(s.Rule); err == nil && said == "today" && rule.At() != "" {
 		said += " " + rule.At()
 	}
 	return said
@@ -204,7 +204,7 @@ func SeriesFields(s Series) []Field {
 	return openedAs(SeriesEdit, "task", []Field{
 		{Name: "title", Arg: "title", Value: s.Template.Title},
 		{Name: "priority", Arg: "priority", Value: s.Template.Priority, Choices: Priorities()},
-		{Name: "column", Arg: "state", Value: s.Template.Arrives, Choices: arrivals},
+		{Name: "column", Arg: "state", Value: s.Template.Arrives, Choices: series.Arrivals},
 		{Name: "labels", Arg: "label", Value: strings.Join(s.Template.Labels, " ")},
 		{Name: "estimate", Arg: "estimate", Value: s.Template.Estimate},
 		{Name: "objectives", Arg: "objective", Value: Numbers(s.Template.Objectives)},
@@ -274,11 +274,11 @@ func ChangesTheSeries(c Card, fields []Field) bool {
 
 // DaySaid is how a board writes a day of a series: as a card says its occurrence day while that is close and not passed, as its date otherwise; nothing for no day.
 func DaySaid(day string, now time.Time) string {
-	parsed, err := domain.ParseDeadline(day)
+	parsed, err := calendar.ParseDeadline(day)
 	if err != nil || parsed.IsZero() {
 		return ""
 	}
-	if text, show, _, _ := OccurrenceDay(Card{Series: &Occurs{Day: day}}, now); show && !strings.HasPrefix(text, "−") {
+	if text, show, _, _ := OccurrenceDay(Card{Series: &series.Occurs{Day: day}}, now); show && !strings.HasPrefix(text, "−") {
 		return text
 	}
 	return parsed.Format("2 Jan")

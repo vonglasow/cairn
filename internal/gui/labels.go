@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"cairn/internal/domain"
+	"cairn/internal/engine/label"
 	"slices"
 	"strconv"
 	"strings"
@@ -10,7 +10,7 @@ import (
 )
 
 type labelsState struct {
-	carried    []engine.LabelCarried
+	carried    []label.Carried
 	labelOn    int
 	labelsFrom int
 	renaming   bool
@@ -23,7 +23,7 @@ type labelsState struct {
 }
 
 // LabelsCarried is every label, as the engine listed them, with what carries each.
-func (w Window) LabelsCarried() []engine.LabelCarried { return w.carried }
+func (w Window) LabelsCarried() []label.Carried { return w.carried }
 
 // LabelOn is the line of the list the keyboard is on.
 func (w Window) LabelOn() int { return w.labelOn }
@@ -38,7 +38,7 @@ func (w Window) Renaming() bool { return w.renaming }
 func (w Window) Renamed() Written { return w.renamed }
 
 // LabelSays is one label's line: its name, then how many tasks and objectives carry it.
-func LabelSays(one engine.LabelCarried) string {
+func LabelSays(one label.Carried) string {
 	return one.Label + "   " + countOf(one.Tasks, "task") + " · " + countOf(one.Objectives, "objective")
 }
 
@@ -54,7 +54,7 @@ func (w Window) listingLabels() Window {
 	if err != nil {
 		return w.failing(err)
 	}
-	w.carried, w.screen, w.renaming, w.making, w.colouring = []engine.LabelCarried{}, OnLabels, false, false, false
+	w.carried, w.screen, w.renaming, w.making, w.colouring = []label.Carried{}, OnLabels, false, false, false
 	w.seeking, w.sought = false, Written{}
 	if listed.Labels != nil {
 		w.carried = *listed.Labels
@@ -67,12 +67,12 @@ func (w Window) listingLabels() Window {
 func (w Window) labelChosen() string { return w.LabelsShown()[w.labelOn].Label }
 
 // LabelsShown is the labels the list holds: every one, or those whose name holds what was typed after a slash.
-func (w Window) LabelsShown() []engine.LabelCarried {
+func (w Window) LabelsShown() []label.Carried {
 	sought := strings.ToLower(strings.TrimSpace(w.sought.Reads()))
 	if sought == "" {
 		return w.carried
 	}
-	var shown []engine.LabelCarried
+	var shown []label.Carried
 	for _, one := range w.carried {
 		if strings.Contains(one.Label, sought) {
 			shown = append(shown, one)
@@ -126,7 +126,7 @@ func (w Window) onLabels(name string) Window {
 	if w.colouring {
 		switch name {
 		case "right", "l":
-			w.colourPick = min(len(domain.LabelColours)-1, w.colourPick+1)
+			w.colourPick = min(len(label.LabelColours)-1, w.colourPick+1)
 		case "left", "h":
 			w.colourPick = max(0, w.colourPick-1)
 		}
@@ -203,16 +203,16 @@ func (w Window) renamingLabel() Window {
 func (w Window) Making() bool { return w.making }
 
 func (w Window) deletingLabel() Window {
-	label := w.labelChosen()
+	name := w.labelChosen()
 	w.screen, w.question = OnLabels, aboutDeleting
-	if _, err := w.work.Ask(engine.LabelDelete, engine.Agreed(engine.Input{Given: map[string]string{"label": label}})); err != nil {
+	if _, err := w.work.Ask(engine.LabelDelete, engine.Agreed(engine.Input{Given: map[string]string{"label": name}})); err != nil {
 		return w.failing(err)
 	}
 	w = w.Look().listingLabels()
 	if w.screen != OnLabels {
 		w.screen = OnTheBoard
 	}
-	return w.telling("the label " + label + " was taken off everything")
+	return w.telling("the label " + name + " was taken off everything")
 }
 
 func (w Window) scrollingLabels(p Point, by int) Window {
@@ -255,7 +255,7 @@ func (w Window) clickingLabels(p Point) Window {
 				return w.Choose(strings.ToLower(action.Offer))
 			}
 		}
-		w.labelOn = slices.IndexFunc(w.LabelsShown(), func(one engine.LabelCarried) bool { return one.Label == row.Carried.Label })
+		w.labelOn = slices.IndexFunc(w.LabelsShown(), func(one label.Carried) bool { return one.Label == row.Carried.Label })
 		w.renaming, w.making = false, false
 		if row.Dot.In(p) {
 			return w.startingColour()
@@ -291,7 +291,7 @@ func (w Window) labelsOpens() Box {
 	return box
 }
 
-func (w Window) labelLineWide(m Measure, one engine.LabelCarried) int {
+func (w Window) labelLineWide(m Measure, one label.Carried) int {
 	actions := 0
 	for _, wide := range w.actionWidths(m) {
 		actions += wide + inset
@@ -300,7 +300,7 @@ func (w Window) labelLineWide(m Measure, one engine.LabelCarried) int {
 		ends(m, carriedSays(one), small) + padding + actions
 }
 
-func carriedSays(one engine.LabelCarried) string {
+func carriedSays(one label.Carried) string {
 	return countOf(one.Tasks, "task") + " · " + countOf(one.Objectives, "objective")
 }
 
@@ -328,7 +328,7 @@ type RowAction struct {
 // LabelRow is one line of the list of labels where it is drawn: a label and what carries it, or the name being typed for one, whether the keyboard is on it, where its dot and its name are, and the actions it offers when it is the one chosen.
 type LabelRow struct {
 	At      Box
-	Carried engine.LabelCarried
+	Carried label.Carried
 	Typing  bool
 	On      bool
 	Dot     Box
@@ -382,11 +382,11 @@ func (w Window) actionsIn(m Measure, row Box) []RowAction {
 }
 
 // LabelColour is the colour a label wears on this board: the one the engine read for it, or else the one read off its name.
-func (w Window) LabelColour(label string) string {
-	if colour, ok := w.snap.Colours[label]; ok {
+func (w Window) LabelColour(name string) string {
+	if colour, ok := w.snap.Colours[name]; ok {
 		return colour
 	}
-	return domain.ColourOf(label)
+	return label.ColourOf(name)
 }
 
 func (w Window) startingColour() Window {
@@ -395,18 +395,18 @@ func (w Window) startingColour() Window {
 		return w
 	}
 	w.colouring, w.seeking = true, false
-	w.colourPick = max(0, slices.Index(domain.LabelColours, shown[w.labelOn].Colour))
+	w.colourPick = max(0, slices.Index(label.LabelColours, shown[w.labelOn].Colour))
 	return w
 }
 
 func (w Window) colouredSetting(at int) Window {
 	key := w.colourKey
 	w.colourKey = ""
-	return w.setting(key, domain.LabelColours[at])
+	return w.setting(key, label.LabelColours[at])
 }
 
 func (w Window) colouringLabel(at int) Window {
-	in := engine.Input{Given: map[string]string{"label": w.labelChosen(), "colour": domain.LabelColours[at]}}
+	in := engine.Input{Given: map[string]string{"label": w.labelChosen(), "colour": label.LabelColours[at]}}
 	if _, err := w.work.Ask(engine.LabelColour, in); err != nil {
 		return w.failing(err)
 	}
@@ -438,11 +438,11 @@ func (w Window) ColourSwatches() []ColourSwatch {
 	default:
 		return nil
 	}
-	wide := len(domain.LabelColours)*(swatchSide+swatchGap) - swatchGap
+	wide := len(label.LabelColours)*(swatchSide+swatchGap) - swatchGap
 	x := max(margin+inset, min(row.X+inset, w.width-margin-inset-wide))
 	y := row.Y + row.H + inset
-	swatches := make([]ColourSwatch, 0, len(domain.LabelColours))
-	for i, colour := range domain.LabelColours {
+	swatches := make([]ColourSwatch, 0, len(label.LabelColours))
+	for i, colour := range label.LabelColours {
 		swatches = append(swatches, ColourSwatch{Colour: colour, At: Box{X: x + i*(swatchSide+swatchGap), Y: y + inset, W: swatchSide, H: swatchSide}})
 	}
 	return swatches

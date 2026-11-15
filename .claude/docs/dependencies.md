@@ -33,7 +33,7 @@ reason no longer holds is a dependency to take out.
 
 | dependency | what it would have been for | why not |
 |---|---|---|
-| `github.com/teambition/rrule-go` | the days a series falls on, read off RFC 5545's RRULE | the subset asked for — days, weeks and months, days of the week, an interval, an end — is some two hundred lines with their reading, in `internal/domain/rule.go`; the words a person types are not RRULE, so a reader of plain words was owed either way; and it has had no release since 2023 — see [series.md](series.md#hand-written-not-rrule-go) |
+| `github.com/teambition/rrule-go` | the days a series falls on, read off RFC 5545's RRULE | the subset asked for — days, weeks and months, days of the week, an interval, an end — is some two hundred lines with their reading, in `internal/engine/series/rule.go`; the words a person types are not RRULE, so a reader of plain words was owed either way; and it has had no release since 2023 — see [series.md](series.md#hand-written-not-rrule-go) |
 
 Two tools draw the logo, and only when it changes, never in a build:
 `rsvg-convert` (librsvg) draws its PNGs from the SVG, and

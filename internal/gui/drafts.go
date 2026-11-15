@@ -2,10 +2,6 @@ package gui
 
 import (
 	"encoding/json"
-	"errors"
-	"io/fs"
-	"os"
-	"path/filepath"
 
 	"cairn/internal/engine"
 )
@@ -17,42 +13,41 @@ type Drafts interface {
 	Drop() error
 }
 
-// DraftsAt keeps the draft in a file of its own.
-func DraftsAt(path string) Drafts { return fileDrafts(path) }
+// DraftsOf keeps the draft through the engine holding the work.
+func DraftsOf(work engine.Work) Drafts { return windowKept{work, "draft"} }
 
-type fileDrafts string
-
-func (f fileDrafts) Keep(values map[string]string) error {
-	written, err := json.Marshal(values)
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(string(f)), 0o700); err != nil {
-		return err
-	}
-	return os.WriteFile(string(f), written, 0o600)
+type windowKept struct {
+	work engine.Work
+	name string
 }
 
-func (f fileDrafts) Held() (map[string]string, error) {
-	read, err := os.ReadFile(string(f))
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
-	}
+func (a windowKept) keep(value any) error {
+	written, err := json.Marshal(value)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	_, err = a.work.Ask(engine.WindowKeep, engine.Input{Given: map[string]string{"name": a.name, "value": string(written)}})
+	return err
+}
+
+func (a windowKept) read(into any) error {
+	kept, err := a.work.Ask(engine.WindowKept, engine.Input{Given: map[string]string{"name": a.name}})
+	if err != nil || kept.Kept == nil || *kept.Kept == "" {
+		return err
+	}
+	return json.Unmarshal([]byte(*kept.Kept), into)
+}
+
+func (a windowKept) Keep(values map[string]string) error { return a.keep(values) }
+
+func (a windowKept) Held() (map[string]string, error) {
 	var values map[string]string
-	if err := json.Unmarshal(read, &values); err != nil {
-		return nil, err
-	}
-	return values, nil
+	return values, a.read(&values)
 }
 
-func (f fileDrafts) Drop() error {
-	if err := os.Remove(string(f)); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return err
-	}
-	return nil
+func (a windowKept) Drop() error {
+	_, err := a.work.Ask(engine.WindowDrop, engine.Input{Given: map[string]string{"name": a.name}})
+	return err
 }
 
 type noDrafts struct{}

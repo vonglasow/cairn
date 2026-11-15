@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func under(t *testing.T, e *Engine, title string, parent string) objective.Objective {
@@ -32,7 +32,7 @@ func servingAll(t *testing.T, e *Engine, title string, numbers ...int) task.Task
 func numbersOfTasks(tasks []task.Task) []int {
 	out := []int{}
 	for _, one := range tasks {
-		out = append(out, factsOf(one).Number)
+		out = append(out, one.Carried().Number)
 	}
 	return out
 }
@@ -51,7 +51,7 @@ func TestEngine_putsAnObjectiveUnderAnother(t *testing.T) {
 
 func TestEngine_refusesAParentThatIsNotThere(t *testing.T) {
 	e := openEngine(t)
-	if _, err := e.addObjective("Enclosure", ObjectiveChanges{Parent: of("9")}); !errors.Is(err, errNoSuchObjective) {
+	if _, err := e.addObjective("Enclosure", ObjectiveChanges{Parent: of("9")}); !errors.Is(err, objective.ErrNoSuchObjective) {
 		t.Errorf("err = %v, want ErrNoSuchObjective", err)
 	}
 }
@@ -223,7 +223,7 @@ func TestObjectiveDelete_asksWhatGoesWithASubObjectiveOrATask(t *testing.T) {
 	servingAll(t, e, "Print the case", 2)
 	servingAll(t, e, "Wiring", 1)
 	_, err := deleting(t, e, map[string]string{"number": "1"}, nil)
-	if !errors.Is(err, errObjectiveCarriesTasks) || !errors.Is(err, errObjectiveHoldsSubObjectives) {
+	if !errors.Is(err, objective.ErrObjectiveCarriesTasks) || !errors.Is(err, objective.ErrObjectiveHoldsSubObjectives) {
 		t.Fatalf("err = %v, want it to carry tasks and hold sub-objectives", err)
 	}
 	for _, said := range []string{"#2  Enclosure", "#1  Print the case", "#2  Wiring", "--sub-objectives keep|delete", "--tasks detach|delete"} {
@@ -232,7 +232,7 @@ func TestObjectiveDelete_asksWhatGoesWithASubObjectiveOrATask(t *testing.T) {
 		}
 	}
 	_, err = deleting(t, e, map[string]string{"number": "1", "sub-objectives": "keep"}, nil)
-	if !errors.Is(err, errObjectiveCarriesTasks) || errors.Is(err, errObjectiveHoldsSubObjectives) || strings.Contains(err.Error(), "--sub-objectives") {
+	if !errors.Is(err, objective.ErrObjectiveCarriesTasks) || errors.Is(err, objective.ErrObjectiveHoldsSubObjectives) || strings.Contains(err.Error(), "--sub-objectives") {
 		t.Errorf("with the sub-objectives seen to: err = %v, want only the tasks asked about", err)
 	}
 	if all, _ := e.listObjectives(); len(all) != 2 {
@@ -256,8 +256,8 @@ func TestObjectiveDelete_keepsTheSubObjectivesAndDetachesTheTasks(t *testing.T) 
 	}
 	kept, _ := e.showObjective(2)
 	wiring, _ := e.show(1)
-	if kept.Carried().Parent != 0 || !slices.Equal(factsOf(wiring).Objectives, []int{3}) {
-		t.Errorf("kept %+v, the task serves %v", kept.Carried(), factsOf(wiring).Objectives)
+	if kept.Carried().Parent != 0 || !slices.Equal(wiring.Carried().Objectives, []int{3}) {
+		t.Errorf("kept %+v, the task serves %v", kept.Carried(), wiring.Carried().Objectives)
 	}
 	if !strings.Contains(RenderText(ObjectiveDelete, answer), "task 1 was detached from it") {
 		t.Errorf("the answer reads:\n%s", RenderText(ObjectiveDelete, answer))
@@ -292,10 +292,10 @@ func TestObjectiveDelete_refusesANumberThatIsNoSubObjectiveOfIt(t *testing.T) {
 	under(t, e, "Enclosure", "1")
 	addObjective(t, e, "Garden")
 	_, err := deleting(t, e, map[string]string{"number": "1", "sub-objectives": "delete"}, map[string][]string{"keep": {"3"}})
-	if !errors.Is(err, errNotASubObjective) || err.Error() != "#3 is not a sub-objective of #1; only a sub-objective of what is deleted is kept or deleted on its own" {
+	if !errors.Is(err, objective.ErrNotASubObjective) || err.Error() != "#3 is not a sub-objective of #1; only a sub-objective of what is deleted is kept or deleted on its own" {
 		t.Errorf("err = %v, want ErrNotASubObjective", err)
 	}
-	if _, err := deleting(t, e, map[string]string{"number": "1"}, map[string][]string{"keep": {"2"}, "delete": {"2"}}); !errors.Is(err, errNotASubObjective) {
+	if _, err := deleting(t, e, map[string]string{"number": "1"}, map[string][]string{"keep": {"2"}, "delete": {"2"}}); !errors.Is(err, objective.ErrNotASubObjective) {
 		t.Errorf("kept and deleted at once: err = %v, want it refused", err)
 	}
 	if _, err := deleting(t, e, map[string]string{"number": "1", "sub-objectives": "maybe"}, nil); !errors.Is(err, errNotOneOf) {

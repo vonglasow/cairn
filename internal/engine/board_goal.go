@@ -1,11 +1,11 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"slices"
 	"strconv"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 // standings are the four an objective can be in, in the order a list keeps them: what is being worked towards first, what was finished with last.
@@ -135,5 +135,5 @@ func (g Goal) Counted() string {
 
 // Percent is the share of it done, by the domain's rule: 0 and 100 are kept for nothing done and everything done.
 func (g Goal) Percent() int {
-	return domain.Progress{Tasks: domain.Tally{Total: g.Total, Done: g.Done}}.Percent()
+	return item.Progress{Tasks: item.Tally{Total: g.Total, Done: g.Done}}.Percent()
 }

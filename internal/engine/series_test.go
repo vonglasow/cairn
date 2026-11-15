@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/series"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -114,7 +115,7 @@ func TestSeries_skippingArchivesAndMakesTheNext(t *testing.T) {
 		t.Errorf("skipping answers:\n%s", text)
 	}
 	shown := doneOn(t, path, "2026-11-10", TaskShow, ask("number", "1"))
-	if !factsOf(*shown.Task).Archived {
+	if !(*shown.Task).Carried().Archived {
 		t.Error("the occurrence skipped is still on the board")
 	}
 	s, text := shownSeries(t, path, "2026-11-10", "1")
@@ -209,7 +210,7 @@ func TestSeries_anActThatLeavesNothingOpenMakesTheNext(t *testing.T) {
 	if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0")); !slices.Equal(got, []int{2}) {
 		t.Fatalf("the act that left nothing open made %v", got)
 	}
-	if f := factsOf(*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2")).Task); f.Deadline.Format("2006-01-02") != "2026-11-20" {
+	if f := (*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2")).Task).Carried(); f.Deadline.Format("2006-01-02") != "2026-11-20" {
 		t.Errorf("the next is for %v", f.Deadline)
 	}
 }
@@ -234,11 +235,11 @@ func TestSeries_editingChangesWhatComesNext(t *testing.T) {
 	doneOn(t, path, "2026-11-09", SeriesEdit, ask("number", "1", "title", "Daily", "every", "every tuesday", "priority", "high").with("label", "team"))
 	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
 	next := doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2"))
-	f := factsOf(*next.Task)
+	f := (*next.Task).Carried()
 	if f.Title != "Daily" || string(f.Priority) != "high" || !slices.Equal(f.Labels, []string{"team"}) || f.Deadline.Format("2006-01-02") != "2026-11-10" {
 		t.Errorf("the next reads %+v", f)
 	}
-	if f := factsOf(*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "1")).Task); f.Title != "Stand-up" {
+	if f := (*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "1")).Task).Carried(); f.Title != "Stand-up" {
 		t.Errorf("the one made before was changed: %q", f.Title)
 	}
 	_, text := shownSeries(t, path, "2026-11-09", "1")
@@ -335,7 +336,7 @@ func TestSeries_anOccurrenceServesWhatTheSeriesServes(t *testing.T) {
 	doneOn(t, path, "2026-11-09", ObjectiveNew, ask("title", "Team"))
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday").with("objective", "1"))
 	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
-	if f := factsOf(*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2")).Task); !slices.Equal(f.Objectives, []int{1}) {
+	if f := (*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2")).Task).Carried(); !slices.Equal(f.Objectives, []int{1}) {
 		t.Errorf("the next serves %v", f.Objectives)
 	}
 }
@@ -420,7 +421,7 @@ func TestSeries_countedAfterDoneWithNothingOpenComesOnItsDayOrToday(t *testing.T
 		if got := listed(c.on); !slices.Equal(got, []int{2, 1}) {
 			t.Fatalf("on %s the occurrences are %v", c.on, got)
 		}
-		if f := factsOf(*at(c.on, TaskShow, ask("number", "2")).Task); f.Deadline.Format("2006-01-02") != c.day {
+		if f := (*at(c.on, TaskShow, ask("number", "2")).Task).Carried(); f.Deadline.Format("2006-01-02") != c.day {
 			t.Errorf("made for %v, want %s", f.Deadline, c.day)
 		}
 	}
@@ -536,8 +537,8 @@ func TestSeries_anOccurrenceMadeSaysItsSeriesInItsTrace(t *testing.T) {
 func TestSeriesShown_saysTheTimeSpentAndADeletion(t *testing.T) {
 	said := seriesShownText(Series{
 		Number: 1, Title: "Review", State: "active", Rule: "every day", Says: "every day", TimeSpent: "1h",
-		Occurrences: []Occurrence{{Day: "2026-11-09", Task: 3, Is: "done", TimeSpent: "30m"}},
-		Acts:        []seriesAct{{Did: "deleted", Became: "keep", At: "2026-11-09T10:00:00Z"}},
+		Occurrences: []series.Occurrence{{Day: "2026-11-09", Task: 3, Is: "done", TimeSpent: "30m"}},
+		Acts:        []series.Act{{Did: "deleted", Became: "keep", At: "2026-11-09T10:00:00Z"}},
 	})
 	for _, want := range []string{"missed · 1h\n", "done  30m\n", "deleted, choosing keep"} {
 		if !strings.Contains(said, want) {
@@ -547,7 +548,7 @@ func TestSeriesShown_saysTheTimeSpentAndADeletion(t *testing.T) {
 }
 
 func TestTemplateSaid_namesWhatItServes(t *testing.T) {
-	if got := TemplateSaid(Template{Title: "Review", Priority: "normal", Objectives: []int{2, 3}}); !strings.HasSuffix(got, " · serves #2, #3") {
+	if got := TemplateSaid(series.Template{Title: "Review", Priority: "normal", Objectives: []int{2, 3}}); !strings.HasSuffix(got, " · serves #2, #3") {
 		t.Errorf("said %q", got)
 	}
 }
@@ -587,8 +588,8 @@ func TestEvery_givesATaskWithNoDeadlineTheDayOfItsFirstOccurrence(t *testing.T) 
 		t.Fatal(err)
 	}
 	shown, err := e.show(1)
-	if err != nil || factsOf(shown).Deadline.IsZero() {
-		t.Fatalf("the task shown %+v, %v", factsOf(shown), err)
+	if err != nil || shown.Carried().Deadline.IsZero() {
+		t.Fatalf("the task shown %+v, %v", shown.Carried(), err)
 	}
 	if open, err := e.openSeries(); err != nil || len(open) != 1 {
 		t.Errorf("series %v, %v; want the one begun", open, err)
@@ -743,20 +744,20 @@ func TestEdit_aRuleAndTheSeriesOnAnOccurrenceAreRefused(t *testing.T) {
 
 func TestSeriesTexts_sayOnlyWhatIsThere(t *testing.T) {
 	for _, c := range []struct{ got, want string }{
-		{followedText([]madeNext{{Series: 1, Task: 2, Day: "2026-11-10"}}), "↻1 made #2 for Tue 10 Nov\n"},
+		{series.FollowedText([]series.MadeNext{{Series: 1, Task: 2, Day: "2026-11-10"}}), "↻1 made #2 for Tue 10 Nov\n"},
 		{NextSaid(Series{}), "none"},
 		{NextSaid(Series{Ended: true, Next: []string{"2026-11-10"}}), "Tue 10 Nov"},
-		{TemplateSaid(Template{Title: "Review", Priority: "normal"}), "Review · normal"},
-		{TemplateSaid(Template{Title: "Review", Priority: "normal", Labels: []string{"a", "b"}, Steps: []string{"x"}, Estimate: "15m"}), "Review · normal · a, b · 1 step · 15m"},
-		{seriesDeletedText(seriesDeleted{Deleted: 1}), "↻1 was deleted\n"},
-		{seriesDeletedText(seriesDeleted{Deleted: 1, TasksDeleted: []int{2}, Kept: []int{1}}), "↻1 was deleted · #2 deleted · 1 task kept as ordinary tasks\n"},
+		{TemplateSaid(series.Template{Title: "Review", Priority: "normal"}), "Review · normal"},
+		{TemplateSaid(series.Template{Title: "Review", Priority: "normal", Labels: []string{"a", "b"}, Steps: []string{"x"}, Estimate: "15m"}), "Review · normal · a, b · 1 step · 15m"},
+		{seriesDeletedText(series.Deleted{Deleted: 1}), "↻1 was deleted\n"},
+		{seriesDeletedText(series.Deleted{Deleted: 1, TasksDeleted: []int{2}, Kept: []int{1}}), "↻1 was deleted · #2 deleted · 1 task kept as ordinary tasks\n"},
 		{seriesActedText("stop", Answer{SeriesShown: &Series{Number: 1}}), "↻1 stopped; nothing more is made\n"},
 	} {
 		if c.got != c.want {
 			t.Errorf("said %q, want %q", c.got, c.want)
 		}
 	}
-	if said := occursText(Occurs{Series: 1, Says: "every day", Day: "2026-11-10"}); !strings.Contains(said, "\nday      Tue 10 Nov\n") {
+	if said := series.OccursText(series.Occurs{Series: 1, Says: "every day", Day: "2026-11-10"}); !strings.Contains(said, "\nday      Tue 10 Nov\n") {
 		t.Errorf("an occurrence with no time reads %q", said)
 	}
 }
@@ -769,8 +770,8 @@ func TestSeriesShown_saysWhatItHoldsAndNothingMore(t *testing.T) {
 		}
 	}
 	said := seriesShownText(Series{Number: 1, Title: "Review", State: "active", Rule: "every day", Says: "every day",
-		Occurrences: []Occurrence{{Day: "2026-11-10", Is: "missed"}},
-		Acts:        []seriesAct{{Did: "missed", Day: "2026-11-10", By: "me", At: "2026-11-11T10:00:00Z"}}})
+		Occurrences: []series.Occurrence{{Day: "2026-11-10", Is: "missed"}},
+		Acts:        []series.Act{{Did: "missed", Day: "2026-11-10", By: "me", At: "2026-11-11T10:00:00Z"}}})
 	if !strings.Contains(said, "—      missed") || strings.Contains(said, "#0") {
 		t.Errorf("a day missed reads\n%s", said)
 	}

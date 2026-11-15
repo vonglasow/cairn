@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"context"
 	"fmt"
 	"image"
@@ -20,10 +21,9 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/build"
-	"cairn/internal/config"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -106,6 +106,9 @@ type wrote struct {
 }
 
 func (r *refusing) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
+	if op.Thing == engine.WindowKeep.Thing {
+		return r.held.Ask(op, in)
+	}
 	if op.Level != engine.Read {
 		r.wrote = append(r.wrote, wrote{op.Thing, op.Verb, in.Given["number"]})
 	}
@@ -203,7 +206,7 @@ func (w *world) aStoreANewerCairnChanged(title string) error {
 	}
 	_ = w.held.Close()
 	held, err := engine.Hold(engine.Home{Dir: filepath.Dir(w.path), Lookup: func(name string) (string, bool) {
-		return w.path, name == config.StoreVariable
+		return w.path, name == files.StoreVariable
 	}}, engine.Through("gui", engine.Home{}))
 	if err != nil {
 		return err
@@ -263,10 +266,16 @@ func (w *world) storeRefuses() error {
 
 func (w *world) open() error {
 	w.w = New(w.work, w.width, w.high).OnSystem(w.system).At(w.today).Paged(w.shownPages()).
-		Drafting(DraftsAt(engine.Places{Store: w.path}.Draft()))
+		Drafting(DraftsOf(w.work))
 	if w.keepSizes {
-		w.w = w.w.KeepingSizes(SizesAt(engine.Places{Store: w.path}.Sizes()))
+		if err := os.MkdirAll(filepath.Dir(files.FileIn(w.home)), 0o700); err != nil {
+			return err
+		}
+		if err := os.WriteFile(files.FileIn(w.home), []byte("[window]\nkeep_sizes = true\n"), 0o600); err != nil {
+			return err
+		}
 	}
+	w.w = w.w.KeepingSizes(SizesOf(w.work))
 	w.w = w.w.Look().ReadingConfiguration().LessMotion(w.lessMotion)
 	return w.w.Wrong()
 }
@@ -837,7 +846,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Given(`^today is "([^"]*)"$`, func(day string) error {
-		parsed, err := domain.ParseDeadline(day)
+		parsed, err := calendar.ParseDeadline(day)
 		w.today = parsed.Add(12 * time.Hour)
 		return err
 	})
@@ -845,14 +854,14 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if w.w.Screen() != OnCalendar {
 			return fmt.Errorf("the window is on %v, not on the calendar", w.w.Screen())
 		}
-		if got := domain.FormatDay(w.w.day); got != day {
+		if got := calendar.FormatDay(w.w.day); got != day {
 			return fmt.Errorf("the calendar is on %s, want %s", got, day)
 		}
 		return nil
 	})
 	sc.Step(`^I click the day "([^"]*)" on the calendar$`, func(day string) error {
 		for i, shown := range engine.MonthGrid(w.w.day) {
-			if domain.FormatDay(shown) == day {
+			if calendar.FormatDay(shown) == day {
 				box := DayAt(w.w.CalendarBox(), i)
 				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 				return nil

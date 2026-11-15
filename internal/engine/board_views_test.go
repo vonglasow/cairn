@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"cairn/internal/store"
+	"cairn/internal/engine/view"
 	"slices"
 	"testing"
 	"time"
@@ -193,8 +193,8 @@ func TestViewing_aViewOnTheFocusKeepsTheTasksInIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	for focus, want := range map[string]int{"in": 1, "out": 2} {
-		kept, _, err := e.viewing(store.View{Name: "f", Focus: focus})
-		if err != nil || len(kept) != 1 || factsOf(kept[0]).Number != want {
+		kept, _, err := e.viewing(view.View{Name: "f", Focus: focus})
+		if err != nil || len(kept) != 1 || kept[0].Carried().Number != want {
 			t.Errorf("focus %s keeps %d tasks, %v; want task %d", focus, len(kept), err, want)
 		}
 	}

@@ -1,11 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -221,7 +221,7 @@ func (w Window) HiddenSays(n int) []string {
 	for _, h := range w.snap.Hidden(n, w.today()) {
 		named := "#" + strconv.Itoa(h.Goal.Number) + " " + h.Goal.Title
 		if h.Late {
-			lines = append(lines, named+", its deadline "+domain.ShortDay(h.Goal.Deadline)+" past, not reached.")
+			lines = append(lines, named+", its deadline "+series.ShortDay(h.Goal.Deadline)+" past, not reached.")
 			continue
 		}
 		lines = append(lines, named+" waits on #"+strconv.Itoa(h.On.Number)+" "+h.On.Title+", not reached.")

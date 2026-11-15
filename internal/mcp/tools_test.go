@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"cairn/internal/engine/workspace"
 	"context"
 	"fmt"
 	"os"
@@ -13,9 +14,9 @@ import (
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
+	"cairn/internal/store/files"
 )
 
 func factsOf(t task.Task) task.Carried {
@@ -40,7 +41,7 @@ func homeFor(t *testing.T, path string) engine.Home {
 	t.Helper()
 	dir := t.TempDir()
 	return engine.Home{Dir: dir, Lookup: func(name string) (string, bool) {
-		if name == config.StoreVariable {
+		if name == files.StoreVariable {
 			return path, true
 		}
 		return "", false
@@ -62,7 +63,7 @@ func TestHandlerFor_showsTheConfigurationToAnAgent(t *testing.T) {
 	if err != nil || result.IsError {
 		t.Fatalf("handle = %+v, %v", result, err)
 	}
-	said, ok := result.StructuredContent.(engine.Config)
+	said, ok := result.StructuredContent.(workspace.Config)
 	if !ok || said.File != file || said.Notes.By != "the file" {
 		t.Errorf("structured = %#v, want the file and the notes it named", result.StructuredContent)
 	}

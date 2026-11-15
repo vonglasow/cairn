@@ -1,12 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func TestLocate_theProjectHoldingAWorkspacesFolderNamesIt(t *testing.T) {
@@ -22,7 +23,7 @@ func TestLocate_theNearestFolderWinsAndTheDirectoryComesBeforeTheDefault(t *test
 	h := homeHolding(t, "[workspaces]\ndefault = \"code\"\ncode = \"~/code/.cairn\"\ncairn = \"~/code/cairn/.cairn\"\n", nil, "code/.cairn", "code/cairn/.cairn")
 	h.Here = filepath.Join(h.Dir, "code", "cairn")
 	_, a, err := h.settled()
-	if err != nil || a.workspace != "cairn" || a.why.Rung != rungDirectory || len(a.why.Over) != 1 || a.why.Over[0].Names != "code" {
+	if err != nil || a.Workspace != "cairn" || a.Why.Rung != workspace.RungDirectory || len(a.Why.Over) != 1 || a.Why.Over[0].Names != "code" {
 		t.Errorf("settled = %+v, %v; want cairn, chosen by the directory over the default", a, err)
 	}
 }
@@ -69,7 +70,7 @@ func TestLocate_aWorkspaceNamingItsNotesKeepsThemThere(t *testing.T) {
 func TestLocate_noWorkspaceChosenIsMainInTheUsualFolder(t *testing.T) {
 	h := homeHolding(t, "", nil)
 	_, a, err := h.settled()
-	if err != nil || a.workspace != config.UpgradedMain || a.folder != filepath.Join(h.Dir, ".cairn") {
+	if err != nil || a.Workspace != files.UpgradedMain || a.Folder != filepath.Join(h.Dir, ".cairn") {
 		t.Errorf("settled = %+v, %v; want main at ~/.cairn", a, err)
 	}
 }
@@ -77,10 +78,10 @@ func TestLocate_noWorkspaceChosenIsMainInTheUsualFolder(t *testing.T) {
 func TestUpgradeConfiguration_turnsTheTopLevelPlacesIntoMainOnceAndSaysSo(t *testing.T) {
 	h := homeHolding(t, "store = \"~/data/cairn.db\"\n", nil)
 	said, err := UpgradeConfiguration(h)
-	if err != nil || !strings.Contains(said, `"main"`) || !strings.Contains(said, config.FileIn(h.Dir)+".v0.11.0") {
+	if err != nil || !strings.Contains(said, `"main"`) || !strings.Contains(said, files.FileIn(h.Dir)+".v0.11.0") {
 		t.Errorf("UpgradeConfiguration = %q, %v; want it saying main and where the old file is", said, err)
 	}
-	if kept, err := os.ReadFile(config.FileIn(h.Dir) + ".v0.11.0"); err != nil || string(kept) != "store = \"~/data/cairn.db\"\n" {
+	if kept, err := os.ReadFile(files.FileIn(h.Dir) + ".v0.11.0"); err != nil || string(kept) != "store = \"~/data/cairn.db\"\n" {
 		t.Errorf("the old file kept reads %q, %v", kept, err)
 	}
 	if at, err := Locate(h); err != nil || at.Store != filepath.Join(h.Dir, "data", "cairn.db") || at.Notes != filepath.Join(h.Dir, ".cairn", "notes") {
@@ -106,7 +107,7 @@ func TestLocate_upgradesTheConfigurationOnItsOwn(t *testing.T) {
 	if _, err := Locate(h); err != nil {
 		t.Fatal(err)
 	}
-	if said, _ := os.ReadFile(config.FileIn(h.Dir)); strings.Contains(string(said), "\nnotes = \"~/vault\"\n[") || strings.HasPrefix(string(said), "notes") {
+	if said, _ := os.ReadFile(files.FileIn(h.Dir)); strings.Contains(string(said), "\nnotes = \"~/vault\"\n[") || strings.HasPrefix(string(said), "notes") {
 		t.Errorf("the configuration still names its notes at the top:\n%s", said)
 	}
 }
@@ -120,7 +121,7 @@ func notesMovedAway(t *testing.T) Home {
 	if _, found, err := NotesToMove(h); err != nil || found {
 		t.Fatalf("NotesToMove on the notes where they are = %v, %v", found, err)
 	}
-	if err := os.WriteFile(config.FileIn(h.Dir), []byte("[workspaces]\ndefault = \"cairn\"\n\n[workspaces.cairn]\nfolder = \"~/c\"\nnotes = \"~/vault\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(files.FileIn(h.Dir), []byte("[workspaces]\ndefault = \"cairn\"\n\n[workspaces.cairn]\nfolder = \"~/c\"\nnotes = \"~/vault\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return h
@@ -183,7 +184,7 @@ func TestNotesToMove_anEmptyTargetIsTakenAndNotesGoneAreForgotten(t *testing.T) 
 func TestNotesToMove_notesTheEnvironmentNamesAreNotTheWorkspaces(t *testing.T) {
 	h := notesMovedAway(t)
 	h.Lookup = func(key string) (string, bool) {
-		if key == config.NotesVariable {
+		if key == files.NotesVariable {
 			return filepath.Join(h.Dir, "elsewhere"), true
 		}
 		return "", false
@@ -198,7 +199,7 @@ func TestWorkspaceShow_mainNobodyConfiguredIsSaidAndConfiguresNothing(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	if shown := answer.WorkspaceShown; shown.Workspace != config.UpgradedMain || !shown.Implicit || shown.Configured() != "" {
+	if shown := answer.WorkspaceShown; shown.Workspace != files.UpgradedMain || !shown.Implicit || shown.Configured() != "" {
 		t.Errorf("shown %+v, want main, said implicit, configuring nothing", shown)
 	}
 	answer, err = WorkspaceShow.Run(workedOn{Home: homeHolding(t, twoWorkspaces, nil, "w", "h")}, Input{})
@@ -208,7 +209,7 @@ func TestWorkspaceShow_mainNobodyConfiguredIsSaidAndConfiguresNothing(t *testing
 }
 
 func TestLocate_aStoreNoWorkspaceNamesTakesTheNotesOfMain(t *testing.T) {
-	h := homeHolding(t, "[workspaces]\ndefault = \"work\"\nwork = \"~/w\"\n\n[workspaces.main]\nfolder = \"~/m\"\nnotes = \"~/vault\"\n", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "w", "m")
+	h := homeHolding(t, "[workspaces]\ndefault = \"work\"\nwork = \"~/w\"\n\n[workspaces.main]\nfolder = \"~/m\"\nnotes = \"~/vault\"\n", map[string]string{files.StoreVariable: "~/e/cairn.db"}, "w", "m")
 	if at, err := Locate(h); err != nil || at.Notes != filepath.Join(h.Dir, "vault") {
 		t.Errorf("Locate = %+v, %v; want the notes of main", at, err)
 	}
@@ -235,7 +236,7 @@ func TestWithin_saysWhetherADirectoryIsUnderAFolder(t *testing.T) {
 		dir, root string
 		want      bool
 	}{{"/a/b", "/a", true}, {"/a", "/a", true}, {"/a", "/a/b", false}, {"/c", "/a/b", false}, {"/a/bc", "/a/b", false}} {
-		if got := within(c.dir, c.root); got != c.want {
+		if got := workspace.Within(c.dir, c.root); got != c.want {
 			t.Errorf("within(%q, %q) = %v, want %v", c.dir, c.root, got, c.want)
 		}
 	}
@@ -264,7 +265,7 @@ func TestConfigSet_aServerKeptOnMainNobodyNamedSetsTheGlobalFile(t *testing.T) {
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "pages.time", "value": "off"}); err != nil {
 		t.Fatal(err)
 	}
-	if got := fileRead(t, config.FileIn(h.Dir)); got != "[pages]\ntime = \"off\"\n" {
+	if got := fileRead(t, files.FileIn(h.Dir)); got != "[pages]\ntime = \"off\"\n" {
 		t.Errorf("the file became %q", got)
 	}
 }

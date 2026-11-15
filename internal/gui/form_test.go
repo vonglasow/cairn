@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -1057,7 +1056,7 @@ func TestAFieldsNameExplainsTheFieldUnderThePointer(t *testing.T) {
 }
 
 func TestClosingTheWindowKeepsWhatWasJustTypedIntoANewTask(t *testing.T) {
-	drafts := DraftsAt(filepath.Join(t.TempDir(), "cairn.db.draft.json"))
+	drafts := &heldDrafts{}
 	w := holding(newFake()).Drafting(drafts).Key("cmd+n").Types("Plan the week")
 	w.Closing()
 	held, err := drafts.Held()

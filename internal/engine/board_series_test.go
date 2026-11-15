@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/series"
 	"slices"
 	"strings"
 	"testing"
@@ -70,7 +71,7 @@ func TestOccurrenceDay_saysTheDayOfAnOccurrenceWithinAWeek(t *testing.T) {
 		{"2026-11-06", "", "todo", "−3d", true, true, false},
 		{"2026-11-09", "10:30", "done", "", false, false, false},
 	} {
-		card := Card{State: c.state, Series: &Occurs{Day: c.day, At: c.at}}
+		card := Card{State: c.state, Series: &series.Occurs{Day: c.day, At: c.at}}
 		text, show, late, passed := OccurrenceDay(card, now)
 		if text != c.text || show != c.show || late != c.late || passed != c.passed {
 			t.Errorf("%s %s %s reads %q %v %v %v, want %q %v %v %v", c.day, c.at, c.state, text, show, late, passed, c.text, c.show, c.late, c.passed)
@@ -83,7 +84,7 @@ func TestOccurrenceDay_saysTheDayOfAnOccurrenceWithinAWeek(t *testing.T) {
 
 func TestSeriesFields_areWhatTheNextIsMadeFromAndItsRule(t *testing.T) {
 	s := Series{Number: 3, Title: "Stand-up", Rule: "every weekday 10:30", From: "2026-11-09",
-		Template: Template{Title: "Stand-up", Priority: "high", Labels: []string{"team", "work"}, Steps: []string{"Yesterday", "Today"}, Estimate: "15m", Objectives: []int{2}}}
+		Template: series.Template{Title: "Stand-up", Priority: "high", Labels: []string{"team", "work"}, Steps: []string{"Yesterday", "Today"}, Estimate: "15m", Objectives: []int{2}}}
 	fields := SeriesFields(s)
 	got := map[string]string{}
 	for _, f := range fields {
@@ -178,7 +179,7 @@ func TestPages_withoutRecurrenceOffersNoSeries(t *testing.T) {
 }
 
 func TestRecurring_leavesNoSeriesWhileRecurrenceIsOff(t *testing.T) {
-	s := Snapshot{Series: []Series{{Number: 1}}, Cards: []Card{{Number: 1, Series: &Occurs{Series: 1}}, {Number: 2}}}
+	s := Snapshot{Series: []Series{{Number: 1}}, Cards: []Card{{Number: 1, Series: &series.Occurs{Series: 1}}, {Number: 2}}}
 	if on := (Pages{}).Recurring(s); len(on.Series) != 1 || on.Cards[0].Series == nil {
 		t.Errorf("with recurrence on, the board shows %+v", on)
 	}
@@ -210,7 +211,7 @@ func TestShownSeries_listsTheActiveOnesBeforeTheStopped(t *testing.T) {
 }
 
 func TestMadeStill_isEveryTaskTheSeriesMadeThatIsThere(t *testing.T) {
-	s := Series{Occurrences: []Occurrence{{Task: 4, Is: "todo"}, {Task: 0, Is: "missed"}, {Task: 3, Is: "deleted"}, {Task: 2, Is: "done", Archived: true}}}
+	s := Series{Occurrences: []series.Occurrence{{Task: 4, Is: "todo"}, {Task: 0, Is: "missed"}, {Task: 3, Is: "deleted"}, {Task: 2, Is: "done", Archived: true}}}
 	if got := MadeStill(s); !slices.Equal(got, []int{4, 2}) {
 		t.Errorf("the tasks still there are %v", got)
 	}
@@ -220,7 +221,7 @@ func TestMadeStill_isEveryTaskTheSeriesMadeThatIsThere(t *testing.T) {
 }
 
 func TestChangesTheSeries_onlyWhatTheNextIsMadeFrom(t *testing.T) {
-	occurrence := Card{Series: &Occurs{Series: 1}}
+	occurrence := Card{Series: &series.Occurs{Series: 1}}
 	changed := func(arg string) []Field { return []Field{{Arg: arg, Value: "new", Was: "old"}} }
 	for _, arg := range []string{"title", "priority", "label", "estimate", "steps", "objective"} {
 		if !ChangesTheSeries(occurrence, changed(arg)) {
@@ -292,8 +293,8 @@ func TestInState_narrowsTheSeriesToAState(t *testing.T) {
 func TestSeriesSaid_theMissedDaysWhatCameBeforeAndEach(t *testing.T) {
 	s := Series{
 		Rule: "every weekday 10:30", Done: 2, TimeSpent: "30m",
-		Occurrences: []Occurrence{{Day: "2026-11-06", Task: 3}, {Day: "2026-11-05", Is: "missed"}, {Day: "2026-11-04", Is: "missed"}, {Day: "2026-11-03", Task: 1}},
-		Acts: []seriesAct{
+		Occurrences: []series.Occurrence{{Day: "2026-11-06", Task: 3}, {Day: "2026-11-05", Is: "missed"}, {Day: "2026-11-04", Is: "missed"}, {Day: "2026-11-03", Task: 1}},
+		Acts: []series.Act{
 			{Did: "made", Task: 1, Day: "2026-11-03", At: "2026-11-03T08:00:00Z"},
 			{Did: "skipped", Task: 1, Day: "2026-11-03", At: "2026-11-05T09:00:00Z"},
 			{Did: "made", Task: 3, Day: "2026-11-06", At: "2026-11-05T09:00:00Z"},
@@ -327,7 +328,7 @@ func TestSeriesSaid_theMissedDaysWhatCameBeforeAndEach(t *testing.T) {
 }
 
 func TestBoardFilters_offerWhatComesBackWhileThereAreSeries(t *testing.T) {
-	cards := []Card{{Number: 1, Series: &Occurs{Series: 1}}, {Number: 2}}
+	cards := []Card{{Number: 1, Series: &series.Occurs{Series: 1}}, {Number: 2}}
 	plain := BoardFilters(Snapshot{Cards: cards}, time.Now())
 	for _, f := range plain {
 		if f.Arg == "series" {
@@ -358,7 +359,7 @@ func TestNextDaySaid_isTheNextDayAndItsTimeToday(t *testing.T) {
 }
 
 func TestSeriesFields_offerTheColumnItsOccurrencesArriveIn(t *testing.T) {
-	for _, f := range SeriesFields(Series{Template: Template{Arrives: "current"}}) {
+	for _, f := range SeriesFields(Series{Template: series.Template{Arrives: "current"}}) {
 		if f.Name == "column" {
 			if f.Arg != "state" || f.Value != "current" || len(f.Choices) != 3 {
 				t.Errorf("the column field is %+v, want state, current, three choices", f)
@@ -371,14 +372,14 @@ func TestSeriesFields_offerTheColumnItsOccurrencesArriveIn(t *testing.T) {
 
 func TestOccurrenceDay_saysNothingOfAnOccurrenceWithNoDay(t *testing.T) {
 	now := time.Date(2026, 11, 12, 10, 30, 0, 0, time.UTC)
-	if text, show, _, _ := OccurrenceDay(Card{State: "todo", Series: &Occurs{}}, now); show || text != "" {
+	if text, show, _, _ := OccurrenceDay(Card{State: "todo", Series: &series.Occurs{}}, now); show || text != "" {
 		t.Errorf("said %q, shown %v", text, show)
 	}
 }
 
 func TestOccurrenceDay_aTimeThatIsNowIsNotPassed(t *testing.T) {
 	now := time.Date(2026, 11, 12, 10, 30, 0, 0, time.UTC)
-	if _, _, _, passed := OccurrenceDay(Card{State: "todo", Series: &Occurs{Day: "2026-11-12", At: "10:30"}}, now); passed {
+	if _, _, _, passed := OccurrenceDay(Card{State: "todo", Series: &series.Occurs{Day: "2026-11-12", At: "10:30"}}, now); passed {
 		t.Error("10:30 is passed at 10:30")
 	}
 }

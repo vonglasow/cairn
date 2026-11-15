@@ -1,17 +1,17 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func TestSpentByDay_reachesBackToTheDayTimeWasAddedFor(t *testing.T) {
 	e := openEngine(t)
-	day := domain.FormatDay(time.Now().AddDate(0, 0, -10))
-	if err := e.record(1, trace.TimeAdded, "", day, "2h"); err != nil {
+	day := calendar.FormatDay(time.Now().AddDate(0, 0, -10))
+	if err := e.record(1, act.TimeAdded, "", day, "2h"); err != nil {
 		t.Fatal(err)
 	}
 	spent, err := e.spentByDay()

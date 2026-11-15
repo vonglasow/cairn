@@ -1,11 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/change"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
 	"errors"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 // Changes are the attributes an operation was given.
@@ -41,7 +44,7 @@ const (
 )
 
 func changedLabels(given, current []string, atCreation bool) ([]string, error) {
-	change, err := domain.ParseLabelChange(given)
+	change, err := label.ParseLabelChange(given)
 	if err != nil {
 		return nil, err
 	}
@@ -60,35 +63,35 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		return task.Task{}, err
 	}
 	if c.State != nil {
-		state, err := domain.ParseState(*c.State)
+		state, err := item.ParseState(*c.State)
 		if err != nil {
 			return task.Task{}, err
 		}
 		a.State = state
 	}
 	if c.Blocker != nil {
-		blockers, err := changedBlockers(*c.Blocker, a.Blockers, atCreation)
+		blockers, err := task.ChangedBlockers(*c.Blocker, a.Blockers, atCreation)
 		if err != nil {
 			return task.Task{}, err
 		}
 		a.Blockers = blockers
 	}
 	if c.Link != nil {
-		linked, err := changedLinks(*c.Link, a.Linked, atCreation)
+		linked, err := task.ChangedLinks(*c.Link, a.Linked, atCreation)
 		if err != nil {
 			return task.Task{}, err
 		}
 		a.Linked = linked
 	}
 	if c.Because != nil {
-		said, err := domain.Prose(*c.Because)
+		said, err := item.Prose(*c.Because)
 		if err != nil {
 			return task.Task{}, err
 		}
 		a.Because = said
 	}
 	if c.Spent != nil {
-		spent, err := domain.ParseSpent(*c.Spent)
+		spent, err := change.ParseSpent(*c.Spent)
 		if err != nil {
 			return task.Task{}, err
 		}
@@ -98,7 +101,7 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 		a.Steps = *c.Steps
 	}
 	if c.Objective != nil {
-		served, err := changedNumbers(*c.Objective, a.Objectives, atCreation, errObjectiveRequired,
+		served, err := change.ChangedNumbers(*c.Objective, a.Objectives, atCreation, errObjectiveRequired,
 			errObjectivesBothWays, errObjectiveSignAtBirth)
 		if err != nil {
 			return task.Task{}, err
@@ -110,7 +113,7 @@ func apply(t task.Task, c Changes, atCreation bool) (task.Task, error) {
 
 type carriedTo struct {
 	title, description *string
-	priority           *domain.Priority
+	priority           *item.Priority
 	labels             *[]string
 	deadline           *time.Time
 	estimate           *time.Duration
@@ -134,23 +137,23 @@ func replaced(description string, c carriedChanges) (string, error) {
 	if c.description != nil {
 		return "", errDescriptionBothWays
 	}
-	said, err := domain.ReplaceOnce(description, *c.replace, *c.by)
+	said, err := change.ReplaceOnce(description, *c.replace, *c.by)
 	if err != nil {
 		return "", err
 	}
-	return domain.Prose(said)
+	return item.Prose(said)
 }
 
 func applyCarried(to carriedTo, of string, c carriedChanges, atCreation bool) error {
 	if c.title != nil {
-		title, err := domain.Title(of, *c.title)
+		title, err := item.Title(of, *c.title)
 		if err != nil {
 			return err
 		}
 		*to.title = title
 	}
 	if c.description != nil {
-		said, err := domain.Prose(*c.description)
+		said, err := item.Prose(*c.description)
 		if err != nil {
 			return err
 		}
@@ -164,7 +167,7 @@ func applyCarried(to carriedTo, of string, c carriedChanges, atCreation bool) er
 		*to.description = said
 	}
 	if c.priority != nil {
-		priority, err := domain.ParsePriority(*c.priority)
+		priority, err := item.ParsePriority(*c.priority)
 		if err != nil {
 			return err
 		}
@@ -178,14 +181,14 @@ func applyCarried(to carriedTo, of string, c carriedChanges, atCreation bool) er
 		*to.labels = changed
 	}
 	if c.deadline != nil {
-		deadline, err := domain.ParseDeadline(*c.deadline)
+		deadline, err := calendar.ParseDeadline(*c.deadline)
 		if err != nil {
 			return err
 		}
 		*to.deadline = deadline
 	}
 	if c.estimate != nil {
-		estimate, err := domain.ParseEstimate(*c.estimate)
+		estimate, err := calendar.ParseEstimate(*c.estimate)
 		if err != nil {
 			return err
 		}
@@ -193,3 +196,10 @@ func applyCarried(to carriedTo, of string, c carriedChanges, atCreation bool) er
 	}
 	return nil
 }
+
+// What a change to what a task serves can be turned down for.
+var (
+	errObjectiveRequired    = errors.New("an objective number is expected")
+	errObjectivesBothWays   = errors.New("the objectives are either replaced or changed, not both")
+	errObjectiveSignAtBirth = errors.New("an objective is added or taken away only when changing a task")
+)

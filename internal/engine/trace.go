@@ -4,8 +4,7 @@ import (
 	"slices"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 // TraceShow says what has been done to a task.
@@ -62,9 +61,9 @@ cairn trace list --by sam`,
 		if err != nil {
 			return Answer{}, err
 		}
-		acts = slices.DeleteFunc(acts, func(a trace.Act) bool { return !a.Carried().At.Before(end) })
+		acts = slices.DeleteFunc(acts, func(a act.Act) bool { return !a.Carried().At.Before(end) })
 		if by := in.Given["by"]; by != "" {
-			acts = slices.DeleteFunc(acts, func(a trace.Act) bool { return a.Carried().By != by })
+			acts = slices.DeleteFunc(acts, func(a act.Act) bool { return a.Carried().By != by })
 		}
 		return Answer{Since: acts}, nil
 	},
@@ -76,7 +75,7 @@ func sinceWhen(in Input) (time.Time, error) {
 		now := time.Now()
 		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()), nil
 	}
-	return dayStarting(given)
+	return act.DayStarting(given)
 }
 
 func endOf(in Input) (time.Time, error) {
@@ -84,11 +83,6 @@ func endOf(in Input) (time.Time, error) {
 	if given == "" {
 		return time.Date(9999, 12, 31, 0, 0, 0, 0, time.Local), nil
 	}
-	last, err := dayStarting(given)
+	last, err := act.DayStarting(given)
 	return last.AddDate(0, 0, 1), err
-}
-
-func dayStarting(given string) (time.Time, error) {
-	parsed, err := domain.ParseDeadline(given)
-	return time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.Local), err
 }

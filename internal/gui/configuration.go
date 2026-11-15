@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/workspace"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"cairn/internal/config"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 // OpenSettings is the offer handing the settings of the workspace shown to the system, to open in its editor.
@@ -44,13 +45,13 @@ const (
 )
 
 type configurationState struct {
-	configured  engine.Config
+	configured  workspace.Config
 	configHere  bool
 	opens       string
-	stamp       engine.ConfigStamp
+	stamp       workspace.ConfigStamp
 	readAt      time.Time
-	trouble     *engine.Trouble
-	changed     []engine.ConfigChange
+	trouble     *workspace.Trouble
+	changed     []workspace.ConfigChange
 	changedIn   string
 	changedFor  int
 	global      bool
@@ -71,10 +72,10 @@ type configurationState struct {
 	skin        *Skin
 }
 
-func (w Window) readingConfig() (engine.Config, bool) {
+func (w Window) readingConfig() (workspace.Config, bool) {
 	got, err := w.work.Ask(engine.ConfigShow, engine.Input{})
 	if err != nil || got.Config == nil {
-		return engine.Config{}, false
+		return workspace.Config{}, false
 	}
 	return *got.Config, true
 }
@@ -139,16 +140,16 @@ func (w Window) SettingsPath() string {
 		return global
 	}
 	if w.narrow() {
-		return filepath.Base(engine.SettingsOf(w.configured))
+		return filepath.Base(workspace.SettingsOf(w.configured))
 	}
-	return filepath.Base(engine.SettingsOf(w.configured)) + " over " + global
+	return filepath.Base(workspace.SettingsOf(w.configured)) + " over " + global
 }
 
 func (w Window) settingsWritten() string {
 	if w.global {
 		return w.configured.File
 	}
-	return engine.SettingsOf(w.configured)
+	return workspace.SettingsOf(w.configured)
 }
 
 func tilde(path string) string {
@@ -164,7 +165,7 @@ func tilde(path string) string {
 
 // SettingRow is one key of the settings as the panel lays it out: its key, its value in force in the scope shown, where that value comes from, what the other scope says, what it offers, and the boxes it is drawn in.
 type SettingRow struct {
-	Key                         config.Key
+	Key                         files.Key
 	Value, Comes, Aside, Theirs string
 	Offers                      []string
 	Off, Fixed                  bool
@@ -182,9 +183,9 @@ type SettingSection struct {
 	At          Box
 }
 
-func (w Window) keysShown() []config.Key {
-	var shown []config.Key
-	for _, key := range config.Keys() {
+func (w Window) keysShown() []files.Key {
+	var shown []files.Key
+	for _, key := range files.Keys() {
 		if w.global && key.Store || !w.global && key.Machine {
 			continue
 		}
@@ -193,7 +194,7 @@ func (w Window) keysShown() []config.Key {
 	return shown
 }
 
-func (w Window) rowOfKey(key config.Key) SettingRow {
+func (w Window) rowOfKey(key files.Key) SettingRow {
 	c := w.configured
 	row := SettingRow{Key: key, Value: w.valueShown(key.Name), Words: key.Words}
 	here, global := slices.Contains(c.WrittenHere, key.Name), slices.Contains(c.Written, key.Name)
@@ -215,7 +216,7 @@ func (w Window) rowOfKey(key config.Key) SettingRow {
 		row.Comes = ByDefault
 	}
 	if w.global && here && w.HereOffered() {
-		row.Theirs = "· " + w.hereName() + " sets its own: " + engine.ValueIn(c, key.Name)
+		row.Theirs = "· " + w.hereName() + " sets its own: " + workspace.ValueIn(c, key.Name)
 	}
 	if !row.Fixed && row.Comes != SetHere && row.Comes != InFile && w.hoverKey == key.Name && !w.global {
 		row.Offers = []string{SetHereOffer}
@@ -236,7 +237,7 @@ func (w Window) scopeFile() string {
 	if w.global {
 		return w.configured.File
 	}
-	return engine.SettingsOf(w.configured)
+	return workspace.SettingsOf(w.configured)
 }
 
 func (w Window) valueShown(key string) string {
@@ -247,11 +248,11 @@ func (w Window) valueShown(key string) string {
 	case "notes":
 		return tilde(c.Notes.At)
 	}
-	value := engine.ValueIn(c, key)
+	value := workspace.ValueIn(c, key)
 	if global, ok := c.Global[key]; ok && w.global {
 		value = global
 	}
-	if value == engine.NotSaid {
+	if value == workspace.NotSaid {
 		return ""
 	}
 	return value
@@ -261,7 +262,7 @@ func (w Window) valueShown(key string) string {
 func (w Window) SettingSections() []SettingSection {
 	shown := w.keysShown()
 	var sections []SettingSection
-	for _, name := range config.Sections() {
+	for _, name := range files.Sections() {
 		first, count := -1, 0
 		for i, key := range shown {
 			if key.Section == name {
@@ -276,7 +277,7 @@ func (w Window) SettingSections() []SettingSection {
 		}
 	}
 	if !w.global {
-		sections = append(sections, SettingSection{Name: config.SectionPlaces, Count: "global", First: -1})
+		sections = append(sections, SettingSection{Name: files.SectionPlaces, Count: "global", First: -1})
 	}
 	nav := SettingsNav(w.SettingsBox())
 	for i := range sections {
@@ -467,19 +468,19 @@ func (w Window) laidRow(row SettingRow, at Box) SettingRow {
 func (w Window) controlWide(row SettingRow) int {
 	m := w.measured()
 	switch row.Key.Kind {
-	case config.KindBool:
+	case files.KindBool:
 		return toggleWide
-	case config.KindWords:
+	case files.KindWords:
 		wide := 4
 		for _, word := range row.Words {
 			wide += ends(m, word, small) + 2*pickerPad
 		}
 		return wide
-	case config.KindTheme:
+	case files.KindTheme:
 		return PickerWide(m, row.Value, false, true)
-	case config.KindIntro:
+	case files.KindIntro:
 		return PickerWide(m, row.Value, false, false)
-	case config.KindColour:
+	case files.KindColour:
 		return PickerWide(m, row.Value, true, false)
 	}
 	if row.Fixed {
@@ -487,9 +488,9 @@ func (w Window) controlWide(row SettingRow) int {
 	}
 	least := fieldLeast
 	switch {
-	case row.Key.Kind == config.KindPath:
+	case row.Key.Kind == files.KindPath:
 		least = 200
-	case row.Key.Kind == config.KindText:
+	case row.Key.Kind == files.KindText:
 		least = 130
 	case row.Key.Unit != "":
 		least = 80 + ends(m, row.Key.Unit, small)
@@ -503,9 +504,9 @@ func (w Window) controlWide(row SettingRow) int {
 
 func (w Window) controlParts(row SettingRow) []Box {
 	switch row.Key.Kind {
-	case config.KindBool:
+	case files.KindBool:
 		return []Box{ToggleAt(row.Control)}
-	case config.KindWords:
+	case files.KindWords:
 		m := w.measured()
 		var parts []Box
 		x := row.Control.X + 2
@@ -553,7 +554,7 @@ func (w Window) SettingsFootSays() string {
 }
 
 // Configured is the configuration the window holds in force: the last one read that could be read.
-func (w Window) Configured() engine.Config { return w.configured }
+func (w Window) Configured() workspace.Config { return w.configured }
 
 func itoa(n int) string {
 	if n == 0 {
@@ -576,7 +577,7 @@ func (w Window) onConfiguration(name string) Window {
 	if w.colourKey != "" {
 		switch name {
 		case "right", "l":
-			w.colourPick = min(len(domain.LabelColours)-1, w.colourPick+1)
+			w.colourPick = min(len(label.LabelColours)-1, w.colourPick+1)
 		case "left", "h":
 			w.colourPick = max(0, w.colourPick-1)
 		case "enter", "space":
@@ -620,7 +621,7 @@ func (w Window) onConfiguration(name string) Window {
 			return w.unsetting(rows[w.rowOn].Key.Name)
 		}
 	case "left", "right":
-		if w.rowOn >= 0 && w.rowOn < len(rows) && rows[w.rowOn].Key.Kind == config.KindWords {
+		if w.rowOn >= 0 && w.rowOn < len(rows) && rows[w.rowOn].Key.Kind == files.KindWords {
 			row := rows[w.rowOn]
 			at := slices.Index(row.Words, row.Value)
 			if name == "left" {
@@ -663,13 +664,13 @@ func (w Window) acting(row SettingRow, word int) Window {
 		return w
 	}
 	switch row.Key.Kind {
-	case config.KindBool:
+	case files.KindBool:
 		value := "true"
 		if row.Value == "true" {
 			value = "false"
 		}
 		return w.setting(row.Key.Name, value)
-	case config.KindWords:
+	case files.KindWords:
 		if word < 0 {
 			word = (slices.Index(row.Words, row.Value) + 1) % len(row.Words)
 		}
@@ -677,14 +678,14 @@ func (w Window) acting(row SettingRow, word int) Window {
 			return w
 		}
 		return w.setting(row.Key.Name, row.Words[word])
-	case config.KindTheme:
+	case files.KindTheme:
 		return w.openingChooser()
-	case config.KindIntro:
+	case files.KindIntro:
 		return w.openingIntros()
-	case config.KindColour:
-		w.colourKey, w.colourPick = row.Key.Name, max(0, slices.Index(domain.LabelColours, row.Value))
+	case files.KindColour:
+		w.colourKey, w.colourPick = row.Key.Name, max(0, slices.Index(label.LabelColours, row.Value))
 		return w
-	case config.KindDay:
+	case files.KindDay:
 		return w.openingCalendarFor(row.Key.Name, row.Value)
 	}
 	w.keyWriting, w.keyWritten, w.refusedKey = row.Key.Name, Written{}.Types(row.Value).All(), ""
@@ -751,7 +752,7 @@ func (w Window) applyingOwn() Window {
 		return w
 	}
 	w = w.takingConfig(got)
-	w.stamp = engine.StampOf(got)
+	w.stamp = workspace.StampOf(got)
 	return w
 }
 
@@ -788,7 +789,7 @@ func (w Window) clickingSettings(p Point) Window {
 		}
 		for j, part := range row.Parts {
 			if part.In(p) {
-				if row.Key.Kind == config.KindBool {
+				if row.Key.Kind == files.KindBool {
 					return w.acting(row, -1)
 				}
 				return w.acting(row, j)
@@ -808,7 +809,7 @@ func (w Window) offeredOnRow(row SettingRow, offer string) Window {
 	}
 	if offer == SetHereOffer {
 		value := row.Value
-		if row.Key.Kind == config.KindText && value == "" {
+		if row.Key.Kind == files.KindText && value == "" {
 			return w
 		}
 		return w.setting(row.Key.Name, value)
@@ -860,7 +861,7 @@ func (w Window) choosingOnSettings(name string) (Window, bool) {
 	}
 	switch {
 	case name == OpenSettings:
-		w.opens = engine.SettingsOf(w.configured)
+		w.opens = workspace.SettingsOf(w.configured)
 		return w.filling(false), true
 	case name == OpenGlobal:
 		w.opens = w.configured.File
@@ -910,26 +911,26 @@ func (w Window) settingsShortcut(offer string) string {
 	return ""
 }
 
-func (w Window) troubledBy(got engine.Config) Window {
+func (w Window) troubledBy(got workspace.Config) Window {
 	if got.Problem == "" {
 		w.trouble = nil
 		return w
 	}
-	trouble := engine.TroubleIn(got, w.configured)
+	trouble := workspace.TroubleIn(got, w.configured)
 	w.trouble = &trouble
 	return w
 }
 
 // Trouble is the file the window cannot read while it is open, and why: nothing when every file reads.
-func (w Window) Trouble() (engine.Trouble, bool) {
+func (w Window) Trouble() (workspace.Trouble, bool) {
 	if w.trouble == nil {
-		return engine.Trouble{}, false
+		return workspace.Trouble{}, false
 	}
 	return *w.trouble, true
 }
 
 // ReadAgain is what the window says of a configuration it read again: the file, and each key that changed with what it was.
-func (w Window) ReadAgain() (string, []engine.ConfigChange) { return w.changedIn, w.changed }
+func (w Window) ReadAgain() (string, []workspace.ConfigChange) { return w.changedIn, w.changed }
 
 func (w Window) rereading() Window {
 	if w.configured.File == "" {
@@ -953,11 +954,11 @@ func (w Window) rereading() Window {
 	if got.Problem != "" {
 		return w.troubledBy(got)
 	}
-	changes := engine.ConfigChanges(w.configured, got)
+	changes := workspace.ConfigChanges(w.configured, got)
 	in := filepath.Base(got.File)
 	for _, change := range changes {
 		if slices.Contains(got.WrittenHere, change.Key) || slices.Contains(w.configured.WrittenHere, change.Key) {
-			in = config.SettingsFile
+			in = files.SettingsFile
 		}
 	}
 	w.trouble = nil
@@ -968,7 +969,7 @@ func (w Window) rereading() Window {
 	return w
 }
 
-func (w Window) takingConfig(got engine.Config) Window {
+func (w Window) takingConfig(got workspace.Config) Window {
 	was := w.configured
 	w.configured, w.readAt = got, w.now
 	_, missing := os.Stat(got.File)
@@ -1002,7 +1003,7 @@ func (w Window) ReadingConfiguration() Window {
 	if !ok || got.Problem != "" {
 		return w
 	}
-	w.configured, w.readAt, w.stamp = got, w.now, engine.StampOf(got)
+	w.configured, w.readAt, w.stamp = got, w.now, workspace.StampOf(got)
 	_, missing := os.Stat(got.File)
 	w.configHere = missing == nil
 	return w

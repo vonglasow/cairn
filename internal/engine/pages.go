@@ -3,7 +3,7 @@ package engine
 import (
 	"slices"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 // The three pages a board draws, by the names the configuration turns them off by.
@@ -41,7 +41,7 @@ func PagesFrom(h Home) Pages {
 	if err != nil {
 		return Pages{}
 	}
-	return Pages{off: read.PagesOff(), noWeekend: read.TimeWeekends() == config.WeekendsHidden, noRecurrence: !read.Recurrence()}
+	return Pages{off: read.PagesOff(), noWeekend: read.TimeWeekends() == files.WeekendsHidden, noRecurrence: !read.Recurrence()}
 }
 
 // WeekDays is how many days a week of the time page shows, counted from Monday: seven, or five once the configuration hides the weekends.

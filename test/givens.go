@@ -10,8 +10,8 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 // Asker is somebody else at the store: a second connection, a command line, a server.

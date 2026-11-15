@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
@@ -104,14 +105,14 @@ func TestOpeningApart_bringsForwardTheWindowShowingItOrStartsACairn(t *testing.T
 	defer func() { _ = claim.Close() }()
 	var started [][]string
 	start := func(args ...string) error { started = append(started, args); return nil }
-	reach := func(to engine.Elsewhere) (engine.Apart, error) {
+	reach := func(to engine.Elsewhere) (workspace.Apart, error) {
 		if to.Workspace == "gone" {
-			return engine.Apart{}, engine.ErrWorkspaceNotThere
+			return workspace.Apart{}, workspace.ErrWorkspaceNotThere
 		}
 		if to.Workspace == "dev" {
-			return engine.Apart{Store: shown}, nil
+			return workspace.Apart{Store: shown}, nil
 		}
-		return engine.Apart{Store: other, Flags: []string{"--workspace", to.Workspace}}, nil
+		return workspace.Apart{Store: other, Flags: []string{"--workspace", to.Workspace}}, nil
 	}
 	if went := OpeningApart(engine.Elsewhere{Workspace: "dev"}, reach, ws, start); !went.Raised || went.Err != nil || len(started) != 0 || raised.Load() != 1 {
 		t.Errorf("the one shown: %+v, started %v, raised %d", went, started, raised.Load())
@@ -119,7 +120,7 @@ func TestOpeningApart_bringsForwardTheWindowShowingItOrStartsACairn(t *testing.T
 	if went := OpeningApart(engine.Elsewhere{Workspace: "home"}, reach, ws, start); went.Raised || went.Err != nil || len(started) != 1 || !slices.Equal(started[0], []string{"gui", "--workspace", "home"}) {
 		t.Errorf("another: %+v, started %v", went, started)
 	}
-	if went := OpeningApart(engine.Elsewhere{Workspace: "gone"}, reach, ws, start); !errors.Is(went.Err, engine.ErrWorkspaceNotThere) || len(started) != 1 {
+	if went := OpeningApart(engine.Elsewhere{Workspace: "gone"}, reach, ws, start); !errors.Is(went.Err, workspace.ErrWorkspaceNotThere) || len(started) != 1 {
 		t.Errorf("one not there: %+v, started %v", went, started)
 	}
 }
@@ -146,16 +147,16 @@ func typedKey(name string, with key.Modifiers) string {
 	return said
 }
 
-func atPlace(f *fake, shown engine.WorkspaceShown, cards ...engine.Card) Window {
+func atPlace(f *fake, shown workspace.Shown, cards ...engine.Card) Window {
 	f.shown = &shown
 	return holding(f, cards...).Look()
 }
 
 func TestTheWindowIsTitledAfterItsWorkspace(t *testing.T) {
-	if got := atPlace(newFake(), engine.WorkspaceShown{Workspace: "work", Store: "/w/cairn.db"}).Title(); got != "cairn — work" {
+	if got := atPlace(newFake(), workspace.Shown{Workspace: "work", Store: "/w/cairn.db"}).Title(); got != "cairn — work" {
 		t.Errorf("Title = %q", got)
 	}
-	if got := atPlace(newFake(), engine.WorkspaceShown{Store: "/scratch/cairn.db"}).Title(); got != "cairn — scratch" {
+	if got := atPlace(newFake(), workspace.Shown{Store: "/scratch/cairn.db"}).Title(); got != "cairn — scratch" {
 		t.Errorf("Title of a loose store = %q", got)
 	}
 	if got := holding(newFake()).Title(); got != "cairn" {
@@ -164,7 +165,7 @@ func TestTheWindowIsTitledAfterItsWorkspace(t *testing.T) {
 }
 
 func TestThePillOpensTheTopBarAndTheTabsComeAfterIt(t *testing.T) {
-	w := atPlace(newFake(), engine.WorkspaceShown{Workspace: "work", Store: "/w/cairn.db", Colour: "teal"})
+	w := atPlace(newFake(), workspace.Shown{Workspace: "work", Store: "/w/cairn.db", Colour: "teal"})
 	l := w.Layout()
 	if l.Place.W == 0 || l.Place.X != margin {
 		t.Fatalf("the pill is at %+v", l.Place)
@@ -185,15 +186,15 @@ func TestThePillOpensTheTopBarAndTheTabsComeAfterIt(t *testing.T) {
 }
 
 func switching(f *fake, seeing func(string) bool) Window {
-	f.listed = &engine.Workspaces{
-		Workspaces: []engine.Workspace{
+	f.listed = &workspace.Workspaces{
+		Workspaces: []workspace.Workspace{
 			{Name: "work", Folder: "/w", Default: true},
 			{Name: "home", Folder: "/h"},
 			{Name: "dev", Folder: "/d"},
 		},
-		Recent: []engine.RecentFolder{{Store: "/s/cairn.db", Folder: "/s", Opened: time.Date(2026, 9, 30, 9, 0, 0, 0, time.UTC)}},
+		Recent: []workspace.RecentFolder{{Store: "/s/cairn.db", Folder: "/s", Opened: time.Date(2026, 9, 30, 9, 0, 0, 0, time.UTC)}},
 	}
-	return atPlace(f, engine.WorkspaceShown{Workspace: "work", Store: "/w/cairn.db"}).At(time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)).Seeing(seeing).Key("cmd+shift+o")
+	return atPlace(f, workspace.Shown{Workspace: "work", Store: "/w/cairn.db"}).At(time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)).Seeing(seeing).Key("cmd+shift+o")
 }
 
 func TestTheSwitcherSaysWhatChoosingEachDoes(t *testing.T) {
@@ -240,7 +241,7 @@ func TestChoosingAnotherAsksForAWindowOfItsOwn(t *testing.T) {
 	if said := w.Went(Went{Raised: true}).told; said != "home is brought forward" {
 		t.Errorf("the window says %q", said)
 	}
-	if got := w.Went(Went{Err: engine.ErrWorkspaceNotThere}).Wrong(); !errors.Is(got, engine.ErrWorkspaceNotThere) {
+	if got := w.Went(Went{Err: workspace.ErrWorkspaceNotThere}).Wrong(); !errors.Is(got, workspace.ErrWorkspaceNotThere) {
 		t.Errorf("a refusal is said as %v", got)
 	}
 	here := switching(newFake(), nil).Key("enter")
@@ -253,7 +254,7 @@ func TestChoosingAnotherAsksForAWindowOfItsOwn(t *testing.T) {
 }
 
 func TestTheMenuBarOffersTheSwitcher(t *testing.T) {
-	w := atPlace(newFake(), engine.WorkspaceShown{Workspace: "work", Store: "/w/cairn.db"}).Picked("Open a workspace…")
+	w := atPlace(newFake(), workspace.Shown{Workspace: "work", Store: "/w/cairn.db"}).Picked("Open a workspace…")
 	if w.Screen() != OnWorkspaces {
 		t.Errorf("Open a workspace… leaves the window on %v", w.Screen())
 	}
@@ -261,13 +262,13 @@ func TestTheMenuBarOffersTheSwitcher(t *testing.T) {
 
 func TestTheSettingsOfAWorkspaceSayWhereEachKeyComesFrom(t *testing.T) {
 	f := newFake()
-	f.config = &engine.Config{
-		File: "/c/config.toml", Settings: "/h/settings.toml", Store: engine.Emplacement{At: "/h/cairn.db"},
-		Pages: &engine.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &engine.Archive{Days: 30},
-		Focus: &engine.FocusConfig{}, Time: &engine.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &engine.WindowConfig{},
+	f.config = &workspace.Config{
+		File: "/c/config.toml", Settings: "/h/settings.toml", Store: workspace.Emplacement{At: "/h/cairn.db"},
+		Pages: &workspace.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &workspace.Archive{Days: 30},
+		Focus: &workspace.FocusConfig{}, Time: &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &workspace.WindowConfig{},
 		Written: []string{"archive.days", "pages.time"}, WrittenHere: []string{"pages.time"},
 	}
-	w := atPlace(f, engine.WorkspaceShown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
+	w := atPlace(f, workspace.Shown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
 	if got := Heads(w); got != "Settings of home" {
 		t.Errorf("the panel is headed %q", got)
 	}
@@ -354,15 +355,15 @@ func TestARecentFolderIsKeptAsAWorkspaceThroughWorkspaceAdd(t *testing.T) {
 
 func TestTheSettingsOfAWorkspaceSayItsLabelItsColourAndTheGlobalValueOfAKeySetHere(t *testing.T) {
 	f := newFake()
-	f.config = &engine.Config{
-		File: "/c/config.toml", Settings: "/h/settings.toml", Store: engine.Emplacement{At: "/h/cairn.db"},
-		Pages: &engine.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &engine.Archive{Days: 30},
-		Focus: &engine.FocusConfig{}, Approach: &engine.ApproachConfig{Label: "discuss"}, Time: &engine.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &engine.WindowConfig{},
-		Workspace: &engine.WorkspaceConfig{Colour: "teal"},
+	f.config = &workspace.Config{
+		File: "/c/config.toml", Settings: "/h/settings.toml", Store: workspace.Emplacement{At: "/h/cairn.db"},
+		Pages: &workspace.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &workspace.Archive{Days: 30},
+		Focus: &workspace.FocusConfig{}, Approach: &workspace.ApproachConfig{Label: "discuss"}, Time: &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &workspace.WindowConfig{},
+		Workspace: &workspace.Colouring{Colour: "teal"},
 		Written:   []string{"archive.days", "pages.time"}, WrittenHere: []string{"pages.time", "workspace.colour"},
 		Global: map[string]string{"pages.time": "on"},
 	}
-	w := atPlace(f, engine.WorkspaceShown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
+	w := atPlace(f, workspace.Shown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
 	rows := map[string]SettingRow{}
 	for _, row := range w.SettingRows() {
 		rows[row.Key.Name] = row
@@ -377,7 +378,7 @@ func TestTheSettingsOfAWorkspaceSayItsLabelItsColourAndTheGlobalValueOfAKeySetHe
 		t.Errorf("the colour reads %+v", colour)
 	}
 	f.config.Workspace, f.config.Approach.Label = nil, ""
-	w = atPlace(f, engine.WorkspaceShown{Store: "/s/cairn.db"}).Key("cmd+,")
+	w = atPlace(f, workspace.Shown{Store: "/s/cairn.db"}).Key("cmd+,")
 	for _, row := range w.SettingRows() {
 		if row.Key.Name == "approach.label" && row.Value != "" {
 			t.Errorf("a store saying no label reads %+v", row)
@@ -399,7 +400,7 @@ func TestAStoreIsShownByAShortNameItsPathUnderThePointer(t *testing.T) {
 			t.Errorf("the pointer on %q says %q, want %q", lines[at].Name, said, path)
 		}
 	}
-	loose := atPlace(newFake(), engine.WorkspaceShown{Store: "/Users/me/projects/proj/cairn.db"})
+	loose := atPlace(newFake(), workspace.Shown{Store: "/Users/me/projects/proj/cairn.db"})
 	if said := loose.PlaceShown(); said != "proj" {
 		t.Errorf("the pill of a store no workspace names reads %q, want proj", said)
 	}

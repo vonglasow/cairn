@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func countTasks(t *testing.T, store string) int {
@@ -31,10 +31,10 @@ func TestMakeFixtures_fillsAFolderItMakesAndKeepsItAfter(t *testing.T) {
 	if settings, err := os.ReadFile(filepath.Join(folder, "settings.toml")); err != nil || !strings.Contains(string(settings), "[series]\non = true") {
 		t.Errorf("the settings of the fixtures read %q (%v), want recurrence on", settings, err)
 	}
-	if colour, err := config.ColourIn(filepath.Join(folder, "settings.toml")); err != nil || colour == "" {
+	if colour, err := files.ColourIn(filepath.Join(folder, "settings.toml")); err != nil || colour == "" {
 		t.Errorf("the settings of the fixtures say the colour %q (%v), want one", colour, err)
 	}
-	if name, err := config.NameIn(filepath.Join(folder, "settings.toml")); err != nil || name != "fixtures" {
+	if name, err := files.NameIn(filepath.Join(folder, "settings.toml")); err != nil || name != "fixtures" {
 		t.Errorf("the settings of the fixtures name them %q (%v), want fixtures", name, err)
 	}
 	first := countTasks(t, made.Store)

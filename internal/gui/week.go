@@ -1,10 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"strconv"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -413,7 +413,7 @@ func CellLines(tasks []engine.TimesheetTask, room int) []string {
 
 // MonthDay is the sheet's day for the i-th day of the month's six weeks.
 func (w Window) MonthDay(i int) engine.TimesheetDay {
-	day := domain.FormatDay(engine.MonthGrid(w.week)[i])
+	day := calendar.FormatDay(engine.MonthGrid(w.week)[i])
 	for _, d := range w.TimeShown().Days {
 		if d.Day == day {
 			return d
@@ -630,7 +630,7 @@ func (w Window) PeriodSays() string {
 	if minutes == 0 {
 		return ""
 	}
-	return domain.FormatDuration(time.Duration(minutes) * time.Minute)
+	return calendar.FormatDuration(time.Duration(minutes) * time.Minute)
 }
 
 // PeriodAt is where a month shown says its total: after its year, short of Today.

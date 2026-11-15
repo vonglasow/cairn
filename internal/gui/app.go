@@ -223,7 +223,7 @@ type Here struct {
 }
 
 // Run opens a window wearing the skin given and keeps it until it is closed; a window already showing the store is brought forward instead, and none opened.
-func Run(work engine.Work, pages engine.Pages, look Skin, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int, here Here) {
+func Run(work engine.Work, pages engine.Pages, look Skin, noted *debug.Log, width, height int, here Here) {
 	window := new(app.Window)
 	windows := WindowsHere(os.LookupEnv)
 	claim, err := windows.Claim(here.Store, func() { window.Perform(system.ActionRaise) })
@@ -254,7 +254,7 @@ func Run(work engine.Work, pages engine.Pages, look Skin, drafts Drafts, sizes S
 				panic(stopped)
 			}
 		}()
-		ended(loop(window, work, pages, look, drafts, sizes, noted, width, height, apartFrom(here, windows)), os.Stderr, leaving)
+		ended(loop(window, work, pages, look, noted, width, height, apartFrom(here, windows)), os.Stderr, leaving)
 	}()
 	app.Main()
 }
@@ -286,14 +286,11 @@ func (a elsewhereOf) opening(to engine.Elsewhere) Went {
 
 var errNoElsewhere = errors.New("this window cannot open another")
 
-func loop(window *app.Window, work engine.Work, pages engine.Pages, skin Skin, drafts Drafts, sizes SizesKept, noted *debug.Log, width, height int, elsewhere elsewhereOf) error {
+func loop(window *app.Window, work engine.Work, pages engine.Pages, skin Skin, noted *debug.Log, width, height int, elsewhere elsewhereOf) error {
 	seen := ""
 
 	theme := Theme()
-	board := New(work, width, height).Paged(pages).Drafting(drafts).Measuring(Measured(theme)).MeasuringHeadings(MeasuredHeadings(theme)).Seeing(elsewhere.windows.Shows)
-	if sizes != nil {
-		board = board.KeepingSizes(sizes)
-	}
+	board := New(work, width, height).Paged(pages).Drafting(DraftsOf(work)).KeepingSizes(SizesOf(work)).Measuring(Measured(theme)).MeasuringHeadings(MeasuredHeadings(theme)).Seeing(elsewhere.windows.Shows)
 	board = board.At(time.Now()).Look().ReadingConfiguration().Wearing(skin).LessMotion(lessMotion())
 	window.Option(app.Title(board.Title()), app.Size(unit.Dp(width), unit.Dp(height)), app.MinSize(unit.Dp(Narrowest), unit.Dp(Shortest)))
 	if data, starts, ok := desktopHome(); ok {

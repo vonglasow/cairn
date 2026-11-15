@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"errors"
+	"cairn/internal/engine/app"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -10,19 +10,6 @@ import (
 	"cairn/internal/linuxapp"
 	"cairn/internal/macapp"
 )
-
-// What installing cairn as an application can be turned down for, whatever the system.
-var (
-	errNoApplicationHere = errors.New("an application is installed only on a Mac or a Linux desktop")
-	errPassing           = errors.New("this cairn is a build go run makes and throws away; install cairn (make install), then run cairn app install from it")
-)
-
-// appInstalled says where the application was written, which cairn it opens the window of, and where the person opens it from.
-type appInstalled struct {
-	Installed  string `json:"installed" jsonschema:"where the application was written: the Mac application, or the Linux desktop entry"`
-	Runs       string `json:"runs" jsonschema:"the cairn whose window it opens"`
-	OpenedFrom string `json:"opened_from" jsonschema:"where the person opens it from"`
-}
 
 // appInstall writes cairn as an application: a Mac application in the person's Applications folder, or an entry in a Linux desktop's applications menu.
 var appInstall = Operation{
@@ -34,7 +21,7 @@ var appInstall = Operation{
 	Level:   write,
 	Needs:   noStore,
 	Again:   ChangesNothingMore,
-	Answers: appInstalled{},
+	Answers: app.Installed{},
 	Run: func(on workedOn, _ Input) (Answer, error) {
 		if on.Home.Dir == "" {
 			return Answer{}, fmt.Errorf("%w: %w", errStore, on.Home.Missing)
@@ -44,16 +31,16 @@ var appInstall = Operation{
 			return Answer{}, err
 		}
 		if strings.Contains(running, string(filepath.Separator)+"go-build") {
-			return Answer{}, fmt.Errorf("%s: %w", running, errPassing)
+			return Answer{}, fmt.Errorf("%s: %w", running, app.ErrPassing)
 		}
 		switch {
 		case macapp.Here:
-			app, err := macapp.Install(on.Home.Dir, running, build.Read().Version)
+			installed, err := macapp.Install(on.Home.Dir, running, build.Read().Version)
 			if err != nil {
 				return Answer{}, err
 			}
 			from := "Spotlight (⌘ space, cairn) or the Dock"
-			return Answer{Installed: &app, Runs: &running, OpenedFrom: &from}, nil
+			return Answer{Installed: &installed, Runs: &running, OpenedFrom: &from}, nil
 		case linuxapp.Here:
 			entry, starts, err := linuxapp.Install(linuxapp.DataHome(on.Home.Dir, on.Home.lookup()), running)
 			if err != nil {
@@ -62,12 +49,33 @@ var appInstall = Operation{
 			from := "your desktop's applications menu (cairn)"
 			return Answer{Installed: &entry, Runs: &starts, OpenedFrom: &from}, nil
 		}
-		return Answer{}, errNoApplicationHere
+		return Answer{}, app.ErrNoApplicationHere
 	},
 }
 
-func appText(a appInstalled) string {
-	return "cairn is installed as an application in " + a.Installed + "\n" +
-		"it opens the window of " + a.Runs + "\n\n" +
-		"open it from " + a.OpenedFrom + "\n"
+// upgradeCairn puts the newest release of cairn in the place of the one that was run; a person asks it, never a machine.
+var upgradeCairn = Operation{
+	Verb:  "upgrade",
+	Short: "Put the newest release of cairn in the place of this one",
+	Does: "Take the newest release of cairn from GitHub, check its archive against the release's SHA256SUMS, and put its binary in the place of the cairn that was run. " +
+		"Whatever runs cairn from there runs the new one: the terminal, the Mac application, and a cairn mcp serve already running, at its next call. " +
+		"Its place is tried before anything is fetched, and one that cannot be written is refused. " +
+		"A cairn already the newest is left as it is; one built from its source, or installed by Homebrew, is left to whoever keeps it. " +
+		"With --json it answers from, to and binary; the newest already answers to equal to from.",
+	Example: "cairn upgrade\ncairn upgrade --json",
+	Level:   write,
+	Needs:   noStore,
+	Again:   ChangesNothingMore,
+	Answers: app.Upgraded{},
+	Run: func(on workedOn, _ Input) (Answer, error) {
+		running, err := build.Running()
+		if err != nil {
+			return Answer{}, err
+		}
+		upgraded, err := app.Upgrade(on.Home.version(), running, build.Read().Platform)
+		if err != nil {
+			return Answer{}, err
+		}
+		return Answer{Upgraded: &upgraded}, nil
+	},
 }

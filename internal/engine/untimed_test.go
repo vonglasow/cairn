@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func TestUntimed_leavesNoListingWhereThereWasNoneAndKeepsEveryTask(t *testing.T) {

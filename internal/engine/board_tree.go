@@ -1,12 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
 	"maps"
 	"slices"
 	"strconv"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 // Branch is one objective as a tree draws it: the objective, whether it sits under the one before it, whether it is the last under its parent, and whether it is drawn only as what holds a match.
@@ -85,11 +86,11 @@ func (s Snapshot) Segments(n int, cards []Card) []Segment {
 }
 
 // LabelsFor is every label that may be put on what is named, in alphabetical order.
-func (s Snapshot) LabelsFor(on domain.Bearer) []string {
+func (s Snapshot) LabelsFor(on label.Bearer) []string {
 	var out []string
-	for label, scope := range s.Scopes {
-		if parsed, err := domain.ParseScope(scope); err == nil && parsed.Admits(on) {
-			out = append(out, label)
+	for name, scope := range s.Scopes {
+		if parsed, err := label.ParseScope(scope); err == nil && parsed.Admits(on) {
+			out = append(out, name)
 		}
 	}
 	slices.Sort(out)
@@ -133,7 +134,7 @@ func (s Snapshot) CountedOnce(task int, ticked []int) error {
 func (s Snapshot) Left(n int) objective.Left {
 	var l objective.Left
 	for _, c := range Serving(s.Cards, s.Reach(n)...) {
-		l = l.Counting(c.Number, domain.State(c.State), c.Archived, c.Deadline)
+		l = l.Counting(c.Number, item.State(c.State), c.Archived, c.Deadline)
 	}
 	return l
 }

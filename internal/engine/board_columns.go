@@ -1,9 +1,8 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"slices"
-
-	"cairn/internal/domain"
 )
 
 // Column is one of the four, named as the board writes it.
@@ -14,17 +13,17 @@ type Column struct {
 }
 
 var columns = []struct{ state, name string }{
-	{string(domain.Backlog), "BACKLOG"},
-	{string(domain.Todo), "TODO"},
-	{string(domain.Current), "CURRENT"},
-	{string(domain.Done), "DONE"},
+	{string(item.Backlog), "BACKLOG"},
+	{string(item.Todo), "TODO"},
+	{string(item.Current), "CURRENT"},
+	{string(item.Done), "DONE"},
 }
 
 // Columns is how many columns stand side by side: backlog, todo, current, done.
 const Columns = 4
 
 // Stalled are the three states the band holds, in the order it lays them out: domain's three that mean a task is not moving.
-var Stalled = []string{string(domain.Blocked), string(domain.Watching), string(domain.Paused)}
+var Stalled = []string{string(item.Blocked), string(item.Watching), string(item.Paused)}
 
 // Band is the name the three stopped states share.
 const Band = "STALLED"
@@ -47,7 +46,7 @@ func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 		}
 	}
 	for i := range out {
-		if out[i].State == string(domain.Current) {
+		if out[i].State == string(item.Current) {
 			out[i].Cards = focusFirst(out[i].Cards)
 		}
 	}

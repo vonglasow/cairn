@@ -58,7 +58,7 @@ mixed with a sign. The set named after an `=` replaces the task's links on the
 other tasks too (`@task-link-replaced`).
 
 - One row per pair, the lower number first, so a pair is held once whichever
-  side put it (`links` in `internal/migration/known.go`). Linking two tasks
+  side put it (`links` in `internal/engine/migration/known.go`). Linking two tasks
   already linked changes nothing and writes nothing (`@task-link-twice`).
 - A task cannot be linked to itself, nor to a task that is not there
   (`@task-link-itself`, `@task-link-nothing`). Nothing is refused for its

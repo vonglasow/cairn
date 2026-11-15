@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"cairn/internal/engine/workspace"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,8 +11,6 @@ import (
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
-
-	"cairn/internal/engine"
 )
 
 const hung = 30 * time.Second
@@ -46,7 +45,7 @@ func TestServe_answersFromTheStoreHandedOver(t *testing.T) {
 		},
 		Tools:  offeredNames(t),
 		Unread: []byte(showing + "\n"),
-		Kept:   &engine.Started{Why: engine.Why{Rung: "--store", Started: true}, Store: engine.Emplacement{At: kept}},
+		Kept:   &workspace.Started{Why: workspace.Why{Rung: "--store", Started: true}, Store: workspace.Emplacement{At: kept}},
 	})
 	if err != nil {
 		t.Fatal(err)

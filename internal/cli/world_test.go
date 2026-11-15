@@ -2,6 +2,8 @@ package cli
 
 import (
 	"bytes"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -20,8 +22,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/build"
-	"cairn/internal/config"
-	"cairn/internal/domain"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -61,14 +62,14 @@ func (w *world) context() context.Context {
 }
 
 func daysToday() []string {
-	return []string{domain.FormatDay(time.Now()), domain.FormatDay(time.Now().Add(-time.Minute))}
+	return []string{calendar.FormatDay(time.Now()), calendar.FormatDay(time.Now().Add(-time.Minute))}
 }
 
 func (w *world) field(key string) string {
 	for _, l := range strings.Split(w.Out.Stdout, "\n") {
 		if rest, ok := strings.CutPrefix(strings.TrimSpace(l), key); ok {
 			value := strings.TrimSpace(rest)
-			if value == domain.Absent {
+			if value == item.Absent {
 				return ""
 			}
 			return value
@@ -636,7 +637,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^nothing is written to the default place$`, func() error {
-		left, err := os.ReadDir(filepath.Join(w.Defaults, config.DefaultFolder))
+		left, err := os.ReadDir(filepath.Join(w.Defaults, files.DefaultFolder))
 		if err != nil {
 			return nil
 		}
@@ -772,7 +773,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 			return fmt.Errorf("in_column_since = %v: %w", doc["in_column_since"], err)
 		}
 		for _, day := range daysToday() {
-			if domain.FormatDay(since.Local()) == day {
+			if calendar.FormatDay(since.Local()) == day {
 				return nil
 			}
 		}

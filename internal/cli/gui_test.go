@@ -19,15 +19,9 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 	var readable error
 	handed := false
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, draft, sizes string, _ *debug.Log, width, height int, _ gui.Here) error {
+	openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, width, height int, _ gui.Here) error {
 		handed = true
-		if sizes != "" {
-			t.Errorf("with nothing configured, the window keeps its sizes at %q", sizes)
-		}
 		_, readable = work.Version()
-		if draft != store+".draft.json" {
-			t.Errorf("the window keeps its draft at %q, not beside the store", draft)
-		}
 		if width <= 0 || height <= 0 {
 			t.Errorf("the window was opened at %d by %d", width, height)
 		}
@@ -50,7 +44,7 @@ func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
 func TestGuiPassesOnWhatWentWrongOpeningTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", storeFor(t))
 	was := openGui
-	openGui = func(engine.Work, engine.Pages, gui.Skin, string, string, *debug.Log, int, int, gui.Here) error {
+	openGui = func(engine.Work, engine.Pages, gui.Skin, *debug.Log, int, int, gui.Here) error {
 		return errors.New("no display here")
 	}
 	t.Cleanup(func() { openGui = was })
@@ -79,7 +73,7 @@ func TestGuiActsThroughTheWindow(t *testing.T) {
 	t.Setenv("CAIRN_STORE", store)
 	t.Setenv("CAIRN_AUTHOR", "sam")
 	was := openGui
-	openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+	openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
 		_, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": "Write the spec"}})
 		return err
 	}
@@ -105,18 +99,17 @@ func TestGuiKeepsTheSizesBesideTheStoreWhenTheConfigurationSaysSo(t *testing.T) 
 	if err := os.WriteFile(path, []byte("[window]\nkeep_sizes = true\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	var kept string
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _, sizes string, _ *debug.Log, _, _ int, _ gui.Here) error {
-		kept = sizes
-		return nil
+	openGui = func(work engine.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
+		_, err := work.Ask(engine.WindowKeep, engine.Input{Given: map[string]string{"name": "sizes", "value": "{}"}})
+		return err
 	}
 	t.Cleanup(func() { openGui = was })
 	if got := run(t, "gui"); got.Code != 0 {
 		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
 	}
-	if kept != store+".sizes.json" {
-		t.Errorf("the window keeps its sizes at %q, not beside the store", kept)
+	if _, err := os.Stat(store + ".sizes.json"); err != nil {
+		t.Errorf("the window kept no sizes beside the store: %v", err)
 	}
 }
 
@@ -125,7 +118,7 @@ func TestGuiHandsTheWindowTheDebugFileInDebugMode(t *testing.T) {
 	t.Setenv("CAIRN_DEBUG", "1")
 	var handed *debug.Log
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, noted *debug.Log, _, _ int, _ gui.Here) error {
+	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, noted *debug.Log, _, _ int, _ gui.Here) error {
 		handed = noted
 		return nil
 	}
@@ -148,7 +141,7 @@ func TestGuiTellsTheWindowItsStoreAndHowToReachAnotherWorkspace(t *testing.T) {
 	}
 	var here gui.Here
 	was := openGui
-	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, _ *debug.Log, _, _ int, given gui.Here) error {
+	openGui = func(_ engine.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, _, _ int, given gui.Here) error {
 		here = given
 		return nil
 	}
@@ -170,12 +163,12 @@ func TestGuiTellsTheWindowItsStoreAndHowToReachAnotherWorkspace(t *testing.T) {
 
 func TestGui_opensTheWindowItsRunWasHanded(t *testing.T) {
 	was := openGui
-	openGui = func(engine.Work, engine.Pages, gui.Skin, string, string, *debug.Log, int, int, gui.Here) error {
+	openGui = func(engine.Work, engine.Pages, gui.Skin, *debug.Log, int, int, gui.Here) error {
 		return errors.New("the window every other run opens")
 	}
 	t.Cleanup(func() { openGui = was })
 	opened := false
-	ctx := withWindow(context.Background(), func(engine.Work, engine.Pages, gui.Skin, string, string, *debug.Log, int, int, gui.Here) error {
+	ctx := withWindow(context.Background(), func(engine.Work, engine.Pages, gui.Skin, *debug.Log, int, int, gui.Here) error {
 		opened = true
 		return nil
 	})

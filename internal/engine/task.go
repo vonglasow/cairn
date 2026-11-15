@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -8,8 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 // TaskNew records a new task.
@@ -43,11 +43,11 @@ cairn task new "Write the spec" --desc - < notes.md`,
 		}
 		added, err := on.Engine.add(title, changes)
 		if err != nil {
-			return Answer{}, withTypedTitle(err, title)
+			return Answer{}, task.WithTypedTitle(err, title)
 		}
-		n := factsOf(added).Number
+		n := added.Carried().Number
 		if begun != nil {
-			if err := on.Engine.beginSeries(added, begun.rule, begun.from, begun.day); err != nil {
+			if err := on.Engine.beginSeries(added, begun.Rule, begun.From, begun.Day); err != nil {
 				return Answer{}, err
 			}
 		}
@@ -198,14 +198,14 @@ cairn task archive --state done`,
 			return shown, err
 		}
 		if len(in.Listed["also"]) > 0 {
-			return Answer{}, errAlsoWithoutNumber
+			return Answer{}, task.ErrAlsoWithoutNumber
 		}
 		kept, err := keeping(in, taskNarrowing, on.Engine)
 		if err != nil {
 			return Answer{}, err
 		}
 		if !kept.Narrows() {
-			return Answer{}, errNothingToArchive
+			return Answer{}, task.ErrNothingToArchive
 		}
 		swept, err := on.Engine.archiveEvery(kept)
 		if err != nil {
@@ -240,7 +240,7 @@ var TaskLabel = Operation{
 			return Answer{}, err
 		}
 		if !kept.Narrows() {
-			return Answer{}, errNothingToLabel
+			return Answer{}, task.ErrNothingToLabel
 		}
 		put, err := on.Engine.labelEvery(kept, label)
 		if err != nil {
@@ -249,15 +249,6 @@ var TaskLabel = Operation{
 		return Answer{Labelled: &put}, nil
 	},
 }
-
-// errNothingToLabel is returned when labelling is given nothing to narrow by.
-var errNothingToLabel = errors.New("labelling needs something to narrow by")
-
-// errNothingToArchive is returned when archiving is given neither a number nor a narrowing.
-var errNothingToArchive = errors.New("archiving needs a number or something to narrow by")
-
-// errAlsoWithoutNumber is returned when archiving names more tasks beside a first, and no first: a narrowing already takes many, and "also" said beside one is a question about which.
-var errAlsoWithoutNumber = errors.New("--also names tasks beside a number, and no number was given")
 
 // taskUnarchive brings one back onto the board.
 var taskUnarchive = Operation{
@@ -346,7 +337,7 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		if err != nil {
 			return Answer{}, err
 		}
-		warnings, err := on.Engine.unmet(n, factsOf(was).State)
+		warnings, err := on.Engine.unmet(n, was.Carried().State)
 		if err != nil {
 			return Answer{}, err
 		}
@@ -445,7 +436,7 @@ cairn task search spec --limit 50 --offset 100`,
 		var found []task.Task
 		var terms map[string][]int
 		if in.yes("any") {
-			found, terms = matchingAny(tasks, *named)
+			found, terms = task.MatchingAny(tasks, *named)
 		} else {
 			found = []task.Task{}
 			for _, t := range tasks {
@@ -459,7 +450,7 @@ cairn task search spec --limit 50 --offset 100`,
 			total := len(found)
 			answer.Total = &total
 			found = cut.of(found)
-			terms = onPage(terms, found)
+			terms = task.OnPage(terms, found)
 		}
 		answer.Matched, answer.Terms = found, terms
 		answer.Choosing, err = on.Engine.choosing(found)
@@ -467,42 +458,9 @@ cairn task search spec --limit 50 --offset 100`,
 	},
 }
 
-func onPage(terms map[string][]int, page []task.Task) map[string][]int {
-	if terms == nil {
-		return nil
-	}
-	shown := make(map[int]bool, len(page))
-	for _, t := range page {
-		shown[t.Carried().Number] = true
-	}
-	kept := make(map[string][]int, len(terms))
-	for term, numbers := range terms {
-		kept[term] = slices.DeleteFunc(slices.Clone(numbers), func(n int) bool { return !shown[n] })
-	}
-	return kept
-}
-
-func matchingAny(tasks []task.Task, named []string) ([]task.Task, map[string][]int) {
-	found := []task.Task{}
-	terms := make(map[string][]int, len(named))
-	for _, term := range named {
-		terms[term] = []int{}
-	}
-	for _, t := range tasks {
-		carried := domain.Among(task.Said(t), named)
-		if len(carried) > 0 {
-			found = append(found, t)
-		}
-		for _, term := range carried {
-			terms[term] = append(terms[term], t.Carried().Number)
-		}
-	}
-	return found, terms
-}
-
 // Reaches is the engine's search over what a board already holds: what a task or an objective said a search looks in (task.Said, objective.Said), and what somebody typed, word by word.
 func Reaches(said []string, typed string) bool {
-	return domain.Reaches(said, strings.Fields(typed))
+	return item.Reaches(said, strings.Fields(typed))
 }
 
 func sweepsByNarrowing(in Input) bool {
@@ -519,8 +477,8 @@ func sweepsByNarrowing(in Input) bool {
 
 var taskAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the task is; what was done or decided goes in its notes"},
-	{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column it sits in"},
-	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
+	{Name: "state", Kind: Text, OneOf: oneOf(item.States), Outside: item.ErrNotAState, Means: "the column it sits in"},
+	{Name: "priority", Kind: Text, OneOf: oneOf(item.Priorities), Outside: item.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all"},
 	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
 	{Name: "link", Kind: List, Of: "a task", Means: "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
@@ -537,13 +495,6 @@ func oneOf[T ~string](values []T) []string {
 		out[i] = string(v)
 	}
 	return out
-}
-
-func withTypedTitle(err error, typed string) error {
-	if errors.Is(err, domain.ErrTitleRequired) {
-		return fmt.Errorf("%w, got %q", err, typed)
-	}
-	return err
 }
 
 func editReason(err error) error {
@@ -622,11 +573,11 @@ func listing(on workedOn, in Input) (Answer, error) {
 		return Answer{}, err
 	}
 	if seen != nil {
-		tasks = seen.kept(tasks)
+		tasks = seen.Kept(tasks)
 	}
-	tasks = occurrences.kept(tasks)
+	tasks = occurrences.Kept(tasks)
 	if byBlocker {
-		tasks = inTheWayOf(tasks, blocker)
+		tasks = task.InTheWayOf(tasks, blocker)
 	}
 	var unknown []int
 	if numbers != nil {
@@ -645,23 +596,23 @@ func listing(on workedOn, in Input) (Answer, error) {
 		return Answer{}, err
 	}
 	held := heldAmong(tasks, inFocus)
-	free, err := on.Engine.nothingBlocks()
+	free, err := on.Engine.tasks.NothingBlocks()
 	if err != nil {
 		return Answer{}, err
 	}
-	narrows := kept.Narrows() || numbers != nil || seen != nil || occurrences.of != nil || byBlocker
+	narrows := kept.Narrows() || numbers != nil || seen != nil || occurrences.Of != nil || byBlocker
 	along, _, err := on.Engine.alongEvery(tasks, !narrows && !cut.asked)
 	if err != nil {
 		return Answer{}, err
 	}
 	contexts := map[int]string{}
 	for _, t := range tasks {
-		n := factsOf(t).Number
+		n := t.Carried().Number
 		contexts[n] = on.contextOf(n)
 	}
 	shown := make([]int, 0, len(tasks))
 	for _, t := range tasks {
-		shown = append(shown, factsOf(t).Number)
+		shown = append(shown, t.Carried().Number)
 	}
 	occurring, err := on.Engine.occurring(shown)
 	if err != nil {
@@ -676,7 +627,7 @@ func listing(on workedOn, in Input) (Answer, error) {
 		answer.Total = &total
 	}
 	if seen != nil {
-		answer.InView, answer.Lost, answer.KeepsNothing = seen.name, seen.lost, seen.nothing
+		answer.InView, answer.Lost, answer.KeepsNothing = seen.Name, seen.Lost, seen.Nothing
 		if counting == "" {
 			if answer.Outside, err = on.Engine.outside(tasks); err != nil {
 				return Answer{}, err

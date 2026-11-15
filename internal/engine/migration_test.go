@@ -3,14 +3,7 @@ package engine
 import (
 	"strconv"
 	"testing"
-
-	"cairn/internal/migration"
 )
-
-func factsOfChange(m migration.Migration) migration.Carried {
-	f := m.Carried()
-	return f
-}
 
 func TestMigrationShow_saysWhatAChangeDoes(t *testing.T) {
 	path := storeAt(t)
@@ -19,7 +12,7 @@ func TestMigrationShow_saysWhatAChangeDoes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if answer.Change == nil || factsOfChange(*answer.Change).Number != 1 {
+	if answer.Change == nil || (*answer.Change).Carried().Number != 1 {
 		t.Fatalf("answer.Change = %v, want change 1", answer.Change)
 	}
 }
@@ -39,9 +32,9 @@ func TestMigrationRollback_unmakesTheLastChangeApplied(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do(MigrationList): %v", err)
 	}
-	rolledBack := factsOfChange(*answer.RolledBack)
+	rolledBack := (*answer.RolledBack).Carried()
 	for _, one := range list.Changes {
-		c := factsOfChange(one)
+		c := one.Carried()
 		if c.Number == rolledBack.Number && c.Applied {
 			t.Fatalf("change %d is still applied, want it rolled back", c.Number)
 		}
@@ -66,7 +59,7 @@ func TestMigrationApply_appliesWhatWasNamedOrEverythingWaiting(t *testing.T) {
 	}
 	var missing int
 	for _, one := range waiting.Changes {
-		c := factsOfChange(one)
+		c := one.Carried()
 		if !c.Applied {
 			missing = c.Number
 		}

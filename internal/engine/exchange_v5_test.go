@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/exchange"
 	"errors"
 	"os"
 	"path/filepath"
@@ -28,7 +29,7 @@ func TestTaskExport_writesTheTreeWhatWaitsAndTheScopes(t *testing.T) {
 	if read.Objectives[1].Parent != 0 || read.Objectives[2].Parent != 2 || read.Objectives[3].Parent != 2 || !slices.Equal(read.Objectives[3].WaitsOn, []int{3}) {
 		t.Errorf("the objectives read %+v", read.Objectives)
 	}
-	if !slices.ContainsFunc(read.Labels, func(l labelFiled) bool { return l.Label == "area" && l.Scope == "objectives" }) {
+	if !slices.ContainsFunc(read.Labels, func(l exchange.LabelFiled) bool { return l.Label == "area" && l.Scope == "objectives" }) {
 		t.Errorf("labels = %v, want area for objectives", read.Labels)
 	}
 }
@@ -44,15 +45,15 @@ func TestTaskImport_bringsTheTreeWhatWaitsAndTheScopes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c := factsOfObjective(features); c.Title != "Features" || c.Parent != 2 || !slices.Equal(c.WaitsOn, []int{3}) {
+	if c := features.Carried(); c.Title != "Features" || c.Parent != 2 || !slices.Equal(c.WaitsOn, []int{3}) {
 		t.Errorf("Features came back as %+v", c)
 	}
-	if firmware, _ := e.showObjective(3); factsOfObjective(firmware).Parent != 2 {
-		t.Errorf("Firmware came back under %d", factsOfObjective(firmware).Parent)
+	if firmware, _ := e.showObjective(3); firmware.Carried().Parent != 2 {
+		t.Errorf("Firmware came back under %d", firmware.Carried().Parent)
 	}
 	scopes, _ := e.scopes()
-	if scopes.of("area") != "objectives" {
-		t.Errorf("area came back for %s", scopes.of("area"))
+	if scopes.Of("area") != "objectives" {
+		t.Errorf("area came back for %s", scopes.Of("area"))
 	}
 }
 
@@ -69,7 +70,7 @@ func TestTaskImport_refusesATreeOrAWaitOutsideTheFile(t *testing.T) {
 		if err == nil {
 			_, err = openEngine(t).importing(read)
 		}
-		if !errors.Is(err, errExportPointsOutside) {
+		if !errors.Is(err, exchange.ErrExportPointsOutside) {
 			t.Errorf("%s reads %v", file, err)
 		}
 	}

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine/workspace"
 	"context"
 	"errors"
 	"fmt"
@@ -14,8 +15,8 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -79,7 +80,7 @@ func (w *world) handingApart() {
 	}
 	w.w = w.w.ApartTaken()
 	held := w.held
-	reach := func(to engine.Elsewhere) (engine.Apart, error) { return engine.OpenApart(held, to) }
+	reach := func(to engine.Elsewhere) (workspace.Apart, error) { return engine.OpenApart(held, to) }
 	start := func(args ...string) error {
 		w.apart.started = append(w.apart.started, args)
 		return nil
@@ -140,7 +141,7 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Given(`^the global configuration says the archive lasts (\d+) days$`, func(days int) error {
-		path := config.FileIn(w.spaces.Dir)
+		path := files.FileIn(w.spaces.Dir)
 		said, err := os.ReadFile(path)
 		if err != nil {
 			return err
@@ -317,7 +318,7 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the window asks the system to open the settings of "([^"]*)"$`, func(name string) error {
 		got, asked := w.w.OpenAsked()
-		if want := filepath.Join(w.spaces.FolderOf(name), config.SettingsFile); !asked || got != want {
+		if want := filepath.Join(w.spaces.FolderOf(name), files.SettingsFile); !asked || got != want {
 			return fmt.Errorf("the window asks the system to open %q, not %q", got, want)
 		}
 		return nil

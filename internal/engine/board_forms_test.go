@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func TestNewForms_startWhereEveryBoardStartsThem(t *testing.T) {

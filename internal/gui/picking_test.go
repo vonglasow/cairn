@@ -11,13 +11,13 @@ import (
 	"gioui.org/unit"
 
 	"cairn/internal/engine"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func openTask(t *testing.T) (Window, *fake) {
 	t.Helper()
 	f := newFake()
-	f.acts = []trace.Act{anAct("changed", "title", "Write the spec", "")}
+	f.acts = []act.Act{anAct("changed", "title", "Write the spec", "")}
 	w := holding(f,
 		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
 			Description: "Deux colonnes et une bande", Context: "/vault/1",

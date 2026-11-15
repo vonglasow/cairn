@@ -1,32 +1,40 @@
 package engine
 
 import (
+	"cairn/internal/engine/app"
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/series"
+	"cairn/internal/engine/view"
+	"cairn/internal/engine/workspace"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/objective"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 // Task is how a task crosses to a machine: every fact task.Shape carries, plus how far along it is.
 type Task struct {
 	task.Shape
-	Progress   *domain.ProgressShape `json:"progress"`
-	Context    string                `json:"context,omitempty"`
-	StoodSince *time.Time            `json:"in_column_since,omitempty"`
-	Blocking   []int                 `json:"blocking,omitempty" jsonschema:"the numbers of the open tasks naming it as a blocker; left out when none does"`
-	Added      *sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
-	TakenOff   *sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
-	Warnings   []string              `json:"warnings,omitempty" jsonschema:"what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"`
-	Series     *Occurs               `json:"series,omitempty" jsonschema:"the series it is an occurrence of, while recurrence is on; left out otherwise"`
-	Made       []madeNext            `json:"made,omitempty" jsonschema:"each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"`
+	Progress   *item.ProgressShape `json:"progress"`
+	Context    string              `json:"context,omitempty"`
+	StoodSince *time.Time          `json:"in_column_since,omitempty"`
+	Blocking   []int               `json:"blocking,omitempty" jsonschema:"the numbers of the open tasks naming it as a blocker; left out when none does"`
+	Added      *sets               `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
+	TakenOff   *sets               `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
+	Warnings   []string            `json:"warnings,omitempty" jsonschema:"what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"`
+	Series     *series.Occurs      `json:"series,omitempty" jsonschema:"the series it is an occurrence of, while recurrence is on; left out otherwise"`
+	Made       []series.MadeNext   `json:"made,omitempty" jsonschema:"each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"`
 }
 
 // ofTask turns a task and how far along it is into what crosses to a machine.
-func ofTask(t task.Task, p domain.Progress) Task {
-	return Task{Shape: task.OfTask(t), Progress: domain.OfProgress(p)}
+func ofTask(t task.Task, p item.Progress) Task {
+	return Task{Shape: task.OfTask(t), Progress: item.OfProgress(p)}
 }
 
 // Row is a task as a listing carries it: its facts, and whether it says anything — not what it says; only the fields asked for, when some were.
@@ -49,18 +57,18 @@ func rowOf(t task.Task, kept []string) Row {
 
 // Tasks is how a listing of tasks crosses: an object naming what it carries, never a bare list.
 type Tasks struct {
-	Tasks    []Row            `json:"tasks"`
-	InFocus  []int            `json:"in_focus"`
-	Crossed  *crossed         `json:"crossed,omitempty" jsonschema:"the column a move took a task out of and into; left out when it stayed where it was"`
-	Matched  map[string][]int `json:"matched,omitempty" jsonschema:"each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked"`
-	Unknown  []int            `json:"unknown,omitempty" jsonschema:"each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"`
-	Total    *int             `json:"total,omitempty" jsonschema:"how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"`
-	Counts   *map[string]int  `json:"counts,omitempty" jsonschema:"each column, or each label, as count asked, and how many of the tasks kept sit in it or carry it; one no task has is left out; left out unless count was asked"`
-	Warnings []string         `json:"warnings,omitempty" jsonschema:"what the move did and should be known: each objective a task moved into current counts in, waiting on one not reached; left out when there is nothing to say"`
-	View     string           `json:"view,omitempty" jsonschema:"the view whose filters kept the tasks; left out unless one was named"`
-	Gone     []string         `json:"gone,omitempty" jsonschema:"each condition of the view whose objective or label is gone, which narrows nothing; when every one is, the view keeps nothing; left out when none is"`
-	Outside  []outside        `json:"outside,omitempty" jsonschema:"the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"`
-	Made     []madeNext       `json:"made,omitempty" jsonschema:"each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"`
+	Tasks    []Row             `json:"tasks"`
+	InFocus  []int             `json:"in_focus"`
+	Crossed  *task.Crossed     `json:"crossed,omitempty" jsonschema:"the column a move took a task out of and into; left out when it stayed where it was"`
+	Matched  map[string][]int  `json:"matched,omitempty" jsonschema:"each thing a search for any of it named, and the numbers of the tasks it matched — none when it matched nothing; given a page, only the tasks on it; left out unless any was asked"`
+	Unknown  []int             `json:"unknown,omitempty" jsonschema:"each number a listing was asked for that no task carries, in the order asked; left out when every one is a task"`
+	Total    *int              `json:"total,omitempty" jsonschema:"how many tasks the listing or the search kept before a page was cut from them, or before they were counted; left out unless a limit, an offset or a count was asked"`
+	Counts   *map[string]int   `json:"counts,omitempty" jsonschema:"each column, or each label, as count asked, and how many of the tasks kept sit in it or carry it; one no task has is left out; left out unless count was asked"`
+	Warnings []string          `json:"warnings,omitempty" jsonschema:"what the move did and should be known: each objective a task moved into current counts in, waiting on one not reached; left out when there is nothing to say"`
+	View     string            `json:"view,omitempty" jsonschema:"the view whose filters kept the tasks; left out unless one was named"`
+	Gone     []string          `json:"gone,omitempty" jsonschema:"each condition of the view whose objective or label is gone, which narrows nothing; when every one is, the view keeps nothing; left out when none is"`
+	Outside  []view.Outside    `json:"outside,omitempty" jsonschema:"the tasks outside the view that block, wait on or are linked to one listed, each once with every way it does, never counted; left out unless a view was named"`
+	Made     []series.MadeNext `json:"made,omitempty" jsonschema:"each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"`
 }
 
 // Timesheet is how long the work took, as it crosses to a machine: every day something was done on, in order, with each task's minutes — a minute begun counted whole — and the day's, the sum of those.
@@ -84,10 +92,10 @@ type TimesheetTask struct {
 	Deleted            bool   `json:"deleted,omitempty" jsonschema:"the task was deleted, keeping its time; its title is the one it went with"`
 }
 
-func ofSheet(s trace.Sheet, titles map[int]string, gone map[int]bool) Timesheet {
+func ofSheet(s act.Sheet, titles map[int]string, gone map[int]bool) Timesheet {
 	days := make([]TimesheetDay, 0, len(s.Days))
 	for _, d := range s.Days {
-		day := TimesheetDay{Day: domain.FormatDay(d.Day), Minutes: int(d.Total.Minutes()), Tasks: []TimesheetTask{}}
+		day := TimesheetDay{Day: calendar.FormatDay(d.Day), Minutes: int(d.Total.Minutes()), Tasks: []TimesheetTask{}}
 		for _, w := range d.Tasks {
 			day.Tasks = append(day.Tasks, TimesheetTask{Number: w.Task, Title: titles[w.Task],
 				Minutes: int(w.Took.Minutes()), LeftOpenAtMidnight: w.LeftOpen, Deleted: gone[w.Task]})
@@ -110,12 +118,12 @@ type kept struct {
 // ledger is how a listing of changes to the shape of the store crosses, with what the store holds — which the text has always said and the JSON used to lose, having nowhere to put it.
 type ledger struct {
 	Changes []migration.Shape `json:"changes"`
-	Holds   *domain.Held      `json:"holds"`
+	Holds   *backup.Held      `json:"holds"`
 }
 
 // acts is how what was done to a task, or over a period, crosses.
 type acts struct {
-	Acts []trace.Shape `json:"acts"`
+	Acts []act.Shape `json:"acts"`
 }
 
 // Focus is how the task being worked on crosses, or the fact that none is.
@@ -129,30 +137,30 @@ type Focus struct {
 // objectiveRow is how an objective crosses to a machine.
 type objectiveRow struct {
 	objective.Shape
-	Tasks      []int                 `json:"tasks"`
-	Progress   *domain.ProgressShape `json:"progress"`
-	TimeSpent  string                `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
-	Left       []int                 `json:"left" jsonschema:"the numbers of the tasks serving it that are neither done nor archived"`
-	Parent     *int                  `json:"parent" jsonschema:"the number of the objective it sits under; null when it stands on its own"`
-	Children   []int                 `json:"children" jsonschema:"the numbers of its sub-objectives; empty when it holds none"`
-	WaitsOn    []int                 `json:"waits_on" jsonschema:"the numbers of the objectives it waits on, which warn and never block; empty when it waits on none"`
-	WaitedOnBy []int                 `json:"waited_on_by" jsonschema:"the numbers of the objectives that wait on it; empty when none does"`
-	Proposed   *int                  `json:"proposed_reached,omitempty" jsonschema:"the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"`
-	Added      *sets                 `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
-	TakenOff   *sets                 `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
+	Tasks      []int               `json:"tasks"`
+	Progress   *item.ProgressShape `json:"progress"`
+	TimeSpent  string              `json:"time_spent" jsonschema:"how long has been spent on the tasks serving it, as 1h30m; empty when nothing has"`
+	Left       []int               `json:"left" jsonschema:"the numbers of the tasks serving it that are neither done nor archived"`
+	Parent     *int                `json:"parent" jsonschema:"the number of the objective it sits under; null when it stands on its own"`
+	Children   []int               `json:"children" jsonschema:"the numbers of its sub-objectives; empty when it holds none"`
+	WaitsOn    []int               `json:"waits_on" jsonschema:"the numbers of the objectives it waits on, which warn and never block; empty when it waits on none"`
+	WaitedOnBy []int               `json:"waited_on_by" jsonschema:"the numbers of the objectives that wait on it; empty when none does"`
+	Proposed   *int                `json:"proposed_reached,omitempty" jsonschema:"the number of an objective every sub-objective of which is reached, so it may be put reached too — itself on show, its parent on the act that reached the last one; left out otherwise"`
+	Added      *sets               `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
+	TakenOff   *sets               `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 }
 
 // ofObjective turns an objective into what crosses.
-func ofObjective(o objective.Objective, under []task.Task, p domain.Progress) objectiveRow {
+func ofObjective(o objective.Objective, under []task.Task, p item.Progress) objectiveRow {
 	numbers := make([]int, 0, len(under))
 	for _, t := range under {
-		numbers = append(numbers, factsOf(t).Number)
+		numbers = append(numbers, t.Carried().Number)
 	}
 	return objectiveRow{
 		Shape:      objective.OfObjective(o),
 		Tasks:      numbers,
-		Progress:   domain.OfProgress(p),
-		TimeSpent:  domain.FormatDuration(reviewOf(under).Spent),
+		Progress:   item.OfProgress(p),
+		TimeSpent:  calendar.FormatDuration(reviewOf(under).Spent),
 		Left:       leftOf(under),
 		Children:   []int{},
 		WaitsOn:    []int{},
@@ -218,19 +226,19 @@ type applied struct {
 // Of turns what an operation answered into the shape a machine reads — the shape the operation declared it answers, and no other.
 func Of(op Operation, a Answer) any {
 	switch op.Answers.(type) {
-	case configChanged:
+	case workspace.ConfigChanged:
 		return *a.ConfigChanged
-	case Config:
+	case workspace.Config:
 		return *a.Config
-	case Workspaces:
+	case workspace.Workspaces:
 		return *a.Workspaces
-	case workspaceAdded:
+	case workspace.Added:
 		return *a.WorkspaceAdded
-	case workspaceUsed:
+	case workspace.Used:
 		return *a.WorkspaceUsed
-	case workspaceRemoved:
+	case workspace.Removed:
 		return *a.WorkspaceRemoved
-	case WorkspaceShown:
+	case workspace.Shown:
 		return *a.WorkspaceShown
 	case Timesheet:
 		return ofSheet(*a.Sheet, a.Named, a.Gone)
@@ -308,26 +316,26 @@ func Of(op Operation, a Answer) any {
 		return migration.OfRolledBack(*a.RolledBack)
 	case labelled:
 		return labelled{Labelled: *a.Labelled}
-	case labelList:
-		return labelList{Labels: *a.Labels, Warnings: a.Warnings}
+	case label.List:
+		return label.List{Labels: *a.Labels, Warnings: a.Warnings}
 	case View:
 		return *a.Viewed
 	case Views:
 		return *a.ViewsKept
-	case viewDeleted:
-		return viewDeleted{Deleted: *a.ViewGone}
+	case view.Deleted:
+		return view.Deleted{Deleted: *a.ViewGone}
 	case Series:
 		return *a.SeriesShown
 	case seriesListed:
 		return *a.SeriesKept
-	case seriesDeleted:
+	case series.Deleted:
 		return *a.SeriesGone
-	case configWritten:
-		return configWritten{Written: *a.Written}
+	case workspace.ConfigWritten:
+		return workspace.ConfigWritten{Written: *a.Written}
 	case debugReported:
 		return debugReported{Written: *a.Written, Files: *a.Packed}
-	case steps:
-		return ofSteps(*a.Task)
+	case task.Steps:
+		return task.OfSteps(*a.Task)
 	case Deleted:
 		said := Deleted{Deleted: *a.Deleted, Also: a.Also, WasBlocking: a.Unblocked}
 		if a.Went != nil {
@@ -336,16 +344,18 @@ func Of(op Operation, a Answer) any {
 		return said
 	case restored:
 		return restored{Restored: *a.Restored}
-	case pluginWritten:
-		return pluginWritten{Plugin: *a.Plugin}
-	case pluginShown:
+	case app.PluginWritten:
+		return app.PluginWritten{Plugin: *a.Plugin}
+	case app.PluginShown:
 		return *a.Install
-	case appInstalled:
-		return appInstalled{Installed: *a.Installed, Runs: *a.Runs, OpenedFrom: *a.OpenedFrom}
-	case exported:
-		return exported{Exported: *a.Exported, Holds: a.Holds}
-	case importedFile:
-		return importedFile{Imported: *a.Imported, Added: *a.Holds}
+	case app.Upgraded:
+		return *a.Upgraded
+	case app.Installed:
+		return app.Installed{Installed: *a.Installed, Runs: *a.Runs, OpenedFrom: *a.OpenedFrom}
+	case exchange.Exported:
+		return exchange.Exported{Exported: *a.Exported, Holds: a.Holds}
+	case exchange.ImportedFile:
+		return exchange.ImportedFile{Imported: *a.Imported, Added: *a.Holds}
 	case applied:
 		return applied{Applied: a.Applied}
 	case acts:
@@ -357,19 +367,19 @@ func Of(op Operation, a Answer) any {
 	return nil
 }
 
-func ofActs(acts []trace.Act) []trace.Shape {
-	out := make([]trace.Shape, 0, len(acts))
+func ofActs(acts []act.Act) []act.Shape {
+	out := make([]act.Shape, 0, len(acts))
 	for _, one := range acts {
-		out = append(out, trace.OfAct(one))
+		out = append(out, act.OfAct(one))
 	}
 	return out
 }
 
-func ofFocus(held []task.Task, p domain.Progress, numbers []int, sessions []focusSession) Focus {
+func ofFocus(held []task.Task, p item.Progress, numbers []int, sessions []focusSession) Focus {
 	out := make([]Task, 0, len(held))
 	for _, t := range held {
 		out = append(out, ofTask(t, p))
-		p = domain.Progress{}
+		p = item.Progress{}
 	}
 	if sessions == nil {
 		sessions = []focusSession{}
@@ -406,13 +416,13 @@ func ofObjectives(all []objective.Objective, a Answer) []objectiveRow {
 	out := make([]objectiveRow, 0, len(all))
 	for _, o := range all {
 		said := seated(ofObjective(o, nil, a.Along[o.Carried().Number]), o, a)
-		said.TimeSpent = domain.FormatDuration(a.Spent[o.Carried().Number])
+		said.TimeSpent = calendar.FormatDuration(a.Spent[o.Carried().Number])
 		out = append(out, said)
 	}
 	return out
 }
 
-func ofBackups(all []domain.Backup) []BackupShape {
+func ofBackups(all []backup.Backup) []BackupShape {
 	out := make([]BackupShape, 0, len(all))
 	for _, b := range all {
 		out = append(out, ofBackup(b, nil))
@@ -432,14 +442,14 @@ func ofChanges(all []migration.Migration) []migration.Shape {
 type BackupShape struct {
 	Number int          `json:"number"`
 	Made   string       `json:"made"`
-	Holds  *domain.Held `json:"holds,omitempty"`
+	Holds  *backup.Held `json:"holds,omitempty"`
 }
 
 // ofBackup turns a backup into what crosses, holding what it held when that was counted, and nothing when it was not: making a backup does not open it, and a zero nobody measured would read as an empty store.
-func ofBackup(b domain.Backup, held *domain.Held) BackupShape {
-	out := BackupShape{Number: b.Number, Made: domain.FormatMoment(b.Made)}
+func ofBackup(b backup.Backup, held *backup.Held) BackupShape {
+	out := BackupShape{Number: b.Number, Made: calendar.FormatMoment(b.Made)}
 	if held != nil {
-		out.Holds = &domain.Held{Tasks: held.Tasks, Objectives: held.Objectives}
+		out.Holds = &backup.Held{Tasks: held.Tasks, Objectives: held.Objectives}
 	}
 	return out
 }

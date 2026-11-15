@@ -1,11 +1,12 @@
 package gui
 
 import (
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
 	"image/color"
 
 	"gioui.org/font"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/internal/theme"
 )
@@ -105,10 +106,10 @@ func Dark() Skin {
 				DangerLitChip: color.NRGBA{R: 54, G: 27, B: 30, A: 255},
 			},
 			Priority: map[string]color.NRGBA{
-				string(domain.Critical): {R: 229, G: 96, B: 94, A: 255},
-				string(domain.High):     {R: 229, G: 162, B: 74, A: 255},
-				string(domain.Normal):   {R: 79, G: 174, B: 140, A: 255},
-				string(domain.Low):      {R: 125, G: 130, B: 150, A: 255},
+				string(item.Critical): {R: 229, G: 96, B: 94, A: 255},
+				string(item.High):     {R: 229, G: 162, B: 74, A: 255},
+				string(item.Normal):   {R: 79, G: 174, B: 140, A: 255},
+				string(item.Low):      {R: 125, G: 130, B: 150, A: 255},
 			},
 			Standing: map[string]theme.Inked{
 				"active":  {Back: color.NRGBA{R: 29, G: 51, B: 40, A: 255}, Ink: color.NRGBA{R: 143, G: 211, B: 180, A: 255}},
@@ -141,7 +142,7 @@ func Dark() Skin {
 
 var labelColours = func() map[string]color.NRGBA {
 	inked := map[string]color.NRGBA{}
-	for name, ink := range domain.LabelInks {
+	for name, ink := range label.LabelInks {
 		inked[name] = color.NRGBA{R: ink[0], G: ink[1], B: ink[2], A: 255}
 	}
 	return inked

@@ -1,10 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"unicode"
 	"unicode/utf8"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"strconv"
 	"strings"
@@ -272,7 +272,7 @@ func Counted(g engine.Goal) string {
 	}
 	said := g.Counted() + " · " + strconv.Itoa(g.Percent()) + "%"
 	if g.Spent > 0 {
-		said += " · " + domain.FormatDuration(g.Spent)
+		said += " · " + calendar.FormatDuration(g.Spent)
 	}
 	return said
 }

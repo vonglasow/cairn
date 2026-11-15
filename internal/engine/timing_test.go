@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func homeTimed(t *testing.T, path, said string, at time.Time) Home {
@@ -42,7 +42,7 @@ func timeRecorded(t *testing.T, path string, at time.Time) Home {
 	return homeTimed(t, path, "[pages]\ntime = \"hidden\"\n", at)
 }
 
-func actsOf(t *testing.T, path string, number int) []trace.Carried {
+func actsOf(t *testing.T, path string, number int) []act.Carried {
 	t.Helper()
 	e, err := Open(path)
 	if err != nil {
@@ -53,7 +53,7 @@ func actsOf(t *testing.T, path string, number int) []trace.Carried {
 	if err != nil {
 		t.Fatal(err)
 	}
-	out := make([]trace.Carried, 0, len(acts))
+	out := make([]act.Carried, 0, len(acts))
 	for _, a := range acts {
 		out = append(out, a.Carried())
 	}
@@ -65,7 +65,7 @@ func timerActs(t *testing.T, path string) []string {
 	var said []string
 	for _, c := range actsOf(t, path, 1) {
 		switch c.Did {
-		case trace.FocusTaken, trace.FocusReleased, trace.TimerStarted, trace.TimerStopped:
+		case act.FocusTaken, act.FocusReleased, act.TimerStarted, act.TimerStopped:
 			said = append(said, c.Did+" "+c.Became)
 		}
 	}
@@ -85,7 +85,7 @@ func TestFocus_takenWhileTheTimeIsOffHasNoTimer(t *testing.T) {
 	path := storeAt(t, "one")
 	nine := time.Date(2026, 9, 29, 9, 0, 0, 0, time.Local)
 	ranAt(t, TaskFocus, timeOff(t, path, nine), given("number", "1"))
-	if got := timerActs(t, path); len(got) != 1 || got[0] != trace.FocusTaken+" "+trace.WithoutATimer {
+	if got := timerActs(t, path); len(got) != 1 || got[0] != act.FocusTaken+" "+act.WithoutATimer {
 		t.Errorf("focus taken with the time off wrote %q, want one focus taken without a timer", got)
 	}
 }
@@ -98,7 +98,7 @@ func TestTiming_theTimerStopsWhenTheTimeIsOffAndStartsWhenItIsOn(t *testing.T) {
 	ranAt(t, TaskList, timeOff(t, path, nine.Add(time.Hour)), given())
 	ranAt(t, TaskList, timeOff(t, path, nine.Add(90*time.Minute)), given())
 	ranAt(t, TaskList, timeRecorded(t, path, nine.Add(2*time.Hour)), given())
-	want := []string{trace.FocusTaken + " ", trace.TimerStopped + " ", trace.TimerStarted + " "}
+	want := []string{act.FocusTaken + " ", act.TimerStopped + " ", act.TimerStarted + " "}
 	got := timerActs(t, path)
 	if len(got) != len(want) {
 		t.Fatalf("the timer acts are %q, want %q", got, want)
@@ -135,7 +135,7 @@ func TestAnswer_asksNoRenewalWhileTheTimeIsOff(t *testing.T) {
 	}
 	ranAt(t, TaskFocus, homeTimed(t, path, said, nine.Add(3*time.Hour)), given("number", "1"))
 	for _, c := range actsOf(t, path, 1) {
-		if c.Did == trace.FocusRenewed {
+		if c.Did == act.FocusRenewed {
 			t.Errorf("with the time off, focusing again renewed the session")
 		}
 	}
@@ -151,7 +151,7 @@ func TestAnswer_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 			ranAt(t, TaskEdit, on, Input{Given: map[string]string{"number": "1", "spent": "2h"}, Listed: map[string][]string{"objective": {"=1"}}})
 			not := homeTimed(t, path, "[pages]\ntime = \""+mode+"\"\n", nine)
 			shown := ranAt(t, TaskShow, not, given("number", "1"))
-			if spent := factsOf(*shown.Task).Spent; spent != 0 {
+			if spent := (*shown.Task).Carried().Spent; spent != 0 {
 				t.Errorf("task show says %s spent", spent)
 			}
 			if said := RenderText(TaskShow, shown); strings.Contains(said, "time spent") {
@@ -164,7 +164,7 @@ func TestAnswer_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 			if listed := ranAt(t, objectiveList, not, given()); len(listed.Spent) != 0 {
 				t.Errorf("objective list says %v spent", listed.Spent)
 			}
-			if spent := factsOf(*ranAt(t, TaskShow, on, given("number", "1")).Task).Spent; spent != 2*time.Hour {
+			if spent := (*ranAt(t, TaskShow, on, given("number", "1")).Task).Carried().Spent; spent != 2*time.Hour {
 				t.Errorf("shown again, the time spent is %s, want 2h", spent)
 			}
 		})
@@ -180,7 +180,7 @@ func TestTiming_theTimerStopsOnEveryTaskInFocus(t *testing.T) {
 	for _, n := range []int{1, 2} {
 		stopped := false
 		for _, c := range actsOf(t, path, n) {
-			stopped = stopped || c.Did == trace.TimerStopped
+			stopped = stopped || c.Did == act.TimerStopped
 		}
 		if !stopped {
 			t.Errorf("task %d's timer was not stopped", n)

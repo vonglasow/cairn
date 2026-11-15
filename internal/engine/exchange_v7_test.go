@@ -1,14 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/view"
 	"errors"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
-
-	"cairn/internal/store"
 )
 
 func TestTaskExport_writesTheViewsAndTheObjectivesTheyName(t *testing.T) {
@@ -46,7 +46,7 @@ func TestTaskExport_leavesOutAnObjectiveGoneAndAViewLeftHoldingNothing(t *testin
 	if _, err := e.addObjective("Still here", ObjectiveChanges{}); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.store.KeepViews([]store.View{
+	if err := e.store.KeepViews([]view.View{
 		{Name: "Half gone", Objectives: []int{1, 9}},
 		{Name: "All gone", Objectives: []int{9}},
 	}); err != nil {
@@ -66,7 +66,7 @@ func TestTaskImport_bringsTheViewsBackAfterTheOnesHereAtTheNewNumbers(t *testing
 	if _, err := e.addObjective("Already here", ObjectiveChanges{}); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.store.KeepViews([]store.View{{Name: "Shopping", State: "current"}}); err != nil {
+	if err := e.store.KeepViews([]view.View{{Name: "Shopping", State: "current"}}); err != nil {
 		t.Fatal(err)
 	}
 	from := filepath.Join(t.TempDir(), "held.json")
@@ -140,7 +140,7 @@ func TestTaskImport_refusesAViewItCannotReadBeforeAnythingIsAdded(t *testing.T) 
 		if err == nil || !strings.Contains(err.Error(), c.says) {
 			t.Errorf("%s: err = %v, want it to say %q", c.view, err, c.says)
 		}
-		if c.outside && !errors.Is(err, errExportPointsOutside) {
+		if c.outside && !errors.Is(err, exchange.ErrExportPointsOutside) {
 			t.Errorf("%s: err = %v, want ErrExportPointsOutside", c.view, err)
 		}
 		if tasks, _ := e.store.All(); len(tasks) != 0 {

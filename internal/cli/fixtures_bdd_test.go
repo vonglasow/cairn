@@ -13,9 +13,9 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
 	"cairn/internal/debug"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -40,8 +40,8 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 	}
 	inTheStore := func(line string) error {
 		mine := w.StorePath
-		w.Setenv(config.StoreVariable, filepath.Join(folder, "cairn.db"))
-		defer w.Setenv(config.StoreVariable, mine)
+		w.Setenv(files.StoreVariable, filepath.Join(folder, "cairn.db"))
+		defer w.Setenv(files.StoreVariable, mine)
 		w.Run(line)
 		if w.Out.Code != exitOK {
 			return fmt.Errorf("%s: exit %d (%s)", line, w.Out.Code, w.Out.Stderr)
@@ -61,7 +61,7 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 	sc.Step(`^I make the fixtures in that folder again with --new$`, func() { made(" --new") })
 	sc.Step(`^I make the fixtures in a folder of my own from that file$`, func() { made(" --from " + from) })
 	sc.Step(`^I make the fixtures in a folder of my own with --gui$`, func() {
-		w.window = func(work engine.Work, _ engine.Pages, _ gui.Skin, _, _ string, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(work engine.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
 			openedOn = "opened"
 			_, err := work.Version()
 			return err

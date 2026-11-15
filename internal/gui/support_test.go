@@ -2,8 +2,8 @@ package gui
 
 import (
 	"cairn/internal/engine"
+	"cairn/internal/engine/act"
 	"cairn/internal/theme"
-	"cairn/internal/trace"
 	"fmt"
 	"strings"
 	"time"
@@ -123,8 +123,8 @@ func (w Window) On(name string) Window {
 	return w
 }
 
-func anAct(did, field, became, through string) trace.Act {
-	var told trace.AsTold
+func anAct(did, field, became, through string) act.Act {
+	var told act.AsTold
 	told.On(1)
 	told.Did(did)
 	told.At(time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC))

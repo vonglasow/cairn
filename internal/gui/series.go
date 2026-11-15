@@ -1,11 +1,12 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -107,7 +108,7 @@ func StandingOfSeries(s engine.Series) string {
 
 // OccurrenceLine is one occurrence the detail of a series lists, and where.
 type OccurrenceLine struct {
-	Occurrence engine.Occurrence
+	Occurrence series.Occurrence
 	At         Box
 }
 
@@ -248,13 +249,13 @@ func FootSaid(s engine.Series) string {
 				said = "stopped by " + a.By
 			}
 		}
-		if day, err := domain.ParseDeadline(s.Stopped); err == nil && !day.IsZero() {
+		if day, err := calendar.ParseDeadline(s.Stopped); err == nil && !day.IsZero() {
 			said += " · " + day.Format("2 Jan")
 		}
 		return said
 	}
 	made := ""
-	if day, err := domain.ParseDeadline(s.From); err == nil && !day.IsZero() {
+	if day, err := calendar.ParseDeadline(s.From); err == nil && !day.IsZero() {
 		made = " · made " + day.Format("2 Jan")
 	}
 	return strconv.Itoa(s.Number) + made + " · " + strconv.Itoa(len(s.Occurrences)) + " occurrences"
@@ -274,7 +275,7 @@ func OccurrencesAside(s engine.Series) string {
 	return "archived ones included · ⏎ opens the task"
 }
 
-func templateFacts(t engine.Template) Facts {
+func templateFacts(t series.Template) Facts {
 	steps := strconv.Itoa(len(t.Steps))
 	if len(t.Steps) > 0 {
 		steps += " — " + strings.Join(t.Steps, ", ")
@@ -314,7 +315,7 @@ func (w Window) nowSaid(s engine.Series) []string {
 }
 
 // OccurrenceSays is what a line of the occurrences says: its day, its task, its title, where it stands and the time spent on it.
-func (w Window) OccurrenceSays(o engine.Occurrence) (day, number, title, is, spent string) {
+func (w Window) OccurrenceSays(o series.Occurrence) (day, number, title, is, spent string) {
 	day = engine.DaySaid(o.Day, w.now)
 	number, title = "—", "no task made"
 	if o.Task != 0 {
@@ -534,7 +535,7 @@ func (w Window) asksWhole() bool {
 func (w Window) changedOfTheSeries() string {
 	var names []string
 	for _, f := range w.form.fields {
-		if f.Value != f.Was && engine.ChangesTheSeries(engine.Card{Series: &engine.Occurs{}}, []engine.Field{f}) {
+		if f.Value != f.Was && engine.ChangesTheSeries(engine.Card{Series: &series.Occurs{}}, []engine.Field{f}) {
 			names = append(names, f.Name)
 		}
 	}
@@ -709,19 +710,19 @@ func (w Window) occurrenceFacts() Facts {
 		return Facts{}
 	}
 	s, _ := w.snap.SeriesOf(c.Series.Series)
-	rule, _ := domain.ParseRule(c.Series.Rule)
+	rule, _ := series.ParseRule(c.Series.Rule)
 	anchored := "On the calendar"
 	if rule.AfterDone() {
 		anchored = "After the last is done"
 	}
-	next := engine.ShortDays(c.Series.Then[:min(1, len(c.Series.Then))])
+	next := series.ShortDays(c.Series.Then[:min(1, len(c.Series.Then))])
 	if next != "" && rule.At() != "" {
 		next += ", " + rule.At()
 	}
 	if c.Series.Stopped {
 		next = "none, the series is stopped"
 	}
-	since := domainOrNothing(engine.ShortDays([]string{s.From})) + " · ends " + endsSaid(rule.Parts())
+	since := domainOrNothing(series.ShortDays([]string{s.From})) + " · ends " + endsSaid(rule.Parts())
 	lines := []Fact{
 		{Name: "anchored", Value: anchored},
 		{Name: "next", Value: domainOrNothing(next)},
@@ -734,14 +735,14 @@ func (w Window) occurrenceFacts() Facts {
 	return Facts{Lines: lines}
 }
 
-func endsSaid(p domain.RuleParts) string {
+func endsSaid(p series.RuleParts) string {
 	switch {
 	case p.Times == 1:
 		return "after once"
 	case p.Times > 1:
 		return "after " + strconv.Itoa(p.Times) + " times"
 	case !p.Until.IsZero():
-		return "on " + domain.ShortDay(p.Until)
+		return "on " + series.ShortDay(p.Until)
 	}
 	return "never"
 }
@@ -759,7 +760,7 @@ func (w Window) OccurrenceHeading() (OccurrenceHead, bool) {
 		return OccurrenceHead{}, false
 	}
 	return OccurrenceHead{Title: c.Title, Number: "#" + strconv.Itoa(c.Number),
-		Under: "one of the series " + c.Series.Often + " · this one is " + engine.ShortDays([]string{c.Series.Day})}, true
+		Under: "one of the series " + c.Series.Often + " · this one is " + series.ShortDays([]string{c.Series.Day})}, true
 }
 
 func drawOccurrenceBeside(k Kit, w Window) {

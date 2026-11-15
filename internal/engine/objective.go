@@ -1,28 +1,13 @@
 package engine
 
 import (
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/store"
-	"cairn/internal/task"
+	"cairn/internal/engine/change"
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
-
-// errNoSuchObjective is the name the engine answers with when an objective is asked for by a number nothing carries.
-var errNoSuchObjective = store.ErrNoSuchObjective
-
-// errObjectiveCarriesTasks is why an objective with work under it is not deleted: the tasks would be left pointing at a number nothing carries.
-var errObjectiveCarriesTasks = objective.ErrObjectiveCarriesTasks
-
-type objectives interface {
-	KeepObjective(objective.Objective) (objective.Objective, error)
-	FindObjective(int) (objective.Objective, error)
-	AllObjectives() ([]objective.Objective, error)
-	NarrowedObjectives(*domain.Narrowing) ([]objective.Objective, error)
-	UpdateObjective(objective.Objective) error
-	DeleteObjective(int) error
-	PlaceObjective(number, parent, after int) error
-	TasksServing(...int) ([]task.Task, error)
-}
 
 // ObjectiveChanges are the attributes an operation was given for an objective.
 type ObjectiveChanges struct {
@@ -53,7 +38,7 @@ func (e *Engine) addObjective(title string, c ObjectiveChanges) (objective.Objec
 	if o, err = applyObjective(o, c, creating); err != nil {
 		return objective.Objective{}, err
 	}
-	if err := e.inScope(nil, o.Carried().Labels, domain.OnObjectives); err != nil {
+	if err := e.inScope(nil, o.Carried().Labels, label.OnObjectives); err != nil {
 		return objective.Objective{}, err
 	}
 	if err := e.mayHang(o); err != nil {
@@ -69,7 +54,7 @@ func (e *Engine) listObjectives() ([]objective.Objective, error) {
 	return e.objectives.AllObjectives()
 }
 
-func (e *Engine) narrowedObjectives(kept *domain.Narrowing) ([]objective.Objective, error) {
+func (e *Engine) narrowedObjectives(kept *filter.Narrowing) ([]objective.Objective, error) {
 	return e.objectives.NarrowedObjectives(kept)
 }
 
@@ -89,7 +74,7 @@ func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Object
 	if err != nil {
 		return objective.Objective{}, err
 	}
-	if err := e.inScope(was.Carried().Labels, o.Carried().Labels, domain.OnObjectives); err != nil {
+	if err := e.inScope(was.Carried().Labels, o.Carried().Labels, label.OnObjectives); err != nil {
 		return objective.Objective{}, err
 	}
 	if err := e.mayHang(o); err != nil {
@@ -108,8 +93,6 @@ func (e *Engine) editObjective(number int, c ObjectiveChanges) (objective.Object
 	}
 	return o, nil
 }
-
-func factsOfObjective(o objective.Objective) objective.Carried { return o.Carried() }
 
 func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) (objective.Objective, error) {
 	a := o.Carried()
@@ -134,7 +117,7 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 		a.Parent = parent
 	}
 	if c.WaitsOn != nil {
-		on, err := changedNumbers(*c.WaitsOn, a.WaitsOn, atCreation, errWaitsOnRequired, errWaitsOnBothWays, errWaitsOnSignAtBirth)
+		on, err := change.ChangedNumbers(*c.WaitsOn, a.WaitsOn, atCreation, objective.ErrWaitsOnRequired, objective.ErrWaitsOnBothWays, objective.ErrWaitsOnSignAtBirth)
 		if err != nil {
 			return objective.Objective{}, err
 		}
@@ -144,7 +127,7 @@ func applyObjective(o objective.Objective, c ObjectiveChanges, atCreation bool) 
 }
 
 func (e *Engine) canServe(t task.Task) error {
-	served := factsOf(t).Objectives
+	served := t.Carried().Objectives
 	if len(served) == 0 {
 		return nil
 	}
@@ -153,7 +136,7 @@ func (e *Engine) canServe(t task.Task) error {
 			return err
 		}
 	}
-	return e.countedOnce(factsOf(t).Number, served, nil)
+	return e.countedOnce(t.Carried().Number, served, nil)
 }
 
 func (e *Engine) tasksUnder(number int) ([]task.Task, error) {
@@ -161,24 +144,24 @@ func (e *Engine) tasksUnder(number int) ([]task.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	return spentTasks{history: e.history}.told(e.objectives.TasksServing(t.reach(number)...))
+	return spentTasks{history: e.history}.told(e.store.TasksServing(t.Reach(number)...))
 }
 
-func (e *Engine) objectiveProgress(number int) (domain.Progress, error) {
+func (e *Engine) objectiveProgress(number int) (item.Progress, error) {
 	if _, err := e.objectives.FindObjective(number); err != nil {
-		return domain.Progress{}, err
+		return item.Progress{}, err
 	}
 	_, objectives, err := e.alongEvery(nil, false)
 	if err != nil {
-		return domain.Progress{}, err
+		return item.Progress{}, err
 	}
 	return objectives[number], nil
 }
 
-func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objectives map[int]domain.Progress, err error) {
+func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objectives map[int]item.Progress, err error) {
 	all := read
 	if !everything {
-		every := domain.Narrowing{}
+		every := filter.Narrowing{}
 		every.WithArchived()
 		if all, err = e.tasks.Narrowed(&every); err != nil {
 			return nil, nil, err
@@ -188,11 +171,11 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 	if err != nil {
 		return nil, nil, err
 	}
-	tasks, objectives = map[int]domain.Progress{}, map[int]domain.Progress{}
+	tasks, objectives = map[int]item.Progress{}, map[int]item.Progress{}
 	serves := map[int][]int{}
 	for _, t := range all {
-		f := factsOf(t)
-		serves[f.Number] = tr.counted(f.Objectives)
+		f := t.Carried()
+		serves[f.Number] = tr.Counted(f.Objectives)
 		for _, o := range serves[f.Number] {
 			p := objectives[o]
 			p.Tasks = counted(p.Tasks, t)
@@ -200,12 +183,12 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 		}
 	}
 	for _, t := range all {
-		f := factsOf(t)
+		f := t.Carried()
 		steps := stepsTallied(f.Steps)
 		if steps.Total == 0 {
 			continue
 		}
-		tasks[f.Number] = domain.Progress{Steps: steps}
+		tasks[f.Number] = item.Progress{Steps: steps}
 		for _, o := range serves[f.Number] {
 			p := objectives[o]
 			p.Steps.Total += steps.Total
@@ -216,8 +199,8 @@ func (e *Engine) alongEvery(read []task.Task, everything bool) (tasks, objective
 	return tasks, objectives, nil
 }
 
-func stepsTallied(steps []task.Step) domain.Tally {
-	tally := domain.Tally{Total: len(steps)}
+func stepsTallied(steps []task.Step) item.Tally {
+	tally := item.Tally{Total: len(steps)}
 	for _, s := range steps {
 		if s.Done {
 			tally.Done++
@@ -226,20 +209,20 @@ func stepsTallied(steps []task.Step) domain.Tally {
 	return tally
 }
 
-func (e *Engine) taskProgress(number int) (domain.Progress, error) {
+func (e *Engine) taskProgress(number int) (item.Progress, error) {
 	t, err := e.tasks.Find(number)
 	if err != nil {
-		return domain.Progress{}, err
+		return item.Progress{}, err
 	}
-	return domain.Progress{Steps: stepsTallied(factsOf(t).Steps)}, nil
+	return item.Progress{Steps: stepsTallied(t.Carried().Steps)}, nil
 }
 
-func counted(tally domain.Tally, t task.Task) domain.Tally { return task.Count(tally, t) }
+func counted(tally item.Tally, t task.Task) item.Tally { return task.Count(tally, t) }
 
 var objectiveAttributes = []Argument{
 	{Name: "desc", Kind: Text, Means: "what the objective is about"},
 	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Outside: objective.ErrNotAnObjectiveState, Means: "where the objective stands"},
-	{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority it carries"},
+	{Name: "priority", Kind: Text, OneOf: oneOf(item.Priorities), Outside: item.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all"},
 	{Name: "deadline", Kind: day, Means: "the day it is due"},
 	{Name: "estimate", Kind: duration, Means: "how long it should take"},
@@ -305,7 +288,7 @@ var ObjectiveNew = Operation{
 		}
 		o, err := on.Engine.addObjective(title, objectiveChanges(in))
 		if err != nil {
-			return Answer{}, withTypedTitle(err, title)
+			return Answer{}, task.WithTypedTitle(err, title)
 		}
 		read, err := readObjective(on.Engine, o.Carried().Number)
 		if err != nil {
@@ -409,7 +392,7 @@ var ObjectiveEdit = Operation{
 			if changes.Title != nil {
 				title = *changes.Title
 			}
-			return Answer{}, withTypedTitle(editReason(err), title)
+			return Answer{}, task.WithTypedTitle(editReason(err), title)
 		}
 		read, err := readObjective(on.Engine, n)
 		if err != nil {
@@ -498,7 +481,7 @@ func reviewOf(under []task.Task) objective.Review {
 func leftOf(under []task.Task) []int {
 	left := []int{}
 	for _, t := range under {
-		if c := t.Carried(); !c.Archived && c.State != domain.Done {
+		if c := t.Carried(); !c.Archived && c.State != item.Done {
 			left = append(left, c.Number)
 		}
 	}

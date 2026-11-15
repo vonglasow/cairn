@@ -2,6 +2,7 @@ package engine
 
 import (
 	"archive/zip"
+	"cairn/internal/engine/workspace"
 	"errors"
 	"fmt"
 	"io"
@@ -183,7 +184,7 @@ func configLines(h Home) []string {
 	if err != nil {
 		return []string{"cannot be read"}
 	}
-	said := configText(*answer.Config)
+	said := workspace.ConfigText(*answer.Config)
 	if h.Dir != "" {
 		said = strings.ReplaceAll(said, h.Dir, "~")
 	}

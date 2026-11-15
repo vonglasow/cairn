@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func stepsOf(t *testing.T, path string, number string) []task.Step {
@@ -64,7 +64,7 @@ func TestStepEdit_refusesDoneAndNotDoneAtOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := Do(StepEdit, path, given("number", "1", "step", "1", "done", "true", "not-done", "true"))
-	if !errors.Is(err, errDoneAndNotDone) {
+	if !errors.Is(err, task.ErrDoneAndNotDone) {
 		t.Fatalf("both at once = %v, want ErrDoneAndNotDone", err)
 	}
 }
@@ -125,8 +125,8 @@ func TestStepList_answersAMachineTheStepsWithTheirPlaces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	said, ok := Of(stepList, answer).(steps)
-	if !ok || said.Task != 1 || len(said.Steps) != 1 || said.Steps[0] != (stepShape{Place: 1, Title: "Write the spec", Done: true}) {
+	said, ok := Of(stepList, answer).(task.Steps)
+	if !ok || said.Task != 1 || len(said.Steps) != 1 || said.Steps[0] != (task.StepShape{Place: 1, Title: "Write the spec", Done: true}) {
 		t.Errorf("a machine reads %+v", Of(stepList, answer))
 	}
 }

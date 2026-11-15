@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/workspace"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -8,8 +9,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/cucumber/godog"
-
-	"cairn/internal/engine"
 )
 
 func (w *world) registerConfiguring(sc *godog.ScenarioContext) {
@@ -36,7 +35,7 @@ func (w *world) beatComes() error {
 
 func TestTheBeatReadsTheStoreAndTheConfigurationAndBeatsAgain(t *testing.T) {
 	b := New(newFake(), GlyphsFor(Unicode), time.Now, 100, 40)
-	b.configured.config = engine.Config{File: filepath.Join(t.TempDir(), "config.toml")}
+	b.configured.config = workspace.Config{File: filepath.Join(t.TempDir(), "config.toml")}
 	_, cmd := b.Update(Beat(time.Now()))
 	if batch, ok := cmd().(tea.BatchMsg); !ok || len(batch) != 3 || batch[1] == nil {
 		t.Errorf("the beat asks %v", cmd())

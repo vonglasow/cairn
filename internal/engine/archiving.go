@@ -1,11 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/store"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/store/sqlite"
 )
 
 const throughArchive = "archive"
@@ -42,26 +44,26 @@ func (e *Engine) archivingSwept() error {
 }
 
 func (e *Engine) sweptByPeriod(start time.Time, days int, now time.Time) error {
-	begun, ok := domain.PeriodUnderWay(start, days, now)
+	begun, ok := calendar.PeriodUnderWay(start, days, now)
 	if !ok {
 		return nil
 	}
-	return e.store.Within(func(kept *store.Store) error {
+	return e.store.Within(func(kept *sqlite.Store) error {
 		in := e.keptBy(kept)
 		in.acting.Through = throughArchive
-		var done domain.Narrowing
-		done.InColumn(string(domain.Done))
+		var done filter.Narrowing
+		done.InColumn(string(item.Done))
 		found, err := in.tasks.Narrowed(&done)
 		if err != nil {
 			return err
 		}
 		for _, one := range found {
-			number := factsOf(one).Number
+			number := one.Carried().Number
 			acts, err := in.history.ActsOn(number)
 			if err != nil {
 				return err
 			}
-			if went := trace.LastNamed(acts, "column"); went.IsZero() || !went.Before(begun) {
+			if went := act.LastNamed(acts, "column"); went.IsZero() || !went.Before(begun) {
 				continue
 			}
 			if err := in.archive(number); err != nil {

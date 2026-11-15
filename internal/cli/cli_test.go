@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"cairn/internal/build"
-	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -269,7 +269,7 @@ func TestAskedFor_readsAFlagAnywhereBeforeTheDoubleDash(t *testing.T) {
 func homeWithStore(t *testing.T, store string) engine.Home {
 	t.Helper()
 	return engine.Home{Dir: t.TempDir(), Lookup: func(key string) (string, bool) {
-		if key == config.StoreVariable {
+		if key == files.StoreVariable {
 			return store, true
 		}
 		return "", false
@@ -278,7 +278,7 @@ func homeWithStore(t *testing.T, store string) engine.Home {
 
 func TestMainIn_runsInTheHomeItIsGiven(t *testing.T) {
 	mine, theirs := storeFor(t), storeFor(t)
-	t.Setenv(config.StoreVariable, theirs)
+	t.Setenv(files.StoreVariable, theirs)
 	var out, errs bytes.Buffer
 	if code := MainIn(context.Background(), homeWithStore(t, mine), []string{"task", "new", "Write the spec"}, strings.NewReader(""), &out, &errs); code != exitOK {
 		t.Fatalf("task new: exit %d (%s)", code, errs.String())
@@ -304,7 +304,7 @@ func TestHomeOf_isTheHomeMainWasHanded(t *testing.T) {
 	if got.Dir != h.Dir || got.Workspace != "work" {
 		t.Errorf("homeOf = %q in workspace %q, want %q in workspace work", got.Dir, got.Workspace, h.Dir)
 	}
-	if store, _ := got.Lookup(config.StoreVariable); store == "" {
+	if store, _ := got.Lookup(files.StoreVariable); store == "" {
 		t.Error("homeOf reads the process's environment, not the home's")
 	}
 }

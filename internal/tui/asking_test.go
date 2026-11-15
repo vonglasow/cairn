@@ -2,6 +2,7 @@ package tui
 
 import (
 	"cairn/internal/engine"
+	"cairn/internal/engine/migration"
 	"errors"
 	"strings"
 	"testing"
@@ -146,7 +147,7 @@ func TestTheBoardAsksWhatTheEngineSaysIsAQuestion(t *testing.T) {
 
 func TestALookRefusedForAStoreBehindIsAskedAbout(t *testing.T) {
 	f := newFake()
-	f.fail = engine.ErrStoreBehind
+	f.fail = migration.ErrStoreBehind
 	b := pump(standing(f), standing(f).look())
 	if !b.asking {
 		t.Fatalf("the board is not asking, and says %q", strip(b.Draw()))
@@ -158,7 +159,7 @@ func TestALookRefusedForAStoreBehindIsAskedAbout(t *testing.T) {
 
 func TestAFailedApplyIsSaidAndTheStoreIsAskedAboutAgain(t *testing.T) {
 	f := newFake()
-	f.fail = engine.ErrStoreBehind
+	f.fail = migration.ErrStoreBehind
 	b := pump(standing(f), standing(f).look())
 	f.fail, f.failOp = nil, errNope
 	b = hit(b, "enter")
@@ -177,7 +178,7 @@ func TestAFailedApplyIsSaidAndTheStoreIsAskedAboutAgain(t *testing.T) {
 
 func TestEscOnAStoreBehindLeavesTheBoardAndTouchesNothing(t *testing.T) {
 	f := newFake()
-	f.fail = engine.ErrStoreBehind
+	f.fail = migration.ErrStoreBehind
 	b := pump(standing(f), standing(f).look())
 	asked := len(f.asked)
 	_, cmd := b.pressed("esc")
@@ -194,7 +195,7 @@ func TestEscOnAStoreBehindLeavesTheBoardAndTouchesNothing(t *testing.T) {
 
 func TestAStoreFromANewerCairnIsSaidAndOnlyLeftWithEsc(t *testing.T) {
 	f := newFake()
-	f.fail = engine.ErrNewerStore
+	f.fail = migration.ErrNewerStore
 	b := pump(standing(f), standing(f).look())
 	if said := strip(b.foot()); !strings.Contains(said, "this store comes from a newer cairn") {
 		t.Fatalf("the foot says %q", said)

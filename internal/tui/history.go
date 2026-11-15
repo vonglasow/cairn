@@ -2,10 +2,10 @@ package tui
 
 import (
 	"cairn/internal/engine"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
-func (b Board) line(act trace.Act) string {
+func (b Board) line(act act.Act) string {
 	said := engine.SaidOf(act)
 	out := b.skin.Faint.Render(said.When) + "  " + b.skin.Bright.Render(said.Did)
 	if said.Field != "" {

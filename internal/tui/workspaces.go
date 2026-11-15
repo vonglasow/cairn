@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/workspace"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,14 +25,14 @@ var errNoSwitching = engine.Refusing("no-switching", "this board holds one store
 
 // Placed is where the store a board shows is: the workspace that names it, or its folder when none does.
 type Placed struct {
-	Shown engine.WorkspaceShown
+	Shown workspace.Shown
 	Err   error
 }
 
 // Listed is every workspace the configuration names, and the folders a board opened by path that none names, read when the switcher opens.
 type Listed struct {
-	Spaces []engine.Workspace
-	Recent []engine.RecentFolder
+	Spaces []workspace.Workspace
+	Recent []workspace.RecentFolder
 	Err    error
 }
 
@@ -168,12 +169,12 @@ func openedOver(now, was string, focus []int) string {
 	return said + " · " + was + "'s focus on " + strings.Join(held, ", ") + " is still held"
 }
 
-func (b Board) isHere(one engine.Workspace) bool {
+func (b Board) isHere(one workspace.Workspace) bool {
 	return one.Name == b.place.Shown.Workspace
 }
 
-func (b Board) listed() []engine.Workspace {
-	var out []engine.Workspace
+func (b Board) listed() []workspace.Workspace {
+	var out []workspace.Workspace
 	for _, one := range b.spaces {
 		if strings.Contains(one.Name, strings.ToLower(b.sought)) {
 			out = append(out, one)
@@ -182,7 +183,7 @@ func (b Board) listed() []engine.Workspace {
 	return out
 }
 
-func (b Board) placeOf(one engine.Workspace) int {
+func (b Board) placeOf(one workspace.Workspace) int {
 	place := 0
 	for _, other := range b.spaces {
 		if b.isHere(other) {
@@ -196,8 +197,8 @@ func (b Board) placeOf(one engine.Workspace) int {
 	return 0
 }
 
-func (b Board) recentListed() []engine.RecentFolder {
-	var out []engine.RecentFolder
+func (b Board) recentListed() []workspace.RecentFolder {
+	var out []workspace.RecentFolder
 	for _, one := range b.recent {
 		if strings.Contains(one.Shown(), b.sought) {
 			out = append(out, one)
@@ -206,16 +207,16 @@ func (b Board) recentListed() []engine.RecentFolder {
 	return out
 }
 
-func (b Board) recentChosen() (engine.RecentFolder, bool) {
+func (b Board) recentChosen() (workspace.RecentFolder, bool) {
 	at := b.spaceAt - len(b.listed())
 	recent := b.recentListed()
 	if at < 0 || at >= len(recent) {
-		return engine.RecentFolder{}, false
+		return workspace.RecentFolder{}, false
 	}
 	return recent[at], true
 }
 
-func (b Board) isHereStore(one engine.RecentFolder) bool {
+func (b Board) isHereStore(one workspace.RecentFolder) bool {
 	return b.place.Shown.Workspace == "" && one.Store == b.place.Shown.Store
 }
 
@@ -308,7 +309,7 @@ func (b Board) inWorkspaces(key string) (tea.Model, tea.Cmd) {
 	return b, nil
 }
 
-func (b Board) choosingSpace(one engine.Workspace) (tea.Model, tea.Cmd) {
+func (b Board) choosingSpace(one workspace.Workspace) (tea.Model, tea.Cmd) {
 	if b.isHere(one) {
 		return b.leavingSwitcher(), nil
 	}
@@ -422,7 +423,7 @@ func (b Board) switcherBody(inner int) ([]string, int) {
 	return body, at
 }
 
-func (b Board) recentLine(one engine.RecentFolder, chosen bool, inner int) string {
+func (b Board) recentLine(one workspace.RecentFolder, chosen bool, inner int) string {
 	cursor := "   "
 	if chosen {
 		cursor = " " + b.skin.Key.Render("›") + " "
@@ -453,7 +454,7 @@ func (b Board) switcherActions() string {
 	return said
 }
 
-func (b Board) spaceLine(one engine.Workspace, chosen bool, inner int) string {
+func (b Board) spaceLine(one workspace.Workspace, chosen bool, inner int) string {
 	wide := 0
 	for _, other := range b.spaces {
 		wide = max(wide, len(other.Name))

@@ -13,8 +13,8 @@ import (
 
 	"cairn/test"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 func initStore(t *testing.T) func(*godog.ScenarioContext) {
@@ -64,9 +64,9 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^the environment says nothing about where anything lives$`, func() error {
-		w.Setenv(config.StoreVariable, "")
+		w.Setenv(files.StoreVariable, "")
 		w.Setenv("HOME", "")
-		if err := os.Unsetenv(config.StoreVariable); err != nil {
+		if err := os.Unsetenv(files.StoreVariable); err != nil {
 			return err
 		}
 		return os.Unsetenv("HOME")

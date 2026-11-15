@@ -1,8 +1,8 @@
 package gui
 
 import (
-	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/engine/label"
 	"strings"
 	"testing"
 	"time"
@@ -297,7 +297,7 @@ func TestALabelPillWearsItsColour(t *testing.T) {
 	if painted(drawn(t, w), Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, ground) != 1 {
 		t.Error("the card's label is not drawn on its colour")
 	}
-	if got := w.LabelColour("doc"); got != domain.ColourOf("doc") {
+	if got := w.LabelColour("doc"); got != label.ColourOf("doc") {
 		t.Errorf("a label the board has no colour for wears %q", got)
 	}
 }

@@ -1,14 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"errors"
 	"slices"
 	"strings"
 	"testing"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func TestObjective_aTaskServingNoObjectiveThatExistsIsRefused(t *testing.T) {
@@ -82,7 +82,7 @@ func TestObjective_anEditToABlankTitleSaysWhatWasTyped(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := Do(ObjectiveEdit, path, given("number", "1", "title", "   "))
-	if !errors.Is(err, domain.ErrTitleRequired) || !strings.HasSuffix(err.Error(), `, got "   "`) {
+	if !errors.Is(err, item.ErrTitleRequired) || !strings.HasSuffix(err.Error(), `, got "   "`) {
 		t.Errorf("err = %v, want the title typed said", err)
 	}
 }
@@ -141,7 +141,7 @@ func TestObjectiveDelete_carryingTasksIsNotNamedByAView(t *testing.T) {
 	addObjective(t, e, "Ship")
 	serving(t, e, "one", 1)
 	err := objectiveDeleted(e, map[string]string{"number": "1"})
-	if !errors.Is(err, errObjectiveCarriesTasks) || errors.Is(err, errObjectiveNamedByAView) {
+	if !errors.Is(err, objective.ErrObjectiveCarriesTasks) || errors.Is(err, objective.ErrObjectiveNamedByAView) {
 		t.Errorf("refused as %v", err)
 	}
 }
@@ -153,7 +153,7 @@ func TestObjectiveDelete_aSubObjectiveCarryingTasksAsksForThem(t *testing.T) {
 		t.Fatal(err)
 	}
 	serving(t, e, "one", 2)
-	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, errObjectiveCarriesTasks) {
+	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, objective.ErrObjectiveCarriesTasks) {
 		t.Errorf("refused as %v", err)
 	}
 }
@@ -185,7 +185,7 @@ func TestObjectiveDelete_aSubObjectiveWithNoTaskAsksOnlyForItself(t *testing.T) 
 	if _, err := e.Ask(ObjectiveNew, given("title", "Write", "parent", "1")); err != nil {
 		t.Fatal(err)
 	}
-	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, errObjectiveHoldsSubObjectives) || errors.Is(err, errObjectiveCarriesTasks) {
+	if err := objectiveDeleted(e, map[string]string{"number": "1"}); !errors.Is(err, objective.ErrObjectiveHoldsSubObjectives) || errors.Is(err, objective.ErrObjectiveCarriesTasks) {
 		t.Errorf("refused as %v", err)
 	}
 }

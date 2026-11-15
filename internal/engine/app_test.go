@@ -1,9 +1,11 @@
 package engine
 
 import (
+	"cairn/internal/engine/app"
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -31,18 +33,18 @@ func TestAppInstall_writesTheApplicationRunningThisCairn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	app := filepath.Join(home, "Applications", "cairn.app")
-	if answer.Installed == nil || *answer.Installed != app {
-		t.Fatalf("installed %v, want %s", answer.Installed, app)
+	installed := filepath.Join(home, "Applications", "cairn.app")
+	if answer.Installed == nil || *answer.Installed != installed {
+		t.Fatalf("installed %v, want %s", answer.Installed, installed)
 	}
-	if launcher, _ := os.ReadFile(filepath.Join(app, "Contents", "MacOS", "cairn")); !strings.Contains(string(launcher), running) {
+	if launcher, _ := os.ReadFile(filepath.Join(installed, "Contents", "MacOS", "cairn")); !strings.Contains(string(launcher), running) {
 		t.Errorf("the launcher runs %q, not %s", launcher, running)
 	}
 	said := RenderText(appInstall, answer)
-	if !strings.Contains(said, app) || !strings.Contains(said, running) || !strings.Contains(said, "Spotlight") {
+	if !strings.Contains(said, installed) || !strings.Contains(said, running) || !strings.Contains(said, "Spotlight") {
 		t.Errorf("it says %q", said)
 	}
-	if shaped, ok := Of(appInstall, answer).(appInstalled); !ok || shaped.Installed != app || shaped.Runs != running || !strings.Contains(shaped.OpenedFrom, "Spotlight") {
+	if shaped, ok := Of(appInstall, answer).(app.Installed); !ok || shaped.Installed != installed || shaped.Runs != running || !strings.Contains(shaped.OpenedFrom, "Spotlight") {
 		t.Errorf("a machine is told %#v", Of(appInstall, answer))
 	}
 	if _, err := appInstall.Run(workedOn{}, Input{}); err == nil {
@@ -72,7 +74,7 @@ func TestAppInstall_writesTheDesktopEntryOnLinux(t *testing.T) {
 
 func TestAppInstall_refusesWhereThereIsNoApplicationToInstall(t *testing.T) {
 	home := installing(t, false, false, "/usr/local/bin/cairn")
-	if _, err := appInstall.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, errNoApplicationHere) {
+	if _, err := appInstall.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, app.ErrNoApplicationHere) {
 		t.Errorf("elsewhere: %v", err)
 	}
 }
@@ -80,8 +82,22 @@ func TestAppInstall_refusesWhereThereIsNoApplicationToInstall(t *testing.T) {
 func TestAppInstall_refusesACairnThatWillNotStay(t *testing.T) {
 	for _, mac := range []bool{true, false} {
 		home := installing(t, mac, !mac, filepath.Join(os.TempDir(), "go-build123", "b001", "exe", "cairn"))
-		if _, err := appInstall.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, errPassing) {
+		if _, err := appInstall.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, app.ErrPassing) {
 			t.Errorf("a go run build, mac %v: %v", mac, err)
 		}
+	}
+}
+
+func TestUpgrade_isAskedByAPersonAsTheCairnThatRuns(t *testing.T) {
+	if slices.ContainsFunc(All(), func(o Operation) bool { return o.Line() == "upgrade" }) ||
+		!slices.ContainsFunc(ForAPersonOnly(), func(o Operation) bool { return o.Line() == "upgrade" }) {
+		t.Error("upgrade is to be asked by a person only, never over MCP")
+	}
+	installing(t, false, false, "/opt/homebrew/Cellar/cairn/0.10.0/bin/cairn")
+	if _, err := upgradeCairn.Run(workedOn{Home: Home{Version: "v0.10.0"}}, Input{}); !errors.Is(err, app.ErrKeptByHomebrew) {
+		t.Errorf("err = %v, want the cairn Homebrew keeps left to it", err)
+	}
+	if _, err := upgradeCairn.Run(workedOn{Home: Home{Version: "dev"}}, Input{}); !errors.Is(err, app.ErrBuiltFromSource) {
+		t.Errorf("err = %v, want a cairn built from its source refused", err)
 	}
 }

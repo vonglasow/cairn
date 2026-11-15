@@ -1,14 +1,14 @@
 package tui
 
 import (
+	"cairn/internal/engine/calendar"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 
 	"charm.land/lipgloss/v2"
 )
@@ -46,7 +46,7 @@ func (b Board) goalFacts(g engine.Goal, width int) string {
 		dressed = append(dressed, b.skin.Bright.Render(count))
 	}
 	if g.Spent > 0 {
-		spent := domain.FormatDuration(g.Spent)
+		spent := calendar.FormatDuration(g.Spent)
 		told = append(told, spent)
 		dressed = append(dressed, b.skin.Faint.Render(spent))
 	}
@@ -130,4 +130,4 @@ func (b Board) goalRows(g engine.Goal, width int) []string {
 }
 
 // Written is a day as a person reads it, or nothing when there is none.
-func Written(day time.Time) string { return domain.FormatDay(day) }
+func Written(day time.Time) string { return calendar.FormatDay(day) }

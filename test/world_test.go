@@ -11,9 +11,9 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
-	"cairn/internal/migration"
+	"cairn/internal/engine/migration"
+	"cairn/internal/store/files"
 )
 
 func answering(t *testing.T, answer Result) (*World, *[]string) {
@@ -290,7 +290,7 @@ func TestItSaysWhatItExpectsInsteadOf_wantsTheValueQuotedBack(t *testing.T) {
 }
 
 func TestAHomeOfMyOwn_doesNotPointAtAStore(t *testing.T) {
-	t.Setenv(config.StoreVariable, "a store nothing here should touch")
+	t.Setenv(files.StoreVariable, "a store nothing here should touch")
 	w, _ := answering(t, Result{})
 	if err := w.AHomeOfMyOwn(); err != nil {
 		t.Fatalf("AHomeOfMyOwn = %v", err)
@@ -298,8 +298,8 @@ func TestAHomeOfMyOwn_doesNotPointAtAStore(t *testing.T) {
 	if w.Defaults == "" || w.Home().Dir != w.Defaults {
 		t.Fatalf("HOME = %q, Defaults = %q, want HOME pointed at a fresh Defaults", w.Home().Dir, w.Defaults)
 	}
-	if got, _ := w.Lookup(config.StoreVariable); got != "a store nothing here should touch" {
-		t.Errorf("%s = %q, want it left untouched — a home of my own names no store", config.StoreVariable, got)
+	if got, _ := w.Lookup(files.StoreVariable); got != "a store nothing here should touch" {
+		t.Errorf("%s = %q, want it left untouched — a home of my own names no store", files.StoreVariable, got)
 	}
 }
 
@@ -391,7 +391,7 @@ func TestLineListsTasks_runsTheLineAndCounts(t *testing.T) {
 
 func TestRegister_wiresTheStepsEverySurfaceShares(t *testing.T) {
 	w, asked := answering(t, Result{Code: 0, Stdout: "#1  Write the spec\n"})
-	here, had := os.LookupEnv(config.StoreVariable)
+	here, had := os.LookupEnv(files.StoreVariable)
 
 	suite := godog.TestSuite{
 		ScenarioInitializer: w.Register,
@@ -419,7 +419,7 @@ func TestRegister_wiresTheStepsEverySurfaceShares(t *testing.T) {
 	if len(*asked) == 0 {
 		t.Error("nothing reached the surface: the steps were wired to nothing")
 	}
-	if now, still := os.LookupEnv(config.StoreVariable); still != had || now != here {
+	if now, still := os.LookupEnv(files.StoreVariable); still != had || now != here {
 		t.Errorf("the store variable is %q (set: %v), and it was %q (set: %v) before",
 			now, still, here, had)
 	}
@@ -470,7 +470,7 @@ func seededIn(t *testing.T, pointed bool) (*World, *bool) {
 	t.Cleanup(w.EndScenario)
 	w.StorePath = filepath.Join(t.TempDir(), "mine", "cairn.db")
 	if pointed {
-		w.Setenv(config.StoreVariable, w.StorePath)
+		w.Setenv(files.StoreVariable, w.StorePath)
 	}
 	return w, there
 }
@@ -548,7 +548,7 @@ func TestANewerCairn_knowsOneChangeMoreThanThisOne(t *testing.T) {
 		t.Errorf("the newer cairn's last change is #%d %q, want #%d %q, after every one this cairn knows",
 			last.Number, last.Name, len(migration.Known)+1, UnknownChange)
 	}
-	if _, err := engine.Open(path); !errors.Is(err, engine.ErrNewerStore) {
+	if _, err := engine.Open(path); !errors.Is(err, migration.ErrNewerStore) {
 		t.Errorf("this cairn opens what a newer one changed: %v", err)
 	}
 }

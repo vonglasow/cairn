@@ -1,13 +1,13 @@
 package gui
 
 import (
+	"cairn/internal/engine/label"
 	"errors"
 	"maps"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -17,13 +17,13 @@ const LabelsNoneSays = "no label yet: type one"
 func (w Window) openingLabels(held string) Window {
 	known := map[string]bool{}
 	for _, c := range w.snap.Cards {
-		for _, label := range c.Labels {
-			known[label] = true
+		for _, name := range c.Labels {
+			known[name] = true
 		}
 	}
 	for _, g := range w.snap.Goals {
-		for _, label := range g.Labels {
-			known[label] = true
+		for _, name := range g.Labels {
+			known[name] = true
 		}
 	}
 	w.labelsCarried = map[string]int{}
@@ -38,26 +38,26 @@ func (w Window) openingLabels(held string) Window {
 			scopes[one.Label] = one.Scope
 		}
 	}
-	bearer := domain.OnTasks
+	bearer := label.OnTasks
 	if w.form.ForObjective {
-		bearer = domain.OnObjectives
+		bearer = label.OnObjectives
 	}
-	for label := range known {
-		if scope, err := domain.ParseScope(scopes[label]); err == nil && !scope.Admits(bearer) {
-			delete(known, label)
+	for name := range known {
+		if scope, err := label.ParseScope(scopes[name]); err == nil && !scope.Admits(bearer) {
+			delete(known, name)
 		}
 	}
 	holding := engine.Words(held)
-	for _, label := range holding {
-		known[label] = true
+	for _, name := range holding {
+		known[name] = true
 	}
 	w.labelsOffered = w.labelsOffered[:0:0]
-	for label := range known {
-		w.labelsOffered = append(w.labelsOffered, label)
+	for name := range known {
+		w.labelsOffered = append(w.labelsOffered, name)
 	}
 	slices.Sort(w.labelsOffered)
-	for i, label := range w.labelsOffered {
-		if slices.Contains(holding, label) {
+	for i, name := range w.labelsOffered {
+		if slices.Contains(holding, name) {
 			w.ticked[i+1] = true
 		}
 	}
@@ -66,15 +66,15 @@ func (w Window) openingLabels(held string) Window {
 
 func (w Window) labelChoices() []Choice {
 	looking := strings.TrimSpace(w.filtering.Reads())
-	written, refused := domain.ParseLabels([]string{looking})
+	written, refused := label.ParseLabels([]string{looking})
 	reach := strings.ToLower(looking)
 	if refused == nil && len(written) == 1 {
 		reach = written[0]
 	}
 	var found []Choice
-	for i, label := range w.labelsOffered {
-		if strings.Contains(label, reach) {
-			found = append(found, Choice{Number: i + 1, Title: label, Carried: w.labelsCarried[label]})
+	for i, name := range w.labelsOffered {
+		if strings.Contains(name, reach) {
+			found = append(found, Choice{Number: i + 1, Title: name, Carried: w.labelsCarried[name]})
 		}
 	}
 	slices.SortFunc(found, func(a, b Choice) int { return strings.Compare(a.Title, b.Title) })
@@ -91,7 +91,7 @@ func (w Window) labelChoices() []Choice {
 }
 
 func refusal(err error) string {
-	for _, why := range []error{domain.ErrLabelHasNoFamily, domain.ErrLabelHolds, domain.ErrLabelNotOneLine} {
+	for _, why := range []error{label.ErrLabelHasNoFamily, label.ErrLabelHolds, label.ErrLabelNotOneLine} {
 		if errors.Is(err, why) {
 			return why.Error()
 		}
@@ -137,12 +137,12 @@ func (w Window) LabelsTaken() []LabelTaken {
 	line := Inside(ChoosingLooking(w.ChoosingBox()))
 	x := line.X
 	var taken []LabelTaken
-	for i, label := range w.labelsOffered {
+	for i, name := range w.labelsOffered {
 		if !w.ticked[i+1] {
 			continue
 		}
-		pill := Box{X: x, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, label, small) + 2*pillPad + crossWide, H: pillHigh}
-		taken = append(taken, LabelTaken{Label: label, Pill: pill, Cross: Box{X: pill.X + pill.W - crossWide - pillPad/2, Y: pill.Y, W: crossWide + pillPad/2, H: pill.H}})
+		pill := Box{X: x, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, name, small) + 2*pillPad + crossWide, H: pillHigh}
+		taken = append(taken, LabelTaken{Label: name, Pill: pill, Cross: Box{X: pill.X + pill.W - crossWide - pillPad/2, Y: pill.Y, W: crossWide + pillPad/2, H: pill.H}})
 		x += pill.W + pillGap
 	}
 	return taken
@@ -150,13 +150,13 @@ func (w Window) LabelsTaken() []LabelTaken {
 
 const crossWide = 10
 
-func (w Window) untaking(label string) Window {
-	at := slices.Index(w.labelsOffered, label)
+func (w Window) untaking(name string) Window {
+	at := slices.Index(w.labelsOffered, name)
 	if at < 0 || !w.ticked[at+1] {
 		return w
 	}
 	w.ticked[at+1] = false
-	return w.writingPicked("-" + label)
+	return w.writingPicked("-" + name)
 }
 
 func (w Window) untakingLast() Window {
@@ -200,9 +200,9 @@ func (w Window) chosenSlot() (Box, bool) {
 
 func (w Window) keepingLabels() Window {
 	var kept []string
-	for i, label := range w.labelsOffered {
+	for i, name := range w.labelsOffered {
 		if w.ticked[i+1] {
-			kept = append(kept, label)
+			kept = append(kept, name)
 		}
 	}
 	slices.Sort(kept)

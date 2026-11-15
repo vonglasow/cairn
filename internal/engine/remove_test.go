@@ -1,13 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func removing(name string) Input { return Input{Given: map[string]string{"name": name}} }
@@ -22,7 +23,7 @@ func TestWorkspaceRemove_dropsTheEntryAndTouchesNoFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	said, _ := os.ReadFile(config.FileIn(h.Dir))
+	said, _ := os.ReadFile(files.FileIn(h.Dir))
 	if want := "# mine\n[workspaces]\ndefault = \"work\"\nwork = \"~/w\"\n\n[pages]\nobjectives = false\n"; string(said) != want {
 		t.Errorf("the configuration reads\n%s\nwant\n%s", said, want)
 	}
@@ -30,27 +31,27 @@ func TestWorkspaceRemove_dropsTheEntryAndTouchesNoFile(t *testing.T) {
 		t.Errorf("the store of home is %q, %v; want it as it was", kept, err)
 	}
 	removed := *answer.WorkspaceRemoved
-	if removed.Name != "home" || removed.Folder != filepath.Join(h.Dir, "h") || removed.Written != config.FileIn(h.Dir) {
+	if removed.Name != "home" || removed.Folder != filepath.Join(h.Dir, "h") || removed.Written != files.FileIn(h.Dir) {
 		t.Errorf("WorkspaceRemoved = %+v", removed)
 	}
 	if text := RenderText(workspaceRemove, answer); !strings.Contains(text, "home") || !strings.Contains(text, removed.Folder+" is left as it was") {
 		t.Errorf("it says\n%s", text)
 	}
-	if got := Of(workspaceRemove, answer).(workspaceRemoved); got != removed {
+	if got := Of(workspaceRemove, answer).(workspace.Removed); got != removed {
 		t.Errorf("Of = %+v", got)
 	}
 }
 
 func TestWorkspaceRemove_refusesAnUnknownNameAndTheDefault(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	if _, err := DoFrom(workspaceRemove, h, removing("play"), Acting{}); !errors.Is(err, errNoSuchWorkspace) {
-		t.Errorf("removing play = %v; want %v", err, errNoSuchWorkspace)
+	if _, err := DoFrom(workspaceRemove, h, removing("play"), Acting{}); !errors.Is(err, workspace.ErrNoSuchWorkspace) {
+		t.Errorf("removing play = %v; want %v", err, workspace.ErrNoSuchWorkspace)
 	}
 	_, err := DoFrom(workspaceRemove, h, removing("work"), Acting{})
-	if !errors.Is(err, errRemovingTheDefault) || !strings.Contains(err.Error(), `"work"`) || !strings.Contains(err.Error(), "cairn workspace use") {
-		t.Errorf("removing work = %v; want %v, naming it and how to choose another", err, errRemovingTheDefault)
+	if !errors.Is(err, workspace.ErrRemovingTheDefault) || !strings.Contains(err.Error(), `"work"`) || !strings.Contains(err.Error(), "cairn workspace use") {
+		t.Errorf("removing work = %v; want %v, naming it and how to choose another", err, workspace.ErrRemovingTheDefault)
 	}
-	if said, _ := os.ReadFile(config.FileIn(h.Dir)); string(said) != twoWorkspaces {
+	if said, _ := os.ReadFile(files.FileIn(h.Dir)); string(said) != twoWorkspaces {
 		t.Errorf("the configuration reads %q; want it as it was", said)
 	}
 }

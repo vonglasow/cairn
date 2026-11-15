@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine/workspace"
 	"testing"
 
 	"cairn/internal/engine"
@@ -12,7 +13,7 @@ func TestEveryPanelMovesByItsHeadingAndResizesByItsGrip(t *testing.T) {
 		OnHelp:          func(w Window) Window { return w.Key("?") },
 	}
 	for screen, open := range opening {
-		w := open(holding(configuredWith(engine.Config{}), engine.Card{Number: 1, Title: "Spec", State: "todo"}))
+		w := open(holding(configuredWith(workspace.Config{}), engine.Card{Number: 1, Title: "Spec", State: "todo"}))
 		if w.Screen() != screen {
 			t.Fatalf("opened %v, want %v", w.Screen(), screen)
 		}

@@ -1,9 +1,9 @@
 package gui
 
 import (
-	"cairn/internal/config"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/engine/item"
+	"cairn/internal/store/files"
 	"image"
 	"sync"
 	"time"
@@ -42,13 +42,13 @@ func (w Window) Introducing(name string) Window {
 func (w Window) IntroShown() string {
 	switch {
 	case w.screen == OnConfiguration && w.introsOpen:
-		return config.Intros()[w.introOn]
+		return files.Intros()[w.introOn]
 	case w.introPlayed != "":
 		return w.introPlayed
 	case w.configured.Window != nil && w.configured.Window.Intro != "":
 		return w.configured.Window.Intro
 	}
-	return config.DefaultIntro
+	return files.DefaultIntro
 }
 
 // Intro is how far the board has arrived, from nought to one, and whether it is arriving at all: not before the first frame, not once arrived, not once anything was pressed, not when the system asks for less motion, and not on a board holding no task.
@@ -89,7 +89,7 @@ func (w Window) Stage() Stage {
 	current := -1
 	for i, column := range dealt {
 		s.Grounds = append(s.Grounds, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
-		if column.Name == string(domain.Current) {
+		if column.Name == string(item.Current) {
 			current = len(s.Grounds) - 1
 		}
 	}

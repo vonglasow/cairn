@@ -7,7 +7,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -34,7 +34,7 @@ func (w *world) registerTime(sc *godog.ScenarioContext) {
 		return w.WriteConfig(fmt.Sprintf("[pages]\ntime = %s\n\n[focus]\nsession = %q\n", said, length))
 	})
 	sc.Step(`^the settings beside the store say time = (\S+)$`, func(said string) error {
-		return os.WriteFile(config.SettingsBeside(w.StorePath), fmt.Appendf(nil, "[pages]\ntime = %s\n", said), 0o600)
+		return os.WriteFile(files.SettingsBeside(w.StorePath), fmt.Appendf(nil, "[pages]\ntime = %s\n", said), 0o600)
 	})
 	sc.Step(`^it says on standard error that the time is "on", "hidden" or "off"$`, func() error {
 		return test.WantContains(w.Out.Stderr, `"on", "hidden" or "off"`, "standard error")

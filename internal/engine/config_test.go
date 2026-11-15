@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"fmt"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
@@ -43,7 +44,7 @@ func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
 		t.Fatalf("could not set up the fixture: %v", err)
 	}
 	env := func(key string) (string, bool) {
-		if key == config.NotesVariable {
+		if key == files.NotesVariable {
 			return "/somewhere/of/my/own/notes", true
 		}
 		return "", false
@@ -58,10 +59,10 @@ func TestConfigShow_isOfferedAndAnswersAnObject(t *testing.T) {
 	if want := filepath.Join(dir, "config.toml"); answer.Config.File != want {
 		t.Errorf("File = %q, want %q", answer.Config.File, want)
 	}
-	if want := (Emplacement{At: "/tmp/quelquepart/cairn.db", By: "the file"}); answer.Config.Store != want {
+	if want := (workspace.Emplacement{At: "/tmp/quelquepart/cairn.db", By: "the file"}); answer.Config.Store != want {
 		t.Errorf("Store = %+v, want %+v", answer.Config.Store, want)
 	}
-	if want := (Emplacement{At: "/somewhere/of/my/own/notes", By: "the environment"}); answer.Config.Notes != want {
+	if want := (workspace.Emplacement{At: "/somewhere/of/my/own/notes", By: "the environment"}); answer.Config.Notes != want {
 		t.Errorf("Notes = %+v, want %+v", answer.Config.Notes, want)
 	}
 }
@@ -83,17 +84,17 @@ func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	written, err := os.ReadFile(config.FileIn(home))
-	if err != nil || string(written) != config.Example {
+	written, err := os.ReadFile(files.FileIn(home))
+	if err != nil || string(written) != files.Example {
 		t.Fatalf("it wrote %q, %v", written, err)
 	}
-	if answer.Written == nil || *answer.Written != config.FileIn(home) {
+	if answer.Written == nil || *answer.Written != files.FileIn(home) {
 		t.Errorf("it says it wrote %v", answer.Written)
 	}
-	if said := RenderText(ConfigInit, answer); !strings.Contains(said, config.FileIn(home)) {
+	if said := RenderText(ConfigInit, answer); !strings.Contains(said, files.FileIn(home)) {
 		t.Errorf("it says %q", said)
 	}
-	if _, err := ConfigInit.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, errConfigAlreadyThere) {
+	if _, err := ConfigInit.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, workspace.ErrConfigAlreadyThere) {
 		t.Errorf("writing it again = %v, want ErrConfigAlreadyThere", err)
 	}
 	if ConfigInit.Level != write || ConfigInit.Needs != aConfiguration {
@@ -101,7 +102,7 @@ func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
 	}
 }
 
-func shownWith(t *testing.T, content string) Config {
+func shownWith(t *testing.T, content string) workspace.Config {
 	t.Helper()
 	home := t.TempDir()
 	dir := filepath.Join(home, ".config", "cairn")
@@ -122,10 +123,10 @@ func shownWith(t *testing.T, content string) Config {
 
 func TestConfigShow_answersEveryTableWhenTheFileSaysNothing(t *testing.T) {
 	c := shownWith(t, "")
-	if c.Pages == nil || *c.Pages != (PagesConfig{Tasks: true, Objectives: true, Time: "on"}) {
+	if c.Pages == nil || *c.Pages != (workspace.PagesConfig{Tasks: true, Objectives: true, Time: "on"}) {
 		t.Errorf("Pages = %+v, want every page on", c.Pages)
 	}
-	if c.Archive == nil || *c.Archive != (Archive{Days: 14}) {
+	if c.Archive == nil || *c.Archive != (workspace.Archive{Days: 14}) {
 		t.Errorf("Archive = %+v, want no start, in periods of 14 days", c.Archive)
 	}
 	if c.Focus == nil || c.Focus.Session != "" {
@@ -141,14 +142,14 @@ func TestConfigShow_answersEveryTableWhenTheFileSaysNothing(t *testing.T) {
 
 func TestConfigShow_answersWhatTheFileSays(t *testing.T) {
 	c := shownWith(t, "[pages]\ntime = false\n[archive]\nstart = 2026-10-21\ndays = 7\n[focus]\nsession = \"1h\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
-	if *c.Pages != (PagesConfig{Tasks: true, Objectives: true, Time: "hidden"}) || *c.Archive != (Archive{Start: "2026-10-21", Days: 7}) ||
+	if *c.Pages != (workspace.PagesConfig{Tasks: true, Objectives: true, Time: "hidden"}) || *c.Archive != (workspace.Archive{Start: "2026-10-21", Days: 7}) ||
 		c.Focus.Session != "1h" || c.Time.Deleted != "taken" || !c.Window.KeepSizes {
 		t.Errorf("config show answers %+v %+v %+v %+v %+v", c.Pages, c.Archive, c.Focus, c.Time, c.Window)
 	}
 }
 
 func TestConfigText_saysEveryKeyUnderItsTable(t *testing.T) {
-	said := configText(shownWith(t, ""))
+	said := workspace.ConfigText(shownWith(t, ""))
 	for _, line := range []string{"\n[pages]\ntasks = true\nobjectives = true\ntime = \"on\"\n", "\n[archive]\n", "days = 14", "\n[focus]\n", "\n[time]\ndeleted = \"kept\"\n", "\n[window]\nkeep_sizes = false\n", "store = \"", "notes = \"", "plugin = \""} {
 		if !strings.Contains(said, line) {
 			t.Errorf("config show does not say %q:\n%s", line, said)
@@ -161,19 +162,19 @@ func TestConfigText_readsBackAsTheSameConfiguration(t *testing.T) {
 	if first.Notes.At != "/x/notes" {
 		t.Fatalf("the notes are at %q, want those of main", first.Notes.At)
 	}
-	again := shownWith(t, configText(first))
+	again := shownWith(t, workspace.ConfigText(first))
 	if again.Problem != "" {
-		t.Fatalf("what config show says is refused as a configuration: %s\n%s", again.Problem, configText(first))
+		t.Fatalf("what config show says is refused as a configuration: %s\n%s", again.Problem, workspace.ConfigText(first))
 	}
 	if again.Store.At != first.Store.At || again.Notes.At != first.Notes.At || again.Plugin.At != first.Plugin.At ||
 		*again.Pages != *first.Pages || *again.Archive != *first.Archive || *again.Focus != *first.Focus ||
 		*again.Time != *first.Time || *again.Window != *first.Window {
-		t.Errorf("read back, it says:\n%s\nwhere it said:\n%s", configText(again), configText(first))
+		t.Errorf("read back, it says:\n%s\nwhere it said:\n%s", workspace.ConfigText(again), workspace.ConfigText(first))
 	}
 }
 
 func TestConfigText_saysWhatNamedEachPlaceAndWhatIsNotSaid(t *testing.T) {
-	said := configText(shownWith(t, ""))
+	said := workspace.ConfigText(shownWith(t, ""))
 	for _, words := range []string{"named by nothing", "nothing is archived on its own", "never asked to be renewed"} {
 		if !strings.Contains(said, words) {
 			t.Errorf("config show does not say %q:\n%s", words, said)
@@ -189,10 +190,10 @@ func TestConfigShow_saysWhetherTheWeekendsAreShown(t *testing.T) {
 	if c.Time.Weekends != "hidden" {
 		t.Errorf("Time = %+v, want the weekends hidden", c.Time)
 	}
-	if said := configText(c); !strings.Contains(said, "\n[time]\ndeleted = \"kept\"\nweekends = \"hidden\"\n") {
+	if said := workspace.ConfigText(c); !strings.Contains(said, "\n[time]\ndeleted = \"kept\"\nweekends = \"hidden\"\n") {
 		t.Errorf("config show does not say the weekends are hidden:\n%s", said)
 	}
-	if again := shownWith(t, configText(c)); again.Problem != "" || again.Time.Weekends != "hidden" {
+	if again := shownWith(t, workspace.ConfigText(c)); again.Problem != "" || again.Time.Weekends != "hidden" {
 		t.Errorf("read back, the weekends are %+v (%s)", again.Time, again.Problem)
 	}
 }
@@ -208,7 +209,7 @@ func TestConfigShow_answersWhichKeysTheFileWrote(t *testing.T) {
 }
 
 func TestConfigText_writesTheTimeAsItsWord(t *testing.T) {
-	if said := configText(shownWith(t, "[pages]\ntime = \"off\"\n")); !strings.Contains(said, "\ntime = \"off\"\n") {
+	if said := workspace.ConfigText(shownWith(t, "[pages]\ntime = \"off\"\n")); !strings.Contains(said, "\ntime = \"off\"\n") {
 		t.Errorf("config show does not write time = \"off\":\n%s", said)
 	}
 }
@@ -218,17 +219,17 @@ func TestConfigShow_saysWhetherTasksComeBack(t *testing.T) {
 		t.Errorf("Recurrence = %+v, want it off", c.Recurrence)
 	}
 	c := shownWith(t, "[series]\non = true\n")
-	if c.Recurrence == nil || !c.Recurrence.On || !strings.Contains(configText(c), "\n[series]\non = true\n") {
-		t.Errorf("Recurrence = %+v:\n%s", c.Recurrence, configText(c))
+	if c.Recurrence == nil || !c.Recurrence.On || !strings.Contains(workspace.ConfigText(c), "\n[series]\non = true\n") {
+		t.Errorf("Recurrence = %+v:\n%s", c.Recurrence, workspace.ConfigText(c))
 	}
 }
 
 func TestValuesOf_sayHowSeeThroughWhatIsDraggedIs(t *testing.T) {
-	read, err := config.Read(t.TempDir(), func(string) (string, bool) { return "", false })
+	read, err := files.Read(t.TempDir(), func(string) (string, bool) { return "", false })
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := valuesOf(read)["window.ghost"]; got != "65" {
+	if got := workspace.ValuesOf(read)["window.ghost"]; got != "65" {
 		t.Errorf("window.ghost says %q, want 65", got)
 	}
 }

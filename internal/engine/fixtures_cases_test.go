@@ -1,14 +1,17 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/series"
 	"encoding/json"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
@@ -46,8 +49,8 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 		saw("no label", len(f.Labels) == 0)
 		saw("one label", len(f.Labels) == 1)
 		saw("too many labels", len(f.Labels) >= 6)
-		if day, err := domain.FromToday(f.Deadline, today); err == nil && day != "" {
-			due, _ := domain.ParseDeadline(day)
+		if day, err := calendar.FromToday(f.Deadline, today); err == nil && day != "" {
+			due, _ := calendar.ParseDeadline(day)
 			days := int(due.Sub(startOfDay(today)).Hours() / 24)
 			saw("a deadline past", days < 0)
 			saw("a deadline today", days == 0)
@@ -65,7 +68,7 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 			focused++
 		}
 	}
-	for _, column := range domain.States {
+	for _, column := range item.States {
 		if perColumn[string(column)] == 0 {
 			t.Errorf("no task in %s", column)
 		}
@@ -76,7 +79,7 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 	if focused != 2 {
 		t.Errorf("%d tasks in focus, want 2", focused)
 	}
-	for _, p := range domain.Priorities {
+	for _, p := range item.Priorities {
 		if !seen["priority "+string(p)] {
 			t.Errorf("no task of priority %s", p)
 		}
@@ -104,7 +107,7 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 	if under < 2 || !waiting {
 		t.Errorf("%d sub-objectives and one waiting on another %v; want a parent holding several, one of them waiting on another", under, waiting)
 	}
-	byNumber := map[int]filed{}
+	byNumber := map[int]exchange.Filed{}
 	for _, f := range read.Tasks {
 		byNumber[f.Number] = f
 	}
@@ -115,7 +118,7 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 		for _, a := range s.Acts {
 			missed = missed || a.Did == "missed"
 			f, made := byNumber[a.Task]
-			open = open || a.Did == "made" && made && f.State != string(domain.Done) && !f.Archived
+			open = open || a.Did == "made" && made && f.State != string(item.Done) && !f.Archived
 		}
 		openWithMissed = openWithMissed || s.Stopped == "" && missed && open
 	}
@@ -164,7 +167,7 @@ func fixturesServeObjectives(t *testing.T, read exchanged) {
 
 func fixturesTypeObjectives(t *testing.T, read exchanged) {
 	t.Helper()
-	byNumber := map[int]objectiveFiled{}
+	byNumber := map[int]exchange.ObjectiveFiled{}
 	children := map[int][]int{}
 	for _, o := range read.Objectives {
 		byNumber[o.Number] = o
@@ -189,10 +192,10 @@ func fixturesTypeObjectives(t *testing.T, read exchanged) {
 			onObjectives[l] = true
 		}
 	}
-	both := slices.ContainsFunc(read.Tasks, func(f filed) bool {
+	both := slices.ContainsFunc(read.Tasks, func(f exchange.Filed) bool {
 		return slices.ContainsFunc(f.Labels, func(l string) bool { return onObjectives[l] })
 	})
-	forTasks := slices.ContainsFunc(read.Labels, func(l labelFiled) bool { return l.Scope == "tasks" })
+	forTasks := slices.ContainsFunc(read.Labels, func(l exchange.LabelFiled) bool { return l.Scope == "tasks" })
 	if !typed || !proposed || !viewedUnder || !both || !forTasks {
 		t.Errorf("an area holding projects %v, a parent proposed as reached %v, a view naming a sub-objective %v, a label on both %v, one for tasks only %v",
 			typed, proposed, viewedUnder, both, forTasks)
@@ -203,7 +206,7 @@ func fixturesComeBackEveryWay(t *testing.T, read exchanged) {
 	t.Helper()
 	afterDone, ended, skipped := false, false, false
 	for _, s := range read.Series {
-		rule, err := domain.ParseRule(s.Rule)
+		rule, err := series.ParseRule(s.Rule)
 		if err != nil {
 			t.Fatal(err)
 		}

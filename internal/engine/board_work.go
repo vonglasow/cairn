@@ -1,13 +1,15 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 // Work is what the board needs from whatever holds the work.
@@ -44,7 +46,7 @@ type Card struct {
 	Blocks      int
 	Context     string
 	Said        []string
-	Series      *Occurs
+	Series      *series.Occurs
 }
 
 // BlocksSaid is how many open tasks the task is in the way of, as a card writes it; nothing when it is in nobody's way.
@@ -70,7 +72,7 @@ type Goal struct {
 	Estimate    string
 	Done        int
 	Total       int
-	Steps       domain.Tally
+	Steps       item.Tally
 	Spent       time.Duration
 	Said        []string
 	Parent      int
@@ -115,7 +117,7 @@ func Look(w Work) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
-	series, err := lookAtSeries(w)
+	recurring, err := lookAtSeries(w)
 	if err != nil {
 		return Snapshot{}, err
 	}
@@ -127,7 +129,7 @@ func Look(w Work) (Snapshot, error) {
 	if listed.InFocus != nil {
 		held = *listed.InFocus
 	}
-	found := Snapshot{Focus: held, Views: views, Series: series, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
+	found := Snapshot{Focus: held, Views: views, Series: recurring, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
 	if labels.Labels != nil {
 		for _, one := range *labels.Labels {
 			found.Colours[one.Label] = one.Colour
@@ -184,14 +186,14 @@ func Numbered(n int) Input {
 func shownAll(kept []string) []string {
 	shown := make([]string, 0, len(kept))
 	for _, k := range kept {
-		shown = append(shown, domain.Shown(k))
+		shown = append(shown, item.Shown(k))
 	}
 	return shown
 }
 
-func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, contexts map[int]string) (Card, error) {
+func cardOf(t task.Task, held, freed []int, along map[int]item.Progress, contexts map[int]string) (Card, error) {
 	told := task.OfTask(t)
-	due, err := domain.ParseDeadline(told.Deadline)
+	due, err := calendar.ParseDeadline(told.Deadline)
 	if err != nil {
 		return Card{}, err
 	}
@@ -200,14 +202,14 @@ func cardOf(t task.Task, held, freed []int, along map[int]domain.Progress, conte
 		Number:      told.Number,
 		Steps:       partsOf(told.Steps),
 		Archived:    told.Archived,
-		Title:       domain.Shown(told.Title),
+		Title:       item.Shown(told.Title),
 		State:       told.State,
 		Priority:    told.Priority,
-		Description: domain.Shown(told.Description),
+		Description: item.Shown(told.Description),
 		Labels:      shownAll(told.Labels),
 		Blockers:    told.BlockedBy,
 		Linked:      told.Linked,
-		Because:     domain.Shown(told.Because),
+		Because:     item.Shown(told.Because),
 		Deadline:    due,
 		Estimate:    told.Estimate,
 		Spent:       told.TimeSpent,
@@ -229,24 +231,24 @@ func partsOf(steps []task.Step) []Part {
 	}
 	parts := make([]Part, 0, len(steps))
 	for i, s := range steps {
-		parts = append(parts, Part{Number: i + 1, Title: domain.Shown(s.Title), Done: s.Done})
+		parts = append(parts, Part{Number: i + 1, Title: item.Shown(s.Title), Done: s.Done})
 	}
 	return parts
 }
 
-func goalOf(o objective.Objective, along map[int]domain.Progress) (Goal, error) {
+func goalOf(o objective.Objective, along map[int]item.Progress) (Goal, error) {
 	told := objective.OfObjective(o)
-	due, err := domain.ParseDeadline(told.Deadline)
+	due, err := calendar.ParseDeadline(told.Deadline)
 	if err != nil {
 		return Goal{}, err
 	}
 	sofar := along[told.Number]
 	return Goal{
 		Number:      told.Number,
-		Title:       domain.Shown(told.Title),
+		Title:       item.Shown(told.Title),
 		State:       told.State,
 		Priority:    told.Priority,
-		Description: domain.Shown(told.Description),
+		Description: item.Shown(told.Description),
 		Labels:      shownAll(told.Labels),
 		Deadline:    due,
 		Estimate:    told.Estimate,

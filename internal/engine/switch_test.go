@@ -1,12 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func heldOn(t *testing.T, h Home) *Engine {
@@ -47,7 +48,7 @@ func TestSwitch_writesNoConfiguration(t *testing.T) {
 	if _, err := Switch(held, Elsewhere{Workspace: "home"}); err != nil {
 		t.Fatal(err)
 	}
-	said, err := os.ReadFile(config.FileIn(h.Dir))
+	said, err := os.ReadFile(files.FileIn(h.Dir))
 	if err != nil || string(said) != twoWorkspaces {
 		t.Errorf("the configuration reads %q, %v; want it as it was", said, err)
 	}
@@ -59,8 +60,8 @@ func TestSwitch_aFolderGoneIsRefusedAndTheStoreHeldStays(t *testing.T) {
 	if _, err := held.Ask(TaskNew, Input{Given: map[string]string{"title": "at work"}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Switch(held, Elsewhere{Workspace: "home"}); !errors.Is(err, ErrWorkspaceNotThere) {
-		t.Fatalf("Switch = %v; want %v", err, ErrWorkspaceNotThere)
+	if _, err := Switch(held, Elsewhere{Workspace: "home"}); !errors.Is(err, workspace.ErrWorkspaceNotThere) {
+		t.Fatalf("Switch = %v; want %v", err, workspace.ErrWorkspaceNotThere)
 	}
 	listed, err := held.Ask(TaskList, Input{})
 	if err != nil || len(listed.Tasks) != 1 {
@@ -82,7 +83,7 @@ func TestSwitch_keepsWhoActsAndThroughWhat(t *testing.T) {
 
 func TestSwitch_saysThePagesOfTheStoreNowHeld(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	if err := os.WriteFile(filepath.Join(h.Dir, "h", config.SettingsFile), []byte("[pages]\ntime = \"off\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(h.Dir, "h", files.SettingsFile), []byte("[pages]\ntime = \"off\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	held := heldOn(t, h)
@@ -99,8 +100,8 @@ func TestSwitch_saysThePagesOfTheStoreNowHeld(t *testing.T) {
 }
 
 func TestWorkspace_foundSaysWhetherItsFolderIsThere(t *testing.T) {
-	there := Workspace{Name: "work", Folder: t.TempDir()}
-	gone := Workspace{Name: "home", Folder: filepath.Join(t.TempDir(), "gone")}
+	there := workspace.Workspace{Name: "work", Folder: t.TempDir()}
+	gone := workspace.Workspace{Name: "home", Folder: filepath.Join(t.TempDir(), "gone")}
 	if !there.Found() || gone.Found() {
 		t.Errorf("Found = %v, %v; want true, false", there.Found(), gone.Found())
 	}

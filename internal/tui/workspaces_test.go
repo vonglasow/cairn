@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
@@ -17,13 +18,13 @@ import (
 
 type roaming struct {
 	*fake
-	shown    map[string]engine.WorkspaceShown
-	spaces   []engine.Workspace
+	shown    map[string]workspace.Shown
+	spaces   []workspace.Workspace
 	on       string
 	refuse   error
 	pages    map[string]engine.Pages
 	switched []string
-	recent   []engine.RecentFolder
+	recent   []workspace.RecentFolder
 	added    []string
 }
 
@@ -37,11 +38,11 @@ func newRoaming(t *testing.T, f *fake) *roaming {
 	r := &roaming{
 		fake: f,
 		on:   "work",
-		shown: map[string]engine.WorkspaceShown{
+		shown: map[string]workspace.Shown{
 			"work": {Workspace: "work", Folder: "/c/work", Store: "/c/work/cairn.db"},
 			"home": {Workspace: "home", Folder: "/c/home", Store: "/c/home/cairn.db"},
 		},
-		spaces: []engine.Workspace{
+		spaces: []workspace.Workspace{
 			{Name: "work", Folder: "/c/work", Default: true},
 			{Name: "home", Folder: "/c/home"},
 			{Name: "client-a", Folder: "/c/client-a"},
@@ -60,18 +61,18 @@ func (r *roaming) Ask(op engine.Operation, in engine.Input) (engine.Answer, erro
 		shown := r.shown[r.on]
 		return engine.Answer{WorkspaceShown: &shown}, nil
 	case "workspace list":
-		return engine.Answer{Workspaces: &engine.Workspaces{Workspaces: r.spaces, Recent: r.recent}}, nil
+		return engine.Answer{Workspaces: &workspace.Workspaces{Workspaces: r.spaces, Recent: r.recent}}, nil
 	case "workspace add":
 		name, folder := in.Given["name"], in.Given["folder"]
 		for _, one := range r.spaces {
 			if one.Name == name {
-				return engine.Answer{}, engine.ErrWorkspaceKnown
+				return engine.Answer{}, workspace.ErrWorkspaceKnown
 			}
 		}
 		r.added = append(r.added, name+" "+folder)
-		r.spaces = append(r.spaces, engine.Workspace{Name: name, Folder: folder})
-		r.recent = slices.DeleteFunc(r.recent, func(one engine.RecentFolder) bool { return one.Folder == folder })
-		r.shown[name] = engine.WorkspaceShown{Workspace: name, Folder: folder, Store: folder + "/cairn.db"}
+		r.spaces = append(r.spaces, workspace.Workspace{Name: name, Folder: folder})
+		r.recent = slices.DeleteFunc(r.recent, func(one workspace.RecentFolder) bool { return one.Folder == folder })
+		r.shown[name] = workspace.Shown{Workspace: name, Folder: folder, Store: folder + "/cairn.db"}
 		return engine.Answer{}, nil
 	}
 	return r.fake.Ask(op, in)
@@ -128,7 +129,7 @@ func TestHeader_opensWithTheWorkspace(t *testing.T) {
 
 func TestHeader_aStoreNoWorkspaceNamesShowsItsFolder(t *testing.T) {
 	r := newRoaming(t, newFake())
-	r.shown["work"] = engine.WorkspaceShown{Store: "/scratch/cairn.db"}
+	r.shown["work"] = workspace.Shown{Store: "/scratch/cairn.db"}
 	if got := headerOf(roamingBoard(t, r)); !strings.HasPrefix(got, "◌ /scratch ") {
 		t.Errorf("header = %q; want it to open with ◌ /scratch", got)
 	}
@@ -136,7 +137,7 @@ func TestHeader_aStoreNoWorkspaceNamesShowsItsFolder(t *testing.T) {
 
 func TestHeader_aLongFolderKeepsItsEnd(t *testing.T) {
 	r := newRoaming(t, newFake())
-	r.shown["work"] = engine.WorkspaceShown{Store: "/" + strings.Repeat("deep/", 20) + "scratch/cairn.db"}
+	r.shown["work"] = workspace.Shown{Store: "/" + strings.Repeat("deep/", 20) + "scratch/cairn.db"}
 	got := headerOf(roamingBoard(t, r))
 	if !strings.HasPrefix(got, "◌ …") || !strings.Contains(got, "/scratch ") {
 		t.Errorf("header = %q; want the folder cut at its start, its end kept", got)
@@ -209,7 +210,7 @@ func TestSwitcher_narrowsAsOneTypes(t *testing.T) {
 	}
 }
 
-func names(spaces []engine.Workspace) []string {
+func names(spaces []workspace.Workspace) []string {
 	var out []string
 	for _, one := range spaces {
 		out = append(out, one.Name)
@@ -307,10 +308,10 @@ func TestSwitched_takesThePagesOfTheOneOpened(t *testing.T) {
 
 func TestSwitched_refusedSaysWhyAndStaysOnTheList(t *testing.T) {
 	r := newRoaming(t, newFake())
-	r.refuse = engine.ErrWorkspaceNotThere
+	r.refuse = workspace.ErrWorkspaceNotThere
 	b := pressing(roamingBoard(t, r), "ctrl+o", "1")
 	screen := strip(b.Draw())
-	if b.screen != OnWorkspaces || !strings.Contains(screen, engine.ErrWorkspaceNotThere.Error()) {
+	if b.screen != OnWorkspaces || !strings.Contains(screen, workspace.ErrWorkspaceNotThere.Error()) {
 		t.Errorf("a refusal shows:\n%s", screen)
 	}
 	if !strings.HasPrefix(headerOf(b), "● work") {

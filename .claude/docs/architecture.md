@@ -17,9 +17,8 @@ eighteen structures, and every fact added touched all of them. The rules are
 still the task's; only the copying went. An objective, an act of the trace and
 a migration work the same way.
 
-An act names its task **by number** and never carries the task, which is why
-`internal/trace` is forbidden `internal/task` outright: a task may be gone by
-the time its acts are read. That is in `.golangci.yml`, where it is enforced.
+An act names its task **by number** and never carries the task: a task may be
+gone by the time its acts are read.
 
 **Errors do not go east.** Telling is for reading; a command that fails returns
 its error the way Go returns errors. That line is deliberate: pushed further,
@@ -33,22 +32,26 @@ all of them.
 
 | package | holds | knows about |
 |---|---|---|
-| `internal/domain` | what is **carried**: columns, priorities, labels, days, durations, progress, the title rule, what an absence looks like, the set grammar, a narrowing, the rule a series comes back by | nobody |
+| `internal/engine/item` | what a task and an objective both have: columns, priorities, the title rule, a card, progress | nobody |
+| `internal/engine/calendar` | days, durations, what a moment reads as | nobody |
 | `internal/build` | which build this is, and which file it runs from | nobody |
 | `plugin/claude` | the Claude Code plugin's files, carried in the binary, and how they are written out as a marketplace — outside `internal/` because Go embeds only what lies under the package, and the files are read from there by a clone too | nobody |
 | `internal/logo` | cairn's logo, drawn at every size a system asks for | nobody |
 | `internal/macapp` | cairn written as a Mac application: its bundle, its icon, its signature | `logo` |
 | `internal/linuxapp` | cairn written as a Linux desktop application: its entry in the applications menu, its logo in the icon theme, the menu refreshed | `logo` |
 | `internal/upgrade` | the newest release of cairn on GitHub, its archive checked against its sum, and its binary put in place of another | nobody of ours |
-| `internal/config` | the file that names cairn's two places, read the way a person wrote it | nobody of ours |
+| `internal/store/files` | the file that names cairn's two places, read the way a person wrote it, and the files kept beside it: drafts, the window's sizes, the recent workspaces | nobody of ours |
 | `internal/debug` | what debug mode writes down, and the folder it keeps its files in | nobody of ours |
-| `internal/theme` | a colour scheme, a base16 file, read and turned into every colour the window draws with, and the contrasts it is held to | `domain`, `objective` |
-| `internal/task` | the task: its cell, its rules, and its two renderings | `domain` |
-| `internal/objective` | the objective: its cell, its rules, and its two renderings | `domain` |
-| `internal/migration` | a change to the shape of the store, and the list of them | `domain` |
-| `internal/trace` | one act performed on a task, and what a period of them comes to | `domain` |
-| `internal/store` | keeping the notions, and handing them back | `domain`, the notions |
-| `internal/engine` | every operation and every decision: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, which scheme a window wears, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `domain`, `config`, `theme`, the notions, `store` |
+| `internal/theme` | a colour scheme, a base16 file, read and turned into every colour the window draws with, and the contrasts it is held to | `engine/item`, `engine/label`, `engine/objective` |
+| `internal/engine/change` | the changes an input says: +x -x =x, replace … by …, more or less time | `calendar` |
+| `internal/engine/filter` | a narrowing: what a listing keeps | nobody |
+| `internal/engine/task` | the task: its cell, its rules, its steps, blockers and links, and the store it needs, as an interface | the notions below it |
+| `internal/engine/objective` | the objective: its cell, its rules, and the store it needs | the notions below it |
+| `internal/engine/act` | one act performed on a task, and what a period of them comes to | the notions below it |
+| `internal/engine/migration` | a change to the shape of the store, and the list of them | the notions below it |
+| `internal/engine/label`, `series`, `view`, `backup`, `workspace`, `exchange`, `app` | one notion each: labels, series, views, backups, workspaces, export and import, cairn as an application and its upgrade | the notions below it, `store/files` |
+| `internal/store/sqlite` | keeping the notions, and handing them back; the only package that knows a database exists | the notions, never the catalogue |
+| `internal/engine` | the catalogue of every operation, `Ask` the one door, and what reads several notions at once: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, which scheme a window wears, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `theme`, the notions, `store/sqlite`, `store/files` |
 | `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
 | `internal/tui` | the board on a terminal | everything below but `cli`, `mcp` and `gui` |
@@ -56,7 +59,7 @@ all of them.
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
 | `internal/site` | the documentation site: the pages of `docs/` for a person using cairn, and a reference read off every surface, its boards drawn over the fixtures | everything below but the store |
 | `cmd/site` | hands the process to `site.Main`; built by `make site`, never part of the binary | `site` |
-| `test` | the acceptance world the surfaces share, and the givens both boards write | `engine`, `config`, the notions |
+| `test` | the acceptance world the surfaces share, and the givens both boards write | `engine`, `store/files`, the notions |
 
 **A surface is an entry point and nothing more.** The command line, the agent's
 server, the terminal board and the window are four ways in to the same
@@ -205,7 +208,7 @@ nothing reaches it.
 
 ## The store is spoken to through an interface the engine owns
 
-`internal/store` is where SQLite lives, and it is the only place that knows
+`internal/store/sqlite` is where SQLite lives, and it is the only place that knows
 that. It speaks in notions: it takes a `task.Task` and gives one back. No
 `*sql.Rows` crosses its boundary, or every caller would need to know the
 schema.
@@ -281,14 +284,14 @@ because it comes from a cairn that knows more. Needing a working store to reach
 the backups would put them out of reach on the one day they matter.
 
 **A backup did not become a notion**, and that was measured rather than
-assumed. `store/backup.go` opens databases: saying what a backup *holds* means
+assumed. `store/sqlite/backup.go` opens databases: saying what a backup *holds* means
 reading the saved file as one. So it is not the plain file copy it looks like,
-and it stays in the layer that knows what a database is. `domain.Backup` names
+and it stays in the layer that knows what a database is. `backup.Backup` names
 one for a surface, the way it always did.
 
-A change to the shape did become one — `internal/migration` holds what a change
+A change to the shape did become one — `internal/engine/migration` holds what a change
 is, the list of them with the SQL that makes and unmakes each, and its two
-renderings. The **ledger** stayed behind, in `internal/store`: what has already
+renderings. The **ledger** stayed behind, in `internal/store/sqlite`: what has already
 run is a table in the database, and it belongs with the database.
 
 ## Half of this is enforced

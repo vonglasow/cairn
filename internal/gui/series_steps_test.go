@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine/series"
 	"fmt"
 	"os"
 	"slices"
@@ -9,15 +10,14 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Given(`^recurrence is (on|off) in the window$`, func(said string) error {
 		w.recurs = said == "on"
-		return os.WriteFile(config.SettingsBeside(w.path), []byte("[series]\non = "+fmt.Sprint(w.recurs)+"\n"), 0o600)
+		return os.WriteFile(files.SettingsBeside(w.path), []byte("[series]\non = "+fmt.Sprint(w.recurs)+"\n"), 0o600)
 	})
 	sc.Then(`^the card "([^"]*)" says its rule "([^"]*)"$`, func(title, rule string) error {
 		slot, err := w.cardSlotOf(title)
@@ -152,7 +152,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		return fmt.Errorf("no choice says %q", said)
 	})
 	sc.Step(`^I choose the rule "([^"]*)"$`, func(rule string) error {
-		wanted, err := domain.ParseRule(rule)
+		wanted, err := series.ParseRule(rule)
 		if err != nil {
 			return err
 		}

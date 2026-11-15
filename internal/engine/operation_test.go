@@ -1,6 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/app"
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/series"
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"os/user"
@@ -9,11 +15,10 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/objective"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func garbageStore(t *testing.T) string {
@@ -91,7 +96,7 @@ func TestDo_needsAStore_reportsWhenTheStoreIsBehind(t *testing.T) {
 	}
 
 	_, err := Do(op, path, Input{})
-	if !errors.Is(err, ErrStoreBehind) {
+	if !errors.Is(err, migration.ErrStoreBehind) {
 		t.Fatalf("err = %v, want ErrStoreBehind", err)
 	}
 	if !strings.Contains(err.Error(), "migration apply") {
@@ -113,7 +118,7 @@ func TestDo_needsAStore_passesThroughAnErrorThatIsNotAboutBeingBehind(t *testing
 	if err == nil {
 		t.Fatal("Do: want an error, got none")
 	}
-	if errors.Is(err, ErrStoreBehind) {
+	if errors.Is(err, migration.ErrStoreBehind) {
 		t.Errorf("err = %v, want an error unrelated to the store being behind", err)
 	}
 }
@@ -242,8 +247,8 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"task_move":          {{Tasks: []task.Task{}}},
 		"task_focus":         {{Task: of(task.Task{}), InFocus: list(1)}, {Held: []task.Task{}, InFocus: list()}},
 		"task_unfocus":       {{InFocus: list()}},
-		"trace_show":         {{Acts: []trace.Act{}}},
-		"trace_list":         {{Since: []trace.Act{}}},
+		"trace_show":         {{Acts: []act.Act{}}},
+		"trace_list":         {{Since: []act.Act{}}},
 		"objective_new":      {{Objective: of(objective.Objective{})}},
 		"objective_list":     {{Objectives: []objective.Objective{}}},
 		"objective_move":     {{Objectives: []objective.Objective{}}},
@@ -252,35 +257,35 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"objective_edit":     {{Objective: of(objective.Objective{})}},
 		"objective_search":   {{MatchedObjectives: []objective.Objective{}}},
 		"objective_delete":   {{Deleted: of(1)}},
-		"backup_new":         {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
-		"backup_list":        {{Backups: []domain.Backup{}}},
-		"backup_show":        {{Backup: of(domain.Backup{}), Holds: of(domain.Held{})}},
+		"backup_new":         {{Backup: of(backup.Backup{}), Holds: of(backup.Held{})}},
+		"backup_list":        {{Backups: []backup.Backup{}}},
+		"backup_show":        {{Backup: of(backup.Backup{}), Holds: of(backup.Held{})}},
 		"backup_delete":      {{Deleted: of(1)}},
 		"backup_restore":     {{Restored: of(1)}},
-		"task_export":        {{Exported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(domain.Held{})}},
-		"task_import":        {{Imported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(domain.Held{})}},
+		"task_export":        {{Exported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(backup.Held{})}},
+		"task_import":        {{Imported: func() *string { s := "/elsewhere.json"; return &s }(), Holds: of(backup.Held{})}},
 		"plugin_write":       {{Plugin: func() *string { s := "/claude-plugin"; return &s }()}},
-		"plugin_show":        {{Install: &pluginShown{Version: "v0.12.0", Install: installFromTag("v0.12.0")}}},
+		"plugin_show":        {{Install: &app.PluginShown{Version: "v0.12.0", Install: app.InstallFromTag("v0.12.0")}}},
 		"app_install":        {{Installed: func() *string { s := "/Applications/cairn.app"; return &s }(), Runs: func() *string { s := "/usr/local/bin/cairn"; return &s }(), OpenedFrom: func() *string { s := "the Dock"; return &s }()}},
-		"migration_list":     {{Changes: []migration.Migration{}, Holds: of(domain.Held{})}},
+		"migration_list":     {{Changes: []migration.Migration{}, Holds: of(backup.Held{})}},
 		"migration_show":     {{Change: of(migration.Migration{})}},
 		"migration_apply":    {{Applied: []string{}}},
 		"migration_rollback": {{RolledBack: of(migration.Migration{})}},
-		"config_show":        {{Config: &Config{}}},
+		"config_show":        {{Config: &workspace.Config{}}},
 		"config_init":        {{Written: func() *string { s := "/config.toml"; return &s }()}},
-		"workspace_list":     {{Workspaces: &Workspaces{}}},
-		"workspace_add":      {{WorkspaceAdded: &workspaceAdded{}}},
-		"workspace_use":      {{WorkspaceUsed: &workspaceUsed{}}},
-		"workspace_show":     {{WorkspaceShown: &WorkspaceShown{}}},
+		"workspace_list":     {{Workspaces: &workspace.Workspaces{}}},
+		"workspace_add":      {{WorkspaceAdded: &workspace.Added{}}},
+		"workspace_use":      {{WorkspaceUsed: &workspace.Used{}}},
+		"workspace_show":     {{WorkspaceShown: &workspace.Shown{}}},
 		"debug_report":       {{Written: func() *string { s := "/cairn-debug.zip"; return &s }(), Packed: of(2)}},
-		"timesheet_show":     {{Sheet: &trace.Sheet{}}},
-		"timesheet_add":      {{Sheet: &trace.Sheet{}}},
-		"label_list":         {{Labels: &[]LabelCarried{}}},
-		"label_new":          {{Labels: &[]LabelCarried{}}},
-		"label_colour":       {{Labels: &[]LabelCarried{}}},
-		"label_scope":        {{Labels: &[]LabelCarried{}}},
-		"label_delete":       {{Labels: &[]LabelCarried{}}},
-		"label_rename":       {{Labels: &[]LabelCarried{}}},
+		"timesheet_show":     {{Sheet: &act.Sheet{}}},
+		"timesheet_add":      {{Sheet: &act.Sheet{}}},
+		"label_list":         {{Labels: &[]label.Carried{}}},
+		"label_new":          {{Labels: &[]label.Carried{}}},
+		"label_colour":       {{Labels: &[]label.Carried{}}},
+		"label_scope":        {{Labels: &[]label.Carried{}}},
+		"label_delete":       {{Labels: &[]label.Carried{}}},
+		"label_rename":       {{Labels: &[]label.Carried{}}},
 		"view_list":          {{ViewsKept: &Views{}}},
 		"task_skip":          {{Task: of(task.Task{})}},
 		"series_list":        {{SeriesKept: &seriesListed{}}},
@@ -288,7 +293,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"series_edit":        {{SeriesShown: &Series{}}},
 		"series_stop":        {{SeriesShown: &Series{}}},
 		"series_resume":      {{SeriesShown: &Series{}}},
-		"series_delete":      {{SeriesGone: &seriesDeleted{}}},
+		"series_delete":      {{SeriesGone: &series.Deleted{}}},
 		"step_new":           {{Task: of(task.Task{})}},
 		"step_list":          {{Task: of(task.Task{})}},
 		"step_edit":          {{Task: of(task.Task{})}},
@@ -334,7 +339,7 @@ func TestCheck_refusesARequiredListGivenEmpty(t *testing.T) {
 
 func TestCheck_refusesAValueOutsideAClosedSetAsNotOneOf(t *testing.T) {
 	e := openEngine(t)
-	if _, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, domain.ErrNotAState) {
+	if _, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "bogus"}}); !errors.Is(err, item.ErrNotAState) {
 		t.Errorf("task list --state bogus = %v, want ErrNotAState, as an edit answers", err)
 	}
 }

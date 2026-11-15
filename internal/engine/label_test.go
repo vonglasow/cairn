@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"cairn/internal/domain"
+	"cairn/internal/engine/label"
 	"errors"
 	"slices"
 	"strings"
@@ -25,14 +25,14 @@ func TestLabels_areListedWithWhatCarriesThem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	said, ok := Of(LabelList, listed).(labelList)
-	if !ok || len(said.Labels) != 2 || said.Labels[0] != (LabelCarried{Label: "doc", Tasks: 1, Objectives: 1, Colour: domain.ColourOf("doc"), Scope: "both"}) || said.Labels[1] != (LabelCarried{Label: "sp26-20", Tasks: 2, Colour: domain.ColourOf("sp26-20"), Scope: "both"}) {
+	said, ok := Of(LabelList, listed).(label.List)
+	if !ok || len(said.Labels) != 2 || said.Labels[0] != (label.Carried{Label: "doc", Tasks: 1, Objectives: 1, Colour: label.ColourOf("doc"), Scope: "both"}) || said.Labels[1] != (label.Carried{Label: "sp26-20", Tasks: 2, Colour: label.ColourOf("sp26-20"), Scope: "both"}) {
 		t.Errorf("the labels read %+v", Of(LabelList, listed))
 	}
 	if text := RenderText(LabelList, listed); !strings.Contains(text, "sp26-20") || !strings.Contains(text, "2 tasks") {
 		t.Errorf("a person reads:\n%s", text)
 	}
-	if text := RenderText(LabelList, Answer{Labels: &[]LabelCarried{}}); !strings.Contains(text, "no label") {
+	if text := RenderText(LabelList, Answer{Labels: &[]label.Carried{}}); !strings.Contains(text, "no label") {
 		t.Errorf("no label reads %q", text)
 	}
 }
@@ -52,14 +52,14 @@ func TestLabels_areDeletedFromEverythingCarryingThem(t *testing.T) {
 		t.Fatal(err)
 	}
 	shown, _ := Do(TaskShow, path, given("number", "1"))
-	if labels := factsOf(*shown.Task).Labels; strings.Join(labels, ",") != "doc" {
+	if labels := (*shown.Task).Carried().Labels; strings.Join(labels, ",") != "doc" {
 		t.Errorf("task 1 carries %v", labels)
 	}
 	goal, _ := Do(ObjectiveShow, path, given("number", "1"))
-	if labels := factsOfObjective(*goal.Objective).Labels; len(labels) != 0 {
+	if labels := (*goal.Objective).Carried().Labels; len(labels) != 0 {
 		t.Errorf("the objective carries %v", labels)
 	}
-	if _, err := Do(LabelDelete, path, Agreed(Input{Given: map[string]string{"label": "nope"}})); !errors.Is(err, errNoSuchLabel) {
+	if _, err := Do(LabelDelete, path, Agreed(Input{Given: map[string]string{"label": "nope"}})); !errors.Is(err, label.ErrNoSuchLabel) {
 		t.Errorf("deleting what nothing carries answered %v", err)
 	}
 }
@@ -76,21 +76,21 @@ func TestLabels_areRenamedOnEverythingCarryingThem(t *testing.T) {
 		t.Fatal(err)
 	}
 	shown, _ := Do(TaskShow, path, given("number", "1"))
-	if labels := factsOf(*shown.Task).Labels; strings.Join(labels, ",") != "doc,sprint-20" {
+	if labels := (*shown.Task).Carried().Labels; strings.Join(labels, ",") != "doc,sprint-20" {
 		t.Errorf("task 1 carries %v", labels)
 	}
 	goal, _ := Do(ObjectiveShow, path, given("number", "1"))
-	if labels := factsOfObjective(*goal.Objective).Labels; strings.Join(labels, ",") != "sprint-20" {
+	if labels := (*goal.Objective).Carried().Labels; strings.Join(labels, ",") != "sprint-20" {
 		t.Errorf("the objective carries %v", labels)
 	}
 	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "doc", "to": "sprint-20"}}); err != nil {
 		t.Fatal(err)
 	}
 	shown, _ = Do(TaskShow, path, given("number", "1"))
-	if labels := factsOf(*shown.Task).Labels; strings.Join(labels, ",") != "sprint-20" {
+	if labels := (*shown.Task).Carried().Labels; strings.Join(labels, ",") != "sprint-20" {
 		t.Errorf("joined, task 1 carries %v", labels)
 	}
-	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "nope", "to": "x"}}); !errors.Is(err, errNoSuchLabel) {
+	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "nope", "to": "x"}}); !errors.Is(err, label.ErrNoSuchLabel) {
 		t.Errorf("renaming what nothing carries answered %v", err)
 	}
 }
@@ -101,8 +101,8 @@ func TestALabelIsMadeOnItsOwnAndListedCarriedByNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	said, ok := Of(LabelNew, made).(labelList)
-	if !ok || len(said.Labels) != 1 || said.Labels[0] != (LabelCarried{Label: "release-train", Colour: domain.ColourOf("release-train"), Scope: "both"}) {
+	said, ok := Of(LabelNew, made).(label.List)
+	if !ok || len(said.Labels) != 1 || said.Labels[0] != (label.Carried{Label: "release-train", Colour: label.ColourOf("release-train"), Scope: "both"}) {
 		t.Fatalf("making a label answers %+v", Of(LabelNew, made))
 	}
 	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "release-train", "to": "train"}}); err != nil {
@@ -112,7 +112,7 @@ func TestALabelIsMadeOnItsOwnAndListedCarriedByNothing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("deleting a label nothing carries: %v", err)
 	}
-	if left := Of(LabelDelete, gone).(labelList); len(left.Labels) != 0 {
+	if left := Of(LabelDelete, gone).(label.List); len(left.Labels) != 0 {
 		t.Errorf("deleted, the labels left are %+v", left)
 	}
 	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": "a:b"}}); err == nil {
@@ -122,16 +122,16 @@ func TestALabelIsMadeOnItsOwnAndListedCarriedByNothing(t *testing.T) {
 
 func TestALabelWithNoNameIsRefusedNotMade(t *testing.T) {
 	path := storeAt(t)
-	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": ""}}); !errors.Is(err, domain.ErrLabelRequired) {
+	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": ""}}); !errors.Is(err, label.ErrLabelRequired) {
 		t.Errorf("a label with no name answers %v", err)
 	}
 	if _, err := Do(LabelNew, path, Input{Given: map[string]string{"label": "doc"}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "doc", "to": "  "}}); !errors.Is(err, domain.ErrLabelRequired) {
+	if _, err := Do(LabelRename, path, Input{Given: map[string]string{"label": "doc", "to": "  "}}); !errors.Is(err, label.ErrLabelRequired) {
 		t.Errorf("a rename to no name answers %v", err)
 	}
-	if _, err := Do(LabelDelete, path, Input{Given: map[string]string{"label": ""}, Confirmed: true}); !errors.Is(err, domain.ErrLabelRequired) {
+	if _, err := Do(LabelDelete, path, Input{Given: map[string]string{"label": ""}, Confirmed: true}); !errors.Is(err, label.ErrLabelRequired) {
 		t.Errorf("deleting no name answers %v", err)
 	}
 }
@@ -145,13 +145,13 @@ func TestALabelWearsTheColourChosenOrOneOfItsName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, one := range Of(LabelColour, coloured).(labelList).Labels {
-		want := map[string]string{"release": "peach", "doc": domain.ColourOf("doc")}[one.Label]
+	for _, one := range Of(LabelColour, coloured).(label.List).Labels {
+		want := map[string]string{"release": "peach", "doc": label.ColourOf("doc")}[one.Label]
 		if one.Colour != want {
 			t.Errorf("%s wears %q, want %q", one.Label, one.Colour, want)
 		}
 	}
-	if _, err := Do(LabelColour, path, Input{Given: map[string]string{"label": "release", "colour": "brown"}}); !errors.Is(err, domain.ErrNoSuchColour) {
+	if _, err := Do(LabelColour, path, Input{Given: map[string]string{"label": "release", "colour": "brown"}}); !errors.Is(err, label.ErrNoSuchColour) {
 		t.Errorf("brown answers %v", err)
 	}
 	opened, err := Open(path)
@@ -163,7 +163,7 @@ func TestALabelWearsTheColourChosenOrOneOfItsName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if looked.Colours["release"] != "peach" || looked.Colours["doc"] != domain.ColourOf("doc") {
+	if looked.Colours["release"] != "peach" || looked.Colours["doc"] != label.ColourOf("doc") {
 		t.Errorf("the board reads the colours %v", looked.Colours)
 	}
 }
@@ -211,13 +211,13 @@ func TestLabels_carryAScope(t *testing.T) {
 	if got := scopesOf(t, path, Input{}); got["area"] != "both" {
 		t.Errorf("area is for %q once put back to both", got["area"])
 	}
-	if _, err := Do(labelScope, path, given("label", "doc", "scope", "everything")); !errors.Is(err, domain.ErrNoSuchScope) {
+	if _, err := Do(labelScope, path, given("label", "doc", "scope", "everything")); !errors.Is(err, label.ErrNoSuchScope) {
 		t.Errorf("a scope that is none of the three reads %v", err)
 	}
-	if _, err := Do(labelScope, path, given("label", "nope", "scope", "tasks")); !errors.Is(err, errNoSuchLabel) {
+	if _, err := Do(labelScope, path, given("label", "nope", "scope", "tasks")); !errors.Is(err, label.ErrNoSuchLabel) {
 		t.Errorf("scoping a label nothing carries reads %v", err)
 	}
-	if _, err := Do(LabelNew, path, given("label", "x", "scope", "nowhere")); !errors.Is(err, domain.ErrNoSuchScope) {
+	if _, err := Do(LabelNew, path, given("label", "x", "scope", "nowhere")); !errors.Is(err, label.ErrNoSuchScope) {
 		t.Errorf("a label made with no such scope reads %v", err)
 	}
 }
@@ -237,7 +237,7 @@ func TestLabels_outOfTheirScopeAreRefused(t *testing.T) {
 		asked(ObjectiveNew, "title", "Other", "label", "chore"),
 	} {
 		op, in := refused()
-		if _, err := Do(op, path, in); !errors.Is(err, domain.ErrOutOfScope) {
+		if _, err := Do(op, path, in); !errors.Is(err, label.ErrOutOfScope) {
 			t.Errorf("%s %v reads %v", op.Line(), in.Listed, err)
 		}
 	}
@@ -261,12 +261,12 @@ func TestLabelRename_renamesItOnEveryObjectiveAndListsIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if answer.Labels == nil || !slices.ContainsFunc(*answer.Labels, func(l LabelCarried) bool { return l.Label == "sprint-20" }) {
+	if answer.Labels == nil || !slices.ContainsFunc(*answer.Labels, func(l label.Carried) bool { return l.Label == "sprint-20" }) {
 		t.Errorf("the rename answered %+v", answer.Labels)
 	}
 	for _, n := range []string{"1", "2"} {
 		goal, _ := Do(ObjectiveShow, path, given("number", n))
-		if labels := factsOfObjective(*goal.Objective).Labels; !slices.Equal(labels, []string{"sprint-20"}) {
+		if labels := (*goal.Objective).Carried().Labels; !slices.Equal(labels, []string{"sprint-20"}) {
 			t.Errorf("objective %s carries %v", n, labels)
 		}
 	}

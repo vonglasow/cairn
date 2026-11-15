@@ -9,8 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 func TestConfigShow_isNotStoppedByAStoreItCannotResolve(t *testing.T) {
@@ -18,8 +18,8 @@ func TestConfigShow_isNotStoppedByAStoreItCannotResolve(t *testing.T) {
 	if err := os.Unsetenv("HOME"); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv(config.StoreVariable, "")
-	if err := os.Unsetenv(config.StoreVariable); err != nil {
+	t.Setenv(files.StoreVariable, "")
+	if err := os.Unsetenv(files.StoreVariable); err != nil {
 		t.Fatal(err)
 	}
 
@@ -52,20 +52,9 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 	wanted := map[string]map[string]bool{}
 
 	for _, op := range append(engine.All(), engine.ForAPersonOnly()...) {
-		group, ok := groups[op.Thing]
-		if !ok {
-			t.Fatalf("%s: no %q group in the tree", op.Line(), op.Thing)
-		}
-
-		var cmd *cobra.Command
-		for _, c := range group.Commands() {
-			if c.Name() == op.Verb {
-				cmd = c
-				break
-			}
-		}
-		if cmd == nil {
-			t.Fatalf("%s: no command under %q for it", op.Line(), op.Thing)
+		cmd, _, err := root.Find(strings.Fields(op.Line()))
+		if err != nil || cmd.Name() != op.Verb {
+			t.Fatalf("%s: not in the tree (%v)", op.Line(), err)
 		}
 
 		if wanted[op.Thing] == nil {
@@ -115,6 +104,9 @@ func TestTree_carriesEveryActionAndWhatItSays(t *testing.T) {
 	}
 
 	for thing, verbs := range wanted {
+		if thing == "" {
+			continue
+		}
 		for _, c := range groups[thing].Commands() {
 			if !verbs[c.Name()] {
 				t.Errorf("%s %s: in the tree, but not declared by any action", thing, c.Name())

@@ -1,13 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"errors"
 	"path/filepath"
 	"slices"
 	"testing"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 func addedAt(t *testing.T, path, title string, at time.Time) {
@@ -56,7 +55,7 @@ func TestTraceList_untilSomethingThatIsNotADayIsRefused(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	addedAt(t, path, "Monday's", time.Date(2026, 9, 28, 9, 0, 0, 0, time.Local))
 	_, err := Do(traceList, path, given("until", "pasunjour"))
-	if !errors.Is(err, domain.ErrNotADay) {
+	if !errors.Is(err, calendar.ErrNotADay) {
 		t.Errorf("err = %v, want it refused as not a day", err)
 	}
 }

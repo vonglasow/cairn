@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/engine/workspace"
 	"image"
 	"image/png"
 	"os"
@@ -11,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 func introBoard() Window {
@@ -40,7 +41,7 @@ func playing(w Window, name string, at time.Duration) Window {
 func TestEveryIntroEndsOnTheStillBoard(t *testing.T) {
 	w := introBoard()
 	stage := w.Stage()
-	for _, name := range config.Intros() {
+	for _, name := range files.Intros() {
 		lasts := IntroLasts(name, stage)
 		if lasts <= 0 || lasts >= underABreath {
 			t.Errorf("%s lasts %v", name, lasts)
@@ -69,7 +70,7 @@ func TestEveryIntroEndsOnTheStillBoard(t *testing.T) {
 
 func TestAnIntroIsAPureFunctionOfTime(t *testing.T) {
 	stage := introBoard().Stage()
-	for _, name := range config.Intros() {
+	for _, name := range files.Intros() {
 		at := 400 * time.Millisecond
 		if a, b := Staging(name, at, stage), Staging(name, at, stage); !reflect.DeepEqual(a, b) {
 			t.Errorf("%s drew two boards at the same instant", name)
@@ -83,7 +84,7 @@ func TestABusyBoardArrivesNoSlower(t *testing.T) {
 		cards = append(cards, engine.Card{Number: n + 1, Title: "Task " + strconv.Itoa(n+1), State: []string{"backlog", "todo", "current", "done"}[n%4]})
 	}
 	stage := holding(newFake(), cards...).Stage()
-	for _, name := range config.Intros() {
+	for _, name := range files.Intros() {
 		if lasts := IntroLasts(name, stage); lasts >= underABreath {
 			t.Errorf("%s lasts %v on a busy board", name, lasts)
 		}
@@ -92,11 +93,11 @@ func TestABusyBoardArrivesNoSlower(t *testing.T) {
 
 func TestTheIntroIsTheOneTheConfigurationNamesAndNoneWithLessMotion(t *testing.T) {
 	w := introBoard()
-	if got := w.IntroShown(); got != config.IntroRipple {
+	if got := w.IntroShown(); got != files.IntroRipple {
 		t.Errorf("with nothing said, the intro is %q", got)
 	}
-	w.configured.Window = &engine.WindowConfig{Intro: config.IntroFlap}
-	if got := w.IntroShown(); got != config.IntroFlap {
+	w.configured.Window = &workspace.WindowConfig{Intro: files.IntroFlap}
+	if got := w.IntroShown(); got != files.IntroFlap {
 		t.Errorf("the configuration names flap, the intro is %q", got)
 	}
 	if _, on := w.Born(w.now).Intro(); !on {
@@ -120,14 +121,14 @@ func TestTheIntroChooserWalksPlaysAndKeeps(t *testing.T) {
 	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"}).At(time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC))
 	w.screen = OnConfiguration
 	w = w.openingIntros()
-	if got := w.IntroShown(); got != config.IntroRipple {
+	if got := w.IntroShown(); got != files.IntroRipple {
 		t.Errorf("the chooser opens on %q", got)
 	}
 	w = Typed(w, "↓", 0)
-	if _, on := w.Intro(); !on || w.IntroShown() != config.Intros()[1] {
+	if _, on := w.Intro(); !on || w.IntroShown() != files.Intros()[1] {
 		t.Errorf("walking down plays %q: %v", w.IntroShown(), on)
 	}
-	if rows := w.IntroRows(); len(rows) != len(config.Intros()) || !rows[0].InForce || rows[1].Says != IntroSays(config.Intros()[1]) {
+	if rows := w.IntroRows(); len(rows) != len(files.Intros()) || !rows[0].InForce || rows[1].Says != IntroSays(files.Intros()[1]) {
 		t.Errorf("the chooser offers %+v", rows)
 	}
 	if got := Heads(w); got != "Intro of here" {
@@ -143,7 +144,7 @@ func TestTheIntroChooserWalksPlaysAndKeeps(t *testing.T) {
 		}
 	}
 	w = w.clickingIntros(Point{X: w.IntroRows()[3].At.X + 4, Y: w.IntroRows()[3].At.Y + 4})
-	if w.IntroShown() != config.Intros()[3] {
+	if w.IntroShown() != files.Intros()[3] {
 		t.Errorf("a click plays %q", w.IntroShown())
 	}
 	w = w.Key("esc")
@@ -156,7 +157,7 @@ func TestEachIntroIsDrawnAtAnyInstantAndEndsOnTheStillBoard(t *testing.T) {
 	still := introBoard()
 	shots := os.Getenv("INTRO_SHOTS")
 	want := drawn(t, still)
-	for _, name := range config.Intros() {
+	for _, name := range files.Intros() {
 		lasts := IntroLasts(name, still.Stage())
 		for _, share := range []float64{0.1, 0.3, 0.6} {
 			at := time.Duration(float64(lasts) * share)

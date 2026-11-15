@@ -13,7 +13,7 @@ import (
 	"gioui.org/io/pointer"
 
 	"cairn/internal/engine"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func TestEveryPointerEventItsGesture(t *testing.T) {
@@ -103,7 +103,7 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 
 func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 	f := newFake()
-	f.acts = []trace.Act{anAct("added", "", "", "")}
+	f.acts = []act.Act{anAct("added", "", "", "")}
 	w := holding(f, engine.Card{
 		Number: 1, Title: "Write the spec", State: "todo",
 		Description: "The client wants two columns",

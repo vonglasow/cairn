@@ -1,0 +1,251 @@
+package objective
+
+import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
+	"strings"
+	"testing"
+	"time"
+)
+
+func plan(t *testing.T) Objective {
+	t.Helper()
+	built, err := NewObjective("Ship the release")
+	if err != nil {
+		t.Fatalf("NewObjective: %v", err)
+	}
+	a := From(built)
+	a.Numbered(1)
+	return a.Objective()
+}
+
+func TestText_leadsWithTheNumberAndTheTitle(t *testing.T) {
+	got := Text(plan(t), item.Progress{}, Review{}, Family{})
+	if first := strings.SplitN(got, "\n", 2)[0]; !strings.Contains(first, "1") || !strings.Contains(first, "Ship the release") {
+		t.Errorf("first line = %q, want the number and the title", first)
+	}
+}
+
+func TestText_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
+	got := Text(plan(t), item.Progress{}, Review{}, Family{})
+	for _, key := range []string{"state", "priority", "description", "labels", "deadline", "estimate"} {
+		if !strings.Contains(got, key) {
+			t.Errorf("text is missing %q:\n%s", key, got)
+		}
+	}
+}
+
+func TestText_showsTheDefaultsAnObjectiveStartsWith(t *testing.T) {
+	got := Text(plan(t), item.Progress{}, Review{}, Family{})
+	if !strings.Contains(got, "active") || !strings.Contains(got, "normal") {
+		t.Errorf("text should show active and normal:\n%s", got)
+	}
+}
+
+func TestText_showsWhatTheObjectiveCarries(t *testing.T) {
+	built := plan(t)
+	deadline, err := calendar.ParseDeadline("2026-10-01")
+	if err != nil {
+		t.Fatalf("ParseDeadline: %v", err)
+	}
+	estimate, err := calendar.ParseEstimate("5h")
+	if err != nil {
+		t.Fatalf("ParseEstimate: %v", err)
+	}
+	a := From(built)
+	a.Described("the whole thing")
+	a.Labelled("launch")
+	a.Labelled("team")
+	a.Due(deadline)
+	a.Estimated(estimate)
+	built = a.Objective()
+
+	got := Text(built, item.Progress{}, Review{}, Family{})
+	for _, want := range []string{"the whole thing", "launch, team", "2026-10-01", "5h"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("text is missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestText_showsHowFarAlongItIs(t *testing.T) {
+	got := Text(plan(t), item.Progress{Tasks: item.Tally{Total: 3, Done: 1}}, Review{}, Family{})
+	if !strings.Contains(got, "1 of 3 tasks are done") {
+		t.Errorf("text is missing the progress line:\n%s", got)
+	}
+}
+
+func TestText_countsStepsApartFromTasks(t *testing.T) {
+	got := Text(plan(t), item.Progress{Steps: item.Tally{Total: 4, Done: 2}}, Review{}, Family{})
+	if !strings.Contains(got, "2 of 4 steps are done") {
+		t.Errorf("text is missing the progress line:\n%s", got)
+	}
+	if strings.Contains(got, "0 of 0 tasks") {
+		t.Errorf("text should not count tasks it does not have:\n%s", got)
+	}
+}
+
+func TestList_writesEveryObjectiveAsOneRow(t *testing.T) {
+	first, err := NewObjective("First")
+	if err != nil {
+		t.Fatalf("NewObjective: %v", err)
+	}
+	second, err := NewObjective("Second")
+	if err != nil {
+		t.Fatalf("NewObjective: %v", err)
+	}
+	var a, b AsTold
+	a = From(first)
+	a.Numbered(1)
+	b = From(second)
+	b.Numbered(2)
+
+	got := List([]Objective{a.Objective(), b.Objective()}, nil, nil)
+	if !strings.Contains(got, "#1  First") || !strings.Contains(got, "#2  Second") {
+		t.Errorf("List is missing a row:\n%s", got)
+	}
+}
+
+func TestList_goesOnPastASubObjectiveToTheNextTopOne(t *testing.T) {
+	told := func(n, parent int, title string) Objective {
+		built, err := NewObjective(title)
+		if err != nil {
+			t.Fatalf("NewObjective: %v", err)
+		}
+		a := From(built)
+		a.Numbered(n)
+		a.Under(parent)
+		return a.Objective()
+	}
+	got := List([]Objective{told(1, 0, "Ship"), told(2, 1, "Write"), told(3, 0, "Rest")}, nil, nil)
+	if !strings.Contains(got, "#3  Rest") {
+		t.Errorf("the top objective after a sub-objective is missing:\n%s", got)
+	}
+}
+
+func TestServing_saysNothingIsUnderItForNoLines(t *testing.T) {
+	if got := Serving(nil); !strings.Contains(got, "nothing is under it") {
+		t.Errorf("Serving(nil) = %q, want it to say nothing is under it", got)
+	}
+}
+
+func TestServing_listsTheLinesItIsGiven(t *testing.T) {
+	got := Serving([]string{"#3  Write the tests"})
+	if !strings.Contains(got, "tasks") || !strings.Contains(got, "#3  Write the tests") {
+		t.Errorf("Serving is missing the line:\n%s", got)
+	}
+}
+
+func TestAListingSaysWhereAnObjectiveStands(t *testing.T) {
+	var a AsTold
+	a.Numbered(3)
+	a.Titled("Ship cairn")
+	a.Standing(Reached)
+	a.Carries(item.High)
+	a.Due(time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC))
+	listed := List([]Objective{a.Objective()}, nil, nil)
+	for _, said := range []string{"Ship cairn", "reached", "high", "2026-12-01"} {
+		if !strings.Contains(listed, said) {
+			t.Errorf("the listing does not say %q: %q", said, listed)
+		}
+	}
+}
+
+func TestText_saysTheTimeSpentAndWhatIsLeft(t *testing.T) {
+	got := Text(plan(t), item.Progress{}, Review{Spent: 2*time.Hour + 15*time.Minute,
+		Left: Left{Tasks: 2, Due: time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC), On: 3}}, Family{})
+	for _, want := range []string{"time spent   2h15m", "left         2 tasks, the next deadline 2026-11-05 (#3)"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("text is missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestLeft_saysWhatRemains(t *testing.T) {
+	due := time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC)
+	for _, c := range []struct {
+		left Left
+		want string
+	}{
+		{Left{}, "nothing"},
+		{Left{Tasks: 1}, "1 task, no deadline"},
+		{Left{Tasks: 1, Due: due, On: 4}, "1 task, deadline 2026-11-05 (#4)"},
+		{Left{Tasks: 3}, "3 tasks, no deadline"},
+		{Left{Tasks: 3, Due: due, On: 4}, "3 tasks, the next deadline 2026-11-05 (#4)"},
+	} {
+		if got := c.left.Line(); got != c.want {
+			t.Errorf("%+v says %q, want %q", c.left, got, c.want)
+		}
+	}
+}
+
+func TestList_saysHowFarAlongEachIs(t *testing.T) {
+	var a, b AsTold
+	a.Numbered(1)
+	a.Titled("Ship cairn")
+	b.Numbered(2)
+	b.Titled("Write the docs")
+	got := List([]Objective{a.Objective(), b.Objective()}, map[int]item.Progress{
+		1: {Tasks: item.Tally{Total: 4, Done: 2}},
+		2: {},
+	}, nil)
+	rows := strings.Split(strings.TrimSpace(got), "\n")
+	if len(rows) != 3 || !strings.HasSuffix(rows[1], "· 50% done") || strings.Contains(rows[2], "done") {
+		t.Errorf("the list reads:\n%s", got)
+	}
+}
+
+func TestReport_saysThePeriodTheMonthsAndWhatWasDone(t *testing.T) {
+	day := func(m time.Month, d int) time.Time { return time.Date(2026, m, d, 0, 0, 0, 0, time.UTC) }
+	in := Period{
+		Since:  day(8, 1),
+		Until:  day(9, 30),
+		Months: []Month{{Month: day(8, 1), Spent: 90 * time.Minute}, {Month: day(9, 1), Spent: 45 * time.Minute}},
+		Done:   []Finished{{Number: 3, Title: "Write the spec", On: day(9, 14)}},
+	}
+	got := Report(plan(t), item.Progress{}, Review{Spent: 4*time.Hour + 15*time.Minute}, in)
+	for _, want := range []string{
+		"Ship the release — from 2026-08-01 to 2026-09-30",
+		"time spent  2h15m in the period, 4h15m in all",
+		"by month\n  2026-08  1h30m\n  2026-09  45m\n",
+		"done in the period\n  #3  Write the spec  · 2026-09-14\n",
+		"left        nothing",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the report is missing %q:\n%s", want, got)
+		}
+	}
+	empty := Report(plan(t), item.Progress{}, Review{}, Period{Since: day(8, 1), Until: day(8, 31)})
+	for _, want := range []string{"time spent  — in the period, — in all", "nothing was spent in the period", "nothing was done in the period"} {
+		if !strings.Contains(empty, want) {
+			t.Errorf("an empty report is missing %q:\n%s", want, empty)
+		}
+	}
+}
+
+func TestText_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
+	said := Text(plan(t), item.Progress{}, Review{Spent: 2 * time.Hour, Untimed: true}, Family{})
+	if strings.Contains(said, "time spent") {
+		t.Errorf("the time not shown, the text says the time spent:\n%s", said)
+	}
+	in := Period{Since: time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC), Until: time.Date(2026, 8, 31, 0, 0, 0, 0, time.UTC)}
+	report := Report(plan(t), item.Progress{}, Review{Spent: 2 * time.Hour, Untimed: true}, in)
+	for _, never := range []string{"time spent", "spent in the period", "by month"} {
+		if strings.Contains(report, never) {
+			t.Errorf("the time not shown, the report says %q:\n%s", never, report)
+		}
+	}
+}
+
+func TestLeft_countsWhatIsOpenAndKeepsTheSoonestDeadline(t *testing.T) {
+	soon, late := time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
+	var l Left
+	l = l.Counting(1, item.Todo, false, late)
+	l = l.Counting(2, item.Done, false, soon)
+	l = l.Counting(3, item.Todo, true, soon)
+	l = l.Counting(4, item.Current, false, soon)
+	l = l.Counting(5, item.Backlog, false, time.Time{})
+	if want := (Left{Tasks: 3, Due: soon, On: 4}); l != want {
+		t.Errorf("Left = %+v, want %+v", l, want)
+	}
+}

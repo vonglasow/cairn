@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func TestTaskShow_saysSinceWhenTheTaskStands(t *testing.T) {
@@ -35,7 +35,7 @@ func TestLabel_putsTheLabelOnEveryTaskReached(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if labels := factsOf(*shown.Task).Labels; !slices.Contains(labels, "sprint") {
+	if labels := (*shown.Task).Carried().Labels; !slices.Contains(labels, "sprint") {
 		t.Errorf("task 2 carries %v, want sprint among them", labels)
 	}
 }
@@ -64,7 +64,7 @@ func TestDelete_aTaskInFocusIsReleasedThenDeleted(t *testing.T) {
 	for _, a := range acts {
 		did = append(did, a.Carried().Did)
 	}
-	released, deleted := slices.Index(did, trace.FocusReleased), slices.Index(did, trace.Deleted)
+	released, deleted := slices.Index(did, act.FocusReleased), slices.Index(did, act.Deleted)
 	if released < 0 || deleted < released {
 		t.Errorf("acts = %v, want the focus released then the task deleted", did)
 	}
@@ -91,7 +91,7 @@ func TestTask_unarchiveAnswersTheTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if back.Task == nil || factsOf(*back.Task).Number != 1 || factsOf(*back.Task).Archived {
+	if back.Task == nil || (*back.Task).Carried().Number != 1 || (*back.Task).Carried().Archived {
 		t.Errorf("unarchive answered %v, want task 1 back on the board", back.Task)
 	}
 }
@@ -111,7 +111,7 @@ func TestTask_stepsGivenAreReadAndRefusedWhenNoText(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if steps := factsOf(*made.Task).Steps; len(steps) != 2 || !steps[0].Done {
+	if steps := (*made.Task).Carried().Steps; len(steps) != 2 || !steps[0].Done {
 		t.Errorf("steps = %+v, want one done and one not", steps)
 	}
 	if _, err := Do(TaskNew, path, given("title", "Ship it", "steps", "[ ] bell\x07")); err == nil {

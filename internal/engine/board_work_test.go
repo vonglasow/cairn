@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func TestAGoalIsToldItHasADescription(t *testing.T) {
@@ -74,7 +74,7 @@ func TestLook_saysOnEachCardHowManyTasksItIsInTheWayOf(t *testing.T) {
 	other.Numbered(2)
 	f := newFake()
 	f.tasks = []task.Task{told.Task(), other.Task()}
-	f.chosen = map[int]choosing{1: {Blocks: []int{2, 3}}}
+	f.chosen = map[int]task.Choosing{1: {Blocks: []int{2, 3}}}
 	s, err := Look(f)
 	if err != nil {
 		t.Fatal(err)

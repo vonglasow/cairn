@@ -3,7 +3,7 @@ package engine
 import (
 	"errors"
 
-	"cairn/internal/migration"
+	"cairn/internal/engine/migration"
 )
 
 // MigrationList names every change to the store, applied or waiting.
@@ -71,7 +71,7 @@ cairn migration apply 4`,
 		n, named := in.whole("number")
 		if !named {
 			made, err := on.Engine.applyAll(on.Path)
-			if errors.Is(err, errNothingWaiting) {
+			if errors.Is(err, migration.ErrNothingWaiting) {
 				return Answer{Applied: []string{}}, nil
 			}
 			if err != nil {

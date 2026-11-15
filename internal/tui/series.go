@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
 	"strings"
@@ -8,7 +10,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -172,7 +173,7 @@ func (b Board) occursSaid(c engine.Card) string {
 	case o.Stopped:
 		said += " · stopped"
 	case len(o.Then) > 0:
-		said += " · next " + engine.ShortDays(o.Then[:1])
+		said += " · next " + series.ShortDays(o.Then[:1])
 	}
 	return said
 }
@@ -259,7 +260,7 @@ func (b Board) seriesChosen(width int) ([]string, int) {
 		b.skin.Head.Render("SO FAR"),
 		"  " + b.skin.Bright.Render(strconv.Itoa(s.Done)+" done · "+strconv.Itoa(s.Skipped)+" skipped · "+strconv.Itoa(s.Missed)+" missed") +
 			b.skin.Faint.Render(spentSaid(s.TimeSpent)),
-		b.skin.Head.Render("ON THE BOARD NOW") + "  " + b.skin.Bright.Render(domain.OrNothing(numbersSaid(s.Open))),
+		b.skin.Head.Render("ON THE BOARD NOW") + "  " + b.skin.Bright.Render(item.OrNothing(numbersSaid(s.Open))),
 		"",
 		b.skin.Head.Render("OCCURRENCES · "+strconv.Itoa(len(s.Occurrences))) + b.skin.Faint.Render("  archived ones included · ⏎ opens one"),
 	}
@@ -277,7 +278,7 @@ func (b Board) seriesChosen(width int) ([]string, int) {
 		if o.Archived {
 			is += " · archived"
 		}
-		out = append(out, mark+b.skin.Says.Render(pad(engine.ShortDays([]string{o.Day}), 11))+b.skin.Faint.Render(what)+"  "+
+		out = append(out, mark+b.skin.Says.Render(pad(series.ShortDays([]string{o.Day}), 11))+b.skin.Faint.Render(what)+"  "+
 			b.skin.Bright.Render(pad(is, 18))+b.skin.Faint.Render(o.TimeSpent))
 	}
 	return out, chosen

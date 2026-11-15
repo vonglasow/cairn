@@ -1,11 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/engine/backup"
 	"errors"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -21,7 +21,7 @@ func TestBackingUpSaysWhatWentWrong(t *testing.T) {
 	if got := w.listingBackups(); !errors.Is(got.Wrong(), errNoBackup) || got.Screen() != OnTheBoard {
 		t.Errorf("a listing refused says %v, on %v", got.Wrong(), got.Screen())
 	}
-	w.backups = []domain.Backup{{Number: 3}}
+	w.backups = []backup.Backup{{Number: 3}}
 	if got := w.puttingBack(); !errors.Is(got.Wrong(), errNoBackup) || got.Screen() != OnTheBoard {
 		t.Errorf("putting back refused says %v, on %v", got.Wrong(), got.Screen())
 	}
@@ -35,7 +35,7 @@ func TestNoBackupYetIsSaid(t *testing.T) {
 }
 
 func TestTheBackupsAreWalkedBothWays(t *testing.T) {
-	w := Window{screen: OnBackups, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
+	w := Window{screen: OnBackups, backupsState: backupsState{backups: []backup.Backup{{Number: 2}, {Number: 1}}}}
 	if got := w.onBackups("up").BackupOn(); got != 0 {
 		t.Errorf("up from the first is on %d", got)
 	}
@@ -72,7 +72,7 @@ func TestWhatIsToldGoes(t *testing.T) {
 
 func TestTheBackupsAreDrawn(t *testing.T) {
 	made := time.Date(2026, 10, 12, 10, 0, 0, 0, time.UTC)
-	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2, Made: made}, {Number: 1, Made: made}}}}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []backup.Backup{{Number: 2, Made: made}, {Number: 1, Made: made}}}}
 	shot := drawn(t, w)
 	box := w.BackupsBox()
 	corner := func(i int) Box {
@@ -96,7 +96,7 @@ func TestTheBackupsAreLaidOut(t *testing.T) {
 }
 
 func TestRestoringAsksWhatItCosts(t *testing.T) {
-	w := Window{screen: OnAsking, question: aboutPuttingBack, backupsState: backupsState{backups: []domain.Backup{{Number: 7}}}}
+	w := Window{screen: OnAsking, question: aboutPuttingBack, backupsState: backupsState{backups: []backup.Backup{{Number: 7}}}}
 	asks := w.Asks()
 	if len(asks) != 1 || asks[0].Means != "A new backup of what the store holds now is made first." {
 		t.Errorf("the question says %+v", asks)
@@ -107,7 +107,7 @@ func TestRestoringAsksWhatItCosts(t *testing.T) {
 }
 
 func TestTheBackupsAnswerThePointer(t *testing.T) {
-	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []domain.Backup{{Number: 2}, {Number: 1}}}}
+	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: []backup.Backup{{Number: 2}, {Number: 1}}}}
 	row := ListRowAt(w.BackupsBox(), 1)
 	asked := w.Click(Point{X: row.X + 5, Y: row.Y + 5})
 	if asked.Screen() != OnAsking || asked.question != aboutPuttingBack || asked.BackupOn() != 1 {
@@ -119,9 +119,9 @@ func TestTheBackupsAnswerThePointer(t *testing.T) {
 }
 
 func TestManyBackupsScroll(t *testing.T) {
-	many := make([]domain.Backup, 40)
+	many := make([]backup.Backup, 40)
 	for i := range many {
-		many[i] = domain.Backup{Number: 40 - i}
+		many[i] = backup.Backup{Number: 40 - i}
 	}
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: many}}
 	room := w.BackupsRoom()
@@ -143,9 +143,9 @@ func TestManyBackupsScroll(t *testing.T) {
 }
 
 func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
-	many := make([]domain.Backup, 40)
+	many := make([]backup.Backup, 40)
 	for i := range many {
-		many[i] = domain.Backup{Number: 40 - i}
+		many[i] = backup.Backup{Number: 40 - i}
 	}
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: many, backupsFrom: 5}}
 	if got := w.BackupsRoom(); got != 19 {
@@ -166,9 +166,9 @@ func TestTheBackupsListIsMeasuredAndClickedWhereItIsDrawn(t *testing.T) {
 }
 
 func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
-	many := make([]domain.Backup, 20)
+	many := make([]backup.Backup, 20)
 	for i := range many {
-		many[i] = domain.Backup{Number: 20 - i}
+		many[i] = backup.Backup{Number: 20 - i}
 	}
 	w := Window{screen: OnBackups, width: 1200, height: 800, backupsState: backupsState{backups: many, backupsFrom: 5, backupOn: 6}}
 	shot := drawn(t, w)
@@ -196,9 +196,9 @@ func TestTheWheelStaysInsideAPanel(t *testing.T) {
 			t.Errorf("the wheel over %v scrolled the board to %v", screen, got.scroll)
 		}
 	}
-	backups := make([]domain.Backup, 40)
+	backups := make([]backup.Backup, 40)
 	for i := range backups {
-		backups[i] = domain.Backup{Number: 40 - i}
+		backups[i] = backup.Backup{Number: 40 - i}
 	}
 	w.screen, w.backups = OnBackups, backups
 	box := w.BackupsBox()
@@ -219,7 +219,7 @@ func TestTheWheelStaysInsideAPanel(t *testing.T) {
 
 func TestABackupLineSaysWhenAndHowBig(t *testing.T) {
 	made := time.Date(2026, 11, 1, 9, 12, 0, 0, time.Local)
-	if got := backupSays(domain.Backup{Number: 3, Made: made, Size: 48 * 1024}); got != "backup 3   2026-11-01 09:12   48 KB" {
+	if got := backupSays(backup.Backup{Number: 3, Made: made, Size: 48 * 1024}); got != "backup 3   2026-11-01 09:12   48 KB" {
 		t.Errorf("a backup line says %q", got)
 	}
 }

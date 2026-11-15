@@ -1,14 +1,15 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/series"
 	"errors"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 func TestTaskExport_writesTheSeriesTheirTemplateAndTheirTrace(t *testing.T) {
@@ -37,7 +38,7 @@ func TestTaskExport_writesTheSeriesTheirTemplateAndTheirTrace(t *testing.T) {
 	if len(first.Acts) != 2 || first.Acts[0].Did != "made" || first.Acts[0].Task != 1 || first.Acts[1].Task != 2 || first.Acts[0].At == "" {
 		t.Errorf("its acts read %+v", first.Acts)
 	}
-	if second.Stopped == "" || !slices.ContainsFunc(second.Acts, func(a seriesAct) bool { return a.Did == "stopped" }) {
+	if second.Stopped == "" || !slices.ContainsFunc(second.Acts, func(a series.Act) bool { return a.Did == "stopped" }) {
 		t.Errorf("the second series reads %+v", second)
 	}
 	if len(read.Objectives) != 1 || read.Objectives[0].Number != 1 {
@@ -73,7 +74,7 @@ func TestTaskImport_bringsTheSeriesBackLinkedToTheirTasks(t *testing.T) {
 		t.Fatal(err)
 	}
 	today := time.Now()
-	from, _ := domain.FromToday("-5d", today)
+	from, _ := calendar.FromToday("-5d", today)
 	if s.kept.Rule != "every day" || s.kept.Start != from || s.kept.Title != "Stand-up" || s.kept.Priority != "high" || s.kept.Estimate != 15*time.Minute ||
 		!slices.Equal(s.kept.Steps, []string{"Yesterday"}) || !slices.Equal(s.kept.Labels, []string{"daily"}) || !slices.Equal(s.kept.Objectives, []int{1}) {
 		t.Errorf("↻1 came back as %+v", s.kept)
@@ -81,7 +82,7 @@ func TestTaskImport_bringsTheSeriesBackLinkedToTheirTasks(t *testing.T) {
 	if len(s.acts) != 4 || s.acts[0].Task != 0 || s.acts[0].By != "me" || !s.acts[0].At.Equal(time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)) || s.acts[1].Task != 1 || s.acts[3].Task != 2 {
 		t.Errorf("its acts came back as %+v", s.acts)
 	}
-	if day, _ := domain.FromToday("-2d", today); s.acts[2].Did != "missed" || s.acts[2].Day != day {
+	if day, _ := calendar.FromToday("-2d", today); s.acts[2].Did != "missed" || s.acts[2].Day != day {
 		t.Errorf("the day missed came back as %+v", s.acts[2])
 	}
 	stopped, err := e.seriesAt(2)
@@ -95,7 +96,7 @@ func TestTaskImport_bringsTheSeriesBackLinkedToTheirTasks(t *testing.T) {
 }
 
 func TestTaskImport_refusesASeriesItCannotRead(t *testing.T) {
-	for _, series := range []string{
+	for _, said := range []string{
 		`{"number": 1, "rule": "every day", "from": "2026-11-09", "template": {"title": "x", "priority": "normal", "objectives": [9]}}`,
 		`{"number": 1, "rule": "every blue moon", "from": "2026-11-09", "template": {"title": "x", "priority": "normal"}}`,
 		`{"number": 1, "rule": "every day", "from": "someday", "template": {"title": "x", "priority": "normal"}}`,
@@ -109,7 +110,7 @@ func TestTaskImport_refusesASeriesItCannotRead(t *testing.T) {
 		`{"number": 1, "rule": "every day", "from": "2026-11-09", "template": {"title": "x", "priority": "normal"}, "acts": [{"did": "made", "task": 1, "at": "noon"}]}`,
 	} {
 		from := filepath.Join(t.TempDir(), "held.json")
-		file := `{"cairn": "tasks", "version": 6, "objectives": [], "tasks": [{"number": 1, "title": "Ship it", "state": "todo", "priority": "normal"}], "series": [` + series + `]}`
+		file := `{"cairn": "tasks", "version": 6, "objectives": [], "tasks": [{"number": 1, "title": "Ship it", "state": "todo", "priority": "normal"}], "series": [` + said + `]}`
 		if err := os.WriteFile(from, []byte(file), 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -119,11 +120,11 @@ func TestTaskImport_refusesASeriesItCannotRead(t *testing.T) {
 			_, err = e.importing(read)
 		}
 		if err == nil {
-			t.Errorf("%s was read", series)
+			t.Errorf("%s was read", said)
 			continue
 		}
 		if tasks, _ := e.everyTask(); len(tasks) != 0 {
-			t.Errorf("%s added %d tasks before it was refused", series, len(tasks))
+			t.Errorf("%s added %d tasks before it was refused", said, len(tasks))
 		}
 	}
 	from := filepath.Join(t.TempDir(), "twice.json")
@@ -136,7 +137,7 @@ func TestTaskImport_refusesASeriesItCannotRead(t *testing.T) {
 	if err == nil {
 		_, err = openEngine(t).importing(read)
 	}
-	if !errors.Is(err, errNotAnExport) {
+	if !errors.Is(err, exchange.ErrNotAnExport) {
 		t.Errorf("a series in the file twice reads %v", err)
 	}
 }
@@ -146,7 +147,7 @@ func TestTaskImport_aFileOfVersion8IsRefused(t *testing.T) {
 	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 8, "objectives": [], "tasks": []}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readExport(from); !errors.Is(err, errNotAnExport) {
+	if _, err := readExport(from); !errors.Is(err, exchange.ErrNotAnExport) {
 		t.Errorf("a file of version 8 reads %v", err)
 	}
 }
@@ -156,7 +157,7 @@ func TestTaskImport_aFileHoldingNothingToAddIsRefused(t *testing.T) {
 	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 7, "tasks": []}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readExport(from); !errors.Is(err, errNotAnExport) {
+	if _, err := readExport(from); !errors.Is(err, exchange.ErrNotAnExport) {
 		t.Errorf("a file holding nothing reads %v", err)
 	}
 	for what, held := range map[string]string{

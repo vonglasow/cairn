@@ -1,6 +1,10 @@
 package engine
 
 import (
+	"cairn/internal/engine/app"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/workspace"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -8,9 +12,8 @@ import (
 	"time"
 
 	"cairn/internal/build"
-	"cairn/internal/config"
 	"cairn/internal/debug"
-	"cairn/internal/domain"
+	"cairn/internal/store/files"
 )
 
 // Home is what a surface knows about where it runs: the home directory, or why there is none, how to read the environment, the workspace or the store its command line named, where a server kept answering from since it started, the version of the cairn running, its stamps' when none is given, and the directory it runs in, which may sit under a workspace's folder.
@@ -20,7 +23,7 @@ type Home struct {
 	Lookup    func(string) (string, bool)
 	Workspace string
 	Store     string
-	Kept      *Started
+	Kept      *workspace.Started
 	Version   string
 	Here      string
 }
@@ -86,7 +89,7 @@ func Ignored(h Home) []string {
 // Locate works out where the store and the notes live: a flag, then the environment, then the workspace the current directory sits under, then the default workspace, then the configuration file, then main, under the home, in that order.
 func Locate(h Home) (Places, error) {
 	if h.Dir == "" {
-		if said, ok := h.lookup()(config.StoreVariable); !ok || said == "" {
+		if said, ok := h.lookup()(files.StoreVariable); !ok || said == "" {
 			return Places{}, fmt.Errorf("%w: %w", errStore, h.Missing)
 		}
 	}
@@ -94,50 +97,50 @@ func Locate(h Home) (Places, error) {
 	if err != nil {
 		return Places{}, err
 	}
-	notes := answers.notes.At
+	notes := answers.Notes.At
 	if !filepath.IsAbs(notes) {
 		notes = ""
 	}
 	plugin := found.Plugin()
 	if plugin == "" {
-		plugin = PluginBeside(answers.store.At)
+		plugin = app.PluginBeside(answers.Store.At)
 	}
-	return Places{Store: answers.store.At, Notes: notes, Plugin: plugin, Home: h}, nil
+	return Places{Store: answers.Store.At, Notes: notes, Plugin: plugin, Home: h}, nil
 }
 
-func (h Home) configuration() (config.Places, error) {
+func (h Home) configuration() (files.Places, error) {
 	_, _ = UpgradeConfiguration(h)
-	found, err := config.Read(h.Dir, h.lookup())
+	found, err := files.Read(h.Dir, h.lookup())
 	if err != nil {
-		return config.Places{}, refusedOrUnusable(err)
+		return files.Places{}, refusedOrUnusable(err)
 	}
 	return found, nil
 }
 
-func (h Home) settled() (config.Places, answering, error) {
+func (h Home) settled() (files.Places, workspace.Answering, error) {
 	found, err := h.configuration()
 	if err != nil {
-		return config.Places{}, answering{}, err
+		return files.Places{}, workspace.Answering{}, err
 	}
 	answers, err := h.answering(found)
 	if err != nil {
-		return config.Places{}, answering{}, err
+		return files.Places{}, workspace.Answering{}, err
 	}
-	beside := config.SettingsBeside(answers.store.At)
+	beside := files.SettingsBeside(answers.Store.At)
 	settled, err := found.WithSettings(beside)
 	if err != nil {
-		return config.Places{}, answering{}, refusedOrUnusable(err)
+		return files.Places{}, workspace.Answering{}, refusedOrUnusable(err)
 	}
 	if said := settled.Colour(); said != "" {
-		if _, err := domain.ParseColour(said); err != nil {
-			return config.Places{}, answering{}, fmt.Errorf("%s: workspace.colour %w", beside, err)
+		if _, err := label.ParseColour(said); err != nil {
+			return files.Places{}, workspace.Answering{}, fmt.Errorf("%s: workspace.colour %w", beside, err)
 		}
 	}
 	return settled, answers, nil
 }
 
 func refusedOrUnusable(err error) error {
-	for _, theirs := range []error{config.ErrNotTOML, config.ErrUnknownKey, config.ErrNotAbsolute, config.ErrNotAWorkspace, config.ErrMachineKey, config.ErrEmpty} {
+	for _, theirs := range []error{files.ErrNotTOML, files.ErrUnknownKey, files.ErrNotAbsolute, files.ErrNotAWorkspace, files.ErrMachineKey, files.ErrEmpty} {
 		if errors.Is(err, theirs) {
 			return err
 		}
@@ -146,11 +149,11 @@ func refusedOrUnusable(err error) error {
 }
 
 // DoFrom runs an operation for a surface that knows only its home: it refuses what it cannot read first, then finds the places, then runs it there.
-func DoFrom(op Operation, h Home, in Input, acting Acting) (answer Answer, err error) {
-	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
-	if err := op.admitted(in); err != nil {
-		return Answer{}, err
-	}
+func DoFrom(op Operation, h Home, in Input, acting Acting) (Answer, error) {
+	return admittedAndNoted(op, in, func() (Answer, error) { return doFrom(op, h, in, acting) })
+}
+
+func doFrom(op Operation, h Home, in Input, acting Acting) (Answer, error) {
 	if op.Needs == aConfiguration {
 		return doAt(op, Places{Home: h}, in, acting)
 	}
@@ -168,7 +171,7 @@ func Hold(h Home, acting Acting) (*Engine, error) {
 		return nil, err
 	}
 	held, err := OpenAt(at)
-	if errors.Is(err, ErrNewerStore) {
+	if errors.Is(err, migration.ErrNewerStore) {
 		return &Engine{path: at.Store, notes: at.Notes, home: at.Home, acting: acting, turn: &sync.Mutex{}, refused: err}, nil
 	}
 	if err != nil {

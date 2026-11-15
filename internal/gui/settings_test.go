@@ -1,14 +1,14 @@
 package gui
 
 import (
+	"cairn/internal/engine/workspace"
 	"fmt"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"cairn/internal/config"
-	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 func TestAToggleIsATrackOnTheControlOffAndOnTheAccentOn(t *testing.T) {
@@ -54,10 +54,10 @@ func TestTheSettingsPanelIsPinnedAtBothSizes(t *testing.T) {
 
 func TestEveryRowKeepsItsNameItsControlAndItsOriginApart(t *testing.T) {
 	f := newFake()
-	f.config = &engine.Config{File: "/h/.config/cairn/config.toml", Store: engine.Emplacement{At: "/h/.cairn/cairn.db"},
-		Pages: &engine.PagesConfig{Tasks: true, Objectives: true, Time: "on"}, Archive: &engine.Archive{Days: 14},
-		Focus: &engine.FocusConfig{}, Approach: &engine.ApproachConfig{}, Time: &engine.TimeConfig{Deleted: "kept", Weekends: "shown"},
-		Window: &engine.WindowConfig{Theme: "default"}, Recurrence: &engine.RecurrenceConfig{}}
+	f.config = &workspace.Config{File: "/h/.config/cairn/config.toml", Store: workspace.Emplacement{At: "/h/.cairn/cairn.db"},
+		Pages: &workspace.PagesConfig{Tasks: true, Objectives: true, Time: "on"}, Archive: &workspace.Archive{Days: 14},
+		Focus: &workspace.FocusConfig{}, Approach: &workspace.ApproachConfig{}, Time: &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"},
+		Window: &workspace.WindowConfig{Theme: "default"}, Recurrence: &workspace.RecurrenceConfig{}}
 	for _, size := range [][2]int{{1200, 800}, {720, 560}} {
 		w := holding(f).Resized(size[0], size[1]).openingConfiguration()
 		rows := w.SettingRows()
@@ -76,11 +76,11 @@ func settingsScreens(size [2]int) []struct {
 	name string
 	w    Window
 } {
-	c := engine.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"pages.time", "archive.start"}, WrittenHere: []string{"window.theme", "pages.objectives", "workspace.colour"},
-		Global: map[string]string{"window.theme": "default", "pages.objectives": "true"}, Window: &engine.WindowConfig{Theme: "nord"},
-		Workspace: &engine.WorkspaceConfig{Colour: "green"}, Themes: []engine.ThemeSeen{{Slug: "default", From: "shipped"}, {Slug: "nord", From: "shipped", InForce: true}, {Slug: "dracula", From: "shipped"}, {Slug: "neon", From: "/nowhere/neon.yaml", Problem: "line 3: base0D is not a colour"}}}
+	c := workspace.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"pages.time", "archive.start"}, WrittenHere: []string{"window.theme", "pages.objectives", "workspace.colour"},
+		Global: map[string]string{"window.theme": "default", "pages.objectives": "true"}, Window: &workspace.WindowConfig{Theme: "nord"},
+		Workspace: &workspace.Colouring{Colour: "green"}, Themes: []workspace.ThemeSeen{{Slug: "default", From: "shipped"}, {Slug: "nord", From: "shipped", InForce: true}, {Slug: "dracula", From: "shipped"}, {Slug: "neon", From: "/nowhere/neon.yaml", Problem: "line 3: base0D is not a colour"}}}
 	f := configuredWith(c)
-	f.shown = &engine.WorkspaceShown{Workspace: "home", Store: "/h/.cairn/cairn.db", Colour: "green"}
+	f.shown = &workspace.Shown{Workspace: "home", Store: "/h/.cairn/cairn.db", Colour: "green"}
 	w := holding(f, card(1, "Fix the garden gate", "backlog")).Resized(size[0], size[1]).At(time.Now()).Look().ReadingConfiguration()
 	open := w.openingConfiguration()
 	refused := open
@@ -88,9 +88,9 @@ func settingsScreens(size [2]int) []struct {
 	writing := open
 	writing.keyWriting, writing.keyWritten = "focus.session", Written{}.Types("1 hour")
 	told := w
-	told.changed, told.changedIn = []engine.ConfigChange{{Key: "pages.time", Was: "hidden", Now: "off"}, {Key: "window.theme", Was: "default", Now: "nord"}}, "settings.toml"
+	told.changed, told.changedIn = []workspace.ConfigChange{{Key: "pages.time", Was: "hidden", Now: "off"}, {Key: "window.theme", Was: "default", Now: "nord"}}, "settings.toml"
 	troubled := w
-	troubled.trouble = &engine.Trouble{File: "/h/.cairn/settings.toml", Line: 4, Said: `pages.time "hiden": the time is "on", "hidden" or "off"`}
+	troubled.trouble = &workspace.Trouble{File: "/h/.cairn/settings.toml", Line: 4, Said: `pages.time "hiden": the time is "on", "hidden" or "off"`}
 	troubledPanel := troubled.openingConfiguration()
 	troubledPanel.trouble = troubled.trouble
 	return []struct {
@@ -106,7 +106,7 @@ func settingsScreens(size [2]int) []struct {
 		{"a field written", writing},
 		{"the theme chooser", open.openingChooser().Key("right")},
 		{"the intro chooser", open.openingIntros().Key("down").Key("down")},
-		{"the intro chooser walked down", open.openingIntros().Key("up").onIntro(len(config.Intros()) - 1)},
+		{"the intro chooser walked down", open.openingIntros().Key("up").onIntro(len(files.Intros()) - 1)},
 		{"the board told of a change", told},
 		{"the board with a file it cannot read", troubled},
 		{"the settings it cannot read", troubledPanel},

@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 // Pose is how far one thing of the board has come at an instant of its intro: how much of it is seen, how far it is moved, grown, stretched and turned about its pivot — a share of its box — what light or shadow lies over it, how far it is lifted and blurred, whether it flies free of its column, and the draft it is still drawn as.
@@ -96,24 +96,24 @@ type introOf struct {
 }
 
 var intros = map[string]introOf{
-	config.IntroSpring:    {"Spring cascade", 1100, springing},
-	config.IntroDeck:      {"Dealt from the deck", 1400, dealing},
-	config.IntroAccordion: {"Accordion columns", 950, unfolding},
-	config.IntroSweep:     {"Light sweep", 1250, sweeping},
-	config.IntroFlap:      {"Split-flap board", 1200, flapping},
-	config.IntroPull:      {"Focus pull", 1000, pulling},
-	config.IntroRipple:    {"Ripple from the focus", 1100, rippling},
-	config.IntroParticles: {"Particles assemble", 1400, assembling},
-	config.IntroDolly:     {"Camera dolly", 1400, craning},
-	config.IntroBlueprint: {"Blueprint, then ink", 1450, drafting},
-	config.IntroStones:    {"Falling stones", 1800, stoning},
+	files.IntroSpring:    {"Spring cascade", 1100, springing},
+	files.IntroDeck:      {"Dealt from the deck", 1400, dealing},
+	files.IntroAccordion: {"Accordion columns", 950, unfolding},
+	files.IntroSweep:     {"Light sweep", 1250, sweeping},
+	files.IntroFlap:      {"Split-flap board", 1200, flapping},
+	files.IntroPull:      {"Focus pull", 1000, pulling},
+	files.IntroRipple:    {"Ripple from the focus", 1100, rippling},
+	files.IntroParticles: {"Particles assemble", 1400, assembling},
+	files.IntroDolly:     {"Camera dolly", 1400, craning},
+	files.IntroBlueprint: {"Blueprint, then ink", 1450, drafting},
+	files.IntroStones:    {"Falling stones", 1800, stoning},
 }
 
 func introNamed(name string) introOf {
 	if one, ok := intros[name]; ok {
 		return one
 	}
-	return intros[config.DefaultIntro]
+	return intros[files.DefaultIntro]
 }
 
 // IntroSays is what an intro is called on screen.

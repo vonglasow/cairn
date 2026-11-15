@@ -1,10 +1,10 @@
 package engine
 
 import (
-	"cairn/internal/domain"
+	"cairn/internal/engine/backup"
 )
 
-func resolveBackup(vault *backups, in Input) (domain.Backup, error) {
+func resolveBackup(vault backup.Vault, in Input) (backup.Backup, error) {
 	n, named := in.whole("number")
 	if !named {
 		return vault.Latest()
@@ -52,7 +52,7 @@ var BackupList = Operation{
 			return Answer{}, err
 		}
 		if all == nil {
-			all = []domain.Backup{}
+			all = []backup.Backup{}
 		}
 		return Answer{Backups: all}, nil
 	},

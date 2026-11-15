@@ -1,6 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/series"
 	"errors"
 	"fmt"
 	"maps"
@@ -9,109 +15,34 @@ import (
 	"strings"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/store"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
+	"cairn/internal/store/sqlite"
 )
 
 // Series is how a series crosses to a machine: its rule, what its next occurrence is made from, what it did so far, and, shown, every occurrence and its trace.
 type Series struct {
-	Number      int          `json:"number"`
-	Title       string       `json:"title"`
-	State       string       `json:"state" jsonschema:"active, or stopped"`
-	Stopped     string       `json:"stopped,omitempty" jsonschema:"the day it was stopped; left out while it is active"`
-	Rule        string       `json:"rule" jsonschema:"how often it comes back, in the words cairn reads back"`
-	Says        string       `json:"says" jsonschema:"the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends"`
-	From        string       `json:"from" jsonschema:"the day it counts from"`
-	Next        []string     `json:"next" jsonschema:"the days of its next occurrences, the open one first, or the ones it would make if resumed today; empty once it has ended"`
-	Ended       bool         `json:"ended" jsonschema:"true once its end is reached: it makes nothing more"`
-	Template    Template     `json:"template"`
-	Open        []int        `json:"open" jsonschema:"the numbers of its occurrences neither done nor archived"`
-	Done        int          `json:"done"`
-	Skipped     int          `json:"skipped"`
-	Missed      int          `json:"missed"`
-	TimeSpent   string       `json:"time_spent" jsonschema:"how long was spent over its occurrences, as 1h30m; empty when nothing was"`
-	Occurrences []Occurrence `json:"occurrences,omitempty" jsonschema:"every day it made a task for or missed, the latest first, archived ones included; left out unless it is shown"`
-	Acts        []seriesAct  `json:"acts,omitempty" jsonschema:"its trace: everything that happened to it, oldest first; left out unless it is shown"`
-}
-
-// Template is what the next occurrence of a series is made from.
-type Template struct {
-	Title      string   `json:"title"`
-	Priority   string   `json:"priority"`
-	Labels     []string `json:"labels"`
-	Steps      []string `json:"steps"`
-	Estimate   string   `json:"estimate"`
-	Objectives []int    `json:"objectives"`
-	Arrives    string   `json:"arrives" jsonschema:"the column its occurrences arrive in: backlog, todo or current"`
-}
-
-// arrivals are the columns a series' occurrences may arrive in: a column that needs a reason, or done, is no place for work still to do.
-var arrivals = []string{string(domain.Backlog), string(domain.Todo), string(domain.Current)}
-
-// errNotAnArrival is returned when a series is told to put its occurrences in a column they cannot arrive in.
-var errNotAnArrival = errors.New("an occurrence arrives in backlog, todo or current")
-
-func arrivalOf(state domain.State) string {
-	if slices.Contains(arrivals, string(state)) {
-		return string(state)
-	}
-	return string(domain.Todo)
-}
-
-// Occurrence is one day of a series: the task made for it, or none when it was missed.
-type Occurrence struct {
-	Day       string `json:"day"`
-	Task      int    `json:"task" jsonschema:"the number of the task made for that day; 0 when none was"`
-	Is        string `json:"is" jsonschema:"the column the task stands in, or skipped, missed or deleted"`
-	Archived  bool   `json:"archived"`
-	TimeSpent string `json:"time_spent"`
-}
-
-// seriesAct is one thing that happened to a series, as it crosses to a machine.
-type seriesAct struct {
-	Did     string `json:"did" jsonschema:"made, missed, skipped, changed, stopped, resumed or deleted"`
-	Task    int    `json:"task,omitempty"`
-	Day     string `json:"day,omitempty"`
-	Field   string `json:"field,omitempty"`
-	Was     string `json:"was,omitempty"`
-	Became  string `json:"became,omitempty"`
-	Through string `json:"through,omitempty"`
-	By      string `json:"by,omitempty"`
-	At      string `json:"at"`
+	Number      int                 `json:"number"`
+	Title       string              `json:"title"`
+	State       string              `json:"state" jsonschema:"active, or stopped"`
+	Stopped     string              `json:"stopped,omitempty" jsonschema:"the day it was stopped; left out while it is active"`
+	Rule        string              `json:"rule" jsonschema:"how often it comes back, in the words cairn reads back"`
+	Says        string              `json:"says" jsonschema:"the whole rule the way a person reads it: how often, what it counts from, from which day, and when it ends"`
+	From        string              `json:"from" jsonschema:"the day it counts from"`
+	Next        []string            `json:"next" jsonschema:"the days of its next occurrences, the open one first, or the ones it would make if resumed today; empty once it has ended"`
+	Ended       bool                `json:"ended" jsonschema:"true once its end is reached: it makes nothing more"`
+	Template    series.Template     `json:"template"`
+	Open        []int               `json:"open" jsonschema:"the numbers of its occurrences neither done nor archived"`
+	Done        int                 `json:"done"`
+	Skipped     int                 `json:"skipped"`
+	Missed      int                 `json:"missed"`
+	TimeSpent   string              `json:"time_spent" jsonschema:"how long was spent over its occurrences, as 1h30m; empty when nothing was"`
+	Occurrences []series.Occurrence `json:"occurrences,omitempty" jsonschema:"every day it made a task for or missed, the latest first, archived ones included; left out unless it is shown"`
+	Acts        []series.Act        `json:"acts,omitempty" jsonschema:"its trace: everything that happened to it, oldest first; left out unless it is shown"`
 }
 
 // seriesListed is how a listing of series crosses.
 type seriesListed struct {
 	Series []Series `json:"series"`
-}
-
-// seriesDeleted is how deleting a series answers: which, and what became of the tasks it made.
-type seriesDeleted struct {
-	Deleted      int   `json:"deleted"`
-	Kept         []int `json:"kept" jsonschema:"the tasks it made that stay, ordinary tasks now"`
-	TasksDeleted []int `json:"tasks_deleted" jsonschema:"the tasks it made that were deleted with it"`
-}
-
-// Occurs is how a task says it is an occurrence of a series.
-type Occurs struct {
-	Series  int      `json:"series"`
-	Rule    string   `json:"rule" jsonschema:"how often it comes back, in the words cairn reads back"`
-	Often   string   `json:"often" jsonschema:"how often it comes back, the way a person reads it"`
-	Says    string   `json:"says" jsonschema:"the whole rule the way a person reads it"`
-	Day     string   `json:"day" jsonschema:"the day the series made it for"`
-	At      string   `json:"at,omitempty" jsonschema:"the time of day it is for, as 10:30; left out when the rule names none"`
-	Then    []string `json:"then" jsonschema:"the next three days of the rule after its own, on the calendar; empty when it counts from the last one done"`
-	Stopped bool     `json:"stopped"`
-	after   string
-}
-
-// madeNext is one occurrence a series made because an act left it with none open, and the days it missed first.
-type madeNext struct {
-	Series int      `json:"series"`
-	Task   int      `json:"task"`
-	Day    string   `json:"day"`
-	Missed []string `json:"missed,omitempty"`
 }
 
 // ErrRecurrenceOff is what anything about a series is refused with while recurrence is off.
@@ -214,11 +145,11 @@ cairn series edit 3 --every "every tuesday 10:00"`,
 	Takes: append([]Argument{
 		seriesNumber("to change"),
 		{Name: "title", Kind: Text, Means: "what its occurrences are called"},
-		{Name: "priority", Kind: Text, OneOf: oneOf(domain.Priorities), Outside: domain.ErrNotAPriority, Means: "the priority its occurrences carry"},
+		{Name: "priority", Kind: Text, OneOf: oneOf(item.Priorities), Outside: item.ErrNotAPriority, Means: "the priority its occurrences carry"},
 		{Name: "label", Kind: List, Means: "a label its occurrences carry; x or +x adds one, -x takes one off, =x replaces them all"},
 		{Name: "estimate", Kind: duration, Means: "how long each occurrence should take"},
 		{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective its occurrences serve; 4 or +4 adds one, -1 takes one away, =4 replaces them all"},
-		{Name: "state", Kind: Text, OneOf: arrivals, Outside: errNotAnArrival, Means: "the column its occurrences arrive in: backlog, todo or current"},
+		{Name: "state", Kind: Text, OneOf: series.Arrivals, Outside: series.ErrNotAnArrival, Means: "the column its occurrences arrive in: backlog, todo or current"},
 		stepsArgument,
 	}, everyArguments...),
 	Run: func(on workedOn, in Input) (Answer, error) {
@@ -252,13 +183,13 @@ var SeriesStop = Operation{
 			return Answer{}, err
 		}
 		if !s.active() {
-			return Answer{}, Refusing("series-stopped", fmt.Sprintf("↻%d is already stopped, since %s", s.kept.Number, domain.ShortDay(s.stopped())))
+			return Answer{}, Refusing("series-stopped", fmt.Sprintf("↻%d is already stopped, since %s", s.kept.Number, series.ShortDay(s.stopped())))
 		}
-		s.kept.Stopped = domain.FormatDay(on.Engine.today())
+		s.kept.Stopped = calendar.FormatDay(on.Engine.today())
 		if err := on.Engine.store.UpdateSeries(s.kept); err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.recordSeries(store.SeriesAct{Series: s.kept.Number, Did: "stopped"}); err != nil {
+		if err := on.Engine.recordSeries(sqlite.SeriesAct{Series: s.kept.Number, Did: "stopped"}); err != nil {
 			return Answer{}, err
 		}
 		return on.Engine.shownNumber(s.kept.Number)
@@ -290,7 +221,7 @@ var SeriesResume = Operation{
 		if err := on.Engine.store.UpdateSeries(s.kept); err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.recordSeries(store.SeriesAct{Series: s.kept.Number, Did: "resumed"}); err != nil {
+		if err := on.Engine.recordSeries(sqlite.SeriesAct{Series: s.kept.Number, Did: "resumed"}); err != nil {
 			return Answer{}, err
 		}
 		made, err := on.Engine.resumed(s.kept.Number)
@@ -314,7 +245,7 @@ var SeriesDelete = Operation{
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
 	Repeats: true,
-	Answers: seriesDeleted{},
+	Answers: series.Deleted{},
 	Takes: []Argument{
 		seriesNumber("to delete"),
 		{Name: "keep-tasks", Kind: Bool, Means: "keep every task it made, as an ordinary task"},
@@ -365,13 +296,13 @@ var TaskSkip = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		if !isOpen(found) {
+		if !series.IsOpen(found) {
 			return Answer{}, Refusing("occurrence-not-open", fmt.Sprintf("task %d is done or archived already: only an open occurrence is skipped", n))
 		}
 		if err := on.Engine.archive(n); err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.recordSeries(store.SeriesAct{Series: s.kept.Number, Did: "skipped", Task: n, Day: s.dayOf(n)}); err != nil {
+		if err := on.Engine.recordSeries(sqlite.SeriesAct{Series: s.kept.Number, Did: "skipped", Task: n, Day: s.dayOf(n)}); err != nil {
 			return Answer{}, err
 		}
 		return shownTask(on, n)
@@ -379,18 +310,18 @@ var TaskSkip = Operation{
 }
 
 type aSeries struct {
-	kept  store.Series
-	rule  domain.Rule
+	kept  sqlite.Series
+	rule  series.Rule
 	start time.Time
-	acts  []store.SeriesAct
+	acts  []sqlite.SeriesAct
 }
 
-func (e *Engine) aSeries(kept store.Series) (aSeries, error) {
-	rule, err := domain.ParseRule(kept.Rule)
+func (e *Engine) aSeries(kept sqlite.Series) (aSeries, error) {
+	rule, err := series.ParseRule(kept.Rule)
 	if err != nil {
 		return aSeries{}, err
 	}
-	start, err := domain.ParseDeadline(kept.Start)
+	start, err := calendar.ParseDeadline(kept.Start)
 	if err != nil {
 		return aSeries{}, err
 	}
@@ -403,7 +334,7 @@ func (e *Engine) aSeries(kept store.Series) (aSeries, error) {
 
 func (e *Engine) seriesAt(n int) (aSeries, error) {
 	kept, err := e.store.FindSeries(n)
-	if errors.Is(err, store.ErrNoSuchSeries) {
+	if errors.Is(err, sqlite.ErrNoSuchSeries) {
 		return aSeries{}, Refusing("no-such-series", fmt.Sprintf("there is no series ↻%d", n))
 	}
 	if err != nil {
@@ -429,17 +360,17 @@ func (e *Engine) occurrenceOf(n int) (aSeries, error) {
 	if err != nil {
 		return aSeries{}, err
 	}
-	series, is := of[n]
+	numbered, is := of[n]
 	if !is {
 		return aSeries{}, Refusing("no-occurrence", fmt.Sprintf("task %d is no occurrence of a series", n))
 	}
-	return e.seriesAt(series)
+	return e.seriesAt(numbered)
 }
 
 func (s aSeries) active() bool { return s.kept.Stopped == "" }
 
 func (s aSeries) stopped() time.Time {
-	day, _ := domain.ParseDeadline(s.kept.Stopped)
+	day, _ := calendar.ParseDeadline(s.kept.Stopped)
 	return day
 }
 
@@ -478,7 +409,7 @@ func (s aSeries) last() time.Time {
 		if a.Did != "made" && a.Did != "missed" {
 			continue
 		}
-		if day, err := domain.ParseDeadline(a.Day); err == nil {
+		if day, err := calendar.ParseDeadline(a.Day); err == nil {
 			last = day
 		}
 	}
@@ -491,15 +422,10 @@ func (s aSeries) room(more int) bool {
 
 func (s aSeries) ended() bool { return !s.room(0) }
 
-func isOpen(t task.Task) bool {
-	f := factsOf(t)
-	return !f.Archived && f.State != domain.Done
-}
-
 func (s aSeries) opened(tasks map[int]task.Task) []int {
 	var open []int
 	for _, n := range s.made() {
-		if t, there := tasks[n]; there && isOpen(t) {
+		if t, there := tasks[n]; there && series.IsOpen(t) {
 			open = append(open, n)
 		}
 	}
@@ -507,7 +433,7 @@ func (s aSeries) opened(tasks map[int]task.Task) []int {
 }
 
 func (e *Engine) everyTask() (map[int]task.Task, error) {
-	every := domain.Narrowing{}
+	every := filter.Narrowing{}
 	every.WithArchived()
 	all, err := e.tasks.Narrowed(&every)
 	if err != nil {
@@ -515,12 +441,12 @@ func (e *Engine) everyTask() (map[int]task.Task, error) {
 	}
 	out := make(map[int]task.Task, len(all))
 	for _, t := range all {
-		out[factsOf(t).Number] = t
+		out[t.Carried().Number] = t
 	}
 	return out, nil
 }
 
-func (e *Engine) today() time.Time { return domain.DayOf(today(e.home)) }
+func (e *Engine) today() time.Time { return series.DayOf(today(e.home)) }
 
 func (e *Engine) recurring() bool {
 	if e.home.Dir == "" {
@@ -537,22 +463,22 @@ func (e *Engine) mayRecur() error {
 	return ErrRecurrenceOff
 }
 
-func (e *Engine) recordSeries(a store.SeriesAct) error {
+func (e *Engine) recordSeries(a sqlite.SeriesAct) error {
 	a.Through, a.By, a.At = e.acting.Through, e.acting.By, e.home.now()
 	return e.store.RecordSeries(a)
 }
 
-func ruleOf(in Input) (domain.Rule, error) {
+func ruleOf(in Input) (series.Rule, error) {
 	said := in.Given["every"]
 	if in.yes("after-done") {
 		said += " after done"
 	}
-	return domain.ParseRule(said)
+	return series.ParseRule(said)
 }
 
 func (e *Engine) fromOf(in Input) (time.Time, error) {
 	if given := in.Given["from"]; given != "" {
-		return domain.ParseDeadline(given)
+		return calendar.ParseDeadline(given)
 	}
 	return e.today(), nil
 }
@@ -565,32 +491,32 @@ func everyNamed(in Input) (bool, error) {
 	return named, nil
 }
 
-func templateOf(t task.Task) store.Series {
-	f := factsOf(t)
+func templateOf(t task.Task) sqlite.Series {
+	f := t.Carried()
 	steps := []string{}
 	for _, s := range f.Steps {
 		steps = append(steps, s.Title)
 	}
-	return store.Series{Title: f.Title, Priority: string(f.Priority), Estimate: f.Estimate, Steps: steps,
-		Labels: listed(f.Labels), Objectives: listed(f.Objectives), Arrives: arrivalOf(f.State)}
+	return sqlite.Series{Title: f.Title, Priority: string(f.Priority), Estimate: f.Estimate, Steps: steps,
+		Labels: listed(f.Labels), Objectives: listed(f.Objectives), Arrives: series.ArrivalOf(f.State)}
 }
 
-func (e *Engine) beginSeries(t task.Task, rule domain.Rule, from, day time.Time) error {
+func (e *Engine) beginSeries(t task.Task, rule series.Rule, from, day time.Time) error {
 	kept := templateOf(t)
-	kept.Rule, kept.Start = rule.Words(), domain.FormatDay(from)
+	kept.Rule, kept.Start = rule.Words(), calendar.FormatDay(from)
 	made, err := e.store.KeepSeries(kept)
 	if err != nil {
 		return err
 	}
-	for _, label := range made.Labels {
-		if err := e.store.KeepLabel(label); err != nil {
+	for _, name := range made.Labels {
+		if err := e.store.KeepLabel(name); err != nil {
 			return err
 		}
 	}
-	return e.recordSeries(store.SeriesAct{Series: made.Number, Did: "made", Task: factsOf(t).Number, Day: domain.FormatDay(day)})
+	return e.recordSeries(sqlite.SeriesAct{Series: made.Number, Did: "made", Task: t.Carried().Number, Day: calendar.FormatDay(day)})
 }
 
-func firstDay(rule domain.Rule, from time.Time) (time.Time, error) {
+func firstDay(rule series.Rule, from time.Time) (time.Time, error) {
 	day, ok := rule.First(from)
 	if !ok {
 		return time.Time{}, Refusing("series-ends-before", "the rule ends before its first day")
@@ -603,8 +529,8 @@ func (e *Engine) occur(s aSeries, day time.Time) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	labels := slices.DeleteFunc(slices.Clone(s.kept.Labels), func(label string) bool { return scopes.of(label).Refuses(label, domain.OnTasks) != nil })
-	state, deadline, estimate := arrivalOf(domain.State(s.kept.Arrives)), domain.FormatDay(day), domain.FormatDuration(s.kept.Estimate)
+	labels := slices.DeleteFunc(slices.Clone(s.kept.Labels), func(name string) bool { return scopes.Of(name).Refuses(name, label.OnTasks) != nil })
+	state, deadline, estimate := series.ArrivalOf(item.State(s.kept.Arrives)), calendar.FormatDay(day), calendar.FormatDuration(s.kept.Estimate)
 	objectives := make([]string, 0, len(s.kept.Objectives))
 	for _, n := range s.kept.Objectives {
 		objectives = append(objectives, strconv.Itoa(n))
@@ -619,15 +545,12 @@ func (e *Engine) occur(s aSeries, day time.Time) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	n := factsOf(made).Number
-	if err := e.record(n, MadeFromSeries, "", "", "↻"+strconv.Itoa(s.kept.Number)); err != nil {
+	n := made.Carried().Number
+	if err := e.record(n, series.MadeFromSeries, "", "", "↻"+strconv.Itoa(s.kept.Number)); err != nil {
 		return 0, err
 	}
-	return n, e.recordSeries(store.SeriesAct{Series: s.kept.Number, Did: "made", Task: n, Day: deadline})
+	return n, e.recordSeries(sqlite.SeriesAct{Series: s.kept.Number, Did: "made", Task: n, Day: deadline})
 }
-
-// MadeFromSeries is the act written in the trace of a task a series made, naming the series.
-const MadeFromSeries = "made from series"
 
 func (e *Engine) openSeries() (map[int]bool, error) {
 	if !e.recurring() {
@@ -655,8 +578,8 @@ func (e *Engine) openSeries() (map[int]bool, error) {
 	return open, nil
 }
 
-func (e *Engine) madeAfter(before map[int]bool) ([]madeNext, error) {
-	var made []madeNext
+func (e *Engine) madeAfter(before map[int]bool) ([]series.MadeNext, error) {
+	var made []series.MadeNext
 	after, err := e.openSeries()
 	if err != nil {
 		return nil, err
@@ -686,7 +609,7 @@ func (e *Engine) madeAfter(before map[int]bool) ([]madeNext, error) {
 	return made, nil
 }
 
-func (e *Engine) follow(s aSeries) (madeNext, bool, error) {
+func (e *Engine) follow(s aSeries) (series.MadeNext, bool, error) {
 	today := e.today()
 	var missed []time.Time
 	day, ok := s.rule.Next(today, s.start)
@@ -697,11 +620,11 @@ func (e *Engine) follow(s aSeries) (madeNext, bool, error) {
 			day, ok = s.rule.Next(day, s.start)
 		}
 	}
-	next := madeNext{Series: s.kept.Number}
+	next := series.MadeNext{Series: s.kept.Number}
 	for _, d := range missed {
-		next.Missed = append(next.Missed, domain.FormatDay(d))
-		if err := e.recordSeries(store.SeriesAct{Series: s.kept.Number, Did: "missed", Day: domain.FormatDay(d)}); err != nil {
-			return madeNext{}, false, err
+		next.Missed = append(next.Missed, calendar.FormatDay(d))
+		if err := e.recordSeries(sqlite.SeriesAct{Series: s.kept.Number, Did: "missed", Day: calendar.FormatDay(d)}); err != nil {
+			return series.MadeNext{}, false, err
 		}
 	}
 	if !ok || !s.room(len(missed)) {
@@ -709,9 +632,9 @@ func (e *Engine) follow(s aSeries) (madeNext, bool, error) {
 	}
 	n, err := e.occur(s, day)
 	if err != nil {
-		return madeNext{}, false, err
+		return series.MadeNext{}, false, err
 	}
-	next.Task, next.Day = n, domain.FormatDay(day)
+	next.Task, next.Day = n, calendar.FormatDay(day)
 	return next, true, nil
 }
 
@@ -726,7 +649,7 @@ func (s aSeries) fromToday(today time.Time) (time.Time, bool) {
 	return s.rule.Next(after, s.start)
 }
 
-func (e *Engine) resumed(n int) ([]madeNext, error) {
+func (e *Engine) resumed(n int) ([]series.MadeNext, error) {
 	s, err := e.seriesAt(n)
 	if err != nil {
 		return nil, err
@@ -746,7 +669,7 @@ func (e *Engine) resumed(n int) ([]madeNext, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []madeNext{{Series: n, Task: made, Day: domain.FormatDay(day)}}, nil
+	return []series.MadeNext{{Series: n, Task: made, Day: calendar.FormatDay(day)}}, nil
 }
 
 func (e *Engine) seriesDue() error {
@@ -782,7 +705,7 @@ func (e *Engine) seriesDue() error {
 	if len(due) == 0 {
 		return nil
 	}
-	return e.store.Within(func(kept *store.Store) error {
+	return e.store.Within(func(kept *sqlite.Store) error {
 		in := e.keptBy(kept)
 		in.acting.Through = "series"
 		for _, s := range due {
@@ -808,7 +731,7 @@ func (s aSeries) dueFrom(today time.Time) (time.Time, bool) {
 func (s aSeries) nextDays(tasks map[int]task.Task, today time.Time) []string {
 	var next []time.Time
 	if open := s.opened(tasks); len(open) > 0 {
-		if day, err := domain.ParseDeadline(s.dayOf(open[0])); err == nil {
+		if day, err := calendar.ParseDeadline(s.dayOf(open[0])); err == nil {
 			next = append(next, day)
 		}
 	} else if !s.ended() {
@@ -821,7 +744,7 @@ func (s aSeries) nextDays(tasks map[int]task.Task, today time.Time) []string {
 	}
 	days := []string{}
 	for _, d := range next {
-		days = append(days, domain.FormatDay(d))
+		days = append(days, calendar.FormatDay(d))
 	}
 	return days
 }
@@ -832,8 +755,8 @@ func (s aSeries) shape(tasks map[int]task.Task, today time.Time) Series {
 		Rule: s.rule.Words(), Says: s.rule.Sentence(s.start), From: s.kept.Start, Ended: s.ended(),
 		Next: s.nextDays(tasks, today), Open: listed(s.opened(tasks)),
 		Skipped: s.count("skipped"), Missed: s.count("missed"),
-		Template: Template{Title: s.kept.Title, Priority: s.kept.Priority, Labels: listed(s.kept.Labels), Steps: listed(s.kept.Steps),
-			Estimate: domain.FormatDuration(s.kept.Estimate), Objectives: listed(s.kept.Objectives), Arrives: s.kept.Arrives},
+		Template: series.Template{Title: s.kept.Title, Priority: s.kept.Priority, Labels: listed(s.kept.Labels), Steps: listed(s.kept.Steps),
+			Estimate: calendar.FormatDuration(s.kept.Estimate), Objectives: listed(s.kept.Objectives), Arrives: s.kept.Arrives},
 	}
 	if !s.active() {
 		said.State = "stopped"
@@ -841,14 +764,14 @@ func (s aSeries) shape(tasks map[int]task.Task, today time.Time) Series {
 	var spent time.Duration
 	for _, n := range s.made() {
 		if t, there := tasks[n]; there {
-			f := factsOf(t)
+			f := t.Carried()
 			spent += f.Spent
-			if f.State == domain.Done {
+			if f.State == item.Done {
 				said.Done++
 			}
 		}
 	}
-	said.TimeSpent = domain.FormatDuration(spent)
+	said.TimeSpent = calendar.FormatDuration(spent)
 	return said
 }
 
@@ -872,23 +795,23 @@ func (e *Engine) shownSeries(s aSeries, whole bool) (Answer, error) {
 	return Answer{SeriesShown: &shown}, nil
 }
 
-func (s aSeries) occurrences(tasks map[int]task.Task) []Occurrence {
+func (s aSeries) occurrences(tasks map[int]task.Task) []series.Occurrence {
 	skipped := map[int]bool{}
 	for _, a := range s.acts {
 		if a.Did == "skipped" {
 			skipped[a.Task] = true
 		}
 	}
-	out := []Occurrence{}
+	out := []series.Occurrence{}
 	for _, a := range s.acts {
 		switch a.Did {
 		case "missed":
-			out = append(out, Occurrence{Day: a.Day, Is: "missed"})
+			out = append(out, series.Occurrence{Day: a.Day, Is: "missed"})
 		case "made":
-			one := Occurrence{Day: a.Day, Task: a.Task, Is: "deleted"}
+			one := series.Occurrence{Day: a.Day, Task: a.Task, Is: "deleted"}
 			if t, there := tasks[a.Task]; there {
-				f := factsOf(t)
-				one.Is, one.Archived, one.TimeSpent = string(f.State), f.Archived, domain.FormatDuration(f.Spent)
+				f := t.Carried()
+				one.Is, one.Archived, one.TimeSpent = string(f.State), f.Archived, calendar.FormatDuration(f.Spent)
 				if skipped[a.Task] {
 					one.Is = "skipped"
 				}
@@ -897,20 +820,20 @@ func (s aSeries) occurrences(tasks map[int]task.Task) []Occurrence {
 		}
 	}
 	slices.Reverse(out)
-	slices.SortStableFunc(out, func(a, b Occurrence) int { return strings.Compare(b.Day, a.Day) })
+	slices.SortStableFunc(out, func(a, b series.Occurrence) int { return strings.Compare(b.Day, a.Day) })
 	return out
 }
 
-func (s aSeries) trace() []seriesAct {
-	out := make([]seriesAct, 0, len(s.acts))
+func (s aSeries) trace() []series.Act {
+	out := make([]series.Act, 0, len(s.acts))
 	for _, a := range s.acts {
-		out = append(out, seriesAct{Did: a.Did, Task: a.Task, Day: a.Day, Field: a.Field, Was: a.Was, Became: a.Became,
+		out = append(out, series.Act{Did: a.Did, Task: a.Task, Day: a.Day, Field: a.Field, Was: a.Was, Became: a.Became,
 			Through: a.Through, By: a.By, At: a.At.UTC().Format(time.RFC3339)})
 	}
 	return out
 }
 
-func (e *Engine) occurring(numbers []int) (map[int]Occurs, error) {
+func (e *Engine) occurring(numbers []int) (map[int]series.Occurs, error) {
 	if !e.recurring() || len(numbers) == 0 {
 		return nil, nil
 	}
@@ -919,7 +842,7 @@ func (e *Engine) occurring(numbers []int) (map[int]Occurs, error) {
 		return nil, err
 	}
 	known := map[int]aSeries{}
-	out := map[int]Occurs{}
+	out := map[int]series.Occurs{}
 	for _, n := range numbers {
 		number, is := of[n]
 		if !is {
@@ -937,16 +860,16 @@ func (e *Engine) occurring(numbers []int) (map[int]Occurs, error) {
 	return out, nil
 }
 
-func (s aSeries) occurs(n int) Occurs {
-	o := Occurs{Series: s.kept.Number, Rule: s.rule.Words(), Often: s.rule.Short(), Says: s.rule.Sentence(s.start),
+func (s aSeries) occurs(n int) series.Occurs {
+	o := series.Occurs{Series: s.kept.Number, Rule: s.rule.Words(), Often: s.rule.Short(), Says: s.rule.Sentence(s.start),
 		Day: s.dayOf(n), At: s.rule.At(), Then: []string{}, Stopped: !s.active()}
 	if s.rule.AfterDone() {
-		o.after = s.rule.Then()
+		o.After = s.rule.Then()
 		return o
 	}
-	if day, err := domain.ParseDeadline(o.Day); err == nil {
+	if day, err := calendar.ParseDeadline(o.Day); err == nil {
 		for _, d := range s.rule.Dates(day, s.start, 3) {
-			o.Then = append(o.Then, domain.FormatDay(d))
+			o.Then = append(o.Then, calendar.FormatDay(d))
 		}
 	}
 	return o
@@ -973,12 +896,12 @@ func (e *Engine) editSeries(s aSeries, in Input) error {
 		for _, title := range was.Steps {
 			steps = append(steps, task.Step{Title: title})
 		}
-		t := task.Made(task.Carried{Title: was.Title, State: domain.Backlog, Priority: domain.Priority(was.Priority),
+		t := task.Made(task.Carried{Title: was.Title, State: item.Backlog, Priority: item.Priority(was.Priority),
 			Labels: was.Labels, Estimate: was.Estimate, Steps: steps, Objectives: was.Objectives})
 		if t, err = apply(t, changes, changing); err != nil {
 			return err
 		}
-		if err := e.inScope(was.Labels, factsOf(t).Labels, domain.OnTasks); err != nil {
+		if err := e.inScope(was.Labels, t.Carried().Labels, label.OnTasks); err != nil {
 			return err
 		}
 		if err := e.canServe(t); err != nil {
@@ -990,8 +913,8 @@ func (e *Engine) editSeries(s aSeries, in Input) error {
 		s.kept = template
 	}
 	if arrives != nil {
-		if !slices.Contains(arrivals, *arrives) {
-			return fmt.Errorf("%q: %w", *arrives, errNotAnArrival)
+		if !slices.Contains(series.Arrivals, *arrives) {
+			return fmt.Errorf("%q: %w", *arrives, series.ErrNotAnArrival)
 		}
 		s.kept.Arrives = *arrives
 	}
@@ -1008,12 +931,12 @@ func (e *Engine) editSeries(s aSeries, in Input) error {
 	return e.keptSeries(was, s.kept)
 }
 
-func (e *Engine) keptSeries(was, now store.Series) error {
+func (e *Engine) keptSeries(was, now sqlite.Series) error {
 	if err := e.store.UpdateSeries(now); err != nil {
 		return err
 	}
-	for _, label := range now.Labels {
-		if err := e.store.KeepLabel(label); err != nil {
+	for _, name := range now.Labels {
+		if err := e.store.KeepLabel(name); err != nil {
 			return err
 		}
 	}
@@ -1022,8 +945,8 @@ func (e *Engine) keptSeries(was, now store.Series) error {
 		{"priority", was.Priority, now.Priority},
 		{"labels", strings.Join(was.Labels, ", "), strings.Join(now.Labels, ", ")},
 		{"steps", strings.Join(was.Steps, "; "), strings.Join(now.Steps, "; ")},
-		{"estimate", domain.FormatDuration(was.Estimate), domain.FormatDuration(now.Estimate)},
-		{"objectives", numbersOrNothing(was.Objectives), numbersOrNothing(now.Objectives)},
+		{"estimate", calendar.FormatDuration(was.Estimate), calendar.FormatDuration(now.Estimate)},
+		{"objectives", act.NumbersOrNothing(was.Objectives), act.NumbersOrNothing(now.Objectives)},
 		{"rule", was.Rule, now.Rule},
 		{"from", was.Start, now.Start},
 		{"column", was.Arrives, now.Arrives},
@@ -1031,7 +954,7 @@ func (e *Engine) keptSeries(was, now store.Series) error {
 		if f.was == f.now {
 			continue
 		}
-		if err := e.recordSeries(store.SeriesAct{Series: now.Number, Did: "changed", Field: f.field, Was: f.was, Became: f.now}); err != nil {
+		if err := e.recordSeries(sqlite.SeriesAct{Series: now.Number, Did: "changed", Field: f.field, Was: f.was, Became: f.now}); err != nil {
 			return err
 		}
 	}
@@ -1055,8 +978,8 @@ func (e *Engine) everyGiven(n int, in Input) error {
 	if err != nil {
 		return err
 	}
-	if factsOf(t).Deadline.IsZero() {
-		deadline := domain.FormatDay(day)
+	if t.Carried().Deadline.IsZero() {
+		deadline := calendar.FormatDay(day)
 		if t, err = e.edit(n, Changes{Deadline: &deadline}); err != nil {
 			return err
 		}
@@ -1090,10 +1013,10 @@ func (e *Engine) seriesFollowsTask(n int, in Input) error {
 	return e.keptSeries(s.kept, now)
 }
 
-func (e *Engine) deleteSeries(s aSeries, in Input) (seriesDeleted, error) {
+func (e *Engine) deleteSeries(s aSeries, in Input) (series.Deleted, error) {
 	tasks, err := e.everyTask()
 	if err != nil {
-		return seriesDeleted{}, err
+		return series.Deleted{}, err
 	}
 	var there []int
 	for _, n := range s.made() {
@@ -1109,13 +1032,13 @@ func (e *Engine) deleteSeries(s aSeries, in Input) (seriesDeleted, error) {
 		}
 	}
 	if len(chosen) != 1 {
-		return seriesDeleted{}, Refusing("series-delete-asks", deletionAsked(s.kept.Number, there, open))
+		return series.Deleted{}, Refusing("series-delete-asks", deletionAsked(s.kept.Number, there, open))
 	}
-	gone := seriesDeleted{Deleted: s.kept.Number, Kept: []int{}, TasksDeleted: []int{}}
+	gone := series.Deleted{Deleted: s.kept.Number, Kept: []int{}, TasksDeleted: []int{}}
 	for _, n := range there {
 		if chosen[0] == "delete-tasks" || chosen[0] == "delete-open" && slices.Contains(open, n) {
 			if err := e.delete(n); err != nil {
-				return seriesDeleted{}, err
+				return series.Deleted{}, err
 			}
 			gone.TasksDeleted = append(gone.TasksDeleted, n)
 			continue
@@ -1123,75 +1046,24 @@ func (e *Engine) deleteSeries(s aSeries, in Input) (seriesDeleted, error) {
 		gone.Kept = append(gone.Kept, n)
 	}
 	if err := e.store.DeleteSeries(s.kept.Number); err != nil {
-		return seriesDeleted{}, err
+		return series.Deleted{}, err
 	}
-	return gone, e.recordSeries(store.SeriesAct{Series: s.kept.Number, Did: "deleted", Became: chosen[0]})
+	return gone, e.recordSeries(sqlite.SeriesAct{Series: s.kept.Number, Did: "deleted", Became: chosen[0]})
 }
 
 func deletionAsked(n int, there, open []int) string {
 	openSaid := "deletes none, as none is open"
 	if len(open) > 0 {
-		openSaid = "keeps the done and deletes " + numbersOrNothing(open)
+		openSaid = "keeps the done and deletes " + act.NumbersOrNothing(open)
 	}
 	return fmt.Sprintf("↻%d made %s. Say what becomes of them: --keep-tasks keeps all %d as ordinary tasks, --delete-open %s, --delete-tasks deletes all %d as well",
 		n, manyOf(len(there), "task", "tasks"), len(there), openSaid, len(there))
 }
 
-// ShortDays writes days the short way, Mon 9 Nov, one after another.
-func ShortDays(days []string) string {
-	said := make([]string, 0, len(days))
-	for _, one := range days {
-		if d, err := domain.ParseDeadline(one); err == nil {
-			said = append(said, domain.ShortDay(d))
-		}
-	}
-	return strings.Join(said, " · ")
-}
-
-func followedText(made []madeNext) string {
-	var out strings.Builder
-	for _, m := range made {
-		if len(m.Missed) > 0 {
-			fmt.Fprintf(&out, "↻%d missed %s\n", m.Series, strings.ReplaceAll(ShortDays(m.Missed), " · ", ", "))
-		}
-		if m.Task != 0 {
-			fmt.Fprintf(&out, "↻%d made #%d for %s\n", m.Series, m.Task, ShortDays([]string{m.Day}))
-		}
-	}
-	return out.String()
-}
-
-func occursText(o Occurs) string {
-	day := ShortDays([]string{o.Day})
-	if o.At != "" {
-		day += " " + o.At
-	}
-	then := ShortDays(o.Then)
-	if o.Stopped {
-		then = "nothing: the series is stopped"
-	} else if o.after != "" {
-		then = o.after
-	} else if then == "" {
-		then = "nothing: the series ends"
-	}
-	return fmt.Sprintf("\nrepeats  ↻%d %s\nday      %s\nthen     %s\n", o.Series, o.Says, day, then)
-}
-
-func repeatsOf(of map[int]Occurs) map[int]string {
-	if of == nil {
-		return nil
-	}
-	out := make(map[int]string, len(of))
-	for n, o := range of {
-		out[n] = fmt.Sprintf("↻%d %s", o.Series, o.Often)
-	}
-	return out
-}
-
 // StandingSaid is where a series stands, in words: active, or stopped since a day.
 func StandingSaid(s Series) string {
 	if s.State == "stopped" {
-		return "stopped since " + ShortDays([]string{s.Stopped})
+		return "stopped since " + series.ShortDays([]string{s.Stopped})
 	}
 	return "active"
 }
@@ -1205,9 +1077,9 @@ func NextSaid(s Series) string {
 		return "none"
 	}
 	if s.State == "stopped" && len(s.Open) == 0 {
-		return "if resumed today: " + ShortDays(s.Next)
+		return "if resumed today: " + series.ShortDays(s.Next)
 	}
-	return ShortDays(s.Next)
+	return series.ShortDays(s.Next)
 }
 
 func seriesListText(all []Series) string {
@@ -1228,7 +1100,7 @@ func seriesListText(all []Series) string {
 }
 
 // TemplateSaid is what the next occurrence of a series is made from, in a line.
-func TemplateSaid(t Template) string {
+func TemplateSaid(t series.Template) string {
 	said := []string{t.Title, t.Priority}
 	if len(t.Labels) > 0 {
 		said = append(said, strings.Join(t.Labels, ", "))
@@ -1240,7 +1112,7 @@ func TemplateSaid(t Template) string {
 		said = append(said, t.Estimate)
 	}
 	if len(t.Objectives) > 0 {
-		said = append(said, "serves "+numbersOrNothing(t.Objectives))
+		said = append(said, "serves "+act.NumbersOrNothing(t.Objectives))
 	}
 	return strings.Join(said, " · ")
 }
@@ -1250,7 +1122,7 @@ func seriesShownText(s Series) string {
 	fmt.Fprintf(&out, "↻%d  %s  %s\n\n", s.Number, s.Title, StandingSaid(s))
 	fmt.Fprintf(&out, "rule      %s\nnext      %s\n", s.Says, NextSaid(s))
 	if strings.Contains(s.Says, "after the last is done") && !s.Ended {
-		rule, _ := domain.ParseRule(s.Rule)
+		rule, _ := series.ParseRule(s.Rule)
 		fmt.Fprintf(&out, "then      %s\n", rule.Then())
 	}
 	fmt.Fprintf(&out, "template  %s\n", TemplateSaid(s.Template))
@@ -1258,19 +1130,19 @@ func seriesShownText(s Series) string {
 	if s.TimeSpent != "" {
 		soFar += " · " + s.TimeSpent
 	}
-	fmt.Fprintf(&out, "so far    %s\nopen      %s\n", soFar, domain.OrNothing(numbersOrNothing(s.Open)))
+	fmt.Fprintf(&out, "so far    %s\nopen      %s\n", soFar, item.OrNothing(act.NumbersOrNothing(s.Open)))
 	if len(s.Occurrences) > 0 {
 		out.WriteString("\noccurrences\n")
 		for _, o := range s.Occurrences {
 			what := "—"
 			if o.Task != 0 {
-				what = domain.Ref(o.Task)
+				what = item.Ref(o.Task)
 			}
 			is := o.Is
 			if o.Archived {
 				is += " · archived"
 			}
-			fmt.Fprintf(&out, "  %-10s  %-5s  %s", ShortDays([]string{o.Day}), what, is)
+			fmt.Fprintf(&out, "  %-10s  %-5s  %s", series.ShortDays([]string{o.Day}), what, is)
 			if o.TimeSpent != "" {
 				out.WriteString("  " + o.TimeSpent)
 			}
@@ -1281,7 +1153,7 @@ func seriesShownText(s Series) string {
 		out.WriteString("\ntrace\n")
 		for _, a := range s.Acts {
 			at, _ := time.Parse(time.RFC3339, a.At)
-			line := fmt.Sprintf("  %s  %s", domain.FormatMoment(at), actSaid(a))
+			line := fmt.Sprintf("  %s  %s", calendar.FormatMoment(at), series.ActSaid(a))
 			for _, more := range []string{a.Through, a.By} {
 				if more != "" {
 					line += " · " + more
@@ -1293,36 +1165,20 @@ func seriesShownText(s Series) string {
 	return out.String()
 }
 
-func actSaid(a seriesAct) string {
-	switch a.Did {
-	case "made":
-		return fmt.Sprintf("made #%d for %s", a.Task, ShortDays([]string{a.Day}))
-	case "missed":
-		return "missed " + ShortDays([]string{a.Day})
-	case "skipped":
-		return fmt.Sprintf("skipped #%d, made for %s", a.Task, ShortDays([]string{a.Day}))
-	case "changed":
-		return fmt.Sprintf("changed %s from %q to %q", a.Field, a.Was, a.Became)
-	case "deleted":
-		return "deleted, choosing " + a.Became
-	}
-	return a.Did
-}
-
 func seriesActedText(verb string, a Answer) string {
 	s := *a.SeriesShown
 	switch verb {
 	case "stop":
 		if len(s.Open) > 0 {
-			return fmt.Sprintf("↻%d stopped; %s stays open, and nothing more is made\n", s.Number, numbersOrNothing(s.Open))
+			return fmt.Sprintf("↻%d stopped; %s stays open, and nothing more is made\n", s.Number, act.NumbersOrNothing(s.Open))
 		}
 		return fmt.Sprintf("↻%d stopped; nothing more is made\n", s.Number)
 	case "resume":
 		if len(a.Followed) > 0 {
-			return fmt.Sprintf("↻%d resumed · next %s, made as #%d\n", s.Number, ShortDays([]string{a.Followed[0].Day}), a.Followed[0].Task)
+			return fmt.Sprintf("↻%d resumed · next %s, made as #%d\n", s.Number, series.ShortDays([]string{a.Followed[0].Day}), a.Followed[0].Task)
 		}
 		if len(s.Open) > 0 {
-			return fmt.Sprintf("↻%d resumed; %s is still open, and the next comes when it is done or skipped\n", s.Number, numbersOrNothing(s.Open))
+			return fmt.Sprintf("↻%d resumed; %s is still open, and the next comes when it is done or skipped\n", s.Number, act.NumbersOrNothing(s.Open))
 		}
 		return fmt.Sprintf("↻%d resumed; it has ended, and nothing more is made\n", s.Number)
 	case "edit":
@@ -1331,10 +1187,10 @@ func seriesActedText(verb string, a Answer) string {
 	return seriesShownText(s)
 }
 
-func seriesDeletedText(d seriesDeleted) string {
+func seriesDeletedText(d series.Deleted) string {
 	said := fmt.Sprintf("↻%d was deleted", d.Deleted)
 	if len(d.TasksDeleted) > 0 {
-		said += " · " + numbersOrNothing(d.TasksDeleted) + " deleted"
+		said += " · " + act.NumbersOrNothing(d.TasksDeleted) + " deleted"
 	}
 	if len(d.Kept) > 0 {
 		said += fmt.Sprintf(" · %s kept as ordinary tasks", manyOf(len(d.Kept), "task", "tasks"))
@@ -1346,12 +1202,7 @@ var inSeriesArgument = Argument{Name: "series", Kind: Number, Of: "a series", Re
 
 var seriesTooArgument = Argument{Name: "series", Kind: Bool, Repeats: true, Means: "change the series it is an occurrence of as well, for the ones to come: whatever of its title, priority, labels, estimate, steps and objectives is named"}
 
-type begun struct {
-	rule      domain.Rule
-	from, day time.Time
-}
-
-func (e *Engine) beginning(in Input, c *Changes) (*begun, error) {
+func (e *Engine) beginning(in Input, c *Changes) (*series.Begun, error) {
 	every, err := everyNamed(in)
 	if err != nil || !every {
 		return nil, err
@@ -1372,14 +1223,14 @@ func (e *Engine) beginning(in Input, c *Changes) (*begun, error) {
 		return nil, err
 	}
 	if c.Deadline == nil {
-		deadline := domain.FormatDay(day)
+		deadline := calendar.FormatDay(day)
 		c.Deadline = &deadline
 	}
 	if c.State == nil {
-		state := string(domain.Todo)
+		state := string(item.Todo)
 		c.State = &state
 	}
-	return &begun{rule: rule, from: from, day: day}, nil
+	return &series.Begun{Rule: rule, From: from, Day: day}, nil
 }
 
 func (e *Engine) repeating(n int, in Input) (bool, error) {
@@ -1406,34 +1257,19 @@ func (e *Engine) repeating(n int, in Input) (bool, error) {
 	return every, nil
 }
 
-type occurrencesAsked struct {
-	of     map[int]int
-	series int
-}
-
-func (e *Engine) occurrencesIn(in Input) (occurrencesAsked, error) {
-	series, named := in.whole("series")
+func (e *Engine) occurrencesIn(in Input) (series.OccurrencesAsked, error) {
+	numbered, named := in.whole("series")
 	if !named {
-		return occurrencesAsked{}, nil
+		return series.OccurrencesAsked{}, nil
 	}
 	if err := e.mayRecur(); err != nil {
-		return occurrencesAsked{}, err
+		return series.OccurrencesAsked{}, err
 	}
-	if series != 0 {
-		if _, err := e.seriesAt(series); err != nil {
-			return occurrencesAsked{}, err
+	if numbered != 0 {
+		if _, err := e.seriesAt(numbered); err != nil {
+			return series.OccurrencesAsked{}, err
 		}
 	}
 	of, err := e.store.Occurrences()
-	return occurrencesAsked{of: of, series: series}, err
-}
-
-func (o occurrencesAsked) kept(tasks []task.Task) []task.Task {
-	if o.of == nil {
-		return tasks
-	}
-	return slices.DeleteFunc(tasks, func(t task.Task) bool {
-		series, is := o.of[factsOf(t).Number]
-		return !is || o.series != 0 && series != o.series
-	})
+	return series.OccurrencesAsked{Of: of, Series: numbered}, err
 }

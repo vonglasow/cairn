@@ -1,16 +1,16 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"errors"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func dayNamed(day string) time.Time {
-	parsed, err := domain.ParseDeadline(day)
+	parsed, err := calendar.ParseDeadline(day)
 	if err != nil {
 		panic(err)
 	}
@@ -19,17 +19,17 @@ func dayNamed(day string) time.Time {
 
 func TestAWeekStartsOnItsMonday(t *testing.T) {
 	for day, want := range map[string]string{"2026-10-14": "2026-10-12", "2026-10-18": "2026-10-12", "2026-10-12": "2026-10-12", "2026-10-19": "2026-10-19"} {
-		if got := domain.FormatDay(Monday(dayNamed(day).Add(15 * time.Hour))); got != want {
+		if got := calendar.FormatDay(Monday(dayNamed(day).Add(15 * time.Hour))); got != want {
 			t.Errorf("the week of %s starts on %s, want %s", day, got, want)
 		}
 	}
 }
 
 func TestMonthOn_keepsTheDayItCan(t *testing.T) {
-	if got := domain.FormatDay(MonthOn(dayNamed("2026-01-31"), 1)); got != "2026-02-28" {
+	if got := calendar.FormatDay(MonthOn(dayNamed("2026-01-31"), 1)); got != "2026-02-28" {
 		t.Errorf("a month after the 31st of January is %s", got)
 	}
-	if got := domain.FormatDay(FirstOfMonth(dayNamed("2026-01-31"))); got != "2026-01-01" {
+	if got := calendar.FormatDay(FirstOfMonth(dayNamed("2026-01-31"))); got != "2026-01-01" {
 		t.Errorf("the first of January's month is %s", got)
 	}
 }
@@ -69,16 +69,16 @@ func TestATimesheetSaysWhatADayHolds(t *testing.T) {
 
 func TestMonthGrid_startsOnTheMondayBeforeTheFirst(t *testing.T) {
 	grid := MonthGrid(time.Date(2026, 10, 12, 15, 0, 0, 0, time.UTC))
-	if got := domain.FormatDay(grid[0]); got != "2026-09-28" {
+	if got := calendar.FormatDay(grid[0]); got != "2026-09-28" {
 		t.Errorf("October 2026 starts its grid on %s, want the Monday 2026-09-28", got)
 	}
-	if got := domain.FormatDay(grid[len(grid)-1]); got != "2026-11-08" {
+	if got := calendar.FormatDay(grid[len(grid)-1]); got != "2026-11-08" {
 		t.Errorf("it ends on %s, want 2026-11-08", got)
 	}
-	if got := domain.FormatDay(MonthGrid(time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC))[0]); got != "2026-06-01" {
+	if got := calendar.FormatDay(MonthGrid(time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC))[0]); got != "2026-06-01" {
 		t.Errorf("a month starting on a Monday starts its grid on %s", got)
 	}
-	if got := domain.FormatDay(MonthGrid(time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC))[0]); got != "2026-10-26" {
+	if got := calendar.FormatDay(MonthGrid(time.Date(2026, 11, 3, 0, 0, 0, 0, time.UTC))[0]); got != "2026-10-26" {
 		t.Errorf("a month starting on a Sunday starts its grid on %s, want the Monday before", got)
 	}
 }
@@ -99,14 +99,14 @@ func TestTimesheet_worked_countsEachTaskOnce(t *testing.T) {
 	}
 }
 
-type sheetWork struct{ sheet trace.Sheet }
+type sheetWork struct{ sheet act.Sheet }
 
 func (w sheetWork) Ask(Operation, Input) (Answer, error) { return Answer{Sheet: &w.sheet}, nil }
 
 func (sheetWork) Version() (int64, error) { return 0, nil }
 
 func TestReadPeriod_answersTheSheetRead(t *testing.T) {
-	w := sheetWork{trace.Sheet{Days: []trace.Day{{Day: dayNamed("2026-10-13"), Total: 90 * time.Minute}}}}
+	w := sheetWork{act.Sheet{Days: []act.Day{{Day: dayNamed("2026-10-13"), Total: 90 * time.Minute}}}}
 	sheet, err := ReadPeriod(w, dayNamed("2026-10-12"), dayNamed("2026-10-18"), dayNamed("2026-10-14"))
 	if err != nil {
 		t.Fatal(err)

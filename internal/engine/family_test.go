@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 func TestDeleteObjectives_passesOverASubObjectiveDeletedWithItsParent(t *testing.T) {
@@ -16,7 +16,7 @@ func TestDeleteObjectives_passesOverASubObjectiveDeletedWithItsParent(t *testing
 			t.Fatal(err)
 		}
 	}
-	went, err := e.deleteObjectives([]int{1, 2}, deletion{subs: "keep"})
+	went, err := e.deleteObjectives([]int{1, 2}, objective.Deletion{Subs: "keep"})
 	if err != nil || !slices.Equal(went.Kept, []int{3}) {
 		t.Errorf("deleting 1 and its sub-objective 2 kept %v, %v; want 3", went.Kept, err)
 	}
@@ -39,7 +39,7 @@ func TestNamesOnly_refusesATopObjectiveAsASubObjective(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := (deletion{keep: []int{2}}).namesOnly([]int{1}, tr); !errors.Is(err, errNotASubObjective) {
+	if err := (objective.Deletion{Keep: []int{2}}).NamesOnly([]int{1}, tr); !errors.Is(err, objective.ErrNotASubObjective) {
 		t.Errorf("a top objective kept as a sub-objective of 1: %v", err)
 	}
 }
@@ -55,7 +55,7 @@ func TestNamesOnly_refusesASubObjectiveOfAnotherObjective(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := (deletion{keep: []int{3}}).namesOnly([]int{1}, tr); !errors.Is(err, errNotASubObjective) {
+	if err := (objective.Deletion{Keep: []int{3}}).NamesOnly([]int{1}, tr); !errors.Is(err, objective.ErrNotASubObjective) {
 		t.Errorf("a sub-objective of 2 kept as one of 1: %v", err)
 	}
 }

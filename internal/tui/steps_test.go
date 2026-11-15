@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"cairn/internal/engine"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func (w *world) columnsRead(list string) error {

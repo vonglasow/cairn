@@ -11,7 +11,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
-	"cairn/internal/migration"
+	"cairn/internal/engine/migration"
 	"cairn/test"
 )
 

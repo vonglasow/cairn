@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/engine/workspace"
 	"strconv"
 	"strings"
 
@@ -18,10 +19,10 @@ const (
 )
 
 type switcherState struct {
-	place     engine.WorkspaceShown
+	place     workspace.Shown
 	placeRead bool
-	spaces    []engine.Workspace
-	recent    []engine.RecentFolder
+	spaces    []workspace.Workspace
+	recent    []workspace.RecentFolder
 	typed     Written
 	on        int
 	asking    spaceAsking
@@ -76,7 +77,7 @@ func (w Window) readingPlace() Window {
 }
 
 // Place is the workspace the window shows, or the store no workspace names.
-func (w Window) Place() engine.WorkspaceShown { return w.switcher.place }
+func (w Window) Place() workspace.Shown { return w.switcher.place }
 
 // Title is what the window is called on the screen: cairn, and the workspace it shows, or the folder of a store no workspace names.
 func (w Window) Title() string {
@@ -168,7 +169,7 @@ func (w Window) shownElsewhere(store string) bool {
 	return w.switcher.seeing != nil && w.switcher.seeing(store)
 }
 
-func (w Window) spaceLine(place int, one engine.Workspace) SwitcherLine {
+func (w Window) spaceLine(place int, one workspace.Workspace) SwitcherLine {
 	line := SwitcherLine{Name: one.Name, Folder: one.Folder, Colour: one.Colour, Gone: one.NotFound, to: engine.Elsewhere{Workspace: one.Name}}
 	var tags []string
 	switch {
@@ -192,7 +193,7 @@ func (w Window) spaceLine(place int, one engine.Workspace) SwitcherLine {
 	return line
 }
 
-func (w Window) recentLine(one engine.RecentFolder) SwitcherLine {
+func (w Window) recentLine(one workspace.RecentFolder) SwitcherLine {
 	line := SwitcherLine{Name: one.Name(), Folder: one.Shown(), Recent: true, Gone: one.NotFound, Tag: one.Said(w.now), to: engine.Elsewhere{Store: one.Store}}
 	if !one.NotFound {
 		line.keeps = one.Folder

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
@@ -8,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/config"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/store/files"
 )
 
 func settingsIn(t *testing.T, folder, said string) {
@@ -17,7 +18,7 @@ func settingsIn(t *testing.T, folder, said string) {
 	if err := os.MkdirAll(folder, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(folder, config.SettingsFile), []byte(said), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(folder, files.SettingsFile), []byte(said), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -35,7 +36,7 @@ func TestPagesFrom_readsTheSettingsOfTheStoreInUse(t *testing.T) {
 }
 
 func TestKeepsSizes_readsTheSettingsBesideTheStore(t *testing.T) {
-	h := homeHolding(t, "", map[string]string{config.StoreVariable: "~/s/cairn.db"})
+	h := homeHolding(t, "", map[string]string{files.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "[window]\nkeep_sizes = true\n")
 	if !KeepsSizes(h) {
 		t.Error("keep_sizes = true beside the store does not keep the window's sizes")
@@ -46,7 +47,7 @@ func TestLocate_refusesSettingsThatSayWhatBelongsToTheMachine(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	settingsIn(t, filepath.Join(h.Dir, "w"), "store = \"~/x/cairn.db\"\n")
 	_, err := Locate(h)
-	if !errors.Is(err, config.ErrMachineKey) || RefusalOf(err).Kind != KindRefused {
+	if !errors.Is(err, files.ErrMachineKey) || RefusalOf(err).Kind != KindRefused {
 		t.Errorf("Locate = %v, want ErrMachineKey, refused rather than a store unusable", err)
 	}
 	if RefusalOf(err).Reason != "config-machine-key" {
@@ -60,7 +61,7 @@ func TestLocate_refusesSettingsThatSayWhatBelongsToTheMachine(t *testing.T) {
 
 func TestLocate_settingsThatCannotBeReadLeaveTheStoreUnusable(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	if err := os.MkdirAll(filepath.Join(h.Dir, "w", config.SettingsFile), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Join(h.Dir, "w", files.SettingsFile), 0o700); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Locate(h); RefusalOf(err).Kind != KindStore {
@@ -72,7 +73,7 @@ func TestLocate_settingsThatAreNotTOMLAreRefusedNamingThem(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	settingsIn(t, filepath.Join(h.Dir, "w"), "[pages\n")
 	_, err := Locate(h)
-	if !errors.Is(err, config.ErrNotTOML) || !strings.Contains(err.Error(), filepath.Join(h.Dir, "w", config.SettingsFile)) {
+	if !errors.Is(err, files.ErrNotTOML) || !strings.Contains(err.Error(), filepath.Join(h.Dir, "w", files.SettingsFile)) {
 		t.Errorf("Locate = %v, want ErrNotTOML naming the settings", err)
 	}
 }
@@ -92,7 +93,7 @@ func TestDelete_takesItsTimeWhenTheSettingsOfItsStoreSaySo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if went := acts[len(acts)-1].Carried().Was; !strings.HasSuffix(went, trace.WentWithItsTime) {
+	if went := acts[len(acts)-1].Carried().Was; !strings.HasSuffix(went, act.WentWithItsTime) {
 		t.Errorf("the deletion took %q, want its time with it", went)
 	}
 }
@@ -129,10 +130,10 @@ func TestConfigured_isTheGlobalConfigurationWithTheSettingsBesideTheStore(t *tes
 }
 
 func TestIgnored_saysWhatTheGlobalFileAndTheSettingsPassOver(t *testing.T) {
-	h := homeHolding(t, "colour = 1\n", map[string]string{config.StoreVariable: "~/s/cairn.db"})
+	h := homeHolding(t, "colour = 1\n", map[string]string{files.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "[pages]\ncalendar = false\n")
 	said := Ignored(h)
-	if len(said) != 2 || !strings.Contains(said[1], filepath.Join(h.Dir, "s", config.SettingsFile)) {
+	if len(said) != 2 || !strings.Contains(said[1], filepath.Join(h.Dir, "s", files.SettingsFile)) {
 		t.Errorf("Ignored = %q, want the global key and the settings' one, naming the settings", said)
 	}
 	if Ignored(Home{}) != nil {
@@ -145,18 +146,18 @@ func TestIgnored_saysWhatTheGlobalFileAndTheSettingsPassOver(t *testing.T) {
 }
 
 func TestConfigShow_saysWhereEachStoreKeyComesFrom(t *testing.T) {
-	h := homeHolding(t, "[focus]\nsession = \"1h\"\n[approach]\nlabel = \"discuss\"\n", map[string]string{config.StoreVariable: "~/s/cairn.db"})
+	h := homeHolding(t, "[focus]\nsession = \"1h\"\n[approach]\nlabel = \"discuss\"\n", map[string]string{files.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "[time]\nweekends = \"hidden\"\n[approach]\nlabel = \"\"\n")
 	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	c := *answer.Config
-	settings := filepath.Join(h.Dir, "s", config.SettingsFile)
-	if c.Settings != settings || !slices.Equal(c.WrittenHere, []string{"approach.label", "time.weekends"}) || c.Time.Weekends != config.WeekendsHidden {
+	settings := filepath.Join(h.Dir, "s", files.SettingsFile)
+	if c.Settings != settings || !slices.Equal(c.WrittenHere, []string{"approach.label", "time.weekends"}) || c.Time.Weekends != files.WeekendsHidden {
 		t.Errorf("Config = %+v, want the settings read over the global file", c)
 	}
-	said := configText(c)
+	said := workspace.ConfigText(c)
 	for _, line := range []string{
 		"# the store's settings: " + settings + "\n",
 		"weekends = \"hidden\"   # set in the store's settings; global: \"shown\"\n",
@@ -174,14 +175,14 @@ func TestConfigShow_saysWhereEachStoreKeyComesFrom(t *testing.T) {
 }
 
 func TestConfigShow_saysNothingOfSettingsThatAreNotThere(t *testing.T) {
-	said := configText(shownWith(t, "[focus]\nsession = \"1h\"\n"))
+	said := workspace.ConfigText(shownWith(t, "[focus]\nsession = \"1h\"\n"))
 	if strings.Contains(said, "settings") || strings.Contains(said, "# by default") {
 		t.Errorf("with no settings, config show says:\n%s", said)
 	}
 }
 
 func TestConfigShow_saysSettingsItCannotMakeSenseOfAsTheProblem(t *testing.T) {
-	h := homeHolding(t, "", map[string]string{config.StoreVariable: "~/s/cairn.db"})
+	h := homeHolding(t, "", map[string]string{files.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "plugin = \"~/p\"\n")
 	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
 	if err != nil {
@@ -197,7 +198,7 @@ func TestWorkspaceAdd_writesSettingsThatSayNothing(t *testing.T) {
 	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p")); err != nil {
 		t.Fatal(err)
 	}
-	if read, _ := os.ReadFile(filepath.Join(h.Dir, "p", config.SettingsFile)); string(read) != config.SettingsHeader {
+	if read, _ := os.ReadFile(filepath.Join(h.Dir, "p", files.SettingsFile)); string(read) != files.SettingsHeader {
 		t.Errorf("the settings read %q", read)
 	}
 }
@@ -208,7 +209,7 @@ func TestWorkspaceAdd_leavesSettingsAlreadyThere(t *testing.T) {
 	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p")); err != nil {
 		t.Fatal(err)
 	}
-	if read, _ := os.ReadFile(filepath.Join(h.Dir, "p", config.SettingsFile)); string(read) != "[pages]\ntime = false\n" {
+	if read, _ := os.ReadFile(filepath.Join(h.Dir, "p", files.SettingsFile)); string(read) != "[pages]\ntime = false\n" {
 		t.Errorf("the settings read %q", read)
 	}
 }

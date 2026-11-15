@@ -1,16 +1,17 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
 type ruleState struct {
-	parts domain.RuleParts
+	parts series.RuleParts
 	line  int
 	day   int
 	was   string
@@ -52,8 +53,8 @@ func (w Window) openingRule() Window {
 			from = f.Value
 		}
 	}
-	w.ruling = ruleState{parts: domain.RuleParts{Every: 1, Unit: "days"}, was: field.Value, from: from, since: from}
-	if rule, err := domain.ParseRule(field.Value); err == nil {
+	w.ruling = ruleState{parts: series.RuleParts{Every: 1, Unit: "days"}, was: field.Value, from: from, since: from}
+	if rule, err := series.ParseRule(field.Value); err == nil {
 		w.ruling.parts = rule.Parts()
 	}
 	w.screen = OnRule
@@ -82,7 +83,7 @@ func (w Window) fromSet(day string) Window {
 func fromDays(held string, today time.Time) []string {
 	out := make([]string, 0, ruleDaysAhead+1)
 	for n := range ruleDaysAhead {
-		out = append(out, domain.FormatDay(domain.DayOf(today).AddDate(0, 0, n)))
+		out = append(out, calendar.FormatDay(series.DayOf(today).AddDate(0, 0, n)))
 	}
 	if held != "" && !slices.Contains(out, held) {
 		out = append(out, held)
@@ -99,7 +100,7 @@ func ruleChoices(line int, r ruleState, today time.Time) []string {
 	case ruleEvery:
 		return counted(1, ruleMost, "")
 	case ruleUnit:
-		return domain.RuleUnits
+		return series.RuleUnits
 	case ruleOn:
 		return Weekdays[:]
 	case ruleAt:
@@ -132,7 +133,7 @@ func timesOfDay(held string) []string {
 	return out
 }
 
-func endsOf(p domain.RuleParts, today time.Time) []string {
+func endsOf(p series.RuleParts, today time.Time) []string {
 	switch {
 	case p.Times > 0:
 		return counted(1, ruleMost, " times")
@@ -145,9 +146,9 @@ func endsOf(p domain.RuleParts, today time.Time) []string {
 func untilDays(held, today time.Time) []string {
 	var out []string
 	for week := 1; week <= ruleWeeksAhead; week++ {
-		out = append(out, domain.FormatDay(domain.DayOf(today).AddDate(0, 0, 7*week)))
+		out = append(out, calendar.FormatDay(series.DayOf(today).AddDate(0, 0, 7*week)))
 	}
-	if said := domain.FormatDay(held); !slices.Contains(out, said) {
+	if said := calendar.FormatDay(held); !slices.Contains(out, said) {
 		out = append(out, said)
 		slices.Sort(out)
 	}
@@ -162,7 +163,7 @@ func ruleOnOf(line int, r ruleState, today time.Time) int {
 	case ruleEvery:
 		return p.Every - 1
 	case ruleUnit:
-		return slices.Index(domain.RuleUnits, p.Unit)
+		return slices.Index(series.RuleUnits, p.Unit)
 	case ruleOn:
 		return -1
 	case ruleAt:
@@ -183,7 +184,7 @@ func ruleOnOf(line int, r ruleState, today time.Time) int {
 		case p.Times > 0:
 			return p.Times - 1
 		case !p.Until.IsZero():
-			return slices.Index(untilDays(p.Until, today), domain.FormatDay(p.Until))
+			return slices.Index(untilDays(p.Until, today), calendar.FormatDay(p.Until))
 		}
 		return 0
 	}
@@ -193,7 +194,7 @@ func ruleOnOf(line int, r ruleState, today time.Time) int {
 	return 0
 }
 
-func ticked(p domain.RuleParts) []bool {
+func ticked(p series.RuleParts) []bool {
 	out := make([]bool, len(Weekdays))
 	if p.Unit != "weeks" {
 		return out
@@ -232,7 +233,7 @@ func (w Window) ruled(line, at int) Window {
 			p.Times = ruleTimesFirst
 		}
 		if at == 2 {
-			p.Until = domain.DayOf(w.today()).AddDate(0, 0, 7*ruleUntilFirst)
+			p.Until = series.DayOf(w.today()).AddDate(0, 0, 7*ruleUntilFirst)
 		}
 	case ruleEnd:
 		p = endAt(p, choices[at], at)
@@ -247,7 +248,7 @@ func (w Window) ruled(line, at int) Window {
 	return w
 }
 
-func dayTicked(p domain.RuleParts, day time.Weekday) domain.RuleParts {
+func dayTicked(p series.RuleParts, day time.Weekday) series.RuleParts {
 	if p.Unit != "weeks" {
 		p.Days = nil
 	}
@@ -260,12 +261,12 @@ func dayTicked(p domain.RuleParts, day time.Weekday) domain.RuleParts {
 	return p
 }
 
-func endAt(p domain.RuleParts, said string, at int) domain.RuleParts {
+func endAt(p series.RuleParts, said string, at int) series.RuleParts {
 	switch {
 	case p.Times > 0:
 		p.Times = at + 1
 	case !p.Until.IsZero():
-		if day, err := domain.ParseDeadline(said); err == nil {
+		if day, err := calendar.ParseDeadline(said); err == nil {
 			p.Until = day
 		}
 	}

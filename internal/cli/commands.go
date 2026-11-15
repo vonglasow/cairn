@@ -102,6 +102,10 @@ func newActionGroups(pages engine.Pages) []*cobra.Command {
 		if !pages.Offers(op) {
 			continue
 		}
+		if op.Thing == "" {
+			groups = append(groups, newActionCmd(pages.Shaped(op)))
+			continue
+		}
 		group, ok := byThing[op.Thing]
 		if !ok {
 			group = newGroupCmd(op.Thing)

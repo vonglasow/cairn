@@ -1,12 +1,13 @@
 package tui
 
 import (
+	"cairn/internal/engine/workspace"
 	rdebug "runtime/debug"
 	"time"
 
 	"cairn/internal/debug"
 	"cairn/internal/engine"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -66,7 +67,7 @@ type Looked struct {
 // Heard is the history of the task that is open, read when it opens and again whenever the board is read again — never while it is being drawn.
 type Heard struct {
 	Number int
-	Acts   []trace.Act
+	Acts   []act.Act
 	Err    error
 }
 
@@ -146,15 +147,15 @@ type Board struct {
 
 	place    Placed
 	switcher Switcher
-	spaces   []engine.Workspace
-	recent   []engine.RecentFolder
+	spaces   []workspace.Workspace
+	recent   []workspace.RecentFolder
 	sought   string
 	spaceAt  int
 	opened   string
 	spaceAsk spaceTyping
 	spaceIn  string
 	newSpace string
-	keeping  engine.RecentFolder
+	keeping  workspace.RecentFolder
 
 	seriesOn      int
 	inOccurrences bool

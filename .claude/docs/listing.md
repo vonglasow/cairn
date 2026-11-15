@@ -724,7 +724,7 @@ only what was being worked on was `task focus`, which no board offers.
 
 ## Where the narrowing happens
 
-In SQL, in `internal/store/narrowing.go`, not by reading everything and
+In SQL, in `internal/store/sqlite/narrowing.go`, not by reading everything and
 dropping most of it above. What a narrowed listing is for is not handing over
 what nobody asked for, and a filter that reads the whole store first only hides
 the cost.

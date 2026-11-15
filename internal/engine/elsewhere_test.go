@@ -1,12 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func TestSwitch_aFolderTypedOpensItsStoreAndIsRemembered(t *testing.T) {
@@ -27,12 +28,12 @@ func TestSwitch_aFolderTypedOpensItsStoreAndIsRemembered(t *testing.T) {
 func TestSwitch_aFolderNotAbsoluteOrNotThereIsRefusedAndTheStoreHeldStays(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
 	held := heldOn(t, h)
-	if _, err := Switch(held, Elsewhere{Folder: "scratch"}); !errors.Is(err, config.ErrNotAbsolute) {
-		t.Errorf("Switch to a relative folder = %v; want %v", err, config.ErrNotAbsolute)
+	if _, err := Switch(held, Elsewhere{Folder: "scratch"}); !errors.Is(err, files.ErrNotAbsolute) {
+		t.Errorf("Switch to a relative folder = %v; want %v", err, files.ErrNotAbsolute)
 	}
 	gone := filepath.Join(h.Dir, "gone")
-	if _, err := Switch(held, Elsewhere{Folder: gone}); !errors.Is(err, errNotThere) {
-		t.Errorf("Switch to a folder not there = %v; want %v", err, errNotThere)
+	if _, err := Switch(held, Elsewhere{Folder: gone}); !errors.Is(err, workspace.ErrNotThere) {
+		t.Errorf("Switch to a folder not there = %v; want %v", err, workspace.ErrNotThere)
 	}
 	if _, err := os.Stat(gone); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the folder not there was made: %v", err)
@@ -56,8 +57,8 @@ func TestSwitch_aStoreOpenedBeforeOpensAgainAndOneGoneIsRefused(t *testing.T) {
 		t.Errorf("Switch to the store opened before = %v", err)
 	}
 	gone := filepath.Join(h.Dir, "trip", "cairn.db")
-	if _, err := Switch(held, Elsewhere{Store: gone}); !errors.Is(err, errNotThere) {
-		t.Errorf("Switch to a store gone = %v; want %v", err, errNotThere)
+	if _, err := Switch(held, Elsewhere{Store: gone}); !errors.Is(err, workspace.ErrNotThere) {
+		t.Errorf("Switch to a store gone = %v; want %v", err, workspace.ErrNotThere)
 	}
 	if _, err := os.Stat(filepath.Dir(gone)); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("the folder of the store gone was made: %v", err)

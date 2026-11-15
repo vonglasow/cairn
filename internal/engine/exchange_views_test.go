@@ -1,9 +1,8 @@
 package engine
 
 import (
+	"cairn/internal/engine/view"
 	"testing"
-
-	"cairn/internal/store"
 )
 
 func TestImport_aViewKeepsTheFocusInOrOutAndNothingElse(t *testing.T) {
@@ -18,7 +17,7 @@ func TestImport_aViewKeepsTheFocusInOrOutAndNothingElse(t *testing.T) {
 
 func TestExport_passesOverAViewNarrowingNothingAndWritesTheNext(t *testing.T) {
 	e := openEngine(t)
-	if err := e.store.KeepViews([]store.View{{Name: "Gone", Objectives: []int{9}}, {Name: "Todo", State: "todo"}}); err != nil {
+	if err := e.store.KeepViews([]view.View{{Name: "Gone", Objectives: []int{9}}, {Name: "Todo", State: "todo"}}); err != nil {
 		t.Fatal(err)
 	}
 	tr, err := e.tree()

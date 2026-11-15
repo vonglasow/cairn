@@ -10,7 +10,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 	"cairn/test"
 )
 

@@ -1,25 +1,27 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/label"
 	"fmt"
 	"maps"
 	"slices"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func countedFromToday(read exchanged, today time.Time) (exchanged, error) {
 	for i, o := range read.Objectives {
-		day, err := domain.FromToday(o.Deadline, today)
+		day, err := calendar.FromToday(o.Deadline, today)
 		if err != nil {
 			return exchanged{}, fmt.Errorf("objective %d: %w", o.Number, err)
 		}
 		read.Objectives[i].Deadline = day
 	}
 	for i, t := range read.Tasks {
-		day, err := domain.FromToday(t.Deadline, today)
+		day, err := calendar.FromToday(t.Deadline, today)
 		if err != nil {
 			return exchanged{}, fmt.Errorf("task %d: %w", t.Number, err)
 		}
@@ -29,7 +31,7 @@ func countedFromToday(read exchanged, today time.Time) (exchanged, error) {
 		}
 		spent := map[string]string{}
 		for said, length := range t.Spent {
-			day, err := domain.FromToday(said, today)
+			day, err := calendar.FromToday(said, today)
 			if err != nil {
 				return exchanged{}, fmt.Errorf("task %d: %w", t.Number, err)
 			}
@@ -37,14 +39,14 @@ func countedFromToday(read exchanged, today time.Time) (exchanged, error) {
 		}
 		read.Tasks[i].Spent = spent
 	}
-	series, err := seriesFromToday(read.Series, today)
+	series, err := exchange.SeriesFromToday(read.Series, today)
 	read.Series = series
 	return read, err
 }
 
 func (e *Engine) spentOnDays(number int, spent map[string]string) error {
 	for _, said := range slices.Sorted(maps.Keys(spent)) {
-		day, err := domain.ParseDeadline(said)
+		day, err := calendar.ParseDeadline(said)
 		if err != nil {
 			return err
 		}
@@ -65,8 +67,8 @@ func (e *Engine) spentByDay() (map[int]map[string]string, error) {
 	for _, a := range acts {
 		c := a.Carried()
 		at := c.At.Local()
-		if c.Did == trace.TimeAdded {
-			if day, err := domain.ParseDeadline(c.Was); err == nil {
+		if c.Did == act.TimeAdded {
+			if day, err := calendar.ParseDeadline(c.Was); err == nil {
 				at = day
 			}
 		}
@@ -75,24 +77,24 @@ func (e *Engine) spentByDay() (map[int]map[string]string, error) {
 		}
 	}
 	out := map[int]map[string]string{}
-	for _, day := range trace.Timed(trace.WithoutTimeTaken(acts), first, startOfDay(now), now).Days {
+	for _, day := range act.Timed(act.WithoutTimeTaken(acts), first, startOfDay(now), now).Days {
 		for _, w := range day.Tasks {
 			if out[w.Task] == nil {
 				out[w.Task] = map[string]string{}
 			}
-			out[w.Task][domain.FormatDay(day.Day)] = domain.FormatDuration(w.Took)
+			out[w.Task][calendar.FormatDay(day.Day)] = calendar.FormatDuration(w.Took)
 		}
 	}
 	return out, nil
 }
 
-func (e *Engine) labelsFiled(labels []labelFiled) error {
+func (e *Engine) labelsFiled(labels []exchange.LabelFiled) error {
 	held, err := e.everyLabel()
 	if err != nil {
 		return err
 	}
 	for _, l := range labels {
-		name, _ := oneLabel(l.Label)
+		name, _ := label.OneLabel(l.Label)
 		if _, there := held[name]; there {
 			continue
 		}

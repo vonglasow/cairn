@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/pflag"
 
 	"cairn/internal/cli"
-	"cairn/internal/config"
 	"cairn/internal/mcp"
+	"cairn/internal/store/files"
 	"cairn/internal/theme"
 )
 
@@ -176,7 +176,7 @@ func toolsPageOf() page {
 }
 
 func configurationIntro() string {
-	return `<h2 id="the-whole-file">The whole file</h2><p>What <code>cairn config init</code> writes: every key, explained, set to what cairn uses when the file says nothing.</p><pre><code class="toml">` + e(config.Example) + `</code></pre>`
+	return `<h2 id="the-whole-file">The whole file</h2><p>What <code>cairn config init</code> writes: every key, explained, set to what cairn uses when the file says nothing.</p><pre><code class="toml">` + e(files.Example) + `</code></pre>`
 }
 
 func themesPageOf(schemes []theme.Scheme, pictured bool) page {

@@ -1,9 +1,11 @@
 package engine
 
 import (
-	"cairn/internal/config"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/series"
+	"cairn/internal/engine/task"
+	"cairn/internal/engine/view"
+	"cairn/internal/store/files"
 )
 
 func (e *Engine) timeShown() bool {
@@ -11,17 +13,17 @@ func (e *Engine) timeShown() bool {
 		return true
 	}
 	read, err := e.configured()
-	return err != nil || read.TimeMode() == config.TimeOn
+	return err != nil || read.TimeMode() == files.TimeOn
 }
 
 func (a Answer) untimed() Answer {
 	a.Untimed = true
 	if a.Task != nil {
-		one := withoutTime(*a.Task)
+		one := task.WithoutTime(*a.Task)
 		a.Task = &one
 	}
 	for _, all := range []*[]task.Task{&a.Tasks, &a.Matched, &a.Under, &a.Held} {
-		*all = everyWithoutTime(*all)
+		*all = task.EveryWithoutTime(*all)
 	}
 	a.Spent = nil
 	if a.Family != nil {
@@ -39,7 +41,7 @@ func (a Answer) untimed() Answer {
 	}
 	if a.Viewed != nil {
 		v := *a.Viewed
-		v.Objectives = append([]viewObjective(nil), v.Objectives...)
+		v.Objectives = append([]view.Objective(nil), v.Objectives...)
 		for i := range v.Objectives {
 			v.Objectives[i].TimeSpent = ""
 		}
@@ -67,26 +69,9 @@ func (a Answer) review() objective.Review {
 
 func (s Series) untimed() Series {
 	s.TimeSpent = ""
-	s.Occurrences = append([]Occurrence(nil), s.Occurrences...)
+	s.Occurrences = append([]series.Occurrence(nil), s.Occurrences...)
 	for i := range s.Occurrences {
 		s.Occurrences[i].TimeSpent = ""
 	}
 	return s
-}
-
-func everyWithoutTime(all []task.Task) []task.Task {
-	if all == nil {
-		return nil
-	}
-	out := make([]task.Task, 0, len(all))
-	for _, t := range all {
-		out = append(out, withoutTime(t))
-	}
-	return out
-}
-
-func withoutTime(t task.Task) task.Task {
-	c := t.Carried()
-	c.Spent = 0
-	return task.Made(c)
 }

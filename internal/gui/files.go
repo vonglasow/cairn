@@ -1,13 +1,14 @@
 package gui
 
 import (
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -69,7 +70,7 @@ func (w Window) exportingTasks() Window {
 		_ = os.RemoveAll(dir)
 		return w.failing(err)
 	}
-	w.fileAsk = &FileAsk{Save: true, Name: "cairn-tasks-" + domain.FormatDay(w.now) + ".json", From: from}
+	w.fileAsk = &FileAsk{Save: true, Name: "cairn-tasks-" + calendar.FormatDay(w.now) + ".json", From: from}
 	return w
 }
 
@@ -115,7 +116,7 @@ func (w Window) addingFrom(from, name string) Window {
 	if err != nil {
 		return w.failing(err)
 	}
-	var added domain.Held
+	var added backup.Held
 	if answer.Holds != nil {
 		added = *answer.Holds
 	}

@@ -1,6 +1,7 @@
 package theme
 
 import (
+	"cairn/internal/engine/item"
 	"errors"
 	"fmt"
 	"image/color"
@@ -10,8 +11,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 // ErrNotAScheme is what a file is said to be when it cannot be read as YAML holding a base16 scheme.
@@ -185,7 +185,7 @@ func (s Scheme) derived() Colours {
 			DangerChip: mix(danger, bg, 0.5), DangerLitChip: mix(dangerLit, bg, 0.5),
 		},
 		Priority: map[string]color.NRGBA{
-			string(domain.Critical): p[0x8], string(domain.High): p[0xA], string(domain.Normal): p[0xC], string(domain.Low): ramp(0.5),
+			string(item.Critical): p[0x8], string(item.High): p[0xA], string(item.Normal): p[0xC], string(item.Low): ramp(0.5),
 		},
 		Standing: map[string]Inked{},
 		Labels:   map[string]color.NRGBA{},

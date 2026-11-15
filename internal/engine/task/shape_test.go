@@ -1,0 +1,146 @@
+package task_test
+
+import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
+	"encoding/json"
+	"reflect"
+	"strings"
+	"testing"
+
+	"cairn/internal/engine/task"
+)
+
+func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
+	deadline, err := calendar.ParseDeadline("2026-09-01")
+	if err != nil {
+		t.Fatalf("ParseDeadline: %v", err)
+	}
+	estimate, err := calendar.ParseEstimate("90m")
+	if err != nil {
+		t.Fatalf("ParseEstimate: %v", err)
+	}
+	spent, err := calendar.ParseEstimate("30m")
+	if err != nil {
+		t.Fatalf("ParseEstimate: %v", err)
+	}
+	var a task.AsTold
+	a.Numbered(1)
+	a.Step("Plan it", true)
+	a.Serves(3)
+	a.Titled("Write the spec")
+	a.Described("in full")
+	a.InColumn(item.Todo)
+	a.Carries(item.High)
+	a.Labelled("spec")
+	a.Labelled("team")
+	a.Due(deadline)
+	a.Estimated(estimate)
+	a.Spent(spent)
+	a.BlockedBy(4)
+	a.BlockedBy(5)
+	a.Because("the client's answer")
+	built := a.Task()
+
+	encoded, err := json.Marshal(task.OfTask(built))
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	var doc map[string]any
+	if err := json.Unmarshal(encoded, &doc); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+
+	want := map[string]any{
+		"number": float64(1),
+
+		"title":       "Write the spec",
+		"description": "in full",
+		"state":       string(item.Todo),
+		"priority":    string(item.High),
+		"deadline":    "2026-09-01",
+		"estimate":    "1h30m",
+		"time_spent":  "30m",
+	}
+	for field, expected := range want {
+		if doc[field] != expected {
+			t.Errorf("%s = %v, want %v", field, doc[field], expected)
+		}
+	}
+	labels, ok := doc["labels"].([]any)
+	if !ok || len(labels) != 2 || labels[0] != "spec" || labels[1] != "team" {
+		t.Errorf("labels = %v, want [spec team]", doc["labels"])
+	}
+	objectives, ok := doc["objectives"].([]any)
+	if !ok || len(objectives) != 1 || objectives[0] != float64(3) {
+		t.Errorf("objectives = %v, want [3]", doc["objectives"])
+	}
+	blockers, ok := doc["blocked_by"].([]any)
+	if !ok || len(blockers) != 2 || blockers[0] != float64(4) || blockers[1] != float64(5) {
+		t.Errorf("blocked_by = %v, want [4 5]", doc["blocked_by"])
+	}
+	steps, ok := doc["steps"].([]any)
+	if !ok || len(steps) != 1 || steps[0].(map[string]any)["title"] != "Plan it" || steps[0].(map[string]any)["done"] != true {
+		t.Errorf("steps = %v, want one done, called Plan it", doc["steps"])
+	}
+	if doc["because"] != "the client's answer" {
+		t.Errorf("because = %v, want the words it was given", doc["because"])
+	}
+}
+
+func TestOfTask_writesAnEmptyListRatherThanNothingAtAll(t *testing.T) {
+	built, err := task.NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	encoded, err := json.Marshal(task.OfTask(built))
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	for _, want := range []string{`"labels":[]`, `"blocked_by":[]`, `"objectives":[]`} {
+		if got := string(encoded); !strings.Contains(got, want) {
+			t.Errorf("%s should be there, got %s", want, got)
+		}
+	}
+}
+
+func TestOfTask_keepsWhatATaskSaysApartFromItsFacts(t *testing.T) {
+	var a task.AsTold
+	a.Numbered(1)
+	a.Titled("Write the spec")
+	a.Described("in full")
+	shape := task.OfTask(a.Task())
+	if shape.Title != "Write the spec" || shape.Description != "in full" {
+		t.Errorf("the facts say %q and the task says %q", shape.Title, shape.Description)
+	}
+}
+
+func TestShape_everyFieldSaysWhatItHolds(t *testing.T) {
+	for _, shape := range []any{task.Shape{}, task.Facts{}} {
+		of := reflect.TypeOf(shape)
+		for i := range of.NumField() {
+			field := of.Field(i)
+			if field.Anonymous {
+				continue
+			}
+			if field.Tag.Get("jsonschema") == "" {
+				t.Errorf("%s.%s says nothing of what it holds", of.Name(), field.Name)
+			}
+		}
+	}
+}
+
+func TestOfTaskCarriesTheLinks(t *testing.T) {
+	linked := task.OfTask(task.Made(task.Carried{Number: 1, Linked: []int{2, 5}}))
+	if !reflect.DeepEqual(linked.Linked, []int{2, 5}) {
+		t.Errorf("linked = %v, want [2 5]", linked.Linked)
+	}
+	encoded, err := json.Marshal(task.OfTask(task.Made(task.Carried{Number: 1})))
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if got := string(encoded); !strings.Contains(got, `"linked":[]`) {
+		t.Errorf(`"linked":[] should be there, got %s`, got)
+	}
+}

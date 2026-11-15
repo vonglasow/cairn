@@ -1,11 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/task"
 	"errors"
 	"reflect"
 	"testing"
 
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func linkedOf(t *testing.T, e *Engine, number int) []int {
@@ -14,7 +15,7 @@ func linkedOf(t *testing.T, e *Engine, number int) []int {
 	if err != nil {
 		t.Fatalf("Find(%d): %v", number, err)
 	}
-	return factsOf(found).Linked
+	return found.Carried().Linked
 }
 
 func linking(t *testing.T, given ...string) Changes {
@@ -60,13 +61,13 @@ func TestLinkIsAppliedToTheTask(t *testing.T) {
 func TestLinkToItselfOrToNothingIsRefused(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "1")
-	if _, err := e.edit(1, linking(t, "1")); !errors.Is(err, errLinkedToItself) {
+	if _, err := e.edit(1, linking(t, "1")); !errors.Is(err, task.ErrLinkedToItself) {
 		t.Errorf("edit 1 link 1: %v, want ErrLinkedToItself", err)
 	}
-	if _, err := e.edit(1, linking(t, "9")); !errors.Is(err, errNoSuchTask) {
+	if _, err := e.edit(1, linking(t, "9")); !errors.Is(err, task.ErrNoSuchTask) {
 		t.Errorf("edit 1 link 9: %v, want ErrNoSuchTask", err)
 	}
-	if _, err := e.add("x", linking(t, "9")); !errors.Is(err, errNoSuchTask) {
+	if _, err := e.add("x", linking(t, "9")); !errors.Is(err, task.ErrNoSuchTask) {
 		t.Errorf("add link 9: %v, want ErrNoSuchTask", err)
 	}
 	if all, err := e.tasks.All(); err != nil || len(all) != 1 {
@@ -97,7 +98,7 @@ func linksActsOn(t *testing.T, e *Engine, number int) [][2]string {
 	var told [][2]string
 	for _, a := range acts {
 		c := a.Carried()
-		if c.Field == "links" && c.Did == trace.Changed {
+		if c.Field == "links" && c.Did == act.Changed {
 			told = append(told, [2]string{c.Was, c.Became})
 		}
 	}

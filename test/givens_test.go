@@ -1,15 +1,15 @@
 package test
 
 import (
+	"cairn/internal/engine/item"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func givensOn(t *testing.T) Givens {
@@ -24,7 +24,7 @@ func givensOn(t *testing.T) Givens {
 
 func shownText(t *testing.T, one task.Task) string {
 	t.Helper()
-	return task.Text(one, domain.Progress{}, true)
+	return task.Text(one, item.Progress{}, true)
 }
 
 func TestGivens_writeWhatTheyDescribe(t *testing.T) {
@@ -106,7 +106,7 @@ func TestGivens_writeWhatTheyDescribe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if text := objective.Text(goal, domain.Progress{}, objective.Review{}, objective.Family{}); !strings.Contains(text, "Ship it") {
+	if text := objective.Text(goal, item.Progress{}, objective.Review{}, objective.Family{}); !strings.Contains(text, "Ship it") {
 		t.Errorf("the objective reads %q", text)
 	}
 	if _, err := g.Objective(9); err == nil {

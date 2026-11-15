@@ -1,13 +1,15 @@
 package gui
 
 import (
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/task"
+	"cairn/internal/engine/workspace"
 	"errors"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -434,9 +436,9 @@ func (w Window) PartsTicked() []engine.Card {
 		}
 		var cards []engine.Card
 		for _, part := range engine.PartsIn(field.Value) {
-			state := domain.Todo
+			state := item.Todo
 			if part.Done {
-				state = domain.Done
+				state = item.Done
 			}
 			cards = append(cards, engine.Card{Number: part.Number, Title: part.Title, State: string(state)})
 		}
@@ -504,7 +506,7 @@ func (w Window) puttingBehind(number int) error {
 	}
 	_, err := w.work.Ask(engine.TaskMove, engine.Input{Given: map[string]string{
 		"number": strconv.Itoa(number), "after": strconv.Itoa(w.form.behind), "state": w.form.argued("state")}})
-	if errors.Is(err, engine.ErrOtherColumn) {
+	if errors.Is(err, task.ErrOtherColumn) {
 		return nil
 	}
 	return err
@@ -1175,7 +1177,7 @@ func (w Window) untickSays(number int) string {
 			below = append(below, sub.Title)
 		}
 	}
-	return "Untick " + engine.InWords(below) + " to put it on " + g.Title + " itself. " + NothingChanged
+	return "Untick " + workspace.InWords(below) + " to put it on " + g.Title + " itself. " + NothingChanged
 }
 
 // RefusalBox is where the open list says what it refused: under it, or above it when there is no room below.

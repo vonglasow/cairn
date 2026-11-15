@@ -1,12 +1,12 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"errors"
 	"strings"
 	"testing"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func movedBehind(n, after string, more ...string) Input {
@@ -25,10 +25,10 @@ func TestTaskMove_takesATaskIntoTheColumnOfTheOneItGoesBehind(t *testing.T) {
 		t.Fatalf("move: %v", err)
 	}
 	moved, _ := e.show(1)
-	if factsOf(moved).State != domain.Todo {
-		t.Errorf("task 1 is in %s, want todo", factsOf(moved).State)
+	if moved.Carried().State != item.Todo {
+		t.Errorf("task 1 is in %s, want todo", moved.Carried().State)
 	}
-	if a.Crossed == nil || *a.Crossed != (crossed{Task: 1, From: "backlog", To: "todo"}) {
+	if a.Crossed == nil || *a.Crossed != (task.Crossed{Task: 1, From: "backlog", To: "todo"}) {
 		t.Errorf("Crossed = %+v, want task 1 from backlog to todo", a.Crossed)
 	}
 }
@@ -49,11 +49,11 @@ func TestTaskMove_refusesAColumnNamedAgainstTheOneItGoesBehind(t *testing.T) {
 	if _, err := e.add("Already to do", Changes{State: of("todo")}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.Ask(TaskMove, movedBehind("1", "2", "state", "current")); !errors.Is(err, ErrOtherColumn) {
+	if _, err := e.Ask(TaskMove, movedBehind("1", "2", "state", "current")); !errors.Is(err, task.ErrOtherColumn) {
 		t.Errorf("err = %v, want ErrOtherColumn", err)
 	}
-	if kept, _ := e.show(1); factsOf(kept).State != domain.Backlog {
-		t.Errorf("task 1 is in %s, want it left in the backlog", factsOf(kept).State)
+	if kept, _ := e.show(1); kept.Carried().State != item.Backlog {
+		t.Errorf("task 1 is in %s, want it left in the backlog", kept.Carried().State)
 	}
 }
 
@@ -67,14 +67,14 @@ func TestTaskMove_refusesBehindATaskThatIsNotThere(t *testing.T) {
 
 func TestRenderText_saysATaskCrossedIntoAnotherColumn(t *testing.T) {
 	tasks := []task.Task{builtTask(t, 1, "First")}
-	got := RenderText(TaskMove, Answer{Tasks: tasks, Crossed: &crossed{Task: 1, From: "backlog", To: "todo"}})
+	got := RenderText(TaskMove, Answer{Tasks: tasks, Crossed: &task.Crossed{Task: 1, From: "backlog", To: "todo"}})
 	if !strings.HasPrefix(got, "task 1 moved from backlog to todo\n") {
 		t.Errorf("the answer does not open on the column it crossed:\n%s", got)
 	}
 }
 
 func TestOf_carriesTheColumnATaskCrossed(t *testing.T) {
-	crossed := &crossed{Task: 1, From: "backlog", To: "todo"}
+	crossed := &task.Crossed{Task: 1, From: "backlog", To: "todo"}
 	if said, _ := Of(TaskMove, Answer{Crossed: crossed}).(Tasks); said.Crossed != crossed {
 		t.Errorf("Of = %+v, want the crossing carried", said.Crossed)
 	}

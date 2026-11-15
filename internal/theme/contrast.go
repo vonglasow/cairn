@@ -1,11 +1,10 @@
 package theme
 
 import (
+	"cairn/internal/engine/label"
 	"fmt"
 	"image/color"
 	"math"
-
-	"cairn/internal/domain"
 )
 
 // Contrast is how far two colours stand apart, by the measure a person reading a screen is held to: 21 at most, 1 when they are the same.
@@ -74,7 +73,7 @@ func Shortfalls(c Colours) []Shortfall {
 			short = append(short, Shortfall{Said: h.said, On: h.on, Ratio: ratio, Needs: h.needs})
 		}
 	}
-	for _, name := range domain.LabelColours {
+	for _, name := range label.LabelColours {
 		ground, ink := c.LabelPill(name)
 		if ratio := Contrast(ink, ground); ratio < pillNeeds {
 			short = append(short, Shortfall{Said: labelToken + name, On: "its pill", Ratio: ratio, Needs: pillNeeds})

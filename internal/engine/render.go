@@ -1,17 +1,25 @@
 package engine
 
 import (
+	"cairn/internal/engine/app"
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/exchange"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/series"
+	"cairn/internal/engine/view"
+	"cairn/internal/engine/workspace"
 	"fmt"
 	"math"
 	"slices"
 	"strings"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/objective"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func contextText(at string) string {
@@ -24,29 +32,29 @@ func contextText(at string) string {
 // RenderText turns an answer into what a person reads: the rendering of the shape the operation declared it answers, the way Of builds the JSON.
 func RenderText(op Operation, a Answer) string {
 	if _, isSeries := op.Answers.(Series); isSeries {
-		return domain.Shown(rendered(op, a))
+		return item.Shown(rendered(op, a))
 	}
-	return domain.Shown(rendered(op, a) + followedText(a.Followed))
+	return item.Shown(rendered(op, a) + series.FollowedText(a.Followed))
 }
 
 func rendered(op Operation, a Answer) string {
 	switch op.Answers.(type) {
-	case configChanged:
-		return configChangedText(*a.ConfigChanged)
-	case Config:
-		return configText(*a.Config)
-	case Workspaces:
-		return workspacesText(a.Workspaces.Workspaces) + recentText(a.Workspaces.Recent)
-	case workspaceRemoved:
-		return workspaceRemovedText(*a.WorkspaceRemoved)
-	case workspaceAdded:
-		return workspaceAddedText(*a.WorkspaceAdded)
-	case workspaceUsed:
-		return workspaceUsedText(*a.WorkspaceUsed)
-	case WorkspaceShown:
-		return workspaceShownText(*a.WorkspaceShown)
+	case workspace.ConfigChanged:
+		return workspace.ConfigChangedText(*a.ConfigChanged)
+	case workspace.Config:
+		return workspace.ConfigText(*a.Config)
+	case workspace.Workspaces:
+		return workspace.WorkspacesText(a.Workspaces.Workspaces) + workspace.RecentText(a.Workspaces.Recent)
+	case workspace.Removed:
+		return workspace.RemovedText(*a.WorkspaceRemoved)
+	case workspace.Added:
+		return workspace.AddedText(*a.WorkspaceAdded)
+	case workspace.Used:
+		return workspace.UsedText(*a.WorkspaceUsed)
+	case workspace.Shown:
+		return workspace.ShownText(*a.WorkspaceShown)
 	case Timesheet:
-		return trace.SheetText(*a.Sheet, namedAsShown(a.Named, a.Gone))
+		return act.SheetText(*a.Sheet, namedAsShown(a.Named, a.Gone))
 	case review:
 		return objective.Report(*a.Objective, a.Progress, a.review(), *a.Period)
 	case Focus:
@@ -56,7 +64,7 @@ func rendered(op Operation, a Answer) string {
 		return heldText(a.Held, a) + sessionAsksText(a.Sessions)
 	case Task:
 		if op.Verb == TaskSkip.Verb {
-			return fmt.Sprintf("#%d skipped\n", factsOf(*a.Task).Number)
+			return fmt.Sprintf("#%d skipped\n", (*a.Task).Carried().Number)
 		}
 		return cardText(a) + movedText(a.Moved) + warningsText(a.Warnings)
 	case swept:
@@ -69,9 +77,9 @@ func rendered(op Operation, a Answer) string {
 			return countsText(a.Counts, *a.Total)
 		}
 		if a.Matched != nil {
-			return lostText(a) + foundText(a.Matched, a) + pageText(a, len(a.Matched)) + outsideText(a.Outside)
+			return lostText(a) + foundText(a.Matched, a) + pageText(a, len(a.Matched)) + view.OutsideText(a.Outside)
 		}
-		return lostText(a) + crossedText(a.Crossed) + warningsText(a.Warnings) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks)) + outsideText(a.Outside)
+		return lostText(a) + crossedText(a.Crossed) + warningsText(a.Warnings) + tasksText(a.Tasks, a) + pageText(a, len(a.Tasks)) + view.OutsideText(a.Outside)
 	case objectiveRow:
 		return objectiveText(a) + movedText(a.Moved)
 	case objectivesListed:
@@ -91,7 +99,7 @@ func rendered(op Operation, a Answer) string {
 		return migration.List(a.Changes, *a.Holds)
 	case labelled:
 		return fmt.Sprintf("%d %s(s) labelled\n", *a.Labelled, op.Thing)
-	case labelList:
+	case label.List:
 		return labelsText(*a.Labels) + warningsText(a.Warnings)
 	case View:
 		if a.Viewed.Outside != nil {
@@ -104,15 +112,15 @@ func rendered(op Operation, a Answer) string {
 		return seriesActedText(op.Verb, a)
 	case seriesListed:
 		return seriesListText(a.SeriesKept.Series)
-	case seriesDeleted:
+	case series.Deleted:
 		return seriesDeletedText(*a.SeriesGone)
-	case viewDeleted:
+	case view.Deleted:
 		return "deleted view " + *a.ViewGone + " · no task changed\n"
-	case configWritten:
-		return configWrittenText(*a.Written)
+	case workspace.ConfigWritten:
+		return workspace.ConfigWrittenText(*a.Written)
 	case debugReported:
 		return fmt.Sprintf("debug report written to %s, %d debug file(s) in it\n", *a.Written, *a.Packed)
-	case steps:
+	case task.Steps:
 		return stepsText(*a.Task)
 	case Deleted:
 		said := fmt.Sprintf("%s %d was deleted\n", op.Thing, *a.Deleted)
@@ -122,34 +130,36 @@ func rendered(op Operation, a Answer) string {
 		for _, n := range a.Unblocked {
 			said += fmt.Sprintf("task %d was waiting on it, and nothing names what stops it now\n", n)
 		}
-		return said + wentText(a.Went)
+		return said + objective.WentText(a.Went)
 	case restored:
 		return fmt.Sprintf("backup %d was restored\n", *a.Restored)
-	case pluginWritten:
-		return pluginText(*a.Plugin)
-	case pluginShown:
-		return pluginShownText(*a.Install)
-	case appInstalled:
-		return appText(Of(op, a).(appInstalled))
-	case exported:
-		return *a.Exported + " " + domain.HeldText(*a.Holds) + "\n"
-	case importedFile:
+	case app.PluginWritten:
+		return app.PluginText(*a.Plugin)
+	case app.PluginShown:
+		return app.PluginShownText(*a.Install)
+	case app.Upgraded:
+		return a.Upgraded.String()
+	case app.Installed:
+		return app.Text(Of(op, a).(app.Installed))
+	case exchange.Exported:
+		return *a.Exported + " " + backup.HeldText(*a.Holds) + "\n"
+	case exchange.ImportedFile:
 		return fmt.Sprintf("%d task(s) and %d objective(s) were added from %s\n", a.Holds.Tasks, a.Holds.Objectives, *a.Imported)
 	case applied:
 		return appliedText(a.Applied)
 	case acts:
 		if a.Since != nil {
-			return trace.List(a.Since)
+			return act.List(a.Since)
 		}
-		return trace.Text(a.Acts)
+		return act.Text(a.Acts)
 	}
 	return ""
 }
 
 func cardText(a Answer) string {
-	said := task.Text(*a.Task, a.Progress, !a.Untimed, a.Choosing[factsOf(*a.Task).Number].Blocks...) + task.StepsText(factsOf(*a.Task).Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
-	if o, is := a.Occurring[factsOf(*a.Task).Number]; is {
-		said += occursText(o)
+	said := task.Text(*a.Task, a.Progress, !a.Untimed, a.Choosing[(*a.Task).Carried().Number].Blocks...) + task.StepsText((*a.Task).Carried().Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
+	if o, is := a.Occurring[(*a.Task).Carried().Number]; is {
+		said += series.OccursText(o)
 	}
 	return said
 }
@@ -158,7 +168,7 @@ func stoodText(t task.Task, since time.Time) string {
 	if since.IsZero() {
 		return ""
 	}
-	return fmt.Sprintf("\nin %s since %s · %s\n", factsOf(t).State, domain.FormatDay(since.Local()), daysSince(since, time.Now()))
+	return fmt.Sprintf("\nin %s since %s · %s\n", t.Carried().State, calendar.FormatDay(since.Local()), daysSince(since, time.Now()))
 }
 
 func daysFrom(since, now time.Time) int {
@@ -179,7 +189,7 @@ func daysSince(since, now time.Time) string {
 	return fmt.Sprintf("%d days", days)
 }
 
-func crossedText(c *crossed) string {
+func crossedText(c *task.Crossed) string {
 	if c == nil {
 		return ""
 	}
@@ -218,7 +228,7 @@ func foundText(tasks []task.Task, a Answer) string {
 }
 
 func marksOf(a Answer) task.Marks {
-	return task.Marks{Blocks: blocksOf(a.Choosing), InFocus: heldOr(a.InFocus), NothingBlocks: a.NothingBlocks, Repeats: repeatsOf(a.Occurring)}
+	return task.Marks{Blocks: task.BlocksOf(a.Choosing), InFocus: heldOr(a.InFocus), NothingBlocks: a.NothingBlocks, Repeats: series.RepeatsOf(a.Occurring)}
 }
 
 func linesOf(tasks []task.Task) []string {
@@ -248,7 +258,7 @@ func objectiveText(a Answer) string {
 		n := a.Objective.Carried().Number
 		var own, through []task.Task
 		for _, t := range a.Under {
-			if slices.Contains(factsOf(t).Objectives, n) {
+			if slices.Contains(t.Carried().Objectives, n) {
 				own = append(own, t)
 			} else {
 				through = append(through, t)
@@ -273,17 +283,17 @@ func warningsText(said []string) string {
 	return out.String()
 }
 
-func backupLine(b domain.Backup, holds domain.Held) string {
-	return fmt.Sprintf("#%d  made %s  %s\n", b.Number, domain.FormatMoment(b.Made), domain.HeldText(holds))
+func backupLine(b backup.Backup, holds backup.Held) string {
+	return fmt.Sprintf("#%d  made %s  %s\n", b.Number, calendar.FormatMoment(b.Made), backup.HeldText(holds))
 }
 
-func backupsText(all []domain.Backup) string {
+func backupsText(all []backup.Backup) string {
 	if len(all) == 0 {
 		return "there is no backup\n"
 	}
 	var out strings.Builder
 	for _, one := range all {
-		fmt.Fprintf(&out, "#%d  made %s\n", one.Number, domain.FormatMoment(one.Made))
+		fmt.Fprintf(&out, "#%d  made %s\n", one.Number, calendar.FormatMoment(one.Made))
 	}
 	return out.String()
 }

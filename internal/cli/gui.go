@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/engine/workspace"
 	"context"
 	"fmt"
 
@@ -16,10 +17,10 @@ const (
 	high = 840
 )
 
-type opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, draft, sizes string, noted *debug.Log, width, height int, here gui.Here) error
+type opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error
 
-var openGui opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, draft, sizes string, noted *debug.Log, width, height int, here gui.Here) error {
-	gui.Run(work, pages, look, gui.DraftsAt(draft), sizesAt(sizes), noted, width, height, here)
+var openGui opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error {
+	gui.Run(work, pages, look, noted, width, height, here)
 	return nil
 }
 
@@ -34,13 +35,6 @@ func windowFor(cmd *cobra.Command) opensWindow {
 		return open
 	}
 	return openGui
-}
-
-func sizesAt(path string) gui.SizesKept {
-	if path == "" {
-		return nil
-	}
-	return gui.SizesAt(path)
 }
 
 func newGuiCmd() *cobra.Command {
@@ -64,14 +58,10 @@ func openWindow(cmd *cobra.Command, h engine.Home) error {
 	if err != nil {
 		return err
 	}
-	sizes := ""
-	if engine.KeepsSizes(h) {
-		sizes = at.Sizes()
-	}
 	worn, unworn := engine.Wearing(h)
 	if unworn != "" {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "theme: %s\n", unworn)
 	}
-	here := gui.Here{Store: at.Store, Reach: func(to engine.Elsewhere) (engine.Apart, error) { return engine.OpenApart(held, to) }}
-	return windowFor(cmd)(held, engine.PagesFrom(h), gui.Skinned(worn), at.Draft(), sizes, notedIn(cmd.Context()), wide, high, here)
+	here := gui.Here{Store: at.Store, Reach: func(to engine.Elsewhere) (workspace.Apart, error) { return engine.OpenApart(held, to) }}
+	return windowFor(cmd)(held, engine.PagesFrom(h), gui.Skinned(worn), notedIn(cmd.Context()), wide, high, here)
 }

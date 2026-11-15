@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 func oneList(name string, values ...string) Input {
@@ -134,15 +134,15 @@ func TestEngine_addsAPlainLabelWhenEditing(t *testing.T) {
 		t.Fatal(err)
 	}
 	edited, err := e.edit(1, Changes{Labels: of([]string{"team"})})
-	if err != nil || !slices.Equal(factsOf(edited).Labels, []string{"spec", "team"}) {
-		t.Errorf("edit = %v, %v; want spec and team", factsOf(edited).Labels, err)
+	if err != nil || !slices.Equal(edited.Carried().Labels, []string{"spec", "team"}) {
+		t.Errorf("edit = %v, %v; want spec and team", edited.Carried().Labels, err)
 	}
 }
 
 func TestEngine_takesWhatAnEqualsSignSaysAtCreation(t *testing.T) {
 	made, err := openEngine(t).add("Write the spec", Changes{Labels: of([]string{"=spec,team"}), Blocker: of([]string{"="})})
-	if err != nil || !slices.Equal(factsOf(made).Labels, []string{"spec", "team"}) {
-		t.Errorf("add = %v, %v; want spec and team", factsOf(made).Labels, err)
+	if err != nil || !slices.Equal(made.Carried().Labels, []string{"spec", "team"}) {
+		t.Errorf("add = %v, %v; want spec and team", made.Carried().Labels, err)
 	}
 }
 

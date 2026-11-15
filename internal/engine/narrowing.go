@@ -1,14 +1,15 @@
 package engine
 
 import (
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/label"
 	"errors"
 	"fmt"
 	"slices"
 	"strconv"
 	"strings"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func narrowedBy(attributes []Argument, means map[string]string) []Argument {
@@ -26,13 +27,13 @@ func narrowedBy(attributes []Argument, means map[string]string) []Argument {
 	return taken
 }
 
-func keeping(in Input, taken []Argument, e *Engine) (*domain.Narrowing, error) {
+func keeping(in Input, taken []Argument, e *Engine) (*filter.Narrowing, error) {
 	for _, argument := range taken {
 		if err := accepted(in, argument); err != nil {
 			return nil, err
 		}
 	}
-	kept := &domain.Narrowing{}
+	kept := &filter.Narrowing{}
 	if state, named := in.Given["state"]; named {
 		kept.InColumn(state)
 	}
@@ -56,7 +57,7 @@ func keeping(in Input, taken []Argument, e *Engine) (*domain.Narrowing, error) {
 		}
 	}
 	if labels := in.changed("label"); labels != nil {
-		written, err := domain.ParseLabels(*labels)
+		written, err := label.ParseLabels(*labels)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +104,7 @@ var errNotOneOf = errors.New("not one of")
 func heldAmong(tasks []task.Task, inFocus []int) []int {
 	kept := make([]int, 0, len(inFocus))
 	for _, number := range inFocus {
-		if slices.ContainsFunc(tasks, func(one task.Task) bool { return factsOf(one).Number == number }) {
+		if slices.ContainsFunc(tasks, func(one task.Task) bool { return one.Carried().Number == number }) {
 			kept = append(kept, number)
 		}
 	}
@@ -118,5 +119,5 @@ func reaching(e *Engine, number int, itself bool) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
-	return t.reach(number), nil
+	return t.Reach(number), nil
 }

@@ -1,17 +1,10 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
-
-// errObjectiveNowhereToGo is returned when an objective is asked to go behind itself.
-var errObjectiveNowhereToGo = errors.New("an objective goes first, last, behind another, or under a parent")
-
-// errObjectiveParentAndAfter is returned when the parent named is not the one of the objective it is to go behind.
-var errObjectiveParentAndAfter = errors.New("an objective behind another sits under that one's parent")
 
 // ObjectiveMove changes where an objective sits: its place among its siblings, and the parent it sits under, in one act.
 var ObjectiveMove = Operation{
@@ -60,7 +53,7 @@ func (e *Engine) moveObjective(n int, in Input) error {
 	}
 	if after, given := in.whole("after"); given {
 		if after == n {
-			return fmt.Errorf("objective %d: %w", n, errObjectiveNowhereToGo)
+			return fmt.Errorf("objective %d: %w", n, objective.ErrObjectiveNowhereToGo)
 		}
 		behind, err := e.objectives.FindObjective(after)
 		if err != nil {
@@ -68,7 +61,7 @@ func (e *Engine) moveObjective(n int, in Input) error {
 		}
 		its := behind.Carried().Parent
 		if in.change("parent") != nil && its != parent {
-			return fmt.Errorf("objective %d behind %d: %w", n, after, errObjectiveParentAndAfter)
+			return fmt.Errorf("objective %d behind %d: %w", n, after, objective.ErrObjectiveParentAndAfter)
 		}
 		parent, at = its, after
 	}

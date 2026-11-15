@@ -3,7 +3,6 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -11,7 +10,7 @@ import (
 	"gioui.org/io/key"
 
 	"cairn/internal/engine"
-	"cairn/internal/migration"
+	"cairn/internal/engine/migration"
 )
 
 type behind struct {
@@ -36,11 +35,11 @@ func (b behind) Ask(op engine.Operation, in engine.Input) (engine.Answer, error)
 		}
 		return engine.Answer{Changes: changes}, nil
 	}
-	return engine.Answer{}, engine.Told(engine.ErrStoreBehind)
+	return engine.Answer{}, engine.Told(migration.ErrStoreBehind)
 }
 
 func TestAQuestionThatComesWhileAddingKeepsTheDraft(t *testing.T) {
-	drafts := DraftsAt(filepath.Join(t.TempDir(), "cairn.db.draft.json"))
+	drafts := &heldDrafts{}
 	current := false
 	f := newFake()
 	w := holding(f).Drafting(drafts).Key("cmd+n").Types("Plan the week")
@@ -107,7 +106,7 @@ func TestTheWindowAsksAgainWhenApplyingFails(t *testing.T) {
 type newer struct{ *fake }
 
 func (n newer) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) {
-	return engine.Answer{}, engine.Told(fmt.Errorf("%w: a change it does not know", engine.ErrNewerStore))
+	return engine.Answer{}, engine.Told(fmt.Errorf("%w: a change it does not know", migration.ErrNewerStore))
 }
 
 func TestTheWindowSaysAStoreFromANewerCairnAndOffersOnlyToQuit(t *testing.T) {

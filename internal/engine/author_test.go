@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func TestAuthor_isTheOneNamedOrTheOneLoggedIn(t *testing.T) {
@@ -75,9 +75,9 @@ func TestHold_writesDownWhatItIsAskedAsDoneThroughItsSurface(t *testing.T) {
 }
 
 func TestSaidOf_aBoardLineSaysWhoDidTheAct(t *testing.T) {
-	var a trace.AsTold
+	var a act.AsTold
 	a.On(1)
-	a.Did(trace.FocusTaken)
+	a.Did(act.FocusTaken)
 	a.Through("gui")
 	a.By("sam")
 	if got := SaidOf(a.Act()).Line(); !strings.HasSuffix(got, "(by sam, through gui)") {

@@ -1,13 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"fmt"
 	"slices"
 	"time"
 
-	"cairn/internal/config"
-	"cairn/internal/domain"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/store/files"
 )
 
 // NowVariable is the variable that names the moment cairn takes for now when it writes an act and measures a focus session, for a script or a scenario to stand later.
@@ -30,16 +30,16 @@ type focusSession struct {
 	Ask   string    `json:"ask,omitempty" jsonschema:"once the session is past its length: whether to renew it or end it"`
 }
 
-func sessionOf(number int, acts []trace.Act, now time.Time, length time.Duration) focusSession {
+func sessionOf(number int, acts []act.Act, now time.Time, length time.Duration) focusSession {
 	var since time.Time
 	for _, a := range acts {
 		c := a.Carried()
-		if c.Task == number && (c.Did == trace.FocusTaken || c.Did == trace.FocusRenewed) && c.At.After(since) {
+		if c.Task == number && (c.Did == act.FocusTaken || c.Did == act.FocusRenewed) && c.At.After(since) {
 			since = c.At
 		}
 	}
 	up := now.Sub(since).Truncate(time.Minute)
-	session := focusSession{Task: number, Since: since, Up: domain.FormatDuration(up)}
+	session := focusSession{Task: number, Since: since, Up: calendar.FormatDuration(up)}
 	if length > 0 && up >= length {
 		session.Ask = fmt.Sprintf("this focus session has been up %s: renew it by focusing task %d again, or end it by unfocusing task %d",
 			session.Up, number, number)
@@ -56,12 +56,12 @@ func (e *Engine) sessionLength() (time.Duration, error) {
 		return 0, nil
 	}
 	said := read.FocusSession()
-	if said == "" || read.TimeMode() == config.TimeOff {
+	if said == "" || read.TimeMode() == files.TimeOff {
 		return 0, nil
 	}
 	length, err := time.ParseDuration(said)
 	if err != nil || length <= 0 {
-		return 0, fmt.Errorf("focus.session %q: %w", said, config.ErrFocus)
+		return 0, fmt.Errorf("focus.session %q: %w", said, files.ErrFocus)
 	}
 	return length, nil
 }
@@ -122,5 +122,5 @@ func (e *Engine) renewed(number int) error {
 	if err != nil || !slices.ContainsFunc(sessions, func(s focusSession) bool { return s.Ask != "" }) {
 		return err
 	}
-	return e.record(number, trace.FocusRenewed, "", "", "")
+	return e.record(number, act.FocusRenewed, "", "", "")
 }

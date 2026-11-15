@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func homeSaying(t *testing.T, path, toml string) Home {
@@ -41,7 +41,7 @@ func TestDelete_takesItsTimeOnlyWhenTheConfigurationSaysSo(t *testing.T) {
 			t.Fatal(err)
 		}
 		went := acts[len(acts)-1].Carried().Was
-		if strings.HasSuffix(went, trace.WentWithItsTime) != c.taken {
+		if strings.HasSuffix(went, act.WentWithItsTime) != c.taken {
 			t.Errorf("with %q, the deletion took %q", c.toml, went)
 		}
 	}

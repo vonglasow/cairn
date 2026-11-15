@@ -1,15 +1,11 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
-
-// errDoneAndNotDone is returned when a step is asked to be ticked and unticked in one go.
-var errDoneAndNotDone = errors.New("a step is done or not done, not both")
 
 var (
 	stepOfTask  = Argument{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"}
@@ -62,7 +58,7 @@ cairn step new 3 "Plan it" --done`,
 	Level:   write,
 	Needs:   aStore,
 	Again:   doesItAgain,
-	Answers: steps{},
+	Answers: task.Steps{},
 	Takes: []Argument{
 		stepOfTask,
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the step is called"},
@@ -91,7 +87,7 @@ cairn step edit 3 2 --title "Write the tests first"`,
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: steps{},
+	Answers: task.Steps{},
 	Takes: []Argument{
 		stepOfTask,
 		stepAtPlace,
@@ -101,7 +97,7 @@ cairn step edit 3 2 --title "Write the tests first"`,
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		if in.yes("done") && in.yes("not-done") {
-			return Answer{}, errDoneAndNotDone
+			return Answer{}, task.ErrDoneAndNotDone
 		}
 		if !in.Named("title") && !in.Named("done") && !in.Named("not-done") {
 			return Answer{}, errNothingToChange
@@ -137,7 +133,7 @@ var StepDelete = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   doesItAgain,
-	Answers: steps{},
+	Answers: task.Steps{},
 	Takes:   []Argument{stepOfTask, stepAtPlace},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		n, _ := in.whole("number")
@@ -160,7 +156,7 @@ var stepList = Operation{
 	Example: "cairn step list 3",
 	Level:   Read,
 	Needs:   aStore,
-	Answers: steps{},
+	Answers: task.Steps{},
 	Takes:   []Argument{stepOfTask},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		n, _ := in.whole("number")
@@ -168,31 +164,10 @@ var stepList = Operation{
 	},
 }
 
-// steps is how a task's steps cross to a machine: the task they belong to, and each step with its place.
-type steps struct {
-	Task  int         `json:"task"`
-	Steps []stepShape `json:"steps"`
-}
-
-// stepShape is one step as it crosses, with the place it is named by.
-type stepShape struct {
-	Place int    `json:"place"`
-	Title string `json:"title"`
-	Done  bool   `json:"done"`
-}
-
-func ofSteps(t task.Task) steps {
-	said := steps{Task: factsOf(t).Number, Steps: []stepShape{}}
-	for i, s := range t.Carried().Steps {
-		said.Steps = append(said.Steps, stepShape{Place: i + 1, Title: s.Title, Done: s.Done})
-	}
-	return said
-}
-
 func stepsText(t task.Task) string {
 	steps := t.Carried().Steps
 	if len(steps) == 0 {
-		return fmt.Sprintf("task %d has no steps\n", factsOf(t).Number)
+		return fmt.Sprintf("task %d has no steps\n", t.Carried().Number)
 	}
 	return task.StepsText(steps)[1:]
 }

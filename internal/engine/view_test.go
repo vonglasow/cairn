@@ -1,7 +1,8 @@
 package engine
 
 import (
-	"cairn/internal/store"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/view"
 	"errors"
 	"slices"
 	"strings"
@@ -199,12 +200,12 @@ func TestTaskList_aViewNamesWhatLiesOutsideItOnceAndCountsNoneOfIt(t *testing.T)
 	if !slices.Equal(rowsListed(listed), []int{1}) {
 		t.Fatalf("the view lists %v", rowsListed(listed))
 	}
-	want := []outside{
-		{Number: 2, Title: "Read the sensors", State: "backlog", Why: []Touch{{Is: "waits on", Of: 1}}},
-		{Number: 4, Title: "Upgrade the printer", State: "backlog", Why: []Touch{{Is: "blocks", Of: 1}, {Is: "linked to", Of: 1}}},
-		{Number: 5, Title: "Publish the diagram", State: "backlog", Why: []Touch{{Is: "waits on", Of: 1}}},
+	want := []view.Outside{
+		{Number: 2, Title: "Read the sensors", State: "backlog", Why: []view.Touch{{Is: "waits on", Of: 1}}},
+		{Number: 4, Title: "Upgrade the printer", State: "backlog", Why: []view.Touch{{Is: "blocks", Of: 1}, {Is: "linked to", Of: 1}}},
+		{Number: 5, Title: "Publish the diagram", State: "backlog", Why: []view.Touch{{Is: "waits on", Of: 1}}},
 	}
-	if !slices.EqualFunc(listed.Outside, want, func(a, b outside) bool {
+	if !slices.EqualFunc(listed.Outside, want, func(a, b view.Outside) bool {
 		return a.Number == b.Number && a.Title == b.Title && a.State == b.State && slices.Equal(a.Why, b.Why)
 	}) {
 		t.Errorf("outside reads %+v, want %+v", listed.Outside, want)
@@ -275,7 +276,7 @@ func TestViewDelete_closesThePlacesAndTouchesNoTask(t *testing.T) {
 	did(t, path, ViewEdit, ask("view", "Second", "name", "Next"))
 	did(t, path, ViewEdit, ask("view", "Next", "name", "Second"))
 	answer := did(t, path, ViewDelete, ask("view", "first"))
-	if said := Of(ViewDelete, answer).(viewDeleted); said.Deleted != "First" {
+	if said := Of(ViewDelete, answer).(view.Deleted); said.Deleted != "First" {
 		t.Errorf("deleting answers %+v", said)
 	}
 	if text := RenderText(ViewDelete, answer); text != "deleted view First · no task changed\n" {
@@ -301,8 +302,8 @@ func TestViews_followALabelRenamedAndSayALabelDeletedIsGone(t *testing.T) {
 	path := homeStore(t)
 	did(t, path, ViewNew, ask("name", "Docs", "state", "backlog").with("label", "doc", "release"))
 	did(t, path, ViewNew, ask("name", "Only").with("label", "doc"))
-	labels := Of(LabelList, did(t, path, LabelList, ask())).(labelList)
-	if !slices.ContainsFunc(labels.Labels, func(l LabelCarried) bool { return l.Label == "release" }) {
+	labels := Of(LabelList, did(t, path, LabelList, ask())).(label.List)
+	if !slices.ContainsFunc(labels.Labels, func(l label.Carried) bool { return l.Label == "release" }) {
 		t.Errorf("a label a view holds is not kept: %+v", labels)
 	}
 	did(t, path, LabelRename, ask("label", "doc", "to", "docs"))
@@ -314,7 +315,7 @@ func TestViews_followALabelRenamedAndSayALabelDeletedIsGone(t *testing.T) {
 	if said := RenderText(LabelDelete, deleted); !strings.Contains(said, "warning: 2 views hold the label docs; it narrows nothing there now\n") {
 		t.Errorf("deleting the label reads %q", said)
 	}
-	if said := Of(LabelDelete, deleted).(labelList); len(said.Warnings) != 1 {
+	if said := Of(LabelDelete, deleted).(label.List); len(said.Warnings) != 1 {
 		t.Errorf("deleting the label answers %+v", said)
 	}
 	did(t, path, LabelDelete, ask("label", "release"))
@@ -417,10 +418,10 @@ func TestViewShow_givesEachObjectiveItNamesWithTheStoresFigures(t *testing.T) {
 }
 
 func TestCmdKey_isAPlacePastNine(t *testing.T) {
-	if got := cmdKey(9); got != "⌘9" {
+	if got := view.CmdKey(9); got != "⌘9" {
 		t.Errorf("place 9 is %q", got)
 	}
-	if got := cmdKey(10); got != "place 10" {
+	if got := view.CmdKey(10); got != "place 10" {
 		t.Errorf("place 10 is %q", got)
 	}
 }
@@ -508,7 +509,7 @@ func TestViewShow_aViewWithOneLabelGoneStillKeepsWhatTheRestKeeps(t *testing.T) 
 	if _, err := e.Ask(TaskNew, Input{Given: map[string]string{"title": "one"}, Listed: map[string][]string{"label": {"x"}}}); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.store.KeepViews([]store.View{{Name: "Mine", State: "backlog", Labels: []string{"x", "y"}}}); err != nil {
+	if err := e.store.KeepViews([]view.View{{Name: "Mine", State: "backlog", Labels: []string{"x", "y"}}}); err != nil {
 		t.Fatal(err)
 	}
 	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
@@ -521,7 +522,7 @@ func TestViewShow_anObjectiveGoneLeavesTheNextNarrowing(t *testing.T) {
 	addObjective(t, e, "Ship")
 	serving(t, e, "serving", 1)
 	add(t, e, "loose")
-	if err := e.store.KeepViews([]store.View{{Name: "Mine", Objectives: []int{9, 1}}}); err != nil {
+	if err := e.store.KeepViews([]view.View{{Name: "Mine", Objectives: []int{9, 1}}}); err != nil {
 		t.Fatal(err)
 	}
 	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
@@ -566,7 +567,7 @@ func TestViewShow_anObjectiveGoneBeforeAnotherLeavesTheOtherNarrowing(t *testing
 	if err := objectiveDeleted(e, map[string]string{"number": "1"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.store.KeepViews([]store.View{{Name: "Mine", Objectives: []int{1, 2}}}); err != nil {
+	if err := e.store.KeepViews([]view.View{{Name: "Mine", Objectives: []int{1, 2}}}); err != nil {
 		t.Fatal(err)
 	}
 	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {

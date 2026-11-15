@@ -1,9 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"strings"
-
-	"cairn/internal/domain"
 )
 
 // TabAt is where one of the two tabs sits.
@@ -100,7 +99,7 @@ func Stamped(said string) (stamp, rest string, ok bool) {
 	if !found {
 		return "", said, false
 	}
-	if _, err := domain.ParseMoment(stamp); err != nil {
+	if _, err := calendar.ParseMoment(stamp); err != nil {
 		return "", said, false
 	}
 	return stamp, rest, true

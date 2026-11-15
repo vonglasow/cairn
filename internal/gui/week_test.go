@@ -1,16 +1,16 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"errors"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
 func dayNamed(day string) time.Time {
-	parsed, err := domain.ParseDeadline(day)
+	parsed, err := calendar.ParseDeadline(day)
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +89,7 @@ func TestTheWeekAnswersItsOwnKeys(t *testing.T) {
 func TestAWeekWithoutItsWeekendIsCutInFive(t *testing.T) {
 	w := Window{tab: Time, width: 1200, height: 800, pages: engine.Pages{}.WithoutWeekends(), timeState: timeState{week: dayNamed("2026-09-28")}}
 	days := w.WeekDays()
-	if len(days) != 5 || domain.FormatDay(days[0]) != "2026-09-28" || domain.FormatDay(days[4]) != "2026-10-02" {
+	if len(days) != 5 || calendar.FormatDay(days[0]) != "2026-09-28" || calendar.FormatDay(days[4]) != "2026-10-02" {
 		t.Fatalf("the week shows %v, want Monday to Friday", days)
 	}
 	l := w.Layout()

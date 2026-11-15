@@ -1,10 +1,9 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"strconv"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 const monthWeeks = 6
@@ -52,8 +51,8 @@ func ReadPeriod(w Work, since, until, today time.Time) (Timesheet, error) {
 		return Timesheet{}, nil
 	}
 	answer, err := w.Ask(TimesheetShow, Input{Given: map[string]string{
-		"since": domain.FormatDay(since),
-		"until": domain.FormatDay(until),
+		"since": calendar.FormatDay(since),
+		"until": calendar.FormatDay(until),
 	}})
 	if err != nil || answer.Sheet == nil {
 		return Timesheet{}, err
@@ -64,7 +63,7 @@ func ReadPeriod(w Work, since, until, today time.Time) (Timesheet, error) {
 
 // On is what the sheet holds of one day; a day nothing was done on is not in it, and reads as that day holding nothing.
 func (s Timesheet) On(day time.Time) TimesheetDay {
-	named := domain.FormatDay(day)
+	named := calendar.FormatDay(day)
 	for _, d := range s.Days {
 		if d.Day == named {
 			return d
@@ -97,12 +96,12 @@ func (s Timesheet) Worked() int {
 
 // Says is a day's total, as a duration is written.
 func (d TimesheetDay) Says() string {
-	return domain.FormatDuration(time.Duration(d.Minutes) * time.Minute)
+	return calendar.FormatDuration(time.Duration(d.Minutes) * time.Minute)
 }
 
 // Spent is how long one task took on a day, as a duration is written.
 func (t TimesheetTask) Spent() string {
-	return domain.FormatDuration(time.Duration(t.Minutes) * time.Minute)
+	return calendar.FormatDuration(time.Duration(t.Minutes) * time.Minute)
 }
 
 // Says is one task's line on a day: its time, then which task.

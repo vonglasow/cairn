@@ -1,9 +1,9 @@
 package gui
 
 import (
-	"cairn/internal/config"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/store/files"
 	"fmt"
 	"strconv"
 	"time"
@@ -65,7 +65,7 @@ func (w Window) GhostShows() float32 {
 	if w.configured.Window != nil && w.configured.Window.Ghost > 0 {
 		return float32(w.configured.Window.Ghost) / 100
 	}
-	return float32(config.DefaultGhost) / 100
+	return float32(files.DefaultGhost) / 100
 }
 
 // OriginShows is how much of a carried thing's own place still shows: faint, so it reads as where it came from.
@@ -554,7 +554,7 @@ const progressHead = lineHigh + between + 2*padding + lineHigh
 func (w Window) GoalProgress(g engine.Goal) Facts {
 	f := Facts{Lines: []Fact{{Name: "done", Value: strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " tasks"}}}
 	if w.pages.Shows(engine.PageTime) {
-		time := Fact{Name: "time spent", Value: w.spentSaid(domain.FormatDuration(g.Spent))}
+		time := Fact{Name: "time spent", Value: w.spentSaid(calendar.FormatDuration(g.Spent))}
 		if g.Estimate != "" {
 			time.Aside = "of " + g.Estimate + " estimated"
 		}
@@ -566,7 +566,7 @@ func (w Window) GoalProgress(g engine.Goal) Facts {
 			Aside: strconv.Itoa(parent.Done) + " of " + strconv.Itoa(parent.Total) + " there, each task once"})
 	}
 	if !g.Deadline.IsZero() {
-		f.Lines = append(f.Lines, Fact{Name: "deadline", Value: domain.FormatDay(g.Deadline) + ", " + daysTo(engine.DayOf(g.Deadline), w.today())})
+		f.Lines = append(f.Lines, Fact{Name: "deadline", Value: calendar.FormatDay(g.Deadline) + ", " + daysTo(engine.DayOf(g.Deadline), w.today())})
 	}
 	return f
 }

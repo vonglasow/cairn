@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
@@ -8,14 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 const homeIsDefault = "[workspaces]\ndefault = \"home\"\nhome = \"~/h\"\n"
 
 func settingsOf(t *testing.T, h Home, folder, said string) string {
 	t.Helper()
-	path := filepath.Join(h.Dir, folder, config.SettingsFile)
+	path := filepath.Join(h.Dir, folder, files.SettingsFile)
 	if err := os.WriteFile(path, []byte(said), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -59,8 +60,8 @@ func TestConfigSet_globalWritesTheGlobalFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := homeIsDefault + "\n[focus]\nsession = \"45m\"\n"; fileRead(t, config.FileIn(h.Dir)) != want {
-		t.Errorf("the file became\n%s", fileRead(t, config.FileIn(h.Dir)))
+	if want := homeIsDefault + "\n[focus]\nsession = \"45m\"\n"; fileRead(t, files.FileIn(h.Dir)) != want {
+		t.Errorf("the file became\n%s", fileRead(t, files.FileIn(h.Dir)))
 	}
 	if !got.ConfigChanged.Global || got.ConfigChanged.From != "from the global configuration" {
 		t.Errorf("the answer is %+v", got.ConfigChanged)
@@ -72,13 +73,13 @@ func TestConfigSet_aLooseStoreWithNoSettingsIsSetInTheGlobalFile(t *testing.T) {
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "pages.time", "value": "off"}); err != nil {
 		t.Fatal(err)
 	}
-	if got := fileRead(t, config.FileIn(h.Dir)); got != "[pages]\ntime = \"off\"\n" {
+	if got := fileRead(t, files.FileIn(h.Dir)); got != "[pages]\ntime = \"off\"\n" {
 		t.Errorf("the file became %q", got)
 	}
 }
 
 func TestConfigSet_aLooseStoreWithSettingsBesideItIsSetThere(t *testing.T) {
-	h := homeHolding(t, "", map[string]string{config.StoreVariable: "~/l/cairn.db"}, "l")
+	h := homeHolding(t, "", map[string]string{files.StoreVariable: "~/l/cairn.db"}, "l")
 	path := settingsOf(t, h, "l", "")
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "time.weekends", "value": "hidden"}); err != nil {
 		t.Fatal(err)
@@ -93,8 +94,8 @@ func TestConfigSet_aKeyOfTheMachineGoesGlobalAndAKeyOfAStoreDoesNot(t *testing.T
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "plugin", "value": "~/p"}); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(fileRead(t, config.FileIn(h.Dir)), "plugin = \"~/p\"\n\n[workspaces]") {
-		t.Errorf("the file became\n%s", fileRead(t, config.FileIn(h.Dir)))
+	if !strings.HasPrefix(fileRead(t, files.FileIn(h.Dir)), "plugin = \"~/p\"\n\n[workspaces]") {
+		t.Errorf("the file became\n%s", fileRead(t, files.FileIn(h.Dir)))
 	}
 	_, err := setting(h, ConfigSet, map[string]string{"key": "workspace.colour", "value": "green", "global": "true"})
 	if err == nil || !strings.Contains(err.Error(), "workspace.colour belongs to a store") || RefusalOf(err).Kind != KindRefused {
@@ -103,7 +104,7 @@ func TestConfigSet_aKeyOfTheMachineGoesGlobalAndAKeyOfAStoreDoesNot(t *testing.T
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "workspace.colour", "value": "green"}); err != nil {
 		t.Fatal(err)
 	}
-	if got := fileRead(t, filepath.Join(h.Dir, "h", config.SettingsFile)); got != "[workspace]\ncolour = \"green\"\n" {
+	if got := fileRead(t, filepath.Join(h.Dir, "h", files.SettingsFile)); got != "[workspace]\ncolour = \"green\"\n" {
 		t.Errorf("the settings became %q", got)
 	}
 }
@@ -136,7 +137,7 @@ func TestConfigSet_aLabelEmptyIsNoLabelHereOnlyInTheSettings(t *testing.T) {
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "approach.label", "value": ""}); err != nil {
 		t.Fatal(err)
 	}
-	if got := fileRead(t, filepath.Join(h.Dir, "h", config.SettingsFile)); got != "[approach]\nlabel = \"\"\n" {
+	if got := fileRead(t, filepath.Join(h.Dir, "h", files.SettingsFile)); got != "[approach]\nlabel = \"\"\n" {
 		t.Errorf("the settings became %q", got)
 	}
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "approach.label", "value": "", "global": "true"}); err == nil {
@@ -170,10 +171,10 @@ func TestConfigSet_leavesNoFileBehindButTheOneWritten(t *testing.T) {
 	for _, e := range entries {
 		names = append(names, e.Name())
 	}
-	if !slices.Equal(names, []string{config.SettingsFile}) {
+	if !slices.Equal(names, []string{files.SettingsFile}) {
 		t.Errorf("the folder holds %v", names)
 	}
-	if info, err := os.Stat(filepath.Join(h.Dir, "h", config.SettingsFile)); err != nil || info.Mode().Perm() != 0o600 {
+	if info, err := os.Stat(filepath.Join(h.Dir, "h", files.SettingsFile)); err != nil || info.Mode().Perm() != 0o600 {
 		t.Errorf("the settings are %v, %v", info, err)
 	}
 }
@@ -229,17 +230,17 @@ func TestConfigFill_writesEveryKeyTheFileCanHoldAsACommentWithItsValueAndWhereIt
 	if _, err := setting(h, ConfigFill, map[string]string{"global": "true"}); err != nil {
 		t.Fatal(err)
 	}
-	if global := fileRead(t, config.FileIn(h.Dir)); !strings.Contains(global, "# ghost = 65") || strings.Contains(global, "colour = ") {
+	if global := fileRead(t, files.FileIn(h.Dir)); !strings.Contains(global, "# ghost = 65") || strings.Contains(global, "colour = ") {
 		t.Errorf("the global file reads\n%s", global)
 	}
 }
 
 func TestWrittenFor_aServerStartedInAWorkspaceWritesItsSettings(t *testing.T) {
 	folder := t.TempDir()
-	h := Home{Dir: t.TempDir(), Kept: &Started{Workspace: "home", Store: Emplacement{At: filepath.Join(folder, "cairn.db")}}}
-	key, _ := config.KeyNamed("pages.objectives")
+	h := Home{Dir: t.TempDir(), Kept: &workspace.Started{Workspace: "home", Store: workspace.Emplacement{At: filepath.Join(folder, "cairn.db")}}}
+	key, _ := files.KeyNamed("pages.objectives")
 	file, global, err := h.writtenFor(key, false)
-	if err != nil || global || file != config.SettingsBeside(filepath.Join(folder, "cairn.db")) {
+	if err != nil || global || file != files.SettingsBeside(filepath.Join(folder, "cairn.db")) {
 		t.Errorf("written to %s, global %v, %v", file, global, err)
 	}
 }
@@ -263,7 +264,7 @@ func TestConfigFill_refusesSettingsThatSayWhereTheStoreIs(t *testing.T) {
 }
 
 func TestConfigChangedText_writesATrueOrFalseUnquoted(t *testing.T) {
-	if got := configChangedText(configChanged{Set: true, Key: "window.keep_sizes", Value: "true", File: "f"}); got != "window.keep_sizes = true, written in f\n" {
+	if got := workspace.ConfigChangedText(workspace.ConfigChanged{Set: true, Key: "window.keep_sizes", Value: "true", File: "f"}); got != "window.keep_sizes = true, written in f\n" {
 		t.Errorf("said %q", got)
 	}
 }
@@ -271,7 +272,7 @@ func TestConfigChangedText_writesATrueOrFalseUnquoted(t *testing.T) {
 func TestConfigSet_aPlaceTheWorkspaceGivesIsRefused(t *testing.T) {
 	h := homeHolding(t, homeIsDefault, nil, "h")
 	for _, key := range []string{"store", "notes"} {
-		if _, err := setting(h, ConfigSet, map[string]string{"key": key, "value": "~/elsewhere"}); !errors.Is(err, errAnsweredKey) {
+		if _, err := setting(h, ConfigSet, map[string]string{"key": key, "value": "~/elsewhere"}); !errors.Is(err, workspace.ErrAnsweredKey) {
 			t.Errorf("config set %s = %v, want it refused as the workspace's", key, err)
 		}
 	}

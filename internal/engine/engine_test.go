@@ -1,13 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
 	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func openEngine(t *testing.T) *Engine {
@@ -32,7 +33,7 @@ func add(t *testing.T, e *Engine, title string) task.Task {
 func of[T any](v T) *T { return &v }
 
 func TestEngine_numbersTheFirstTaskOne(t *testing.T) {
-	if got := factsOf(add(t, openEngine(t), "Write the spec")).Number; got != 1 {
+	if got := add(t, openEngine(t), "Write the spec").Carried().Number; got != 1 {
 		t.Errorf("Number = %d, want 1", got)
 	}
 }
@@ -40,13 +41,13 @@ func TestEngine_numbersTheFirstTaskOne(t *testing.T) {
 func TestEngine_givesTheNextNumberToTheNextTask(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "First")
-	if got := factsOf(add(t, e, "Second")).Number; got != 2 {
+	if got := add(t, e, "Second").Carried().Number; got != 2 {
 		t.Errorf("Number = %d, want 2", got)
 	}
 }
 
 func TestEngine_refusesATaskWithNoTitle(t *testing.T) {
-	if _, err := openEngine(t).add("  ", Changes{}); !errors.Is(err, domain.ErrTitleRequired) {
+	if _, err := openEngine(t).add("  ", Changes{}); !errors.Is(err, item.ErrTitleRequired) {
 		t.Errorf("err = %v, want ErrTitleRequired", err)
 	}
 }
@@ -63,17 +64,17 @@ func TestEngine_carriesTheAttributesItWasGiven(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Add: %v", err)
 	}
-	got := factsOf(added)
-	if got.Description != "the one" || got.State != domain.Todo || got.Priority != domain.High {
+	got := added.Carried()
+	if got.Description != "the one" || got.State != item.Todo || got.Priority != item.High {
 		t.Errorf("got %+v, want the attributes it was given", got)
 	}
 	if len(got.Labels) != 2 || got.Labels[0] != "spec" || got.Labels[1] != "team" {
 		t.Errorf("Labels = %v, want [spec team]: lower case, sorted", got.Labels)
 	}
-	if domain.FormatDay(got.Deadline) != "2026-09-01" {
+	if calendar.FormatDay(got.Deadline) != "2026-09-01" {
 		t.Errorf("Deadline = %v", got.Deadline)
 	}
-	if domain.FormatDuration(got.Estimate) != "1h30m" {
+	if calendar.FormatDuration(got.Estimate) != "1h30m" {
 		t.Errorf("Estimate = %v, want 1h30m", got.Estimate)
 	}
 }
@@ -101,7 +102,7 @@ func TestEngine_listsTasksInTheOrderTheyWereAdded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	if len(got) != 2 || factsOf(got[0]).Title != "First" || factsOf(got[1]).Title != "Second" {
+	if len(got) != 2 || got[0].Carried().Title != "First" || got[1].Carried().Title != "Second" {
 		t.Errorf("List = %v", got)
 	}
 }
@@ -110,11 +111,11 @@ func TestEngine_showsATaskByItsNumber(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
 
-	got, err := e.show(factsOf(kept).Number)
+	got, err := e.show(kept.Carried().Number)
 	if err != nil {
 		t.Fatalf("Show: %v", err)
 	}
-	if facts := factsOf(got); facts.Title != "Write the spec" {
+	if facts := got.Carried(); facts.Title != "Write the spec" {
 		t.Errorf("Title = %q", facts.Title)
 	}
 }
@@ -132,12 +133,12 @@ func TestEngine_changesOnlyWhatWasNamed(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	added, err := e.edit(factsOf(kept).Number, Changes{Priority: of("high")})
+	added, err := e.edit(kept.Carried().Number, Changes{Priority: of("high")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	got := factsOf(added)
-	if got.Priority != domain.High {
+	got := added.Carried()
+	if got.Priority != item.High {
 		t.Errorf("Priority = %q, want high", got.Priority)
 	}
 	if got.Description != "the one" {
@@ -158,20 +159,20 @@ func TestEngine_clearsAnAttributeGivenEmpty(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	added, err := e.edit(factsOf(kept).Number, Changes{
+	added, err := e.edit(kept.Carried().Number, Changes{
 		Deadline: of(""), Priority: of(""), State: of(""), Labels: of([]string{""}),
 	})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	got := factsOf(added)
+	got := added.Carried()
 	if !got.Deadline.IsZero() {
 		t.Errorf("Deadline = %v, want it cleared", got.Deadline)
 	}
-	if got.Priority != domain.Normal {
+	if got.Priority != item.Normal {
 		t.Errorf("Priority = %q, want normal", got.Priority)
 	}
-	if got.State != domain.Backlog {
+	if got.State != item.Backlog {
 		t.Errorf("State = %q, want the backlog", got.State)
 	}
 	if len(got.Labels) != 0 {
@@ -182,7 +183,7 @@ func TestEngine_clearsAnAttributeGivenEmpty(t *testing.T) {
 func TestEngine_refusesToEmptyATitle(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.edit(factsOf(kept).Number, Changes{Title: of("")}); !errors.Is(err, domain.ErrTitleRequired) {
+	if _, err := e.edit(kept.Carried().Number, Changes{Title: of("")}); !errors.Is(err, item.ErrTitleRequired) {
 		t.Errorf("err = %v, want ErrTitleRequired", err)
 	}
 }
@@ -190,7 +191,7 @@ func TestEngine_refusesToEmptyATitle(t *testing.T) {
 func TestEngine_saysWhenNothingWasNamedToChange(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.edit(factsOf(kept).Number, Changes{}); !errors.Is(err, errNothingToChange) {
+	if _, err := e.edit(kept.Carried().Number, Changes{}); !errors.Is(err, errNothingToChange) {
 		t.Errorf("err = %v, want ErrNothingToChange", err)
 	}
 }
@@ -200,22 +201,22 @@ func TestEngine_doesNotRenumberATaskItChanges(t *testing.T) {
 	add(t, e, "First")
 	second := add(t, e, "Second")
 
-	got, err := e.edit(factsOf(second).Number, Changes{Title: of("Second, revised")})
+	got, err := e.edit(second.Carried().Number, Changes{Title: of("Second, revised")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if factsOf(got).Number != factsOf(second).Number {
-		t.Errorf("Number = %d, want %d", factsOf(got).Number, factsOf(second).Number)
+	if got.Carried().Number != second.Carried().Number {
+		t.Errorf("Number = %d, want %d", got.Carried().Number, second.Carried().Number)
 	}
 }
 
 func TestEngine_deletesATask(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if err := e.delete(factsOf(kept).Number); err != nil {
+	if err := e.delete(kept.Carried().Number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if _, err := e.show(factsOf(kept).Number); err == nil {
+	if _, err := e.show(kept.Carried().Number); err == nil {
 		t.Error("the task should be gone")
 	}
 }
@@ -230,10 +231,10 @@ func TestEngine_neverHandsOutANumberFreedByADeletion(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "First")
 	second := add(t, e, "Second")
-	if err := e.delete(factsOf(second).Number); err != nil {
+	if err := e.delete(second.Carried().Number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if got := factsOf(add(t, e, "Third")).Number; got != 3 {
+	if got := add(t, e, "Third").Carried().Number; got != 3 {
 		t.Errorf("Number = %d, want 3", got)
 	}
 }
@@ -263,7 +264,7 @@ func TestEngine_reportsAStoreItCanNoLongerReach(t *testing.T) {
 	if _, err := e.tasks.All(); err == nil {
 		t.Error("List on a closed store should fail")
 	}
-	if _, err := e.edit(factsOf(kept).Number, Changes{Title: of("Nope")}); err == nil {
+	if _, err := e.edit(kept.Carried().Number, Changes{Title: of("Nope")}); err == nil {
 		t.Error("Edit on a closed store should fail")
 	}
 }
@@ -275,11 +276,11 @@ func TestEngine_addsALabelToTheOnesAlreadyThere(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.edit(factsOf(kept).Number, Changes{Labels: of([]string{"+urgent"})})
+	got, err := e.edit(kept.Carried().Number, Changes{Labels: of([]string{"+urgent"})})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if labels := factsOf(got).Labels; len(labels) != 3 {
+	if labels := got.Carried().Labels; len(labels) != 3 {
 		t.Errorf("Labels = %v, want three", labels)
 	}
 }
@@ -291,11 +292,11 @@ func TestEngine_takesALabelAwayFromTheOnesAlreadyThere(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.edit(factsOf(kept).Number, Changes{Labels: of([]string{"-spec"})})
+	got, err := e.edit(kept.Carried().Number, Changes{Labels: of([]string{"-spec"})})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if labels := factsOf(got).Labels; len(labels) != 1 || labels[0] != "team" {
+	if labels := got.Carried().Labels; len(labels) != 1 || labels[0] != "team" {
 		t.Errorf("Labels = %v, want [team]", labels)
 	}
 }
@@ -310,7 +311,7 @@ func TestEngine_refusesASignedLabelAtCreation(t *testing.T) {
 func TestEngine_refusesToReplaceAndChangeLabelsAtOnce(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
-	if _, err := e.edit(factsOf(kept).Number, Changes{Labels: of([]string{"+urgent", "=draft"})}); err == nil {
+	if _, err := e.edit(kept.Carried().Number, Changes{Labels: of([]string{"+urgent", "=draft"})}); err == nil {
 		t.Error("Edit should refuse to both replace and change the labels")
 	}
 }
@@ -328,7 +329,7 @@ func TestEngine_reportsWhatItCannotReach(t *testing.T) {
 		t.Fatalf("Close: %v", err)
 	}
 
-	if err := e.delete(factsOf(kept).Number); err == nil {
+	if err := e.delete(kept.Carried().Number); err == nil {
 		t.Error("Delete on a closed store should fail")
 	}
 }
@@ -337,12 +338,12 @@ func TestEngine_writesDownTheTimeSpent(t *testing.T) {
 	e := openEngine(t)
 	kept := add(t, e, "Write the spec")
 
-	got, err := e.edit(factsOf(kept).Number, Changes{Spent: of("2h")})
+	got, err := e.edit(kept.Carried().Number, Changes{Spent: of("2h")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if domain.FormatDuration(factsOf(got).Spent) != "2h" {
-		t.Errorf("TimeSpent = %v, want 2h", factsOf(got).Spent)
+	if calendar.FormatDuration(got.Carried().Spent) != "2h" {
+		t.Errorf("TimeSpent = %v, want 2h", got.Carried().Spent)
 	}
 }
 
@@ -353,12 +354,12 @@ func TestEngine_addsToTheTimeAlreadySpent(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.edit(factsOf(kept).Number, Changes{Spent: of("+30m")})
+	got, err := e.edit(kept.Carried().Number, Changes{Spent: of("+30m")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if domain.FormatDuration(factsOf(got).Spent) != "2h30m" {
-		t.Errorf("TimeSpent = %v, want 2h30m", factsOf(got).Spent)
+	if calendar.FormatDuration(got.Carried().Spent) != "2h30m" {
+		t.Errorf("TimeSpent = %v, want 2h30m", got.Carried().Spent)
 	}
 }
 
@@ -369,11 +370,11 @@ func TestEngine_takesTimeOffAndStopsAtNothing(t *testing.T) {
 		t.Fatalf("Add: %v", err)
 	}
 
-	got, err := e.edit(factsOf(kept).Number, Changes{Spent: of("-3h")})
+	got, err := e.edit(kept.Carried().Number, Changes{Spent: of("-3h")})
 	if err != nil {
 		t.Fatalf("Edit: %v", err)
 	}
-	if facts := factsOf(got); facts.Spent != 0 {
+	if facts := got.Carried(); facts.Spent != 0 {
 		t.Errorf("TimeSpent = %v, want none", facts.Spent)
 	}
 }
@@ -389,11 +390,11 @@ func TestEngine_refusesProseATerminalWouldObey(t *testing.T) {
 		"description": {Description: of("look \x1b]52;c;aGk=\x07 here")},
 		"because":     {State: of("blocked"), Because: of("waiting\x1b[8m on legal")},
 	} {
-		if _, err := openEngine(t).add("Write the spec", c); !errors.Is(err, domain.ErrNotText) {
+		if _, err := openEngine(t).add("Write the spec", c); !errors.Is(err, item.ErrNotText) {
 			t.Errorf("%s: err = %v, want ErrNotText", name, err)
 		}
 	}
-	if _, err := openEngine(t).addObjective("Ship cairn", ObjectiveChanges{Description: of("bell\x07")}); !errors.Is(err, domain.ErrNotText) {
+	if _, err := openEngine(t).addObjective("Ship cairn", ObjectiveChanges{Description: of("bell\x07")}); !errors.Is(err, item.ErrNotText) {
 		t.Errorf("objective: err = %v, want ErrNotText", err)
 	}
 }
@@ -501,7 +502,7 @@ func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 func TestArchive_refusesAlsoWithoutANumber(t *testing.T) {
 	path := storeAt(t, "First", "Second")
 	_, err := Do(TaskArchive, path, Input{Confirmed: true, Given: map[string]string{"state": "backlog"}, Listed: map[string][]string{"also": {"2"}}})
-	if !errors.Is(err, errAlsoWithoutNumber) {
+	if !errors.Is(err, task.ErrAlsoWithoutNumber) {
 		t.Errorf("err = %v, want ErrAlsoWithoutNumber", err)
 	}
 	if _, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"two"}}}); err == nil {

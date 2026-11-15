@@ -1,18 +1,18 @@
 package engine
 
 import (
+	"cairn/internal/engine/filter"
 	"errors"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 type failingFind struct {
-	tasks
+	task.Store
 	err error
 }
 
@@ -25,7 +25,7 @@ func TestTimed_saysAStoreItCouldNotRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	broken := errors.New("disk on fire")
-	e.tasks = failingFind{tasks: e.tasks, err: broken}
+	e.tasks = failingFind{Store: e.tasks, err: broken}
 	day := time.Date(2026, 9, 29, 0, 0, 0, 0, time.Local)
 	if _, _, _, err := e.timed(day, day); !errors.Is(err, broken) {
 		t.Errorf("Timed = %v, want the store's failure", err)
@@ -33,7 +33,7 @@ func TestTimed_saysAStoreItCouldNotRead(t *testing.T) {
 }
 
 type failingClose struct {
-	tasks
+	task.Store
 	err error
 }
 
@@ -48,7 +48,7 @@ func TestDoWith_saysAStoreItCouldNotClose(t *testing.T) {
 		}
 		real := e.tasks
 		t.Cleanup(func() { _ = real.Close() })
-		e.tasks = failingClose{tasks: real, err: broken}
+		e.tasks = failingClose{Store: real, err: broken}
 		return e, nil
 	}
 	op := Operation{Needs: aStore, Run: func(workedOn, Input) (Answer, error) { return Answer{}, nil }}
@@ -86,7 +86,7 @@ func TestDo_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
 	if len(answer.Tasks) != 0 {
 		t.Errorf("%d tasks kept from an operation that failed, want none", len(answer.Tasks))
 	}
-	if _, err := Do(TraceShow, path, given("number", "1")); !errors.Is(err, errNoSuchTask) {
+	if _, err := Do(TraceShow, path, given("number", "1")); !errors.Is(err, task.ErrNoSuchTask) {
 		t.Errorf("the history of what was undone = %v, want nothing written down", err)
 	}
 }
@@ -114,11 +114,11 @@ func TestAsk_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
 }
 
 type keptBy struct {
-	tasks
+	task.Store
 	told []string
 }
 
-func (k *keptBy) Narrowed(n *domain.Narrowing) ([]task.Task, error) {
+func (k *keptBy) Narrowed(n *filter.Narrowing) ([]task.Task, error) {
 	n.Tell(k)
 	return []task.Task{}, nil
 }

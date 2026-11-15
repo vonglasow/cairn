@@ -1,13 +1,13 @@
 package gui
 
 import (
+	"cairn/internal/engine/calendar"
 	"fmt"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -114,7 +114,7 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	}
 	in, _ := f.gave("timesheet", "show")
 	grid := engine.MonthGrid(dayNamed("2026-10-01"))
-	if in.Given["since"] != domain.FormatDay(grid[0]) || in.Given["until"] != "2026-10-14" {
+	if in.Given["since"] != calendar.FormatDay(grid[0]) || in.Given["until"] != "2026-10-14" {
 		t.Errorf("the month asked for %v", in.Given)
 	}
 	if got := (Window{work: f, now: dayNamed("2026-10-14"), timeState: timeState{week: dayNamed("2026-09-28")}}).onWeek("3"); got.week.Format("January 2006") != "October 2026" {
@@ -129,18 +129,18 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 	if got := month.onWeek("left").onWeek("t").week.Format("January 2006"); got != "October 2026" {
 		t.Errorf("t shows %s", got)
 	}
-	if got := month.onWeek("2"); got.Monthly() || domain.FormatDay(got.week) != "2026-10-12" {
-		t.Errorf("2 shows the week of %s, monthly %v", domain.FormatDay(got.week), got.Monthly())
+	if got := month.onWeek("2"); got.Monthly() || calendar.FormatDay(got.week) != "2026-10-12" {
+		t.Errorf("2 shows the week of %s, monthly %v", calendar.FormatDay(got.week), got.Monthly())
 	}
 	later := month.onWeek("right").onWeek("right")
-	if got := later.onWeek("2"); domain.FormatDay(got.week) != "2026-11-30" {
-		t.Errorf("the week of December shown is %s", domain.FormatDay(got.week))
+	if got := later.onWeek("2"); calendar.FormatDay(got.week) != "2026-11-30" {
+		t.Errorf("the week of December shown is %s", calendar.FormatDay(got.week))
 	}
 	l := w.Layout()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	for chip, want := range map[string]string{"‹": "2026-10-05", "›": "2026-10-19", "Today": "2026-10-12", "Week": "2026-10-12"} {
-		if got := w.Click(middle(TimeChip(l, chip))); got.Monthly() || domain.FormatDay(got.week) != want {
-			t.Errorf("%s shows the week of %s", chip, domain.FormatDay(got.week))
+		if got := w.Click(middle(TimeChip(l, chip))); got.Monthly() || calendar.FormatDay(got.week) != want {
+			t.Errorf("%s shows the week of %s", chip, calendar.FormatDay(got.week))
 		}
 	}
 	if got := w.Click(middle(TimeChip(l, "Month"))); !got.Monthly() {
@@ -150,8 +150,8 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 		t.Error("Month on a month left it")
 	}
 	fourth := slices.IndexFunc(grid, func(d time.Time) bool { return d.Day() == 4 })
-	if got := month.Click(middle(MonthCellAt(l, fourth))); got.Monthly() || domain.FormatDay(got.week) != "2026-09-28" {
-		t.Errorf("the 4th clicked shows the week of %s, monthly %v", domain.FormatDay(got.week), got.Monthly())
+	if got := month.Click(middle(MonthCellAt(l, fourth))); got.Monthly() || calendar.FormatDay(got.week) != "2026-09-28" {
+		t.Errorf("the 4th clicked shows the week of %s, monthly %v", calendar.FormatDay(got.week), got.Monthly())
 	}
 	if got := month.Click(Point{X: 1, Y: l.Band.Y + l.Band.H + 2}); !got.Monthly() {
 		t.Error("a click under the month left it")
@@ -257,11 +257,11 @@ func TestWhatTheTimePageIsDrawnOn(t *testing.T) {
 		}
 	}
 	m := Window{work: newFake(), now: dayNamed("2026-10-14"), timeState: timeState{monthly: true, week: dayNamed("2026-10-01")}}
-	if got := m.onWeek("right").week; domain.FormatDay(got) != "2026-11-01" {
-		t.Errorf("right from October shows %s", domain.FormatDay(got))
+	if got := m.onWeek("right").week; calendar.FormatDay(got) != "2026-11-01" {
+		t.Errorf("right from October shows %s", calendar.FormatDay(got))
 	}
-	if got := m.onWeek("left").week; domain.FormatDay(got) != "2026-09-01" {
-		t.Errorf("left from October shows %s", domain.FormatDay(got))
+	if got := m.onWeek("left").week; calendar.FormatDay(got) != "2026-09-01" {
+		t.Errorf("left from October shows %s", calendar.FormatDay(got))
 	}
 }
 

@@ -42,7 +42,7 @@ asked=("$@")
 # mutants no test can tell from the original than ones pointing at a weak
 # test. Every rule of what blocks, orders and narrows is written in && and ||,
 # so the core is where a 100% without them meant least.
-logical=" internal/domain internal/engine internal/task internal/objective internal/store internal/trace internal/migration internal/config internal/build "
+logical=" internal/engine/item internal/engine/calendar internal/engine/change internal/engine/label internal/engine/series internal/engine/filter internal/engine/backup internal/engine internal/engine/task internal/engine/objective internal/store/sqlite internal/engine/act internal/engine/migration internal/engine/workspace internal/engine/view internal/engine/exchange internal/engine/app internal/store/files internal/build "
 
 # The packages too long for one job, and in how many shards each is judged.
 # Measured on 2026-11-11: the engine's 2558 mutants, four workers, were still

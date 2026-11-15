@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/task"
 	"errors"
 	"fmt"
 	"os"
@@ -8,8 +11,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"cairn/internal/domain"
 )
 
 func TestRefusalOf_namesWhatKindOfAnswerAFailureIs(t *testing.T) {
@@ -17,9 +18,9 @@ func TestRefusalOf_namesWhatKindOfAnswerAFailureIs(t *testing.T) {
 		err          error
 		kind, reason string
 	}{
-		{fmt.Errorf("a task %w", domain.ErrTitleRequired), "refused", "title-required"},
-		{fmt.Errorf("task 4: %w", errNoSuchTask), "refused", "no-such-task"},
-		{fmt.Errorf("%w — run it", ErrStoreBehind), "store", "store-behind"},
+		{fmt.Errorf("a task %w", item.ErrTitleRequired), "refused", "title-required"},
+		{fmt.Errorf("task 4: %w", task.ErrNoSuchTask), "refused", "no-such-task"},
+		{fmt.Errorf("%w — run it", migration.ErrStoreBehind), "store", "store-behind"},
 		{fmt.Errorf("%w: disk", errStore), "store", "store-unreadable"},
 		{Misread(errors.New("unknown flag: --colour")), "usage", "not-understood"},
 		{errors.New("something nobody foresaw"), "failed", ""},
@@ -155,7 +156,7 @@ func TestAgreeingTo_aStepStillOpenIsAgreedToByTheSameActConfirmed(t *testing.T) 
 	}{
 		"an act that does not finish": {Operation{Thing: "task", Verb: "show"}, asked, open},
 		"an act already confirmed":    {finishing, Agreed(asked), open},
-		"another refusal":             {finishing, asked, errNoSuchTask},
+		"another refusal":             {finishing, asked, task.ErrNoSuchTask},
 		"no refusal":                  {finishing, asked, nil},
 	} {
 		if got, ok := AgreeingTo(c.op, c.in, c.err); ok || got.Reason != "" || got.In.Confirmed {
@@ -165,7 +166,7 @@ func TestAgreeingTo_aStepStillOpenIsAgreedToByTheSameActConfirmed(t *testing.T) 
 }
 
 func TestAgreeingTo_aStoreFromANewerCairnHasNoActToAgreeWith(t *testing.T) {
-	newer := Told(fmt.Errorf("%w: written by a later cairn", ErrNewerStore))
+	newer := Told(fmt.Errorf("%w: written by a later cairn", migration.ErrNewerStore))
 
 	got, ok := AgreeingTo(TaskList, Input{}, newer)
 	if !ok || got.Reason != "store-newer" || got.Op.Run != nil || got.Op.Name() != (Operation{}).Name() {
@@ -174,7 +175,7 @@ func TestAgreeingTo_aStoreFromANewerCairnHasNoActToAgreeWith(t *testing.T) {
 }
 
 func TestAgreeingTo_aStoreBehindIsAgreedToByApplying(t *testing.T) {
-	behind := Told(fmt.Errorf("%w by 2 change(s)", ErrStoreBehind))
+	behind := Told(fmt.Errorf("%w by 2 change(s)", migration.ErrStoreBehind))
 
 	got, ok := AgreeingTo(TaskList, Input{}, behind)
 	if !ok || got.Reason != "store-behind" || got.Op.Name() != MigrationApply.Name() || got.In.Given["number"] != "" {

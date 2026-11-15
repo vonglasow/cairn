@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/workspace"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -9,8 +10,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"cairn/internal/config"
 	"cairn/internal/engine"
+	"cairn/internal/store/files"
 )
 
 const globalWord = "--global"
@@ -18,25 +19,25 @@ const globalWord = "--global"
 const completedAtMost = 5
 
 type configHeld struct {
-	config  engine.Config
-	stamp   engine.ConfigStamp
+	config  workspace.Config
+	stamp   workspace.ConfigStamp
 	readAt  time.Time
-	trouble *engine.Trouble
+	trouble *workspace.Trouble
 	notice  string
 }
 
 // Reread is the configuration as the beat found it: the files' stamp now, and the configuration read again when one of them said something else.
 type Reread struct {
-	Stamp  engine.ConfigStamp
-	Config *engine.Config
+	Stamp  workspace.ConfigStamp
+	Config *workspace.Config
 	First  bool
 }
 
 // Configured is what a key set or taken out from the : line answered, and the configuration as it reads after the write.
 type Configured struct {
 	Text   string
-	Config *engine.Config
-	Stamp  engine.ConfigStamp
+	Config *workspace.Config
+	Stamp  workspace.ConfigStamp
 	Err    error
 }
 
@@ -46,7 +47,7 @@ func (b Board) readingConfig() tea.Cmd {
 		if err != nil || got.Config == nil {
 			return nil
 		}
-		return Reread{Stamp: engine.StampOf(*got.Config), Config: got.Config, First: true}
+		return Reread{Stamp: workspace.StampOf(*got.Config), Config: got.Config, First: true}
 	}
 }
 
@@ -79,7 +80,7 @@ func (b Board) reread(m Reread) Board {
 			b.configured.config = now
 			was = now
 		}
-		trouble := engine.TroubleIn(now, was)
+		trouble := workspace.TroubleIn(now, was)
 		b.configured.trouble = &trouble
 		return b
 	}
@@ -88,18 +89,18 @@ func (b Board) reread(m Reread) Board {
 		return b
 	}
 	b = b.Paged(engine.PagesOf(now))
-	if changes := engine.ConfigChanges(was, now); len(changes) > 0 {
+	if changes := workspace.ConfigChanges(was, now); len(changes) > 0 {
 		b.configured.notice = readAgain(was, now, changes)
 	}
 	return b
 }
 
-func readAgain(was, now engine.Config, changes []engine.ConfigChange) string {
+func readAgain(was, now workspace.Config, changes []workspace.ConfigChange) string {
 	file := filepath.Base(now.File)
 	said := make([]string, 0, len(changes))
 	for _, change := range changes {
 		if slices.Contains(now.WrittenHere, change.Key) || slices.Contains(was.WrittenHere, change.Key) {
-			file = config.SettingsFile
+			file = files.SettingsFile
 		}
 		said = append(said, change.String())
 	}
@@ -143,7 +144,7 @@ func (b Board) configuring(op engine.Operation, in engine.Input) tea.Cmd {
 		}
 		said := Configured{Text: strings.TrimSpace(engine.RenderText(op, answer))}
 		if got, err := b.work.Ask(engine.ConfigShow, engine.Input{}); err == nil && got.Config != nil {
-			said.Config, said.Stamp = got.Config, engine.StampOf(*got.Config)
+			said.Config, said.Stamp = got.Config, workspace.StampOf(*got.Config)
 		}
 		return said
 	}
@@ -186,13 +187,13 @@ func (b Board) keyTyped() (string, bool) {
 	return "", false
 }
 
-func (b Board) completions() []config.Key {
+func (b Board) completions() []files.Key {
 	typed, ok := b.keyTyped()
 	if !ok {
 		return nil
 	}
-	var found []config.Key
-	for _, key := range config.Keys() {
+	var found []files.Key
+	for _, key := range files.Keys() {
 		if strings.HasPrefix(key.Name, typed) && len(found) < completedAtMost {
 			found = append(found, key)
 		}
@@ -215,7 +216,7 @@ func (b Board) completionLines() []string {
 	c := b.configured.config
 	lines := make([]string, 0, len(found))
 	for _, key := range found {
-		value := engine.ValueIn(c, key.Name)
+		value := workspace.ValueIn(c, key.Name)
 		from := "default"
 		switch {
 		case slices.Contains(c.WrittenHere, key.Name):

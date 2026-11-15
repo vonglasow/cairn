@@ -7,7 +7,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 func (w *world) registerBlocking(sc *godog.ScenarioContext) {

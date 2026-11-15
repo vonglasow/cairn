@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/engine/calendar"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,8 +11,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
-	"cairn/internal/domain"
+	"cairn/internal/store/files"
 	"cairn/test"
 )
 
@@ -47,16 +47,16 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		mine := w.StorePath
 		other := filepath.Join(w.T.TempDir(), "other", "cairn.db")
 		w.file = filepath.Join(w.T.TempDir(), "other", "tasks.json")
-		if settings, err := os.ReadFile(config.SettingsBeside(mine)); err == nil {
+		if settings, err := os.ReadFile(files.SettingsBeside(mine)); err == nil {
 			if err := os.MkdirAll(filepath.Dir(other), 0o700); err != nil {
 				return err
 			}
-			if err := os.WriteFile(config.SettingsBeside(other), settings, 0o600); err != nil {
+			if err := os.WriteFile(files.SettingsBeside(other), settings, 0o600); err != nil {
 				return err
 			}
 		}
-		w.Setenv(config.StoreVariable, other)
-		defer w.Setenv(config.StoreVariable, mine)
+		w.Setenv(files.StoreVariable, other)
+		defer w.Setenv(files.StoreVariable, mine)
 		for _, line := range strings.Split(strings.TrimSpace(run.Content), "\n") {
 			if err := w.Seed(strings.TrimSpace(line)); err != nil {
 				return err
@@ -86,10 +86,10 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		return os.WriteFile(w.file, []byte(held.Content), 0o600)
 	})
 	sc.Step(`^task (\d+) is due (\d+) days from today$`, func(n, days int) error {
-		return w.CommandSays(fmt.Sprintf("cairn task show %d", n), domain.FormatDay(time.Now().AddDate(0, 0, days)))
+		return w.CommandSays(fmt.Sprintf("cairn task show %d", n), calendar.FormatDay(time.Now().AddDate(0, 0, days)))
 	})
 	sc.Step(`^the time sheet of yesterday gives task (\d+) "([^"]*)"$`, func(n int, took string) error {
-		day := domain.FormatDay(time.Now().AddDate(0, 0, -1))
+		day := calendar.FormatDay(time.Now().AddDate(0, 0, -1))
 		w.Run(fmt.Sprintf("cairn timesheet show --since %s --until %s", day, day))
 		return test.WantContains(w.Out.Stdout, took, fmt.Sprintf("the sheet of %s for task %d", day, n))
 	})

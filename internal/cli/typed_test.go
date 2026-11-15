@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"cairn/internal/engine/migration"
 	"strings"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 
 func TestWhatToTypeStandsOnALineOfItsOwn(t *testing.T) {
 	var out bytes.Buffer
-	saidToAPerson(&out, fang.Styles{}, engine.Told(engine.ErrStoreBehind))
+	saidToAPerson(&out, fang.Styles{}, engine.Told(migration.ErrStoreBehind))
 	alone := false
 	for _, line := range strings.Split(out.String(), "\n") {
 		if strings.TrimSpace(line) == "cairn migration apply" {

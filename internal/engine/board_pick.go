@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"cairn/internal/domain"
+	"cairn/internal/engine/calendar"
 )
 
 // FoundGoals is what a search reaches among the objectives, in the order a list keeps them; every one of them when nothing is looked for.
@@ -19,7 +19,7 @@ func FoundGoals(goals []Goal, query string) []Goal {
 }
 
 func overrun(estimate, spent string) bool {
-	reckoned, _ := domain.ParseEstimate(estimate)
-	took, _ := domain.ParseEstimate(spent)
+	reckoned, _ := calendar.ParseEstimate(estimate)
+	took, _ := calendar.ParseEstimate(spent)
 	return reckoned > 0 && took > reckoned
 }

@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/migration"
 	"errors"
 	"fmt"
 	"os"
@@ -80,7 +82,7 @@ func TestBackups_deletesABackup(t *testing.T) {
 	if err := vault.Delete(made.Number); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
-	if _, err := vault.Find(made.Number); !errors.Is(err, errNoSuchBackup) {
+	if _, err := vault.Find(made.Number); !errors.Is(err, backup.ErrNoSuchBackup) {
 		t.Errorf("err = %v, want ErrNoSuchBackup", err)
 	}
 }
@@ -122,7 +124,7 @@ func TestBackups_putsABackupBack(t *testing.T) {
 }
 
 func TestBackups_saysThereIsNoBackupToPutBack(t *testing.T) {
-	if _, err := backupsAt(storeAt(t)).Latest(); !errors.Is(err, errNoBackup) {
+	if _, err := backupsAt(storeAt(t)).Latest(); !errors.Is(err, backup.ErrNoBackup) {
 		t.Errorf("err = %v, want ErrNoBackup", err)
 	}
 }
@@ -137,7 +139,7 @@ func TestEngine_namesEveryChangeAndItsState(t *testing.T) {
 		t.Fatal("Migrations should name every change this cairn knows")
 	}
 	for _, one := range all {
-		change := factsOfChange(one)
+		change := one.Carried()
 		if change.Name == "" || change.Does == "" {
 			t.Errorf("a change should carry its name and what it does, got %+v", change)
 		}
@@ -228,7 +230,7 @@ func TestEngine_appliesOneChangeByItsNumber(t *testing.T) {
 	if len(waiting) != 1 {
 		t.Fatalf("%d changes waiting, want 1", len(waiting))
 	}
-	name, err := e.apply(path, factsOfChange(waiting[0]).Number)
+	name, err := e.apply(path, waiting[0].Carried().Number)
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}
@@ -238,7 +240,7 @@ func TestEngine_appliesOneChangeByItsNumber(t *testing.T) {
 }
 
 func TestEngine_refusesToOpenAStoreBehindIt(t *testing.T) {
-	if _, err := Open(behindStore(t)); !errors.Is(err, ErrStoreBehind) {
+	if _, err := Open(behindStore(t)); !errors.Is(err, migration.ErrStoreBehind) {
 		t.Errorf("err = %v, want ErrStoreBehind", err)
 	}
 }
@@ -263,9 +265,9 @@ func TestEngine_reportsAPlaceItCannotBackupBeforeChanging(t *testing.T) {
 }
 
 func TestTold_saysWhatToRunAboutAStoreThatIsBehind(t *testing.T) {
-	behind := fmt.Errorf("%w by 1 change(s)", ErrStoreBehind)
+	behind := fmt.Errorf("%w by 1 change(s)", migration.ErrStoreBehind)
 	got := Told(behind)
-	if !errors.Is(got, ErrStoreBehind) {
+	if !errors.Is(got, migration.ErrStoreBehind) {
 		t.Errorf("Told lost what the error was about: %v", got)
 	}
 	if !strings.Contains(got.Error(), "cairn migration apply") {
@@ -274,7 +276,7 @@ func TestTold_saysWhatToRunAboutAStoreThatIsBehind(t *testing.T) {
 }
 
 func TestTold_leavesEveryOtherErrorAlone(t *testing.T) {
-	for _, err := range []error{ErrNewerStore, errNotAStore, errors.New("something else")} {
+	for _, err := range []error{migration.ErrNewerStore, backup.ErrNotAStore, errors.New("something else")} {
 		if got := Told(err); got.Error() != err.Error() {
 			t.Errorf("Told(%v) = %v, want it left alone", err, got)
 		}

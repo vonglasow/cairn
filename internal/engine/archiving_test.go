@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 func midnight(at time.Time) time.Time {
@@ -76,7 +77,7 @@ func TestABoardOpeningArchivesOnItsOwn(t *testing.T) {
 		t.Fatal(err)
 	}
 	ago := time.Now().AddDate(0, 0, -10)
-	if err := e.history.Record(trace.Made(trace.Carried{Task: 1, Did: trace.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
+	if err := e.history.Record(act.Made(act.Carried{Task: 1, Did: act.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
 		t.Fatal(err)
 	}
 	_ = e.Close()
@@ -100,11 +101,11 @@ func TestABoardOpeningArchivesOnItsOwn(t *testing.T) {
 }
 
 func TestConfigShowSaysWhatIsArchivedOnItsOwn(t *testing.T) {
-	said := configText(Config{Archive: &Archive{Start: "2026-10-21", Days: 10}})
+	said := workspace.ConfigText(workspace.Config{Archive: &workspace.Archive{Start: "2026-10-21", Days: 10}})
 	if !strings.Contains(said, "[archive]\nstart = 2026-10-21\ndays = 10\n") {
 		t.Errorf("config show says:\n%s", said)
 	}
-	if said := configText(Config{Archive: &Archive{Days: 14}}); !strings.Contains(said, "nothing is archived on its own") {
+	if said := workspace.ConfigText(workspace.Config{Archive: &workspace.Archive{Days: 14}}); !strings.Contains(said, "nothing is archived on its own") {
 		t.Errorf("with no archiving, config show says:\n%s", said)
 	}
 }
@@ -161,7 +162,7 @@ func TestHold_sweepsTheArchiveOnceTheStoreIsCurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 	ago := time.Now().AddDate(0, 0, -10)
-	if err := e.history.Record(trace.Made(trace.Carried{Task: 1, Did: trace.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
+	if err := e.history.Record(act.Made(act.Carried{Task: 1, Did: act.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := e.rollBack(path); err != nil {
@@ -221,7 +222,7 @@ func archivingHome(t *testing.T) (string, Home) {
 		t.Fatal(err)
 	}
 	ago := time.Now().AddDate(0, 0, -10)
-	if err := e.history.Record(trace.Made(trace.Carried{Task: 1, Did: trace.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
+	if err := e.history.Record(act.Made(act.Carried{Task: 1, Did: act.Changed, Field: "column", Was: "todo", Became: "done", At: ago})); err != nil {
 		t.Fatal(err)
 	}
 	_ = e.Close()
@@ -248,7 +249,7 @@ func TestArchiving_onlyTheListingOfTasksSweeps(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if factsOf(*shown.Task).Archived {
+		if (*shown.Task).Carried().Archived {
 			t.Fatalf("%s archived on its own", op.Line())
 		}
 	}
@@ -259,7 +260,7 @@ func TestArchiving_onlyTheListingOfTasksSweeps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !factsOf(*shown.Task).Archived {
+	if !(*shown.Task).Carried().Archived {
 		t.Error("task list left a task done before the period under way on the board")
 	}
 }

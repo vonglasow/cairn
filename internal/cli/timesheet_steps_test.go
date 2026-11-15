@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/engine/calendar"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/domain"
 	"cairn/test"
 )
 
@@ -81,7 +81,7 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^today gives task (\d+) "([^"]*)"$`, func(n int, want string) error {
-		return w.dayGives(domain.FormatDay(time.Now()), n, want)
+		return w.dayGives(calendar.FormatDay(time.Now()), n, want)
 	})
 
 	sc.Step(`^it says (\S+) was added with no day$`, func(span string) error {
@@ -113,10 +113,10 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 	})
 
 	sc.Step(`^it says today$`, func() error {
-		if was := domain.FormatDay(time.Now().Add(-time.Minute)); strings.Contains(w.Out.Stdout, was) {
+		if was := calendar.FormatDay(time.Now().Add(-time.Minute)); strings.Contains(w.Out.Stdout, was) {
 			return nil
 		}
-		return test.WantContains(w.Out.Stdout, domain.FormatDay(time.Now()), "the timesheet")
+		return test.WantContains(w.Out.Stdout, calendar.FormatDay(time.Now()), "the timesheet")
 	})
 
 	sc.Step(`^it says (\S+) was added for "([^"]*)"$`, func(span, day string) error {

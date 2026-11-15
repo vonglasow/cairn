@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 )
 
 func objectiveOrder(t *testing.T, e *Engine) []int {

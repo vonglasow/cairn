@@ -1,11 +1,10 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"maps"
 	"slices"
 	"testing"
-
-	"cairn/internal/domain"
 )
 
 func column(state string, numbers ...int) []Card {
@@ -93,7 +92,7 @@ func TestTheBoardIsLaidOutFromDomainsStates(t *testing.T) {
 	if len(columns) != Columns {
 		t.Errorf("%d columns are listed and Columns says %d", len(columns), Columns)
 	}
-	for _, state := range domain.States {
+	for _, state := range item.States {
 		inColumn := IndexOf(string(state)) >= 0
 		if inColumn == Stopped(string(state)) {
 			t.Errorf("%s is in a column: %v, and stopped: %v — want exactly one", state, inColumn, Stopped(string(state)))

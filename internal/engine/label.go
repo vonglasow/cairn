@@ -1,40 +1,17 @@
 package engine
 
 import (
-	"errors"
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/label"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
 	"text/tabwriter"
-
-	"cairn/internal/domain"
 )
 
-// errNoSuchLabel is returned when a label named is carried by no task and no objective.
-var errNoSuchLabel = errors.New("nothing carries that label")
-
-// LabelCarried is one label and how many tasks and objectives carry it.
-type LabelCarried struct {
-	Label      string `json:"label"`
-	Tasks      int    `json:"tasks"`
-	Objectives int    `json:"objectives"`
-	Colour     string `json:"colour"`
-	Scope      string `json:"scope" jsonschema:"what it may be put on: tasks, objectives or both"`
-}
-
-// labelList is how the labels answer: every one, in alphabetical order, with what carries it.
-type labelList struct {
-	Labels   []LabelCarried `json:"labels"`
-	Warnings []string       `json:"warnings,omitempty" jsonschema:"what a deletion did and should be known: how many views held the label, which narrows nothing there now; left out when there is nothing to say"`
-}
-
-type carriers struct {
-	tasks, objectives []int
-}
-
-func (e *Engine) everyLabel() (map[string]carriers, error) {
-	every := domain.Narrowing{}
+func (e *Engine) everyLabel() (map[string]label.Carriers, error) {
+	every := filter.Narrowing{}
 	every.WithArchived()
 	tasks, err := e.tasks.Narrowed(&every)
 	if err != nil {
@@ -44,34 +21,34 @@ func (e *Engine) everyLabel() (map[string]carriers, error) {
 	if err != nil {
 		return nil, err
 	}
-	held := map[string]carriers{}
+	held := map[string]label.Carriers{}
 	kept, err := e.store.KeptLabels()
 	if err != nil {
 		return nil, err
 	}
-	for _, label := range kept {
-		held[label] = carriers{}
+	for _, name := range kept {
+		held[name] = label.Carriers{}
 	}
 	for _, t := range tasks {
-		f := factsOf(t)
-		for _, label := range f.Labels {
-			c := held[label]
-			c.tasks = append(c.tasks, f.Number)
-			held[label] = c
+		f := t.Carried()
+		for _, name := range f.Labels {
+			c := held[name]
+			c.Tasks = append(c.Tasks, f.Number)
+			held[name] = c
 		}
 	}
 	for _, g := range goals {
-		f := factsOfObjective(g)
-		for _, label := range f.Labels {
-			c := held[label]
-			c.objectives = append(c.objectives, f.Number)
-			held[label] = c
+		f := g.Carried()
+		for _, name := range f.Labels {
+			c := held[name]
+			c.Objectives = append(c.Objectives, f.Number)
+			held[name] = c
 		}
 	}
 	return held, nil
 }
 
-func (e *Engine) labelsCarried() ([]LabelCarried, error) {
+func (e *Engine) labelsCarried() ([]label.Carried, error) {
 	held, err := e.everyLabel()
 	if err != nil {
 		return nil, err
@@ -84,41 +61,32 @@ func (e *Engine) labelsCarried() ([]LabelCarried, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := []LabelCarried{}
-	for _, label := range slices.Sorted(maps.Keys(held)) {
-		colour, ok := chosen[label]
+	out := []label.Carried{}
+	for _, name := range slices.Sorted(maps.Keys(held)) {
+		colour, ok := chosen[name]
 		if !ok {
-			colour = domain.ColourOf(label)
+			colour = label.ColourOf(name)
 		}
-		out = append(out, LabelCarried{Label: label, Tasks: len(held[label].tasks), Objectives: len(held[label].objectives), Colour: colour, Scope: string(scopes.of(label))})
+		out = append(out, label.Carried{Label: name, Tasks: len(held[name].Tasks), Objectives: len(held[name].Objectives), Colour: colour, Scope: string(scopes.Of(name))})
 	}
 	return out, nil
 }
 
-type scoped map[string]string
-
-func (s scoped) of(label string) domain.Scope {
-	if scope, narrowed := s[label]; narrowed {
-		return domain.Scope(scope)
-	}
-	return domain.ForBoth
-}
-
-func (e *Engine) scopes() (scoped, error) {
+func (e *Engine) scopes() (label.Scoped, error) {
 	said, err := e.store.LabelScopes()
-	return scoped(said), err
+	return label.Scoped(said), err
 }
 
-func (e *Engine) inScope(was, now []string, on domain.Bearer) error {
+func (e *Engine) inScope(was, now []string, on label.Bearer) error {
 	scopes, err := e.scopes()
 	if err != nil {
 		return err
 	}
-	for _, label := range now {
-		if slices.Contains(was, label) {
+	for _, name := range now {
+		if slices.Contains(was, name) {
 			continue
 		}
-		if err := scopes.of(label).Refuses(label, on); err != nil {
+		if err := scopes.Of(name).Refuses(name, on); err != nil {
 			return err
 		}
 	}
@@ -126,57 +94,46 @@ func (e *Engine) inScope(was, now []string, on domain.Bearer) error {
 }
 
 func (e *Engine) scope(given, named string) error {
-	label, found, err := e.carriersOf(given)
+	name, found, err := e.carriersOf(given)
 	if err != nil {
 		return err
 	}
-	scope, err := domain.ParseScope(named)
+	scope, err := label.ParseScope(named)
 	if err != nil {
 		return err
 	}
-	if !scope.Admits(domain.OnTasks) && len(found.tasks) > 0 {
-		return fmt.Errorf("%q is carried by %s; %w", label, manyOf(len(found.tasks), "task", "tasks"), domain.ErrOutOfScope)
+	if !scope.Admits(label.OnTasks) && len(found.Tasks) > 0 {
+		return fmt.Errorf("%q is carried by %s; %w", name, manyOf(len(found.Tasks), "task", "tasks"), label.ErrOutOfScope)
 	}
-	if !scope.Admits(domain.OnObjectives) && len(found.objectives) > 0 {
-		return fmt.Errorf("%q is carried by %s; %w", label, manyOf(len(found.objectives), "objective", "objectives"), domain.ErrOutOfScope)
+	if !scope.Admits(label.OnObjectives) && len(found.Objectives) > 0 {
+		return fmt.Errorf("%q is carried by %s; %w", name, manyOf(len(found.Objectives), "objective", "objectives"), label.ErrOutOfScope)
 	}
-	return e.store.ScopeLabel(label, string(scope))
+	return e.store.ScopeLabel(name, string(scope))
 }
 
-func oneLabel(given string) (string, error) {
-	written, err := domain.ParseLabels([]string{given})
+func (e *Engine) carriersOf(given string) (string, label.Carriers, error) {
+	name, err := label.OneLabel(given)
 	if err != nil {
-		return "", err
-	}
-	if len(written) == 0 {
-		return "", domain.ErrLabelRequired
-	}
-	return written[0], nil
-}
-
-func (e *Engine) carriersOf(given string) (string, carriers, error) {
-	label, err := oneLabel(given)
-	if err != nil {
-		return "", carriers{}, err
+		return "", label.Carriers{}, err
 	}
 	held, err := e.everyLabel()
 	if err != nil {
-		return "", carriers{}, err
+		return "", label.Carriers{}, err
 	}
-	found, there := held[label]
+	found, there := held[name]
 	if !there {
-		return "", carriers{}, fmt.Errorf("%q: %w", label, errNoSuchLabel)
+		return "", label.Carriers{}, fmt.Errorf("%q: %w", name, label.ErrNoSuchLabel)
 	}
-	return label, found, nil
+	return name, found, nil
 }
 
-func (e *Engine) relabel(c carriers, change []string) error {
-	for _, n := range c.tasks {
+func (e *Engine) relabel(c label.Carriers, change []string) error {
+	for _, n := range c.Tasks {
 		if _, err := e.edit(n, Changes{Labels: &change}); err != nil {
 			return err
 		}
 	}
-	for _, n := range c.objectives {
+	for _, n := range c.Objectives {
 		if _, err := e.editObjective(n, ObjectiveChanges{Labels: &change}); err != nil {
 			return err
 		}
@@ -192,12 +149,12 @@ func offeredLabels(on workedOn, onto string) (Answer, error) {
 		return Answer{}, err
 	}
 	if onto != "" {
-		listed = slices.DeleteFunc(listed, func(l LabelCarried) bool { return !domain.Scope(l.Scope).Admits(domain.Bearer(onto)) })
+		listed = slices.DeleteFunc(listed, func(l label.Carried) bool { return !label.Scope(l.Scope).Admits(label.Bearer(onto)) })
 	}
 	return Answer{Labels: &listed}, nil
 }
 
-var scopeArgument = Argument{Name: "scope", Kind: Text, OneOf: oneOf(domain.Scopes), Outside: domain.ErrNoSuchScope, Means: "what it may be put on: tasks, objectives, or both, which a label nobody scoped is for"}
+var scopeArgument = Argument{Name: "scope", Kind: Text, OneOf: oneOf(label.Scopes), Outside: label.ErrNoSuchScope, Means: "what it may be put on: tasks, objectives, or both, which a label nobody scoped is for"}
 
 // LabelList lists every label, with how many tasks and objectives carry it.
 var LabelList = Operation{
@@ -209,9 +166,9 @@ var LabelList = Operation{
 cairn label list --for objectives`,
 	Level:   Read,
 	Needs:   aStore,
-	Answers: labelList{},
+	Answers: label.List{},
 	Takes: []Argument{
-		{Name: "for", Kind: Text, OneOf: oneOf([]domain.Bearer{domain.OnTasks, domain.OnObjectives}), Outside: domain.ErrNoSuchScope, Means: "keep only the labels that may be put on tasks, or on objectives"},
+		{Name: "for", Kind: Text, OneOf: oneOf([]label.Bearer{label.OnTasks, label.OnObjectives}), Outside: label.ErrNoSuchScope, Means: "keep only the labels that may be put on tasks, or on objectives"},
 	},
 	Run: func(on workedOn, in Input) (Answer, error) { return offeredLabels(on, in.Given["for"]) },
 }
@@ -226,28 +183,28 @@ var LabelDelete = Operation{
 	Level:   Full,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: labelList{},
+	Answers: label.List{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to take off everything"},
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
-		label, found, err := on.Engine.carriersOf(in.Given["label"])
+		name, found, err := on.Engine.carriersOf(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.relabel(found, []string{"-" + label}); err != nil {
+		if err := on.Engine.relabel(found, []string{"-" + name}); err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.store.ForgetLabel(label); err != nil {
+		if err := on.Engine.store.ForgetLabel(name); err != nil {
 			return Answer{}, err
 		}
-		held, err := on.Engine.viewsHolding(label)
+		held, err := on.Engine.viewsHolding(name)
 		if err != nil {
 			return Answer{}, err
 		}
 		answer, err := listedLabels(on)
 		if held > 0 {
-			answer.Warnings = []string{fmt.Sprintf("%s the label %s; it narrows nothing there now", manyOf(held, "view holds", "views hold"), label)}
+			answer.Warnings = []string{fmt.Sprintf("%s the label %s; it narrows nothing there now", manyOf(held, "view holds", "views hold"), name)}
 		}
 		return answer, err
 	},
@@ -263,28 +220,28 @@ var LabelRename = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: labelList{},
+	Answers: label.List{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to rename"},
 		{Name: "to", Kind: Text, Positional: true, Required: true, Means: "the name it takes"},
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
-		label, found, err := on.Engine.carriersOf(in.Given["label"])
+		name, found, err := on.Engine.carriersOf(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
 		}
-		to, err := oneLabel(in.Given["to"])
+		to, err := label.OneLabel(in.Given["to"])
 		if err != nil {
 			return Answer{}, err
 		}
-		if to != label {
-			if err := on.Engine.relabel(found, []string{"-" + label, "+" + to}); err != nil {
+		if to != name {
+			if err := on.Engine.relabel(found, []string{"-" + name, "+" + to}); err != nil {
 				return Answer{}, err
 			}
-			if err := on.Engine.store.RenameKeptLabel(label, to); err != nil {
+			if err := on.Engine.store.RenameKeptLabel(name, to); err != nil {
 				return Answer{}, err
 			}
-			if err := on.Engine.relabelViews(label, to); err != nil {
+			if err := on.Engine.relabelViews(name, to); err != nil {
 				return Answer{}, err
 			}
 		}
@@ -303,21 +260,21 @@ cairn label new area --scope objectives`,
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: labelList{},
+	Answers: label.List{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to make"},
 		scopeArgument,
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
-		label, err := oneLabel(in.Given["label"])
+		name, err := label.OneLabel(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.store.KeepLabel(label); err != nil {
+		if err := on.Engine.store.KeepLabel(name); err != nil {
 			return Answer{}, err
 		}
 		if scope, named := in.Given["scope"]; named {
-			if err := on.Engine.scope(label, scope); err != nil {
+			if err := on.Engine.scope(name, scope); err != nil {
 				return Answer{}, err
 			}
 		}
@@ -335,10 +292,10 @@ var labelScope = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: labelList{},
+	Answers: label.List{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to scope"},
-		{Name: "scope", Kind: Text, Positional: true, Required: true, OneOf: scopeArgument.OneOf, Outside: domain.ErrNoSuchScope, Means: scopeArgument.Means},
+		{Name: "scope", Kind: Text, Positional: true, Required: true, OneOf: scopeArgument.OneOf, Outside: label.ErrNoSuchScope, Means: scopeArgument.Means},
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		if err := on.Engine.scope(in.Given["label"], in.Given["scope"]); err != nil {
@@ -358,28 +315,28 @@ var LabelColour = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: labelList{},
+	Answers: label.List{},
 	Takes: []Argument{
 		{Name: "label", Kind: Text, Positional: true, Required: true, Means: "the label to colour"},
 		{Name: "colour", Kind: Text, Positional: true, Required: true, Means: "the colour it wears"},
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
-		label, _, err := on.Engine.carriersOf(in.Given["label"])
+		name, _, err := on.Engine.carriersOf(in.Given["label"])
 		if err != nil {
 			return Answer{}, err
 		}
-		colour, err := domain.ParseColour(in.Given["colour"])
+		colour, err := label.ParseColour(in.Given["colour"])
 		if err != nil {
 			return Answer{}, err
 		}
-		if err := on.Engine.store.ColourLabel(label, colour); err != nil {
+		if err := on.Engine.store.ColourLabel(name, colour); err != nil {
 			return Answer{}, err
 		}
 		return listedLabels(on)
 	},
 }
 
-func labelsText(listed []LabelCarried) string {
+func labelsText(listed []label.Carried) string {
 	if len(listed) == 0 {
 		return "no label is carried\n"
 	}

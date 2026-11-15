@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"os"
 	"path/filepath"
 	"slices"
@@ -8,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
-func answered(t *testing.T, h Home) Config {
+func answered(t *testing.T, h Home) workspace.Config {
 	t.Helper()
 	got, err := DoFrom(ConfigShow, h, Input{}, Acting{})
 	if err != nil {
@@ -26,7 +27,7 @@ func TestPagesOf_readsThePagesTheWeekAndTheSeriesOffAnAnswer(t *testing.T) {
 	if p.Shows(PageObjectives) || p.Shows(PageTime) || !p.Shows(PageTasks) || p.WeekDays() != 5 || !p.Recurs() {
 		t.Errorf("the pages read %+v", p)
 	}
-	if p := PagesOf(Config{}); !p.Shows(PageTasks) || p.Recurs() || p.WeekDays() != 7 {
+	if p := PagesOf(workspace.Config{}); !p.Shows(PageTasks) || p.Recurs() || p.WeekDays() != 7 {
 		t.Errorf("an answer saying nothing reads %+v", p)
 	}
 }
@@ -36,7 +37,7 @@ func TestConfigChanges_namesEachKeyThatMovedAndFromWhat(t *testing.T) {
 	was := answered(t, h)
 	settingsOf(t, h, "h", "[pages]\ntime = \"off\"\n[window]\ntheme = \"nord\"\n")
 	now := answered(t, h)
-	changes := ConfigChanges(was, now)
+	changes := workspace.ConfigChanges(was, now)
 	var said []string
 	for _, c := range changes {
 		said = append(said, c.String())
@@ -44,7 +45,7 @@ func TestConfigChanges_namesEachKeyThatMovedAndFromWhat(t *testing.T) {
 	if !slices.Equal(said, []string{"window.theme default → nord", "pages.time on → off"}) {
 		t.Errorf("the changes are %v", said)
 	}
-	if ConfigChanges(now, now) != nil {
+	if workspace.ConfigChanges(now, now) != nil {
 		t.Error("an answer changed from itself")
 	}
 }
@@ -53,7 +54,7 @@ func TestConfigStamp_movesOnlyWhenWhatAFileSaysChanges(t *testing.T) {
 	h := homeHolding(t, homeIsDefault, nil, "h")
 	path := settingsOf(t, h, "h", "[pages]\ntime = \"off\"\n")
 	c := answered(t, h)
-	stamp := StampOf(c)
+	stamp := workspace.StampOf(c)
 	if _, moved := stamp.Moved(); moved {
 		t.Error("the stamp moved with nothing written")
 	}
@@ -69,8 +70,8 @@ func TestConfigStamp_movesOnlyWhenWhatAFileSaysChanges(t *testing.T) {
 	if _, moved := stamp.Moved(); !moved {
 		t.Error("a file changed did not move the stamp")
 	}
-	before := StampOf(c)
-	if err := os.WriteFile(config.FileIn(h.Dir), []byte(homeIsDefault+"\n[focus]\nsession = \"1h\"\n"), 0o600); err != nil {
+	before := workspace.StampOf(c)
+	if err := os.WriteFile(files.FileIn(h.Dir), []byte(homeIsDefault+"\n[focus]\nsession = \"1h\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if _, moved := before.Moved(); !moved {
@@ -80,7 +81,7 @@ func TestConfigStamp_movesOnlyWhenWhatAFileSaysChanges(t *testing.T) {
 
 func TestConfigStamp_watchesTheThemeOfOnesOwnInForce(t *testing.T) {
 	h := homeHolding(t, "[window]\ntheme = \"mine\"\n", nil)
-	folder := filepath.Join(filepath.Dir(config.FileIn(h.Dir)), "themes")
+	folder := filepath.Join(filepath.Dir(files.FileIn(h.Dir)), "themes")
 	if err := os.MkdirAll(folder, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +92,7 @@ func TestConfigStamp_watchesTheThemeOfOnesOwnInForce(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(folder, "mine.yaml"), scheme, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	stamp := StampOf(answered(t, h))
+	stamp := workspace.StampOf(answered(t, h))
 	if err := os.WriteFile(filepath.Join(folder, "mine.yaml"), append(scheme, '\n'), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -105,17 +106,17 @@ func TestTroubleIn_namesTheFileTheLineAndWhy(t *testing.T) {
 	last := answered(t, h)
 	path := settingsOf(t, h, "h", "# mine\n[pages]\n\ntime = \"hiden\"\n")
 	broken := answered(t, h)
-	trouble := TroubleIn(broken, last)
+	trouble := workspace.TroubleIn(broken, last)
 	if trouble.File != path || trouble.Line != 4 || !strings.Contains(trouble.Said, `"hiden"`) || strings.HasPrefix(trouble.Said, path) {
 		t.Errorf("the trouble is %+v", trouble)
 	}
 	if got := trouble.String(); !strings.HasPrefix(got, "line 4: ") {
 		t.Errorf("it says %q", got)
 	}
-	if err := os.WriteFile(config.FileIn(h.Dir), []byte("[[[\n"), 0o600); err != nil {
+	if err := os.WriteFile(files.FileIn(h.Dir), []byte("[[[\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if trouble := TroubleIn(answered(t, h), last); trouble.File != config.FileIn(h.Dir) || trouble.Line != 0 {
+	if trouble := workspace.TroubleIn(answered(t, h), last); trouble.File != files.FileIn(h.Dir) || trouble.Line != 0 {
 		t.Errorf("the global trouble is %+v", trouble)
 	}
 }
@@ -123,37 +124,37 @@ func TestTroubleIn_namesTheFileTheLineAndWhy(t *testing.T) {
 func TestSchemeOf_readsTheSchemeWhereConfigShowSaysItIs(t *testing.T) {
 	h := homeHolding(t, "", nil)
 	for _, seen := range answered(t, h).Themes {
-		scheme, err := SchemeOf(seen)
+		scheme, err := workspace.SchemeOf(seen)
 		if err != nil || scheme.Slug != seen.Slug {
 			t.Errorf("%s reads %+v, %v", seen.Slug, scheme.Slug, err)
 		}
 	}
-	if _, err := SchemeOf(ThemeSeen{Slug: "mine", From: "/nowhere/mine.yaml"}); err == nil {
+	if _, err := workspace.SchemeOf(workspace.ThemeSeen{Slug: "mine", From: "/nowhere/mine.yaml"}); err == nil {
 		t.Error("a scheme of one's own gone is read")
 	}
 }
 
 func TestPlacesOfAnswer_sayWhereTheSettingsAre(t *testing.T) {
 	h := homeHolding(t, homeIsDefault, nil, "h")
-	if got := SettingsOf(answered(t, h)); got != filepath.Join(h.Dir, "h", config.SettingsFile) {
+	if got := workspace.SettingsOf(answered(t, h)); got != filepath.Join(h.Dir, "h", files.SettingsFile) {
 		t.Errorf("the settings are at %q", got)
 	}
-	if SettingsOf(Config{}) != "" {
+	if workspace.SettingsOf(workspace.Config{}) != "" {
 		t.Error("an answer with no store has settings")
 	}
 }
 
 func TestValueIn_readsEveryTableTheAnswerHolds(t *testing.T) {
-	c := Config{
-		Pages:      &PagesConfig{Tasks: true, Objectives: false, Time: "hidden"},
-		Archive:    &Archive{Start: "03:00", Days: 9},
-		Focus:      &FocusConfig{Session: "2h"},
-		Approach:   &ApproachConfig{Label: "discuss"},
-		Time:       &TimeConfig{Deleted: "kept", Weekends: "shown"},
-		Window:     &WindowConfig{KeepSizes: true, Theme: "nord", Intro: "fade", Ghost: 70},
-		Recurrence: &RecurrenceConfig{On: true},
-		Workspace:  &WorkspaceConfig{Colour: "teal", Name: "mine"},
-		Plugin:     Emplacement{At: "/p"},
+	c := workspace.Config{
+		Pages:      &workspace.PagesConfig{Tasks: true, Objectives: false, Time: "hidden"},
+		Archive:    &workspace.Archive{Start: "03:00", Days: 9},
+		Focus:      &workspace.FocusConfig{Session: "2h"},
+		Approach:   &workspace.ApproachConfig{Label: "discuss"},
+		Time:       &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"},
+		Window:     &workspace.WindowConfig{KeepSizes: true, Theme: "nord", Intro: "fade", Ghost: 70},
+		Recurrence: &workspace.RecurrenceConfig{On: true},
+		Workspace:  &workspace.Colouring{Colour: "teal", Name: "mine"},
+		Plugin:     workspace.Emplacement{At: "/p"},
 	}
 	for key, want := range map[string]string{
 		"pages.tasks": "true", "pages.objectives": "false", "pages.time": "hidden",
@@ -162,11 +163,11 @@ func TestValueIn_readsEveryTableTheAnswerHolds(t *testing.T) {
 		"window.keep_sizes": "true", "window.theme": "nord", "window.intro": "fade", "window.ghost": "70",
 		"series.on": "true", "workspace.colour": "teal", "workspace.name": "mine", "plugin": "/p",
 	} {
-		if got := ValueIn(c, key); got != want {
+		if got := workspace.ValueIn(c, key); got != want {
 			t.Errorf("%s is %q, want %q", key, got, want)
 		}
 	}
-	if got := ValueIn(Config{}, "pages.tasks"); got != "" {
+	if got := workspace.ValueIn(workspace.Config{}, "pages.tasks"); got != "" {
 		t.Errorf("an answer holding no table gives pages.tasks %q", got)
 	}
 }
@@ -179,7 +180,7 @@ func TestStampOf_watchesOnlyTheSchemeWornFromAFile(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	stamp := StampOf(Config{File: file, Themes: []ThemeSeen{{Slug: "o", From: other}, {Slug: "w", From: worn, InForce: true}}})
+	stamp := workspace.StampOf(workspace.Config{File: file, Themes: []workspace.ThemeSeen{{Slug: "o", From: other}, {Slug: "w", From: worn, InForce: true}}})
 	if err := os.WriteFile(other, []byte("bb"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +208,7 @@ func TestMoved_readsAgainOnlyWhatTheSizeOrTheTimeSaysChanged(t *testing.T) {
 		}
 	}
 	wrote("ab", at)
-	stamp := StampOf(Config{File: path})
+	stamp := workspace.StampOf(workspace.Config{File: path})
 	if _, moved := stamp.Moved(); moved {
 		t.Error("a file left alone moved the stamp")
 	}

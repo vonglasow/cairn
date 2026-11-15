@@ -1,10 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/engine/workspace"
 	"path/filepath"
 	"strconv"
 
-	"cairn/internal/engine"
 	"cairn/internal/theme"
 )
 
@@ -12,7 +12,7 @@ import (
 const OpenThemes = "Open the themes folder"
 
 type schemeOffered struct {
-	seen    engine.ThemeSeen
+	seen    workspace.ThemeSeen
 	colours theme.Colours
 	kind    string
 	bad     string
@@ -25,11 +25,11 @@ type ChooserTile struct {
 	At   Box
 }
 
-func themesFolder(c engine.Config) string { return filepath.Join(filepath.Dir(c.File), "themes") }
+func themesFolder(c workspace.Config) string { return filepath.Join(filepath.Dir(c.File), "themes") }
 
-func offeredFrom(seen engine.ThemeSeen) schemeOffered {
+func offeredFrom(seen workspace.ThemeSeen) schemeOffered {
 	offered := schemeOffered{seen: seen, kind: "dark"}
-	scheme, err := engine.SchemeOf(seen)
+	scheme, err := workspace.SchemeOf(seen)
 	switch {
 	case seen.Problem != "":
 		offered.bad = seen.Problem
@@ -234,7 +234,7 @@ func (w Window) Wearing(s Skin) Window {
 	return w
 }
 
-func (w Window) wornFrom(got engine.Config) Window {
+func (w Window) wornFrom(got workspace.Config) Window {
 	for _, seen := range got.Themes {
 		if !seen.InForce {
 			continue

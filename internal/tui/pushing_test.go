@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/engine/task"
 	"strings"
 	"testing"
 
@@ -157,7 +158,7 @@ func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 	if len(f.moved) != 1 {
 		t.Fatalf("pushing down asked for %v", f.moved)
 	}
-	if got := f.moved[0]; got.number != 1 || got.at != engine.Behind || got.target != 2 {
+	if got := f.moved[0]; got.number != 1 || got.at != task.Behind || got.target != 2 {
 		t.Fatalf("pushing the first down asked for %+v, want task 1 behind task 2", got)
 	}
 	if len(f.edited) != 0 {
@@ -176,7 +177,7 @@ func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 	if _, cmd := b.pressed("shift+k"); cmd != nil {
 		cmd()
 	}
-	if got := f.moved[0]; got.number != 3 || got.at != engine.Behind || got.target != 1 {
+	if got := f.moved[0]; got.number != 3 || got.at != task.Behind || got.target != 1 {
 		t.Fatalf("pushing the third up asked for %+v, want task 3 behind task 1", got)
 	}
 	f.moved = nil
@@ -184,7 +185,7 @@ func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 	if _, cmd := second.pressed("shift+k"); cmd != nil {
 		cmd()
 	}
-	if got := f.moved[0]; got.number != 2 || got.at != engine.First {
+	if got := f.moved[0]; got.number != 2 || got.at != task.First {
 		t.Fatalf("pushing the second up asked for %+v, want task 2 first", got)
 	}
 }

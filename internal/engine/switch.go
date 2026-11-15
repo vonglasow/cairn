@@ -1,17 +1,14 @@
 package engine
 
 import (
-	"errors"
+	"cairn/internal/engine/workspace"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
-
-// errNotThere is returned when a board is asked to open a folder, or a store, that is not there: opening it would start an empty board where nobody looks.
-var errNotThere = errors.New("is not there")
 
 // Elsewhere is where a board is asked to go in place of the store it holds: a workspace by its name, a folder typed, or a store a board opened before.
 type Elsewhere struct {
@@ -23,17 +20,17 @@ type Elsewhere struct {
 func (to Elsewhere) from(h Home) (Home, error) {
 	h.Workspace, h.Store, h.Kept = to.Workspace, to.Store, nil
 	if to.Folder != "" {
-		at, err := config.Absolute(to.Folder, h.Dir)
+		at, err := files.Absolute(to.Folder, h.Dir)
 		if err != nil {
 			return h, err
 		}
 		if info, err := os.Stat(at); err != nil || !info.IsDir() {
-			return h, fmt.Errorf("%s %w", at, errNotThere)
+			return h, fmt.Errorf("%s %w", at, workspace.ErrNotThere)
 		}
-		h.Store = filepath.Join(at, storeFile)
+		h.Store = filepath.Join(at, workspace.StoreFile)
 	}
 	if _, err := os.Stat(h.Store); to.Store != "" && err != nil {
-		return h, fmt.Errorf("%s %w", to.Store, errNotThere)
+		return h, fmt.Errorf("%s %w", to.Store, workspace.ErrNotThere)
 	}
 	return h, nil
 }
@@ -59,10 +56,4 @@ func Switch(held *Engine, to Elsewhere) (Pages, error) {
 func (e *Engine) placed() Home {
 	defer e.taking()()
 	return e.home
-}
-
-// Found says whether the folder of the workspace is there.
-func (w Workspace) Found() bool {
-	_, err := os.Stat(w.Folder)
-	return err == nil
 }

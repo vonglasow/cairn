@@ -1,10 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/engine/backup"
+	"cairn/internal/engine/calendar"
 	"fmt"
 	"strconv"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -25,16 +26,16 @@ func (w Window) backingUp() Window {
 }
 
 // Backups is what the list of backups holds, as the engine listed them.
-func (w Window) Backups() []domain.Backup { return w.backups }
+func (w Window) Backups() []backup.Backup { return w.backups }
 
 type backupsState struct {
-	backups     []domain.Backup
+	backups     []backup.Backup
 	backupOn    int
 	backupsFrom int
 }
 
-func backupSays(one domain.Backup) string {
-	return "backup " + strconv.Itoa(one.Number) + "   " + domain.FormatMoment(one.Made) + "   " + domain.FormatSize(one.Size)
+func backupSays(one backup.Backup) string {
+	return "backup " + strconv.Itoa(one.Number) + "   " + calendar.FormatMoment(one.Made) + "   " + backup.FormatSize(one.Size)
 }
 
 // BackupOn is the line of the list the keyboard is on.

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -8,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func TestKeep_aServerKeepsTheDefaultItStartedOn(t *testing.T) {
 	h := Keep(homeHolding(t, twoWorkspaces, nil, "w", "h"))
-	if err := os.WriteFile(config.FileIn(h.Dir), []byte(strings.Replace(twoWorkspaces, `"work"`, `"home"`, 1)), 0o600); err != nil {
+	if err := os.WriteFile(files.FileIn(h.Dir), []byte(strings.Replace(twoWorkspaces, `"work"`, `"home"`, 1)), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	at, err := Locate(h)
@@ -24,7 +25,7 @@ func TestKeep_aServerKeepsTheDefaultItStartedOn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if shown := answer.WorkspaceShown; shown.Workspace != "work" || shown.Why.Rung != rungDefault || !shown.Why.Started || !strings.HasPrefix(shown.Switch, "not from here") {
+	if shown := answer.WorkspaceShown; shown.Workspace != "work" || shown.Why.Rung != workspace.RungDefault || !shown.Why.Started || !strings.HasPrefix(shown.Switch, "not from here") {
 		t.Errorf("shown %+v, want work, kept since the start, and how to switch", shown)
 	}
 }
@@ -37,11 +38,11 @@ func TestKeep_saysWhyAsItWasWhenTheServerStarted(t *testing.T) {
 		said             string
 		rung             string
 	}{
-		{"the flag", nil, "home", "", twoWorkspaces, rungWorkspaceFlag},
-		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, rungStoreFlag},
-		{"the environment", map[string]string{config.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, config.StoreVariable},
-		{"the file", nil, "", "", "store = \"~/s/tasks.db\"\n", rungFile},
-		{"nothing", nil, "", "", "", rungNothing},
+		{"the flag", nil, "home", "", twoWorkspaces, workspace.RungWorkspaceFlag},
+		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, workspace.RungStoreFlag},
+		{"the environment", map[string]string{files.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, files.StoreVariable},
+		{"the file", nil, "", "", "store = \"~/s/tasks.db\"\n", workspace.RungFile},
+		{"nothing", nil, "", "", "", workspace.RungNothing},
 	} {
 		h := homeHolding(t, c.said, c.env, "w", "h")
 		h.Workspace, h.Store = c.workspace, c.store
@@ -68,7 +69,7 @@ func TestKeep_isCarriedWhole(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var back Started
+	var back workspace.Started
 	if err := json.Unmarshal(said, &back); err != nil || !reflect.DeepEqual(back, *h.Kept) {
 		t.Errorf("carried %s, read back %+v, %v", said, back, err)
 	}
@@ -84,7 +85,7 @@ func TestWorkspaceShow_saysTheTimeAndWhereItIsSaid(t *testing.T) {
 	} {
 		h := homeHolding(t, c.said, nil, "w", "h")
 		if c.settings != "" {
-			if err := os.WriteFile(filepath.Join(h.Dir, "w", config.SettingsFile), []byte(c.settings), 0o600); err != nil {
+			if err := os.WriteFile(filepath.Join(h.Dir, "w", files.SettingsFile), []byte(c.settings), 0o600); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -104,7 +105,7 @@ func TestWorkspaceShow_saysTheTimeAndWhereItIsSaid(t *testing.T) {
 
 func TestWorkspaceShow_refusesSettingsItCannotRead(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	if err := os.WriteFile(filepath.Join(h.Dir, "w", config.SettingsFile), []byte("not toml ["), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(h.Dir, "w", files.SettingsFile), []byte("not toml ["), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := WorkspaceShow.Run(workedOn{Home: h}, Input{}); err == nil {

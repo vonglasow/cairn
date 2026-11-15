@@ -9,7 +9,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 func (w *world) contextLine() (string, bool) {
@@ -73,13 +73,13 @@ func (w *world) registerContext(sc *godog.ScenarioContext) {
 		stores = append(stores, w.StorePath)
 		w.StorePath = filepath.Join(w.T.TempDir(), "other", "cairn.db")
 		stores = append(stores, w.StorePath)
-		w.Setenv(config.StoreVariable, w.StorePath)
+		w.Setenv(files.StoreVariable, w.StorePath)
 		return nil
 	})
 
 	sc.Step("^I run `([^`]*)` against each store$", func(line string) error {
 		for _, store := range stores {
-			w.Setenv(config.StoreVariable, store)
+			w.Setenv(files.StoreVariable, store)
 			w.Run(line)
 			if place, ok := w.contextLine(); ok {
 				said = append(said, place)

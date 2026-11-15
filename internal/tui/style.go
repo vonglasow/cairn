@@ -1,10 +1,10 @@
 package tui
 
 import (
+	"cairn/internal/engine/item"
 	"image/color"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
+	"cairn/internal/engine/objective"
 
 	"charm.land/lipgloss/v2"
 )
@@ -183,11 +183,11 @@ var LabelsInTheTerminal = map[string]color.Color{
 // Priority answers the ink a priority is drawn in.
 func (p Palette) Priority(named string) Ink {
 	switch named {
-	case string(domain.Low):
+	case string(item.Low):
 		return p.Low
-	case string(domain.High):
+	case string(item.High):
 		return p.High
-	case string(domain.Critical):
+	case string(item.Critical):
 		return p.Critical
 	default:
 		return p.Normal
@@ -197,9 +197,9 @@ func (p Palette) Priority(named string) Ink {
 // Stopped answers the ink one of the three stopped states is drawn in.
 func (p Palette) Stopped(named string) Ink {
 	switch named {
-	case string(domain.Blocked):
+	case string(item.Blocked):
 		return p.Blocked
-	case string(domain.Watching):
+	case string(item.Watching):
 		return p.Watching
 	default:
 		return p.Paused

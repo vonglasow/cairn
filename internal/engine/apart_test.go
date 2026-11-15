@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
@@ -41,34 +42,14 @@ func TestOpenApart_aFolderOrAStoreIsNamedByItsStore(t *testing.T) {
 func TestOpenApart_whatIsNotThereIsRefused(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "w")
 	held := heldOn(t, h)
-	if _, err := OpenApart(held, Elsewhere{Folder: filepath.Join(h.Dir, "gone")}); !errors.Is(err, errNotThere) {
-		t.Errorf("a folder not there = %v; want %v", err, errNotThere)
+	if _, err := OpenApart(held, Elsewhere{Folder: filepath.Join(h.Dir, "gone")}); !errors.Is(err, workspace.ErrNotThere) {
+		t.Errorf("a folder not there = %v; want %v", err, workspace.ErrNotThere)
 	}
-	if _, err := OpenApart(held, Elsewhere{Workspace: "home"}); !errors.Is(err, ErrWorkspaceNotThere) {
-		t.Errorf("a workspace whose folder is gone = %v; want %v", err, ErrWorkspaceNotThere)
+	if _, err := OpenApart(held, Elsewhere{Workspace: "home"}); !errors.Is(err, workspace.ErrWorkspaceNotThere) {
+		t.Errorf("a workspace whose folder is gone = %v; want %v", err, workspace.ErrWorkspaceNotThere)
 	}
-	if _, err := OpenApart(held, Elsewhere{Workspace: "garden"}); !errors.Is(err, errNoSuchWorkspace) {
-		t.Errorf("a workspace nobody named = %v; want %v", err, errNoSuchWorkspace)
-	}
-}
-
-func TestWorkspace_itsStoreIsTheCairnDbOfItsFolder(t *testing.T) {
-	if got := (Workspace{Folder: filepath.Join("a", "home")}).Store(); got != filepath.Join("a", "home", "cairn.db") {
-		t.Errorf("Store = %q", got)
-	}
-}
-
-func TestWorkspaceShown_isNamedShortNeverByAWholePath(t *testing.T) {
-	cases := map[string]WorkspaceShown{
-		"home":     {Workspace: "home", Own: "kept", Store: filepath.Join("x", "cairn.db")},
-		"fixtures": {Own: "fixtures", Store: filepath.Join("tmp", "x", "cairn.db")},
-		"loose":    {Store: filepath.Join("a", "loose", "cairn.db")},
-		"":         {},
-	}
-	for want, shown := range cases {
-		if got := shown.Name(); got != want {
-			t.Errorf("Name of %+v = %q, want %q", shown, got, want)
-		}
+	if _, err := OpenApart(held, Elsewhere{Workspace: "garden"}); !errors.Is(err, workspace.ErrNoSuchWorkspace) {
+		t.Errorf("a workspace nobody named = %v; want %v", err, workspace.ErrNoSuchWorkspace)
 	}
 }
 

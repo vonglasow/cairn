@@ -33,7 +33,7 @@ func TestMutationList_givesTheEngineAJobPerShard(t *testing.T) {
 			t.Errorf("%s is not listed: %v", shard, listed)
 		}
 	}
-	if !slices.Contains(listed, "./internal/domain") {
+	if !slices.Contains(listed, "./internal/engine/task") {
 		t.Errorf("a package not split is no longer listed whole: %v", listed)
 	}
 }

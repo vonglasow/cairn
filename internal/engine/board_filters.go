@@ -1,12 +1,11 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 // anyValue is the value a filter opens on: it narrows nothing.
@@ -87,7 +86,7 @@ func BoardFilters(s Snapshot, today time.Time) Filters {
 	objectives.Reach = reach
 	var days []string
 	for _, in := range dueIn {
-		days = append(days, domain.FormatDay(today.AddDate(0, 0, in)))
+		days = append(days, calendar.FormatDay(today.AddDate(0, 0, in)))
 	}
 	fs := Filters{
 		offered("column", "state", States(), nil),
@@ -343,7 +342,7 @@ func (j *cardJudged) Archived()         {}
 func (j *cardJudged) WithArchived()     {}
 
 func (j *cardJudged) DueBefore(day string) {
-	by, err := domain.ParseDeadline(day)
+	by, err := calendar.ParseDeadline(day)
 	j.kept = j.kept && err == nil && !j.card.Deadline.IsZero() && !j.card.Deadline.After(by)
 }
 

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"cairn/internal/engine"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
 )
 
 var update = os.Getenv("UPDATE_FRAMES") != ""
@@ -36,7 +36,7 @@ func fullBoard() *fake {
 	}
 	f.focus = []int{6}
 	for i := range 40 {
-		var told trace.AsTold
+		var told act.AsTold
 		told.On(4)
 		told.Did("changed")
 		told.Changing("priority")

@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"bufio"
+	"cairn/internal/engine/workspace"
 	"context"
 	"encoding/json"
 	"io"
@@ -18,7 +19,6 @@ import (
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/debug"
-	"cairn/internal/engine"
 )
 
 const (
@@ -73,7 +73,7 @@ type carried struct {
 	State  sdk.ServerSessionState `json:"state"`
 	Tools  []string               `json:"tools"`
 	Unread []byte                 `json:"unread"`
-	Kept   *engine.Started        `json:"kept,omitempty"`
+	Kept   *workspace.Started     `json:"kept,omitempty"`
 }
 
 func takenOver() (carried, bool, error) {

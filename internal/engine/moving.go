@@ -1,56 +1,21 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"errors"
 	"fmt"
 	"slices"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/task"
 )
 
-// ErrOtherColumn is re-exported so a surface, which may not import the task, can recognise it.
-var ErrOtherColumn = task.ErrOtherColumn
-
-// errNowhereToMove is returned when a move names no place to go.
-var errNowhereToMove = errors.New("a task is moved to the first place, behind another, or to the last")
-
-// errMoreThanOnePlace is returned when a move names several places at once.
-var errMoreThanOnePlace = errors.New("a task is moved to one place, not several")
-
-// errDoneHoldsNoFocus is returned when a task already done is put in focus: there is nothing left to work on.
-var errDoneHoldsNoFocus = errors.New("a task that is done cannot be in focus")
-
-// Place is where a move puts a task among the ones it sits with.
-type Place int
-
-const (
-	_ Place = iota
-	// First is the head of the tasks it sits with.
-	First
-	// Behind is directly after another task.
-	Behind
-	// Last is after all the tasks it sits with.
-	Last
-)
-
-type places interface {
-	MoveFirst(int) (bool, error)
-	MoveLast(int) (bool, error)
-	MoveAfter(int, int) (bool, error)
-	Focus() ([]int, error)
-	AddFocus(int) error
-	DropFocus(int) error
-	ClearFocus() error
-}
-
-func (e *Engine) move(number int, at Place, target int) error {
+func (e *Engine) move(number int, at task.Place, target int) error {
 	moved, err := e.moveTo(number, at, target)
 	if err != nil || !moved {
 		return err
 	}
-	return e.record(number, trace.Moved, "", "", placeNamed(at, target))
+	return e.record(number, act.Moved, "", "", task.PlaceNamed(at, target))
 }
 
 func (e *Engine) moveInto(number int, state string, finishing bool) error {
@@ -58,22 +23,22 @@ func (e *Engine) moveInto(number int, state string, finishing bool) error {
 	if err != nil {
 		return err
 	}
-	if factsOf(was).State == domain.State(state) {
+	if was.Carried().State == item.State(state) {
 		return nil
 	}
 	_, err = e.edit(number, Changes{State: &state, Finishing: finishing})
 	return editReason(err)
 }
 
-func (e *Engine) moveTo(number int, at Place, target int) (bool, error) {
+func (e *Engine) moveTo(number int, at task.Place, target int) (bool, error) {
 	moving, err := e.tasks.Find(number)
 	if err != nil {
 		return false, err
 	}
-	if at == First {
+	if at == task.First {
 		return e.places.MoveFirst(number)
 	}
-	if at != Behind {
+	if at != task.Behind {
 		return e.places.MoveLast(number)
 	}
 	sits, err := e.tasks.Find(target)
@@ -86,17 +51,6 @@ func (e *Engine) moveTo(number int, at Place, target int) (bool, error) {
 	return e.places.MoveAfter(number, target)
 }
 
-func placeNamed(at Place, target int) string {
-	switch at {
-	case First:
-		return "first"
-	case Behind:
-		return fmt.Sprintf("behind task %d", target)
-	default:
-		return "last"
-	}
-}
-
 func (e *Engine) focus() ([]int, error) {
 	return e.places.Focus()
 }
@@ -106,8 +60,8 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	if err != nil {
 		return task.Task{}, err
 	}
-	if factsOf(t).State == domain.Done {
-		return task.Task{}, errDoneHoldsNoFocus
+	if t.Carried().State == item.Done {
+		return task.Task{}, task.ErrDoneHoldsNoFocus
 	}
 	held, err := e.places.Focus()
 	if err != nil {
@@ -121,25 +75,23 @@ func (e *Engine) putInFocus(number int) (task.Task, error) {
 	}
 	became := ""
 	if !e.timeCounted() {
-		became = trace.WithoutATimer
+		became = act.WithoutATimer
 	}
-	if err := e.record(number, trace.FocusTaken, "", "", became); err != nil {
+	if err := e.record(number, act.FocusTaken, "", "", became); err != nil {
 		return task.Task{}, err
 	}
 	return e.broughtIntoCurrent(t)
 }
 
-var waitingForSomebody = []domain.State{domain.Backlog, domain.Todo, domain.Paused}
-
 func (e *Engine) broughtIntoCurrent(t task.Task) (task.Task, error) {
-	number := factsOf(t).Number
-	if !slices.Contains(waitingForSomebody, factsOf(t).State) {
+	number := t.Carried().Number
+	if !slices.Contains(task.WaitingForSomebody, t.Carried().State) {
 		return t, nil
 	}
-	if err := e.moveInto(number, string(domain.Current), false); err != nil {
+	if err := e.moveInto(number, string(item.Current), false); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.move(number, First, 0); err != nil {
+	if err := e.move(number, task.First, 0); err != nil {
 		return task.Task{}, err
 	}
 	return e.tasks.Find(number)
@@ -156,7 +108,7 @@ func (e *Engine) letGoOf(number int) error {
 	if !slices.Contains(held, number) {
 		return nil
 	}
-	return e.record(number, trace.FocusReleased, "", "", "")
+	return e.record(number, act.FocusReleased, "", "", "")
 }
 
 func (e *Engine) letGo() error {
@@ -168,7 +120,7 @@ func (e *Engine) letGo() error {
 		return err
 	}
 	for _, number := range held {
-		if err := e.record(number, trace.FocusReleased, "", "", ""); err != nil {
+		if err := e.record(number, act.FocusReleased, "", "", ""); err != nil {
 			return err
 		}
 	}
@@ -210,7 +162,7 @@ cairn task move 3 --state todo --after 1`,
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},
 		{Name: "after", Kind: Number, Of: "a task", Means: "put it directly behind this task, in this task's column"},
 		{Name: "last", Kind: Bool, Means: "put it behind all the ones it sits with"},
-		{Name: "state", Kind: Text, OneOf: oneOf(domain.States), Outside: domain.ErrNotAState, Means: "the column to move it into first, in the same act"},
+		{Name: "state", Kind: Text, OneOf: oneOf(item.States), Outside: item.ErrNotAState, Means: "the column to move it into first, in the same act"},
 		alsoOf("a task"),
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
@@ -221,7 +173,7 @@ cairn task move 3 --state todo --after 1`,
 		n := numbers[0]
 		at, target, placed := placeFrom(in)
 		into := in.change("state")
-		if placed != nil && (into == nil || !errors.Is(placed, errNowhereToMove)) {
+		if placed != nil && (into == nil || !errors.Is(placed, task.ErrNowhereToMove)) {
 			return Answer{}, placed
 		}
 		was, err := on.Engine.tasks.Find(n)
@@ -232,7 +184,7 @@ cairn task move 3 --state todo --after 1`,
 		if err != nil {
 			return Answer{}, err
 		}
-		if into == nil && at == Behind {
+		if into == nil && at == task.Behind {
 			if into, err = on.Engine.columnOf(target); err != nil {
 				return Answer{}, err
 			}
@@ -262,19 +214,12 @@ cairn task move 3 --state todo --after 1`,
 	},
 }
 
-// crossed is the column a move took a task out of, and the one it took it into.
-type crossed struct {
-	Task int    `json:"task" jsonschema:"the number of the task that changed column"`
-	From string `json:"from" jsonschema:"the column it was in"`
-	To   string `json:"to" jsonschema:"the column it is in now"`
-}
-
-func (e *Engine) crossed(was task.Task) (*crossed, error) {
-	now, err := e.tasks.Find(factsOf(was).Number)
-	if err != nil || factsOf(now).State == factsOf(was).State {
+func (e *Engine) crossed(was task.Task) (*task.Crossed, error) {
+	now, err := e.tasks.Find(was.Carried().Number)
+	if err != nil || now.Carried().State == was.Carried().State {
 		return nil, err
 	}
-	return &crossed{Task: factsOf(was).Number, From: string(factsOf(was).State), To: string(factsOf(now).State)}, nil
+	return &task.Crossed{Task: was.Carried().Number, From: string(was.Carried().State), To: string(now.Carried().State)}, nil
 }
 
 func (e *Engine) columnOf(number int) (*string, error) {
@@ -282,7 +227,7 @@ func (e *Engine) columnOf(number int) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	column := string(factsOf(t).State)
+	column := string(t.Carried().State)
 	return &column, nil
 }
 
@@ -291,12 +236,12 @@ func (e *Engine) alongBehind(first int, others []int, finishing bool) error {
 	if err != nil {
 		return err
 	}
-	state, behind := string(factsOf(led).State), first
+	state, behind := string(led.Carried().State), first
 	for _, number := range others {
 		if err := e.moveInto(number, state, finishing); err != nil {
 			return err
 		}
-		if err := e.move(number, Behind, behind); err != nil {
+		if err := e.move(number, task.Behind, behind); err != nil {
 			return err
 		}
 		behind = number
@@ -380,24 +325,24 @@ cairn task unfocus`,
 	},
 }
 
-func placeFrom(in Input) (Place, int, error) {
-	named := make([]Place, 0, 3)
+func placeFrom(in Input) (task.Place, int, error) {
+	named := make([]task.Place, 0, 3)
 	target := 0
 	if in.yes("first") {
-		named = append(named, First)
+		named = append(named, task.First)
 	}
 	if in.Given["after"] != "" {
-		named = append(named, Behind)
+		named = append(named, task.Behind)
 		target, _ = in.whole("after")
 	}
 	if in.yes("last") {
-		named = append(named, Last)
+		named = append(named, task.Last)
 	}
 	if len(named) == 0 {
-		return 0, 0, errNowhereToMove
+		return 0, 0, task.ErrNowhereToMove
 	}
 	if len(named) > 1 {
-		return 0, 0, errMoreThanOnePlace
+		return 0, 0, task.ErrMoreThanOnePlace
 	}
 	return named[0], target, nil
 }

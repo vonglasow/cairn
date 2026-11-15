@@ -1,0 +1,70 @@
+// Package act holds the act: one thing that was done to a task, what it was before, what it became, when, by whom and through which surface — and the membrane anything uses to read or build one.
+package act
+
+import (
+	"cairn/internal/engine/calendar"
+	"time"
+)
+
+// The acts that are not about an attribute a task carries.
+const (
+	// Created is a task coming into being.
+	Created = "created"
+	// Moved is a task changing place among the ones it sits with.
+	Moved = "moved"
+	// FocusTaken is a task becoming the one being worked on.
+	FocusTaken = "focus taken"
+	// FocusReleased is that task being let go.
+	FocusReleased = "focus released"
+	// FocusRenewed is a focus said to go on past its session's length: the session starts again, the time runs on.
+	FocusRenewed = "focus renewed"
+	// TimerStopped is a task in focus that stops counting time, the time turned off: the focus stays.
+	TimerStopped = "timer stopped"
+	// TimerStarted is a task in focus that starts counting time again, the time turned back on: nothing before is caught up.
+	TimerStarted = "timer started"
+	// Deleted is a task being removed.
+	Deleted = "deleted"
+	// Changed is one attribute of a task taking another value.
+	Changed = "changed"
+	// TimeAdded is time spent on a task without it being in focus, added by hand: the day it was spent is what it was, the length what it became.
+	TimeAdded = "time added"
+)
+
+// WithoutATimer is what a focus taken while the time is off became: the focus is held, and no time is counted for it.
+const WithoutATimer = "without a timer"
+
+// Act is one thing that was done to a task.
+type Act struct {
+	task    int
+	did     string
+	field   string
+	was     string
+	became  string
+	through string
+	by      string
+	at      time.Time
+}
+
+// Carried is everything an act carries, as plain facts.
+type Carried struct {
+	Task                             int
+	Did, Field, Was, Became, Through string
+	By                               string
+	At                               time.Time
+}
+
+// Carried hands over what the act carries.
+func (a Act) Carried() Carried {
+	return Carried{Task: a.task, Did: a.did, Field: a.field, Was: a.was, Became: a.became, Through: a.through, By: a.by, At: a.at}
+}
+
+// Made is the act that carries what is given.
+func Made(c Carried) Act {
+	return Act{task: c.Task, did: c.Did, field: c.Field, was: c.Was, became: c.Became, through: c.Through, by: c.By, at: c.At}
+}
+
+// DayStarting is the start of the day given.
+func DayStarting(given string) (time.Time, error) {
+	parsed, err := calendar.ParseDeadline(given)
+	return time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.Local), err
+}

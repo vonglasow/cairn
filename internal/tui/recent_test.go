@@ -1,23 +1,22 @@
 package tui
 
 import (
+	"cairn/internal/engine/workspace"
 	"fmt"
 	"slices"
 	"strings"
 	"testing"
 	"time"
-
-	"cairn/internal/engine"
 )
 
 func withRecent(t *testing.T) *roaming {
 	r := newRoaming(t, newFake())
-	r.recent = []engine.RecentFolder{
+	r.recent = []workspace.RecentFolder{
 		{Store: "/s/scratch/cairn.db", Folder: "/s/scratch", Opened: today.Add(-24 * time.Hour)},
 		{Store: "/v/trip/cairn.db", Folder: "/v/trip", Opened: today.Add(-48 * time.Hour), NotFound: true},
 		{Store: "/o/odd/tasks.db", Opened: today},
 	}
-	r.shown["/s/scratch/cairn.db"] = engine.WorkspaceShown{Store: "/s/scratch/cairn.db"}
+	r.shown["/s/scratch/cairn.db"] = workspace.Shown{Store: "/s/scratch/cairn.db"}
 	return r
 }
 
@@ -121,7 +120,7 @@ func TestSwitcher_ctrlNMakesAWorkspaceAndOpensIt(t *testing.T) {
 func TestSwitcher_aNewWorkspaceRefusedOpensNothing(t *testing.T) {
 	r := withRecent(t)
 	b := pressing(roamingBoard(t, r), "ctrl+o", "ctrl+n", "w", "o", "r", "k", "enter", "/", "w", "enter")
-	if len(r.switched) != 0 || !strings.Contains(strip(b.Draw()), engine.ErrWorkspaceKnown.Error()) {
+	if len(r.switched) != 0 || !strings.Contains(strip(b.Draw()), workspace.ErrWorkspaceKnown.Error()) {
 		t.Errorf("switched = %v; want work refused, saying why:\n%s", r.switched, strip(b.Draw()))
 	}
 }
@@ -169,7 +168,7 @@ func inked(colour string) string {
 
 func TestHeader_theDotWearsTheColourOfTheWorkspace(t *testing.T) {
 	r := newRoaming(t, newFake())
-	r.shown["work"] = engine.WorkspaceShown{Workspace: "work", Store: "/c/work/cairn.db", Colour: "green"}
+	r.shown["work"] = workspace.Shown{Workspace: "work", Store: "/c/work/cairn.db", Colour: "green"}
 	if header := strings.SplitN(roamingBoard(t, r).Draw(), "\n", 2)[0]; !strings.Contains(header, inked("green")) {
 		t.Errorf("the header's dot does not wear green: %q", header)
 	}

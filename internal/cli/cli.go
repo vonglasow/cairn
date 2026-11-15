@@ -3,6 +3,7 @@ package cli
 
 import (
 	"bufio"
+	"cairn/internal/engine/item"
 	"context"
 	"errors"
 	"fmt"
@@ -19,7 +20,6 @@ import (
 
 	"cairn/internal/build"
 	"cairn/internal/debug"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 )
 
@@ -67,7 +67,6 @@ func newRootCmdWith(pages engine.Pages, b build.Info) *cobra.Command {
 	root.AddCommand(newTuiCmd())
 	root.AddCommand(newGuiCmd())
 	root.AddCommand(newFixturesCmd())
-	root.AddCommand(newUpgradeCmd())
 	markMisreads(root)
 	return root
 }
@@ -102,7 +101,7 @@ func saidToAPerson(w io.Writer, styles fang.Styles, err error) {
 		return
 	}
 	fang.DefaultErrorHandler(w, styles, shownError{typedApart{said, err}})
-	_, _ = fmt.Fprintf(w, "  To go on, run:\n\n    %s\n\n", domain.Shown(command))
+	_, _ = fmt.Fprintf(w, "  To go on, run:\n\n    %s\n\n", item.Shown(command))
 }
 
 type typedApart struct {
@@ -115,7 +114,7 @@ func (t typedApart) Unwrap() error { return t.err }
 
 type shownError struct{ err error }
 
-func (s shownError) Error() string { return domain.Shown(s.err.Error()) }
+func (s shownError) Error() string { return item.Shown(s.err.Error()) }
 func (s shownError) Unwrap() error { return s.err }
 
 func askedFor(flag string, args []string) bool {

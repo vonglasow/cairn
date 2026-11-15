@@ -1,17 +1,9 @@
 package engine
 
 import (
-	"path/filepath"
-	"strings"
-
-	"cairn/internal/build"
+	"cairn/internal/engine/app"
 	claudeplugin "cairn/plugin/claude"
 )
-
-// pluginWritten says where the plugin was written, which is what a person hands Claude Code next.
-type pluginWritten struct {
-	Plugin string `json:"plugin"`
-}
 
 // pluginWrite writes the Claude Code plugin the binary carries, as a marketplace Claude Code installs from.
 var pluginWrite = Operation{
@@ -23,23 +15,17 @@ var pluginWrite = Operation{
 	Level:   write,
 	Needs:   noStore,
 	Again:   doesItAgain,
-	Answers: pluginWritten{},
+	Answers: app.PluginWritten{},
 	Run: func(on workedOn, _ Input) (Answer, error) {
 		dir := on.Plugin
 		if dir == "" {
-			dir = PluginBeside(on.Path)
+			dir = app.PluginBeside(on.Path)
 		}
 		if err := claudeplugin.Write(dir, on.Home.version()); err != nil {
 			return Answer{}, err
 		}
 		return Answer{Plugin: &dir}, nil
 	},
-}
-
-// pluginShown says the version of the cairn running and the commands that install its plugin in Claude Code from its tag on GitHub, none when no tag holds it.
-type pluginShown struct {
-	Version string   `json:"version"`
-	Install []string `json:"install,omitempty" jsonschema:"the commands to type in Claude Code, in order; none when this cairn is no version released"`
 }
 
 // pluginShow says how Claude Code installs the plugin of the version of this cairn, from its tag on GitHub.
@@ -51,52 +37,18 @@ var pluginShow = Operation{
 	Example: `cairn plugin show`,
 	Level:   Read,
 	Needs:   noStore,
-	Answers: pluginShown{},
+	Answers: app.PluginShown{},
 	Run: func(on workedOn, _ Input) (Answer, error) {
-		shown := pluginShown{Version: on.Home.version(), Install: installFromTag(on.Home.version())}
+		shown := app.PluginShown{Version: on.Home.version(), Install: app.InstallFromTag(on.Home.version())}
 		return Answer{Install: &shown}, nil
 	},
 }
-
-func installFromTag(version string) []string {
-	if _, released := releaseOf(version); !released {
-		return nil
-	}
-	return []string{
-		"/plugin marketplace remove " + claudeplugin.Name,
-		"/plugin marketplace add " + strings.TrimPrefix(build.Home, "https://github.com/") + "@" + version,
-		"/plugin install " + claudeplugin.Name + "@" + claudeplugin.Name,
-	}
-}
-
-func installText(install []string) string {
-	return "in Claude Code, the first line only where a plugin of another version is installed:\n" +
-		"  " + strings.Join(install, "\n  ") + "\n"
-}
-
-func pluginShownText(shown pluginShown) string {
-	if len(shown.Install) == 0 {
-		return "cairn " + shown.Version + " is no version released, and no tag on GitHub holds its plugin:\n" +
-			"cairn plugin write writes the plugin it carries, and says how to install it\n"
-	}
-	return "the plugin of cairn " + shown.Version + " is on GitHub, at its tag\n\n" + installText(shown.Install)
-}
-
-func pluginText(dir string) string {
-	return "the Claude Code plugin is written in " + dir + "\n\n" +
-		"in Claude Code:\n" +
-		"  /plugin marketplace add " + dir + "\n" +
-		"  /plugin install " + claudeplugin.Name + "@" + claudeplugin.Name + "\n"
-}
-
-// PluginBeside is where the plugin is written when no folder is named: beside the store, with the rest of what cairn keeps.
-func PluginBeside(store string) string { return filepath.Join(filepath.Dir(store), "claude-plugin") }
 
 // KeepPluginCurrent writes the plugin again, where the configuration says or beside the store, when a cairn of another version wrote it, and says whether it did: a plugin nobody wrote there is not written.
 func KeepPluginCurrent(at Places, version string) (bool, error) {
 	dir := at.Plugin
 	if dir == "" {
-		dir = PluginBeside(at.Store)
+		dir = app.PluginBeside(at.Store)
 	}
 	was, written := claudeplugin.WrittenAt(dir)
 	if !written || was == version {

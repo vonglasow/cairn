@@ -1,0 +1,291 @@
+package task
+
+import (
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
+
+func spec(t *testing.T) Task {
+	t.Helper()
+	built, err := NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	a := From(built)
+	a.Numbered(1)
+	return a.Task()
+}
+
+func TestText_leadsWithTheNumberAndTheTitle(t *testing.T) {
+	got := Text(spec(t), item.Progress{}, true)
+	if first := strings.SplitN(got, "\n", 2)[0]; !strings.Contains(first, "1") || !strings.Contains(first, "Write the spec") {
+		t.Errorf("first line = %q, want the number and the title", first)
+	}
+}
+
+func TestText_namesEveryAttributeEvenTheEmptyOnes(t *testing.T) {
+	got := Text(spec(t), item.Progress{}, true)
+	for _, key := range []string{"state", "priority", "description", "labels", "deadline", "estimate", "time spent"} {
+		if !strings.Contains(got, key) {
+			t.Errorf("text is missing %q:\n%s", key, got)
+		}
+	}
+}
+
+func TestText_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
+	if got := Text(spec(t), item.Progress{}, false); strings.Contains(got, "time spent") {
+		t.Errorf("the time not shown, the text says the time spent:\n%s", got)
+	}
+}
+
+func TestText_showsTheDefaultsATaskStartsWith(t *testing.T) {
+	got := Text(spec(t), item.Progress{}, true)
+	if !strings.Contains(got, "backlog") || !strings.Contains(got, "normal") {
+		t.Errorf("text should show backlog and normal:\n%s", got)
+	}
+}
+
+func TestText_showsWhatTheTaskCarries(t *testing.T) {
+	built := spec(t)
+	deadline, err := calendar.ParseDeadline("2026-09-01")
+	if err != nil {
+		t.Fatalf("ParseDeadline: %v", err)
+	}
+	estimate, err := calendar.ParseEstimate("90m")
+	if err != nil {
+		t.Fatalf("ParseEstimate: %v", err)
+	}
+	a := From(built)
+	a.Described("the one")
+	a.Labelled("spec")
+	a.Labelled("team")
+	a.Due(deadline)
+	a.Estimated(estimate)
+	built = a.Task()
+
+	got := Text(built, item.Progress{}, true)
+	for _, want := range []string{"the one", "spec, team", "2026-09-01", "1h30m"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("text is missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestText_showsHowFarAlongItIs(t *testing.T) {
+	got := Text(spec(t), item.Progress{Steps: item.Tally{Total: 4, Done: 1}}, true)
+	if !strings.Contains(got, "1 of 4 steps are done") {
+		t.Errorf("text is missing the progress line:\n%s", got)
+	}
+	if strings.Contains(got, "0 of 0 tasks") {
+		t.Errorf("text should not count tasks it does not have:\n%s", got)
+	}
+}
+
+func TestText_countsTasksApartFromSteps(t *testing.T) {
+	got := Text(spec(t), item.Progress{Tasks: item.Tally{Total: 2, Done: 2}}, true)
+	if !strings.Contains(got, "2 of 2 tasks are done") {
+		t.Errorf("text is missing the progress line:\n%s", got)
+	}
+	if strings.Contains(got, "0 of 0 steps") {
+		t.Errorf("text should not count steps it does not have:\n%s", got)
+	}
+}
+
+func TestLine_showsTheNumberAndTheTitle(t *testing.T) {
+	if got := Line(spec(t)); !strings.Contains(got, "1") || !strings.Contains(got, "Write the spec") {
+		t.Errorf("line = %q, want the number and the title", got)
+	}
+}
+
+func listed(number int, title string) Task {
+	var a AsTold
+	a.Numbered(number)
+	a.Titled(title)
+	return a.Task()
+}
+
+func TestLines_writesNothingForNoTasks(t *testing.T) {
+	if got := Lines(nil, Marks{}); got != "" {
+		t.Errorf("Lines(nil, Marks{}) = %q, want nothing", got)
+	}
+}
+
+func TestLines_marksTheTasksInFocus(t *testing.T) {
+	tasks := []Task{
+		listed(1, "Ship it"),
+		listed(2, "Write the tests"),
+		listed(3, "Something else"),
+	}
+	for _, inFocus := range []int{1, 2, 3} {
+		got := Lines(tasks, Marks{InFocus: []int{inFocus}})
+		if marks := strings.Count(got, InFocusMark); marks != 1 {
+			t.Errorf("with %d in focus, %d lines are marked, want exactly one:\n%s",
+				inFocus, marks, got)
+		}
+		for _, line := range strings.Split(got, "\n") {
+			if !strings.Contains(line, InFocusMark) {
+				continue
+			}
+			if want := "#" + strconv.Itoa(inFocus); !strings.Contains(line, want) {
+				t.Errorf("with %d in focus, %q is the marked line", inFocus, line)
+			}
+		}
+	}
+}
+
+func TestLines_marksEveryTaskInFocus(t *testing.T) {
+	tasks := []Task{
+		listed(1, "Ship it"),
+		listed(2, "Write the tests"),
+		listed(3, "Something else"),
+	}
+	got := Lines(tasks, Marks{InFocus: []int{1, 3}})
+	if marks := strings.Count(got, InFocusMark); marks != 2 {
+		t.Errorf("with two in focus, %d lines are marked, want two:\n%s", marks, got)
+	}
+	for _, line := range strings.Split(got, "\n") {
+		if strings.Contains(line, "Write the tests") && strings.Contains(line, InFocusMark) {
+			t.Errorf("a task that is not in focus is marked: %q", line)
+		}
+	}
+}
+
+func TestLines_marksNothingWhenNothingIsInFocus(t *testing.T) {
+	got := Lines([]Task{listed(1, "Ship it")}, Marks{})
+	if strings.Contains(got, InFocusMark) {
+		t.Errorf("nothing is in focus, yet a line is marked:\n%s", got)
+	}
+}
+
+func TestText_carriesTheAttributesMostTasksDoNot(t *testing.T) {
+	built, err := NewTask("Write the spec")
+	if err != nil {
+		t.Fatalf("NewTask: %v", err)
+	}
+	a := From(built)
+	a.Numbered(2)
+	a.Spent(90 * time.Minute)
+	a.Serves(3)
+
+	got := Text(a.Task(), item.Progress{}, true)
+	for _, want := range []string{"time spent", "1h30m", "objective"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the card does not carry %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestStepsText_keepsTheOrderItWasGiven(t *testing.T) {
+	got := StepsText([]Step{{Title: "Write the docs"}, {Title: "Write the tests"}})
+	if docs, tests := strings.Index(got, "Write the docs"), strings.Index(got, "Write the tests"); docs > tests {
+		t.Errorf("StepsText reordered them:\n%s", got)
+	}
+}
+
+func TestText_saysWhenATaskIsOffTheBoard(t *testing.T) {
+	made := func(archived bool) Task {
+		var a AsTold
+		a.Numbered(1)
+		a.Titled("Migration Jenkins")
+		a.InColumn(item.Done)
+		if archived {
+			a.Archived()
+		}
+		return a.Task()
+	}
+	if got := Text(made(true), item.Progress{}, true); !strings.Contains(got, "archived") {
+		t.Errorf("Text of an archived task =\n%s\nwant it to say so", got)
+	}
+	if got := Text(made(false), item.Progress{}, true); strings.Contains(got, "archived") {
+		t.Errorf("Text of one on the board =\n%s\nwant it to say nothing of archiving", got)
+	}
+}
+
+func TestALineCarriesEnoughToDecideOn(t *testing.T) {
+	var a AsTold
+	a.Numbered(12)
+	a.Titled("Write the spec")
+	a.InColumn(item.Current)
+	a.Carries(item.High)
+	a.Due(time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC))
+	a.Labelled("backend")
+	a.Labelled("sprint-172")
+	line := Line(a.Task())
+	for _, said := range []string{"Write the spec", "current", "high", "2026-10-09", "backend", "sprint-172"} {
+		if !strings.Contains(line, said) {
+			t.Errorf("the line does not say %q: %q", said, line)
+		}
+	}
+}
+
+func TestTextSaysWhatItIsLinkedTo(t *testing.T) {
+	linked := Made(Carried{Number: 2, Title: "Write the spec", Linked: []int{1, 3}})
+	if got := Text(linked, item.Progress{}, true); !strings.Contains(got, "linked       #1, #3\n") {
+		t.Errorf("text should say what it is linked to:\n%s", got)
+	}
+	if got := Text(spec(t), item.Progress{}, true); !strings.Contains(got, "linked       —\n") {
+		t.Errorf("text should say it is linked to nothing:\n%s", got)
+	}
+}
+
+func TestText_saysWhatBlocksTheTaskAndWhy(t *testing.T) {
+	made := func(because string) string {
+		var a AsTold
+		a.Numbered(1)
+		a.Titled("Migration Jenkins")
+		a.BlockedBy(4)
+		if because != "" {
+			a.Because(because)
+		}
+		got := Text(a.Task(), item.Progress{}, true)
+		for _, line := range strings.Split(got, "\n") {
+			if strings.Contains(line, "blocked by") {
+				return strings.TrimSpace(line)
+			}
+		}
+		t.Fatalf("Text has no blocked by line:\n%s", got)
+		return ""
+	}
+	if got := made("the client's answer"); !strings.HasSuffix(got, "#4, the client's answer") {
+		t.Errorf("blocked by line = %q, want the blocker then the reason", got)
+	}
+	if got := made(""); !strings.HasSuffix(got, "#4") {
+		t.Errorf("blocked by line = %q, want the blocker alone, no empty reason after it", got)
+	}
+}
+
+func TestLines_saysHowOftenAnOccurrenceComesBack(t *testing.T) {
+	tasks := []Task{Made(Carried{Number: 1, Title: "Stand-up", State: "todo", Priority: "normal"}), Made(Carried{Number: 2, Title: "Spec", State: "todo", Priority: "normal"})}
+	got := Lines(tasks, Marks{InFocus: []int{1}, Repeats: map[int]string{1: "↻3 every weekday"}})
+	want := "#1  Stand-up  · todo  · normal  · ↻3 every weekday" + InFocusMark + "\n#2  Spec  · todo  · normal\n"
+	if got != want {
+		t.Errorf("Lines = %q, want %q", got, want)
+	}
+}
+
+func TestText_namesTheTasksItIsInTheWayOfBelowWhatIsInItsOwn(t *testing.T) {
+	got := Text(spec(t), item.Progress{}, true, 2, 3)
+	if !strings.Contains(got, "blocked by   —\nblocks       ⊳2  #2, #3\nlinked") {
+		t.Errorf("text does not name tasks 2 and 3 below what blocks it:\n%s", got)
+	}
+}
+
+func TestText_saysNothingOfWhatItBlocksWhenItBlocksNothing(t *testing.T) {
+	if got := Text(spec(t), item.Progress{}, true); strings.Contains(got, "blocks ") || strings.Contains(got, BlocksMark) {
+		t.Errorf("text speaks of what it blocks:\n%s", got)
+	}
+}
+
+func TestLines_marksHowManyTasksEachIsInTheWayOf(t *testing.T) {
+	got := Lines([]Task{spec(t)}, Marks{Blocks: map[int]int{1: 2}})
+	if got != "#1  Write the spec  · backlog  · normal  · ⊳2\n" {
+		t.Errorf("Lines = %q, want task 1 marked ⊳2", got)
+	}
+	if got := Lines([]Task{spec(t)}, Marks{Blocks: map[int]int{1: 0}}); strings.Contains(got, BlocksMark) {
+		t.Errorf("Lines = %q, want no mark for a task blocking nothing", got)
+	}
+}

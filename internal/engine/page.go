@@ -1,14 +1,14 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
 	"unicode/utf8"
 
-	"cairn/internal/domain"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 var pageArguments = []Argument{
@@ -77,7 +77,7 @@ func askedCount(in Input, fields []string, p page) (string, error) {
 func countedBy(tasks []task.Task, by string) []count {
 	tally := map[string]int{}
 	for _, t := range tasks {
-		f := factsOf(t)
+		f := t.Carried()
 		groups := f.Labels
 		if by == "state" {
 			groups = []string{string(f.State)}
@@ -88,7 +88,7 @@ func countedBy(tasks []task.Task, by string) []count {
 	}
 	order := slices.Sorted(maps.Keys(tally))
 	if by == "state" {
-		order = slices.DeleteFunc(oneOf(domain.States), func(state string) bool { return tally[state] == 0 })
+		order = slices.DeleteFunc(oneOf(item.States), func(state string) bool { return tally[state] == 0 })
 	}
 	counts := make([]count, 0, len(order))
 	for _, group := range order {

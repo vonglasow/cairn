@@ -1,11 +1,10 @@
 package engine
 
 import (
+	"cairn/internal/engine/label"
 	"slices"
 	"testing"
 	"time"
-
-	"cairn/internal/domain"
 )
 
 func homeTree(t *testing.T) *Engine {
@@ -74,13 +73,13 @@ func TestLook_namesWhatACardServes(t *testing.T) {
 
 func TestLook_keepsWhatEachLabelIsFor(t *testing.T) {
 	e := openEngine(t)
-	for label, scope := range map[string]string{"area": "objectives", "backend": "tasks", "spec": ""} {
-		if _, err := e.Ask(LabelNew, Input{Given: map[string]string{"label": label, "scope": scope}}); err != nil {
-			t.Fatalf("label new %s: %v", label, err)
+	for name, scope := range map[string]string{"area": "objectives", "backend": "tasks", "spec": ""} {
+		if _, err := e.Ask(LabelNew, Input{Given: map[string]string{"label": name, "scope": scope}}); err != nil {
+			t.Fatalf("label new %s: %v", name, err)
 		}
 	}
 	s := lookAt(t, e)
-	if got := s.LabelsFor(domain.OnObjectives); !slices.Equal(got, []string{"area", "spec"}) {
+	if got := s.LabelsFor(label.OnObjectives); !slices.Equal(got, []string{"area", "spec"}) {
 		t.Errorf("labels for objectives = %v, want area and spec", got)
 	}
 }

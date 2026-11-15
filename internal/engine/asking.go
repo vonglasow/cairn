@@ -1,18 +1,19 @@
 package engine
 
 import (
+	"cairn/internal/engine/migration"
 	"errors"
 	"time"
 
-	"cairn/internal/store"
+	"cairn/internal/store/sqlite"
 )
 
 // Ask runs an operation against the store this engine is open on.
-func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
-	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
-	if err := op.admitted(in); err != nil {
-		return Answer{}, err
-	}
+func (e *Engine) Ask(op Operation, in Input) (Answer, error) {
+	return admittedAndNoted(op, in, func() (Answer, error) { return e.ask(op, in) })
+}
+
+func (e *Engine) ask(op Operation, in Input) (Answer, error) {
 	defer e.taking()()
 	if err := e.following(); err != nil {
 		return Answer{}, Told(err)
@@ -21,7 +22,7 @@ func (e *Engine) Ask(op Operation, in Input) (answer Answer, err error) {
 		return Answer{}, Told(e.refused)
 	}
 	if op.Needs != noStore {
-		if err := e.store.Current(); err != nil && (op.Needs == aStore || errors.Is(err, ErrNewerStore)) {
+		if err := e.store.Current(); err != nil && (op.Needs == aStore || errors.Is(err, migration.ErrNewerStore)) {
 			return Answer{}, Told(err)
 		}
 	}
@@ -52,7 +53,7 @@ func (e *Engine) acted(op Operation, in Input) (Answer, error) {
 		return op.Run(e.on(), in)
 	}
 	var answer Answer
-	err := e.store.Within(func(kept *store.Store) error {
+	err := e.store.Within(func(kept *sqlite.Store) error {
 		held := e.keptBy(kept)
 		before, err := held.openSeries()
 		if err != nil {
@@ -70,4 +71,13 @@ func (e *Engine) acted(op Operation, in Input) (Answer, error) {
 
 func (e *Engine) on() workedOn {
 	return workedOn{Engine: e, Backups: backupsAt(e.path), Path: e.path, Notes: e.notes, Home: e.home}
+}
+
+// admittedAndNoted refuses what the operation does not admit, runs it, and writes down in debug mode what it was asked and what it answered — the one place every door does.
+func admittedAndNoted(op Operation, in Input, run func() (Answer, error)) (answer Answer, err error) {
+	defer func(from time.Time) { noteDone(op, in, from, answer, err) }(time.Now())
+	if err := op.admitted(in); err != nil {
+		return Answer{}, err
+	}
+	return run()
 }

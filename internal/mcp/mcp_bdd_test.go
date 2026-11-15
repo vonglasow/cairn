@@ -2,6 +2,8 @@ package mcp_test
 
 import (
 	"bytes"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/view"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,7 +24,6 @@ import (
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/cli"
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 	"cairn/test"
 )
@@ -1004,12 +1005,12 @@ func (w *world) taskAddNamesEveryStateCairnAccepts() error {
 	if !ok {
 		return fmt.Errorf("%q names no enum: %#v", "state", prop)
 	}
-	if len(enum) != len(domain.States) {
-		return fmt.Errorf("enum = %v, want the %d states cairn accepts", enum, len(domain.States))
+	if len(enum) != len(item.States) {
+		return fmt.Errorf("enum = %v, want the %d states cairn accepts", enum, len(item.States))
 	}
-	for i, s := range domain.States {
+	for i, s := range item.States {
 		if enum[i] != string(s) {
-			return fmt.Errorf("enum = %v, want %v", enum, domain.States)
+			return fmt.Errorf("enum = %v, want %v", enum, item.States)
 		}
 	}
 	title, err := schemaProperty(w.tool("task_new"), "title")
@@ -1437,7 +1438,7 @@ func (w *world) itNamesOutside(n int, is string, of int) error {
 		return err
 	}
 	for _, o := range listed.Outside {
-		if o.Number == n && len(o.Why) == 1 && o.Why[0] == (engine.Touch{Is: is, Of: of}) {
+		if o.Number == n && len(o.Why) == 1 && o.Why[0] == (view.Touch{Is: is, Of: of}) {
 			return nil
 		}
 	}

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"cairn/internal/engine"
+	"cairn/internal/engine/migration"
 	"fmt"
 	"slices"
 	"strconv"
@@ -462,11 +463,11 @@ func (b Board) question() string {
 		return " " + b.skin.Title.Render("delete step "+b.going.In.Given["step"]+" of task "+b.going.In.Given["number"]+", “"+b.going.Title+"”?") + "  " +
 			b.bar(b.offer("⏎", "delete it"), b.offer("esc", "keep it"))
 	}
-	if b.aboutReason(engine.ErrNewerStore) {
+	if b.aboutReason(migration.ErrNewerStore) {
 		return " " + b.skin.Title.Render("this store comes from a newer cairn") + "  " +
 			b.bar(b.offer("esc", "close the board, then open cairn again"))
 	}
-	if b.aboutReason(engine.ErrStoreBehind) {
+	if b.aboutReason(migration.ErrStoreBehind) {
 		return " " + b.skin.Title.Render("apply what this workspace is waiting for?") + "  " +
 			b.bar(b.offer("⏎", "apply, a backup is set aside first"), b.offer("esc", "quit"))
 	}

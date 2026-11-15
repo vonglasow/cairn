@@ -1,12 +1,12 @@
 package tui
 
 import (
+	"cairn/internal/engine/item"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"cairn/internal/domain"
 	"cairn/internal/engine"
 
 	"charm.land/lipgloss/v2"
@@ -17,11 +17,11 @@ const titleLines = 2
 // StoppedGlyph answers the mark one of the three stopped states is drawn with.
 func StoppedGlyph(state string, g Glyphs) string {
 	switch state {
-	case string(domain.Blocked):
+	case string(item.Blocked):
 		return g.Blocked
-	case string(domain.Watching):
+	case string(item.Watching):
 		return g.Watching
-	case string(domain.Paused):
+	case string(item.Paused):
 		return g.Paused
 	default:
 		return ""

@@ -2,17 +2,20 @@
 package engine
 
 import (
+	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/label"
+	"cairn/internal/engine/objective"
 	"errors"
 	"fmt"
 	"slices"
 	"sync"
 
-	"cairn/internal/config"
-	"cairn/internal/domain"
-	"cairn/internal/migration"
-	"cairn/internal/store"
-	"cairn/internal/task"
-	"cairn/internal/trace"
+	"cairn/internal/engine/act"
+	"cairn/internal/engine/migration"
+	"cairn/internal/engine/task"
+	"cairn/internal/store/files"
+	"cairn/internal/store/sqlite"
 )
 
 // errNothingToChange is returned when an edit names nothing to change.
@@ -24,27 +27,13 @@ var errStore = errors.New("the store cannot be read")
 // errLabelSignAtCreation is returned when a task is created with a label carrying a + or a -.
 var errLabelSignAtCreation = errors.New("a label is added or taken away only when changing a task")
 
-// errNoSuchTask is re-exported so a surface can recognise it: a surface asks the engine and may not import the store, so the engine is where the name it answers with has to live.
-var errNoSuchTask = store.ErrNoSuchTask
-
-type tasks interface {
-	Keep(task.Task) (task.Task, error)
-	Update(task.Task) error
-	Delete(int) error
-	Find(int) (task.Task, error)
-	All() ([]task.Task, error)
-	Narrowed(*domain.Narrowing) ([]task.Task, error)
-	NothingBlocks() ([]int, error)
-	Close() error
-}
-
 // Engine carries out the operations.
 type Engine struct {
-	tasks      tasks
-	places     places
-	history    history
-	objectives objectives
-	store      *store.Store
+	tasks      task.Store
+	places     task.Places
+	history    act.Store
+	objectives objective.Store
+	store      *sqlite.Store
 	acting     Acting
 	notes      string
 	home       Home
@@ -57,7 +46,7 @@ type Engine struct {
 }
 
 // Open opens a store that has to be up to date, and refuses one that is not: a command about tasks does not change the shape of the store on the way past.
-func Open(path string) (*Engine, error) { return openWith(path, migration.Known, store.OpenKnowing) }
+func Open(path string) (*Engine, error) { return openWith(path, migration.Known, sqlite.OpenKnowing) }
 
 // OpenAt opens the store the way OpenBehind does, whatever shape it is in, and keeps where the notes are and what they were found from, for a surface that holds an engine open — a board — rather than one per call.
 func OpenAt(at Places) (*Engine, error) {
@@ -71,15 +60,15 @@ func OpenAt(at Places) (*Engine, error) {
 
 // OpenBehind opens a store whatever shape it is in, for the commands whose job is to change that shape.
 func OpenBehind(path string) (*Engine, error) {
-	return openWith(path, migration.Known, store.OpenBehindKnowing)
+	return openWith(path, migration.Known, sqlite.OpenBehindKnowing)
 }
 
 // OpenBehindKnowing opens a store the way OpenBehind does, for a cairn that knows the changes given rather than this one's.
 func OpenBehindKnowing(path string, known []migration.Migration) (*Engine, error) {
-	return openWith(path, known, store.OpenBehindKnowing)
+	return openWith(path, known, sqlite.OpenBehindKnowing)
 }
 
-func openWith(path string, known []migration.Migration, open func(string, []migration.Migration) (*store.Store, error)) (*Engine, error) {
+func openWith(path string, known []migration.Migration, open func(string, []migration.Migration) (*sqlite.Store, error)) (*Engine, error) {
 	kept, err := open(path, known)
 	if err != nil {
 		return nil, storeProblem(err)
@@ -100,7 +89,7 @@ func (e *Engine) following() error {
 	if err != nil || !replaced {
 		return err
 	}
-	fresh, err := store.OpenKnowing(e.path, e.known)
+	fresh, err := sqlite.OpenKnowing(e.path, e.known)
 	if err != nil {
 		return storeProblem(err)
 	}
@@ -111,13 +100,13 @@ func (e *Engine) following() error {
 	return nil
 }
 
-func (e Engine) keptBy(s *store.Store) *Engine {
+func (e Engine) keptBy(s *sqlite.Store) *Engine {
 	e.tasks, e.places, e.history, e.objectives, e.store = spentTasks{s, s}, s, s, s, s
 	return &e
 }
 
 func storeProblem(err error) error {
-	if errors.Is(err, ErrStoreBehind) || errors.Is(err, ErrNewerStore) {
+	if errors.Is(err, migration.ErrStoreBehind) || errors.Is(err, migration.ErrNewerStore) {
 		return err
 	}
 	return fmt.Errorf("%w: %w", errStore, err)
@@ -140,13 +129,13 @@ func (e *Engine) add(title string, c Changes) (task.Task, error) {
 	if t, err = apply(t, c, creating); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.inScope(nil, factsOf(t).Labels, domain.OnTasks); err != nil {
+	if err := e.inScope(nil, t.Carried().Labels, label.OnTasks); err != nil {
 		return task.Task{}, err
 	}
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.canBeLinked(t); err != nil {
+	if err := task.CanBeLinked(e.tasks, t); err != nil {
 		return task.Task{}, err
 	}
 	kept, err := e.tasks.Keep(t)
@@ -156,13 +145,13 @@ func (e *Engine) add(title string, c Changes) (task.Task, error) {
 	if err := e.recordCreated(kept); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.spendOn(factsOf(kept).Number, 0, factsOf(t).Spent); err != nil {
+	if err := e.spendOn(kept.Carried().Number, 0, t.Carried().Spent); err != nil {
 		return task.Task{}, err
 	}
-	return e.tasks.Find(factsOf(kept).Number)
+	return e.tasks.Find(kept.Carried().Number)
 }
 
-func (e *Engine) narrowed(kept *domain.Narrowing) ([]task.Task, error) {
+func (e *Engine) narrowed(kept *filter.Narrowing) ([]task.Task, error) {
 	return e.tasks.Narrowed(kept)
 }
 
@@ -195,7 +184,7 @@ func (e *Engine) puttingAway(number int, away bool) error {
 	return e.recordChanges(found, put)
 }
 
-func (e *Engine) sweeping(kept *domain.Narrowing) ([]task.Task, error) {
+func (e *Engine) sweeping(kept *filter.Narrowing) ([]task.Task, error) {
 	found, err := e.tasks.Narrowed(kept)
 	if err != nil {
 		return nil, err
@@ -203,14 +192,14 @@ func (e *Engine) sweeping(kept *domain.Narrowing) ([]task.Task, error) {
 	return found, nil
 }
 
-func (e *Engine) archiveEvery(kept *domain.Narrowing) (int, error) {
+func (e *Engine) archiveEvery(kept *filter.Narrowing) (int, error) {
 	found, err := e.sweeping(kept)
 	if err != nil {
 		return 0, err
 	}
 	swept := 0
 	for _, one := range found {
-		if err := e.archive(factsOf(one).Number); err != nil {
+		if err := e.archive(one.Carried().Number); err != nil {
 			if errors.Is(err, task.ErrAlreadyArchived) {
 				continue
 			}
@@ -221,15 +210,15 @@ func (e *Engine) archiveEvery(kept *domain.Narrowing) (int, error) {
 	return swept, nil
 }
 
-func (e *Engine) labelEvery(kept *domain.Narrowing, label string) (int, error) {
+func (e *Engine) labelEvery(kept *filter.Narrowing, name string) (int, error) {
 	found, err := e.sweeping(kept)
 	if err != nil {
 		return 0, err
 	}
 	put := 0
-	adding := []string{fmt.Sprintf("+%s", label)}
+	adding := []string{fmt.Sprintf("+%s", name)}
 	for _, one := range found {
-		if _, err := e.edit(factsOf(one).Number, Changes{Labels: &adding}); err != nil {
+		if _, err := e.edit(one.Carried().Number, Changes{Labels: &adding}); err != nil {
 			return put, err
 		}
 		put++
@@ -249,19 +238,19 @@ func (e *Engine) delete(number int) error {
 	if err := e.tasks.Delete(number); err != nil {
 		return err
 	}
-	if err := e.recordOtherEnds(number, factsOf(gone).Linked, nil); err != nil {
+	if err := e.recordOtherEnds(number, gone.Carried().Linked, nil); err != nil {
 		return err
 	}
 	if slices.Contains(held, number) {
-		if err := e.record(number, trace.FocusReleased, "", "", ""); err != nil {
+		if err := e.record(number, act.FocusReleased, "", "", ""); err != nil {
 			return err
 		}
 	}
-	went := whatItHeld(gone)
+	went := act.WhatItHeld(gone)
 	if e.timeGoesWithTasks() {
-		went += "; " + trace.WentWithItsTime
+		went += "; " + act.WentWithItsTime
 	}
-	return e.record(number, trace.Deleted, "", went, "")
+	return e.record(number, act.Deleted, "", went, "")
 }
 
 func (e *Engine) timeGoesWithTasks() bool {
@@ -269,19 +258,19 @@ func (e *Engine) timeGoesWithTasks() bool {
 		return false
 	}
 	read, err := e.configured()
-	return err == nil && read.TimeDeleted() == config.TimeTaken
+	return err == nil && read.TimeDeleted() == files.TimeTaken
 }
 
-func (e *Engine) configured() (config.Places, error) {
-	read, err := config.Read(e.home.Dir, e.home.lookup())
+func (e *Engine) configured() (files.Places, error) {
+	read, err := files.Read(e.home.Dir, e.home.lookup())
 	if err != nil {
-		return config.Places{}, err
+		return files.Places{}, err
 	}
-	return read.WithSettings(config.SettingsBeside(e.path))
+	return read.WithSettings(files.SettingsBeside(e.path))
 }
 
 func (e *Engine) waitingOn(number int) ([]int, error) {
-	every := domain.Narrowing{}
+	every := filter.Narrowing{}
 	every.WithArchived()
 	all, err := e.tasks.Narrowed(&every)
 	if err != nil {
@@ -289,7 +278,7 @@ func (e *Engine) waitingOn(number int) ([]int, error) {
 	}
 	var waiting []int
 	for _, t := range all {
-		f := factsOf(t)
+		f := t.Carried()
 		if slices.Contains(f.Blockers, number) {
 			waiting = append(waiting, f.Number)
 		}
@@ -310,22 +299,22 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if t, err = apply(t, c, changing); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.inScope(factsOf(was).Labels, factsOf(t).Labels, domain.OnTasks); err != nil {
+	if err := e.inScope(was.Carried().Labels, t.Carried().Labels, label.OnTasks); err != nil {
 		return task.Task{}, err
 	}
 	if err := e.canServe(t); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.canBeBlocked(t); err != nil {
+	if err := task.CanBeBlocked(e.tasks, t); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.canBeLinked(t); err != nil {
+	if err := task.CanBeLinked(e.tasks, t); err != nil {
 		return task.Task{}, err
 	}
 	if err := was.MayLeaveFor(t); err != nil {
 		return task.Task{}, err
 	}
-	if c.Finishing && factsOf(t).State == domain.Done {
+	if c.Finishing && t.Carried().State == item.Done {
 		t = t.Ticked()
 	}
 	if err := was.MayFinishAs(t); errors.Is(err, ErrStepStillOpen) {
@@ -336,7 +325,7 @@ func (e *Engine) edit(number int, c Changes) (task.Task, error) {
 	if err := e.tasks.Update(t); err != nil {
 		return task.Task{}, err
 	}
-	if err := e.spendOn(number, factsOf(was).Spent, factsOf(t).Spent); err != nil {
+	if err := e.spendOn(number, was.Carried().Spent, t.Carried().Spent); err != nil {
 		return task.Task{}, err
 	}
 	found, err := e.tasks.Find(number)
@@ -362,7 +351,7 @@ func (e *Engine) freeIfNothingBlocksIt(was, found task.Task) (task.Task, error) 
 	if err := e.tasks.Update(free); err != nil {
 		return task.Task{}, err
 	}
-	after, err := e.tasks.Find(factsOf(found).Number)
+	after, err := e.tasks.Find(found.Carried().Number)
 	if err != nil {
 		return task.Task{}, err
 	}

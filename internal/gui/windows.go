@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bufio"
+	"cairn/internal/engine/workspace"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -109,7 +110,7 @@ func answer(conn net.Conn, raise func()) {
 }
 
 // Reach says what a window of its own on another workspace, folder or store would hold, and how a cairn started for it names it.
-type Reach func(engine.Elsewhere) (engine.Apart, error)
+type Reach func(engine.Elsewhere) (workspace.Apart, error)
 
 // Starter starts a cairn with these arguments, apart from this one, and does not wait for it.
 type Starter func(args ...string) error

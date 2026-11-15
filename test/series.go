@@ -6,7 +6,7 @@ import (
 	"github.com/cucumber/godog"
 
 	"cairn/internal/engine"
-	"cairn/internal/task"
+	"cairn/internal/engine/task"
 )
 
 // Series reads back a series, as somebody else would see it.

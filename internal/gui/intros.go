@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"cairn/internal/config"
+	"cairn/internal/store/files"
 )
 
 // The offers of the intro chooser beside keeping the one it is on.
@@ -35,7 +35,7 @@ func IntrosBox(width, height int) Box {
 func (w Window) openingIntros() Window {
 	w.introsOpen, w.settingsAt = true, 0
 	w.introFrom, w.tab = w.tab, Tasks
-	w.introOn = max(0, slices.Index(config.Intros(), w.IntroShown()))
+	w.introOn = max(0, slices.Index(files.Intros(), w.IntroShown()))
 	return w.replaying()
 }
 
@@ -44,7 +44,7 @@ func (w Window) inIntros(name string) Window {
 	if step == 0 {
 		return w
 	}
-	return w.onIntro(min(len(config.Intros())-1, max(0, w.introOn+step)))
+	return w.onIntro(min(len(files.Intros())-1, max(0, w.introOn+step)))
 }
 
 func (w Window) onIntro(at int) Window {
@@ -95,12 +95,12 @@ func (w Window) introsRegion() Box {
 // IntroRows is every intro the chooser offers, in the order the configuration names them, laid down its panel and scrolled.
 func (w Window) IntroRows() []IntroRow {
 	region, stage := w.introsRegion(), w.Stage()
-	inForce := config.DefaultIntro
+	inForce := files.DefaultIntro
 	if c := w.configured.Window; c != nil && c.Intro != "" {
 		inForce = c.Intro
 	}
 	var rows []IntroRow
-	for i, name := range config.Intros() {
+	for i, name := range files.Intros() {
 		lasts := IntroLasts(name, stage)
 		rows = append(rows, IntroRow{
 			Name: name, Says: IntroSays(name), InForce: name == inForce,

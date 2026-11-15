@@ -1,13 +1,13 @@
 package engine
 
 import (
+	"cairn/internal/engine/item"
 	"maps"
 	"testing"
 	"time"
 
-	"cairn/internal/domain"
-	"cairn/internal/objective"
-	"cairn/internal/task"
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
 )
 
 func numbersOf(goals []Goal) []int {
@@ -99,7 +99,7 @@ func TestAGoalSaysTheTimeSpentOnTheTasksServingIt(t *testing.T) {
 }
 
 func TestAGoalCountsTheStepsOfItsTasksApart(t *testing.T) {
-	g := Goal{Done: 1, Total: 3, Steps: domain.Tally{Total: 2, Done: 1}}
+	g := Goal{Done: 1, Total: 3, Steps: item.Tally{Total: 2, Done: 1}}
 	if got := g.Counted(); got != "0/1 · 1/2 steps" {
 		t.Errorf("Counted = %q, want the task and its steps apart", got)
 	}
