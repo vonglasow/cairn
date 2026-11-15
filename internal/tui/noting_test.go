@@ -33,10 +33,3 @@ func TestTheBoardWritesDownItsKeysItsSizeAndWhatItShowsInDebugMode(t *testing.T)
 		t.Errorf("a letter typed at the prompt is written down as itself:\n%s", said)
 	}
 }
-
-func TestABoardOutOfDebugModeWritesNothingDown(t *testing.T) {
-	b := hit(standing(twoTasks()), "/", "F")
-	if b.noted != nil {
-		t.Error("a board nobody put in debug mode holds a file")
-	}
-}

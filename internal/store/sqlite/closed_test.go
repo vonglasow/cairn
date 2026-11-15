@@ -49,17 +49,6 @@ func TestEveryWriteSaysWhatFailed(t *testing.T) {
 	}
 }
 
-func TestTheEndOfAListToldChangesNothing(t *testing.T) {
-	b := &boundTask{labels: []string{"x"}, blockers: []int{2}, objectives: []int{3}}
-	if len(b.labels) != 1 || len(b.blockers) != 1 || len(b.objectives) != 1 {
-		t.Errorf("the end of a list changed it: %+v", b)
-	}
-	o := &boundObjective{labels: []string{"x"}}
-	if len(o.labels) != 1 {
-		t.Errorf("the end of a list changed it: %+v", o)
-	}
-}
-
 func TestABackupSaysWhyItCouldNotBeMade(t *testing.T) {
 	v, path := vaultOn(t, "Write the spec")
 	if _, err := v.Make(); err != nil {

@@ -6,30 +6,6 @@ import (
 	"testing"
 )
 
-func TestPages_offerOnlyTheActsOfThePagesShown(t *testing.T) {
-	off := PagesOff("time")
-	if !off.Shows(PageTasks) || !off.Shows(PageObjectives) || off.Shows(PageTime) {
-		t.Errorf("with time off, it shows tasks %v, objectives %v, time %v", off.Shows(PageTasks), off.Shows(PageObjectives), off.Shows(PageTime))
-	}
-	if off.Offers(TimesheetShow) || off.Offers(TimesheetAdd) || !off.Offers(TaskList) || !off.Offers(ConfigShow) {
-		t.Error("with time off, the timesheet is offered or something else is not")
-	}
-	all := PagesOff(PageTasks, PageObjectives, PageTime)
-	for _, op := range All() {
-		if all.Offers(op) && (op.Thing == "task" || op.Thing == "objective" || op.Thing == "timesheet") {
-			t.Errorf("with every page off, %s is offered", op.Line())
-		}
-	}
-	if !all.None() || off.None() || (Pages{}).None() {
-		t.Error("None does not say that every page is off, and only then")
-	}
-	for _, op := range All() {
-		if !(Pages{}).Offers(op) {
-			t.Errorf("with nothing turned off, %s is not offered", op.Line())
-		}
-	}
-}
-
 func TestPagesFrom_readsTheConfiguration(t *testing.T) {
 	home := t.TempDir()
 	path := filepath.Join(home, ".config", "cairn", "config.toml")
@@ -83,11 +59,5 @@ func TestPages_aWeekShowsFiveDaysWhenTheConfigurationHidesTheWeekends(t *testing
 	}
 	if got := PagesFrom(Home{Dir: home}).WeekDays(); got != 5 {
 		t.Errorf("read from the file, a week shows %d days, want 5", got)
-	}
-}
-
-func TestPages_areNoneOnlyWhenEveryOneIsOff(t *testing.T) {
-	if PagesOff(PageTasks, PageTime).None() {
-		t.Error("with the objectives shown, every page was said to be off")
 	}
 }

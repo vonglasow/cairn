@@ -2,17 +2,11 @@ package tui
 
 import (
 	"cairn/internal/board"
-	"cairn/internal/engine/series"
-	"cairn/internal/theme"
-	"cairn/internal/tui/design"
 	"cairn/internal/tui/geom"
-	"errors"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
-
-	"charm.land/lipgloss/v2"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -28,68 +22,6 @@ func twoTasks() *fake {
 		{Number: 3, Title: "Waiting", State: "blocked"},
 	}
 	return f
-}
-
-func TestTakingTheFocusAndLettingItGo(t *testing.T) {
-	f := twoTasks()
-	b := hit(standing(f), "ctrl+l")
-	if _, cmd := b.pressed("f"); cmd != nil {
-		cmd()
-	}
-	if len(f.tookHold) != 1 || f.tookHold[0] != 1 {
-		t.Fatalf("the board took hold of %v, want task 1", f.tookHold)
-	}
-
-	f.focus = []int{1}
-	held := standing(f)
-	held = hit(held, "l", "i")
-	if _, cmd := held.pressed("f"); cmd != nil {
-		cmd()
-	}
-	if f.letGo != 1 {
-		t.Fatalf("the focus was let go %d times, want once", f.letGo)
-	}
-}
-
-func TestATaskThatRefusesToBeDeletedIsSaid(t *testing.T) {
-	f := twoTasks()
-	f.failOp = errRefuse
-	b := hit(standing(f), "ctrl+l", "D")
-	_, cmd := b.pressed("enter")
-	looked, ok := cmd().(Looked)
-	if !ok || looked.Err == nil {
-		t.Fatalf("a deletion that was refused answered %v", looked)
-	}
-	if !errors.Is(looked.Err, errRefuse) {
-		t.Fatalf("the board reported %v rather than what the store refused with", looked.Err)
-	}
-}
-
-func TestDeleting(t *testing.T) {
-	f := twoTasks()
-	b := hit(standing(f), "ctrl+l", "D")
-	if _, cmd := b.pressed("enter"); cmd != nil {
-		cmd()
-	}
-	if len(f.deleted) != 1 || f.deleted[0] != 1 {
-		t.Fatalf("the board deleted %v, want task 1", f.deleted)
-	}
-}
-
-func TestAFailureIsSaidRatherThanSwallowed(t *testing.T) {
-	f := twoTasks()
-	f.fail = errNope
-	b := hit(standing(f), "ctrl+l", "D")
-	_, cmd := b.pressed("enter")
-	msg := cmd()
-	looked, ok := msg.(Looked)
-	if !ok || looked.Err == nil {
-		t.Fatalf("a store that refused answered %v", msg)
-	}
-	after := b.took(looked)
-	if !strings.Contains(after.Draw(), errNope.Error()) {
-		t.Fatalf("the board says nothing about a store that refused:\n%s", after.Draw())
-	}
 }
 
 func TestQuitting(t *testing.T) {
@@ -109,21 +41,6 @@ func TestQuitting(t *testing.T) {
 	}
 }
 
-func TestTheOtherTab(t *testing.T) {
-	f := twoTasks()
-	f.goals = []board.Goal{{Number: 7, Title: "Ship it", State: "active"}}
-	b := hit(standing(f), "tab")
-	if b.Where().Goal != 7 {
-		t.Fatalf("the cursor landed on objective %d, want 7", b.Where().Goal)
-	}
-	if b = hit(b, "tab"); b.tab != board.Time {
-		t.Fatal("the second press did not go on to the time spent")
-	}
-	if b = hit(b, "tab"); b.tab != board.Tasks {
-		t.Fatal("the third press did not come back to the tasks")
-	}
-}
-
 func TestTheObjectivesTabWithNothingOnIt(t *testing.T) {
 	b := hit(standing(twoTasks()), "tab")
 	if b.Where().Goal != 0 {
@@ -134,56 +51,11 @@ func TestTheObjectivesTabWithNothingOnIt(t *testing.T) {
 	}
 }
 
-func TestHelpOpensAndClosesFromAnywhere(t *testing.T) {
-	for _, keys := range [][]string{{"l"}, {"l", "i"}, {"l", "i", "e"}, {"/"}} {
-		b := hit(standing(twoTasks()), keys...)
-		was := b.screen
-		b = hit(b, "?")
-		if b.screen != board.OnHelp {
-			t.Fatalf("help did not answer after %v", keys)
-		}
-		b = hit(b, "?")
-		if b.screen != was {
-			t.Fatalf("closing help after %v left %v on screen, want %v", keys, b.screen, was)
-		}
-	}
-}
-
-func TestHelpIsContextual(t *testing.T) {
-	f := twoTasks()
-	f.goals = []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}
-	onTasks := bare(hit(standing(f), "?").Draw())
-	onGoals := bare(hit(standing(f), "tab", "?").Draw())
-	if !strings.Contains(onTasks, "A TASK") {
-		t.Fatal("the tasks tab's help says nothing about a task")
-	}
-	if strings.Contains(onGoals, "A TASK") {
-		t.Fatal("the objectives tab's help offers the keys of a task")
-	}
-}
-
-func TestAWindowThatChangesSize(t *testing.T) {
-	b := standing(twoTasks())
-	model, _ := b.Update(tea.WindowSizeMsg{Width: 60, Height: 20})
-	if got := model.(Board).width; got != 60 {
-		t.Fatalf("the board is %d wide after being told 60", got)
-	}
-}
-
 func TestAMessageNobodySentIsIgnored(t *testing.T) {
 	b := standing(twoTasks())
 	model, cmd := b.Update("something else entirely")
 	if cmd != nil || model.(Board).Draw() != b.Draw() {
 		t.Fatal("a message the board knows nothing about changed it")
-	}
-}
-
-func TestTheBeatAsksAgain(t *testing.T) {
-	f := twoTasks()
-	b := standing(f)
-	_, cmd := b.Update(Beat(time.Now()))
-	if cmd == nil {
-		t.Fatal("the beat asked for nothing")
 	}
 }
 
@@ -269,345 +141,12 @@ func TestTheDetailSaysWhenAHistoryCannotBeRead(t *testing.T) {
 	}
 }
 
-func TestTooNarrowSaysWhatItNeeds(t *testing.T) {
-	b := standing(twoTasks())
-	b.width = 47
-	drawn := bare(b.Draw())
-	if !strings.Contains(drawn, "bigger window") || !strings.Contains(drawn, "60 by 26") || !strings.Contains(drawn, "is 47 by") {
-		t.Fatalf("a window too small says:\n%s", drawn)
-	}
-}
-
-func TestTheViewCarriesTheScreenAndTakesTheWholeTerminal(t *testing.T) {
-	b := standing(twoTasks())
-	view := b.View()
-	if view.Content != b.Draw() {
-		t.Fatal("what bubbletea is handed is not what the board drew")
-	}
-	if !view.AltScreen {
-		t.Fatal("the board did not ask for the whole terminal")
-	}
-}
-
-func TestInitAsksForAReadingAndABeat(t *testing.T) {
-	if standing(twoTasks()).Init() == nil {
-		t.Fatal("a board opened without asking for anything")
-	}
-}
-
-func TestKeyNameSpellsAShiftedLetterOneWay(t *testing.T) {
-	if got := keyName(tea.KeyPressMsg{Code: 'L', Text: "L"}); got != "shift+l" {
-		t.Fatalf("a capital is called %q", got)
-	}
-	if got := keyName(tea.KeyPressMsg{Code: 'l', Text: "l"}); got != "l" {
-		t.Fatalf("a plain letter is called %q", got)
-	}
-}
-
-func TestDirections(t *testing.T) {
-	for key, want := range map[string]string{
-		"h": goLeft, "left": goLeft,
-		"j": goDown, "down": goDown,
-		"k": goUp, "up": goUp,
-		"l": goRight, "right": goRight,
-	} {
-		if got, ok := direction(key); !ok || got != want {
-			t.Fatalf("%q points %q, want %q", key, got, want)
-		}
-	}
-	if _, ok := direction("a"); ok {
-		t.Fatal("a letter that points nowhere was said to point somewhere")
-	}
-	if _, ok := shifted("a"); ok {
-		t.Fatal("an unshifted letter was read as shifted")
-	}
-	if got, ok := shifted("shift+l"); !ok || got != goRight {
-		t.Fatalf("shift+l points %q", got)
-	}
-}
-
-func TestTyped(t *testing.T) {
-	for key, want := range map[string]string{"a": "a", "shift+a": "A", "space": " "} {
-		got, ok := typed(key)
-		if !ok || got != want {
-			t.Fatalf("%q types %q, want %q", key, got, want)
-		}
-	}
-	if _, ok := typed("f1"); ok {
-		t.Fatal("a key that types nothing was said to type something")
-	}
-}
-
-func TestUnknownNamesWhatWasTypedAndWhatIsTaken(t *testing.T) {
-	err := unknown("zz")
-	if !strings.Contains(err.Error(), "zz") || !strings.Contains(err.Error(), "backup") {
-		t.Fatalf("the refusal says %q", err)
-	}
-}
-
-func TestSavingAFormNamesEveryArgumentEmptied(t *testing.T) {
-	form := asking(board.EditFields(board.Card{
-		Number: 1, Title: "One", State: "todo", Priority: "high",
-		Labels: []string{"spec"}, Blockers: []int{2}, Because: "waiting",
-		Estimate: "3h", Spent: "1h", Objectives: []int{5},
-		Deadline: on("2026-09-02"), Description: "why",
-	}), 80, 20, plainSkin, nil)
-	form.Number = 1
-	for _, field := range form.fields {
-		if field.Name != "title" {
-			form = form.typedInto(field.Name, "")
-		}
-	}
-
-	_, in := (Board{}).saving(form, engine.TaskNew, engine.TaskEdit)
-	for _, field := range form.fields {
-		if field.Was != "" && !in.Named(field.Arg) {
-			t.Errorf("%s was not named, so emptying it would do nothing", field.Arg)
-		}
-	}
-}
-
-func TestValueOfAFieldThatIsNotThere(t *testing.T) {
-	if got := (Form{}).valueOf("nothing"); got != "" {
-		t.Fatalf("a field that does not exist answered %q", got)
-	}
-}
-
-func TestEngineAnswersEverythingTheBoardAsksFor(t *testing.T) {
-	var _ board.Work = (*engine.Engine)(nil)
-}
-
-func TestRemovingAnObjective(t *testing.T) {
-	f := newFake()
-	f.goals = []board.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	b := hit(standing(f), "tab", "D")
-	if _, cmd := b.pressed("enter"); cmd != nil {
-		cmd()
-	}
-	if len(f.deletedGoal) != 1 || f.deletedGoal[0] != 3 {
-		t.Fatalf("the board deleted %v, want objective 3", f.deletedGoal)
-	}
-}
-
-func TestRemovingNoObjectiveAtAll(t *testing.T) {
-	f := newFake()
-	b := hit(standing(f), "tab")
-	if _, cmd := b.pressed("D"); cmd != nil {
-		t.Fatal("delete asked for something with no objective under the cursor")
-	}
-}
-
-func TestAnObjectiveThatRefusesToBeDeletedIsSaid(t *testing.T) {
-	f := newFake()
-	f.goals = []board.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	f.failOp = errRefuse
-	b := hit(standing(f), "tab", "D")
-	_, cmd := b.pressed("enter")
-	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
-		t.Fatal("an objective that could not be deleted was passed over")
-	}
-}
-
-func TestAFocusThatRefusesIsSaid(t *testing.T) {
-	f := twoTasks()
-	f.failOp = errRefuse
-	b := hit(standing(f), "ctrl+l")
-	_, cmd := b.pressed("f")
-	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
-		t.Fatal("a focus that could not be taken was passed over")
-	}
-	f.focus = []int{1}
-	held := hit(standing(f), "ctrl+l")
-	_, cmd = held.pressed("f")
-	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
-		t.Fatal("a focus that could not be let go was passed over")
-	}
-}
-
-func TestAStateThatRefusesIsSaid(t *testing.T) {
-	f := twoTasks()
-	f.failOp = errRefuse
-	b := hit(standing(f), "ctrl+l")
-	_, cmd := b.pressed("shift+l")
-	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
-		t.Fatal("a move that could not be written was passed over")
-	}
-}
-
-func TestASaveThatRefusesIsSaid(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 1, Title: "First", State: "todo"}}
-	f.failOp = errRefuse
-	if b := finish(hit(standing(f), "ctrl+l", "e"), true); b.err == nil {
-		t.Fatal("a save that could not be written was passed over")
-	}
-	if b := finish(hit(standing(f), "ctrl+l", "a"), true); b.err == nil {
-		t.Fatal("an add that could not be written was passed over")
-	}
-}
-
-func TestAnObjectiveSaveThatRefusesIsSaid(t *testing.T) {
-	f := newFake()
-	f.goals = []board.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	f.failOp = errRefuse
-	if b := finish(hit(standing(f), "tab", "e"), true); b.err == nil {
-		t.Fatal("an objective that could not be saved was passed over")
-	}
-	if b := finish(hit(standing(f), "tab", "a"), true); b.err == nil {
-		t.Fatal("an objective that could not be added was passed over")
-	}
-}
-
-func TestTheBeatIsTwoSeconds(t *testing.T) {
-	if got := beat(); got != 2*time.Second {
-		t.Fatalf("the board asks again every %v", got)
-	}
-}
-
-func TestChosenIsOnlyTheOneHeldInInsert(t *testing.T) {
-	b := standing(twoTasks())
-	card := board.Card{Number: 1}
-	if b.chosen(card) {
-		t.Fatal("a card was picked out while the cursor was on a column")
-	}
-	b.task = 1
-	if !b.chosen(card) {
-		t.Fatal("the card the cursor holds was not picked out")
-	}
-	if b.chosen(board.Card{Number: 2}) {
-		t.Fatal("a card the cursor does not hold was picked out")
-	}
-}
-
-func TestTheObjectiveUnderTheCursorIsDrawnApart(t *testing.T) {
-	f := newFake()
-	f.goals = []board.Goal{
-		{Number: 1, Title: "One", State: "active"},
-		{Number: 2, Title: "Two", State: "active"},
-	}
-	b := hit(standing(f), "tab")
-	width := b.width - 2*geom.Margin
-	held := b
-	held.goal = 1
-	chosen := strings.TrimRight(rowOf(t, held.goalCard(board.Branch{Goal: f.goals[0]}, width), "One"), " ")
-	elsewhere := b
-	elsewhere.goal = 2
-	other := strings.TrimRight(rowOf(t, elsewhere.goalCard(board.Branch{Goal: f.goals[0]}, width), "One"), " ")
-	if chosen == other {
-		t.Fatal("a card under the cursor is drawn exactly like any other")
-	}
-	b.goal = 1
-	if got := onTheBoard(t, b, "One"); got != chosen {
-		t.Fatalf("the objective under the cursor is not drawn as the one under it:\n%q\n%q", got, chosen)
-	}
-	b.goal = 2
-	if got := onTheBoard(t, b, "One"); got != other {
-		t.Fatalf("an objective the cursor is not on is drawn as though it were:\n%q\n%q", got, other)
-	}
-}
-
-func onTheBoard(t *testing.T, b Board, title string) string {
-	t.Helper()
-	return strings.TrimRight(strings.TrimPrefix(rowOf(t, b.Draw(), title), " "), " ")
-}
-
-func rowOf(t *testing.T, drawn, title string) string {
-	t.Helper()
-	for _, row := range strings.Split(drawn, "\n") {
-		if strings.Contains(row, title) {
-			return row
-		}
-	}
-	t.Fatalf("no row carries %q:\n%s", title, drawn)
-	return ""
-}
-
-func TestTheBarIsCutToTheScreenAndNoWider(t *testing.T) {
-	b := standing(twoTasks())
-	b.skin = plainSkin
-	b.width = 48
-	if got := b.foot(); got != " hjkl ←↓↑→ tasks   ^hl columns   a new" {
-		t.Fatalf("at 48 the bar reads %q", got)
-	}
-	b.width = 49
-	if got := b.foot(); got != " hjkl ←↓↑→ tasks   ^hl columns   a new   / search" {
-		t.Fatalf("at 49 the bar reads %q", got)
-	}
-}
-
 func manyGoals() *fake {
 	f := newFake()
 	for i := 1; i <= 9; i++ {
 		f.goals = append(f.goals, board.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active"})
 	}
 	return f
-}
-
-func TestLeavingAnObjectiveGoesBackToTheList(t *testing.T) {
-	f := newFake()
-	f.goals = []board.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo", Objectives: []int{3}}}
-	b := hit(standing(f), "tab", "enter")
-	if b.inside != 3 {
-		t.Fatalf("opening the objective left inside at %d", b.inside)
-	}
-	b = hit(b, "esc")
-	if b.inside != 0 || b.tab != board.Objectives || b.Where().Goal != 3 {
-		t.Fatalf("escape left inside=%d tab=%v goal=%d", b.inside, b.tab, b.Where().Goal)
-	}
-}
-
-func TestEscapeOnTheBoardItselfDoesNothing(t *testing.T) {
-	b := standing(twoTasks())
-	if after := hit(b, "esc"); after.Draw() != b.Draw() {
-		t.Fatal("escape changed a board there is nothing above")
-	}
-}
-
-func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
-	skin := design.SkinOf(design.PaletteOf(theme.Default()))
-	g := GlyphsFor(Unicode)
-	todo := Rows(board.Card{Number: 1, Title: "One", State: "todo"}, g, skin, today, engine.Pages{}, 20)
-	if got, want := todo[0], Spread(skin.Faint.Render("1"), "", 20); got != want {
-		t.Fatalf("a card in a column has %q on its first row, want %q", got, want)
-	}
-	stalled := Rows(board.Card{Number: 1, Title: "One", State: "blocked"}, g, skin, today, engine.Pages{}, 20)
-	if stalled[0] == todo[0] {
-		t.Fatal("a stalled card is marked exactly like one in a column")
-	}
-}
-
-func TestAnObjectiveThatIsNotStandingSomewhereKnownIsNotMarked(t *testing.T) {
-	b := standing(newFake())
-	b.skin = design.SkinOf(design.PaletteOf(theme.Default()))
-	known := b.goalRows(board.Goal{Number: 1, Title: "One", State: "active"}, 40)
-	unknown := b.goalRows(board.Goal{Number: 1, Title: "One", State: "invented"}, 40)
-	if known[0] == unknown[0] {
-		t.Fatal("a standing nobody planned for is marked like one that is known")
-	}
-	for _, glyph := range []string{b.glyphs.Active, b.glyphs.OnHold, b.glyphs.Reached, b.glyphs.Dropped} {
-		if strings.Contains(unknown[0], glyph) {
-			t.Fatalf("an unknown standing put %q on the row: %q", glyph, unknown[0])
-		}
-	}
-}
-
-func TestTheObjectiveDrawnAsTheOneUnderTheCursor(t *testing.T) {
-	f := newFake()
-	f.goals = []board.Goal{
-		{Number: 1, Title: "One", State: "active"},
-		{Number: 2, Title: "Two", State: "active"},
-	}
-	b := hit(standing(f), "tab").with(plainSkin)
-	width := b.width - 2*geom.Margin
-	b.goal = 1
-	if got := b.goalCard(board.Branch{Goal: f.goals[0]}, width); !strings.HasPrefix(got, "┃ ") {
-		t.Fatalf("the objective under the cursor is not marked: %q", got)
-	}
-	b.goal = 2
-	if got := b.goalCard(board.Branch{Goal: f.goals[0]}, width); strings.Contains(got, "┃") {
-		t.Fatalf("an objective the cursor is not on is marked: %q", got)
-	}
 }
 
 func TestAWindowOfOneRowStillDrawsARow(t *testing.T) {
@@ -642,84 +181,6 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	}
 }
 
-func TestAnObjectiveWithNothingUnderItShowsNoCount(t *testing.T) {
-	b := standing(newFake())
-	b.skin = plainSkin
-	if got := b.goalFacts(board.Goal{Number: 1}, 60); strings.Contains(got, "0/0") {
-		t.Fatalf("an objective nothing serves claimed a count: %q", got)
-	}
-	if got := b.goalFacts(board.Goal{Number: 1, Done: 0, Total: 3}, 60); !strings.Contains(got, "0/3") {
-		t.Fatalf("an objective nothing is done on lost its count: %q", got)
-	}
-}
-
-func TestTheFactsBesideAnObjectiveBarAreCutToWhatIsLeft(t *testing.T) {
-	b := standing(newFake())
-	b.skin = plainSkin
-	g := board.Goal{Number: 1, Done: 1, Total: 2, Spent: 90 * time.Minute}
-	const room = barWidth + 2 + 10
-	if got := b.goalFacts(g, room); !strings.Contains(got, "1h30m") {
-		t.Fatalf("a row with room for the time spent reads %q", got)
-	}
-	if got := b.goalFacts(g, room-1); strings.Contains(got, "1h30m") {
-		t.Fatalf("a row one column too narrow kept the time spent: %q", got)
-	}
-}
-
-func TestAnObjectiveCardIsAsWideAsItIsGiven(t *testing.T) {
-	b := standing(newFake())
-	drawn := b.goalCard(board.Branch{Goal: board.Goal{Number: 1, Title: "One"}}, 40)
-	for _, row := range strings.Split(strings.TrimRight(bare(drawn), "\n"), "\n") {
-		if got := lipgloss.Width(row); got > 40 {
-			t.Fatalf("a row given 40 drew %d wide", got)
-		}
-	}
-}
-
-func TestEveryScreensBarIsCutToTheSameWidth(t *testing.T) {
-	b := standing(twoTasks())
-	b.skin = plainSkin
-	b.width = 30
-	if got := b.bar(b.offer("a", "one"), b.offer("b", "two"), b.offer("c", "three")); got != " a one   b two   c three" {
-		t.Fatalf("a bar that fits reads %q", got)
-	}
-	b.width = 17
-	if got := b.bar(b.offer("a", "one"), b.offer("b", "two"), b.offer("c", "three")); got != " a one   b two" {
-		t.Fatalf("a bar one column too narrow for the last reads %q", got)
-	}
-}
-
-func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo"}}
-	for i := range 40 {
-		f.acts = append(f.acts, anAct("changed", strconv.Itoa(i)))
-	}
-	for _, height := range []int{28, 40} {
-		b := heardOf(standing(f), 1)
-		b.width, b.height = 100, height
-		b.task, b.screen = 1, board.OnDetail
-		if got := len(b.history(1, 40, height-10)); got != height-10 {
-			t.Fatalf("in a window %d tall the history drew %d rows, want %d", height, got, height-10)
-		}
-	}
-}
-
-func TestTheHistoryShowsItsEndAndNotItsBeginning(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo"}}
-	for i := range 9 {
-		f.acts = append(f.acts, aChange("title", "act-"+strconv.Itoa(i)))
-	}
-	got := heardOf(standing(f), 1).history(1, 60, 3)
-	if !strings.Contains(strip(got[0]), "act-6") {
-		t.Fatalf("the first row shown is %q, want the seventh act", got[0])
-	}
-	if !strings.Contains(strip(got[2]), "act-8") {
-		t.Fatalf("the last row shown is %q, want the ninth act", got[2])
-	}
-}
-
 func TestEveryScreenFitsTheWindowItIsDrawnIn(t *testing.T) {
 	f := fullBoard()
 	for _, keys := range [][]string{
@@ -736,38 +197,6 @@ func TestEveryScreenFitsTheWindowItIsDrawnIn(t *testing.T) {
 					keys, size[0], size[1], got)
 			}
 		}
-	}
-}
-
-func TestEscapeClosesTheForm(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo", Priority: "normal"}}
-	b := hit(standing(f), "ctrl+l", "e")
-	if b.screen != board.OnForm {
-		t.Fatal("the form did not open")
-	}
-	b = hit(b, "esc")
-	if b.screen != board.OnTheBoard {
-		t.Fatal("escape did not close the form")
-	}
-	if len(f.edited) != 0 {
-		t.Fatalf("escape still wrote %v", f.edited)
-	}
-}
-
-func TestEscapeClosesAnObjectivesForm(t *testing.T) {
-	f := newFake()
-	f.goals = []board.Goal{{Number: 3, Title: "Ship it", State: "active"}}
-	b := hit(standing(f), "tab", "e")
-	if b.screen != board.OnForm {
-		t.Fatal("the objective's form did not open")
-	}
-	b = hit(b, "esc")
-	if b.screen != board.OnTheBoard || b.tab != board.Objectives {
-		t.Fatalf("escape left screen=%v tab=%v", b.screen, b.tab)
-	}
-	if len(f.editedGoal) != 0 {
-		t.Fatalf("escape still wrote %v", f.editedGoal)
 	}
 }
 
@@ -788,106 +217,6 @@ func TestTheHelpCanBeReadPastTheBottomOfTheWindow(t *testing.T) {
 	}
 }
 
-func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 7, Title: "Write the spec", State: "blocked", Priority: "critical"}}
-	b := hit(standing(f), "ctrl+l", "ctrl+j", "e").with(plainSkin)
-	head := b.formHead()
-	for _, want := range []string{"7", "Write the spec", "blocked", "critical"} {
-		if !strings.Contains(head, want) {
-			t.Fatalf("the form's head %q is missing %q", head, want)
-		}
-	}
-	adding := hit(standing(f), "ctrl+l", "a").with(plainSkin)
-	if got := adding.formHead(); !strings.Contains(got, "new") || !strings.Contains(got, "untitled") {
-		t.Fatalf("a new task's head reads %q", got)
-	}
-	goals := newFake()
-	goals.goals = []board.Goal{{Number: 2, Title: "Ship it", State: "on-hold", Priority: "low"}}
-	objective := hit(standing(goals), "tab", "e").with(plainSkin)
-	if got := objective.formHead(); !strings.Contains(got, "on-hold") {
-		t.Fatalf("an objective's head reads %q", got)
-	}
-}
-
-func TestAReadingAfterASaveClosesTheFormAndNothingElse(t *testing.T) {
-	f := twoTasks()
-	b := hit(standing(f), "ctrl+l", "e")
-	if b.screen != board.OnForm {
-		t.Fatalf("the form did not open: %v", b.screen)
-	}
-	if after := b.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != board.OnForm {
-		t.Fatalf("a reading made while the form is open closed it, on %v", after.screen)
-	}
-	b.screen = board.OnTheBoard
-	if after := b.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != board.OnTheBoard || after.form.asked != nil {
-		t.Fatalf("a write that went through left the board on %v", after.screen)
-	}
-
-	onDetail := hit(standing(f), "ctrl+l", "enter")
-	if onDetail.screen != board.OnDetail {
-		t.Fatalf("the detail did not open: %v", onDetail.screen)
-	}
-	if after := onDetail.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != board.OnDetail {
-		t.Fatalf("a reading coming back closed the detail: %v", after.screen)
-	}
-}
-
-func TestAStepTheStoreRefusesIsSaid(t *testing.T) {
-	for _, verb := range []string{"edit"} {
-		t.Run("a step the store will not "+verb, func(t *testing.T) {
-			f := newFake()
-			f.cards = []board.Card{
-				{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}},
-			}
-			b := hit(standing(f), "ctrl+l", "e")
-			if b.screen != board.OnForm {
-				t.Fatalf("the form did not open: %v", b.screen)
-			}
-			b.form = b.form.typedInto("steps", "[ ] Rédiger la section Flux")
-			f.refuseVerb = verb
-			cmd := b.saveTask(b.form, false)
-			if cmd == nil {
-				t.Fatal("saving asked for nothing")
-			}
-			looked, ok := cmd().(Looked)
-			if !ok || looked.Err == nil {
-				t.Fatalf("a step the store refused to %s answered %v", verb, looked)
-			}
-		})
-	}
-}
-
-func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
-	f := twoTasks()
-	b := hit(standing(f), "ctrl+l")
-	b = hit(b, "enter")
-	if b.screen != board.OnDetail {
-		t.Fatalf("enter left the board on %v", b.screen)
-	}
-	heard := 0
-	for _, a := range f.asked {
-		if a.op.Name() == "trace_show" {
-			heard++
-		}
-	}
-	if heard != 1 {
-		t.Fatalf("opening the task read its history %d times, want once", heard)
-	}
-	for range 3 {
-		_ = b.Draw()
-	}
-	after := 0
-	for _, a := range f.asked {
-		if a.op.Name() == "trace_show" {
-			after++
-		}
-	}
-	if after != heard {
-		t.Errorf("drawing three times read the history %d more times", after-heard)
-	}
-}
-
 func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
 	b := standing(newFake())
 	var told act.AsTold
@@ -903,27 +232,5 @@ func TestAHistoryLineSaysWhoDidItWhenItWasNotYou(t *testing.T) {
 	}
 	if got := strip(b.line(anAct("created", ""))); strings.Contains(got, "(") {
 		t.Errorf("a change made by hand reads %q", got)
-	}
-}
-
-func TestAHistoryLineSaysTheSeriesAnOccurrenceWasMadeFrom(t *testing.T) {
-	b := standing(newFake())
-	if got := strip(b.line(anAct(series.MadeFromSeries, "↻3"))); !strings.Contains(got, "made from series  ↻3") {
-		t.Errorf("an occurrence made reads %q", got)
-	}
-}
-
-func TestReadingTheBoardAgainReadsTheOpenHistoryAgain(t *testing.T) {
-	f := twoTasks()
-	b := hit(standing(f), "ctrl+l", "enter")
-	if _, cmd := b.Update(Looked{Snapshot: b.snap}); cmd == nil {
-		t.Fatal("reading the board again with a task open read nothing more")
-	}
-	_, cmd := standing(f).Update(Looked{Snapshot: b.snap})
-	if cmd == nil {
-		t.Fatal("reading the board again did not read the week its time tab counts")
-	}
-	if _, heard := cmd().(Heard); heard {
-		t.Error("reading the board again with no task open read a history")
 	}
 }

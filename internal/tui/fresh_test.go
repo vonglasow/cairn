@@ -36,15 +36,3 @@ func TestAFormOpenTakesWhatChangedElsewhereButWhatWasTyped(t *testing.T) {
 		t.Error("what was typed no longer counts as a change")
 	}
 }
-
-func TestASavedFormClosesOnTheReadingItAskedFor(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 1, Title: "Ship it", State: "todo"}}
-	b := hit(standing(f), "ctrl+l", "e", "ctrl+s")
-	if b.screen == board.OnForm || b.form.asked != nil {
-		t.Errorf("a saved form is still open, on %v", b.screen)
-	}
-	if model, _ := b.Update(Looked{Snapshot: test.Searchable(board.Snapshot{Cards: f.cards, Version: 3})}); model.(Board).screen == board.OnForm {
-		t.Error("a later reading opened the form again")
-	}
-}

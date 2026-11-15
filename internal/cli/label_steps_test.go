@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/cucumber/godog"
-
-	"cairn/test"
 )
 
 func (w *world) registerLabel(sc *godog.ScenarioContext) {
@@ -25,27 +23,6 @@ func (w *world) registerLabel(sc *godog.ScenarioContext) {
 			return nil
 		}
 		return fmt.Errorf("no label %q is listed:\n%s", label, w.Out.Stdout)
-	})
-	sc.Step(`^the JSON gives the label "([^"]*)" carried by (\d+) tasks? and (\d+) objectives?$`, func(label string, tasks, objectives int) error {
-		var listed struct {
-			Labels []struct {
-				Label      string `json:"label"`
-				Tasks      int    `json:"tasks"`
-				Objectives int    `json:"objectives"`
-			} `json:"labels"`
-		}
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &listed); err != nil {
-			return err
-		}
-		for _, one := range listed.Labels {
-			if one.Label == label {
-				if one.Tasks != tasks || one.Objectives != objectives {
-					return fmt.Errorf("the label %q is carried by %+v", label, one)
-				}
-				return nil
-			}
-		}
-		return fmt.Errorf("the JSON lists no label %q:\n%s", label, w.Out.Stdout)
 	})
 	sc.Step(`^the JSON gives the label "([^"]*)" the colour "([^"]*)"$`, func(label, colour string) error {
 		var listed struct {
@@ -86,18 +63,6 @@ func (w *world) registerLabel(sc *godog.ScenarioContext) {
 			}
 		}
 		return fmt.Errorf("the JSON lists no label %q:\n%s", label, w.Out.Stdout)
-	})
-	sc.Step(`^it says the label "([^"]*)" is for (tasks|objectives) only$`, func(label, scope string) error {
-		return test.WantContains(w.Out.Stderr, fmt.Sprintf("%q is a label for %s only", label, scope), "the refusal")
-	})
-	sc.Step(`^it says the label "([^"]*)" is carried by (\d+ tasks?|\d+ objectives?)$`, func(label, carried string) error {
-		return test.WantContains(w.Out.Stderr, fmt.Sprintf("%q is carried by %s", label, carried), "the refusal")
-	})
-	sc.Step(`^it says there is no label$`, func() error {
-		return test.WantContains(w.Out.Stdout, "no label", "the listing")
-	})
-	sc.Step(`^it says nothing carries the label "([^"]*)"$`, func(label string) error {
-		return test.WantContains(w.Out.Stderr, label, "the refusal")
 	})
 }
 

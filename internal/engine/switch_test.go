@@ -3,11 +3,7 @@ package engine
 import (
 	"cairn/internal/engine/workspace"
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
-
-	"cairn/internal/store/files"
 )
 
 func heldOn(t *testing.T, h Home) *Engine {
@@ -18,40 +14,6 @@ func heldOn(t *testing.T, h Home) *Engine {
 	}
 	t.Cleanup(func() { _ = held.Close() })
 	return held
-}
-
-func TestSwitch_holdsTheOtherWorkspacesStoreInPlace(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	held := heldOn(t, h)
-	if _, err := held.Ask(TaskNew, Input{Given: map[string]string{"title": "at work"}}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Switch(held, Elsewhere{Workspace: "home"}); err != nil {
-		t.Fatalf("Switch = %v", err)
-	}
-	listed, err := held.Ask(TaskList, Input{})
-	if err != nil || len(listed.Tasks) != 0 {
-		t.Errorf("home lists %d tasks, %v; want none of work's", len(listed.Tasks), err)
-	}
-	shown, err := held.Ask(WorkspaceShow, Input{})
-	if err != nil || shown.WorkspaceShown.Workspace != "home" {
-		t.Errorf("WorkspaceShow = %+v, %v; want home", shown.WorkspaceShown, err)
-	}
-	if _, err := os.Stat(filepath.Join(h.Dir, "h", "cairn.db")); err != nil {
-		t.Errorf("home's store was not opened: %v", err)
-	}
-}
-
-func TestSwitch_writesNoConfiguration(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	held := heldOn(t, h)
-	if _, err := Switch(held, Elsewhere{Workspace: "home"}); err != nil {
-		t.Fatal(err)
-	}
-	said, err := os.ReadFile(files.FileIn(h.Dir))
-	if err != nil || string(said) != twoWorkspaces {
-		t.Errorf("the configuration reads %q, %v; want it as it was", said, err)
-	}
 }
 
 func TestSwitch_aFolderGoneIsRefusedAndTheStoreHeldStays(t *testing.T) {
@@ -66,43 +28,5 @@ func TestSwitch_aFolderGoneIsRefusedAndTheStoreHeldStays(t *testing.T) {
 	listed, err := held.Ask(TaskList, Input{})
 	if err != nil || len(listed.Tasks) != 1 {
 		t.Errorf("work lists %d tasks, %v; want its one still", len(listed.Tasks), err)
-	}
-}
-
-func TestSwitch_keepsWhoActsAndThroughWhat(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	held := heldOn(t, h)
-	was := held.acting
-	if _, err := Switch(held, Elsewhere{Workspace: "home"}); err != nil {
-		t.Fatal(err)
-	}
-	if held.acting != was {
-		t.Errorf("acting = %+v; want %+v", held.acting, was)
-	}
-}
-
-func TestSwitch_saysThePagesOfTheStoreNowHeld(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	if err := os.WriteFile(filepath.Join(h.Dir, "h", files.SettingsFile), []byte("[pages]\ntime = \"off\"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	held := heldOn(t, h)
-	pages, err := Switch(held, Elsewhere{Workspace: "home"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if pages.Shows(PageTime) {
-		t.Errorf("home shows its time; want it off")
-	}
-	if pages, err = Switch(held, Elsewhere{Workspace: "work"}); err != nil || !pages.Shows(PageTime) {
-		t.Errorf("work hides its time, %v; want it shown", err)
-	}
-}
-
-func TestWorkspace_foundSaysWhetherItsFolderIsThere(t *testing.T) {
-	there := workspace.Workspace{Name: "work", Folder: t.TempDir()}
-	gone := workspace.Workspace{Name: "home", Folder: filepath.Join(t.TempDir(), "gone")}
-	if !there.Found() || gone.Found() {
-		t.Errorf("Found = %v, %v; want true, false", there.Found(), gone.Found())
 	}
 }

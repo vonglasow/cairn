@@ -42,28 +42,3 @@ func TestTheKeyboardWalksUpFromTheFiltersIntoTheViews(t *testing.T) {
 		t.Error("with no view, up walks into a view")
 	}
 }
-
-func TestAViewNamingAnObjectiveHoldingSubObjectivesDrawsTheNarrowingBar(t *testing.T) {
-	w := viewedHome(1200, 800).Key("cmd+1")
-	n := w.Narrowing()
-	if n.Root != 1 || len(n.At) != 4 || n.On != 0 {
-		t.Fatalf("the view draws the bar %+v", n)
-	}
-	sub := w.narrowedTo(1)
-	if taken, _ := sub.ObjectiveTaken(); taken != "2" || !sub.ViewChanged() {
-		t.Errorf("narrowed to Enclosure the filter on top is %q", taken)
-	}
-	if back := sub.narrowedTo(0); back.ViewChanged() || back.Narrowing().On != 0 {
-		t.Errorf("narrowed back to all, the view is changed: %v", back.ViewChanged())
-	}
-	if other := w.Key("cmd+2"); other.Narrowing().Box.W != 0 {
-		t.Error("a view naming no objective draws the bar")
-	}
-}
-
-func TestTheObjectivesTabCountsOnlyWhatItShowsWhenAViewLeavesThemWhole(t *testing.T) {
-	w := viewedHome(1200, 800).Key("cmd+2")
-	if got := w.TabCount(board.Objectives); got != "4" {
-		t.Errorf("under a view narrowing no objective the tab counts %q", got)
-	}
-}

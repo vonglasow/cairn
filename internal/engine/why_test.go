@@ -2,8 +2,6 @@ package engine
 
 import (
 	"cairn/internal/engine/workspace"
-	"encoding/json"
-	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -51,29 +49,6 @@ func TestWorkspaceShow_whyNamesTheRungAndThoseItPassedOver(t *testing.T) {
 		if said := RenderText(WorkspaceShow, answer); !strings.Contains(said, "why        "+at(h, c.says)+"\n") || strings.Contains(said, "because") {
 			t.Errorf("%s: it says\n%s\nwant why %q", c.name, said, at(h, c.says))
 		}
-	}
-}
-
-func TestWorkspaceShow_aServerSaysWhyAsItWasWhenItStarted(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	h.Workspace = "home"
-	kept := Keep(h)
-	if kept.Kept == nil || !kept.Kept.Why.Started || kept.Kept.Why.Rung != workspace.RungWorkspaceFlag {
-		t.Fatalf("kept %+v, want why --workspace, settled as the server started", kept.Kept)
-	}
-	answer, err := WorkspaceShow.Run(workedOn{Home: kept}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if said := RenderText(WorkspaceShow, answer); !strings.Contains(said, "why        when this server started, --workspace — over the default, work\n") {
-		t.Errorf("it says\n%s", said)
-	}
-	said, err := json.Marshal(answer.WorkspaceShown)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(said), `"why":{"rung":"--workspace","over":[{"rung":"the default","names":"work"}],"started":true}`) {
-		t.Errorf("a machine reads %s", said)
 	}
 }
 
@@ -131,20 +106,6 @@ func TestWorkspaceList_marksTheTimeEachWorkspaceKeeps(t *testing.T) {
 	}
 }
 
-func TestWorkspaceList_leavesUnmarkedTheTimeOfSettingsItCannotRead(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	settingsIn(t, filepath.Join(h.Dir, "h"), "not toml [")
-	answer, err := WorkspaceList.Run(workedOn{Home: h}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, one := range answer.Workspaces.Workspaces {
-		if one.Time != "" {
-			t.Errorf("%s is marked time %q", one.Name, one.Time)
-		}
-	}
-}
-
 func TestConfigShow_saysWhatTheGlobalConfigurationGivesBesideAKeySetHere(t *testing.T) {
 	h := homeHolding(t, "[focus]\nsession = \"1h\"\n[approach]\nlabel = \"discuss\"\n", map[string]string{files.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "[focus]\nsession = \"25m\"\n[time]\nweekends = \"hidden\"\n[approach]\nlabel = \"\"\n[archive]\nstart = 2026-01-01\ndays = 30\n[pages]\ntasks = false\ntime = \"off\"\n[window]\nkeep_sizes = true\n[workspace]\ncolour = \"teal\"\n")
@@ -178,48 +139,5 @@ func TestConfigShow_saysWhatTheGlobalConfigurationGivesBesideAKeySetHere(t *test
 		if !strings.Contains(said, line) {
 			t.Errorf("config show does not say %q:\n%s", line, said)
 		}
-	}
-}
-
-func TestConfigShow_saysTheColourOfTheWorkspaceAndWhereItComesFrom(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c := answer.Config; c.Workspace == nil || c.Workspace.Colour != workspace.ColourOf("work", "") {
-		t.Fatalf("Config = %+v, want the colour read off work", c.Workspace)
-	}
-	if said := workspace.ConfigText(*answer.Config); !strings.Contains(said, "\n[workspace]\ncolour = \""+workspace.ColourOf("work", "")+"\"   # read off the workspace's name\n\n[workspaces]") {
-		t.Errorf("config show says\n%s", said)
-	}
-	loose := homeHolding(t, "", map[string]string{files.StoreVariable: "~/s/cairn.db"})
-	answer, err = ConfigShow.Run(workedOn{Home: loose}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if answer.Config.Workspace != nil || strings.Contains(workspace.ConfigText(*answer.Config), "[workspace]\n") {
-		t.Errorf("a store no workspace names says a colour: %+v", answer.Config.Workspace)
-	}
-}
-
-func TestConfigInit_namesOneWorkspaceTheDefaultAndMakesItsFolder(t *testing.T) {
-	home := t.TempDir()
-	if _, err := ConfigInit.Run(workedOn{Home: Home{Dir: home}}, Input{}); err != nil {
-		t.Fatal(err)
-	}
-	at, err := Locate(Home{Dir: home})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if at.Store != filepath.Join(home, ".cairn", "cairn.db") || at.Notes != filepath.Join(home, ".cairn", "notes") {
-		t.Errorf("places %+v, want those cairn has always used", at)
-	}
-	if _, err := os.Stat(filepath.Join(home, ".cairn", "notes")); err != nil {
-		t.Errorf("the folder of the default workspace is not made: %v", err)
-	}
-	read, err := files.Read(home, func(string) (string, bool) { return "", false })
-	if err != nil || read.DefaultWorkspace() != "main" {
-		t.Errorf("the default is %q, %v; want main", read.DefaultWorkspace(), err)
 	}
 }

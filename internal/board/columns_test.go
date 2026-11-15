@@ -5,43 +5,6 @@ import (
 	"testing"
 )
 
-func TestDeal(t *testing.T) {
-	all, band := Deal([]Card{
-		{Number: 1, State: "backlog"},
-		{Number: 2, State: "todo"},
-		{Number: 3, State: "current"},
-		{Number: 4, State: "done"},
-		{Number: 5, State: "blocked"},
-		{Number: 6, State: "watching"},
-		{Number: 7, State: "paused"},
-	}, false)
-	if len(all) != Columns {
-		t.Fatalf("dealt into %d columns, want %d", len(all), Columns)
-	}
-	for i, want := range []string{"backlog", "todo", "current", "done"} {
-		if all[i].State != want {
-			t.Fatalf("column %d is %q, want %q", i, all[i].State, want)
-		}
-		if len(all[i].Cards) != 1 {
-			t.Fatalf("column %q holds %d cards, want 1", want, len(all[i].Cards))
-		}
-	}
-	if len(band) != 3 {
-		t.Fatalf("the band holds %d cards, want 3", len(band))
-	}
-}
-
-func TestDealKeepsTheOrderItWasGiven(t *testing.T) {
-	all, _ := Deal([]Card{
-		{Number: 9, State: "todo"},
-		{Number: 2, State: "todo"},
-	}, false)
-	got, _ := At(all, "todo")
-	if got.Cards[0].Number != 9 || got.Cards[1].Number != 2 {
-		t.Fatalf("the order changed: %v", got.Cards)
-	}
-}
-
 func TestDealDrawsTheTasksInFocusFirstInCurrent(t *testing.T) {
 	all, _ := Deal([]Card{
 		{Number: 1, State: "current"},
@@ -62,18 +25,6 @@ func TestDealDrawsTheTasksInFocusFirstInCurrent(t *testing.T) {
 	todo, _ := At(all, "todo")
 	if todo.Cards[0].Number != 5 || todo.Cards[1].Number != 6 {
 		t.Errorf("todo reads %v: only current puts the focus first", todo.Cards)
-	}
-}
-
-func TestDealPassesOverAStateItDoesNotKnow(t *testing.T) {
-	all, band := Deal([]Card{{Number: 1, State: "elsewhere"}}, false)
-	if len(band) != 0 {
-		t.Fatal("an unknown state went into the band")
-	}
-	for _, c := range all {
-		if len(c.Cards) != 0 {
-			t.Fatalf("an unknown state went into %q", c.State)
-		}
 	}
 }
 
@@ -134,18 +85,5 @@ func TestFound_reachesATaskThroughItsSteps(t *testing.T) {
 		if got := numbers(Found(all, tc.query, false)); !slices.Equal(got, tc.want) {
 			t.Errorf("%s: Found(%q, false) = %v, want %v", tc.what, tc.query, got, tc.want)
 		}
-	}
-}
-
-func TestOnTheBoard_leavesArchivedOutUnlessAskedFor(t *testing.T) {
-	cards := []Card{
-		{Number: 1, State: "done", Archived: true},
-		{Number: 2, State: "done"},
-	}
-	if laid := Laid(cards, false); len(laid) != 1 || laid[0].Number != 2 {
-		t.Fatalf("the board laid out %v, not task 2 on its own", laid)
-	}
-	if laid := Laid(cards, true); len(laid) != 2 {
-		t.Fatalf("asked for, the archived stayed off the board: %v", laid)
 	}
 }

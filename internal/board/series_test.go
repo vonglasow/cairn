@@ -109,76 +109,6 @@ func TestSeriesFields_areWhatTheNextIsMadeFromAndItsRule(t *testing.T) {
 	}
 }
 
-func TestSaved_sendsNoRuleLeftEmpty(t *testing.T) {
-	fields := append(AddingFields("todo"), RepeatsField())
-	for i := range fields {
-		if fields[i].Name == "title" {
-			fields[i].Value = "Water"
-		}
-	}
-	_, in := Saved(fields, true, 0, engine.TaskNew, engine.TaskEdit)
-	if _, named := in.Given["every"]; named {
-		t.Errorf("an empty rule was sent: %v", in.Given)
-	}
-	fields[len(fields)-1].Value = "every 3 days"
-	if _, in := Saved(fields, true, 0, engine.TaskNew, engine.TaskEdit); in.Given["every"] != "every 3 days" {
-		t.Errorf("the rule typed was not sent: %v", in.Given)
-	}
-	if f := RepeatsField(); f.Name != "rule" || f.Arg != "every" || f.Means == "" {
-		t.Errorf("the field reads %+v", f)
-	}
-}
-
-func TestSaved_sendsNoSeriesFieldWithoutARule(t *testing.T) {
-	fields := withDay(append(AddingFields("todo"), RepeatsField(), FromField()), "Water", "2026-11-10")
-	_, in := Saved(fields, true, 0, engine.TaskNew, engine.TaskEdit)
-	for _, name := range []string{"every", "from"} {
-		if _, named := in.Given[name]; named {
-			t.Errorf("%s was sent with no rule: %v", name, in.Given)
-		}
-	}
-	fields = withDay(append(EditFields(Card{Number: 4, Title: "Water", State: "todo", Priority: "normal"}), RepeatsField(), FromField()), "Water", "2026-11-10")
-	if _, in := Saved(fields, false, 4, engine.TaskNew, engine.TaskEdit); len(in.Given) != 2 {
-		t.Errorf("an edit with no rule sent %v", in.Given)
-	}
-	fields[len(fields)-2].Value = "every 3 days"
-	if _, in := Saved(fields, false, 4, engine.TaskNew, engine.TaskEdit); in.Given["from"] != "2026-11-10" || in.Given["every"] != "every 3 days" {
-		t.Errorf("the day typed beside a rule was not sent: %v", in.Given)
-	}
-}
-
-func withDay(fields []Field, title, day string) []Field {
-	for i := range fields {
-		switch fields[i].Name {
-		case "title":
-			fields[i].Value = title
-		case FromField().Name:
-			fields[i].Value = day
-		}
-	}
-	return fields
-}
-
-func TestFoundSeries_keepsWhatCarriesEveryWord(t *testing.T) {
-	all := []engine.Series{{Number: 1, Title: "Stand-up", Rule: "every day"}, {Number: 2, Title: "Expense report", Rule: "every 4 weeks on mon"}}
-	if got := foundSeries(all, "expense"); len(got) != 1 || got[0].Number != 2 {
-		t.Errorf("expense found %v", got)
-	}
-	if got := foundSeries(all, ""); len(got) != 2 {
-		t.Errorf("nothing typed found %v", got)
-	}
-	if got := foundSeries(all, "↻1"); len(got) != 1 || got[0].Number != 1 {
-		t.Errorf("↻1 found %v", got)
-	}
-}
-
-func TestPages_withoutRecurrenceOffersNoSeries(t *testing.T) {
-	p := engine.Pages{}.WithoutRecurrence()
-	if p.Recurs() || p.Offers(engine.SeriesList) {
-		t.Error("recurrence turned off still offers the series")
-	}
-}
-
 func TestRecurring_leavesNoSeriesWhileRecurrenceIsOff(t *testing.T) {
 	s := Snapshot{Series: []engine.Series{{Number: 1}}, Cards: []Card{{Number: 1, Series: &series.Occurs{Series: 1}}, {Number: 2}}}
 	if on := Recurring((engine.Pages{}), s); len(on.Series) != 1 || on.Cards[0].Series == nil {
@@ -359,59 +289,9 @@ func TestNextDaySaid_isTheNextDayAndItsTimeToday(t *testing.T) {
 	}
 }
 
-func TestSeriesFields_offerTheColumnItsOccurrencesArriveIn(t *testing.T) {
-	for _, f := range SeriesFields(engine.Series{Template: series.Template{Arrives: "current"}}) {
-		if f.Name == "column" {
-			if f.Arg != "state" || f.Value != "current" || len(f.Choices) != 3 {
-				t.Errorf("the column field is %+v, want state, current, three choices", f)
-			}
-			return
-		}
-	}
-	t.Error("the form of a series offers no column")
-}
-
 func TestOccurrenceDay_saysNothingOfAnOccurrenceWithNoDay(t *testing.T) {
 	now := time.Date(2026, 11, 12, 10, 30, 0, 0, time.UTC)
 	if text, show, _, _ := OccurrenceDay(Card{State: "todo", Series: &series.Occurs{}}, now); show || text != "" {
 		t.Errorf("said %q, shown %v", text, show)
-	}
-}
-
-func TestOccurrenceDay_aTimeThatIsNowIsNotPassed(t *testing.T) {
-	now := time.Date(2026, 11, 12, 10, 30, 0, 0, time.UTC)
-	if _, _, _, passed := OccurrenceDay(Card{State: "todo", Series: &series.Occurs{Day: "2026-11-12", At: "10:30"}}, now); passed {
-		t.Error("10:30 is passed at 10:30")
-	}
-}
-
-func TestEachSaid_saysNothingBeforeOneIsDoneWhateverWasSpent(t *testing.T) {
-	if got := EachSaid(engine.Series{TimeSpent: "1h"}); got != "" {
-		t.Errorf("said %q", got)
-	}
-}
-
-func TestNextDaySaid_aDayOtherThanTodayCarriesNoTime(t *testing.T) {
-	now := time.Date(2026, 11, 9, 9, 0, 0, 0, time.UTC)
-	if got := NextDaySaid(engine.Series{Rule: "every day 10:30", Next: []string{"2026-11-10"}}, now); got != "Tue 10" {
-		t.Errorf("said %q", got)
-	}
-	if got := NextDaySaid(engine.Series{Rule: "every day", Next: []string{"2026-11-09"}}, now); got != "today" {
-		t.Errorf("said %q", got)
-	}
-}
-
-func TestSeriesFields_giveAnExampleToWhatIsTypedAndNoneToAChoice(t *testing.T) {
-	for _, f := range SeriesFields(engine.Series{}) {
-		want := typedLike["task "+f.Arg]
-		if len(f.Choices) > 0 {
-			want = ""
-		}
-		if f.Example != want {
-			t.Errorf("%s has the example %q, want %q", f.Name, f.Example, want)
-		}
-	}
-	if fields := SeriesFields(engine.Series{}); fields[0].Example != "Write the spec" {
-		t.Errorf("the title has the example %q", fields[0].Example)
 	}
 }

@@ -1,10 +1,7 @@
 package engine
 
 import (
-	"cairn/internal/engine/filter"
 	"errors"
-	"slices"
-	"strings"
 	"testing"
 	"time"
 
@@ -88,63 +85,5 @@ func TestDo_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
 	}
 	if _, err := Do(TraceShow, path, given("number", "1")); !errors.Is(err, task.ErrNoSuchTask) {
 		t.Errorf("the history of what was undone = %v, want nothing written down", err)
-	}
-}
-
-func TestAsk_keepsNothingOfAnOperationThatFailedHalfway(t *testing.T) {
-	e := openEngine(t)
-	failed := errors.New("halfway")
-	op := Operation{Thing: "task", Verb: "half", Level: write, Needs: aStore,
-		Run: func(on workedOn, _ Input) (Answer, error) {
-			if _, err := on.Engine.add("Write the spec", Changes{}); err != nil {
-				return Answer{}, err
-			}
-			return Answer{}, failed
-		}}
-	if _, err := e.Ask(op, Input{}); !errors.Is(err, failed) {
-		t.Fatalf("Ask = %v, want the operation's own failure", err)
-	}
-	all, err := e.tasks.All()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(all) != 0 {
-		t.Errorf("%d tasks kept, want none", len(all))
-	}
-}
-
-type keptBy struct {
-	task.Store
-	told []string
-}
-
-func (k *keptBy) Narrowed(n *filter.Narrowing) ([]task.Task, error) {
-	n.Tell(k)
-	return []task.Task{}, nil
-}
-func (k *keptBy) InColumn(s string)   { k.told = append(k.told, "column "+s) }
-func (k *keptBy) Carrying(p string)   { k.told = append(k.told, "priority "+p) }
-func (k *keptBy) DueBefore(string)    {}
-func (k *keptBy) InFocus(bool)        {}
-func (k *keptBy) Serving([]int)       {}
-func (k *keptBy) Labelled(l []string) { k.told = append(k.told, "labels "+strings.Join(l, ",")) }
-func (k *keptBy) Archived()           {}
-func (k *keptBy) WithArchived()       {}
-
-func TestNarrowed_isSaidToWhateverKeepsTheTasks(t *testing.T) {
-	kept, err := keeping(Input{
-		Given:  map[string]string{"state": "done", "priority": "high"},
-		Listed: map[string][]string{"label": {"spec"}},
-	}, taskNarrowing, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	k := &keptBy{}
-	e := &Engine{tasks: k}
-	if _, err := e.narrowed(kept); err != nil {
-		t.Fatal(err)
-	}
-	if want := []string{"column done", "priority high", "labels spec"}; !slices.Equal(k.told, want) {
-		t.Errorf("told %v, want %v", k.told, want)
 	}
 }

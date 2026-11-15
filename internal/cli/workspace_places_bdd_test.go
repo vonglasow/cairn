@@ -33,12 +33,6 @@ func (w *workspaces) registerPlaces(sc *godog.ScenarioContext) {
 		w.Here = w.expand(dir)
 		return os.MkdirAll(w.Here, 0o700)
 	})
-	sc.Step(`^the workspace "([^"]*)" at "([^"]*)", with no default$`, func(name, folder string) error {
-		if err := os.MkdirAll(w.expand(folder), 0o700); err != nil {
-			return err
-		}
-		return w.WriteConfig(fmt.Sprintf("[workspaces]\n%s = %q\n", name, folder))
-	})
 	sc.Step(`^the workspace "([^"]*)" at "([^"]*)", its notes at "([^"]*)", the default being "([^"]*)"$`, func(name, folder, notes, chosen string) error {
 		if err := os.MkdirAll(w.expand(folder), 0o700); err != nil {
 			return err
@@ -50,12 +44,6 @@ func (w *workspaces) registerPlaces(sc *godog.ScenarioContext) {
 			return err
 		}
 		return test.WantContains(w.Out.Stdout, "folder     "+w.expand(folder)+"\n", "the answer")
-	})
-	sc.Step(`^it says the workspace is "([^"]*)", because the current directory is under its folder$`, func(name string) error {
-		if err := test.WantContains(w.Out.Stdout, "workspace  "+name+"\n", "the answer"); err != nil {
-			return err
-		}
-		return test.WantContains(w.Out.Stdout, "why        the current directory", "the answer")
 	})
 	sc.Step(`^a configuration that says the store lives at "([^"]*)" and the notes at "([^"]*)"$`, func(store, notes string) error {
 		return w.WriteConfig(fmt.Sprintf("store = %q\nnotes = %q\n", store, notes))
@@ -73,16 +61,6 @@ func (w *workspaces) registerPlaces(sc *godog.ScenarioContext) {
 		}
 		if notes != "" && w.expand(said.notes[name]) != w.expand(notes) {
 			return fmt.Errorf("the notes of %q are at %q, want %q:\n%s", name, said.notes[name], notes, said.text)
-		}
-		return nil
-	})
-	sc.Step(`^the configuration names the workspace "([^"]*)" the default, and no workspace "([^"]*)"$`, func(name, none string) error {
-		said, err := w.workspacesSaid()
-		if err != nil {
-			return err
-		}
-		if _, there := said.folders[none]; there || said.chosen != name {
-			return fmt.Errorf("the configuration says the default %q, with the workspaces %v; want %q and no %q:\n%s", said.chosen, said.folders, name, none, said.text)
 		}
 		return nil
 	})

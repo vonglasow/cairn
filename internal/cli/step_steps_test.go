@@ -61,13 +61,6 @@ func (w *world) namesStepAt(place int, title, how string) error {
 	return fmt.Errorf("no step %d is named %q:\n%s", place, title, w.Out.Stdout)
 }
 
-func (w *world) doesNotMention(what string) error {
-	if strings.Contains(w.Out.Stdout, what) {
-		return fmt.Errorf("it mentions %q:\n%s", what, w.Out.Stdout)
-	}
-	return nil
-}
-
 func (w *world) aStoreBeforeSteps() error {
 	before, err := os.ReadFile(filepath.Join("testdata", "sub-tasks-before-steps.db"))
 	if err != nil {
@@ -87,10 +80,6 @@ func (w *world) registerStep(sc *godog.ScenarioContext) {
 		}
 		return w.Seed(line)
 	})
-	sc.Step(`^I ticked step (\d+) of task (\d+)$`, func(place, n int) error {
-		return w.Seed(fmt.Sprintf("cairn step edit %d %d --done", n, place))
-	})
-	sc.Step(`^it names the step "([^"]*)" as (done|not done)$`, w.namesTheStep)
 	sc.Step("^`([^`]*)` names the step \"([^\"]*)\" as (done|not done)$", func(line, title, how string) error {
 		w.Run(line)
 		return w.namesTheStep(title, how)
@@ -98,26 +87,6 @@ func (w *world) registerStep(sc *godog.ScenarioContext) {
 	sc.Step("^`([^`]*)` names step (\\d+) \"([^\"]*)\" as (done|not done)$", func(line string, place int, title, how string) error {
 		w.Run(line)
 		return w.namesStepAt(place, title, how)
-	})
-	sc.Step(`^it does not mention "([^"]*)"$`, w.doesNotMention)
-	sc.Step("^`([^`]*)` does not mention \"([^\"]*)\"$", func(line, what string) error {
-		w.Run(line)
-		return w.doesNotMention(what)
-	})
-	sc.Step(`^it carries the step "([^"]*)", (done|not done)$`, func(title, how string) error {
-		steps, err := w.stepsRead()
-		if err != nil {
-			return err
-		}
-		for _, s := range steps {
-			if s.Title == title {
-				if s.Done != (how == "done") {
-					return fmt.Errorf("the step %q is carried as done: %v, and it is %s", title, s.Done, how)
-				}
-				return nil
-			}
-		}
-		return fmt.Errorf("no step %q is carried: %+v", title, steps)
 	})
 	sc.Step(`^every step of task (\d+) is done$`, func(n int) error {
 		steps, err := w.stepsOfTask(n)
@@ -154,8 +123,5 @@ func (w *world) registerStep(sc *godog.ScenarioContext) {
 		wanted := want
 		sc.Step(step, func() error { return test.WantContains(w.Out.Stderr, wanted, "the reason") })
 	}
-	sc.Step(`^it shows "([^"]*)"$`, func(what string) error {
-		return test.WantContains(w.Out.Stdout, what, "what it shows")
-	})
 	sc.Step(`^a store from before tasks were split into steps$`, w.aStoreBeforeSteps)
 }

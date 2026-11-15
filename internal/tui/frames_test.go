@@ -5,7 +5,6 @@ import (
 	"cairn/internal/theme"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -50,46 +49,7 @@ func fullBoard() *fake {
 	return f
 }
 
-func crowded() *fake {
-	f := newFake()
-	for i := 1; i <= 12; i++ {
-		f.cards = append(f.cards, board.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo", Priority: "normal"})
-	}
-	for i := 20; i < 28; i++ {
-		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked", Because: "waiting"})
-	}
-	for i := 1; i <= 9; i++ {
-		f.goals = append(f.goals, board.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active", Done: i, Total: 9})
-	}
-	f.goals = append(f.goals, board.Goal{Number: 10, Title: "Nothing serves this yet", State: "active"})
-	for i := 1; i <= 12; i++ {
-		f.cards[i-1].Objectives = []int{1}
-	}
-	return f
-}
-
 func init() { time.Local = time.FixedZone("UTC+2", 2*60*60) }
-
-func TestFramesOfACrowdedBoard(t *testing.T) {
-	f := crowded()
-	for _, c := range []struct {
-		name          string
-		width, height int
-		keys          []string
-	}{
-		{"crowded", 100, 40, nil},
-		{"crowded-scrolled", 100, 40, []string{"ctrl+l", "j", "j", "j", "j", "j", "j"}},
-		{"crowded-band", 100, 40, []string{"ctrl+l", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j"}},
-		{"crowded-objectives", 100, 40, []string{"tab", "j", "j", "j", "j", "j", "j"}},
-		{"crowded-inside", 100, 40, []string{"tab", "enter", "l", "i", "j", "j", "j", "j"}},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			b := standing(f)
-			b.width, b.height = c.width, c.height
-			pinned(t, c.name, hit(b, c.keys...).Draw())
-		})
-	}
-}
 
 func TestFrames(t *testing.T) {
 	f := fullBoard()

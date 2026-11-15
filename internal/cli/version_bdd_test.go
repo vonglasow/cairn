@@ -285,7 +285,7 @@ func initVersion(t *testing.T) func(*godog.ScenarioContext) {
 				if err != nil {
 					return err
 				}
-				if err := os.WriteFile(filepath.Join(w.repo, "scripts", name), script, 0o755); err != nil {
+				if err := test.WriteProgram(filepath.Join(w.repo, "scripts", name), string(script)); err != nil {
 					return err
 				}
 			}

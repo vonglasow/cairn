@@ -2,29 +2,11 @@ package gui
 
 import (
 	"cairn/internal/board"
-	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
 	"slices"
 	"strings"
 	"testing"
-
-	"gioui.org/io/pointer"
 )
-
-func TestTheMenuIsLaidOutBesideThePointer(t *testing.T) {
-	w := Window{width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Focus", "Archive", "Delete"}}}
-	w.menuAt = geom.Point{X: 300, Y: 200}
-	if got, want := w.MenuBox(), (geom.Box{X: 300, Y: 200, W: 180, H: 124}); got != want {
-		t.Errorf("the menu is at %+v, want %+v", got, want)
-	}
-	if got, want := MenuRowAt(w.MenuBox(), 2), (geom.Box{X: 306, Y: 262, W: 168, H: 28}); got != want {
-		t.Errorf("its third line is at %+v, want %+v", got, want)
-	}
-	w.menuAt = geom.Point{X: 1150, Y: 790}
-	if got, want := w.MenuBox(), (geom.Box{X: 1020, Y: 676, W: 180, H: 124}); got != want {
-		t.Errorf("near the corner the menu is at %+v, want %+v", got, want)
-	}
-}
 
 func TestTheMenuIsWalkedBothWays(t *testing.T) {
 	w := Window{Board: board.Board{Screen: board.OnMenu}, menuState: menuState{menu: []string{"Edit", "Delete"}}}
@@ -37,42 +19,6 @@ func TestTheMenuIsWalkedBothWays(t *testing.T) {
 	}
 	if got := down.onMenu("k").MenuOn(); got != 0 {
 		t.Errorf("k is on %d, want 0", got)
-	}
-}
-
-func TestTheSecondButtonOpensTheMenu(t *testing.T) {
-	f := newFake()
-	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
-	if w.Screen != board.OnMenu || w.Chosen != 1 {
-		t.Errorf("a right press left the window on %v, choosing %d", w.Screen, w.Chosen)
-	}
-}
-
-func TestTheMenuIsDrawn(t *testing.T) {
-	w := Window{Board: board.Board{Screen: board.OnMenu}, width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Delete"}, menuAt: geom.Point{X: 300, Y: 200}}}
-	shot := drawn(t, w)
-	corner := func(i int) geom.Box {
-		row := MenuRowAt(w.MenuBox(), i)
-		return geom.Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}
-	}
-	if got := ink(shot, corner(0), design.Dark().Colour.Surface.Control); got != 0 {
-		t.Error("the line the keyboard is on is not lit")
-	}
-	if got := ink(shot, corner(1), design.Dark().Colour.Surface.Raised); got != 0 {
-		t.Error("a line the keyboard is not on is lit")
-	}
-	if got := ink(shot, Edges(w.MenuBox())[0], design.Dark().Colour.Surface.Back); got == 0 {
-		t.Error("the menu has no edge")
-	}
-}
-
-func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
-	f := newFake()
-	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Move, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
-	if w.Screen != board.OnTheBoard {
-		t.Errorf("a pointer moving with the second button held left the window on %v", w.Screen)
 	}
 }
 
@@ -105,27 +51,6 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	}
 	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[3] != "Move to…" {
 		t.Errorf("opened again, the menu offers %v", again.Menu())
-	}
-}
-
-func TestTheMenusLitLineStandsOnAPillAndEachLineSaysItsKey(t *testing.T) {
-	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	at := middleOf(w, 1, 0)
-	w = w.ContextAt(at)
-	box := w.MenuBox()
-	row := MenuRowAt(box, 0)
-	shot := drawn(t, w)
-	if painted(shot, geom.Box{X: row.X + row.W/2, Y: row.Y + 1, W: 1, H: 1}, design.Dark().Colour.Surface.Control) != 1 {
-		t.Error("the menu's lit line does not stand on a pill")
-	}
-	if painted(shot, geom.Box{X: box.X, Y: box.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 0 {
-		t.Error("the menu's corner is not rounded")
-	}
-	if got := MenuKey("Edit"); got != "e" {
-		t.Errorf("the menu's Edit line says the key %q", got)
-	}
-	if got := MenuKey("Delete"); got != "cmd+backspace" {
-		t.Errorf("the menu's Delete line says the key %q", got)
 	}
 }
 

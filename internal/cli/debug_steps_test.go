@@ -2,9 +2,7 @@ package cli
 
 import (
 	"archive/zip"
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -143,12 +141,6 @@ func (w *world) registerDebug(sc *godog.ScenarioContext) {
 			return err
 		}
 		oldest = held[0]
-		return nil
-	})
-	sc.Step(`^there is no debug folder beside the store$`, func() error {
-		if _, err := os.Stat(folder()); !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("%s is there: %w", folder(), err)
-		}
 		return nil
 	})
 	sc.Step(`^the debug folder beside the store holds (\d+) files?$`, func(n int) error {

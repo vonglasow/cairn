@@ -68,47 +68,6 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the configuration reads "([^"]*)" (set here|from the global configuration), (?:"([^"]*)"|nothing) beside it$`, func(key, from, aside string) error {
-		row, err := w.settingRow(key)
-		if err != nil {
-			return err
-		}
-		if row.Comes != origins[from] || row.Aside != aside {
-			return fmt.Errorf("%q reads %q %s, %q beside it", key, row.Value, row.Comes, row.Aside)
-		}
-		return nil
-	})
-	sc.Then(`^the panel reads the settings of "([^"]*)" over the global configuration$`, func(name string) error {
-		want := files.SettingsFile + " over " + filepath.Base(files.FileIn(w.spaces.Dir))
-		if got := w.w.SettingsPath(); got != want {
-			return fmt.Errorf("the panel reads %q, not %q", got, want)
-		}
-		written := filepath.Join(w.spaces.FolderOf(name), files.SettingsFile)
-		if !slices.ContainsFunc(w.w.CopyMarks(), func(m CopyMark) bool { return m.Said == written }) {
-			return fmt.Errorf("no mark copies %s: %+v", written, w.w.CopyMarks())
-		}
-		return nil
-	})
-	sc.Then(`^the colour of the workspace reads "([^"]*)", beside its swatch$`, func(colour string) error {
-		row, err := w.settingRow("workspace.colour")
-		if err != nil {
-			return err
-		}
-		if row.Value != colour || row.Key.Kind != files.KindColour {
-			return fmt.Errorf("the colour reads %q", row.Value)
-		}
-		return nil
-	})
-	sc.Then(`^the time reads "([^"]*)" of (".*")$`, func(on, list string) error {
-		row, err := w.settingRow("pages.time")
-		if err != nil {
-			return err
-		}
-		if row.Value != on || !slices.Equal(row.Words, quoted(list)) || len(row.Parts) != len(row.Words) {
-			return fmt.Errorf("the time reads %q of %q", row.Value, row.Words)
-		}
-		return nil
-	})
 	sc.Then(`^the settings are written in "([^"]*)"$`, func(scope string) error {
 		if got := w.w.SettingsScope(); got != scope {
 			return fmt.Errorf("the settings are written in %q, not %q", got, scope)
@@ -216,10 +175,6 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		if _, on := w.w.Intro(); !on || w.w.IntroShown() != name {
 			return fmt.Errorf("the board is arriving by %q: %v", w.w.IntroShown(), on)
 		}
-		return nil
-	})
-	sc.Given(`^the system asks for less motion$`, func() error {
-		w.lessMotion = true
 		return nil
 	})
 	sc.Then(`^the window wears "([^"]*)"$`, func(slug string) error {

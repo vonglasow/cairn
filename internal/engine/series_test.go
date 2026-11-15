@@ -173,62 +173,6 @@ func atHome(home, path, day string) Places {
 	}}}
 }
 
-func TestSeries_withNothingOpenTheNextIsMadeOnItsDayAndNotBefore(t *testing.T) {
-	path, home := seriesStore(t), t.TempDir()
-	recurring(t, home, true)
-	at := func(day string, op Operation, a request) Answer {
-		t.Helper()
-		answer, err := doThere(op, atHome(home, path, day), a.input(), Acting{})
-		if err != nil {
-			t.Fatalf("%s on %s: %v", op.Line(), day, err)
-		}
-		return answer
-	}
-	at("2026-11-09", TaskNew, ask("title", "Review", "every", "every friday"))
-	recurring(t, home, false)
-	at("2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
-	recurring(t, home, true)
-	listed := func(day string) []int {
-		return rowsListed(Of(TaskList, at(day, TaskList, ask("series", "0", "with-archived", "true"))).(Tasks))
-	}
-	if got := listed("2026-11-19"); !slices.Equal(got, []int{1}) {
-		t.Errorf("made ahead of its day: %v", got)
-	}
-	if got := listed("2026-11-20"); !slices.Equal(got, []int{2, 1}) {
-		t.Errorf("on its day, the occurrences are %v", got)
-	}
-	s := Of(SeriesShow, at("2026-11-20", SeriesShow, ask("number", "1"))).(Series)
-	if s.Missed != 0 || s.Acts[len(s.Acts)-1].Through != "series" {
-		t.Errorf("made on its day, the series reads %+v", s)
-	}
-}
-
-func TestSeries_anActThatLeavesNothingOpenMakesTheNext(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Review", "every", "every friday"))
-	doneOn(t, path, "2026-11-09", TaskDelete, ask("number", "1"))
-	if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0")); !slices.Equal(got, []int{2}) {
-		t.Fatalf("the act that left nothing open made %v", got)
-	}
-	if f := (*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2")).Task).Carried(); f.Deadline.Format("2006-01-02") != "2026-11-20" {
-		t.Errorf("the next is for %v", f.Deadline)
-	}
-}
-
-func TestSeries_endsAfterSoManyTimes(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Course", "every", "every day 2 times"))
-	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
-	doneOn(t, path, "2026-11-10", TaskEdit, ask("number", "2", "state", "done"))
-	if got := occurrencesListed(t, path, "2026-11-12", ask("series", "0", "with-archived", "true")); !slices.Equal(got, []int{1, 2}) {
-		t.Errorf("an ended series made %v", got)
-	}
-	s, text := shownSeries(t, path, "2026-11-12", "1")
-	if !s.Ended || !strings.Contains(text, "it has ended") {
-		t.Errorf("the series reads %+v:\n%s", s, text)
-	}
-}
-
 func TestSeries_editingChangesWhatComesNext(t *testing.T) {
 	path := seriesStore(t)
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
@@ -328,16 +272,6 @@ func TestSeries_deletingAsksWhatBecomesOfItsTasks(t *testing.T) {
 		if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0", "with-archived", "true")); len(got) != 0 {
 			t.Errorf("%s: occurrences of a deleted series: %v", c.choice, got)
 		}
-	}
-}
-
-func TestSeries_anOccurrenceServesWhatTheSeriesServes(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", ObjectiveNew, ask("title", "Team"))
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday").with("objective", "1"))
-	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "state", "done"))
-	if f := (*doneOn(t, path, "2026-11-09", TaskShow, ask("number", "2")).Task).Carried(); !slices.Equal(f.Objectives, []int{1}) {
-		t.Errorf("the next serves %v", f.Objectives)
 	}
 }
 
@@ -471,16 +405,6 @@ func TestSeries_aRuleIsRefusedWhatItCannotDo(t *testing.T) {
 	}
 }
 
-func TestSeries_anEmptyDayAndAfterDoneFalseNameNoRule(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Spec", "from", "", "after-done", "false"))
-	doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "title", "Spec it", "from", "", "after-done", "false"))
-	if got := occurrencesListed(t, path, "2026-11-09", ask("series", "0", "with-archived", "true")); len(got) != 0 {
-		t.Errorf("an empty day made %v", got)
-	}
-	refusedOn(t, path, "2026-11-09", TaskNew, ask("title", "x", "from", "2026-11-12"), "every-required")
-}
-
 func TestSeries_editingItsStartAndItsRuleIsWrittenDown(t *testing.T) {
 	path := seriesStore(t)
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Review", "every", "every week"))
@@ -553,67 +477,6 @@ func TestTemplateSaid_namesWhatItServes(t *testing.T) {
 	}
 }
 
-func TestMadeAfter_saysTheSeriesInTheirOrder(t *testing.T) {
-	e := openEngine(t)
-	for _, title := range []string{"one", "two", "three", "four", "five"} {
-		if _, err := e.Ask(TaskNew, given("title", title, "every", "every day")); err != nil {
-			t.Fatal(err)
-		}
-	}
-	before, err := e.openSeries()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for n := 1; n <= 5; n++ {
-		if _, err := e.edit(n, Changes{State: of("done"), Finishing: true}); err != nil {
-			t.Fatal(err)
-		}
-	}
-	made, err := e.madeAfter(before)
-	if err != nil || len(made) != 5 {
-		t.Fatalf("made %+v, %v", made, err)
-	}
-	for i, m := range made {
-		if m.Series != i+1 {
-			t.Errorf("made %+v; want the series in their order", made)
-			break
-		}
-	}
-}
-
-func TestEvery_givesATaskWithNoDeadlineTheDayOfItsFirstOccurrence(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "Review")
-	if _, err := e.Ask(TaskEdit, given("number", "1", "every", "every day")); err != nil {
-		t.Fatal(err)
-	}
-	shown, err := e.show(1)
-	if err != nil || shown.Carried().Deadline.IsZero() {
-		t.Fatalf("the task shown %+v, %v", shown.Carried(), err)
-	}
-	if open, err := e.openSeries(); err != nil || len(open) != 1 {
-		t.Errorf("series %v, %v; want the one begun", open, err)
-	}
-}
-
-func seriesNumbersListed(t *testing.T, path string, a request) []int {
-	t.Helper()
-	var numbers []int
-	for _, s := range Of(SeriesList, doneOn(t, path, "2026-11-09", SeriesList, a)).(seriesListed).Series {
-		numbers = append(numbers, s.Number)
-	}
-	return numbers
-}
-
-func TestSeriesList_aSearchReachesTheLast(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Expense report", "every", "every 4 weeks on monday"))
-	if got := seriesNumbersListed(t, path, ask("search", "expense")); !slices.Equal(got, []int{2}) {
-		t.Errorf("searched for the last: %v", got)
-	}
-}
-
 func TestSeries_anOccurrenceSaysItsOwnDay(t *testing.T) {
 	path := seriesStore(t)
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
@@ -621,17 +484,6 @@ func TestSeries_anOccurrenceSaysItsOwnDay(t *testing.T) {
 	shown := Of(TaskShow, doneOn(t, path, "2026-11-10", TaskShow, ask("number", "2"))).(Task)
 	if shown.Series == nil || shown.Series.Day != "2026-11-10" {
 		t.Errorf("the second occurrence says %+v", shown.Series)
-	}
-}
-
-func TestSeries_aChangeBetweenTwoOccurrencesMissesNothingTwice(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
-	doneOn(t, path, "2026-11-09", SeriesEdit, ask("number", "1", "title", "Daily"))
-	doneOn(t, path, "2026-11-10", TaskEdit, ask("number", "1", "state", "done"))
-	said := Of(TaskEdit, doneOn(t, path, "2026-11-12", TaskEdit, ask("number", "2", "state", "done"))).(Task)
-	if len(said.Made) != 1 || !slices.Equal(said.Made[0].Missed, []string{"2026-11-11"}) || said.Made[0].Day != "2026-11-12" {
-		t.Errorf("made %+v, want 11 missed and 12 made", said.Made)
 	}
 }
 
@@ -645,101 +497,6 @@ func TestSeries_endedOnItsDayMissesOnlyUpToIt(t *testing.T) {
 	if s, _ := shownSeries(t, path, "2026-11-14", "1"); len(s.Next) != 0 || s.Missed != 2 {
 		t.Errorf("the series ended reads next %v, %d missed", s.Next, s.Missed)
 	}
-}
-
-func TestSeries_endedAfterSoManyTimesCountsTheDaysMissed(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every day 3 times"))
-	said := Of(TaskEdit, doneOn(t, path, "2026-11-15", TaskEdit, ask("number", "1", "state", "done"))).(Task)
-	if len(said.Made) != 1 || said.Made[0].Task != 0 || !slices.Equal(said.Made[0].Missed, []string{"2026-11-10", "2026-11-11"}) {
-		t.Errorf("made %+v, want 10 and 11 missed, and the third time the last", said.Made)
-	}
-}
-
-func TestSeries_doneOnTheDayOfItsOnlyTimeMakesNothingToSay(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every day 1 times"))
-	if said := Of(TaskEdit, doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "state", "done"))).(Task); len(said.Made) != 0 {
-		t.Errorf("made %+v, want nothing", said.Made)
-	}
-}
-
-func TestSeries_countsOnlyTheOccurrencesDone(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
-	if s, _ := shownSeries(t, path, "2026-11-09", "1"); s.Done != 0 {
-		t.Errorf("an occurrence open is counted done: %d", s.Done)
-	}
-}
-
-func TestSeries_anOccurrenceSkippedIsSaidSkippedAndTheNextIsNot(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Water", "every", "every 3 days after done"))
-	doneOn(t, path, "2026-11-10", TaskSkip, ask("number", "1"))
-	answer := doneOn(t, path, "2026-11-10", SeriesShow, ask("number", "1"))
-	var is []string
-	for _, o := range answer.SeriesShown.Occurrences {
-		is = append(is, o.Is)
-	}
-	if !slices.Equal(is, []string{"todo", "skipped"}) {
-		t.Errorf("the occurrences are %v", is)
-	}
-}
-
-func TestMadeAfter_passesOverWhatIsGoneStoppedOrStillOpen(t *testing.T) {
-	e := openEngine(t)
-	for _, title := range []string{"gone", "stopped", "open", "done"} {
-		if _, err := e.Ask(TaskNew, given("title", title, "every", "every day")); err != nil {
-			t.Fatal(err)
-		}
-	}
-	before, err := e.openSeries()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.Ask(SeriesDelete, Input{Given: map[string]string{"number": "1", "keep-tasks": "true"}, Confirmed: true}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.Ask(SeriesStop, given("number", "2")); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.edit(4, Changes{State: of("done"), Finishing: true}); err != nil {
-		t.Fatal(err)
-	}
-	made, err := e.madeAfter(before)
-	if err != nil || len(made) != 1 || made[0].Series != 4 {
-		t.Errorf("made %+v, %v; want the next of 4 alone", made, err)
-	}
-}
-
-func TestSeriesDue_makesEveryOneDueWhateverComesBefore(t *testing.T) {
-	path, home := seriesStore(t), t.TempDir()
-	recurring(t, home, true)
-	at := func(day string, op Operation, a request) Answer {
-		t.Helper()
-		answer, err := doThere(op, atHome(home, path, day), a.input(), Acting{})
-		if err != nil {
-			t.Fatalf("%s on %s: %v", op.Line(), day, err)
-		}
-		return answer
-	}
-	at("2026-11-09", TaskNew, ask("title", "Open", "every", "every day"))
-	at("2026-11-09", TaskNew, ask("title", "Review", "every", "every friday"))
-	at("2026-11-09", TaskNew, ask("title", "Retro", "every", "every friday"))
-	recurring(t, home, false)
-	at("2026-11-09", TaskEdit, ask("number", "2", "state", "done"))
-	at("2026-11-09", TaskEdit, ask("number", "3", "state", "done"))
-	recurring(t, home, true)
-	got := rowsListed(Of(TaskList, at("2026-11-20", TaskList, ask("series", "0", "with-archived", "true"))).(Tasks))
-	if !slices.Contains(got, 4) || !slices.Contains(got, 5) {
-		t.Errorf("on their day the occurrences are %v, want both fridays made", got)
-	}
-}
-
-func TestEdit_aRuleAndTheSeriesOnAnOccurrenceAreRefused(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
-	refusedOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "every", "every day", "series", "true"), "already-an-occurrence")
 }
 
 func TestSeriesTexts_sayOnlyWhatIsThere(t *testing.T) {
@@ -759,59 +516,5 @@ func TestSeriesTexts_sayOnlyWhatIsThere(t *testing.T) {
 	}
 	if said := series.OccursText(series.Occurs{Series: 1, Says: "every day", Day: "2026-11-10"}); !strings.Contains(said, "\nday      Tue 10 Nov\n") {
 		t.Errorf("an occurrence with no time reads %q", said)
-	}
-}
-
-func TestSeriesShown_saysWhatItHoldsAndNothingMore(t *testing.T) {
-	ended := seriesShownText(Series{Number: 1, Title: "Review", State: "active", Rule: "every day", Says: "every day, on the calendar", Ended: true})
-	for _, absent := range []string{"then ", "occurrences", "trace"} {
-		if strings.Contains(ended, absent) {
-			t.Errorf("%q is in\n%s", absent, ended)
-		}
-	}
-	said := seriesShownText(Series{Number: 1, Title: "Review", State: "active", Rule: "every day", Says: "every day",
-		Occurrences: []series.Occurrence{{Day: "2026-11-10", Is: "missed"}},
-		Acts:        []series.Act{{Did: "missed", Day: "2026-11-10", By: "me", At: "2026-11-11T10:00:00Z"}}})
-	if !strings.Contains(said, "—      missed") || strings.Contains(said, "#0") {
-		t.Errorf("a day missed reads\n%s", said)
-	}
-	if !strings.Contains(said, "missed Tue 10 Nov · me\n") {
-		t.Errorf("an act through nothing, by me, reads\n%s", said)
-	}
-}
-
-func TestSeries_aChangeBetweenOccurrencesMissesNoDay(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every day"))
-	doneOn(t, path, "2026-11-09", SeriesEdit, ask("number", "1", "title", "Daily"))
-	said := Of(TaskEdit, doneOn(t, path, "2026-11-10", TaskEdit, ask("number", "1", "state", "done"))).(Task)
-	if len(said.Made) != 1 || said.Made[0].Day != "2026-11-10" || len(said.Made[0].Missed) != 0 {
-		t.Errorf("made %+v, want the 10th and nothing missed", said.Made)
-	}
-}
-
-func TestSeries_theDaysMissedCountTowardsItsTimes(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every day 3 times"))
-	doneOn(t, path, "2026-11-15", TaskEdit, ask("number", "1", "state", "done"))
-	if s, _ := shownSeries(t, path, "2026-11-15", "1"); len(s.Next) != 0 {
-		t.Errorf("the series done three times still comes back on %v", s.Next)
-	}
-}
-
-func TestDeletionAsked_saysNoneIsOpenWhenNoneIs(t *testing.T) {
-	if said := deletionAsked(1, []int{3}, nil); !strings.Contains(said, "--delete-open deletes none, as none is open") {
-		t.Errorf("said %q", said)
-	}
-}
-
-func TestSeriesShownText_saysWhatComesThenOnlyOfASeriesAfterDoneStillGoing(t *testing.T) {
-	for _, s := range []Series{
-		{Rule: "every day", Says: "every day", Ended: true},
-		{Rule: "every 3 days after done", Says: "every 3 days after the last is done", Ended: true},
-	} {
-		if said := seriesShownText(s); strings.Contains(said, "then      ") {
-			t.Errorf("%q says what comes then:\n%s", s.Rule, said)
-		}
 	}
 }

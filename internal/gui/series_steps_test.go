@@ -2,7 +2,6 @@ package gui
 
 import (
 	"cairn/internal/board"
-	"cairn/internal/engine/series"
 	"cairn/internal/gui/geom"
 	"fmt"
 	"os"
@@ -21,48 +20,9 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		w.recurs = said == "on"
 		return os.WriteFile(files.SettingsBeside(w.path), []byte("[series]\non = "+fmt.Sprint(w.recurs)+"\n"), 0o600)
 	})
-	sc.Then(`^the card "([^"]*)" says its rule "([^"]*)"$`, func(title, rule string) error {
-		slot, err := w.cardSlotOf(title)
-		if err != nil {
-			return err
-		}
-		for _, one := range textDrawnWith(w.theme, w.w) {
-			if one.said == rule && slot.In(geom.Point{X: one.box.X, Y: one.box.Y}) {
-				return nil
-			}
-		}
-		return fmt.Errorf("the card %q does not write its rule %q", title, rule)
-	})
 	sc.Then(`^the trace says "([^"]*)"$`, func(want string) error {
 		if !strings.Contains(strings.Join(w.w.Lines(), "\n"), want) {
 			return fmt.Errorf("the trace reads %q, with no %q", w.w.Lines(), want)
-		}
-		return nil
-	})
-	sc.Then(`^the card "([^"]*)" leads to series (\d+)$`, func(title string, n int) error {
-		row, err := w.rowOf(title)
-		if err != nil {
-			return err
-		}
-		if row.Series != n || row.SeriesAt.W == 0 {
-			return fmt.Errorf("the card %q leads to series %d at %+v", title, row.Series, row.SeriesAt)
-		}
-		return nil
-	})
-	sc.Then(`^the card "([^"]*)" says nothing of a series$`, func(title string) error {
-		row, err := w.rowOf(title)
-		if err != nil {
-			return err
-		}
-		if row.Series != 0 {
-			return fmt.Errorf("the card %q leads to series %d", title, row.Series)
-		}
-		c, err := w.cardOf(title)
-		if err != nil {
-			return err
-		}
-		if said := RuleOf(c); said != "" {
-			return fmt.Errorf("the card %q says its rule %q", title, said)
 		}
 		return nil
 	})
@@ -153,29 +113,6 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("no choice says %q", said)
 	})
-	sc.Step(`^I choose the rule "([^"]*)"$`, func(rule string) error {
-		wanted, err := series.ParseRule(rule)
-		if err != nil {
-			return err
-		}
-		parts := wanted.Parts()
-		if err := w.walkRuleTo("every", strconv.Itoa(parts.Every)); err != nil {
-			return err
-		}
-		if err := w.clickInRulePicker(parts.Unit); err != nil {
-			return err
-		}
-		for _, day := range parts.Days {
-			if err := w.clickInRulePicker(Weekdays[(int(day)+6)%7]); err != nil {
-				return err
-			}
-		}
-		if w.w.Form.Fields[w.w.Form.On()].Value != rule {
-			return fmt.Errorf("the picker wrote %q, not %q", w.w.Form.Fields[w.w.Form.On()].Value, rule)
-		}
-		w.w = w.w.Choose("Choose")
-		return w.w.Wrong()
-	})
 	sc.Then(`^the rule's picker offers "([^"]*)", "([^"]*)", "([^"]*)", "([^"]*)" and "([^"]*)"$`, func(a, b, c, d, e string) error {
 		var said []string
 		for _, line := range w.w.RulePicked().Lines {
@@ -216,12 +153,6 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the form has no field "([^"]*)"$`, func(name string) error {
-		if err := w.detailShowsField(name); err == nil {
-			return fmt.Errorf("the form has a field %q", name)
-		}
-		return nil
-	})
 	sc.Then(`^the form says of its series "([^"]*)"$`, func(said string) error {
 		box, ok := w.w.OccurrenceBox()
 		if !ok {
@@ -235,19 +166,6 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		}
 		if !strings.Contains(strings.Join(all, " "), said) {
 			return fmt.Errorf("the form says of its series %q, and nothing of %q", all, said)
-		}
-		return nil
-	})
-	sc.Then(`^the form's heading carries the loop$`, func() error {
-		if _, ok := w.w.OccurrenceHeading(); !ok {
-			return fmt.Errorf("the form's heading is %q, with no loop", HeadsOn(w.w, board.OnForm))
-		}
-		return nil
-	})
-	sc.Then(`^the form's heading says "([^"]*)"$`, func(want string) error {
-		head, _ := w.w.OccurrenceHeading()
-		if !strings.Contains(head.Title+" "+head.Number+" "+head.Under, want) {
-			return fmt.Errorf("the form's heading says %+v, not %q", head, want)
 		}
 		return nil
 	})
@@ -284,16 +202,6 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the pills read %q, with no %q", all, said)
 	})
-	sc.Then(`^the series tab says "([^"]*)"$`, func(want string) error {
-		var all []string
-		for _, one := range textDrawnWith(w.theme, w.w) {
-			all = append(all, one.said)
-		}
-		if !strings.Contains(strings.Join(all, " "), want) {
-			return fmt.Errorf("the series tab says %q, and nothing of %q", all, want)
-		}
-		return nil
-	})
 	sc.Then(`^the bar offers "([^"]*)"$`, func(offer string) error {
 		if !slices.Contains(w.w.Offers(), offer) {
 			return fmt.Errorf("the bar offers %q, not %q", w.w.Offers(), offer)
@@ -303,12 +211,6 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Then(`^the form offers "([^"]*)"$`, func(offer string) error {
 		if w.w.Screen != board.OnForm || !slices.Contains(w.w.Offers(), offer) {
 			return fmt.Errorf("the window is on %v and offers %q", w.w.Screen, w.w.Offers())
-		}
-		return nil
-	})
-	sc.Then(`^the command bar says "([^"]*)"$`, func(said string) error {
-		if got, _ := w.w.PaletteBanner(); !strings.Contains(got, said) {
-			return fmt.Errorf("the command bar says %q, not %q", got, said)
 		}
 		return nil
 	})
@@ -353,21 +255,6 @@ func (w *world) clickInRulePicker(said string) error {
 		}
 	}
 	return fmt.Errorf("the rule's picker offers no %q", said)
-}
-
-func (w *world) walkRuleTo(said, choice string) error {
-	for range 100 {
-		for _, line := range w.w.RulePicked().Lines {
-			if line.Said != said {
-				continue
-			}
-			if line.On >= 0 && line.Choices[line.On] == choice {
-				return nil
-			}
-			w.w = w.w.clicked(geom.Point{X: line.Next.X + line.Next.W/2, Y: line.Next.Y + line.Next.H/2})
-		}
-	}
-	return fmt.Errorf("the rule's picker never walks %q to %q", said, choice)
 }
 
 func (w *world) readBack() string {

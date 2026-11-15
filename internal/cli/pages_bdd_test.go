@@ -19,12 +19,6 @@ func initPages(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Step(`^a configuration that turns the page "([^"]*)" off$`, func(page string) error {
 			return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n", page))
 		})
-		sc.Step(`^a configuration that turns the pages "([^"]*)" and "([^"]*)" off$`, func(one, other string) error {
-			return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n%s = false\n", one, other))
-		})
-		sc.Step(`^a configuration that turns every page off$`, func() error {
-			return w.WriteConfig("[pages]\ntasks = false\nobjectives = false\ntime = false\n")
-		})
 		sc.Step(`^it says the pages turned off are "([^"]*)"$`, func(pages string) error {
 			off := strings.Split(pages, ", ")
 			for _, page := range []string{"tasks", "objectives", "time"} {

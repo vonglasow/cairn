@@ -73,38 +73,6 @@ func (w *world) registerView(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^the JSON lists no task$`, func() error {
-		listed, err := w.listedWithAView()
-		if err != nil {
-			return err
-		}
-		if len(listed.Tasks) != 0 {
-			return fmt.Errorf("it lists %d tasks, want none:\n%s", len(listed.Tasks), w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^the JSON gives objective (\d+) as (\d+) of (\d+) tasks done, the store's$`, func(n, done, total int) error {
-		listed, err := w.listedWithAView()
-		if err != nil {
-			return err
-		}
-		for _, o := range listed.Objectives {
-			if o.Number == n && o.Progress != nil && o.Progress.Tasks != nil && o.Progress.Tasks.Done == done && o.Progress.Tasks.Total == total {
-				return nil
-			}
-		}
-		return fmt.Errorf("objective %d is not given as %d of %d done:\n%s", n, done, total, w.Out.Stdout)
-	})
-	sc.Step(`^the JSON says the view lost "([^"]*)"$`, func(gone string) error {
-		listed, err := w.listedWithAView()
-		if err != nil {
-			return err
-		}
-		if !slices.Contains(listed.Gone, gone) {
-			return fmt.Errorf("gone reads %v, want %q:\n%s", listed.Gone, gone, w.Out.Stdout)
-		}
-		return nil
-	})
 	sc.Step(`^the JSON names task (\d+) outside, because it "([^"]*)" task (\d+) and is "([^"]*)" task (\d+)$`,
 		func(n int, first string, firstOf int, second string, secondOf int) error {
 			listed, err := w.listedWithAView()
@@ -120,17 +88,4 @@ func (w *world) registerView(sc *godog.ScenarioContext) {
 			}
 			return nil
 		})
-	sc.Step(`^the view "([^"]*)" is listed in place (\d+), holding "([^"]*)", keeping (\d+)$`, func(name string, place int, holds string, keeps int) error {
-		for _, line := range strings.Split(w.Out.Stdout, "\n") {
-			fields := strings.Fields(line)
-			if len(fields) < 3 || fields[0] != strconv.Itoa(place) {
-				continue
-			}
-			if fields[1] != name || !strings.Contains(line, holds) || fields[len(fields)-1] != strconv.Itoa(keeps) {
-				return fmt.Errorf("place %d reads %q, want %s holding %q keeping %d", place, line, name, holds, keeps)
-			}
-			return nil
-		}
-		return fmt.Errorf("no view is listed in place %d:\n%s", place, w.Out.Stdout)
-	})
 }

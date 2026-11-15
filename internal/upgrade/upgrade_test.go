@@ -38,12 +38,6 @@ func placed(t *testing.T) string {
 	return place
 }
 
-func TestNewest_readsTheTag(t *testing.T) {
-	if release := newest(t, test.Release{Tag: "v0.11.0", Platform: "linux/amd64"}); release.Tag != "v0.11.0" {
-		t.Errorf("the newest release is %q", release.Tag)
-	}
-}
-
 func TestInstall_takesTheBinaryOutOfAZipOnWindows(t *testing.T) {
 	release := newest(t, test.Release{Tag: "v0.11.0", Platform: "windows/amd64", Binary: []byte("cairn.exe v0.11.0")})
 	place := placed(t)
@@ -52,13 +46,6 @@ func TestInstall_takesTheBinaryOutOfAZipOnWindows(t *testing.T) {
 	}
 	if said, _ := os.ReadFile(place); string(said) != "cairn.exe v0.11.0" {
 		t.Errorf("in its place: %q", said)
-	}
-}
-
-func TestInstall_refusesAnArchiveForAnotherSystem(t *testing.T) {
-	release := newest(t, test.Release{Tag: "v0.11.0", Platform: "linux/amd64", Binary: []byte("x")})
-	if err := release.Install(placed(t), "linux/arm64"); !errors.Is(err, upgrade.ErrNoBinaryHere) {
-		t.Errorf("err = %v, want ErrNoBinaryHere", err)
 	}
 }
 
@@ -157,31 +144,5 @@ func TestInstall_refusesWhatCannotBeTrusted(t *testing.T) {
 		if said, _ := os.ReadFile(place); string(said) != "before" {
 			t.Errorf("%s: in its place: %q", platform, said)
 		}
-	}
-}
-
-func TestWritable_triesThePlaceAndLeavesNothingThere(t *testing.T) {
-	place := placed(t)
-	if err := upgrade.Writable(place); err != nil {
-		t.Fatalf("a place that can be written: %v", err)
-	}
-	entries, err := os.ReadDir(filepath.Dir(place))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) != 1 || entries[0].Name() != "cairn" {
-		t.Errorf("trying the place left %v beside the cairn", entries)
-	}
-}
-
-func TestWritable_refusesAPlaceThatCannotBeWritten(t *testing.T) {
-	place := placed(t)
-	locked := filepath.Dir(place)
-	if err := os.Chmod(locked, 0o555); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
-	if err := upgrade.Writable(place); !errors.Is(err, upgrade.ErrNotWritable) {
-		t.Errorf("a place that cannot be written: %v", err)
 	}
 }

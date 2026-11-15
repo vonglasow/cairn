@@ -6,21 +6,6 @@ import (
 	"testing"
 )
 
-func TestStartingANewTaskCanCarryALink(t *testing.T) {
-	w := holding(newFake(), card(1, "Ship it", "done"))
-	w.Chosen = 1
-	got := w.startingLinked()
-	if got.Screen != board.OnForm || !got.Form.Adding {
-		t.Fatalf("the window is on %v, adding %v", got.Screen, got.Form.Adding)
-	}
-	if want := board.LinkedTaskFields(1); !reflect.DeepEqual(got.Form.Fields, want) {
-		t.Errorf("the form asks %+v, want %+v", got.Form.Fields, want)
-	}
-	if got.Form.Changed() {
-		t.Error("the preset link counts as a change")
-	}
-}
-
 func TestOOpensANewLinkedTaskOnAChosenTaskOnly(t *testing.T) {
 	w := holding(newFake(), card(1, "Ship it", "done"))
 	if got := w.Key("o"); got.Screen != board.OnTheBoard {

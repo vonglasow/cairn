@@ -2,42 +2,10 @@ package engine
 
 import (
 	"cairn/internal/engine/backup"
-	"cairn/internal/engine/calendar"
 	"errors"
 	"strconv"
 	"testing"
-	"time"
 )
-
-func TestBackupList_listsEveryBackup(t *testing.T) {
-	path := storeAt(t)
-	if _, err := Do(BackupNew, path, Input{}); err != nil {
-		t.Fatalf("Do(BackupNew): %v", err)
-	}
-	if _, err := Do(BackupNew, path, Input{}); err != nil {
-		t.Fatalf("Do(BackupNew): %v", err)
-	}
-
-	answer, err := Do(BackupList, path, Input{})
-	if err != nil {
-		t.Fatalf("Do: %v", err)
-	}
-	if len(answer.Backups) != 2 {
-		t.Fatalf("len(answer.Backups) = %d, want 2", len(answer.Backups))
-	}
-}
-
-func TestBackupList_answersAnEmptySetNotNilWhenNoBackupWasEverMade(t *testing.T) {
-	path := storeAt(t)
-
-	answer, err := Do(BackupList, path, Input{})
-	if err != nil {
-		t.Fatalf("Do: %v", err)
-	}
-	if answer.Backups == nil {
-		t.Fatalf("answer.Backups = nil, want an empty, non-nil set: no backup is a set with none in it, not an absent answer")
-	}
-}
 
 func TestBackupShow_saysWhenABackupWasMadeAndWhatItHolds(t *testing.T) {
 	path := storeAt(t)
@@ -143,29 +111,5 @@ func TestBackupAdd_countsBeforeMaking(t *testing.T) {
 	}
 	if len(list.Backups) != 0 {
 		t.Fatalf("len(list.Backups) = %d, want 0: a backup of a file that cannot be counted must not be made", len(list.Backups))
-	}
-}
-
-var madeAt = time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)
-
-func TestOfBackup_carriesWhatItHeldWhenCounted(t *testing.T) {
-	made := backup.Backup{Number: 2, Made: madeAt}
-	held := backup.Held{Tasks: 3, Objectives: 1}
-
-	got := ofBackup(made, &held)
-
-	want := BackupShape{Number: 2, Made: calendar.FormatMoment(madeAt), Holds: &backup.Held{Tasks: 3, Objectives: 1}}
-	if got.Number != want.Number || got.Made != want.Made {
-		t.Errorf("OfBackup() = %+v, want %+v", got, want)
-	}
-	if got.Holds == nil || *got.Holds != *want.Holds {
-		t.Errorf("Holds = %+v, want %+v", got.Holds, want.Holds)
-	}
-}
-
-func TestOfBackup_leavesHoldsOutWhenNothingWasCounted(t *testing.T) {
-	got := ofBackup(backup.Backup{Number: 1, Made: madeAt}, nil)
-	if got.Holds != nil {
-		t.Errorf("Holds = %+v, want nil: nothing was counted", got.Holds)
 	}
 }

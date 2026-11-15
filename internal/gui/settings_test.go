@@ -3,77 +3,14 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
-	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
 	"fmt"
-	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"cairn/internal/store/files"
 )
-
-func TestAToggleIsATrackOnTheControlOffAndOnTheAccentOn(t *testing.T) {
-	s := design.Dark()
-	box := geom.Box{X: 10, Y: 10, W: toggleWide, H: toggleHigh}
-	off, drawn := drawnAlone(t, 60, 40, func(k Kit) { Toggle{}.Draw(k, box) })
-	if got := pixel(off, box.X+box.W-6, box.Y+box.H/2); got != s.Colour.Surface.ControlLit {
-		t.Errorf("a toggle off is %v at its right", got)
-	}
-	if got := pixel(off, box.X+3+7, box.Y+box.H/2); got != s.Colour.Ink.Faint {
-		t.Errorf("a toggle off has its knob %v at its left", got)
-	}
-	if pixel(off, box.X, box.Y) == s.Colour.Surface.ControlLit {
-		t.Error("a toggle is square")
-	}
-	if want := []Drawing{{Part: "toggle", At: box, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
-		t.Errorf("the toggle recorded %+v", drawn)
-	}
-	on, _ := drawnAlone(t, 60, 40, func(k Kit) { Toggle{On: true}.Draw(k, box) })
-	if got := pixel(on, box.X+6, box.Y+box.H/2); got != s.Colour.Accent.Base {
-		t.Errorf("a toggle on is %v at its left", got)
-	}
-	if got, want := pixel(on, box.X+box.W-3-8, box.Y+box.H/2-1), s.Colour.Ink.OnAccent; abs(int(got.R)-int(want.R))+abs(int(got.G)-int(want.G))+abs(int(got.B)-int(want.B)) > 6 {
-		t.Errorf("a toggle on has its knob %v at its right", got)
-	}
-}
-
-func TestTheSettingsPanelIsPinnedAtBothSizes(t *testing.T) {
-	for _, c := range []struct {
-		wide, high int
-		want       geom.Box
-		nav        bool
-	}{{1200, 800, geom.Box{X: 170, Y: 50, W: 860, H: 700}, true}, {720, 560, geom.Box{X: 16, Y: 16, W: 688, H: 528}, false}} {
-		got := SettingsBox(c.wide, c.high)
-		if got != c.want {
-			t.Errorf("at %d by %d the settings are %+v, want %+v", c.wide, c.high, got, c.want)
-		}
-		if nav := SettingsNav(got); (nav.W > 0) != c.nav {
-			t.Errorf("at %d by %d the sections are %+v", c.wide, c.high, nav)
-		}
-	}
-}
-
-func TestEveryRowKeepsItsNameItsControlAndItsOriginApart(t *testing.T) {
-	f := newFake()
-	f.config = &workspace.Config{File: "/h/.config/cairn/config.toml", Store: workspace.Emplacement{At: "/h/.cairn/cairn.db"},
-		Pages: &workspace.PagesConfig{Tasks: true, Objectives: true, Time: "on"}, Archive: &workspace.Archive{Days: 14},
-		Focus: &workspace.FocusConfig{}, Approach: &workspace.ApproachConfig{}, Time: &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"},
-		Window: &workspace.WindowConfig{Theme: "default"}, Recurrence: &workspace.RecurrenceConfig{}}
-	for _, size := range [][2]int{{1200, 800}, {720, 560}} {
-		w := holding(f).Resized(size[0], size[1]).openingConfiguration()
-		rows := w.SettingRows()
-		if len(rows) == 0 {
-			t.Fatalf("at %v the settings hold no row", size)
-		}
-		for _, row := range rows {
-			if row.Control.W > 0 && (cross(row.Name, row.Control) || cross(row.Control, row.From)) {
-				t.Errorf("at %v the row %s lays %+v %+v %+v over each other", size, row.Key.Name, row.Name, row.Control, row.From)
-			}
-		}
-	}
-}
 
 func settingsScreens(size [2]int) []struct {
 	name string

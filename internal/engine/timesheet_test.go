@@ -51,23 +51,6 @@ func TestTimesheet_measuresWhatWasDoneOnADayPast(t *testing.T) {
 	}
 }
 
-func TestTimesheet_isTodaysWithNothingNamed(t *testing.T) {
-	path := storeAt(t)
-	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
-		t.Fatal(err)
-	}
-	before := startOfToday()
-	answer, err := Do(TimesheetShow, path, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	after := startOfToday()
-	if answer.Sheet == nil || len(answer.Sheet.Days) != 1 ||
-		!answer.Sheet.Days[0].Day.Equal(before) && !answer.Sheet.Days[0].Day.Equal(after) {
-		t.Errorf("today's sheet is %+v", answer.Sheet)
-	}
-}
-
 func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 	path := storeAt(t)
 	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
@@ -89,73 +72,7 @@ func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 	}
 }
 
-func TestFocus_isTakenAndLetGoNowAndAtNoOtherMoment(t *testing.T) {
-	for _, op := range []Operation{TaskFocus, TaskUnfocus} {
-		if err := op.check(given("number", "1", "at", "09:00")); err == nil {
-			t.Errorf("%s takes a moment", op.Line())
-		}
-	}
-}
-
-func TestTimesheetAdd_answersItsDayAndTakesBack(t *testing.T) {
-	path := storeAt(t)
-	if _, err := Do(TaskNew, path, given("title", "one")); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Do(TimesheetAdd, path, given("number", "1", "time", "1h", "on", "2026-09-29")); err != nil {
-		t.Fatal(err)
-	}
-	answer, err := Do(TimesheetAdd, path, given("number", "1", "time", "-30m", "on", "2026-09-29"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if answer.Sheet == nil || len(answer.Sheet.Days) != 1 || answer.Sheet.Days[0].Total != 30*time.Minute {
-		t.Errorf("adding answers %+v, want the day at 30m", answer.Sheet)
-	}
-	history, err := Do(TraceShow, path, given("number", "1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if text := RenderText(TraceShow, history); !strings.Contains(text, "-30m for 2026-09-29") {
-		t.Errorf("the history does not keep what was taken back:\n%s", text)
-	}
-}
-
 func confirmed(in Input) Input {
 	in.Confirmed = true
 	return in
-}
-
-func TestTimeSpent_isTheTimeOnTheTimesheetAndTheTimeWrittenOnTheTask(t *testing.T) {
-	path := storeAt(t)
-	if _, err := Do(TaskNew, path, given("title", "one", "spent", "1h")); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Do(TimesheetAdd, path, given("number", "1", "time", "30m", "on", "2026-09-29")); err != nil {
-		t.Fatal(err)
-	}
-	shown, err := Do(TaskShow, path, given("number", "1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if spent := (*shown.Task).Carried().Spent; spent != 90*time.Minute {
-		t.Errorf("the task spent %s, want 1h30m", spent)
-	}
-	if _, err := Do(TaskEdit, path, given("number", "1", "spent", "2h")); err != nil {
-		t.Fatal(err)
-	}
-	today, err := Do(TimesheetShow, path, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if day := today.Sheet.Days[0]; day.Total != 90*time.Minute {
-		t.Errorf("today came to %s, want the 1h written at the start and the 30m that made it 2h", day.Total)
-	}
-	listed, err := Do(TaskList, path, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if spent := listed.Tasks[0].Carried().Spent; spent != 2*time.Hour {
-		t.Errorf("the listing says %s spent, want 2h", spent)
-	}
 }

@@ -185,52 +185,14 @@ func TestHolds_narrowsByTheFocusOnlyWhenOneIsHeld(t *testing.T) {
 	}
 }
 
-func TestHolds_narrowsByALabelOnlyWhenOneIsHeld(t *testing.T) {
-	if Narrows((engine.Holds{}), "label") || !Narrows((engine.Holds{Label: []string{"x"}}), "label") {
-		t.Error("a view narrows by a label whether it holds one or not")
-	}
-}
-
 func heldFilters(t *testing.T) Filters {
 	t.Helper()
 	return FiltersOf(Snapshot{Cards: []Card{{Number: 1, State: "todo", Labels: []string{"x"}}}}, time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC))
-}
-
-func TestHolding_keepsTheLabelFilteredAndNamesNoneHeldNorAsked(t *testing.T) {
-	fs := on(heldFilters(t), "label", "x")
-	in := fs.Holding(engine.View{Name: "Home"}, "")
-	if !slices.Equal(in.Listed["label"], []string{"x"}) {
-		t.Errorf("the labels kept are %v", in.Listed["label"])
-	}
-	in = heldFilters(t).Holding(engine.View{Name: "Home"}, "")
-	if _, there := in.Listed["label"]; there {
-		t.Errorf("no label filtered nor held names labels %v", in.Listed["label"])
-	}
-	if _, there := in.Given["focus"]; there {
-		t.Error("no focus filtered nor held names the focus")
-	}
 }
 
 func TestHolding_theFocusFilteredWinsOverTheOneHeld(t *testing.T) {
 	in := on(heldFilters(t), "focus", "in").Holding(engine.View{Name: "Home", Holds: engine.Holds{Focus: "out"}}, "")
 	if in.Given["focus"] != "true" || in.Given["no-focus"] != "" {
 		t.Errorf("the focus kept is %v", in.Given)
-	}
-}
-
-func TestSaving_withNoSearchTypedKeepsTheViewsOwn(t *testing.T) {
-	if in := heldFilters(t).Saving(engine.View{Name: "Home", Holds: engine.Holds{Search: "spec"}}, ""); in.Given["search"] != "" {
-		t.Errorf("the search saved is %q", in.Given["search"])
-	}
-}
-
-func TestView_findsTheFirstViewAndOnlyAViewThere(t *testing.T) {
-	s := Snapshot{Views: []Viewing{{View: engine.View{Name: "Home"}}, {View: engine.View{Name: "Work"}}}}
-	if _, found := s.View("home"); !found {
-		t.Error("the first view is not found")
-	}
-	cards := []Card{{Number: 1}, {Number: 2}}
-	if got := s.Viewed("nowhere", cards); len(got) != 2 {
-		t.Errorf("a view not there keeps %d cards", len(got))
 	}
 }

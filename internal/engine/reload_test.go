@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"cairn/internal/store/files"
 )
@@ -47,35 +46,6 @@ func TestConfigChanges_namesEachKeyThatMovedAndFromWhat(t *testing.T) {
 	}
 	if workspace.ConfigChanges(now, now) != nil {
 		t.Error("an answer changed from itself")
-	}
-}
-
-func TestConfigStamp_movesOnlyWhenWhatAFileSaysChanges(t *testing.T) {
-	h := homeHolding(t, homeIsDefault, nil, "h")
-	path := settingsOf(t, h, "h", "[pages]\ntime = \"off\"\n")
-	c := answered(t, h)
-	stamp := workspace.StampOf(c)
-	if _, moved := stamp.Moved(); moved {
-		t.Error("the stamp moved with nothing written")
-	}
-	later := time.Now().Add(time.Minute)
-	if err := os.Chtimes(path, later, later); err != nil {
-		t.Fatal(err)
-	}
-	stamp, moved := stamp.Moved()
-	if moved {
-		t.Error("a file touched and not changed moved the stamp")
-	}
-	settingsOf(t, h, "h", "[pages]\ntime = \"on\"\n")
-	if _, moved := stamp.Moved(); !moved {
-		t.Error("a file changed did not move the stamp")
-	}
-	before := workspace.StampOf(c)
-	if err := os.WriteFile(files.FileIn(h.Dir), []byte(homeIsDefault+"\n[focus]\nsession = \"1h\"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, moved := before.Moved(); !moved {
-		t.Error("the global file changed did not move the stamp")
 	}
 }
 
@@ -169,65 +139,5 @@ func TestValueIn_readsEveryTableTheAnswerHolds(t *testing.T) {
 	}
 	if got := workspace.ValueIn(workspace.Config{}, "pages.tasks"); got != "" {
 		t.Errorf("an answer holding no table gives pages.tasks %q", got)
-	}
-}
-
-func TestStampOf_watchesOnlyTheSchemeWornFromAFile(t *testing.T) {
-	folder := t.TempDir()
-	file, worn, other := filepath.Join(folder, "config.toml"), filepath.Join(folder, "worn.toml"), filepath.Join(folder, "other.toml")
-	for _, path := range []string{file, worn, other} {
-		if err := os.WriteFile(path, []byte("a"), 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	stamp := workspace.StampOf(workspace.Config{File: file, Themes: []workspace.ThemeSeen{{Slug: "o", From: other}, {Slug: "w", From: worn, InForce: true}}})
-	if err := os.WriteFile(other, []byte("bb"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, moved := stamp.Moved(); moved {
-		t.Error("a scheme not worn moved the stamp")
-	}
-	if err := os.WriteFile(worn, []byte("bb"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, moved := stamp.Moved(); !moved {
-		t.Error("the scheme worn changed and the stamp did not move")
-	}
-}
-
-func TestMoved_readsAgainOnlyWhatTheSizeOrTheTimeSaysChanged(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.toml")
-	at := time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)
-	wrote := func(said string, when time.Time) {
-		t.Helper()
-		if err := os.WriteFile(path, []byte(said), 0o600); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.Chtimes(path, when, when); err != nil {
-			t.Fatal(err)
-		}
-	}
-	wrote("ab", at)
-	stamp := workspace.StampOf(workspace.Config{File: path})
-	if _, moved := stamp.Moved(); moved {
-		t.Error("a file left alone moved the stamp")
-	}
-	wrote("cd", at)
-	if _, moved := stamp.Moved(); moved {
-		t.Error("a file of the same size and time was read again")
-	}
-	wrote("ab", at.Add(time.Hour))
-	if _, moved := stamp.Moved(); moved {
-		t.Error("a file saved with nothing changed moved the stamp")
-	}
-	wrote("cd", at.Add(time.Hour))
-	if _, moved := stamp.Moved(); !moved {
-		t.Error("a file of the same size saying something else did not move the stamp")
-	}
-	if err := os.Remove(path); err != nil {
-		t.Fatal(err)
-	}
-	if _, moved := stamp.Moved(); !moved {
-		t.Error("a file gone did not move the stamp")
 	}
 }

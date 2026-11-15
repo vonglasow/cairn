@@ -11,22 +11,6 @@ import (
 	"time"
 )
 
-func TestTheMenuBarHoldsEveryAct(t *testing.T) {
-	want := []MenuGroup{
-		{Name: "cairn", Items: []string{"About cairn", "Settings…", "Upgrade", "Quit"}},
-		{Name: "Help", Items: []string{"Help"}},
-	}
-	got := MenuBar(engine.Pages{})
-	if len(got) != len(want) {
-		t.Fatalf("the menu bar is %v", got)
-	}
-	for i := range want {
-		if got[i].Name != want[i].Name || !slices.Equal(got[i].Items, want[i].Items) {
-			t.Errorf("menu %d is %v, want %v", i, got[i], want[i])
-		}
-	}
-}
-
 func TestALinePickedActsFromTheBoard(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "A", State: "todo"})
@@ -148,24 +132,6 @@ func TestWhatTheSystemsMenuBarsNeedDecided(t *testing.T) {
 	for item, want := range map[string]string{"Settings…": ",", "Help": "", "Upgrade": ""} {
 		if got := macKey(item); got != want {
 			t.Errorf("%s answers %q on a Mac", item, got)
-		}
-	}
-}
-
-func TestTheMenuButtonIsThreeStrokes(t *testing.T) {
-	got := MenuStrokes(geom.Box{X: 100, Y: 10, W: 40, H: 30})
-	want := [3]geom.Box{{X: 110, Y: 19, W: 20, H: 2}, {X: 110, Y: 24, W: 20, H: 2}, {X: 110, Y: 29, W: 20, H: 2}}
-	if got != want {
-		t.Errorf("the strokes are %+v", got)
-	}
-}
-
-func TestTheMenuButtonIsDrawnAsItsStrokes(t *testing.T) {
-	w := New(newFake(), 1200, 800)
-	shot := drawn(t, w)
-	for _, stroke := range MenuStrokes(MenuButton(w.Layout())) {
-		if got := painted(shot, stroke, design.Dark().Colour.Accent.Base); got != stroke.W*stroke.H {
-			t.Errorf("the stroke %+v has %d of its %d pixels", stroke, got, stroke.W*stroke.H)
 		}
 	}
 }

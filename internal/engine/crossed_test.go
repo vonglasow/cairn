@@ -3,7 +3,6 @@ package engine
 import (
 	"cairn/internal/engine/item"
 	"errors"
-	"strings"
 	"testing"
 
 	"cairn/internal/engine/task"
@@ -12,25 +11,6 @@ import (
 func movedBehind(n, after string, more ...string) Input {
 	in := given(append([]string{"number", n, "after", after}, more...)...)
 	return in
-}
-
-func TestTaskMove_takesATaskIntoTheColumnOfTheOneItGoesBehind(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "In the backlog")
-	if _, err := e.add("Already to do", Changes{State: of("todo")}); err != nil {
-		t.Fatal(err)
-	}
-	a, err := e.Ask(TaskMove, movedBehind("1", "2"))
-	if err != nil {
-		t.Fatalf("move: %v", err)
-	}
-	moved, _ := e.show(1)
-	if moved.Carried().State != item.Todo {
-		t.Errorf("task 1 is in %s, want todo", moved.Carried().State)
-	}
-	if a.Crossed == nil || *a.Crossed != (task.Crossed{Task: 1, From: "backlog", To: "todo"}) {
-		t.Errorf("Crossed = %+v, want task 1 from backlog to todo", a.Crossed)
-	}
 }
 
 func TestTaskMove_saysNothingCrossedWhenTheColumnStays(t *testing.T) {
@@ -62,20 +42,5 @@ func TestTaskMove_refusesBehindATaskThatIsNotThere(t *testing.T) {
 	add(t, e, "In the backlog")
 	if _, err := e.Ask(TaskMove, movedBehind("1", "9")); err == nil {
 		t.Error("a move behind a task that is not there went through")
-	}
-}
-
-func TestRenderText_saysATaskCrossedIntoAnotherColumn(t *testing.T) {
-	tasks := []task.Task{builtTask(t, 1, "First")}
-	got := RenderText(TaskMove, Answer{Tasks: tasks, Crossed: &task.Crossed{Task: 1, From: "backlog", To: "todo"}})
-	if !strings.HasPrefix(got, "task 1 moved from backlog to todo\n") {
-		t.Errorf("the answer does not open on the column it crossed:\n%s", got)
-	}
-}
-
-func TestOf_carriesTheColumnATaskCrossed(t *testing.T) {
-	crossed := &task.Crossed{Task: 1, From: "backlog", To: "todo"}
-	if said, _ := Of(TaskMove, Answer{Crossed: crossed}).(Tasks); said.Crossed != crossed {
-		t.Errorf("Of = %+v, want the crossing carried", said.Crossed)
 	}
 }

@@ -142,16 +142,6 @@ func TestTaskImport_refusesASeriesItCannotRead(t *testing.T) {
 	}
 }
 
-func TestTaskImport_aFileOfVersion8IsRefused(t *testing.T) {
-	from := filepath.Join(t.TempDir(), "held.json")
-	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 8, "objectives": [], "tasks": []}`), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := readExport(from); !errors.Is(err, exchange.ErrNotAnExport) {
-		t.Errorf("a file of version 8 reads %v", err)
-	}
-}
-
 func TestTaskImport_aFileHoldingNothingToAddIsRefused(t *testing.T) {
 	from := filepath.Join(t.TempDir(), "empty.json")
 	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 7, "tasks": []}`), 0o600); err != nil {

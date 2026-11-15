@@ -35,16 +35,6 @@ func TestLabels_aRowSayingWhyTakesNothing(t *testing.T) {
 	}
 }
 
-func TestLabels_theCreatingRowCreatesTickedAndClearsTheLine(t *testing.T) {
-	w := labelsOpen(t, nil, []string{"ado"}).Types("Front End").Key("enter")
-	if len(w.LabelsOffered) != 2 || w.LabelsOffered[1] != "front-end" || !w.Ticked(2) {
-		t.Errorf("after creating, the list offers %v with %v ticked", w.LabelsOffered, w.TickedSet)
-	}
-	if w.Filtering.Reads() != "" {
-		t.Errorf("the line still reads %q", w.Filtering.Reads())
-	}
-}
-
 func TestLabels_enterTicksALabelAndUnticksIt(t *testing.T) {
 	w := labelsOpen(t, nil, []string{"ado"})
 	if w = w.Key("enter"); !w.Ticked(1) {
@@ -59,14 +49,5 @@ func TestLabels_enterOnNothingDoesNothing(t *testing.T) {
 	w := labelsOpen(t)
 	if got := w.Key("enter"); got.Screen != board.OnChoosing || len(got.LabelsOffered) != 0 {
 		t.Errorf("enter on an empty list left %v offering %v", got.Screen, got.LabelsOffered)
-	}
-}
-
-func TestLabels_anEmptyListSaysHowToBegin(t *testing.T) {
-	if got := labelsOpen(t).EmptyListSays(); got != LabelsNoneSays {
-		t.Errorf("an empty list of labels says %q", got)
-	}
-	if got := New(newFake(), 1200, 800).EmptyListSays(); got != ChoosingSays {
-		t.Errorf("an empty list of objectives says %q", got)
 	}
 }

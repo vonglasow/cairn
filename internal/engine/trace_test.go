@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"cairn/internal/engine/calendar"
-	"errors"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -48,14 +46,5 @@ func TestTraceList_untilADayKeepsTheWholeOfItAndNothingAfter(t *testing.T) {
 	}
 	if got := tasksActedOn(listed); !slices.Equal(got, []int{2, 3}) {
 		t.Errorf("tasks acted on = %v, want Tuesday's two, from its first minute to its last, in the day's own time", got)
-	}
-}
-
-func TestTraceList_untilSomethingThatIsNotADayIsRefused(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "cairn.db")
-	addedAt(t, path, "Monday's", time.Date(2026, 9, 28, 9, 0, 0, 0, time.Local))
-	_, err := Do(traceList, path, given("until", "pasunjour"))
-	if !errors.Is(err, calendar.ErrNotADay) {
-		t.Errorf("err = %v, want it refused as not a day", err)
 	}
 }

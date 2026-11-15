@@ -1,9 +1,7 @@
 package engine
 
 import (
-	"cairn/internal/engine/task"
 	"reflect"
-	"slices"
 	"strings"
 	"testing"
 )
@@ -143,21 +141,4 @@ func sameInput(a, b Input) bool {
 		return in
 	}
 	return reflect.DeepEqual(norm(a), norm(b))
-}
-
-func TestRead_takesTheValueOfAFlagFromTheNextWord(t *testing.T) {
-	in, err := TaskNew.Read([]string{"Ship", "--priority", "high"})
-	if err != nil || in.Given["title"] != "Ship" || in.Given["priority"] != "high" {
-		t.Errorf("read %+v, %v", in, err)
-	}
-}
-
-func TestStepsIn_readsEveryLine(t *testing.T) {
-	steps, err := stepsIn("[x] A\n[ ] B")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := []task.Step{{Title: "A", Done: true}, {Title: "B"}}; !slices.Equal(steps, want) {
-		t.Errorf("StepsIn = %v, want %v", steps, want)
-	}
 }

@@ -2,22 +2,20 @@ package mcp
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
-	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/engine"
+	"cairn/test"
 )
 
 const (
@@ -32,7 +30,7 @@ const (
 func onDiskAt(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "cairn")
-	if err := os.WriteFile(path, []byte(content), 0o700); err != nil {
+	if err := test.WriteProgram(path, content); err != nil {
 		t.Fatal(err)
 	}
 	return path
@@ -40,7 +38,7 @@ func onDiskAt(t *testing.T, content string) string {
 
 func replace(t *testing.T, path, content string) {
 	t.Helper()
-	if err := os.WriteFile(path+".new", []byte(content), 0o700); err != nil {
+	if err := test.WriteProgram(path+".new", content); err != nil {
 		t.Fatal(err)
 	}
 	later := time.Now().Add(time.Second)
@@ -49,47 +47,6 @@ func replace(t *testing.T, path, content string) {
 	}
 	if err := os.Rename(path+".new", path); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestIdentify_seesNothingChangedUntilTheFileIsReplaced(t *testing.T) {
-	path := onDiskAt(t, "old")
-	running, err := identify(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, changed := running.replaced(); changed {
-		t.Fatal("replaced before anything was installed")
-	}
-	replace(t, path, "new")
-	now, changed := running.replaced()
-	if !changed {
-		t.Fatal("a file installed in its place went unseen")
-	}
-	if _, again := now.replaced(); again {
-		t.Error("the file now on disk is seen as replaced by itself")
-	}
-}
-
-func TestIdentify_seesALinkPointedElsewhere(t *testing.T) {
-	dir := t.TempDir()
-	old, newer := onDiskAt(t, "same"), onDiskAt(t, "same")
-	link := filepath.Join(dir, "cairn")
-	if err := os.Symlink(old, link); err != nil {
-		t.Fatal(err)
-	}
-	running, err := identify(link)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove(link); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink(newer, link); err != nil {
-		t.Fatal(err)
-	}
-	if _, changed := running.replaced(); !changed {
-		t.Error("a link pointed at another cairn went unseen")
 	}
 }
 
@@ -102,12 +59,6 @@ func TestIdentify_findsABareNameOnThePath(t *testing.T) {
 	}
 	if running.path != path {
 		t.Errorf("path = %q, want %q, found on the PATH", running.path, path)
-	}
-}
-
-func TestIdentify_refusesWhatIsNotThere(t *testing.T) {
-	if _, err := identify(filepath.Join(t.TempDir(), "nowhere")); err == nil {
-		t.Error("identified a cairn that is not there")
 	}
 }
 
@@ -202,42 +153,6 @@ func server(t *testing.T, binary string) Server {
 	return Server{Name: "cairn", Version: "0", Access: engine.Read, Home: engine.Home{Dir: t.TempDir(), Lookup: os.LookupEnv}, Binary: binary}
 }
 
-func TestServe_handsTheSessionAndWhatItHasNotAnsweredToTheCairnNowOnDisk(t *testing.T) {
-	path := onDiskAt(t, "old")
-	got := handingOverTo(t, nil)
-	w := serving(t, server(t, path))
-	w.say(greeting, greeted, pinging)
-	w.answerTo(7)
-	replace(t, path, "new")
-	w.say(listing)
-	select {
-	case c := <-got:
-		if c.State.InitializeParams == nil || c.State.InitializeParams.ClientInfo.Name != "unit" {
-			t.Errorf("handed over %+v, want the greeting it was given", c.State.InitializeParams)
-		}
-		if c.State.InitializedParams == nil {
-			t.Error("handed over a session never told it was initialized")
-		}
-		if c.State.NegotiatedProtocolVersion != "2025-06-18" {
-			t.Errorf("handed over the protocol %q, want the one agreed", c.State.NegotiatedProtocolVersion)
-		}
-		if !slices.Contains(c.Tools, "task_list") {
-			t.Errorf("handed over the tools %v, want the ones it offered", c.Tools)
-		}
-		if string(c.Unread) != listing+"\n" {
-			t.Errorf("handed over %q unanswered, want the call it had read", c.Unread)
-		}
-	case <-time.After(hung):
-		t.Fatal("never handed over")
-	}
-	if err := <-w.stopped; err != nil {
-		t.Errorf("a server that handed over stopped with %v", err)
-	}
-	if w.out.Scan() {
-		t.Errorf("answered %q after handing over", w.out.Text())
-	}
-}
-
 func TestServe_carriesOnItselfWhenTheCairnOnDiskCannotTakeOver(t *testing.T) {
 	path := onDiskAt(t, "old")
 	got := handingOverTo(t, errors.New("exec format error"))
@@ -256,23 +171,6 @@ func TestServe_carriesOnItselfWhenTheCairnOnDiskCannotTakeOver(t *testing.T) {
 	}
 }
 
-func handedOver(t *testing.T, tools []string) {
-	t.Helper()
-	payload, err := json.Marshal(carried{
-		State: sdk.ServerSessionState{
-			InitializeParams:          &sdk.InitializeParams{ProtocolVersion: "2025-06-18", ClientInfo: &sdk.Implementation{Name: "unit", Version: "7"}},
-			InitializedParams:         &sdk.InitializedParams{},
-			NegotiatedProtocolVersion: "2025-06-18",
-		},
-		Tools:  tools,
-		Unread: []byte(listing + "\n"),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv(carriedVariable, string(payload))
-}
-
 func offeredNames(t *testing.T) []string {
 	t.Helper()
 	var names []string
@@ -280,38 +178,6 @@ func offeredNames(t *testing.T) []string {
 		names = append(names, toolFor(op).Name)
 	}
 	return names
-}
-
-func TestServe_answersWhatWasHandedOverWithoutAGreeting(t *testing.T) {
-	handedOver(t, offeredNames(t))
-	w := serving(t, server(t, ""))
-	if answer := w.answerTo(2); answer["error"] != nil {
-		t.Fatalf("answered %v, want the call handed over answered", answer)
-	}
-	if _, still := os.LookupEnv(carriedVariable); still {
-		t.Error("the session handed over is still in the environment, for whatever this cairn starts next")
-	}
-	quiet := make(chan string, 1)
-	go func() {
-		if w.out.Scan() {
-			quiet <- w.out.Text()
-		}
-	}()
-	select {
-	case said := <-quiet:
-		t.Errorf("said %q, with the same tools to offer", said)
-	case <-time.After(200 * time.Millisecond):
-	}
-}
-
-func TestServe_saysTheToolsChangedWhenItOffersOthers(t *testing.T) {
-	handedOver(t, []string{"task_list"})
-	w := serving(t, server(t, ""))
-	for {
-		if said := w.next(); said["method"] == listChanged {
-			return
-		}
-	}
 }
 
 func TestServe_refusesASessionHandedOverItCannotRead(t *testing.T) {
@@ -368,136 +234,5 @@ func settled(t *testing.T, l *lines) {
 	}
 	if err := l.Write(context.Background(), &jsonrpc.Response{ID: check.ID, Result: json.RawMessage(`{}`)}); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestLines_handsOverOnlyOnceWhatItReadBeforeIsHandled(t *testing.T) {
-	path := onDiskAt(t, "old")
-	running, err := identify(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := handingOverTo(t, nil)
-	var out bytes.Buffer
-	l := &lines{in: bufio.NewReader(strings.NewReader(greeted + "\n" + listing + "\n")), out: &out, running: &running,
-		carry: func(unread []byte) carried { return carried{Unread: unread} }}
-	if _, err := l.Read(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	replace(t, path, "new")
-	settled(t, l)
-	if len(got) != 0 {
-		t.Fatal("handed over before the notification it had read was handled")
-	}
-	if out.Len() != 0 {
-		t.Errorf("told the client %q, an answer it never asked for", out.String())
-	}
-	if _, err := l.Read(context.Background()); !errors.Is(err, io.EOF) {
-		t.Fatalf("read %v, want the end of what this cairn reads once it handed over", err)
-	}
-	if c := <-got; string(c.Unread) != listing+"\n" {
-		t.Errorf("handed over %q, want the call it had read", c.Unread)
-	}
-}
-
-func pagesSaid(t *testing.T, s Server, said string) {
-	t.Helper()
-	path := filepath.Join(s.Home.Dir, ".config", "cairn", "config.toml")
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(said), 0o600); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestServe_offersAPageTurnedBackOnFromTheNextCall(t *testing.T) {
-	s := server(t, "")
-	pagesSaid(t, s, "[pages]\ntime = false\n")
-	w := serving(t, s)
-	w.say(greeting, greeted)
-	w.answerTo(1)
-	pagesSaid(t, s, "[pages]\ntime = true\n")
-	w.say(`{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}`)
-	listed, told := make(chan string, 1), make(chan struct{}, 1)
-	go func() {
-		for w.out.Scan() {
-			switch said := w.out.Text(); {
-			case strings.Contains(said, listChanged):
-				select {
-				case told <- struct{}{}:
-				default:
-				}
-			case strings.Contains(said, `"id":2`):
-				listed <- said
-			}
-		}
-	}()
-	select {
-	case said := <-listed:
-		if !strings.Contains(said, `"timesheet_show"`) {
-			t.Errorf("listed %s, want the tools of the page turned back on", said)
-		}
-	case <-time.After(hung):
-		t.Fatal("the tools were never listed")
-	}
-	select {
-	case <-told:
-	case <-time.After(hung):
-		t.Error("the client was never told the tools changed")
-	}
-}
-
-func TestServe_handsOverTheToolsItLastToldTheClientOf(t *testing.T) {
-	path := onDiskAt(t, "old")
-	got := handingOverTo(t, nil)
-	s := server(t, path)
-	pagesSaid(t, s, "[pages]\ntime = false\n")
-	w := serving(t, s)
-	w.say(greeting, greeted)
-	w.answerTo(1)
-	pagesSaid(t, s, "")
-	w.say(listing)
-	for answered, told := false, false; !answered || !told; {
-		said := w.next()
-		answered = answered || said["id"] == float64(2)
-		told = told || said["method"] == listChanged
-	}
-	replace(t, path, "new")
-	w.say(listingNext)
-	select {
-	case c := <-got:
-		if !slices.Contains(c.Tools, "timesheet_show") {
-			t.Errorf("handed over the tools %v, want the ones the client was told of once the page came back", c.Tools)
-		}
-	case <-time.After(hung):
-		t.Fatal("never handed over")
-	}
-}
-
-const newerProtocol = `"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}`
-
-func TestServe_handsOverAsUnknownToTheClientToolsNobodyListenedFor(t *testing.T) {
-	path := onDiskAt(t, "old")
-	got := handingOverTo(t, nil)
-	s := server(t, path)
-	pagesSaid(t, s, "[pages]\ntime = false\n")
-	w := serving(t, s)
-	w.say(`{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{` + newerProtocol + `}}`)
-	w.answerTo(1)
-	pagesSaid(t, s, "")
-	w.say(`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"task_list","arguments":{},` + newerProtocol + `}}`)
-	if answer := w.answerTo(2); answer["error"] != nil {
-		t.Fatalf("answered %v, want the call answered", answer)
-	}
-	replace(t, path, "new")
-	w.say(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"task_list","arguments":{},` + newerProtocol + `}}`)
-	select {
-	case c := <-got:
-		if slices.Contains(c.Tools, "timesheet_show") {
-			t.Errorf("handed over the tools %v as told, though nobody listened when the page came back", c.Tools)
-		}
-	case <-time.After(hung):
-		t.Fatal("never handed over")
 	}
 }

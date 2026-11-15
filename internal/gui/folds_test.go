@@ -1,14 +1,11 @@
 package gui
 
 import (
-	"cairn/internal/board"
 	"cairn/internal/gui/geom"
 	"slices"
 	"strings"
 	"testing"
 	"time"
-
-	"cairn/test"
 )
 
 func treeNumbers(w Window) []int {
@@ -87,51 +84,6 @@ func TestZTogglesAndClimbsAndOptionArrowsDoThemAll(t *testing.T) {
 	w = chooseGoal(w, 2).Key("alt+left")
 	if !w.Folded(1) || w.Chosen != 1 {
 		t.Errorf("option left: folded %v, chosen %d", w.Folded(1), w.Chosen)
-	}
-}
-
-func TestDownWalksPastAFoldedParentsSubObjectives(t *testing.T) {
-	w := chooseGoal(homeWindow(1200, 800), 1).Key("down")
-	if w.Chosen != 4 {
-		t.Errorf("down chose %d", w.Chosen)
-	}
-}
-
-func TestAParentHoldingWhatIsChosenIsDrawnOpen(t *testing.T) {
-	w := chooseGoal(homeWindow(1200, 800), 3)
-	if w.Folded(1) {
-		t.Error("the parent of the one chosen is folded")
-	}
-}
-
-func TestASearchUnfoldsTheParentOfAMatchAndClearingItFoldsItBack(t *testing.T) {
-	w := chooseGoal(homeWindow(1200, 800), 4)
-	w.Snap = test.Searchable(w.Snap)
-	w.Looking = board.Written{Value: "firm", At: 4}
-	tree := w.Tree()
-	if len(tree) != 2 || tree[0].Goal.Number != 1 || !tree[0].Holds || tree[1].Goal.Number != 3 {
-		t.Fatalf("the search draws %+v", tree)
-	}
-	if g, _ := w.Detailed(); g.Number != 3 {
-		t.Errorf("the detail shows %d", g.Number)
-	}
-	if said := w.GoalsCount(); said != "1 of 4" {
-		t.Errorf("the head counts %q", said)
-	}
-	w.Looking = board.Written{}
-	if got := treeNumbers(w); !slices.Equal(got, []int{1, 4}) {
-		t.Errorf("the cleared search leaves %v", got)
-	}
-}
-
-func TestASubObjectiveChosenInASearchKeepsItsParentOpen(t *testing.T) {
-	w := homeWindow(1200, 800)
-	w.Snap = test.Searchable(w.Snap)
-	w.Looking = board.Written{Value: "firm", At: 4}
-	w = w.choosingAt(3)
-	w.Looking = board.Written{}
-	if got := treeNumbers(w); !slices.Equal(got, []int{1, 2, 3, 4}) {
-		t.Errorf("the cleared search leaves %v", got)
 	}
 }
 

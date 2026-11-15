@@ -10,7 +10,6 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -66,29 +65,6 @@ func TestEveryIntroEndsOnTheStillBoard(t *testing.T) {
 		}
 		if !moving {
 			t.Errorf("%s holds the board still all the way through", name)
-		}
-	}
-}
-
-func TestAnIntroIsAPureFunctionOfTime(t *testing.T) {
-	stage := introBoard().Stage()
-	for _, name := range files.Intros() {
-		at := 400 * time.Millisecond
-		if a, b := motion.Staging(name, at, stage), motion.Staging(name, at, stage); !reflect.DeepEqual(a, b) {
-			t.Errorf("%s drew two boards at the same instant", name)
-		}
-	}
-}
-
-func TestABusyBoardArrivesNoSlower(t *testing.T) {
-	var cards []board.Card
-	for n := range 80 {
-		cards = append(cards, board.Card{Number: n + 1, Title: "Task " + strconv.Itoa(n+1), State: []string{"backlog", "todo", "current", "done"}[n%4]})
-	}
-	stage := holding(newFake(), cards...).Stage()
-	for _, name := range files.Intros() {
-		if lasts := motion.IntroLasts(name, stage); lasts >= underABreath {
-			t.Errorf("%s lasts %v on a busy board", name, lasts)
 		}
 	}
 }

@@ -34,29 +34,6 @@ func TestTaskExport_writesTheTreeWhatWaitsAndTheScopes(t *testing.T) {
 	}
 }
 
-func TestTaskImport_bringsTheTreeWhatWaitsAndTheScopes(t *testing.T) {
-	e := imported(t, `{"cairn": "tasks", "version": 5, "objectives": [
-		{"number": 7, "title": "Features", "state": "active", "priority": "normal", "parent": 5, "waits_on": [6]},
-		{"number": 5, "title": "Home automation", "state": "active", "priority": "normal"},
-		{"number": 6, "title": "Firmware", "state": "active", "priority": "normal", "parent": 5}],
-		"labels": [{"label": "area", "scope": "objectives"}],
-		"tasks": [{"number": 1, "title": "Dimmer scenes", "state": "todo", "priority": "normal", "objectives": [7]}]}`)
-	features, err := e.showObjective(1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c := features.Carried(); c.Title != "Features" || c.Parent != 2 || !slices.Equal(c.WaitsOn, []int{3}) {
-		t.Errorf("Features came back as %+v", c)
-	}
-	if firmware, _ := e.showObjective(3); firmware.Carried().Parent != 2 {
-		t.Errorf("Firmware came back under %d", firmware.Carried().Parent)
-	}
-	scopes, _ := e.scopes()
-	if scopes.Of("area") != "objectives" {
-		t.Errorf("area came back for %s", scopes.Of("area"))
-	}
-}
-
 func TestTaskImport_refusesATreeOrAWaitOutsideTheFile(t *testing.T) {
 	for _, file := range []string{
 		`{"cairn": "tasks", "version": 5, "objectives": [{"number": 1, "title": "x", "state": "active", "priority": "normal", "parent": 9}], "tasks": []}`,

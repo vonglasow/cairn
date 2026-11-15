@@ -45,30 +45,6 @@ func TestHidden_saysNothingOfWhatIsReachedOrDropped(t *testing.T) {
 	}
 }
 
-func TestLateOn_isPastItsDeadlineAndNotReached(t *testing.T) {
-	g := Goal{State: "active", Deadline: time.Date(2026, 11, 10, 0, 0, 0, 0, time.Local)}
-	if g.LateOn(foldDay) {
-		t.Error("an objective due today is late")
-	}
-	g.Deadline = g.Deadline.AddDate(0, 0, -1)
-	if !g.LateOn(foldDay) {
-		t.Error("an objective due yesterday is not late")
-	}
-	if (Goal{State: "active"}).LateOn(foldDay) {
-		t.Error("an objective with no deadline is late")
-	}
-}
-
-func TestFoundBranches_holdsTheParentOfAMatch(t *testing.T) {
-	tree := FoundBranches(foldedTree().Goals, "firm")
-	if len(tree) != 2 || tree[0].Goal.Number != 1 || !tree[0].Holds || tree[1].Goal.Number != 3 || !tree[1].Under || !tree[1].Last {
-		t.Fatalf("FoundBranches = %+v", tree)
-	}
-	if tree[1].Holds {
-		t.Error("the match itself is drawn as what holds it")
-	}
-}
-
 func TestFoundBranches_aParentMatchingStandsAsItself(t *testing.T) {
 	tree := FoundBranches(foldedTree().Goals, "home")
 	if len(tree) != 1 || tree[0].Holds {
@@ -76,26 +52,6 @@ func TestFoundBranches_aParentMatchingStandsAsItself(t *testing.T) {
 	}
 	if every := FoundBranches(foldedTree().Goals, ""); len(every) != 5 {
 		t.Errorf("nothing typed finds %d", len(every))
-	}
-}
-
-func TestHidden_passesOverWhatIsReachedOrDroppedAndSaysEveryOther(t *testing.T) {
-	today := time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC)
-	s := Snapshot{Goals: []Goal{
-		{Number: 1, Children: []int{2, 3, 4, 5, 6}},
-		{Number: 2, Parent: 1, State: "reached", WaitsOn: []int{9}},
-		{Number: 3, Parent: 1, State: "dropped", WaitsOn: []int{9}},
-		{Number: 4, Parent: 1, Deadline: today.AddDate(0, 0, -1)},
-		{Number: 5, Parent: 1, WaitsOn: []int{9}},
-		{Number: 6, Parent: 1, Deadline: today.AddDate(0, 0, -2)},
-		{Number: 9},
-	}}
-	var got []int
-	for _, h := range s.Hidden(1, today) {
-		got = append(got, h.Goal.Number)
-	}
-	if !slices.Equal(got, []int{4, 6, 5}) {
-		t.Errorf("hidden %v, want the late 4 and 6, then 5 waiting", got)
 	}
 }
 

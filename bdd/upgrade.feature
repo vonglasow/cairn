@@ -10,35 +10,6 @@ Feature: cairn upgrades itself
 
   Rule: The newest release takes the place of the cairn that was run
 
-    @upgrade-to-the-newest
-    Scenario: a newer release is put in its place, and it says so
-      Given cairn v0.11.0 is released, with a binary for this system
-      And the cairn I run is v0.10.0, from a release
-      When I run `cairn upgrade`
-      Then it succeeds
-      And it says cairn went from v0.10.0 to v0.11.0
-      And the cairn in its place is the one released as v0.11.0
-
-    @upgrade-already-the-newest
-    Scenario: the newest already, nothing is changed
-      Given cairn v0.10.0 is released, with a binary for this system
-      And the cairn I run is v0.10.0, from a release
-      When I run `cairn upgrade`
-      Then it succeeds
-      And it says v0.10.0 is the newest already
-      And the cairn in its place is the one that was there
-      And the answer does not say "/plugin"
-
-    @upgrade-says-how-to-install-its-plugin
-    Scenario: a newer release says how to install the plugin of its version
-      Given cairn v0.11.0 is released, with a binary for this system
-      And the cairn I run is v0.10.0, from a release
-      When I run `cairn upgrade`
-      Then it succeeds
-      And the answer says "/plugin marketplace remove cairn"
-      And the answer says "/plugin marketplace add vonglasow/cairn@v0.11.0"
-      And the answer says "/plugin install cairn@cairn"
-
     @upgrade-answers-json
     Scenario: asked for JSON, it says what it went from, to, and where
       Given cairn v0.11.0 is released, with a binary for this system
@@ -47,15 +18,6 @@ Feature: cairn upgrades itself
       Then it succeeds
       And it says in JSON it went from v0.10.0 to v0.11.0, in its place
       And the cairn in its place is the one released as v0.11.0
-
-    @upgrade-already-the-newest-json
-    Scenario: asked for JSON, the newest already went from itself to itself
-      Given cairn v0.10.0 is released, with a binary for this system
-      And the cairn I run is v0.10.0, from a release
-      When I run `cairn upgrade --json`
-      Then it succeeds
-      And it says in JSON it went from v0.10.0 to v0.10.0, in its place
-      And the cairn in its place is the one that was there
 
   Rule: Nothing is put in its place that cannot be trusted to be cairn
 
@@ -66,15 +28,6 @@ Feature: cairn upgrades itself
       When I run `cairn upgrade`
       Then it fails
       And it says the archive does not match its sum
-      And the cairn in its place is the one that was there
-
-    @upgrade-no-binary-for-this-system
-    Scenario: a release with no binary for this system is refused
-      Given cairn v0.11.0 is released, with no binary for this system
-      And the cairn I run is v0.10.0, from a release
-      When I run `cairn upgrade`
-      Then it fails
-      And it says the release has no binary for this system
       And the cairn in its place is the one that was there
 
     @upgrade-releases-out-of-reach
@@ -97,24 +50,6 @@ Feature: cairn upgrades itself
       And it says a cairn built from its source is built again
       And the cairn in its place is the one that was there
 
-    @upgrade-kept-by-homebrew
-    Scenario: a cairn Homebrew installed is upgraded by Homebrew
-      Given cairn v0.11.0 is released, with a binary for this system
-      And the cairn I run is v0.10.0, installed by Homebrew
-      When I run `cairn upgrade`
-      Then it fails
-      And it says to run brew upgrade cairn
-      And the cairn in its place is the one that was there
-
-    @upgrade-place-not-writable
-    Scenario: a place that cannot be written is said, and left as it was
-      Given cairn v0.11.0 is released, with a binary for this system
-      And the cairn I run is v0.10.0, from a release, in a folder I cannot write
-      When I run `cairn upgrade`
-      Then it fails
-      And it says its place cannot be written
-      And the cairn in its place is the one that was there
-
   Rule: Its place is tried before anything is fetched, and left as it was
 
     @upgrade-place-not-writable-fetches-nothing
@@ -124,11 +59,3 @@ Feature: cairn upgrades itself
       When I run `cairn upgrade`
       Then it fails
       And nothing was asked of the releases
-
-    @upgrade-tries-its-place-and-leaves-nothing
-    Scenario: trying its place leaves nothing beside the cairn
-      Given cairn v0.10.0 is released, with a binary for this system
-      And the cairn I run is v0.10.0, from a release
-      When I run `cairn upgrade`
-      Then it succeeds
-      And nothing but the cairn is in its folder

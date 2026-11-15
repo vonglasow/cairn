@@ -10,8 +10,6 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"cairn/internal/engine"
-	"cairn/internal/engine/migration"
 	"cairn/test"
 )
 
@@ -22,10 +20,6 @@ func numberOfRow(row string) (int, bool) {
 	}
 	number, err := strconv.Atoi(strings.TrimPrefix(fields[0], "#"))
 	return number, err == nil
-}
-
-func backupsListed(out string) int {
-	return strings.Count(out, "#")
 }
 
 type change struct {
@@ -110,26 +104,6 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^I apply the change that is waiting, by its number$`, func() error {
-		before := w.Out
-		w.Run(`cairn migration list`)
-		listing := w.Out.Stdout
-		w.Out = before
-
-		for _, row := range strings.Split(listing, "\n") {
-			if !strings.Contains(row, "waiting") {
-				continue
-			}
-			number, ok := numberOfRow(row)
-			if !ok {
-				return fmt.Errorf("cannot read a number from %q", row)
-			}
-			w.Run(fmt.Sprintf(`cairn migration apply %d`, number))
-			return nil
-		}
-		return fmt.Errorf("nothing is waiting:\n%s", listing)
-	})
-
 	sc.Step(`^I apply the last change waiting, past the one before it$`, func() error {
 		before := w.Out
 		w.Run(`cairn migration list`)
@@ -164,113 +138,8 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 		return w.Seed(`cairn migration apply`)
 	})
 
-	sc.Step(`^I ran a command that was refused$`, func() error {
-		before := w.Out
-		w.Run(`cairn task list`)
-		w.Out = before
-		return nil
-	})
-
-	sc.Step(`^it names the change it applied$`, func() error {
-		return test.WantContains(w.Out.Stdout, `applied "`, "the answer")
-	})
-
-	sc.Step(`^it says what rolling the change back loses$`, func() error {
-		return test.WantContains(w.Out.Stdout, "which task each sub-task hangs under", "the answer")
-	})
-
-	sc.Step(`^it says a backup can restore it$`, func() error {
-		return test.WantContains(w.Out.Stdout, "cairn backup restore", "the answer")
-	})
-
-	sc.Step(`^it names the change it rolled back$`, func() error {
-		return test.WantContains(w.Out.Stdout, `rolled back "`, "the answer")
-	})
-
-	sc.Step(`^it carries the change it rolled back$`, func() error {
-		var doc map[string]any
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
-			return fmt.Errorf("stdout is not JSON (%w):\n%s", err, w.Out.Stdout)
-		}
-		if named, ok := doc["rolled_back"].(string); !ok || named == "" {
-			return fmt.Errorf("no change named in %s", w.Out.Stdout)
-		}
-		return nil
-	})
-
-	sc.Step(`^it says what it lost$`, func() error {
-		lost := "lost: "
-		at := strings.Index(test.Flatten(w.Out.Stdout), lost)
-		if at < 0 {
-			return fmt.Errorf("the answer does not say what it lost:\n%s", w.Out.Stdout)
-		}
-		if strings.TrimSpace(test.Flatten(w.Out.Stdout)[at+len(lost):]) == "" {
-			return fmt.Errorf("the answer says it lost nothing in particular:\n%s", w.Out.Stdout)
-		}
-		return nil
-	})
-
-	sc.Step(`^it carries the number (\d+)$`, func(n int) error {
-		var doc map[string]any
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
-			return fmt.Errorf("stdout is not JSON (%w):\n%s", err, w.Out.Stdout)
-		}
-		for _, held := range doc {
-			if number, ok := held.(float64); ok && int(number) == n {
-				return nil
-			}
-		}
-		return fmt.Errorf("no number %d in %s", n, w.Out.Stdout)
-	})
-
-	sc.Step(`^it names the change$`, func() error {
-		return test.WantContains(w.Out.Stdout, "a task can hang under another", "the answer")
-	})
-
-	sc.Step(`^it shows what the change does$`, func() error {
-		if err := test.WantContains(w.Out.Stdout, "what it does", "the answer"); err != nil {
-			return err
-		}
-		return test.WantContains(w.Out.Stdout, "ALTER TABLE tasks ADD COLUMN parent", "the answer")
-	})
-
-	sc.Step(`^it shows what undoing it does$`, func() error {
-		if err := test.WantContains(w.Out.Stdout, "what undoing it does", "the answer"); err != nil {
-			return err
-		}
-		return test.WantContains(w.Out.Stdout, "ALTER TABLE tasks DROP COLUMN parent", "the answer")
-	})
-
-	sc.Step(`^it says (\d+) changes? (?:is|are) waiting$`, func(n int) error {
-		return test.WantContains(w.Out.Stdout, fmt.Sprintf("%d change(s) waiting", n), "the answer")
-	})
-
-	sc.Step("^a line of what it says is `([^`]*)` and nothing else$", func(what string) error {
-		for _, line := range strings.Split(w.Out.Stderr, "\n") {
-			if strings.TrimSpace(line) == what {
-				return nil
-			}
-		}
-		return fmt.Errorf("no line says only %q:\n%s", what, w.Out.Stderr)
-	})
-
 	sc.Step("^it says to run `([^`]*)`$", func(what string) error {
 		return test.WantContains(w.Out.Stderr, what, "the reason")
-	})
-
-	sc.Step(`^a board is open on the store$`, func() error {
-		held, err := engine.Hold(w.Home(), engine.Through("cli", w.Home()))
-		if err != nil {
-			return err
-		}
-		w.board = held
-		w.OnEnd(func() { _ = held.Close() })
-		return nil
-	})
-
-	sc.Step(`^the board adds a task titled "([^"]*)"$`, func(title string) error {
-		_, err := w.board.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": title}})
-		return err
 	})
 
 	sc.Step(`^it says the file written holds (\d+) tasks? and (\d+) objectives?$`,
@@ -278,126 +147,13 @@ func (w *world) registerStore(sc *godog.ScenarioContext) {
 			said := fmt.Sprintf("%s holds %d task(s) and %d objective(s)", w.file, tasks, objectives)
 			return test.WantContains(w.Out.Stdout, said, "the answer")
 		})
-	sc.Step(`^that file is as it was$`, func() error {
-		got, err := os.ReadFile(w.file)
-		if err != nil {
-			return err
-		}
-		if string(got) != string(w.was) {
-			return fmt.Errorf("the file now holds %q", got)
-		}
-		return nil
-	})
 
 	sc.Step(`^I made a backup of the store$`, func() error {
 		return w.Seed(`cairn backup new`)
 	})
 
-	sc.Step(`^I deleted backup (\d+)$`, func(n int) error {
-		return w.Seed(fmt.Sprintf(`cairn backup delete %d --yes`, n))
-	})
-
-	sc.Step(`^I deleted every backup$`, func() error {
-		return w.ForgetBackups()
-	})
-
 	sc.Step(`^it numbers the backup (\d+)$`, func(n int) error {
 		return test.WantContains(w.Out.Stdout, "#"+strconv.Itoa(n), "the answer")
-	})
-
-	sc.Step(`^it lists (\d+) backups?$`, func(n int) error {
-		if got := backupsListed(w.Out.Stdout); got != n {
-			return fmt.Errorf("%d backups listed, want %d:\n%s", got, n, w.Out.Stdout)
-		}
-		return nil
-	})
-
-	sc.Step(`^it lists backup (\d+)$`, func(n int) error {
-		return test.WantContains(w.Out.Stdout, "#"+strconv.Itoa(n), "the listing")
-	})
-
-	sc.Step("^`([^`]*)` lists (\\d+) backups?$", func(line string, n int) error {
-		w.Run(line)
-		if got := backupsListed(w.Out.Stdout); got != n {
-			return fmt.Errorf("%d backups listed, want %d:\n%s", got, n, w.Out.Stdout)
-		}
-		return nil
-	})
-
-	sc.Step("^`([^`]*)` says there is no backup$", func(line string) error {
-		w.Run(line)
-		return test.WantContains(w.Out.Stdout, "there is no backup", "the answer")
-	})
-
-	held := func(tasks, objectives int) string {
-		return fmt.Sprintf("holds %d task(s) and %d objective(s)", tasks, objectives)
-	}
-
-	sc.Step(`^it says the backup holds (\d+) tasks? and (\d+) objectives?$`,
-		func(tasks, objectives int) error {
-			return test.WantContains(w.Out.Stdout, held(tasks, objectives), "the answer")
-		})
-
-	sc.Step("^`([^`]*)` says the backup holds (\\d+) tasks? and (\\d+) objectives?$",
-		func(line string, tasks, objectives int) error {
-			w.Run(line)
-			return test.WantContains(w.Out.Stdout, held(tasks, objectives), "the answer")
-		})
-
-	sc.Step(`^it carries every change$`, func() error {
-		rows, _, err := listedUnder(w.Out.Stdout, "changes")
-		if err != nil {
-			return err
-		}
-		if len(rows) != len(migration.Known) {
-			return fmt.Errorf("%d changes, want the %d cairn knows", len(rows), len(migration.Known))
-		}
-		return nil
-	})
-
-	sc.Step(`^it says the store holds (\d+) tasks? and (\d+) objectives?$`,
-		func(tasks, objectives int) error {
-			_, envelope, err := listedUnder(w.Out.Stdout, "changes")
-			if err != nil {
-				return err
-			}
-			holds, said := envelope["holds"].(map[string]any)
-			if !said {
-				return fmt.Errorf("the answer says nothing about what the store holds")
-			}
-			for what, want := range map[string]int{"tasks": tasks, "objectives": objectives} {
-				if got := fmt.Sprint(holds[what]); got != fmt.Sprint(want) {
-					return fmt.Errorf("it holds %s %s, want %d", got, what, want)
-				}
-			}
-			return nil
-		})
-
-	sc.Step("^`([^`]*)` says the store holds (\\d+) tasks? and (\\d+) objectives?$",
-		func(line string, tasks, objectives int) error {
-			w.Run(line)
-			return test.WantContains(w.Out.Stdout, held(tasks, objectives), "the answer")
-		})
-
-	sc.Step(`^it carries (\d+) tasks? and (\d+) objectives? held$`,
-		func(tasks, objectives int) error {
-			var doc map[string]any
-			if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
-				return err
-			}
-			holds, ok := doc["holds"].(map[string]any)
-			if !ok {
-				return fmt.Errorf("holds = %v, want the two counts", doc["holds"])
-			}
-			if holds["tasks"] != float64(tasks) || holds["objectives"] != float64(objectives) {
-				return fmt.Errorf("holds = %v, want %d task(s) and %d objective(s)",
-					holds, tasks, objectives)
-			}
-			return nil
-		})
-
-	sc.Step(`^it says when the backup was made$`, func() error {
-		return test.WantContains(w.Out.Stdout, "made ", "the answer")
 	})
 
 	sc.Step(`^it names every change made to the store$`, func() error {

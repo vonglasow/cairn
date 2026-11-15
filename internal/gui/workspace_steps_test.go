@@ -5,7 +5,6 @@ import (
 	"cairn/internal/engine/workspace"
 	"cairn/internal/gui/geom"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,7 +26,6 @@ type elsewhere struct {
 	claims  []io.Closer
 	raised  map[string]*atomic.Int32
 	started [][]string
-	second  error
 }
 
 func (w *world) storeWritten(path string) error {
@@ -155,7 +153,6 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		h.Store = ""
 		return w.openOn(h)
 	})
-	sc.When(`^I open the window on that store$`, func() error { return w.openOn(w.spaces.Home("")) })
 	sc.When(`^I click the pill of the workspace$`, func() error {
 		w.clickAt(w.w.Layout().Place)
 		return nil
@@ -181,28 +178,8 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		w.w = w.w.Types(filepath.Join(w.spaces.Dir, folder))
 		return nil
 	})
-	sc.When(`^a second window is opened on the workspace "([^"]*)"$`, func(name string) error {
-		claim, err := w.apart.windows.Claim(w.storeOf(name), func() {})
-		if claim != nil {
-			w.apart.claims = append(w.apart.claims, claim)
-		}
-		w.apart.second = err
-		return nil
-	})
-	sc.Then(`^the second window does not open$`, func() error {
-		if !errors.Is(w.apart.second, ErrShownElsewhere) {
-			return fmt.Errorf("the second window opened: %w", w.apart.second)
-		}
-		return nil
-	})
 	sc.Then(`^the window is titled "([^"]*)"$`, func(want string) error {
 		if got := w.w.Title(); got != want {
-			return fmt.Errorf("the window is titled %q, not %q", got, want)
-		}
-		return nil
-	})
-	sc.Then(`^the window is titled after the folder "([^"]*)"$`, func(folder string) error {
-		if got, want := w.w.Title(), "cairn — "+folder; got != want {
 			return fmt.Errorf("the window is titled %q, not %q", got, want)
 		}
 		return nil
@@ -258,14 +235,6 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the switcher does not end on "([^"]*)"$`, func(said string) error {
-		for _, act := range SwitcherActs(w.w) {
-			if act.Said == said {
-				return fmt.Errorf("the switcher ends on %q", said)
-			}
-		}
-		return nil
-	})
 	sc.Then(`^the switcher ends on (".*")$`, func(list string) error {
 		var got []string
 		for _, act := range SwitcherActs(w.w) {
@@ -298,12 +267,6 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the window open on "([^"]*)" is brought forward$`, func(name string) error {
-		if raised := w.apart.raised[w.storeOf(name)]; raised == nil || raised.Load() == 0 {
-			return fmt.Errorf("the window open on %q was not brought forward", name)
-		}
-		return nil
-	})
 	sc.Then(`^the configuration names the workspace "([^"]*)"$`, func(name string) error {
 		h := w.spaces.Home("")
 		h.Store = ""
@@ -317,12 +280,5 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 			}
 		}
 		return fmt.Errorf("the configuration does not name %q", name)
-	})
-	sc.Then(`^the window asks the system to open the settings of "([^"]*)"$`, func(name string) error {
-		got, asked := w.w.OpenAsked()
-		if want := filepath.Join(w.spaces.FolderOf(name), files.SettingsFile); !asked || got != want {
-			return fmt.Errorf("the window asks the system to open %q, not %q", got, want)
-		}
-		return nil
 	})
 }

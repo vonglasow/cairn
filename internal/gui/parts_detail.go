@@ -143,8 +143,6 @@ const between = 6
 
 const apart = 32
 
-const longRows = 4
-
 const closeWide = 24
 
 // FormClose is the box at the right end of a form's heading that closes it, no smaller than a pointer can be sure of.

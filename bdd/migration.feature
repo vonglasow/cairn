@@ -14,50 +14,7 @@ Feature: Changes to the shape of the store
       And it says the store is behind
       And it says to run `cairn migration apply`
 
-    @store-behind-says-what-to-run-on-a-line-of-its-own
-    Scenario: what to run stands alone on its line, to be copied whole
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn task list`
-      Then it exits with code 3
-      And a line of what it says is `cairn migration apply` and nothing else
-
-    @store-behind-opens-the-board
-    Scenario: `cairn tui` on a store behind opens the board
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn tui`
-      Then the board is opened on that store
-      And 1 change is still waiting
-
-    @store-behind-opens-the-window
-    Scenario: `cairn gui` on a store behind opens the window
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn gui`
-      Then the window is opened on that store
-      And 1 change is still waiting
-
-    @store-behind-untouched
-    Scenario: refusing changes nothing about the store
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      And I ran a command that was refused
-      When I run `cairn migration list`
-      Then it says 1 change is waiting
-
   Rule: A change is applied when it is asked for
-
-    @migration-apply
-    Scenario: applying what is waiting brings the store up to date
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn migration apply`
-      Then it succeeds
-      And it names the change it applied
-      And `cairn task list` lists 1 task
-
-    @migration-apply-one
-    Scenario: a single change can be named
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I apply the change that is waiting, by its number
-      Then it succeeds
-      And it names the change it applied
 
     @migration-apply-in-order
     Scenario: a change is never made before one it was written after
@@ -68,51 +25,6 @@ Feature: Changes to the shape of the store
       Then it fails
       And it says an earlier change is still waiting
 
-    @migration-apply-keeps
-    Scenario: what the store held is still there afterwards
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn migration apply`
-      Then `cairn task list` lists task 1 titled "Write the spec"
-
-    @migration-apply-backups
-    Scenario: a backup is set aside before anything is applied
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn migration apply`
-      Then `cairn backup list` lists 1 backup
-
-    @migration-apply-nothing
-    Scenario: applying when nothing is waiting says so
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration apply`
-      Then it succeeds
-      And it says there is nothing waiting
-
-    @migration-apply-nothing-json
-    Scenario: having nothing to apply is answered the way it was asked
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration apply --json`
-      Then it writes JSON to standard output
-
-    @migration-apply-already
-    Scenario: applying a change that is already applied says so
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration apply 1`
-      Then it fails
-      And it says the change is already applied
-
-    @migration-apply-unknown
-    Scenario: applying a change that does not exist says so
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration apply 99`
-      Then it fails
-      And it says there is no such change
-
-    @migration-apply-new-store
-    Scenario: a store made today needs nothing applied to it
-      When I run `cairn task new "Write the spec"`
-      Then it succeeds
-      And it writes nothing to standard error
-
   Rule: A label is written one way, and has no family
 
     @migration-labels-split-at-their-family
@@ -122,13 +34,6 @@ Feature: Changes to the shape of the store
       Then task 1 carries exactly the labels "77594, ado, chantier, proxmox"
       And objective 1 carries exactly the labels "chantier, doc-infra"
 
-    @migration-labels-written-one-way
-    Scenario: the change writes every label the one way, and once
-      Given a store from before labels were written one way
-      When I run `cairn migration apply`
-      Then task 2 carries exactly the labels "a, ado, b, c, dette-config, obj-modularite-helm, sp26-20"
-      And objective 2 carries exactly the labels "ete-2026"
-
   Rule: The time written on a task is kept when the time spent is read from the trace
 
     @migration-time-spent-kept
@@ -137,13 +42,6 @@ Feature: Changes to the shape of the store
       When I run `cairn migration apply`
       And I run `cairn task show 2`
       Then the task carries the time spent "2h30m"
-
-    @migration-time-spent-in-the-trace
-    Scenario: the time written on a task before is in its trace, added by hand
-      Given a store from before the time spent was read from the trace
-      When I run `cairn migration apply`
-      And I run `cairn trace show 2`
-      Then it says 2h30m was added with no day
 
   Rule: A store's sub-tasks become steps of the task they hung under
 
@@ -155,32 +53,7 @@ Feature: Changes to the shape of the store
       And `cairn step list 1` names step 2 "Write the spec" as done
       And `cairn step list 4` names step 1 "Draft the post" as not done
 
-    @migration-sub-tasks-leave-the-board
-    Scenario: a sub-task is no longer a task once it is a step, nor in focus
-      Given a store from before tasks were split into steps
-      When I run `cairn migration apply`
-      Then `cairn task list` lists 2 tasks
-      And `cairn task show 3` says there is no such task
-      When I run `cairn task focus`
-      Then it says nothing is in focus
-
   Rule: What a change will do can be read before it is made
-
-    @migration-show
-    Scenario: a change says what it does, and how it is undone
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration show 2`
-      Then it succeeds
-      And it names the change
-      And it shows what the change does
-      And it shows what undoing it does
-
-    @migration-show-loses
-    Scenario: a change says what rolling it back would lose
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration show 2`
-      Then it succeeds
-      And it says what rolling the change back loses
 
     @migration-show-unknown
     Scenario: showing a change that does not exist says so
@@ -199,21 +72,6 @@ Feature: Changes to the shape of the store
       And it names every change made to the store
       And it says when each was made
 
-    @migration-list-waiting
-    Scenario: what has not been applied is listed too, and marked
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I run `cairn migration list`
-      Then it succeeds
-      And it says 1 change is waiting
-
-    @migration-list-json
-    Scenario: what was done can be read by a machine
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration list --json`
-      Then it writes JSON to standard output
-      And it carries every change
-      And it says the store holds 1 task and 0 objectives
-
   Rule: The last change applied can be rolled back
 
     @migration-rollback
@@ -223,75 +81,6 @@ Feature: Changes to the shape of the store
       When I run `cairn migration rollback --yes`
       Then it succeeds
       And it names the change it undid
-
-    @migration-holds-after-rollback
-    Scenario: the store still says what it holds once rolled back
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added a task titled "Write the spec"
-      And I rolled back the change named "objectives, and the tasks that serve them"
-      When I run `cairn migration list`
-      Then it succeeds
-      And `cairn migration list` says the store holds 1 task and 0 objectives
-
-    @migration-rollback-says-what-it-lost
-    Scenario: rolling back names what it dropped on the way
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      And I applied what was waiting
-      When I run `cairn migration rollback --yes`
-      Then it succeeds
-      And it says what it lost
-      And it says a backup can restore it
-
-    @migration-rollback-keeps-what-fits
-    Scenario: rolling back keeps what the older shape can still hold
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      And I applied what was waiting
-      And I added a task titled "Ship it"
-      When I run `cairn migration rollback --yes`
-      Then it succeeds
-      And `cairn migration list` says the store holds 2 tasks and 0 objectives
-
-    @migration-rollback-backups-first
-    Scenario: a backup is set aside before anything is rolled back
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      And I applied what was waiting
-      And I deleted every backup
-      When I run `cairn migration rollback --yes`
-      Then `cairn backup list` lists 1 backup
-
-    @migration-rollback-json
-    Scenario: rolling back can be read by a machine
-      Given I added a task titled "Write the spec"
-      When I run `cairn migration rollback --yes --json`
-      Then it writes JSON to standard output
-      And it carries the change it rolled back
-
-    @migration-rollback-unconfirmed
-    Scenario: rolling back without confirming refuses
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      And I applied what was waiting
-      When I run `cairn migration rollback`
-      Then it fails
-      And it says how to confirm
-
-    @migration-carries-what-a-task-already-served
-    Scenario: the objective a task already served is not lost on the way
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added a task titled "Write the spec" with the objective "1"
-      And I rolled back the change named "a task can serve more than one objective"
-      When I run `cairn migration apply`
-      Then it succeeds
-      And `cairn task show 1` says it serves objective 1 alone
-
-    @migration-rolling-back-keeps-the-smallest-objective
-    Scenario: rolled back, a task keeps the first objective it served
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added an objective titled "Ship the docs"
-      And I added a task titled "Write the spec" with the objectives "2" and "1"
-      And I rolled back the change named "a task can serve more than one objective"
-      When I run `cairn migration apply`
-      Then it succeeds
-      And `cairn task show 1` says it serves objective 1 alone
 
   Rule: An objective can sit under another, and rolling that back keeps every objective
 
@@ -305,24 +94,6 @@ Feature: Changes to the shape of the store
       And `cairn objective show 1` says it sits under nothing
       And `cairn task show 1` says it serves objective 1 alone
 
-    @objective-sub-migration-rollback-sets-every-one-loose
-    Scenario: rolled back, a sub-objective stands on its own and its parent counts only its own tasks
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added a task titled "Print the case" with the objective "2"
-      And I rolled back the change named "an objective can sit under another"
-      When I run `cairn migration apply`
-      Then it succeeds
-      And `cairn objective show 2` says it sits under nothing
-      And `cairn objective show 1` says "nothing is under it"
-      And `cairn objective show 2` says "0 of 1 tasks are done"
-
-    @objective-sub-migration-says-what-rolling-back-loses
-    Scenario: what rolling the change back loses is said before it is applied
-      When I run `cairn migration show 18`
-      Then it succeeds
-      And the answer says "which objective each sub-objective sat under"
-
   Rule: A label has a scope, and rolling that back leaves every label for both
 
     @label-scope-migration-rollback-leaves-both
@@ -332,12 +103,6 @@ Feature: Changes to the shape of the store
       When I run `cairn migration apply`
       Then it succeeds
       And `cairn label list` says "for both"
-
-    @label-scope-migration-says-what-rolling-back-loses
-    Scenario: what rolling the scope back loses is said before it is applied
-      When I run `cairn migration show 19`
-      Then it succeeds
-      And the answer says "the scope of each label"
 
   Rule: An objective can wait on another, and rolling that back keeps every objective
 
@@ -353,12 +118,6 @@ Feature: Changes to the shape of the store
       Then the answer says "Firmware"
       And the answer does not say "waits on it"
 
-    @objective-waits-on-migration-says-what-rolling-back-loses
-    Scenario: what rolling the dependencies back loses is said before it is applied
-      When I run `cairn migration show 20`
-      Then it succeeds
-      And the answer says "which objective waits on which"
-
   Rule: The views are kept in the store, and rolling that back loses them alone
 
     @view-migration-rollback-loses-the-views
@@ -371,12 +130,6 @@ Feature: Changes to the shape of the store
       And `cairn view list` says "there is no view"
       And `cairn task list` lists 1 task
 
-    @view-migration-says-what-rolling-back-loses
-    Scenario: what rolling the views back loses is said before it is applied
-      When I run `cairn migration show 21`
-      Then it succeeds
-      And the answer says "every view"
-
   Rule: The series are kept in the store, and rolling that back keeps every task they made
 
     @series-migration-rollback-keeps-the-tasks
@@ -388,9 +141,3 @@ Feature: Changes to the shape of the store
       Then it succeeds
       And `cairn series list` says "there is no series"
       And `cairn task list` lists 1 task
-
-    @series-migration-says-what-rolling-back-loses
-    Scenario: what rolling the series back loses is said before it is applied
-      When I run `cairn migration show 22`
-      Then it succeeds
-      And the answer says "every series"

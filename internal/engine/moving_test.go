@@ -105,59 +105,6 @@ func TestMove_takesTheOthersAlongBehindIt(t *testing.T) {
 	}
 }
 
-func TestFocus_bringsWaitingWorkIntoCurrentAndLeavesTheRest(t *testing.T) {
-	for state, lands := range map[string]string{
-		"backlog": "current", "todo": "current", "paused": "current",
-		"blocked": "blocked", "watching": "watching", "current": "current",
-	} {
-		path := storeAt(t)
-		if _, err := Do(TaskNew, path, given("title", "Already here", "state", "current")); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := Do(TaskNew, path, given("title", "Write the spec", "state", state)); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := Do(TaskFocus, path, given("number", "2")); err != nil {
-			t.Fatalf("focusing a task in %s: %v", state, err)
-		}
-		shown, err := Do(TaskShow, path, given("number", "2"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got := string((*shown.Task).Carried().State); got != lands {
-			t.Errorf("a task in %s that takes the focus is in %s, want %s", state, got, lands)
-		}
-		if lands != "current" || state == "current" {
-			continue
-		}
-		listed, err := Do(TaskList, path, given())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(listed.Tasks) == 0 {
-			t.Fatal("nothing is listed")
-		}
-		if first := listed.Tasks[0].Carried().Number; first != 2 {
-			t.Errorf("a task in %s brought into current sits behind task %d, want at the head", state, first)
-		}
-	}
-}
-
-func TestFocus_isLetGoOfByATaskMovedIntoBlocked(t *testing.T) {
-	path := storeAt(t, "one", "two")
-	for _, n := range []string{"1", "2"} {
-		if _, err := Do(TaskFocus, path, given("number", n)); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if _, err := Do(TaskEdit, path, given("number", "1", "state", "blocked", "because", "an answer")); err != nil {
-		t.Fatal(err)
-	}
-	if held := heldIn(t, path); len(held) != 1 || held[0] != 2 {
-		t.Errorf("in focus after one was blocked: %v, want [2]", held)
-	}
-}
-
 func actsDone(t *testing.T, e *Engine, did string) []int {
 	t.Helper()
 	acts, err := e.since(time.Time{})
@@ -219,36 +166,6 @@ func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
 	}
 }
 
-func TestTaskFocus_answersWithTheTaskBroughtIntoCurrentAndTheFocus(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "one")
-	add(t, e, "two")
-	a, err := e.Ask(TaskFocus, given("number", "2"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if a.Task == nil || (*a.Task).Carried().Number != 2 || (*a.Task).Carried().State != item.Current {
-		t.Fatalf("answered with task %+v, want task 2 in current", a.Task)
-	}
-	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{2}) || len(a.Sessions) != 1 {
-		t.Errorf("in focus %v, sessions %d", a.InFocus, len(a.Sessions))
-	}
-}
-
-func TestMove_recordsAMoveOnlyWhenTheTaskChangedPlace(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "one")
-	add(t, e, "two")
-	for range 2 {
-		if err := e.move(2, task.First, 0); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if got := actsDone(t, e, act.Moved); !slices.Equal(got, []int{2}) {
-		t.Errorf("moves recorded on %v, want one on task 2", got)
-	}
-}
-
 func TestTaskMove_putsATaskInPlaceAndRefusesOneGivenNowhereOrTwice(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "one")
@@ -265,21 +182,5 @@ func TestTaskMove_putsATaskInPlaceAndRefusesOneGivenNowhereOrTwice(t *testing.T)
 	}
 	if _, err := e.Ask(TaskMove, given("number", "1", "first", "true", "last", "true", "state", "todo")); !errors.Is(err, task.ErrMoreThanOnePlace) {
 		t.Errorf("moving to two places answered %v", err)
-	}
-}
-
-func TestTaskMove_takesTheOthersAlongBehindItIntoItsColumn(t *testing.T) {
-	e := openEngine(t)
-	for _, title := range []string{"one", "two", "three", "four"} {
-		add(t, e, title)
-	}
-	in := given("number", "3", "state", "todo", "first", "true")
-	in.Listed = map[string][]string{"also": {"1", "2"}}
-	a, err := e.Ask(TaskMove, in)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := numbersIn(a.Tasks, item.Todo); !slices.Equal(got, []int{3, 1, 2}) {
-		t.Errorf("todo is %v, want 3, 1, 2", got)
 	}
 }

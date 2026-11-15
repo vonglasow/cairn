@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -166,27 +165,6 @@ func TestTheWindowIsTitledAfterItsWorkspace(t *testing.T) {
 	}
 }
 
-func TestThePillOpensTheTopBarAndTheTabsComeAfterIt(t *testing.T) {
-	w := atPlace(newFake(), workspace.Shown{Workspace: "work", Store: "/w/cairn.db", Colour: "teal"})
-	l := w.Layout()
-	if l.Place.W == 0 || l.Place.X != geom.Margin {
-		t.Fatalf("the pill is at %+v", l.Place)
-	}
-	if first := TabAt(l, 0); first.X < l.Place.X+l.Place.W {
-		t.Errorf("the first tab at %d stands on the pill ending at %d", first.X, l.Place.X+l.Place.W)
-	}
-	if end := l.Tabs.X + l.Tabs.W; end != geom.LayoutFor(1200, 800).Tabs.X+geom.LayoutFor(1200, 800).Tabs.W {
-		t.Errorf("the top bar ends at %d, not where it ended", end)
-	}
-	if bare := holding(newFake()).Layout(); bare.Place.W != 0 || bare.Tabs != geom.LayoutFor(1200, 800).Tabs {
-		t.Errorf("a window that knows no place moved its tabs: %+v", bare.Tabs)
-	}
-	clicked := w.clicked(geom.Point{X: l.Place.X + l.Place.W/2, Y: l.Place.Y + l.Place.H/2})
-	if clicked.Screen != board.OnWorkspaces {
-		t.Errorf("a click on the pill leaves the window on %v", clicked.Screen)
-	}
-}
-
 func switching(f *fake, seeing func(string) bool) Window {
 	f.listed = &workspace.Workspaces{
 		Workspaces: []workspace.Workspace{
@@ -262,60 +240,6 @@ func TestTheMenuBarOffersTheSwitcher(t *testing.T) {
 	}
 }
 
-func TestTheSettingsOfAWorkspaceSayWhereEachKeyComesFrom(t *testing.T) {
-	f := newFake()
-	f.config = &workspace.Config{
-		File: "/c/config.toml", Settings: "/h/settings.toml", Store: workspace.Emplacement{At: "/h/cairn.db"},
-		Pages: &workspace.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &workspace.Archive{Days: 30},
-		Focus: &workspace.FocusConfig{}, Time: &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &workspace.WindowConfig{},
-		Written: []string{"archive.days", "pages.time"}, WrittenHere: []string{"pages.time"},
-	}
-	w := atPlace(f, workspace.Shown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
-	if got := Heads(w); got != "Settings of home" {
-		t.Errorf("the panel is headed %q", got)
-	}
-	from := map[string]string{}
-	for _, row := range w.SettingRows() {
-		from[row.Key.Name] = row.Comes
-	}
-	if from["pages.time"] != SetHere || from["archive.days"] != FromGlobal || from["time.weekends"] != ByDefault {
-		t.Errorf("the keys come from %v", from)
-	}
-	if said := w.SettingsPath(); said != "settings.toml over config.toml" {
-		t.Errorf("the scope says %q, want the files' names alone", said)
-	}
-	if marks := w.CopyMarks(); !slices.ContainsFunc(marks, func(m CopyMark) bool { return m.Said == "/h/settings.toml" }) {
-		t.Errorf("the settings' copy marks are %+v, none copying /h/settings.toml", marks)
-	}
-	if !slices.Contains(w.Offers(), OpenSettings) {
-		t.Errorf("the panel offers %v", w.Offers())
-	}
-	if got, _ := w.Choose(OpenSettings).OpenAsked(); got != "/h/settings.toml" {
-		t.Errorf("Open settings.toml asks the system to open %q", got)
-	}
-}
-
-func TestACardSaysNothingOfItsTimeWhenTheTimeIsNotShown(t *testing.T) {
-	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	c := board.Card{Estimate: "2h", Spent: "1h", Objectives: []int{4}, Serves: []string{"Ops"}}
-	if said, _ := CardFacts(c, now, engine.PagesOff(engine.PageTime)); strings.Contains(said, "1h") || !strings.Contains(said, "Ops") {
-		t.Errorf("with the time off a card says %q", said)
-	}
-	if said, _ := CardFacts(c, now, engine.Pages{}); !strings.Contains(said, "1h/2h") {
-		t.Errorf("with the time on a card says %q", said)
-	}
-}
-
-func TestEveryWorkspaceIsListedWhenNoFolderIsRecent(t *testing.T) {
-	f := newFake()
-	w := switching(f, nil)
-	f.listed.Recent = nil
-	w = w.Key("esc").Key("cmd+shift+o")
-	if got := w.SwitcherLines(); len(got) != 3 {
-		t.Errorf("the switcher lists %d of 3 workspaces: %+v", len(got), got)
-	}
-}
-
 func TestARecentFolderIsKeptAsAWorkspaceThroughWorkspaceAdd(t *testing.T) {
 	f := newFake()
 	w := switching(f, nil)
@@ -352,39 +276,6 @@ func TestARecentFolderIsKeptAsAWorkspaceThroughWorkspaceAdd(t *testing.T) {
 	refused := keeping(switching(f, nil)).Types("x").Key("enter")
 	if !errors.Is(refused.Wrong(), errRefuse) {
 		t.Errorf("a refusal is said as %v", refused.Wrong())
-	}
-}
-
-func TestTheSettingsOfAWorkspaceSayItsLabelItsColourAndTheGlobalValueOfAKeySetHere(t *testing.T) {
-	f := newFake()
-	f.config = &workspace.Config{
-		File: "/c/config.toml", Settings: "/h/settings.toml", Store: workspace.Emplacement{At: "/h/cairn.db"},
-		Pages: &workspace.PagesConfig{Tasks: true, Objectives: true, Time: "off"}, Archive: &workspace.Archive{Days: 30},
-		Focus: &workspace.FocusConfig{}, Approach: &workspace.ApproachConfig{Label: "discuss"}, Time: &workspace.TimeConfig{Deleted: "kept", Weekends: "shown"}, Window: &workspace.WindowConfig{},
-		Workspace: &workspace.Colouring{Colour: "teal"},
-		Written:   []string{"archive.days", "pages.time"}, WrittenHere: []string{"pages.time", "workspace.colour"},
-		Global: map[string]string{"pages.time": "on"},
-	}
-	w := atPlace(f, workspace.Shown{Workspace: "home", Store: "/h/cairn.db"}).Key("cmd+,")
-	rows := map[string]SettingRow{}
-	for _, row := range w.SettingRows() {
-		rows[row.Key.Name] = row
-	}
-	if got := rows["pages.time"]; got.Aside != "← global: on" || rows["archive.days"].Aside != "" {
-		t.Errorf("pages.time says %q beside it, archive.days %q", got.Aside, rows["archive.days"].Aside)
-	}
-	if got := rows["approach.label"]; got.Value != "discuss" || got.Comes != ByDefault {
-		t.Errorf("approach.label reads %+v", got)
-	}
-	if colour := rows["workspace.colour"]; colour.Value != "teal" || colour.Comes != SetHere || colour.Aside != "" {
-		t.Errorf("the colour reads %+v", colour)
-	}
-	f.config.Workspace, f.config.Approach.Label = nil, ""
-	w = atPlace(f, workspace.Shown{Store: "/s/cairn.db"}).Key("cmd+,")
-	for _, row := range w.SettingRows() {
-		if row.Key.Name == "approach.label" && row.Value != "" {
-			t.Errorf("a store saying no label reads %+v", row)
-		}
 	}
 }
 

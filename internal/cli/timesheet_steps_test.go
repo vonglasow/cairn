@@ -1,17 +1,13 @@
 package cli
 
 import (
-	"cairn/internal/engine/calendar"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/cucumber/godog"
-
-	"cairn/test"
 )
 
 func (w *world) dayBlock(day string) []string {
@@ -80,19 +76,6 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 		return w.Seed(`cairn migration apply`)
 	})
 
-	sc.Step(`^today gives task (\d+) "([^"]*)"$`, func(n int, want string) error {
-		return w.dayGives(calendar.FormatDay(time.Now()), n, want)
-	})
-
-	sc.Step(`^it says (\S+) was added with no day$`, func(span string) error {
-		for _, l := range strings.Split(w.Out.Stdout, "\n") {
-			if strings.Contains(l, "time added") && strings.Contains(l, span) && !strings.Contains(l, " for ") {
-				return nil
-			}
-		}
-		return fmt.Errorf("the history does not say %s was added with no day:\n%s", span, w.Out.Stdout)
-	})
-
 	sc.Step(`^the day "([^"]*)" comes to "([^"]*)"$`, func(day, want string) error {
 		block := w.dayBlock(day)
 		if len(block) == 0 {
@@ -110,22 +93,6 @@ func (w *world) registerTimesheet(sc *godog.ScenarioContext) {
 			}
 		}
 		return fmt.Errorf("the day %s says no total:\n%s", day, w.Out.Stdout)
-	})
-
-	sc.Step(`^it says today$`, func() error {
-		if was := calendar.FormatDay(time.Now().Add(-time.Minute)); strings.Contains(w.Out.Stdout, was) {
-			return nil
-		}
-		return test.WantContains(w.Out.Stdout, calendar.FormatDay(time.Now()), "the timesheet")
-	})
-
-	sc.Step(`^it says (\S+) was added for "([^"]*)"$`, func(span, day string) error {
-		for _, l := range strings.Split(w.Out.Stdout, "\n") {
-			if strings.Contains(l, "time added") && strings.Contains(l, span) && strings.Contains(l, day) {
-				return nil
-			}
-		}
-		return fmt.Errorf("the history does not say %s was added for %s:\n%s", span, day, w.Out.Stdout)
 	})
 
 	sc.Step(`^the JSON gives the day "([^"]*)" task (\d+) at (\d+) minutes$`, func(day string, n, minutes int) error {

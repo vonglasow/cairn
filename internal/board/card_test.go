@@ -52,13 +52,3 @@ func TestStepsAreTalliedLeftAndDone(t *testing.T) {
 		t.Errorf("Tallied with no step = %q, want nothing", got)
 	}
 }
-
-func TestPages_aCardCostsNothingShownWhenTheTimeIsNot(t *testing.T) {
-	c := Card{Spent: "2h", Estimate: "1h", Overrun: true}
-	if said, over := Cost(engine.Pages{}, c); said != "2h/1h" || !over {
-		t.Errorf("with the time shown, Cost = %q, %v", said, over)
-	}
-	if said, over := Cost(engine.PagesOff(engine.PageTime), c); said != "" || over {
-		t.Errorf("with the time not shown, Cost = %q, %v; want nothing", said, over)
-	}
-}

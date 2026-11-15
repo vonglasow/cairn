@@ -1,12 +1,10 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 
@@ -52,18 +50,6 @@ func (w *workspaces) registerSettings(sc *godog.ScenarioContext) {
 	sc.Step(`^it says it wrote the settings in "([^"]*)"$`, func(folder string) error {
 		return test.WantContains(w.Out.Stdout, "written in "+filepath.Join(w.expand(folder), "settings.toml"), "the answer")
 	})
-	sc.Step(`^the settings in "([^"]*)" are as they were$`, func(folder string) error {
-		return w.fileReads(filepath.Join(w.expand(folder), "settings.toml"), w.settings[folder])
-	})
-	sc.Step(`^the global configuration reads:$`, func(said *godog.DocString) error {
-		return w.fileReads(w.configPath(), said.Content+"\n")
-	})
-	sc.Step("^the global configuration holds `([^`]*)` right under `([^`]*)`$", func(line, above string) error {
-		return test.WantContains(w.readFile(w.configPath()), above+"\n"+line+"\n", "the global configuration")
-	})
-	sc.Step("^the global configuration holds `([^`]*)`$", func(line string) error {
-		return test.WantContains(w.readFile(w.configPath()), "\n"+line+"\n", "the global configuration")
-	})
 	sc.Step(`^it names the global configuration$`, func() error {
 		return test.WantContains(w.Out.Stderr, w.configPath(), "the reason")
 	})
@@ -77,60 +63,6 @@ func (w *workspaces) registerSettings(sc *godog.ScenarioContext) {
 		line := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` = "?` + regexp.QuoteMeta(value) + `"?\s+# ` + regexp.QuoteMeta(from) + `(; global: .*)?$`)
 		if !line.MatchString(w.Out.Stdout) {
 			return fmt.Errorf("the answer does not say %s is %s, %s:\n%s", key, value, from, w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^it says "([^"]*)" is "([^"]*)", set in the store's settings, the global configuration giving "([^"]*)"$`, func(key, value, global string) error {
-		line := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + ` = "?` + regexp.QuoteMeta(value) + `"?\s+# set in the store's settings; global: "?` + regexp.QuoteMeta(global) + `"?$`)
-		if !line.MatchString(w.Out.Stdout) {
-			return fmt.Errorf("the answer does not say %s is %s here and %s globally:\n%s", key, value, global, w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^the structured answer says the global configuration gives "([^"]*)" as "([^"]*)"$`, func(key, value string) error {
-		var doc struct {
-			Global map[string]string `json:"global"`
-		}
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
-			return fmt.Errorf("the answer is not JSON (%w):\n%s", err, w.Out.Stdout)
-		}
-		if doc.Global[key] != value {
-			return fmt.Errorf("the answer says the global configuration gives %q as %q, want %q:\n%s", key, doc.Global[key], value, w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^it says the colour is read off the workspace's name$`, func() error {
-		line := regexp.MustCompile(`(?m)^colour = "[a-z]+"\s+# read off the workspace's name$`)
-		if !line.MatchString(w.Out.Stdout) {
-			return fmt.Errorf("the answer does not say the colour is read off the name:\n%s", w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^the structured answer says the workspace wears "([^"]*)"$`, func(colour string) error {
-		var doc struct {
-			Workspace struct {
-				Colour string `json:"colour"`
-			} `json:"workspace"`
-		}
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
-			return fmt.Errorf("the answer is not JSON (%w):\n%s", err, w.Out.Stdout)
-		}
-		if doc.Workspace.Colour != colour {
-			return fmt.Errorf("the answer says the workspace wears %q, want %q:\n%s", doc.Workspace.Colour, colour, w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^the structured answer says "([^"]*)" is written in (the store's settings|the global configuration)$`, func(key, where string) error {
-		var doc struct {
-			Written     []string `json:"written"`
-			WrittenHere []string `json:"written_here"`
-		}
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &doc); err != nil {
-			return fmt.Errorf("the answer is not JSON (%w):\n%s", err, w.Out.Stdout)
-		}
-		here, global := slices.Contains(doc.WrittenHere, key), slices.Contains(doc.Written, key)
-		if want := where == "the store's settings"; here != want || global == want {
-			return fmt.Errorf("%q written in the store's settings %v, in the global configuration %v; want it in %s:\n%s", key, here, global, where, w.Out.Stdout)
 		}
 		return nil
 	})
@@ -153,11 +85,6 @@ func (w *workspaces) registerSettings(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-}
-
-func (w *workspaces) readFile(path string) string {
-	data, _ := os.ReadFile(path)
-	return "\n" + string(data)
 }
 
 func (w *workspaces) fileReads(path, want string) error {

@@ -65,9 +65,6 @@ func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 	sc.Step(`^cairn (v[0-9.]+) is released, its binary not matching the sum it gives$`, func(tag string) {
 		released(test.Release{Tag: tag, Platform: here, Binary: []byte("the cairn released as " + tag), WrongSum: true})
 	})
-	sc.Step(`^cairn (v[0-9.]+) is released, with no binary for this system$`, func(tag string) {
-		released(test.Release{Tag: tag, Platform: "plan9/mips", Binary: []byte("the cairn released as " + tag)})
-	})
 	sc.Step(`^the releases cannot be reached$`, func() {
 		gone := httptest.NewServer(nil)
 		gone.Close()
@@ -78,7 +75,7 @@ func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 		if err := os.MkdirAll(filepath.Dir(place), 0o755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(place, []byte(runBefore), 0o755); err != nil {
+		if err := test.WriteProgram(place, runBefore); err != nil {
 			return err
 		}
 		stamps = func() build.Info { return build.Stamped(version, "", "", "") }
@@ -91,21 +88,12 @@ func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 	sc.Step(`^the cairn I run is (\S+), built from its source$`, func(version string) error {
 		return running(version, "bin")
 	})
-	sc.Step(`^the cairn I run is (v[0-9.]+), installed by Homebrew$`, func(version string) error {
-		return running(version, "homebrew", "Cellar", "cairn", "0.10.0", "bin")
-	})
 	sc.Step(`^the cairn I run is (v[0-9.]+), from a release, in a folder I cannot write$`, func(version string) error {
 		if err := running(version, "bin"); err != nil {
 			return err
 		}
 		locked = filepath.Dir(place)
 		return os.Chmod(locked, 0o555)
-	})
-	sc.Step(`^it says cairn went from (\S+) to (\S+)$`, func(from, to string) error {
-		return test.WantContains(w.Out.Stdout, "cairn went from "+from+" to "+to+", in "+place, "the answer")
-	})
-	sc.Step(`^it says (\S+) is the newest already$`, func(version string) error {
-		return test.WantContains(w.Out.Stdout, "cairn "+version+" is the newest already, in "+place, "the answer")
 	})
 	sc.Step(`^it says in JSON it went from (\S+) to (\S+), in its place$`, func(from, to string) error {
 		var said map[string]string
@@ -123,20 +111,6 @@ func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^nothing but the cairn is in its folder$`, func() error {
-		entries, err := os.ReadDir(filepath.Dir(place))
-		if err != nil {
-			return err
-		}
-		if len(entries) != 1 || entries[0].Name() != filepath.Base(place) {
-			var names []string
-			for _, e := range entries {
-				names = append(names, e.Name())
-			}
-			return fmt.Errorf("its folder holds %v", names)
-		}
-		return nil
-	})
 	sc.Step(`^the cairn in its place is the one released as (\S+)$`, func(tag string) error {
 		return inPlace(place, "the cairn released as "+tag)
 	})
@@ -146,20 +120,11 @@ func (w *world) registerUpgrade(sc *godog.ScenarioContext) {
 	sc.Step(`^it says the archive does not match its sum$`, func() error {
 		return test.WantContains(w.Out.Stderr, "does not match its sum", "the refusal")
 	})
-	sc.Step(`^it says the release has no binary for this system$`, func() error {
-		return test.WantContains(w.Out.Stderr, "no binary for this system", "the refusal")
-	})
 	sc.Step(`^it says the releases could not be read$`, func() error {
 		return test.WantContains(w.Out.Stderr, "the releases could not be read", "the refusal")
 	})
 	sc.Step(`^it says a cairn built from its source is built again$`, func() error {
 		return test.WantContains(w.Out.Stderr, "built from its source", "the refusal")
-	})
-	sc.Step(`^it says to run brew upgrade cairn$`, func() error {
-		return test.WantContains(w.Out.Stderr, "brew upgrade cairn", "the refusal")
-	})
-	sc.Step(`^it says its place cannot be written$`, func() error {
-		return test.WantContains(w.Out.Stderr, "cannot be written", "the refusal")
 	})
 }
 

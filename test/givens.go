@@ -265,13 +265,10 @@ func (g Givens) Register(sc *godog.ScenarioContext) {
 	sc.Given(`^a store of my own, somewhere that is not the default place$`, func() error { return nil })
 	sc.Given(`^nothing in it yet$`, func() error { return nil })
 	sc.Step(`^I added a task titled "([^"]*)"$`, g.IAddedATaskTitled)
-	sc.Step(`^I added a task titled "([^"]*)" with the estimate "([^"]*)"$`, g.IAddedATaskWithTheEstimate)
 	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)"$`, g.IAddedATaskWithTheState)
 	sc.Step(`^I added a task titled "([^"]*)" in "([^"]*)" at the priority "([^"]*)" carrying the label "([^"]*)"$`, g.IAddedATaskCarrying)
 	sc.Step(`^I added a task titled "([^"]*)" with the description "([^"]*)"$`, g.IAddedATaskWithTheDescription)
 	sc.Step(`^I added a task titled "([^"]*)" with the paragraphs "([^"]*)" and "([^"]*)"$`, g.IAddedATaskWithTheParagraphs)
-	sc.Step(`^I added a task titled "([^"]*)" with a description of (\d+) lines ending "([^"]*)"$`,
-		g.IAddedATaskWithADescriptionOfLines)
 	sc.Step(`^I added a task titled "([^"]*)" serving objective (\d+)$`, g.IAddedATaskServingObjective)
 	sc.Step(`^I added a task titled "([^"]*)" with the state "([^"]*)" serving objective (\d+)$`,
 		g.IAddedATaskWithTheStateServingObjective)

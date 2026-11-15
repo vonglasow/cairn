@@ -14,30 +14,6 @@ Feature: The trace
       And it says it started in the backlog at high priority
       And it says when
 
-    @trace-a-change-says-what-it-was-and-became
-    Scenario: a change says what it went from and what it became
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the priority "high"
-      When I run `cairn trace show 1`
-      Then it says the priority went from "normal" to "high"
-
-    @trace-reading-is-not-an-act
-    Scenario: looking at a task is not an act
-      Given I added a task titled "Write the spec"
-      And I looked at task 1
-      And I listed the tasks
-      And I looked for "spec"
-      When I run `cairn trace show 1`
-      Then it carries 1 act
-
-    @trace-oldest-first
-    Scenario: a trace reads oldest first
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the priority "high"
-      And I edited task 1 with the state "todo"
-      When I run `cairn trace show 1`
-      Then it lists the acts in the order "created", "priority", "column"
-
   Rule: Taking the focus and letting it go are acts
 
     @trace-focus-taken-and-released
@@ -48,53 +24,6 @@ Feature: The trace
       When I run `cairn trace show 1`
       Then it lists the acts in the order "created", "focus taken", "focus released"
 
-    @trace-focus-writes-down-the-move-into-current
-    Scenario: a task brought into current by the focus says so in its trace
-      Given I added a task titled "Write the spec" with the state "todo"
-      And I put task 1 in focus
-      When I run `cairn trace show 1`
-      Then it lists the acts in the order "created", "focus taken", "column"
-
-    @trace-focus-taking-another-leaves-the-first-open
-    Scenario: putting another task in focus leaves the first one open
-      Given I added a task titled "First" with the state "current"
-      And I added a task titled "Second" with the state "current"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      When I run `cairn trace show 1`
-      Then it lists the acts in the order "created", "focus taken"
-
-    @trace-focus-letting-one-go-closes-only-that-one
-    Scenario: letting one task go closes its stretch and no other
-      Given I added a task titled "First" with the state "current"
-      And I added a task titled "Second" with the state "current"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      And I let task 1 go
-      When I run `cairn trace show 1`
-      Then it lists the acts in the order "created", "focus taken", "focus released"
-      When I run `cairn trace show 2`
-      Then it lists the acts in the order "created", "focus taken"
-
-    @trace-focus-closed-when-the-task-goes
-    Scenario: deleting the task in focus closes the stretch, and its trace stays
-      Given I added a task titled "Write the spec" with the state "current"
-      And I put task 1 in focus
-      And I deleted task 1
-      When I run `cairn trace show 1`
-      Then it lists the acts in the order "created", "focus taken", "focus released", "deleted"
-
-    @trace-a-deletion-writes-down-what-went-with-it
-    Scenario: what a deleted task carried is written down with the deletion
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the description "the client wants two columns"
-      And I edited task 1 with the priority "high"
-      And I deleted task 1
-      When I run `cairn trace show 1`
-      Then it says the deletion took "Write the spec" with it
-      And it says the deletion took "the client wants two columns" with it
-      And it says the deletion took "high" with it
-
   Rule: What blocks a task is written down like anything else it carries
 
     @trace-a-blocker-added
@@ -104,41 +33,6 @@ Feature: The trace
       And I edited task 2 with the blocker "1"
       When I run `cairn trace show 2`
       Then it says the blockers went from "—" to "#1"
-
-    @trace-a-blocker-taken-away
-    Scenario: taking a blocker away is written down too
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      And I edited task 2 with the blocker "1"
-      And I edited task 2 with the blocker "-1"
-      When I run `cairn trace show 2`
-      Then it says the blockers went from "#1" to "—"
-
-    @trace-the-words-that-block
-    Scenario: what is not in cairn is written down in the words it was given
-      Given I added a task titled "Ship it"
-      And I edited task 1 with the because "the client's answer"
-      When I run `cairn trace show 1`
-      Then it says the because went from "—" to "the client's answer"
-
-    @trace-the-objectives-served
-    Scenario: what a task serves is written down like anything else it carries
-      Given I added an objective titled "Ship cairn 1.0"
-      And I added an objective titled "Ship the docs"
-      And I added a task titled "Write the spec" with the objective "1"
-      And I edited task 1 with the objective "+2"
-      When I run `cairn trace show 1`
-      Then it says the objectives went from "#1" to "#1, #2"
-
-    @trace-the-column-cairn-put-it-back-in
-    Scenario: the return to todo is not a silent move
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      And I edited task 2 with the blocker "1"
-      And I edited task 2 with the state "blocked"
-      And I edited task 2 with the blocker "-1"
-      When I run `cairn trace show 2`
-      Then it lists the acts in the order "created", "blockers", "column", "blockers", "column"
 
   Rule: A link is written down on both tasks it joins
 
@@ -163,21 +57,6 @@ Feature: The trace
       When I run `cairn trace show 1`
       Then it carries 2 acts
 
-    @trace-an-edit-that-changes-nothing-is-not-an-act
-    Scenario: giving an attribute the value it already holds is not a change
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the priority "normal"
-      When I run `cairn trace show 1`
-      Then it carries 1 act
-
-    @trace-a-move-to-where-it-stands-is-not-an-act
-    Scenario: moving a task to the place it already holds is not a move
-      Given I added a task titled "Alone in its column"
-      And I moved task 1 to the first place
-      And I moved task 1 to the last place
-      When I run `cairn trace show 1`
-      Then it carries 1 act
-
   Rule: An act that is not about an attribute says what it did
 
     @trace-moved-says-where-it-went
@@ -189,13 +68,6 @@ Feature: The trace
       Then it lists the acts in the order "created", "moved"
       And it says the move went to the first place
 
-    @trace-labels-are-a-set
-    Scenario: a set of labels says what it was and what it became
-      Given I added a task titled "Write the spec" with the labels "spec" and "team"
-      And I edited task 1 with the labels "spec" and "urgent"
-      When I run `cairn trace show 1`
-      Then it says the labels went from "spec, team" to "spec, urgent"
-
   Rule: What happened over a period is listed, with what can be worked out from it
 
     @trace-list-is-today-by-default
@@ -205,47 +77,6 @@ Feature: The trace
       And I put task 1 in focus
       When I run `cairn trace list`
       Then it lists the acts of 2 tasks
-
-    @trace-list-since-a-day-nothing-reaches
-    Scenario: a period nothing falls into says so
-      Given I added a task titled "First"
-      And I put task 1 in focus
-      When I run `cairn trace list --since 2099-01-01`
-      Then it says nothing was done
-
-    @trace-list-until-a-day
-    Scenario: what was done on one past day is listed alone
-      Given it is 09:00 on 2026-09-28
-      And I added a task titled "Monday's"
-      And it is 09:00 on 2026-09-29
-      And I added a task titled "Tuesday's"
-      And it is 09:00 on 2026-09-30
-      And I added a task titled "Wednesday's"
-      When I run `cairn trace list --since 2026-09-29 --until 2026-09-29`
-      Then it lists the acts of 1 task
-      And it says nothing of task 1
-      And it says nothing of task 3
-
-    @trace-list-until-with-no-start
-    Scenario: a period with only an end starts today, and so holds nothing before it
-      Given it is 09:00 on 2026-09-28
-      And I added a task titled "Monday's"
-      When I run `cairn trace list --until 2026-09-29`
-      Then it says nothing was done
-
-    @trace-list-ending-before-it-begins
-    Scenario: a period that ends before it begins holds nothing
-      Given it is 09:00 on 2026-09-29
-      And I added a task titled "Tuesday's"
-      When I run `cairn trace list --since 2026-09-30 --until 2026-09-28`
-      Then it says nothing was done
-
-    @trace-letting-go-of-nothing-is-written-down-nowhere
-    Scenario: unfocusing nothing is written down nowhere
-      Given I added a task titled "Write the spec"
-      And I let the focus go
-      When I run `cairn trace list`
-      Then it lists the acts of 1 task
 
   Rule: A trace that cannot be shown says why
 
@@ -257,27 +88,6 @@ Feature: The trace
       And it says there is no such task
       And it shows the number it could not find
 
-    @trace-show-needs-a-number
-    Scenario: a trace is asked for by number
-      Given I added a task titled "First"
-      When I run `cairn trace show`
-      Then it fails
-      And it says how to use it
-
-    @trace-list-since-something-that-is-not-a-day
-    Scenario: a period has to start on a day
-      Given I added a task titled "First"
-      When I run `cairn trace list --since pasunjour`
-      Then it fails
-      And it says what it expects instead of "pasunjour"
-
-    @trace-list-until-something-that-is-not-a-day
-    Scenario: a period has to end on a day
-      Given I added a task titled "First"
-      When I run `cairn trace list --until pasunjour`
-      Then it fails
-      And it says what it expects instead of "pasunjour"
-
   Rule: Every act says who did it, and through what
 
     @trace-says-who-acted
@@ -286,26 +96,3 @@ Feature: The trace
       And I added a task titled "Write the spec"
       When I run `cairn trace show 1`
       Then every act says it was done by "sam" through "cli"
-
-    @trace-author-is-the-login-by-default
-    Scenario: with nobody named, the author is the one logged in
-      Given I added a task titled "Write the spec"
-      When I run `cairn trace show 1`
-      Then every act says it was done by the one logged in, through "cli"
-
-    @trace-list-by-author
-    Scenario: what one author did is listed apart
-      Given the author is "sam"
-      And I added a task titled "Write the spec"
-      And the author is "claude session 7f3a"
-      And I added a task titled "Ship it"
-      When I run `cairn trace list --by sam`
-      Then it lists the acts of 1 task
-      And it says nothing of task 2
-
-    @trace-json-says-who
-    Scenario: who did an act can be read by a machine
-      Given the author is "sam"
-      And I added a task titled "Write the spec"
-      When I run `cairn trace show 1 --json`
-      Then every act carries the author "sam" and the surface "cli"

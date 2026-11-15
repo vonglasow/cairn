@@ -2,6 +2,7 @@ package test
 
 import (
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -32,5 +33,15 @@ func TestWithGoCaches_runsInTheHomeTheRunBeganWith(t *testing.T) {
 func TestBuilt_buildsOnlyOnce(t *testing.T) {
 	if first, second := Built(t), Built(t); first != second {
 		t.Errorf("built at %q then %q, want one binary for the run", first, second)
+	}
+}
+
+func TestWriteProgram_writesAProgramThatRunsAtOnce(t *testing.T) {
+	at := filepath.Join(t.TempDir(), "said")
+	if err := WriteProgram(at, "#!/bin/sh\necho ran\n"); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command(at).Output(); err != nil || string(out) != "ran\n" {
+		t.Errorf("ran %q, %v; want it run", out, err)
 	}
 }

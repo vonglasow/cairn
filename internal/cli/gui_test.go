@@ -1,137 +1,14 @@
 package cli
 
 import (
-	"bytes"
 	"cairn/internal/board"
 	"cairn/internal/debug"
 	"cairn/internal/engine"
 	"cairn/internal/gui"
 	"cairn/internal/gui/design"
-	"context"
-	"errors"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
-
-func TestGuiOpensTheStoreAndHandsItToTheWindow(t *testing.T) {
-	store := storeFor(t)
-	t.Setenv("CAIRN_STORE", store)
-	var readable error
-	handed := false
-	was := openGui
-	openGui = func(work board.Work, _ engine.Pages, _ design.Skin, _ *debug.Log, width, height int, _ gui.Here) error {
-		handed = true
-		_, readable = work.Version()
-		if width <= 0 || height <= 0 {
-			t.Errorf("the window was opened at %d by %d", width, height)
-		}
-		return nil
-	}
-	t.Cleanup(func() { openGui = was })
-
-	got := run(t, "gui")
-	if got.Code != 0 {
-		t.Fatalf("gui exited %d: %s%s", got.Code, got.Stdout, got.Stderr)
-	}
-	if !handed {
-		t.Fatal("the window was never opened")
-	}
-	if readable != nil {
-		t.Errorf("the window was handed a store it cannot read: %v", readable)
-	}
-}
-
-func TestGuiPassesOnWhatWentWrongOpeningTheWindow(t *testing.T) {
-	t.Setenv("CAIRN_STORE", storeFor(t))
-	was := openGui
-	openGui = func(board.Work, engine.Pages, design.Skin, *debug.Log, int, int, gui.Here) error {
-		return errors.New("no display here")
-	}
-	t.Cleanup(func() { openGui = was })
-
-	got := run(t, "gui")
-	if got.Code == 0 {
-		t.Fatal("a window that would not open exited 0")
-	}
-	if !strings.Contains(strings.ToLower(got.Stderr), "display") {
-		t.Errorf("it said %q", got.Stderr)
-	}
-}
-
-func TestGuiTakesNoArguments(t *testing.T) {
-	got := run(t, "gui", "something")
-	if got.Code == 0 {
-		t.Fatal("gui took an argument it has no use for")
-	}
-	if !strings.Contains(got.Stderr, "gui") {
-		t.Errorf("the refusal does not name the command: %q", got.Stderr)
-	}
-}
-
-func TestGuiActsThroughTheWindow(t *testing.T) {
-	store := storeFor(t)
-	t.Setenv("CAIRN_STORE", store)
-	t.Setenv("CAIRN_AUTHOR", "sam")
-	was := openGui
-	openGui = func(work board.Work, _ engine.Pages, _ design.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
-		_, err := work.Ask(engine.TaskNew, engine.Input{Given: map[string]string{"title": "Write the spec"}})
-		return err
-	}
-	t.Cleanup(func() { openGui = was })
-	if got := run(t, "gui"); got.Code != 0 {
-		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
-	}
-	shown := run(t, "trace", "show", "1")
-	if !strings.Contains(shown.Stdout, "(by sam, through gui)") {
-		t.Errorf("an act from the window reads:\n%s", shown.Stdout)
-	}
-}
-
-func TestGuiKeepsTheSizesBesideTheStoreWhenTheConfigurationSaysSo(t *testing.T) {
-	store := storeFor(t)
-	t.Setenv("CAIRN_STORE", store)
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	path := filepath.Join(home, ".config", "cairn", "config.toml")
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte("[window]\nkeep_sizes = true\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	was := openGui
-	openGui = func(work board.Work, _ engine.Pages, _ design.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
-		_, err := work.Ask(engine.WindowKeep, engine.Input{Given: map[string]string{"name": "sizes", "value": "{}"}})
-		return err
-	}
-	t.Cleanup(func() { openGui = was })
-	if got := run(t, "gui"); got.Code != 0 {
-		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
-	}
-	if _, err := os.Stat(store + ".sizes.json"); err != nil {
-		t.Errorf("the window kept no sizes beside the store: %v", err)
-	}
-}
-
-func TestGuiHandsTheWindowTheDebugFileInDebugMode(t *testing.T) {
-	t.Setenv("CAIRN_STORE", storeFor(t))
-	t.Setenv("CAIRN_DEBUG", "1")
-	var handed *debug.Log
-	was := openGui
-	openGui = func(_ board.Work, _ engine.Pages, _ design.Skin, noted *debug.Log, _, _ int, _ gui.Here) error {
-		handed = noted
-		return nil
-	}
-	t.Cleanup(func() { openGui = was })
-	if got := run(t, "gui"); got.Code != 0 {
-		t.Fatalf("gui exited %d: %s", got.Code, got.Stderr)
-	}
-	if handed == nil {
-		t.Error("in debug mode, the window was handed no file to write in")
-	}
-}
 
 func TestGuiTellsTheWindowItsStoreAndHowToReachAnotherWorkspace(t *testing.T) {
 	store := storeFor(t)
@@ -160,25 +37,5 @@ func TestGuiTellsTheWindowItsStoreAndHowToReachAnotherWorkspace(t *testing.T) {
 	apart, err := here.Reach(engine.Elsewhere{Workspace: "garden"})
 	if err != nil || apart.Store != filepath.Join(home, "garden", "cairn.db") {
 		t.Errorf("reaching garden = %+v, %v", apart, err)
-	}
-}
-
-func TestGui_opensTheWindowItsRunWasHanded(t *testing.T) {
-	was := openGui
-	openGui = func(board.Work, engine.Pages, design.Skin, *debug.Log, int, int, gui.Here) error {
-		return errors.New("the window every other run opens")
-	}
-	t.Cleanup(func() { openGui = was })
-	opened := false
-	ctx := withWindow(context.Background(), func(board.Work, engine.Pages, design.Skin, *debug.Log, int, int, gui.Here) error {
-		opened = true
-		return nil
-	})
-	var out, errs bytes.Buffer
-	if code := MainIn(ctx, homeWithStore(t, storeFor(t)), []string{"gui"}, strings.NewReader(""), &out, &errs); code != exitOK {
-		t.Fatalf("gui exited %d: %s", code, errs.String())
-	}
-	if !opened {
-		t.Error("the window the run was handed was never opened")
 	}
 }

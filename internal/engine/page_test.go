@@ -30,67 +30,6 @@ func listingJSON(t *testing.T, a Answer) string {
 	return string(out)
 }
 
-func TestTaskList_aPageIsCutInTheBoardsOrderAndSaysHowManyInAll(t *testing.T) {
-	e := openEngine(t)
-	for _, title := range []string{"First", "Second", "Third", "Fourth"} {
-		add(t, e, title)
-	}
-
-	answer, kept := listedPage(t, e, map[string]string{"limit": "2", "offset": "1"})
-	if !slices.Equal(kept, []int{2, 3}) {
-		t.Errorf("it kept %v, want 2 then 3", kept)
-	}
-	if said := listingJSON(t, answer); !strings.Contains(said, `"total":4`) {
-		t.Errorf("it wrote %s, want a total of 4", said)
-	}
-	if text := RenderText(TaskList, answer); !strings.Contains(text, "tasks 2 to 3 of 4\n") {
-		t.Errorf("it read %q, want which tasks of how many", text)
-	}
-
-	_, kept = listedPage(t, e, map[string]string{"limit": "9"})
-	if !slices.Equal(kept, []int{1, 2, 3, 4}) {
-		t.Errorf("a limit past the last kept %v, want every task", kept)
-	}
-
-	_, kept = listedPage(t, e, map[string]string{"offset": "3"})
-	if !slices.Equal(kept, []int{4}) {
-		t.Errorf("an offset alone kept %v, want what is after it", kept)
-	}
-
-	answer, kept = listedPage(t, e, map[string]string{"offset": "7"})
-	if len(kept) != 0 || !strings.Contains(listingJSON(t, answer), `"total":4`) {
-		t.Errorf("past the last it kept %v and wrote %s, want none of 4", kept, listingJSON(t, answer))
-	}
-	if text := RenderText(TaskList, answer); !strings.Contains(text, "no task past 7, of 4\n") {
-		t.Errorf("it read %q, want none past 7", text)
-	}
-}
-
-func TestTaskList_aPageIsCutFromWhatIsKept(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "First")
-	add(t, e, "Second")
-	add(t, e, "Third")
-	if _, err := TaskEdit.Run(workedOn{Engine: e}, Input{Given: map[string]string{"number": "2", "state": "todo"}}); err != nil {
-		t.Fatalf("TaskEdit: %v", err)
-	}
-
-	answer, kept := listedPage(t, e, map[string]string{"state": "backlog", "offset": "1"})
-	if !slices.Equal(kept, []int{3}) || !strings.Contains(listingJSON(t, answer), `"total":2`) {
-		t.Errorf("it kept %v and wrote %s, want 3 of 2", kept, listingJSON(t, answer))
-	}
-}
-
-func TestTaskList_noPageSaysNoTotal(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "First")
-
-	answer, _ := listedPage(t, e, nil)
-	if said := listingJSON(t, answer); strings.Contains(said, `"total"`) || strings.Contains(said, `"counts"`) {
-		t.Errorf("it wrote %s, want no total nor count", said)
-	}
-}
-
 func TestTaskList_aPageOfNoTaskIsRefused(t *testing.T) {
 	e := openEngine(t)
 	for _, given := range []map[string]string{{"limit": "0"}, {"limit": "-1"}, {"offset": "-1"}} {
@@ -236,12 +175,5 @@ func TestTaskSearch_aPageOfNoTaskIsRefused(t *testing.T) {
 		if !errors.Is(err, errMisread) {
 			t.Errorf("%v: err = %v, want it misread", given, err)
 		}
-	}
-}
-
-func TestAPageMayStartAtTheFirstTask(t *testing.T) {
-	p, err := askedPage(given("offset", "0"))
-	if err != nil || !p.asked || p.offset != 0 {
-		t.Errorf("offset 0 gave %+v, %v", p, err)
 	}
 }

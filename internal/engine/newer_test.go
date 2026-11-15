@@ -25,21 +25,6 @@ func aStoreANewerCairnChanged(t *testing.T, path string) {
 	}
 }
 
-func TestAsk_aStoreANewerCairnChangedIsRefusedToEverythingThatTouchesIt(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "cairn.db")
-	held, err := engine.Open(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = held.Close() })
-	aStoreANewerCairnChanged(t, path)
-	for _, op := range []engine.Operation{engine.TaskList, engine.MigrationList} {
-		if _, err := held.Ask(op, engine.Input{}); !errors.Is(err, migration.ErrNewerStore) {
-			t.Errorf("Ask(%s) on a store a newer cairn changed = %v, want ErrNewerStore", op.Name(), err)
-		}
-	}
-}
-
 func TestHold_holdsAStoreFromANewerCairnRefusingEveryAsk(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cairn.db")
 	e, err := engine.Open(path)

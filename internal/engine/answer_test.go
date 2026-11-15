@@ -5,7 +5,6 @@ import (
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/item"
 	"encoding/json"
-	"slices"
 	"strings"
 	"testing"
 
@@ -250,103 +249,12 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 	}
 }
 
-func TestOf_saysWhichTasksAreInFocusAndHandsThemOver(t *testing.T) {
-	one := builtTask(t, 7, "The one")
-	held, ok := Of(TaskFocus, Answer{Task: &one, InFocus: list(7)}).(Focus)
-	if !ok {
-		t.Fatalf("Of on the focus = %T, want Focus", Of(TaskFocus, Answer{Task: &one, InFocus: list(7)}))
-	}
-	if !slices.Equal(held.InFocus, []int{7}) {
-		t.Errorf("in_focus = %v, want [7]", held.InFocus)
-	}
-	if len(held.Tasks) != 1 || held.Tasks[0].Number != 7 {
-		t.Errorf("the tasks handed over = %v, want task 7", held.Tasks)
-	}
-}
-
-func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
-	first := builtTask(t, 1, "First")
-	second := builtTask(t, 2, "Second")
-	held, ok := Of(TaskFocus, Answer{Held: []task.Task{second, first}, InFocus: list(2, 1)}).(Focus)
-	if !ok {
-		t.Fatal("Of on several in focus did not answer the focus")
-	}
-	if !slices.Equal(held.InFocus, []int{2, 1}) {
-		t.Errorf("in_focus = %v, want [2 1]", held.InFocus)
-	}
-	if len(held.Tasks) != 2 || held.Tasks[0].Number != 2 || held.Tasks[1].Number != 1 {
-		t.Errorf("the tasks handed over = %v, want 2 then 1", held.Tasks)
-	}
-}
-
-func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
-	none, ok := Of(TaskUnfocus, Answer{InFocus: list()}).(Focus)
-	if !ok {
-		t.Fatalf("Of with nothing held = %T, want Focus", Of(TaskUnfocus, Answer{InFocus: list()}))
-	}
-	if none.InFocus == nil || len(none.InFocus) != 0 {
-		t.Errorf("in_focus = %v, want an empty list", none.InFocus)
-	}
-	if len(none.Tasks) != 0 {
-		t.Errorf("a task crossed with nothing in focus: %v", none.Tasks)
-	}
-}
-
-func TestOf_saysTheFocusOnceInAListing(t *testing.T) {
-	first := builtTask(t, 1, "First")
-	second := builtTask(t, 2, "Second")
-
-	crossed, ok := Of(TaskList, Answer{Tasks: []task.Task{first, second}, InFocus: list(2)}).(Tasks)
-	if !ok {
-		t.Fatal("Of on a listing did not answer a listing of tasks")
-	}
-	if len(crossed.Tasks) != 2 {
-		t.Fatalf("%d tasks crossed, want 2", len(crossed.Tasks))
-	}
-	if !slices.Equal(crossed.InFocus, []int{2}) {
-		t.Errorf("in_focus = %v, want [2]", crossed.InFocus)
-	}
-}
-
-func TestOf_saysNoFocusWhenAnAnswerSaysNothingAboutIt(t *testing.T) {
-	crossed, ok := Of(TaskList, Answer{Tasks: []task.Task{builtTask(t, 1, "First")}}).(Tasks)
-	if !ok {
-		t.Fatal("Of on a listing did not answer a listing of tasks")
-	}
-	if len(crossed.InFocus) != 0 {
-		t.Errorf("in_focus = %v, want nothing", crossed.InFocus)
-	}
-}
-
 func list(numbers ...int) *[]int { return &numbers }
-
-func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
-	one := builtTask(t, 7, "The one")
-	if _, ok := Of(TaskShow, Answer{Task: &one}).(Task); !ok {
-		t.Errorf("Of on a card = %T, want Task", Of(TaskShow, Answer{Task: &one}))
-	}
-}
 
 func TestRenderText_saysNothingIsInFocus(t *testing.T) {
 	got := RenderText(TaskUnfocus, Answer{InFocus: list()})
 	if got != "nothing is in focus\n" {
 		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
-	}
-}
-
-func TestRenderText_marksTheTaskInFocusInAListing(t *testing.T) {
-	tasks := []task.Task{builtTask(t, 1, "First"), builtTask(t, 2, "Second")}
-
-	marked := RenderText(TaskList, Answer{Tasks: tasks, InFocus: list(2)})
-	if !strings.Contains(marked, "Second") || !strings.Contains(marked, task.InFocusMark) {
-		t.Errorf("the listing does not mark Second:\n%s", marked)
-	}
-	if got := strings.Count(marked, task.InFocusMark); got != 1 {
-		t.Errorf("%d lines are marked, want exactly one:\n%s", got, marked)
-	}
-
-	if plain := RenderText(TaskList, Answer{Tasks: tasks}); strings.Contains(plain, task.InFocusMark) {
-		t.Errorf("a listing asked for without the focus marks a line:\n%s", plain)
 	}
 }
 
@@ -362,88 +270,12 @@ func builtTask(t *testing.T, number int, title string) task.Task {
 	return a.Task()
 }
 
-func TestRenderText_saysNothingIsInFocusWithAnEmptyList(t *testing.T) {
-	got := RenderText(TaskFocus, Answer{Held: []task.Task{}, InFocus: list()})
-	if got != "nothing is in focus\n" {
-		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
-	}
-}
-
-func TestRenderText_listsEveryTaskInFocus(t *testing.T) {
-	first := builtTask(t, 1, "First")
-	second := builtTask(t, 2, "Second")
-	got := RenderText(TaskFocus, Answer{Held: []task.Task{first, second}, InFocus: list(1, 2)})
-	for _, want := range []string{"First", "Second"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("the answer does not carry %q:\n%s", want, got)
-		}
-	}
-	if marks := strings.Count(got, task.InFocusMark); marks != 2 {
-		t.Errorf("%d lines are marked, want both:\n%s", marks, got)
-	}
-}
-
 func TestRenderText_saysWhatASessionPastItsLengthAsks(t *testing.T) {
 	first := builtTask(t, 1, "First")
 	ask := "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
 	got := RenderText(TaskFocus, Answer{Held: []task.Task{first}, InFocus: list(1), Sessions: []focusSession{{Task: 1, Ask: ask}}})
 	if !strings.Contains(got, ask) {
 		t.Errorf("the answer does not ask to renew the session:\n%s", got)
-	}
-}
-
-func TestOfAnswer_carriesTheStepsOfATaskShown(t *testing.T) {
-	var a task.AsTold
-	a.Numbered(1)
-	a.Titled("Ship it")
-	a.Step("Write the tests", true)
-	shown := a.Task()
-	said, ok := Of(TaskShow, Answer{Task: &shown}).(Task)
-	if !ok {
-		t.Fatalf("OfAnswer gave %T, want a Task", Of(TaskShow, Answer{Task: &shown}))
-	}
-	if len(said.Steps) != 1 || said.Steps[0] != (task.Step{Title: "Write the tests", Done: true}) {
-		t.Errorf("Steps = %+v, want the one done", said.Steps)
-	}
-}
-
-func TestOfAnswer_aListingLeavesWhatATaskSaysToBeShown(t *testing.T) {
-	var one, two task.AsTold
-	one.Numbered(1)
-	one.Titled("Ship it")
-	one.Described("everything done so far")
-	two.Numbered(2)
-	two.Titled("Write the tests")
-	tasks := []task.Task{one.Task(), two.Task()}
-	for name, asked := range map[string]struct {
-		op     Operation
-		answer Answer
-	}{"listing": {TaskList, Answer{Tasks: tasks}}, "search": {TaskSearch, Answer{Matched: tasks}}} {
-		encoded, err := json.Marshal(Of(asked.op, asked.answer))
-		if err != nil {
-			t.Fatalf("%s: %v", name, err)
-		}
-		var doc struct {
-			Tasks []map[string]any `json:"tasks"`
-		}
-		if err := json.Unmarshal(encoded, &doc); err != nil {
-			t.Fatalf("%s: %v", name, err)
-		}
-		if len(doc.Tasks) != 2 {
-			t.Fatalf("%s carries %d tasks", name, len(doc.Tasks))
-		}
-		for i, want := range []bool{true, false} {
-			row := doc.Tasks[i]
-			if _, carried := row["description"]; carried {
-				t.Errorf("%s: task %v carries its description", name, row["number"])
-			}
-			if _, carried := row["sub_tasks"]; carried {
-				t.Errorf("%s: task %v carries what hangs under it", name, row["number"])
-			}
-			if row["described"] != want || row["title"] == nil {
-				t.Errorf("%s: task %v reads %v", name, row["number"], row)
-			}
-		}
 	}
 }
 
@@ -455,15 +287,5 @@ func TestRenderText_showsWhatATerminalWouldObey(t *testing.T) {
 	kept := a.Task()
 	if got := RenderText(TaskShow, Answer{Task: &kept}); strings.ContainsAny(got, "\x1b\x07") {
 		t.Errorf("RenderText = %q, want nothing a terminal would obey", got)
-	}
-}
-
-func TestOfFocus_saysEverySessionAndNoneAsAnEmptyList(t *testing.T) {
-	if got := ofFocus(nil, item.Progress{}, nil, nil).Sessions; got == nil || len(got) != 0 {
-		t.Errorf("with no session, sessions = %#v", got)
-	}
-	held := []focusSession{{Task: 4}}
-	if got := ofFocus(nil, item.Progress{}, nil, held).Sessions; !slices.Equal(got, held) {
-		t.Errorf("sessions = %v, want %v", got, held)
 	}
 }

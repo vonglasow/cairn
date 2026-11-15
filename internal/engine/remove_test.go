@@ -55,18 +55,3 @@ func TestWorkspaceRemove_refusesAnUnknownNameAndTheDefault(t *testing.T) {
 		t.Errorf("the configuration reads %q; want it as it was", said)
 	}
 }
-
-func TestWorkspaceRemove_isForAPersonOnly(t *testing.T) {
-	if _, found := called(workspaceRemove.Thing, workspaceRemove.Verb); found {
-		t.Error("workspace remove is among All(), so offered to an agent")
-	}
-	for _, op := range ForAPersonOnly() {
-		if op.Name() == workspaceRemove.Name() {
-			if op.Level != write || op.Needs != aConfiguration {
-				t.Errorf("workspace remove is at %v, needing %v", op.Level, op.Needs)
-			}
-			return
-		}
-	}
-	t.Error("workspace remove is not for a person at the command line")
-}

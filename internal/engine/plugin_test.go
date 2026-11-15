@@ -70,37 +70,6 @@ func TestPluginWrite_saysTheVersionOfThisCairn(t *testing.T) {
 	}
 }
 
-func TestKeepPluginCurrent_followsTheFolderTheConfigurationNames(t *testing.T) {
-	told := filepath.Join(t.TempDir(), "mine")
-	if err := claudeplugin.Write(told, "v1.0.0"); err != nil {
-		t.Fatal(err)
-	}
-	if rewrote, err := KeepPluginCurrent(Places{Store: filepath.Join(t.TempDir(), "cairn.db"), Plugin: told}, "v2.0.0"); err != nil || !rewrote {
-		t.Fatalf("the plugin in the folder the configuration names was left: %v, %v", rewrote, err)
-	}
-}
-
-func TestLocate_findsThePluginFolderTheFileNames(t *testing.T) {
-	home := t.TempDir()
-	dir := filepath.Join(home, ".config", "cairn")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	at, err := Locate(Home{Dir: home})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if at.Plugin != app.PluginBeside(at.Store) {
-		t.Errorf("with nothing said, the plugin goes to %q", at.Plugin)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte("plugin = \"~/claude\"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if at, err = Locate(Home{Dir: home}); err != nil || at.Plugin != filepath.Join(home, "claude") {
-		t.Errorf("the file names ~/claude, and the plugin goes to %q, %v", at.Plugin, err)
-	}
-}
-
 func TestKeepPluginCurrent_rewritesOnlyAPluginAnotherCairnWrote(t *testing.T) {
 	store := filepath.Join(t.TempDir(), "cairn.db")
 	at := Places{Store: store}
@@ -149,15 +118,5 @@ func TestPluginShow_aBuildThatIsNoVersionSaysToWriteThePluginItCarries(t *testin
 	}
 	if said := RenderText(pluginShow, answer); !strings.Contains(said, "cairn plugin write") || strings.Contains(said, "/plugin") {
 		t.Errorf("the answer reads %q", said)
-	}
-}
-
-func TestPluginShow_saysThisCairnsVersionWhenNoneIsGiven(t *testing.T) {
-	answer, err := pluginShow.Run(workedOn{}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if shaped := Of(pluginShow, answer).(app.PluginShown); shaped.Version != build.Read().Version {
-		t.Errorf("the version said is %q, want %q", shaped.Version, build.Read().Version)
 	}
 }

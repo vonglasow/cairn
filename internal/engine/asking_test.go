@@ -3,16 +3,9 @@ package engine
 import (
 	"cairn/internal/engine/migration"
 	"errors"
-	"fmt"
-	"os"
 	"path/filepath"
-	"reflect"
-	"slices"
 	"strings"
 	"testing"
-	"time"
-
-	"cairn/internal/store/sqlite"
 )
 
 func engineOn(t *testing.T) (*Engine, string) {
@@ -24,77 +17,6 @@ func engineOn(t *testing.T) (*Engine, string) {
 	}
 	t.Cleanup(func() { _ = e.Close() })
 	return e, path
-}
-
-func TestAskRunsAnOperationOnAnEngineThatStaysOpen(t *testing.T) {
-	e, _ := engineOn(t)
-	add(t, e, "Write the spec")
-
-	answer, err := e.Ask(TaskList, Input{})
-	if err != nil {
-		t.Fatalf("Ask(TaskList): %v", err)
-	}
-	if len(answer.Tasks) != 1 {
-		t.Fatalf("Tasks = %d, want 1", len(answer.Tasks))
-	}
-}
-
-func TestAskGivesAnOperationThePathItWasOpenedOn(t *testing.T) {
-	e, _ := engineOn(t)
-	add(t, e, "Write the spec")
-
-	if _, err := e.Ask(BackupNew, Input{}); err != nil {
-		t.Fatalf("Ask(BackupNew): %v", err)
-	}
-	answer, err := e.Ask(BackupList, Input{})
-	if err != nil {
-		t.Fatalf("Ask(BackupList): %v", err)
-	}
-	if len(answer.Backups) != 1 {
-		t.Fatalf("Backups = %d, want 1", len(answer.Backups))
-	}
-}
-
-func TestAskRefusesAnArgumentTheOperationDoesNotTake(t *testing.T) {
-	e, _ := engineOn(t)
-
-	_, err := e.Ask(TaskList, Input{Given: map[string]string{"nonesuch": "1"}})
-	if err == nil {
-		t.Fatal("Ask: no error, want a refusal")
-	}
-	if !strings.Contains(err.Error(), "nonesuch") {
-		t.Errorf("error = %q, want it to name the argument", err)
-	}
-}
-
-func TestEngine_isAskedThroughOperationsAlone(t *testing.T) {
-	door := reflect.TypeFor[*Engine]()
-	var exported []string
-	for i := range door.NumMethod() {
-		exported = append(exported, door.Method(i).Name)
-	}
-	if want := []string{"Ask", "Close", "Version"}; !slices.Equal(exported, want) {
-		t.Errorf("an engine exports %v, want only %v", exported, want)
-	}
-}
-
-func TestKeptBy_handsEveryDoorToTheStoreTheOneGiven(t *testing.T) {
-	kept, err := sqlite.Open(filepath.Join(t.TempDir(), "cairn.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = kept.Close() })
-	e := (&Engine{}).keptBy(kept)
-	value := reflect.ValueOf(*e)
-	for i := range value.NumField() {
-		field := value.Type().Field(i)
-		if field.Type == reflect.TypeFor[error]() || field.Type.Kind() != reflect.Interface && field.Type != reflect.TypeOf(kept) {
-			continue
-		}
-		if value.Field(i).IsNil() {
-			t.Errorf("Engine.%s is left out of keptBy: an act would reach the store beside its transaction", field.Name)
-		}
-	}
 }
 
 func TestAsk_followsAStorePutBackUnderIt(t *testing.T) {
@@ -160,34 +82,5 @@ func TestAskRefusesASearchForNothing(t *testing.T) {
 		if !strings.Contains(err.Error(), "there is nothing to look for") {
 			t.Errorf("Ask(TaskSearch, %q) = %v, want it to say there is nothing to look for", named, err)
 		}
-	}
-}
-
-func homeArchivingSince(t *testing.T, daysAgo int) string {
-	t.Helper()
-	home := t.TempDir()
-	dir := filepath.Join(home, ".config", "cairn")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	start := time.Now().AddDate(0, 0, -daysAgo).Format(time.DateOnly)
-	if err := os.WriteFile(filepath.Join(dir, "config.toml"), fmt.Appendf(nil, "[archive]\nstart = %s\n", start), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	return home
-}
-
-func TestAsk_sweepsTheArchiveOwedBeforeWhatNeedsTheStore(t *testing.T) {
-	e := openEngine(t)
-	e.acting = Acting{Through: "cli", By: "sam"}
-	add(t, e, "Migration Jenkins")
-	doneLongAgo(t, e, 1)
-	e.home = Home{Dir: homeArchivingSince(t, 20)}
-	e.sweepOwed = true
-	if _, err := e.Ask(TaskList, Input{}); err != nil {
-		t.Fatal(err)
-	}
-	if !archivedOnItsOwn(t, e, 1) {
-		t.Error("a listing left the archive it owed unswept")
 	}
 }

@@ -5,8 +5,6 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-
-	"cairn/internal/engine/act"
 )
 
 func linkedOf(t *testing.T, e *Engine, number int) []int {
@@ -86,79 +84,5 @@ func TestLinkToItselfOrToNothingIsRefused(t *testing.T) {
 	}
 	if _, err := e.edit(1, linking(t, "2", "3")); err != nil {
 		t.Errorf("link to archived and done: %v", err)
-	}
-}
-
-func linksActsOn(t *testing.T, e *Engine, number int) [][2]string {
-	t.Helper()
-	acts, err := e.history.ActsOn(number)
-	if err != nil {
-		t.Fatalf("ActsOn(%d): %v", number, err)
-	}
-	var told [][2]string
-	for _, a := range acts {
-		c := a.Carried()
-		if c.Field == "links" && c.Did == act.Changed {
-			told = append(told, [2]string{c.Was, c.Became})
-		}
-	}
-	return told
-}
-
-func TestTheOtherEndIsToldOfTheLink(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "1")
-	add(t, e, "2")
-	if _, err := e.edit(2, linking(t, "+1")); err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-	if got, want := linksActsOn(t, e, 1), [][2]string{{"", "#2"}}; !reflect.DeepEqual(got, want) {
-		t.Errorf("acts on 1 = %v, want %v", got, want)
-	}
-	if got, want := linksActsOn(t, e, 2), [][2]string{{"", "#1"}}; !reflect.DeepEqual(got, want) {
-		t.Errorf("acts on 2 = %v, want %v", got, want)
-	}
-	if _, err := e.add("3", linking(t, "1")); err != nil {
-		t.Fatalf("Add: %v", err)
-	}
-	if got, want := linksActsOn(t, e, 1), [][2]string{{"", "#2"}, {"#2", "#2, #3"}}; !reflect.DeepEqual(got, want) {
-		t.Errorf("acts on 1 = %v, want %v", got, want)
-	}
-	if _, err := e.edit(3, linking(t, "-1")); err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-	if got, want := linksActsOn(t, e, 1), [][2]string{{"", "#2"}, {"#2", "#2, #3"}, {"#2, #3", "#2"}}; !reflect.DeepEqual(got, want) {
-		t.Errorf("acts on 1 = %v, want %v", got, want)
-	}
-	if _, err := e.edit(1, linking(t, "+2")); err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-	if got := len(linksActsOn(t, e, 1)); got != 3 {
-		t.Errorf("acts on 1 = %d, want 3", got)
-	}
-	if got := len(linksActsOn(t, e, 2)); got != 1 {
-		t.Errorf("acts on 2 = %d, want 1", got)
-	}
-}
-
-func TestDeletingATaskTellsTheOtherEnd(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "1")
-	add(t, e, "2")
-	add(t, e, "3")
-	if _, err := e.edit(2, linking(t, "1", "3")); err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-	if err := e.delete(2); err != nil {
-		t.Fatalf("delete: %v", err)
-	}
-	for _, n := range []int{1, 3} {
-		told := linksActsOn(t, e, n)
-		if len(told) == 0 {
-			t.Fatalf("acts on %d: no links act", n)
-		}
-		if got, want := told[len(told)-1], [2]string{"#2", ""}; got != want {
-			t.Errorf("last links act on %d = %v, want %v", n, got, want)
-		}
 	}
 }

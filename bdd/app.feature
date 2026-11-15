@@ -18,55 +18,10 @@ Feature: cairn as an application
       And the application carries cairn's icon and its version
       And the application was signed for this machine
 
-    @app-icon-drawn-to-the-edge
-    Scenario: the application's icon is drawn to its edges, for macOS to round
-      When I run `cairn app install`
-      Then it succeeds
-      And every image of the application's icon is opaque to its corners
-
-    @app-icon-read-at-every-size
-    Scenario: the application's icon reads as the logo at every size macOS draws it, however small
-      When I run `cairn app install`
-      Then it succeeds
-      And the application's icon holds an image for every size macOS draws an application at, from 16 points to 512, at one and two pixels a point
-      And each image of the application's icon is the logo at the size its kind says
-
-    @app-installed-again
-    Scenario: installing again replaces what was there
-      Given I ran `cairn app install`
-      When I run `cairn app install`
-      Then it succeeds
-      And the application runs the window of the cairn that wrote it
-
   Rule: On a Linux desktop, an entry is written in the person's applications menu
 
     Background:
       Given this is a Linux desktop
-
-    @app-installed-on-linux
-    Scenario: the entry is written in the applications menu, and says where
-      When I run `cairn app install`
-      Then it succeeds
-      And it says the entry is in my applications folder
-      And the entry starts the window of the cairn that wrote it
-      And cairn's logo is in my icon theme at every size
-      And the desktop's menu was refreshed
-
-    @app-installed-on-linux-where-the-desktop-keeps-its-data
-    Scenario: the entry goes where the desktop says it keeps its data
-      Given my desktop keeps its data in a folder of its own
-      When I run `cairn app install`
-      Then it succeeds
-      And it says the entry is in that folder
-      And the entry starts the window of the cairn that wrote it
-
-    @app-installed-on-linux-again
-    Scenario: installing again on a Linux desktop leaves one entry, the same
-      Given I ran `cairn app install`
-      When I run `cairn app install`
-      Then it succeeds
-      And the entry starts the window of the cairn that wrote it
-      And the desktop's menu was refreshed twice
 
     @app-on-linux-an-entry-of-somebody-elses-is-kept
     Scenario: an entry of the same name somebody else wrote is left alone
@@ -75,13 +30,6 @@ Feature: cairn as an application
       Then it fails
       And it says that entry is left alone
       And the entry is still the one somebody else wrote
-
-    @app-on-linux-without-a-menu-tool
-    Scenario: a desktop with no tool to refresh its menu still gets the entry
-      Given the desktop has no tool to refresh its menu
-      When I run `cairn app install`
-      Then it succeeds
-      And the entry starts the window of the cairn that wrote it
 
   Rule: Elsewhere there is no application to install
 

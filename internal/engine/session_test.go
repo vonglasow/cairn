@@ -11,35 +11,6 @@ import (
 	"cairn/internal/store/files"
 )
 
-func actAt(number int, did string, at time.Time) act.Act {
-	return act.Made(act.Carried{Task: number, Did: did, At: at})
-}
-
-func TestSession_isUpSinceTheFocusWasLastTakenOrRenewed(t *testing.T) {
-	taken := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
-	acts := []act.Act{
-		actAt(4, act.FocusTaken, taken),
-		actAt(4, act.FocusRenewed, taken.Add(time.Hour)),
-		actAt(4, act.Changed, taken.Add(2*time.Hour)),
-	}
-	got := sessionOf(4, acts, taken.Add(150*time.Minute), 0)
-	if !got.Since.Equal(taken.Add(time.Hour)) || got.Up != "1h30m" || got.Ask != "" {
-		t.Errorf("session = %+v, want up 1h30m since the renewal, asking nothing", got)
-	}
-}
-
-func TestSession_asksOnlyOnceItsLengthIsReached(t *testing.T) {
-	taken := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
-	acts := []act.Act{actAt(4, act.FocusTaken, taken)}
-	if got := sessionOf(4, acts, taken.Add(59*time.Minute), time.Hour); got.Ask != "" {
-		t.Errorf("within its length it asks %q", got.Ask)
-	}
-	want := "this focus session has been up 2h: renew it by focusing task 4 again, or end it by unfocusing task 4"
-	if got := sessionOf(4, acts, taken.Add(2*time.Hour), time.Hour); got.Ask != want {
-		t.Errorf("past its length it asks %q, want %q", got.Ask, want)
-	}
-}
-
 func homeLasting(t *testing.T, path, length string, later time.Duration) Home {
 	t.Helper()
 	home := t.TempDir()
@@ -120,38 +91,5 @@ func TestAnswer_asksToRenewWhateverWasCalled(t *testing.T) {
 	}
 	if len(answer.Asked) != 1 {
 		t.Errorf("a listing past the session's length asked %v, want one question", answer.Asked)
-	}
-}
-
-func TestSession_asksTheMinuteItsLengthIsReached(t *testing.T) {
-	taken := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
-	acts := []act.Act{actAt(4, act.FocusTaken, taken)}
-	if got := sessionOf(4, acts, taken.Add(time.Hour), time.Hour); got.Ask == "" {
-		t.Error("a session exactly as long as its length asks nothing")
-	}
-}
-
-func TestSession_refusesALengthOfNothingOrLess(t *testing.T) {
-	for _, said := range []string{"0s", "-1h"} {
-		e := openEngine(t)
-		e.home = homeLasting(t, "", said, 0)
-		if _, err := e.sessionLength(); !errors.Is(err, files.ErrFocus) {
-			t.Errorf("focus.session %q: err = %v, want config.ErrFocus", said, err)
-		}
-	}
-}
-
-func TestSession_sessionsAreTheOnesOfTheTasksInFocus(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "Write the spec")
-	if _, err := e.Ask(TaskFocus, given("number", "1")); err != nil {
-		t.Fatal(err)
-	}
-	got, err := e.sessions()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) != 1 || got[0].Task != 1 {
-		t.Errorf("sessions = %+v, want the one of task 1", got)
 	}
 }

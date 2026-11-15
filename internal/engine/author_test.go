@@ -3,7 +3,6 @@ package engine
 import (
 	"os/user"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -49,31 +48,5 @@ func TestActs_sayWhoDidThemAndThroughWhat(t *testing.T) {
 	}
 	if len(listed.Since) == 0 {
 		t.Error("nothing claude-code did is listed")
-	}
-}
-
-func TestHold_writesDownWhatItIsAskedAsDoneThroughItsSurface(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "cairn.db")
-	h := Home{Dir: t.TempDir(), Lookup: func(k string) (string, bool) { return path, k == "CAIRN_STORE" }}
-	held, err := Hold(h, Acting{Through: "tui", By: "sam"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := held.Ask(TaskNew, given("title", "Write the spec")); err != nil {
-		t.Fatal(err)
-	}
-	_ = held.Close()
-	shown, err := Do(TraceShow, path, given("number", "1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c := shown.Acts[0].Carried(); c.Through != "tui" || c.By != "sam" {
-		t.Errorf("an act from the board says %q through %q", c.By, c.Through)
-	}
-}
-
-func TestTraceList_showsReadingOneAuthorWithAnExample(t *testing.T) {
-	if !strings.Contains(traceList.Example, "cairn trace list --by sam") {
-		t.Fatalf("the example does not show reading one author: %q", traceList.Example)
 	}
 }

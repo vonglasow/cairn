@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"testing"
 )
 
@@ -44,4 +45,11 @@ func Built(t *testing.T) string {
 		t.Fatal(builtFail)
 	}
 	return builtAt
+}
+
+// WriteProgram writes a program and closes it with every fork held off, so no child started meanwhile keeps it open for writing and makes running it fail as busy.
+func WriteProgram(at, said string) error {
+	syscall.ForkLock.RLock()
+	defer syscall.ForkLock.RUnlock()
+	return os.WriteFile(at, []byte(said), 0o755)
 }

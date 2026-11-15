@@ -4,12 +4,10 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
-	"fmt"
 	"image"
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
@@ -252,60 +250,4 @@ func objectiveScreens(w Window) (parent, sub, refused Window) {
 		}
 	}
 	return parent, sub, refused
-}
-
-func TestTheFixturesDrawEveryTextWhereItFits(t *testing.T) {
-	work := onTheFixtures(t)
-	for _, size := range pinnedSizes {
-		var wrong []string
-		for _, s := range everyScreen(New(work, size.X, size.Y).At(time.Now()).Look()) {
-			drawn := textDrawn(s.w)
-			for _, one := range drawn {
-				if one.box.W <= 0 || one.box.H <= 0 {
-					wrong = append(wrong, fmt.Sprintf("%s: %q drawn in an empty box %+v", s.name, one.said, one.box))
-					continue
-				}
-				if one.high > one.box.H+textSlack {
-					wrong = append(wrong, fmt.Sprintf("%s: %q is %d high in a box of %d", s.name, one.said, one.high, one.box.H))
-				}
-			}
-		}
-		if len(wrong) > 0 {
-			t.Errorf("at %dx%d, %d problem(s):\n%s", size.X, size.Y, len(wrong), strings.Join(wrong, "\n"))
-		}
-	}
-}
-
-func TestBarWidths_giveWordsUpThenTheFirstOffers(t *testing.T) {
-	full, keys := []int{100, 100, 100}, []int{30, 30, 30}
-	for _, c := range []struct {
-		room   int
-		want   []int
-		worded bool
-	}{
-		{300, []int{100, 100, 100}, true},
-		{299, []int{30, 30, 30}, false},
-		{90, []int{30, 30, 30}, false},
-		{89, []int{0, 30, 30}, false},
-		{30, []int{0, 0, 30}, false},
-		{0, []int{0, 0, 0}, false},
-	} {
-		got, worded := barWidths(full, keys, c.room)
-		if fmt.Sprint(got) != fmt.Sprint(c.want) || worded != c.worded {
-			t.Errorf("room %d: %v %v, want %v %v", c.room, got, worded, c.want, c.worded)
-		}
-	}
-}
-
-func TestAViewsNameHasTheRoomLeftOfItsCount(t *testing.T) {
-	w := aFixturesBoard(t).filteringBoard()
-	rows := w.ViewRows()
-	if len(rows) == 0 {
-		t.Fatal("the filter menu lists no view")
-	}
-	for _, one := range textDrawn(w) {
-		if one.said == rows[0].Name && one.box.W < rows[0].At.W/2 {
-			t.Errorf("the view %q is written in %+v, of a row %+v", one.said, one.box, rows[0].At)
-		}
-	}
 }

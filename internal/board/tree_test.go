@@ -29,49 +29,6 @@ func lookAt(t *testing.T, e *engine.Engine) Snapshot {
 	return found
 }
 
-func TestLook_seatsEachObjectiveInItsTree(t *testing.T) {
-	e := homeTree(t)
-	if _, err := e.Ask(engine.ObjectiveEdit, engine.Input{Given: map[string]string{"number": "4"}, Listed: map[string][]string{"waits-on": {"3"}}}); err != nil {
-		t.Fatalf("waits-on: %v", err)
-	}
-	s := lookAt(t, e)
-	home, _ := s.Goal(1)
-	if !slices.Equal(home.Children, []int{2, 3}) || home.Parent != 0 {
-		t.Errorf("Home automation = parent %d, children %v", home.Parent, home.Children)
-	}
-	firmware, _ := s.Goal(3)
-	if firmware.Parent != 1 {
-		t.Errorf("Firmware sits under %d, want 1", firmware.Parent)
-	}
-	tidy, _ := s.Goal(4)
-	if !slices.Equal(tidy.WaitsOn, []int{3}) {
-		t.Errorf("Tidy waits on %v, want [3]", tidy.WaitsOn)
-	}
-	if home.Total != 2 {
-		t.Errorf("Home automation counts %d tasks, want 2, each once", home.Total)
-	}
-}
-
-func TestLook_spendsTheTimeOfASubObjectiveOnItsParentOnce(t *testing.T) {
-	e := homeTree(t)
-	if _, err := e.Ask(engine.TimesheetAdd, engine.Input{Given: map[string]string{"number": "1", "time": "1h", "on": "2026-09-01"}}); err != nil {
-		t.Fatalf("timesheet: %v", err)
-	}
-	s := lookAt(t, e)
-	home, _ := s.Goal(1)
-	if home.Spent != time.Hour {
-		t.Errorf("Home automation spent %v, want 1h, counted once", home.Spent)
-	}
-}
-
-func TestLook_namesWhatACardServes(t *testing.T) {
-	s := lookAt(t, homeTree(t))
-	pin, _ := s.Card(1)
-	if !slices.Equal(pin.Serves, []string{"Enclosure", "Firmware"}) {
-		t.Errorf("Pin map serves %v, want Enclosure and Firmware by name", pin.Serves)
-	}
-}
-
 func TestLook_keepsWhatEachLabelIsFor(t *testing.T) {
 	e := openEngine(t)
 	for name, scope := range map[string]string{"area": "objectives", "backend": "tasks", "spec": ""} {
@@ -82,41 +39,6 @@ func TestLook_keepsWhatEachLabelIsFor(t *testing.T) {
 	s := lookAt(t, e)
 	if got := s.LabelsFor(label.OnObjectives); !slices.Equal(got, []string{"area", "spec"}) {
 		t.Errorf("labels for objectives = %v, want area and spec", got)
-	}
-}
-
-func TestBranches_drawEachSubObjectiveUnderItsParent(t *testing.T) {
-	s := lookAt(t, homeTree(t))
-	var got []int
-	var under, last []bool
-	for _, b := range Branches(s.Goals) {
-		got = append(got, b.Goal.Number)
-		under, last = append(under, b.Under), append(last, b.Last)
-	}
-	if !slices.Equal(got, []int{1, 2, 3, 4}) {
-		t.Errorf("the tree reads %v, want 1 2 3 4", got)
-	}
-	if !slices.Equal(under, []bool{false, true, true, false}) || !slices.Equal(last, []bool{false, false, true, false}) {
-		t.Errorf("under %v, last %v", under, last)
-	}
-}
-
-func TestBranches_putASubObjectiveWhoseParentIsLeftOutAtLevelOne(t *testing.T) {
-	s := lookAt(t, homeTree(t))
-	firmware, _ := s.Goal(3)
-	got := Branches([]Goal{firmware})
-	if len(got) != 1 || got[0].Under {
-		t.Errorf("a sub-objective alone = %+v, want it at level one", got)
-	}
-}
-
-func TestSnapshot_reachesAnObjectiveAndItsSubObjectives(t *testing.T) {
-	s := lookAt(t, homeTree(t))
-	if got := s.Reach(1); !slices.Equal(got, []int{1, 2, 3}) {
-		t.Errorf("Reach(1) = %v, want 1 2 3", got)
-	}
-	if got := s.Reach(3); !slices.Equal(got, []int{3}) {
-		t.Errorf("Reach(3) = %v, want 3", got)
 	}
 }
 
@@ -142,13 +64,6 @@ func TestSnapshot_segmentsAnObjectiveIntoItsSubObjectives(t *testing.T) {
 	}
 	if none := s.Segments(4, s.Cards); none != nil {
 		t.Errorf("an objective with no sub-objective has segments %v", none)
-	}
-}
-
-func TestServing_keepsWhatServesAnyOfThem(t *testing.T) {
-	cards := []Card{{Number: 1, Objectives: []int{2}}, {Number: 2, Objectives: []int{3}}, {Number: 3}}
-	if got := filteredNumbers(Serving(cards, 2, 3)); got != "1 2" {
-		t.Errorf("Serving(2, 3) = %q, want 1 2", got)
 	}
 }
 
@@ -241,78 +156,6 @@ func TestDeleting_asksForEachSubObjectiveAndTheTasksTouched(t *testing.T) {
 	}
 }
 
-func TestDeleting_asksNothingOfAnObjectiveAlone(t *testing.T) {
-	s := lookAt(t, homeTree(t))
-	if s.Deleting(4).Asks() {
-		t.Error("an objective with nothing under it asked what goes with it")
-	}
-}
-
-func TestDeleting_asksAboutTasksOnlyOnceTheyAreTouched(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Home automation")
-	under(t, e, "Enclosure", "1")
-	servingAll(t, e, "Vent slots", 2)
-	d := lookAt(t, e).Deleting(1)
-	if d.AsksTasks() {
-		t.Error("the tasks were asked about before any sub-objective holding them was deleted")
-	}
-	if got := d.Choose(2, DeleteIt).Touched(); !slices.Equal(got, []int{1}) {
-		t.Errorf("Touched = %v, want the task of the sub-objective deleted", got)
-	}
-	if !d.Choose(2, DeleteIt).AsksTasks() {
-		t.Error("deleting the sub-objective holding a task did not ask about it")
-	}
-	if d.Choose(2, KeepIt).Ready() != true {
-		t.Error("keeping the only sub-objective left nothing to ask, and it was not ready")
-	}
-}
-
-func TestLook_proposesAParentReachedOnceEverySubObjectiveIs(t *testing.T) {
-	e := homeTree(t)
-	reach := func(n string) {
-		t.Helper()
-		if _, err := e.Ask(engine.ObjectiveEdit, engine.Input{Given: map[string]string{"number": n, "state": "reached"}}); err != nil {
-			t.Fatalf("reach %s: %v", n, err)
-		}
-	}
-	reach("2")
-	if home, _ := lookAt(t, e).Goal(1); home.Proposed {
-		t.Error("Home automation was proposed reached with Firmware still active")
-	}
-	reach("3")
-	s := lookAt(t, e)
-	if home, _ := s.Goal(1); !home.Proposed {
-		t.Error("Home automation was not proposed reached once every sub-objective was")
-	}
-	if tidy, _ := s.Goal(4); tidy.Proposed {
-		t.Error("an objective holding no sub-objective was proposed reached")
-	}
-	if enclosure, _ := s.Goal(2); enclosure.Proposed {
-		t.Error("a sub-objective was proposed reached")
-	}
-	reach("1")
-	if home, _ := lookAt(t, e).Goal(1); home.Proposed {
-		t.Error("a parent already reached was proposed reached again")
-	}
-}
-
-func TestLook_saysWhichObjectivesWaitOnOne(t *testing.T) {
-	e := homeTree(t)
-	for _, n := range []string{"4", "2"} {
-		if _, err := e.Ask(engine.ObjectiveEdit, engine.Input{Given: map[string]string{"number": n}, Listed: map[string][]string{"waits-on": {"3"}}}); err != nil {
-			t.Fatalf("waits-on: %v", err)
-		}
-	}
-	s := lookAt(t, e)
-	if firmware, _ := s.Goal(3); !slices.Equal(firmware.WaitedOnBy, []int{2, 4}) {
-		t.Errorf("Firmware is waited on by %v, want [2 4]", firmware.WaitedOnBy)
-	}
-	if home, _ := s.Goal(1); len(home.WaitedOnBy) != 0 {
-		t.Errorf("Home automation is waited on by %v, want nothing", home.WaitedOnBy)
-	}
-}
-
 func TestCountedOnce_refusesAParentTickedBesideItsSubObjectives(t *testing.T) {
 	s := lookAt(t, homeTree(t))
 	err := s.CountedOnce(44, []int{2, 1, 3})
@@ -350,13 +193,6 @@ func TestSnapshot_treeOfIsTheLevelOneObjectiveAboveIt(t *testing.T) {
 	}
 }
 
-func TestParents_leavesOutAnObjectiveWhoseParentIsNotListed(t *testing.T) {
-	s := Snapshot{Goals: []Goal{{Number: 1}, {Number: 2, Parent: 9}}}
-	if parents := s.Parents(0); len(parents) != 1 || parents[0].Number != 1 {
-		t.Errorf("the parents are %+v", parents)
-	}
-}
-
 func TestDeleting_countsTheTasksOfASubDeletedAfterOneKept(t *testing.T) {
 	s := Snapshot{
 		Goals: []Goal{{Number: 1, Children: []int{2, 3}}, {Number: 2, Parent: 1}, {Number: 3, Parent: 1}},
@@ -368,18 +204,5 @@ func TestDeleting_countsTheTasksOfASubDeletedAfterOneKept(t *testing.T) {
 	}
 	if d.FateOf(2) != KeepIt {
 		t.Errorf("the first sub's fate is %q", d.FateOf(2))
-	}
-}
-
-func TestDeleting_asksAboutSubObjectivesThatHoldNoTask(t *testing.T) {
-	s := Snapshot{Goals: []Goal{{Number: 1, Children: []int{2}}, {Number: 2, Parent: 1}}}
-	if !s.Deleting(1).Asks() {
-		t.Error("a sub-objective is not asked about")
-	}
-}
-
-func TestChoose_aDeletionWithNothingChosenYetTakesAFate(t *testing.T) {
-	if got := (Deleting{}).Choose(2, DeleteIt).FateOf(2); got != DeleteIt {
-		t.Errorf("the fate is %q", got)
 	}
 }

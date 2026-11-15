@@ -20,7 +20,6 @@ import (
 
 const (
 	idleSeconds = 1
-	settle      = 1500 * time.Millisecond
 	letGoAtMost = 30 * time.Second
 )
 
@@ -47,7 +46,7 @@ func (w *sessionWorld) reset() {
 	w.said, w.failed, w.here = "", nil, ""
 	w.env = append(os.Environ(),
 		"HOME="+home,
-		"PATH="+cairnOnPath(w.t)+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"PATH="+filepath.Join(home, "clock")+string(os.PathListSeparator)+cairnOnPath(w.t)+string(os.PathListSeparator)+os.Getenv("PATH"),
 		"CAIRN_STORE="+filepath.Join(home, "cairn.db"),
 		"CAIRN_NOTES="+w.notes,
 		"CAIRN_WORKSPACE=",
@@ -56,20 +55,32 @@ func (w *sessionWorld) reset() {
 	)
 	w.waits = home
 	w.plugin = filepath.Join("..", "..", "plugin", "claude")
+	if err := os.Mkdir(filepath.Join(home, "clock"), 0o700); err != nil {
+		w.t.Fatal(err)
+	}
+	if err := test.WriteProgram(filepath.Join(home, "clock", "sleep"), standInSleep); err != nil {
+		w.t.Fatal(err)
+	}
 }
 
-// idleOver waits out the delay a session's answer starts, then for the hook's
-// wait to end: letting go runs cairn in the background, which a machine busy
-// with every other suite can take seconds to finish, so a fixed margin read
-// the focus before it was let go.
-func (w *sessionWorld) idleOver(session string) error {
-	time.Sleep(time.Duration(idleSeconds) * time.Second)
-	for deadline := time.Now().Add(letGoAtMost); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
-		if waiting, _ := filepath.Glob(filepath.Join(w.waits, "cairn-idle-"+session+".*")); len(waiting) == 0 {
+const standInSleep = `#!/bin/sh
+token="$TMPDIR/cairn-sleep.$$"
+: >"$token"
+while [ -e "$token" ]; do [ -d "$TMPDIR" ] || exit 0; /bin/sleep 0.01; done
+`
+
+// idleOver lets every sleep the hook started end, as the idle delay passing would, then waits for what those waits let go.
+func (w *sessionWorld) idleOver() error {
+	for deadline := time.Now().Add(letGoAtMost); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		sleeping, _ := filepath.Glob(filepath.Join(w.waits, "cairn-sleep.*"))
+		for _, token := range sleeping {
+			_ = os.Remove(token)
+		}
+		if waiting, _ := filepath.Glob(filepath.Join(w.waits, "cairn-idle-*")); len(waiting) == 0 {
 			return nil
 		}
 	}
-	return fmt.Errorf("session %q still waits %v after its idle delay", session, letGoAtMost)
+	return fmt.Errorf("the hook still waits %v after its idle delay", letGoAtMost)
 }
 
 func (w *sessionWorld) cairn(args ...string) (string, error) {
@@ -119,7 +130,7 @@ func (w *sessionWorld) cairnOf(version string) error {
 	said := "#!/bin/sh\n" +
 		"[ \"$1\" != --version ] || { echo \"cairn " + version + "\"; exit 0; }\n" +
 		"exec \"" + filepath.Join(cairnOnPath(w.t), "cairn") + "\" \"$@\"\n"
-	if err := os.WriteFile(filepath.Join(dir, "cairn"), []byte(said), 0o755); err != nil {
+	if err := test.WriteProgram(filepath.Join(dir, "cairn"), said); err != nil {
 		return err
 	}
 	w.env = append(w.env, "PATH="+dir+string(os.PathListSeparator)+cairnOnPath(w.t)+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -396,8 +407,7 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 		})
 		sc.When(`^session "([^"]*)", tied to no task, answers$`, func(session string) error {
 			w.event(session, "Stop")
-			time.Sleep(time.Duration(idleSeconds)*time.Second + settle)
-			return nil
+			return w.idleOver()
 		})
 		sc.When(`^session "([^"]*)", tied to no task, ends$`, func(session string) error {
 			w.event(session, "SessionEnd")
@@ -409,7 +419,7 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 		})
 		sc.When(`^session "([^"]*)" answers and no message follows within the idle delay$`, func(session string) error {
 			w.event(session, "Stop")
-			return w.idleOver(session)
+			return w.idleOver()
 		})
 		sc.When(`^session "([^"]*)" answers and a message follows within the idle delay$`, func(session string) error {
 			w.event(session, "Stop")
@@ -534,7 +544,9 @@ func initSession(t *testing.T) func(*godog.ScenarioContext) {
 		sc.Then(`^task (\d+) is in focus$`, func(n int) error { return w.focused(n, true) })
 		sc.Then(`^task (\d+) is not in focus$`, func(n int) error { return w.focused(n, false) })
 		sc.Then(`^once the idle delay has passed, task (\d+) is in focus$`, func(n int) error {
-			time.Sleep(time.Duration(idleSeconds)*time.Second + settle)
+			if err := w.idleOver(); err != nil {
+				return err
+			}
 			return w.focused(n, true)
 		})
 	}

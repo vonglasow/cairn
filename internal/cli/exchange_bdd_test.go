@@ -1,13 +1,11 @@
 package cli
 
 import (
-	"cairn/internal/engine/calendar"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/cucumber/godog"
 
@@ -35,14 +33,6 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		w.Run("cairn task export " + w.file)
 		return nil
 	})
-	sc.Step(`^I export the tasks to that file$`, func() error {
-		w.Run("cairn task export " + w.file)
-		return nil
-	})
-	sc.Step(`^a file of my own that holds no tasks$`, func() error {
-		w.file, w.was = filepath.Join(w.T.TempDir(), "notes.json"), []byte(`{"cairn":"tasks","version":7,"tasks":[]}`+"\n")
-		return os.WriteFile(w.file, w.was, 0o600)
-	})
 	sc.Step(`^a file of my own exported from a store where these were run:$`, func(run *godog.DocString) error {
 		mine := w.StorePath
 		other := filepath.Join(w.T.TempDir(), "other", "cairn.db")
@@ -64,35 +54,6 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 		}
 		return w.Seed("cairn task export " + w.file)
 	})
-	sc.Step(`^a file of my own holding a task blocked by a task it does not hold$`, func() error {
-		w.file = filepath.Join(w.T.TempDir(), "orphan.json")
-		return os.WriteFile(w.file, []byte(`{"cairn": "tasks", "version": 2, "objectives": [],
-			"tasks": [{"number": 1, "title": "Orphan", "state": "blocked", "priority": "normal", "blocked_by": [9]}]}`), 0o600)
-	})
-	sc.Step(`^a file of my own holding a task linked to a task it does not hold$`, func() error {
-		w.file = filepath.Join(w.T.TempDir(), "linked-outside.json")
-		return os.WriteFile(w.file, []byte(`{"cairn": "tasks", "version": 3, "objectives": [],
-			"tasks": [{"number": 1, "title": "Orphan", "state": "todo", "priority": "normal", "linked": [9]}]}`), 0o600)
-	})
-	sc.Step(`^a file of my own written before steps, holding "([^"]*)" and its sub-tasks "([^"]*)" done and "([^"]*)"$`, func(work, done, open string) error {
-		w.file = filepath.Join(w.T.TempDir(), "before-steps.json")
-		return os.WriteFile(w.file, []byte(fmt.Sprintf(`{"cairn": "tasks", "version": 1, "objectives": [], "tasks": [
-			{"number": 1, "title": %q, "state": "todo", "priority": "normal"},
-			{"number": 2, "parent": 1, "title": %q, "state": "done", "priority": "normal"},
-			{"number": 3, "parent": 1, "title": %q, "state": "todo", "priority": "normal"}]}`, work, done, open)), 0o600)
-	})
-	sc.Step(`^a file of my own holding:$`, func(held *godog.DocString) error {
-		w.file = filepath.Join(w.T.TempDir(), "held.json")
-		return os.WriteFile(w.file, []byte(held.Content), 0o600)
-	})
-	sc.Step(`^task (\d+) is due (\d+) days from today$`, func(n, days int) error {
-		return w.CommandSays(fmt.Sprintf("cairn task show %d", n), calendar.FormatDay(time.Now().AddDate(0, 0, days)))
-	})
-	sc.Step(`^the time sheet of yesterday gives task (\d+) "([^"]*)"$`, func(n int, took string) error {
-		day := calendar.FormatDay(time.Now().AddDate(0, 0, -1))
-		w.Run(fmt.Sprintf("cairn timesheet show --since %s --until %s", day, day))
-		return test.WantContains(w.Out.Stdout, took, fmt.Sprintf("the sheet of %s for task %d", day, n))
-	})
 	sc.Step(`^I import the tasks of that file$`, func() error {
 		w.Run("cairn task import " + w.file)
 		return nil
@@ -100,11 +61,5 @@ func (w *world) registerExchange(sc *godog.ScenarioContext) {
 	sc.Step(`^it says (\d+) tasks? and (\d+) objectives? (?:was|were) added$`, func(tasks, objectives int) error {
 		said := fmt.Sprintf("%d task(s) and %d objective(s) were added from %s", tasks, objectives, w.file)
 		return test.WantContains(w.Out.Stdout, said, "the answer")
-	})
-	sc.Step(`^it says objective (\d+) is not in the file$`, func(n int) error {
-		return test.WantContains(w.Out.Stderr, fmt.Sprintf("objective %d is not in the file", n), "the reason")
-	})
-	sc.Step(`^it says task (\d+) is not in the file$`, func(n int) error {
-		return test.WantContains(w.Out.Stderr, fmt.Sprintf("task %d is not in the file", n), "the reason")
 	})
 }

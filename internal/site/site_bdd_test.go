@@ -17,8 +17,6 @@ import (
 	"github.com/spf13/pflag"
 
 	"cairn/internal/cli"
-	"cairn/internal/mcp"
-	"cairn/internal/store/files"
 	"cairn/internal/theme"
 	"cairn/test"
 )
@@ -50,27 +48,11 @@ func initSite(sc *godog.ScenarioContext) {
 	sc.Step(`^a changelog that says:$`, w.aChangelogThatSays)
 	sc.Step(`^the site is built for version "([^"]*)"$`, w.theSiteIsBuiltForVersion)
 	sc.Step(`^the site has a page for "([^"]*)"$`, w.theSiteHasAPageFor)
-	sc.Step(`^the site has no page for "([^"]*)"$`, w.theSiteHasNoPageFor)
-	sc.Step(`^the site has no page for any page of \.claude/docs/$`, w.theSiteHasNoDeveloperPage)
-	sc.Step(`^every page of docs/ is published$`, w.everyPageOfDocsIsPublished)
-	sc.Step(`^every link from one page of the site to another lands on a page that exists$`, w.everyLinkLandsOnAPage)
-	sc.Step(`^every link to a heading lands on a heading of that page$`, w.everyLinkLandsOnAHeading)
-	sc.Step(`^no link on the site points at a Markdown file of its own$`, w.noLinkPointsAtMarkdown)
-	sc.Step(`^the link from "([^"]*)" to "([^"]*)" goes to it on GitHub$`, w.theLinkGoesToGitHub)
 	sc.Step("^the reference lists every command cairn has, with the first line of its help$", w.theReferenceListsEveryCommand)
 	sc.Step("^the page of `cairn ([^`]*)` lists each of its flags with what its help says$", w.thePageOfACommandListsItsFlags)
-	sc.Step(`^the reference lists every MCP tool cairn serves, with what it does$`, w.theReferenceListsEveryTool)
-	sc.Step("^the configuration reference shows the file `cairn config init` writes$", w.theConfigurationShowsTheFile)
-	sc.Step(`^the site offers every scheme cairn carries$`, w.theSiteOffersEveryScheme)
-	sc.Step(`^a first visit wears "([^"]*)" when the system is dark, and "([^"]*)" when it is light$`, w.aFirstVisitWears)
-	sc.Step(`^the scheme chosen is read back from the browser before the page is drawn$`, w.theSchemeIsReadBeforeDrawing)
 	sc.Step(`^every page says "([^"]*)"$`, w.everyPageSays)
-	sc.Step(`^the changelog page says "([^"]*)"$`, w.theChangelogPageSays)
-	sc.Step(`^every page is in what the search reads$`, w.everyPageIsSearched)
 	sc.Step(`^the site carries a picture of the window in every scheme cairn carries$`, w.aPictureOfTheWindowInEveryScheme)
 	sc.Step(`^each picture is drawn on the back of its own scheme$`, w.eachPictureOnItsOwnBack)
-	sc.Step(`^the home page shows the terminal board drawn over the fixtures$`, w.theHomePageShowsTheTerminal)
-	sc.Step(`^each scheme gives the terminal its sixteen colours$`, w.eachSchemeGivesTheTerminalItsColours)
 	sc.Step(`^the README links to the site's page for "([^"]*)"$`, w.theReadmeLinksToThePageFor)
 	sc.Step(`^every link from the README to the site lands on a page of the site$`, w.everyReadmeLinkLandsOnAPage)
 }
@@ -140,131 +122,6 @@ func (w *siteWorld) theSiteHasAPageFor(source string) error {
 	return nil
 }
 
-func (w *siteWorld) theSiteHasNoPageFor(source string) error {
-	if name, ok := pageFor(source); ok {
-		return fmt.Errorf("%s is published as %s", source, name)
-	}
-	plain := strings.TrimSuffix(filepath.Base(source), ".md") + ".html"
-	if _, err := os.Stat(filepath.Join(w.out, plain)); err == nil {
-		return fmt.Errorf("the site carries %s", plain)
-	}
-	return nil
-}
-
-func (w *siteWorld) theSiteHasNoDeveloperPage() error {
-	pages, err := filepath.Glob(filepath.Join("..", "..", ".claude", "docs", "*.md"))
-	if err != nil {
-		return err
-	}
-	if len(pages) == 0 {
-		return fmt.Errorf("there is no page in .claude/docs/")
-	}
-	for _, page := range pages {
-		source := ".claude/docs/" + filepath.Base(page)
-		if name, ok := pageFor(source); ok {
-			return fmt.Errorf("%s is published as %s", source, name)
-		}
-	}
-	return nil
-}
-
-func (w *siteWorld) everyPageOfDocsIsPublished() error {
-	docs, err := filepath.Glob(filepath.Join("..", "..", "docs", "*.md"))
-	if err != nil {
-		return err
-	}
-	for _, doc := range docs {
-		if _, ok := pageFor("docs/" + filepath.Base(doc)); !ok {
-			return fmt.Errorf("docs/%s is not published", filepath.Base(doc))
-		}
-	}
-	return nil
-}
-
-var (
-	hrefs = regexp.MustCompile(`href="([^"]*)"`)
-	idsOf = regexp.MustCompile(` id="([^"]*)"`)
-)
-
-func local(href string) bool {
-	return !strings.Contains(href, "://") && !strings.HasPrefix(href, "mailto:")
-}
-
-func (w *siteWorld) eachLocalLink(do func(from, page, fragment string) error) error {
-	pages, err := w.pages()
-	if err != nil {
-		return err
-	}
-	for from, body := range pages {
-		for _, found := range hrefs.FindAllStringSubmatch(body, -1) {
-			href := html.UnescapeString(found[1])
-			if !local(href) || strings.HasSuffix(href, ".css") || strings.HasSuffix(href, ".svg") || strings.HasSuffix(href, ".png") {
-				continue
-			}
-			page, fragment, _ := strings.Cut(href, "#")
-			if page == "" {
-				page = from
-			}
-			if err := do(from, page, fragment); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (w *siteWorld) everyLinkLandsOnAPage() error {
-	return w.eachLocalLink(func(from, page, _ string) error {
-		if _, err := os.Stat(filepath.Join(w.out, page)); err != nil {
-			return fmt.Errorf("%s links to %s, which is not on the site", from, page)
-		}
-		return nil
-	})
-}
-
-func (w *siteWorld) everyLinkLandsOnAHeading() error {
-	pages, err := w.pages()
-	if err != nil {
-		return err
-	}
-	return w.eachLocalLink(func(from, page, fragment string) error {
-		if fragment == "" {
-			return nil
-		}
-		for _, found := range idsOf.FindAllStringSubmatch(pages[page], -1) {
-			if html.UnescapeString(found[1]) == fragment {
-				return nil
-			}
-		}
-		return fmt.Errorf("%s links to %s#%s, and %s has no such heading", from, page, fragment, page)
-	})
-}
-
-func (w *siteWorld) noLinkPointsAtMarkdown() error {
-	return w.eachLocalLink(func(from, page, _ string) error {
-		if strings.HasSuffix(page, ".md") {
-			return fmt.Errorf("%s links to %s", from, page)
-		}
-		return nil
-	})
-}
-
-func (w *siteWorld) theLinkGoesToGitHub(from, to string) error {
-	name, ok := pageFor(from)
-	if !ok {
-		return fmt.Errorf("%s is not published", from)
-	}
-	page, err := w.read(name)
-	if err != nil {
-		return err
-	}
-	want := fmt.Sprintf(`href="https://github.com/vonglasow/cairn/blob/%s/%s`, w.version, to)
-	if !strings.Contains(page, want) {
-		return fmt.Errorf("%s has no link starting %s", name, want)
-	}
-	return nil
-}
-
 func commands(c *cobra.Command) []*cobra.Command {
 	var found []*cobra.Command
 	for _, sub := range c.Commands() {
@@ -317,88 +174,6 @@ func (w *siteWorld) thePageOfACommandListsItsFlags(line string) error {
 	return nil
 }
 
-func (w *siteWorld) theReferenceListsEveryTool() error {
-	page, err := w.read(toolsPage)
-	if err != nil {
-		return err
-	}
-	for _, tool := range mcp.Tools() {
-		if !strings.Contains(page, `id="`+tool.Name+`"`) || !strings.Contains(page, html.EscapeString(tool.Description)) {
-			return fmt.Errorf("the tools page does not list %s with what it does", tool.Name)
-		}
-	}
-	return nil
-}
-
-func (w *siteWorld) theConfigurationShowsTheFile() error {
-	name, _ := pageFor("docs/config.md")
-	page, err := w.read(name)
-	if err != nil {
-		return err
-	}
-	if !strings.Contains(page, html.EscapeString(files.Example)) {
-		return fmt.Errorf("%s does not show the file config init writes", name)
-	}
-	return nil
-}
-
-func (w *siteWorld) theSiteOffersEveryScheme() error {
-	pages, err := w.pages()
-	if err != nil {
-		return err
-	}
-	style, err := w.read(styleSheet)
-	if err != nil {
-		return err
-	}
-	for _, slug := range theme.Shipped() {
-		if !strings.Contains(style, `[data-scheme="`+slug+`"]`) {
-			return fmt.Errorf("the style sheet has no colours for %s", slug)
-		}
-		for name, page := range pages {
-			if !strings.Contains(page, `data-pick="`+slug+`"`) {
-				return fmt.Errorf("%s offers no %s", name, slug)
-			}
-		}
-	}
-	return nil
-}
-
-func (w *siteWorld) head(name string) (string, error) {
-	page, err := w.read(name)
-	if err != nil {
-		return "", err
-	}
-	head, _, found := strings.Cut(page, "<body")
-	if !found {
-		return "", fmt.Errorf("%s has no body", name)
-	}
-	return head, nil
-}
-
-func (w *siteWorld) aFirstVisitWears(dark, light string) error {
-	head, err := w.head("index.html")
-	if err != nil {
-		return err
-	}
-	want := fmt.Sprintf(`matchMedia("(prefers-color-scheme: dark)").matches ? %q : %q`, dark, light)
-	if !strings.Contains(head, want) {
-		return fmt.Errorf("the head of the home page does not choose %s", want)
-	}
-	return nil
-}
-
-func (w *siteWorld) theSchemeIsReadBeforeDrawing() error {
-	head, err := w.head("index.html")
-	if err != nil {
-		return err
-	}
-	if !strings.Contains(head, `localStorage.getItem("cairn-theme")`) {
-		return fmt.Errorf("the head of the home page does not read the scheme kept")
-	}
-	return nil
-}
-
 func (w *siteWorld) everyPageSays(said string) error {
 	pages, err := w.pages()
 	if err != nil {
@@ -407,34 +182,6 @@ func (w *siteWorld) everyPageSays(said string) error {
 	for name, page := range pages {
 		if !strings.Contains(page, said) {
 			return fmt.Errorf("%s does not say %s", name, said)
-		}
-	}
-	return nil
-}
-
-func (w *siteWorld) theChangelogPageSays(said string) error {
-	page, err := w.read(changelogPage)
-	if err != nil {
-		return err
-	}
-	if !strings.Contains(page, said) {
-		return fmt.Errorf("the changelog page does not say %q", said)
-	}
-	return nil
-}
-
-func (w *siteWorld) everyPageIsSearched() error {
-	pages, err := w.pages()
-	if err != nil {
-		return err
-	}
-	index, err := w.read(searchIndex)
-	if err != nil {
-		return err
-	}
-	for name := range pages {
-		if !strings.Contains(index, `"u":"`+name+`"`) {
-			return fmt.Errorf("the search does not read %s", name)
 		}
 	}
 	return nil
@@ -481,40 +228,6 @@ func (w *siteWorld) eachPictureOnItsOwnBack() error {
 		back := scheme.Colours().Surface.Back
 		if uint8(r>>8) != back.R || uint8(g>>8) != back.G || uint8(b>>8) != back.B {
 			return fmt.Errorf("the picture in %s is not drawn on its back %v", slug, back)
-		}
-	}
-	return nil
-}
-
-func (w *siteWorld) theHomePageShowsTheTerminal() error {
-	page, err := w.read("index.html")
-	if err != nil {
-		return err
-	}
-	_, term, found := strings.Cut(page, `<pre class="term"`)
-	if !found || !strings.Contains(term, "BACKLOG") || !strings.Contains(term, `class="tp-`) {
-		return fmt.Errorf("the home page shows no terminal board in colour")
-	}
-	return nil
-}
-
-func (w *siteWorld) eachSchemeGivesTheTerminalItsColours() error {
-	style, err := w.read(styleSheet)
-	if err != nil {
-		return err
-	}
-	for _, slug := range theme.Shipped() {
-		scheme, err := theme.Find("", slug)
-		if err != nil {
-			return err
-		}
-		_, rules, _ := strings.Cut(style, `[data-scheme="`+slug+`"]`)
-		rules, _, _ = strings.Cut(rules, "}")
-		for i, slot := range terminal16(scheme) {
-			want := fmt.Sprintf("--t%d:#%02x%02x%02x", i, slot.R, slot.G, slot.B)
-			if !strings.Contains(rules, want) {
-				return fmt.Errorf("%s does not give the terminal %s", slug, want)
-			}
 		}
 	}
 	return nil

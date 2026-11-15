@@ -136,14 +136,6 @@ func tapped(w Window, g Gesture, at geom.Point) (Window, Gesture) {
 	return Pointing(w, g, pointer.Release, at, 0, moment)
 }
 
-func (w Window) doubleDragged(from, to geom.Point) Window {
-	w, g := tapped(w, Gesture{}, from)
-	w, g = Pointing(w, g, pointer.Press, from, 0, moment.Add(time.Millisecond))
-	w, g = Pointing(w, g, pointer.Drag, to, 0, moment.Add(2*time.Millisecond))
-	w, _ = Pointing(w, g, pointer.Release, to, 0, moment.Add(2*time.Millisecond))
-	return w
-}
-
 func (w Window) tripleClicked(at geom.Point) Window {
 	w, g := tapped(w, Gesture{}, at)
 	for i := 1; i <= 2; i++ {

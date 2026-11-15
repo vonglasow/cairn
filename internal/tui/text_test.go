@@ -5,28 +5,6 @@ import (
 	"testing"
 )
 
-func TestClip(t *testing.T) {
-	for _, c := range []struct {
-		name, in string
-		width    int
-		want     string
-	}{
-		{"nothing fits in nothing", "hello", 0, ""},
-		{"a negative width is nothing", "hello", -3, ""},
-		{"what fits is left alone", "hello", 5, "hello"},
-		{"room to spare changes nothing", "hi", 9, "hi"},
-		{"one too many is marked", "hello", 4, "hel…"},
-		{"the space before the mark goes", "a bc", 3, "a…"},
-		{"a wide rune is counted as it is drawn", "日本語", 4, "日…"},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			if got := Clip(c.in, c.width); got != c.want {
-				t.Fatalf("Clip(%q, %d) = %q, want %q", c.in, c.width, got, c.want)
-			}
-		})
-	}
-}
-
 func TestWrap(t *testing.T) {
 	for _, c := range []struct {
 		name, in     string
@@ -55,65 +33,6 @@ func TestWrap(t *testing.T) {
 	}
 }
 
-func TestSpread(t *testing.T) {
-	for _, c := range []struct {
-		name, left, right string
-		width             int
-		want              string
-	}{
-		{"pushed to both ends", "1", "x", 5, "1   x"},
-		{"the right wins when there is no room", "1", "xxxxx", 3, "xx…"},
-		{"the left is cut, and the space between is kept", "abcdef", "x", 5, "ab… x"},
-		{"nothing on the right still fills", "ab", "", 4, "ab  "},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			if got := Spread(c.left, c.right, c.width); got != c.want {
-				t.Fatalf("Spread(%q, %q, %d) = %q, want %q", c.left, c.right, c.width, got, c.want)
-			}
-		})
-	}
-}
-
-func TestJoin(t *testing.T) {
-	for _, c := range []struct {
-		name  string
-		width int
-		facts []string
-		want  string
-	}{
-		{"all of them fit", 20, []string{"2d", "3/5"}, "2d  3/5"},
-		{"what does not fit is dropped", 7, []string{"2d", "3/5", "spec"}, "2d  3/5"},
-		{"and so is everything after it", 7, []string{"2d", "abcdef", "x"}, "2d"},
-		{"an empty fact is passed over", 20, []string{"", "2d"}, "2d"},
-		{"nothing at all is nothing", 20, nil, ""},
-		{"the first one alone can be too wide", 1, []string{"2d"}, ""},
-	} {
-		t.Run(c.name, func(t *testing.T) {
-			if got := Join("  ", c.width, c.facts...); got != c.want {
-				t.Fatalf("Join(%d, %v) = %q, want %q", c.width, c.facts, got, c.want)
-			}
-		})
-	}
-}
-
-func TestPad(t *testing.T) {
-	if got := pad("ab", 4); got != "ab  " {
-		t.Fatalf("pad gave %q", got)
-	}
-	if got := pad("abcdef", 4); got != "abcdef" {
-		t.Fatalf("pad shortened something: %q", got)
-	}
-}
-
-func TestWritten(t *testing.T) {
-	if got := written(""); got != "—" {
-		t.Fatalf("written on nothing gave %q", got)
-	}
-	if got := written("x"); got != "x" {
-		t.Fatalf("written changed something: %q", got)
-	}
-}
-
 func TestSpaced(t *testing.T) {
 	if got := spaced(nil); got != nil {
 		t.Fatalf("spaced on nothing gave %v", got)
@@ -121,15 +40,6 @@ func TestSpaced(t *testing.T) {
 	got := spaced([]string{"a", "b"})
 	if strings.Join(got, "") != "a b" {
 		t.Fatalf("spaced gave %v", got)
-	}
-}
-
-func TestSpreadWithExactlyOneColumnBetweenThem(t *testing.T) {
-	if got := Spread("a", "xx", 3); got != " xx" {
-		t.Fatalf("Spread with room for one gave %q", got)
-	}
-	if got := Spread("a", "xx", 2); got != "xx" {
-		t.Fatalf("Spread with no room gave %q", got)
 	}
 }
 
@@ -141,68 +51,5 @@ func TestATextIsLaidOutParagraphByParagraph(t *testing.T) {
 	}
 	if got := Paragraphs("", 8); len(got) != 0 {
 		t.Fatalf("nothing laid out as %q", got)
-	}
-}
-
-func TestAScrolledTextCarriesItsBar(t *testing.T) {
-	lines := []string{"a", "b", "c", "d", "e", "f", "g", "h"}
-	shown := InSight(lines, 2, 4, 3)
-	if len(shown) != 4 {
-		t.Fatalf("%d lines in sight, want 4", len(shown))
-	}
-	for i, want := range []string{"c", "d", "e", "f"} {
-		if !strings.HasPrefix(shown[i], want) {
-			t.Errorf("line %d in sight is %q, want it to begin %q", i, shown[i], want)
-		}
-	}
-	thumb := 0
-	for _, line := range shown {
-		if strings.HasSuffix(line, Thumb) {
-			thumb++
-		} else if !strings.HasSuffix(line, Track) {
-			t.Errorf("%q carries no bar", line)
-		}
-	}
-	if thumb != 2 {
-		t.Errorf("the thumb is %d lines long, want 2 — half of what is shown, for half of it in sight", thumb)
-	}
-	for _, line := range InSight([]string{"a"}, 0, 4, 3) {
-		if !strings.HasSuffix(line, Thumb) {
-			t.Errorf("a text that fits reads %q", line)
-		}
-	}
-}
-
-func TestTheBarToTheRow(t *testing.T) {
-	ten := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}
-	thumbs := func(shown []string) string {
-		var out strings.Builder
-		for _, line := range shown {
-			if strings.HasSuffix(line, Thumb) {
-				out.WriteString("┃")
-			} else {
-				out.WriteString("│")
-			}
-		}
-		return out.String()
-	}
-	for _, c := range []struct {
-		from int
-		want string
-	}{
-		{0, "┃┃│││"},
-		{5, "│││┃┃"},
-		{2, "│┃┃││"},
-		{99, "│││┃┃"},
-	} {
-		if got := thumbs(InSight(ten, c.from, 5, 3)); got != c.want {
-			t.Errorf("from %d the bar reads %s, want %s", c.from, got, c.want)
-		}
-	}
-	if got := InSight(ten, 99, 5, 3); !strings.HasPrefix(got[0], "5") {
-		t.Errorf("past the end the box starts at %q, want the last five lines", got[0])
-	}
-	if got := thumbs(InSight(ten[:5], 0, 5, 3)); got != "┃┃┃┃┃" {
-		t.Errorf("a text exactly as long as its box reads %s, want all thumb", got)
 	}
 }

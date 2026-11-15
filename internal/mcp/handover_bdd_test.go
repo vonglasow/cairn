@@ -26,12 +26,6 @@ func (w *world) registerHandOver(sc *godog.ScenarioContext) {
 	sc.Step(`^the page "([^"]*)" turned back on$`, func(page string) error {
 		return w.WriteConfig(fmt.Sprintf("[pages]\n%s = true\n", page))
 	})
-	sc.Step(`^the page "([^"]*)" turned off$`, func(page string) error {
-		return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n", page))
-	})
-	sc.Step(`^the configuration written again, the page "([^"]*)" still off and the weekends hidden$`, func(page string) error {
-		return w.WriteConfig(fmt.Sprintf("[pages]\n%s = false\n\n[time]\nweekends = \"hidden\"\n", page))
-	})
 	sc.Step(`^a newer cairn installed in its place$`, func() error {
 		built, err := os.ReadFile(test.Built(w.T))
 		if err != nil {
@@ -66,7 +60,7 @@ func (w *world) aCairnServerStartedFromACairnOnDisk() error {
 		return err
 	}
 	w.onDisk = filepath.Join(w.T.TempDir(), "cairn")
-	if err := os.WriteFile(w.onDisk, built, 0o700); err != nil {
+	if err := test.WriteProgram(w.onDisk, string(built)); err != nil {
 		return err
 	}
 	client := w.client()
@@ -101,7 +95,7 @@ func (w *world) installed(content []byte) error {
 		return fmt.Errorf("no cairn on disk: start a server from one first")
 	}
 	beside := w.onDisk + ".new"
-	if err := os.WriteFile(beside, content, 0o700); err != nil {
+	if err := test.WriteProgram(beside, string(content)); err != nil {
 		return err
 	}
 	return os.Rename(beside, w.onDisk)

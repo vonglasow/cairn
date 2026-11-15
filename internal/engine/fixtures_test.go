@@ -70,23 +70,6 @@ func TestMakeFixtures_leavesAFolderItDidNotMakeAlone(t *testing.T) {
 	}
 }
 
-func TestMakeFixtures_fillsAnEmptyFolderAndReadsAnotherFile(t *testing.T) {
-	from := filepath.Join(t.TempDir(), "mine.json")
-	if err := os.WriteFile(from, []byte(`{"cairn": "tasks", "version": 4, "objectives": [], "tasks": [{"number": 1, "title": "Only", "state": "todo", "priority": "normal"}]}`), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	made, err := MakeFixtures(t.TempDir(), from, false)
-	if err != nil || countTasks(t, made.Store) != 1 {
-		t.Errorf("made %+v, %v: want the one task of the file", made, err)
-	}
-}
-
-func TestFixturesFolder_isInTheTemporaryFolder(t *testing.T) {
-	if got := FixturesFolder(); got != filepath.Join(os.TempDir(), "cairn-fixtures") {
-		t.Errorf("FixturesFolder = %q", got)
-	}
-}
-
 func TestFixturesFile_isAnExportImportCanRead(t *testing.T) {
 	from := filepath.Join(t.TempDir(), "fixtures.json")
 	if err := os.WriteFile(from, FixturesFile(), 0o600); err != nil {

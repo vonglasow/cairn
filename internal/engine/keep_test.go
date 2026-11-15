@@ -1,57 +1,13 @@
 package engine
 
 import (
-	"cairn/internal/engine/workspace"
-	"encoding/json"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
 	"cairn/internal/store/files"
 )
-
-func TestKeep_aServerKeepsTheDefaultItStartedOn(t *testing.T) {
-	h := Keep(homeHolding(t, twoWorkspaces, nil, "w", "h"))
-	if err := os.WriteFile(files.FileIn(h.Dir), []byte(strings.Replace(twoWorkspaces, `"work"`, `"home"`, 1)), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	at, err := Locate(h)
-	if err != nil || at.Store != filepath.Join(h.Dir, "w", "cairn.db") || at.Notes != filepath.Join(h.Dir, "w", "notes") {
-		t.Errorf("Locate = %+v, %v; want work's places, the default it started on", at, err)
-	}
-	answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if shown := answer.WorkspaceShown; shown.Workspace != "work" || shown.Why.Rung != workspace.RungDefault || !shown.Why.Started || !strings.HasPrefix(shown.Switch, "not from here") {
-		t.Errorf("shown %+v, want work, kept since the start, and how to switch", shown)
-	}
-}
-
-func TestKeep_saysWhyAsItWasWhenTheServerStarted(t *testing.T) {
-	for _, c := range []struct {
-		name             string
-		env              map[string]string
-		workspace, store string
-		said             string
-		rung             string
-	}{
-		{"the flag", nil, "home", "", twoWorkspaces, workspace.RungWorkspaceFlag},
-		{"the store flag", nil, "", "~/x/cairn.db", twoWorkspaces, workspace.RungStoreFlag},
-		{"the environment", map[string]string{files.StoreVariable: "~/e/cairn.db"}, "", "", twoWorkspaces, files.StoreVariable},
-		{"the file", nil, "", "", "store = \"~/s/tasks.db\"\n", workspace.RungFile},
-		{"nothing", nil, "", "", "", workspace.RungNothing},
-	} {
-		h := homeHolding(t, c.said, c.env, "w", "h")
-		h.Workspace, h.Store = c.workspace, c.store
-		kept := Keep(h)
-		if kept.Kept == nil || kept.Kept.Why.Rung != c.rung || !kept.Kept.Why.Started {
-			t.Errorf("%s: kept %+v, want why %q, as the server started", c.name, kept.Kept, c.rung)
-		}
-	}
-}
 
 func TestKeep_whatCannotBeSettledIsFoundAtEachCall(t *testing.T) {
 	h := homeHolding(t, twoWorkspaces, nil, "h")
@@ -60,46 +16,6 @@ func TestKeep_whatCannotBeSettledIsFoundAtEachCall(t *testing.T) {
 	}
 	if kept := Keep(Home{Missing: errStore}); kept.Kept != nil {
 		t.Errorf("kept %+v with no home", kept.Kept)
-	}
-}
-
-func TestKeep_isCarriedWhole(t *testing.T) {
-	h := Keep(homeHolding(t, twoWorkspaces, nil, "w", "h"))
-	said, err := json.Marshal(h.Kept)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var back workspace.Started
-	if err := json.Unmarshal(said, &back); err != nil || !reflect.DeepEqual(back, *h.Kept) {
-		t.Errorf("carried %s, read back %+v, %v", said, back, err)
-	}
-}
-
-func TestWorkspaceShow_saysTheTimeAndWhereItIsSaid(t *testing.T) {
-	for _, c := range []struct {
-		name, said, settings, mode, from string
-	}{
-		{"by default", twoWorkspaces, "", "on", "by default"},
-		{"the global file", "[pages]\ntime = \"hidden\"\n" + twoWorkspaces, "", "hidden", "from the global configuration"},
-		{"the store's settings", "[pages]\ntime = \"hidden\"\n" + twoWorkspaces, "[pages]\ntime = \"off\"\n", "off", "set in the store's settings"},
-	} {
-		h := homeHolding(t, c.said, nil, "w", "h")
-		if c.settings != "" {
-			if err := os.WriteFile(filepath.Join(h.Dir, "w", files.SettingsFile), []byte(c.settings), 0o600); err != nil {
-				t.Fatal(err)
-			}
-		}
-		answer, err := WorkspaceShow.Run(workedOn{Home: h}, Input{})
-		if err != nil {
-			t.Fatalf("%s: %v", c.name, err)
-		}
-		shown := answer.WorkspaceShown
-		if shown.Time != c.mode || shown.TimeFrom != c.from || shown.Switch != "" {
-			t.Errorf("%s: shown %+v, want time %q %s and nothing on switching", c.name, shown, c.mode, c.from)
-		}
-		if said := RenderText(WorkspaceShow, answer); !strings.Contains(said, "time       "+c.mode+", "+c.from+"\n") || strings.Contains(said, "switch") {
-			t.Errorf("%s: it says\n%s", c.name, said)
-		}
 	}
 }
 

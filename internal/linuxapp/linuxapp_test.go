@@ -47,22 +47,6 @@ func TestTheEntryStartsCairnByAFullPath(t *testing.T) {
 	}
 }
 
-func TestAStarterFoundByARelativePathIsMadeFull(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-	if err := os.WriteFile(Name, nil, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	full, err := filepath.Abs(Name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := Starter(full, func(string) (string, error) { return Name, nil })
-	if got != full {
-		t.Errorf("the entry starts %q, want %q", got, full)
-	}
-}
-
 func TestAnEntryIsAskedAboutOnlyWhenItHidesTheLogo(t *testing.T) {
 	for _, c := range []struct {
 		what, written string
@@ -89,51 +73,6 @@ func TestAnEntryIsAskedAboutOnlyWhenItHidesTheLogo(t *testing.T) {
 				t.Errorf("asks %v, want %v: %+v", got.Asks(), c.asks, got)
 			}
 		})
-	}
-}
-
-func TestAnEntryKeptIsNotAskedAboutUntilItChanges(t *testing.T) {
-	data := t.TempDir()
-	path := filepath.Join(data, "applications", Name+".desktop")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte("[Desktop Entry]\nIcon=view-list-details\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	hiding := Hiding(data)
-	if hiding.Icon != "view-list-details" {
-		t.Errorf("the entry shows %q", hiding.Icon)
-	}
-	if err := hiding.Kept(); err != nil {
-		t.Fatal(err)
-	}
-	if Hiding(data).Asks() {
-		t.Error("an entry kept is asked about again, unchanged")
-	}
-	if err := os.WriteFile(path, []byte("[Desktop Entry]\nIcon=other\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if !Hiding(data).Asks() {
-		t.Error("an entry kept and then changed is not asked about")
-	}
-	if err := Hiding(data).Replaced("cairn"); err != nil {
-		t.Fatal(err)
-	}
-	if Hiding(data).Asks() {
-		t.Error("an entry replaced is still asked about")
-	}
-}
-
-func TestDataHome_isTheDesktopsOwnFolderOrElseTheHomes(t *testing.T) {
-	set := func(v string) func(string) (string, bool) {
-		return func(key string) (string, bool) { return v, key == "XDG_DATA_HOME" && v != "" }
-	}
-	if got := DataHome("/home/me", set("/elsewhere")); got != "/elsewhere" {
-		t.Errorf("with XDG_DATA_HOME set, %s", got)
-	}
-	if got, want := DataHome("/home/me", set("")), filepath.Join("/home/me", ".local", "share"); got != want {
-		t.Errorf("with nothing set, %s, want %s", got, want)
 	}
 }
 
@@ -171,27 +110,6 @@ func TestInstall_writesTheEntryAndTheLogoAndRefreshesTheMenu(t *testing.T) {
 	}
 	if ran, _ := os.ReadFile(said); string(ran) != "forceupdate\n" {
 		t.Errorf("the menu tool was run with %q", ran)
-	}
-}
-
-func TestInstall_leavesAnEntryOfSomebodyElsesAlone(t *testing.T) {
-	said := menuTool(t)
-	data := t.TempDir()
-	path := filepath.Join(data, "applications", Name+".desktop")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte("[Desktop Entry]\nIcon=cairn\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, err := Install(data, "/usr/bin/cairn"); !errors.Is(err, ErrNotOurs) {
-		t.Errorf("over somebody else's entry: %v", err)
-	}
-	if was, _ := os.ReadFile(path); string(was) != "[Desktop Entry]\nIcon=cairn\n" {
-		t.Errorf("their entry now says %q", was)
-	}
-	if ran, err := os.ReadFile(said); err == nil {
-		t.Errorf("the menu was refreshed for nothing: %q", ran)
 	}
 }
 

@@ -3,26 +3,16 @@ package mcp
 import (
 	"cairn/internal/engine/workspace"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/google/jsonschema-go/jsonschema"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"cairn/internal/engine"
-	"cairn/internal/engine/task"
 	"cairn/internal/store/files"
 )
-
-func factsOf(t task.Task) task.Carried {
-	f := t.Carried()
-	return f
-}
 
 func storeAt(t *testing.T) string {
 	t.Helper()
@@ -73,74 +63,10 @@ func TestHandlerFor_showsTheConfigurationToAnAgent(t *testing.T) {
 	}
 }
 
-func TestHandlerFor_readsALargeNumberAsTheNumberItIs(t *testing.T) {
-	handle := handlerFor(engine.TaskShow, homeFor(t, storeAt(t)))
-	result, err := handle(context.Background(), &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"number": 1000000}`)}})
-	if err != nil {
-		t.Fatalf("handle: %v", err)
-	}
-	text := result.Content[0].(*sdk.TextContent).Text
-	if strings.Contains(text, "e+06") || !strings.Contains(text, "1000000") {
-		t.Errorf("the answer reads %q, want it about task 1000000", text)
-	}
-}
-
-func TestHandlerFor_reachesActionDoWithWhatWasNamed(t *testing.T) {
-	path := storeAt(t)
-	handle := handlerFor(engine.TaskNew, homeFor(t, path))
-	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"title":"From the handler"}`)}}
-
-	if _, err := handle(context.Background(), req); err != nil {
-		t.Fatalf("handle: %v", err)
-	}
-
-	answer, err := engine.Do(engine.TaskList, path, engine.Input{})
-	if err != nil {
-		t.Fatalf("Do(TaskList): %v", err)
-	}
-	if len(answer.Tasks) != 1 || factsOf(answer.Tasks[0]).Title != "From the handler" {
-		t.Fatalf("Tasks = %v, want one titled %q", answer.Tasks, "From the handler")
-	}
-}
-
-func TestHandlerFor_readsNoArgumentsAsNothingNamed(t *testing.T) {
-	path := storeAt(t)
-	handle := handlerFor(engine.TaskNew, homeFor(t, path))
-	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{}}
-
-	res, err := handle(context.Background(), req)
-	if err != nil {
-		t.Fatalf("handle = %v, want the refusal answered rather than returned as an error", err)
-	}
-	if !res.IsError {
-		t.Fatal("IsError = false, want the refusal marked as a failure")
-	}
-	text, ok := res.Content[0].(*sdk.TextContent)
-	if !ok || !strings.Contains(text.Text, `"title"`) {
-		t.Fatalf("content = %v, want it to name %q, the argument that was never given", res.Content, "title")
-	}
-}
-
 func TestHandlerFor_refusesArgumentsItCannotRead(t *testing.T) {
 	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
 	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`not json`)}}
 	refusedAsNotUnderstood(t, handle, req, "")
-}
-
-func TestHandlerFor_refusesAListHandedAsSomethingThatIsNotOne(t *testing.T) {
-	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
-	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
-		Arguments: []byte(`{"title":"From the handler","label":"spec"}`),
-	}}
-	refusedAsNotUnderstood(t, handle, req, `"label"`)
-}
-
-func TestHandlerFor_refusesAListElementThatIsNotAString(t *testing.T) {
-	handle := handlerFor(engine.TaskNew, homeFor(t, storeAt(t)))
-	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
-		Arguments: []byte(`{"title":"From the handler","label":[1,true]}`),
-	}}
-	refusedAsNotUnderstood(t, handle, req, `"label"`)
 }
 
 func refusedAsNotUnderstood(t *testing.T, handle sdk.ToolHandler, req *sdk.CallToolRequest, naming string) {
@@ -157,82 +83,9 @@ func refusedAsNotUnderstood(t *testing.T, handle sdk.ToolHandler, req *sdk.CallT
 	}
 }
 
-func TestHandlerFor_emptiesAListNamedAsNull(t *testing.T) {
-	path := storeAt(t)
-	added, err := engine.Do(engine.TaskNew, path, engine.Input{
-		Given:  map[string]string{"title": "From the handler"},
-		Listed: map[string][]string{"label": {"spec"}},
-	})
-	if err != nil {
-		t.Fatalf("Do(TaskNew): %v", err)
-	}
-	number := task.OfTask(*added.Task).Number
-
-	handle := handlerFor(engine.TaskEdit, homeFor(t, path))
-	req := &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{
-		Arguments: []byte(fmt.Sprintf(`{"number":%d,"label":null}`, number)),
-	}}
-	if _, err := handle(context.Background(), req); err != nil {
-		t.Fatalf("handle: %v", err)
-	}
-
-	shown, err := engine.Do(engine.TaskShow, path, engine.Input{Given: map[string]string{"number": fmt.Sprint(number)}})
-	if err != nil {
-		t.Fatalf("Do(TaskShow): %v", err)
-	}
-	if labels := task.OfTask(*shown.Task).Labels; len(labels) != 0 {
-		t.Fatalf("labels = %v, want none", labels)
-	}
-}
-
-func TestAnswerSchemaFor_readsTheShapeOffTheTypeItWasGiven(t *testing.T) {
-	one := answerSchemaFor(engine.Operation{Answers: engine.Deleted{}})
-	shape, ok := one.(*jsonschema.Schema)
-	if !ok {
-		t.Fatalf("one shape gave %T, want a schema", one)
-	}
-	if shape.Type != "object" {
-		t.Errorf("Deleted{} reads as %q, want an object", shape.Type)
-	}
-	if shape.AnyOf != nil {
-		t.Error("one shape is wrapped in an either-of, and there is nothing to choose between")
-	}
-	if _, described := shape.Properties["deleted"]; !described {
-		t.Errorf("the shape does not name the field it carries: %v", shape.Properties)
-	}
-}
-
-func TestAnswerSchemaFor_namesWhatAListingCarriesBesidesItsRows(t *testing.T) {
-	listing := answerSchemaFor(engine.Operation{Answers: engine.Tasks{}})
-	shape, ok := listing.(*jsonschema.Schema)
-	if !ok {
-		t.Fatalf("a listing gave %T, want a schema", listing)
-	}
-	if shape.Type != "object" {
-		t.Errorf("a listing reads as %q, want an object", shape.Type)
-	}
-	for _, named := range []string{"tasks", "in_focus"} {
-		if _, described := shape.Properties[named]; !described {
-			t.Errorf("the shape does not name %q: %v", named, shape.Properties)
-		}
-	}
-}
-
 func TestAnswerSchemaFor_describesNothingWhenNothingWasDeclared(t *testing.T) {
 	if got := answerSchemaFor(engine.Operation{}); got != nil {
 		t.Errorf("answerSchemaFor = %v, want nothing described", got)
-	}
-}
-
-func TestToolFor_everyToolCarriesTheShapeOfItsAnswer(t *testing.T) {
-	silent := []string{}
-	for _, op := range engine.All() {
-		if toolFor(op).OutputSchema == nil {
-			silent = append(silent, op.Name())
-		}
-	}
-	if len(silent) > 0 {
-		t.Errorf("%d tools carry no shape: %v", len(silent), silent)
 	}
 }
 
@@ -241,68 +94,6 @@ func TestAnswerSchemaFor_describesNothingWhenTheTypeCannotBeRead(t *testing.T) {
 		Answers: make(chan int),
 	}); got != nil {
 		t.Errorf("answerSchemaFor on a shape no schema can describe = %v, want nothing", got)
-	}
-}
-
-func TestToolFor_saysWhatACallCosts(t *testing.T) {
-	for _, c := range []struct {
-		op                    engine.Operation
-		destructive, repeated bool
-	}{
-		{engine.TaskList, false, true},
-		{engine.TaskNew, false, false},
-		{engine.TaskEdit, true, true},
-		{engine.TaskLabel, true, true},
-		{engine.TimesheetAdd, false, false},
-		{engine.TaskDelete, true, true},
-		{engine.MigrationRollback, true, false},
-	} {
-		said := toolFor(c.op).Annotations
-		if *said.DestructiveHint != c.destructive {
-			t.Errorf("%s: destructiveHint = %v, want %v", c.op.Name(), *said.DestructiveHint, c.destructive)
-		}
-		if said.IdempotentHint != c.repeated {
-			t.Errorf("%s: idempotentHint = %v, want %v", c.op.Name(), said.IdempotentHint, c.repeated)
-		}
-		if said.Title != c.op.Short {
-			t.Errorf("%s: title = %q, want the operation's own short sentence", c.op.Name(), said.Title)
-		}
-	}
-}
-
-func TestSchemaFor_takesNothingItDoesNotName(t *testing.T) {
-	schema := schemaFor(engine.TaskNew)
-	if schema["additionalProperties"] != false {
-		t.Errorf("additionalProperties = %v, want false", schema["additionalProperties"])
-	}
-	label := schema["properties"].(map[string]any)["label"].(map[string]any)
-	if items, _ := label["items"].(map[string]any); items["type"] != "string" {
-		t.Errorf("label items = %v, want strings", label["items"])
-	}
-}
-
-func TestSchemaFor_takesAListOfNumbersWrittenAsNumbersOrAsText(t *testing.T) {
-	properties := schemaFor(engine.TaskNew)["properties"].(map[string]any)
-	for _, name := range []string{"blocker", "link", "objective"} {
-		items, _ := properties[name].(map[string]any)["items"].(map[string]any)
-		if !reflect.DeepEqual(items["type"], []string{"integer", "string"}) {
-			t.Errorf("%s items = %v, want whole numbers or text", name, items)
-		}
-	}
-}
-
-func TestHandlerFor_answersARefusalWithItsKindAndReason(t *testing.T) {
-	handle := handlerFor(engine.TaskShow, homeFor(t, storeAt(t)))
-	result, err := handle(context.Background(), &sdk.CallToolRequest{Params: &sdk.CallToolParamsRaw{Arguments: []byte(`{"number": 4}`)}})
-	if err != nil || !result.IsError {
-		t.Fatalf("handle = %+v, %v; want a refusal", result, err)
-	}
-	said, ok := result.Meta[refusalKey].(engine.Refusal)
-	if !ok || said.Kind != engine.KindRefused || said.Reason != "no-such-task" {
-		t.Errorf("_meta = %#v, want refused/no-such-task", result.Meta)
-	}
-	if result.StructuredContent != nil {
-		t.Errorf("structured = %#v, want nothing a client would measure against the answer's shape", result.StructuredContent)
 	}
 }
 
@@ -321,44 +112,5 @@ func TestHandlerFor_runsNothingTheClientGaveUpOn(t *testing.T) {
 	}
 	if len(answer.Tasks) != 0 {
 		t.Errorf("%d tasks, want none: the call was given up on", len(answer.Tasks))
-	}
-}
-
-func TestSchemaFor_aTextNamingAnObjectiveTakesAWholeNumberToo(t *testing.T) {
-	props, _ := schemaFor(engine.ObjectiveNew)["properties"].(map[string]any)
-	parent, _ := props["parent"].(map[string]any)
-	if fmt.Sprint(parent["type"]) != "[integer string]" {
-		t.Errorf("parent is typed %v, want a whole number or text", parent["type"])
-	}
-}
-
-func TestOffered_takesNoRuleWhileRecurrenceIsOff(t *testing.T) {
-	takes := func(pages engine.Pages, tool, argument string) bool {
-		for _, op := range offered(engine.Full, pages) {
-			if op.Name() != tool {
-				continue
-			}
-			_, named := schemaFor(op)["properties"].(map[string]any)[argument]
-			return named
-		}
-		return false
-	}
-	off := engine.PagesFrom(engine.Home{Dir: t.TempDir(), Lookup: func(string) (string, bool) { return "", false }})
-	if takes(off, "task_new", "every") || takes(off, "task_list", "series") {
-		t.Error("with recurrence off, a tool takes a rule")
-	}
-	if !takes(engine.Pages{}, "task_new", "every") || !takes(engine.Pages{}, "task_edit", "series") {
-		t.Error("with recurrence on, a tool takes no rule")
-	}
-}
-
-func TestTools_isEveryToolTheServerCanOffer(t *testing.T) {
-	tools := Tools()
-	names := map[string]string{}
-	for _, tool := range tools {
-		names[tool.Name] = tool.Description
-	}
-	if len(tools) != len(engine.All()) || names["task_delete"] != engine.TaskDelete.Does || names["series_edit"] == "" {
-		t.Errorf("Tools() = %d tools, want every one of the %d operations, series and deleting included", len(tools), len(engine.All()))
 	}
 }

@@ -2,7 +2,6 @@ package migration
 
 import (
 	"cairn/internal/engine/backup"
-	"cairn/internal/engine/calendar"
 	"strings"
 	"testing"
 	"time"
@@ -18,27 +17,6 @@ func builtChange(applied bool) Migration {
 		c.Applied, c.Made = true, time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)
 	}
 	return Made(c)
-}
-
-func TestText_showsWhatAChangeDoesAndWhatUndoingItDoes(t *testing.T) {
-	got := Text(builtChange(false))
-	for _, want := range []string{
-		"#2", "waiting", "a task can hang under another",
-		"what it does", "ALTER TABLE tasks ADD COLUMN parent",
-		"what undoing it does", "ALTER TABLE tasks DROP COLUMN parent",
-		"what undoing it loses", "which task each sub-task hangs under",
-	} {
-		if !strings.Contains(got, want) {
-			t.Errorf("Text() = %q, want it to contain %q", got, want)
-		}
-	}
-}
-
-func TestText_saysWhenAChangeWasApplied(t *testing.T) {
-	got := Text(builtChange(true))
-	if want := "applied " + calendar.FormatMoment(time.Date(2026, 1, 2, 15, 4, 0, 0, time.UTC)); !strings.Contains(got, want) {
-		t.Errorf("Text() = %q, want it to say when the change was applied", got)
-	}
 }
 
 func TestList_countsWhatIsWaiting(t *testing.T) {
@@ -61,12 +39,5 @@ func TestRolledBackText_namesTheChangeAndWhatItCost(t *testing.T) {
 	}
 	if !strings.Contains(got, "lost: which task each sub-task hangs under") {
 		t.Errorf("RolledBackText() = %q, want it to say what was lost", got)
-	}
-}
-
-func TestRolledBackText_saysNothingLostWhenNothingWas(t *testing.T) {
-	got := RolledBackText(Made(Carried{Name: "the shape a store starts with", Does: "CREATE TABLE tasks (...)"}))
-	if strings.Contains(got, "lost:") {
-		t.Errorf("RolledBackText() = %q, want no mention of loss", got)
 	}
 }

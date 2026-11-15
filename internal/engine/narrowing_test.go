@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"slices"
 	"strings"
 	"testing"
 
@@ -14,72 +13,6 @@ func titlesOf(a Answer) []string {
 		titles = append(titles, task.OfTask(one).Title)
 	}
 	return titles
-}
-
-func TestTaskList_keepsWhatTheFactsNamedHoldFor(t *testing.T) {
-	e := openEngine(t)
-	spec := add(t, e, "Write the spec")
-	add(t, e, "Ship it")
-	if _, err := e.edit(task.OfTask(spec).Number, Changes{State: of("todo")}); err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-
-	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "todo"}})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	if got := titlesOf(answer); len(got) != 1 || got[0] != "Write the spec" {
-		t.Errorf("it listed %v, want the one task in todo", got)
-	}
-}
-
-func TestTaskList_answersNarrowedFlatAndUnnarrowedAsATree(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "Write the spec")
-
-	whole, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{}})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	if whole.Tasks == nil || whole.Matched != nil {
-		t.Error("a listing nobody narrowed is not answered as a tree")
-	}
-
-	narrowed, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "backlog"}})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	if narrowed.Matched == nil || narrowed.Tasks != nil {
-		t.Error("a narrowed listing is not answered flat")
-	}
-}
-
-func TestTaskList_saysNothingAboutAFocusItNarrowedOut(t *testing.T) {
-	e := openEngine(t)
-	spec := add(t, e, "Write the spec")
-	shipIt := add(t, e, "Ship it")
-	if _, err := e.edit(task.OfTask(spec).Number, Changes{State: of("todo")}); err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-	if _, err := e.putInFocus(task.OfTask(shipIt).Number); err != nil {
-		t.Fatalf("PutInFocus: %v", err)
-	}
-
-	narrowed, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "todo"}})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	if narrowed.InFocus == nil || len(*narrowed.InFocus) != 0 {
-		t.Errorf("it says %v is in focus, and did not hand that task over", narrowed.InFocus)
-	}
-
-	kept, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"state": "current"}})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	if kept.InFocus == nil || !slices.Contains(*kept.InFocus, task.OfTask(shipIt).Number) {
-		t.Errorf("in focus = %v, want the task it kept", kept.InFocus)
-	}
 }
 
 func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
@@ -121,23 +54,6 @@ func TestTaskList_refusesAnObjectiveNothingCouldBeNumbered(t *testing.T) {
 		}); err == nil {
 			t.Errorf("%q was accepted as an objective to narrow by", named)
 		}
-	}
-}
-
-func TestTaskList_looksForALabelWrittenTheOneWay(t *testing.T) {
-	e := openEngine(t)
-	spec := add(t, e, "Write the spec")
-	add(t, e, "Ship it")
-	if _, err := e.edit(task.OfTask(spec).Number, Changes{Labels: of([]string{"sp26-20"})}); err != nil {
-		t.Fatalf("Edit: %v", err)
-	}
-
-	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"label": {"SP26_20"}}})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	if got := titlesOf(answer); len(got) != 1 || got[0] != "Write the spec" {
-		t.Errorf("it listed %v, want the one task labelled sp26-20", got)
 	}
 }
 

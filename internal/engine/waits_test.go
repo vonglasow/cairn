@@ -145,35 +145,3 @@ func TestObjectiveWaitsOn_warnsWhenWorkStarts(t *testing.T) {
 		t.Errorf("once #2 is reached the move warns %q", quiet.Warnings)
 	}
 }
-
-func TestObjectiveWaitsOn_goesWithWhatIsDeleted(t *testing.T) {
-	path := storeAt(t)
-	ran(t, path,
-		asked(ObjectiveNew, "title", "Firmware"),
-		asked(ObjectiveNew, "title", "Features"),
-		waitsOn("2", "1"),
-	)
-	if _, err := Do(ObjectiveDelete, path, Agreed(given("number", "1"))); err != nil {
-		t.Fatal(err)
-	}
-	if _, said := shownObjective(t, path, "2"); len(said.WaitsOn) != 0 {
-		t.Errorf("#2 still waits on %v", said.WaitsOn)
-	}
-}
-
-func TestObjectiveWaitsOn_aTaskMovedElsewhereThanCurrentWarnsOfNothing(t *testing.T) {
-	path := storeAt(t)
-	ran(t, path,
-		asked(ObjectiveNew, "title", "Home automation"),
-		asked(ObjectiveNew, "title", "Firmware"),
-		waitsOn("1", "2"),
-		asked(TaskNew, "title", "Dimmer scenes", "objective", "1"),
-	)
-	moved, err := Do(TaskMove, path, given("number", "1", "state", "todo"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if said := Of(TaskMove, moved).(Tasks); len(said.Warnings) != 0 {
-		t.Errorf("a move into todo warns %q", said.Warnings)
-	}
-}

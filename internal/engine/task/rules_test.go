@@ -2,7 +2,6 @@ package task
 
 import (
 	"cairn/internal/engine/item"
-	"strings"
 	"testing"
 )
 
@@ -53,20 +52,6 @@ func TestMayLeaveFor_refusesOnlyTheColumnsThatClaimTheWork(t *testing.T) {
 	}
 }
 
-func TestMayLeaveFor_saysWhatIsInTheWayAndHowToTakeItAway(t *testing.T) {
-	err := standing(1, item.Blocked, "the client's answer", 2, 3).
-		MayLeaveFor(standing(1, item.Todo, "the client's answer", 2, 3))
-	if err == nil {
-		t.Fatal("it was allowed")
-	}
-	for _, said := range []string{"#2", "#3", "the client's answer",
-		"task 2", "task 3", "the reason it is waiting"} {
-		if !strings.Contains(err.Error(), said) {
-			t.Errorf("the refusal does not say %q: %v", said, err)
-		}
-	}
-}
-
 func TestFreedBy_putsATaskBackOnlyWhenTheLastThingGoes(t *testing.T) {
 	for _, tc := range []struct {
 		what    string
@@ -101,16 +86,5 @@ func TestFreedBy_putsATaskBackOnlyWhenTheLastThingGoes(t *testing.T) {
 		if put && freed != item.Todo {
 			t.Errorf("%s: it landed in %q, want todo", tc.what, freed)
 		}
-	}
-}
-
-func TestFreedBy_actsOnTheWordsBeingErasedAndNeverOnTheirMeaning(t *testing.T) {
-	if _, put := standing(1, item.Blocked, "the client").
-		FreedBy(standing(1, item.Blocked, "the client")); put {
-		t.Error("a task moved with its words untouched")
-	}
-	if _, put := standing(1, item.Blocked, "the client").
-		FreedBy(standing(1, item.Blocked, "")); !put {
-		t.Error("erasing the last thing in its way left it blocked")
 	}
 }

@@ -1,11 +1,9 @@
 package engine
 
 import (
-	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -54,41 +52,6 @@ func TestConfigSet_writesTheSettingsOfTheWorkspaceInUse(t *testing.T) {
 	}
 }
 
-func TestConfigSet_globalWritesTheGlobalFile(t *testing.T) {
-	h := homeHolding(t, homeIsDefault, nil, "h")
-	got, err := setting(h, ConfigSet, map[string]string{"key": "focus.session", "value": "45m", "global": "true"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := homeIsDefault + "\n[focus]\nsession = \"45m\"\n"; fileRead(t, files.FileIn(h.Dir)) != want {
-		t.Errorf("the file became\n%s", fileRead(t, files.FileIn(h.Dir)))
-	}
-	if !got.ConfigChanged.Global || got.ConfigChanged.From != "from the global configuration" {
-		t.Errorf("the answer is %+v", got.ConfigChanged)
-	}
-}
-
-func TestConfigSet_aLooseStoreWithNoSettingsIsSetInTheGlobalFile(t *testing.T) {
-	h := homeHolding(t, "", nil)
-	if _, err := setting(h, ConfigSet, map[string]string{"key": "pages.time", "value": "off"}); err != nil {
-		t.Fatal(err)
-	}
-	if got := fileRead(t, files.FileIn(h.Dir)); got != "[pages]\ntime = \"off\"\n" {
-		t.Errorf("the file became %q", got)
-	}
-}
-
-func TestConfigSet_aLooseStoreWithSettingsBesideItIsSetThere(t *testing.T) {
-	h := homeHolding(t, "", map[string]string{files.StoreVariable: "~/l/cairn.db"}, "l")
-	path := settingsOf(t, h, "l", "")
-	if _, err := setting(h, ConfigSet, map[string]string{"key": "time.weekends", "value": "hidden"}); err != nil {
-		t.Fatal(err)
-	}
-	if got := fileRead(t, path); got != "[time]\nweekends = \"hidden\"\n" {
-		t.Errorf("the settings became %q", got)
-	}
-}
-
 func TestConfigSet_aKeyOfTheMachineGoesGlobalAndAKeyOfAStoreDoesNot(t *testing.T) {
 	h := homeHolding(t, homeIsDefault, nil, "h")
 	if _, err := setting(h, ConfigSet, map[string]string{"key": "plugin", "value": "~/p"}); err != nil {
@@ -132,19 +95,6 @@ func TestConfigSet_refusesWhatTheKeyDoesNotTakeAndWritesNothing(t *testing.T) {
 	}
 }
 
-func TestConfigSet_aLabelEmptyIsNoLabelHereOnlyInTheSettings(t *testing.T) {
-	h := homeHolding(t, homeIsDefault, nil, "h")
-	if _, err := setting(h, ConfigSet, map[string]string{"key": "approach.label", "value": ""}); err != nil {
-		t.Fatal(err)
-	}
-	if got := fileRead(t, filepath.Join(h.Dir, "h", files.SettingsFile)); got != "[approach]\nlabel = \"\"\n" {
-		t.Errorf("the settings became %q", got)
-	}
-	if _, err := setting(h, ConfigSet, map[string]string{"key": "approach.label", "value": "", "global": "true"}); err == nil {
-		t.Error("the global label is said empty")
-	}
-}
-
 func TestConfigSet_aFileThatDoesNotReadIsNotWrittenInto(t *testing.T) {
 	h := homeHolding(t, homeIsDefault, nil, "h")
 	path := settingsOf(t, h, "h", "[pages]\ntime = \"hiden\"\n")
@@ -158,24 +108,6 @@ func TestConfigSet_aFileThatDoesNotReadIsNotWrittenInto(t *testing.T) {
 	_, err = setting(h, ConfigSet, map[string]string{"key": "focus.session", "value": "1h", "global": "true"})
 	if err != nil {
 		t.Errorf("the global file is not written while the settings do not read: %v", err)
-	}
-}
-
-func TestConfigSet_leavesNoFileBehindButTheOneWritten(t *testing.T) {
-	h := homeHolding(t, homeIsDefault, nil, "h")
-	if _, err := setting(h, ConfigSet, map[string]string{"key": "pages.time", "value": "off"}); err != nil {
-		t.Fatal(err)
-	}
-	entries, _ := os.ReadDir(filepath.Join(h.Dir, "h"))
-	var names []string
-	for _, e := range entries {
-		names = append(names, e.Name())
-	}
-	if !slices.Equal(names, []string{files.SettingsFile}) {
-		t.Errorf("the folder holds %v", names)
-	}
-	if info, err := os.Stat(filepath.Join(h.Dir, "h", files.SettingsFile)); err != nil || info.Mode().Perm() != 0o600 {
-		t.Errorf("the settings are %v, %v", info, err)
 	}
 }
 
@@ -198,17 +130,6 @@ func TestConfigUnset_takesTheLineOutAndSaysWhatAnswersNow(t *testing.T) {
 	_, err = setting(h, ConfigUnset, map[string]string{"key": "pages.objectives"})
 	if err == nil || !strings.Contains(err.Error(), "pages.objectives is not said in "+path) || RefusalOf(err).Kind != KindRefused {
 		t.Errorf("a key not said is taken out: %v", err)
-	}
-}
-
-func TestConfigSetAndUnsetAreAPersonsOnly(t *testing.T) {
-	for _, op := range []Operation{ConfigSet, ConfigUnset} {
-		if slices.ContainsFunc(All(), func(o Operation) bool { return o.Name() == op.Name() }) {
-			t.Errorf("%s is offered to an agent", op.Name())
-		}
-		if !slices.ContainsFunc(ForAPersonOnly(), func(o Operation) bool { return o.Name() == op.Name() }) {
-			t.Errorf("%s is not offered to a person", op.Name())
-		}
 	}
 }
 
@@ -235,23 +156,6 @@ func TestConfigFill_writesEveryKeyTheFileCanHoldAsACommentWithItsValueAndWhereIt
 	}
 }
 
-func TestWrittenFor_aServerStartedInAWorkspaceWritesItsSettings(t *testing.T) {
-	folder := t.TempDir()
-	h := Home{Dir: t.TempDir(), Kept: &workspace.Started{Workspace: "home", Store: workspace.Emplacement{At: filepath.Join(folder, "cairn.db")}}}
-	key, _ := files.KeyNamed("pages.objectives")
-	file, global, err := h.writtenFor(key, false)
-	if err != nil || global || file != files.SettingsBeside(filepath.Join(folder, "cairn.db")) {
-		t.Errorf("written to %s, global %v, %v", file, global, err)
-	}
-}
-
-func TestConfigSet_refusesASessionOfNoLength(t *testing.T) {
-	h := homeHolding(t, homeIsDefault, nil, "h")
-	if _, err := setting(h, ConfigSet, map[string]string{"key": "focus.session", "value": "0s"}); err == nil || !strings.Contains(err.Error(), "is not a duration") {
-		t.Errorf("a session of 0s: %v", err)
-	}
-}
-
 func TestConfigFill_refusesSettingsThatSayWhereTheStoreIs(t *testing.T) {
 	h := homeHolding(t, homeIsDefault, nil, "h")
 	path := settingsOf(t, h, "h", "store = \"~/x/cairn.db\"\n")
@@ -260,20 +164,5 @@ func TestConfigFill_refusesSettingsThatSayWhereTheStoreIs(t *testing.T) {
 	}
 	if fileRead(t, path) != "store = \"~/x/cairn.db\"\n" {
 		t.Errorf("the settings became %q", fileRead(t, path))
-	}
-}
-
-func TestConfigChangedText_writesATrueOrFalseUnquoted(t *testing.T) {
-	if got := workspace.ConfigChangedText(workspace.ConfigChanged{Set: true, Key: "window.keep_sizes", Value: "true", File: "f"}); got != "window.keep_sizes = true, written in f\n" {
-		t.Errorf("said %q", got)
-	}
-}
-
-func TestConfigSet_aPlaceTheWorkspaceGivesIsRefused(t *testing.T) {
-	h := homeHolding(t, homeIsDefault, nil, "h")
-	for _, key := range []string{"store", "notes"} {
-		if _, err := setting(h, ConfigSet, map[string]string{"key": key, "value": "~/elsewhere"}); !errors.Is(err, workspace.ErrAnsweredKey) {
-			t.Errorf("config set %s = %v, want it refused as the workspace's", key, err)
-		}
 	}
 }

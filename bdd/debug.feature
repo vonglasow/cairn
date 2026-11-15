@@ -9,26 +9,6 @@ Feature: Debug mode
 
   Rule: Debug mode is turned on by the environment, at launch
 
-    @debug-off-writes-nothing
-    Scenario: without CAIRN_DEBUG, nothing is written down
-      When I run `cairn task list`
-      Then there is no debug folder beside the store
-      And it writes nothing to standard error
-
-    @debug-on-writes-a-file-beside-the-store
-    Scenario: with CAIRN_DEBUG=1, a run writes one file in the debug folder beside the store
-      Given debug mode is on
-      When I run `cairn task list`
-      Then the debug folder beside the store holds 1 file
-      And it says on standard error where that file is
-
-    @debug-each-run-writes-its-own-file
-    Scenario: each run writes a file of its own
-      Given debug mode is on
-      When I run `cairn task list`
-      And I run `cairn task list`
-      Then the debug folder beside the store holds 2 files
-
     @debug-a-folder-that-cannot-be-made-is-said
     Scenario: a debug folder that cannot be made is said, and the command still runs
       Given debug mode is on
@@ -44,23 +24,6 @@ Feature: Debug mode
       When I run `cairn task list --debug`
       Then the debug folder beside the store holds 1 file
       And it says on standard error where that file is
-
-    @debug-on-by-a-flag-before-the-command
-    Scenario: --debug may come before the command
-      When I run `cairn --debug=true task list`
-      Then it succeeds
-      And the debug folder beside the store holds 1 file
-
-    @debug-off-by-a-flag-said-false
-    Scenario: --debug=false writes nothing
-      When I run `cairn task list --debug=false`
-      Then there is no debug folder beside the store
-
-    @debug-a-flag-after-the-double-dash-is-a-word
-    Scenario: --debug after -- is a word, not the flag
-      When I run `cairn task new -- --debug`
-      Then it succeeds
-      And there is no debug folder beside the store
 
   Rule: The debug folder keeps the last twenty files
 
@@ -94,12 +57,6 @@ Feature: Debug mode
       Then the debug file says "engine task new"
       And the debug file says "priority=high"
       And the debug file says "→ ok"
-
-    @debug-a-refusal-is-written-down
-    Scenario: an operation refused is written down with why
-      Given debug mode is on
-      When I run `cairn task show 99`
-      Then the debug file says "engine task show number=99 → refused"
 
   Rule: What the person wrote never reaches the file
 

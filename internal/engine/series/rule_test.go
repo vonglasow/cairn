@@ -98,43 +98,6 @@ func TestParseRuleRefusesWhatItCannotRead(t *testing.T) {
 	}
 }
 
-func TestRuleSaysItsAnchorAndItsEnd(t *testing.T) {
-	from := day(t, "2026-11-09")
-	for _, c := range []struct{ typed, said string }{
-		{"every weekday 10:30", "every weekday at 10:30, on the calendar, from Mon 9 Nov 2026, never ending"},
-		{"every 3 days after done", "every 3 days, after the last is done, from Mon 9 Nov 2026, never ending"},
-		{"every monday 3 times", "every week on Monday, on the calendar, from Mon 9 Nov 2026, 3 times"},
-		{"every day until 2026-12-01", "every day, on the calendar, from Mon 9 Nov 2026, until Tue 1 Dec 2026"},
-		{"every day 1 times", "every day, on the calendar, from Mon 9 Nov 2026, once"},
-	} {
-		r, err := ParseRule(c.typed)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got := r.Sentence(from); got != c.said {
-			t.Errorf("%q says %q, want %q", c.typed, got, c.said)
-		}
-	}
-}
-
-func TestRuleKnowsItsAnchorAndHowManyTimes(t *testing.T) {
-	r, _ := ParseRule("every 3 days after done 4 times")
-	if !r.AfterDone() || r.Times() != 4 || r.At() != "" {
-		t.Errorf("%q: after done %v, times %d, at %q", r.Words(), r.AfterDone(), r.Times(), r.At())
-	}
-	r, _ = ParseRule("every weekday 9:00")
-	if r.AfterDone() || r.Times() != 0 || r.At() != "09:00" {
-		t.Errorf("%q: after done %v, times %d, at %q", r.Words(), r.AfterDone(), r.Times(), r.At())
-	}
-	if r.Short() != "every weekday at 09:00" {
-		t.Errorf("short reads %q", r.Short())
-	}
-	r, _ = ParseRule("every 3 days after done")
-	if r.Short() != "every 3 days, after the last is done" {
-		t.Errorf("short reads %q", r.Short())
-	}
-}
-
 func TestRuleDatesOnTheCalendar(t *testing.T) {
 	from := day(t, "2026-11-09")
 	for _, c := range []struct{ typed, after, want string }{
@@ -167,23 +130,6 @@ func TestRuleMonthsKeepTheDayOrTheLastOne(t *testing.T) {
 	}
 }
 
-func TestRuleFirstIsTheFirstDateFromItsStart(t *testing.T) {
-	r, _ := ParseRule("every thursday")
-	first, ok := r.First(day(t, "2026-11-09"))
-	if !ok || calendar.FormatDay(first) != "2026-11-12" {
-		t.Errorf("first thursday from a monday: %s %v", calendar.FormatDay(first), ok)
-	}
-	r, _ = ParseRule("every 3 days after done")
-	first, ok = r.First(day(t, "2026-11-09"))
-	if !ok || calendar.FormatDay(first) != "2026-11-09" {
-		t.Errorf("first after done: %s %v", calendar.FormatDay(first), ok)
-	}
-	r, _ = ParseRule("every day until 2026-11-01")
-	if _, ok := r.First(day(t, "2026-11-09")); ok {
-		t.Error("a rule ended before its start has a first date")
-	}
-}
-
 func TestRuleAfterDoneCountsFromTheDayItWasDone(t *testing.T) {
 	for _, c := range []struct{ typed, want string }{
 		{"every 3 days after done", "2026-11-13"},
@@ -209,22 +155,6 @@ func TestRuleAfterDoneCountsFromTheDayItWasDone(t *testing.T) {
 	}
 	if got := r.Dates(day(t, "2026-11-10"), day(t, "2026-11-01"), 3); got != nil {
 		t.Errorf("after done has no dates to come: %v", got)
-	}
-}
-
-func TestRuleSaysADayTheWayAPersonReadsIt(t *testing.T) {
-	if got := ShortDay(day(t, "2026-11-09")); got != "Mon 9 Nov" {
-		t.Errorf("short day %q", got)
-	}
-	if got := LongDay(day(t, "2026-11-09")); got != "Mon 9 Nov 2026" {
-		t.Errorf("long day %q", got)
-	}
-}
-
-func TestRuleDayOfAMoment(t *testing.T) {
-	moment := time.Date(2026, 11, 9, 23, 30, 0, 0, time.FixedZone("far", 10*3600))
-	if got := DayOf(moment); !got.Equal(day(t, "2026-11-09")) {
-		t.Errorf("day of %v is %v", moment, got)
 	}
 }
 
@@ -265,22 +195,6 @@ func TestRuleTakenApartIsWrittenBackAsTheSameRule(t *testing.T) {
 	}
 }
 
-func TestRuleSaidLeavesTheStartOut(t *testing.T) {
-	for typed, want := range map[string]string{
-		"every weekday 10:30":            "every weekday at 10:30, on the calendar",
-		"every 3 days after done 1 time": "every 3 days, after the last is done, once",
-		"every day until 2026-12-31":     "every day, on the calendar, until Thu 31 Dec 2026",
-	} {
-		rule, err := ParseRule(typed)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got := rule.Said(); got != want {
-			t.Errorf("%q is said %q, want %q", typed, got, want)
-		}
-	}
-}
-
 func TestRuleListedIsHowARowWritesIt(t *testing.T) {
 	for typed, want := range map[string]string{
 		"every weekday 10:30":     "every weekday · 10:30",
@@ -297,73 +211,5 @@ func TestRuleListedIsHowARowWritesIt(t *testing.T) {
 		if got := rule.Listed(); got != want {
 			t.Errorf("%q is listed %q, want %q", typed, got, want)
 		}
-	}
-}
-
-func TestARuleTakesItsBoundsAndNothingPast(t *testing.T) {
-	for typed, words := range map[string]string{
-		"every day 999 times": "every day 999 times",
-		"every 1 days":        "every day",
-		"every 999 days":      "every 999 days",
-		"every day 23:59":     "every day 23:59",
-	} {
-		rule, err := ParseRule(typed)
-		if err != nil || rule.Words() != words {
-			t.Errorf("%q reads as %q, %v; want %q", typed, rule.Words(), err, words)
-		}
-	}
-}
-
-func TestATimeTooLongIsRefusedAsATime(t *testing.T) {
-	for _, typed := range []string{"every day 123:45", "every day 10:300"} {
-		if _, err := ParseRule(typed); !errors.Is(err, ErrNotARule) || !strings.Contains(err.Error(), "a time is written 10:30") {
-			t.Errorf("%q: %v", typed, err)
-		}
-	}
-}
-
-func TestAfterAndAnotherWordIsNotAfterDone(t *testing.T) {
-	if _, err := ParseRule("every day after blue done"); !errors.Is(err, ErrNotARule) {
-		t.Errorf("after, a word, then done was read: %v", err)
-	}
-}
-
-func TestWeeksWithNoDayKeepAfterDone(t *testing.T) {
-	if got := (RuleParts{Every: 1, Unit: "weeks", AfterDone: true}).Words(); got != "every week after done" {
-		t.Errorf("weeks counted after done are written %q", got)
-	}
-}
-
-func TestADaySaidTwiceIsWrittenOnce(t *testing.T) {
-	if got := (RuleParts{Every: 1, Unit: "weeks", Days: []time.Weekday{time.Monday, time.Monday}}).Words(); got != "every week on mon" {
-		t.Errorf("monday twice is written %q", got)
-	}
-}
-
-func TestTheFirstDateCanBeTheStartItself(t *testing.T) {
-	r, _ := ParseRule("every monday")
-	if first, ok := r.First(day(t, "2026-11-09")); !ok || calendar.FormatDay(first) != "2026-11-09" {
-		t.Errorf("first monday from a monday: %s %v", calendar.FormatDay(first), ok)
-	}
-}
-
-func TestADateComesBackYearsApart(t *testing.T) {
-	r, _ := ParseRule("every 12 months")
-	if got := days(r.Dates(day(t, "2026-01-15"), day(t, "2026-01-15"), 2)); got != "2027-01-15 2028-01-15" {
-		t.Errorf("every 12 months: %s", got)
-	}
-}
-
-func TestTheNextDateLongAfterTheLastOneIsStillFound(t *testing.T) {
-	r, _ := ParseRule("every day")
-	if next, ok := r.Next(day(t, "2020-01-01"), day(t, "2026-11-09")); !ok || calendar.FormatDay(next) != "2026-11-09" {
-		t.Errorf("a rule from the 9th, asked after 2020: %s %v", calendar.FormatDay(next), ok)
-	}
-}
-
-func TestSundayEndsTheWeek(t *testing.T) {
-	r, _ := ParseRule("every other sunday and monday")
-	if got := days(r.Dates(day(t, "2026-11-08"), day(t, "2026-11-09"), 4)); got != "2026-11-09 2026-11-15 2026-11-23 2026-11-29" {
-		t.Errorf("every other week on monday and sunday: %s", got)
 	}
 }

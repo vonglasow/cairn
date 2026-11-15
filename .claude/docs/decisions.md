@@ -84,6 +84,12 @@ develops cairn meets: one line per decision, and where its reason lives.
 | the terminal splits into `geom` and `design` only, as the window did; its screens and components stay in `tui` | they draw with the board's own fields, and moving them would move the board | `.golangci.yml` |
 | the terminal uses the board's `Tab` and `Screen`, two screens added for it (`OnDetail`, `OnSaid`) | one list of screens for both boards | `internal/board/screens.go` |
 | the pointer is answered from the boxes the drawing lays out (`Placed`, `CardRowOf`, `PillRowOf`, `FormPlace`), not from the `Drawn` record | `Drawn` names a part, not the card or the act it stands for, and a click read from it would wait on a frame; tests and keys move the window without drawing it | `internal/gui/pointer.go` |
+| a scenario is kept when it reaches a line no other test reaches, and one per rule beyond that | the scenarios repeated what the engine's tests check; each was run alone with coverage, and the smallest set reaching every line the whole suite reached was kept, with one example per rule so the rule still says what a person sees; the plugin's, the session's and the version's scenarios test shell, which coverage cannot see, and were all kept | `bdd/` |
+| a unit test is kept the same way, the engine's and the board's chosen first | behaviour is tested once and in the engine; a surface keeps the tests that alone reach its own lines, since the floors come before one contract test per surface; tests that read the repository, a script or run things at once were kept whatever they reach | cairn#314's notes |
+| a scenario marked `@later` is gone | it was run by no suite, so it tested nothing | `bdd/config.feature` |
+| a program a test runs is written by `test.WriteProgram`, under `syscall.ForkLock` | a child forked while the file was open kept it open for writing, and running it then failed as busy | `test/built.go` |
+| the session hook's idle delay is a `sleep` the test stands in for and lets end | the scenarios slept the delay out, and a busy machine needed more | `test/claude/claude_session_bdd_test.go` |
+| "is not told the tools changed" still waits 300 ms | the client may handle a notification after a later answer, so no answer proves none is coming | `internal/mcp/handover_bdd_test.go` |
 
 ## Known and not yet answered
 

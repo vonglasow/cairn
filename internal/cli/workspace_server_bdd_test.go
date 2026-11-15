@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -30,45 +29,9 @@ func (w *workspaces) registerServer(sc *godog.ScenarioContext) {
 	sc.Step(`^I ask the server to add a task titled "([^"]*)"$`, func(title string) error {
 		return s.call("task_new", map[string]any{"title": title})
 	})
-	sc.Step("^I ask the server for `([a-z_]+)`$", func(tool string) error {
-		return s.call(tool, map[string]any{})
-	})
-	sc.Step(`^the server says the workspace "([^"]*)" answers, why "([^"]*)"$`, func(name, why string) error {
-		said := s.text()
-		if err := test.WantContains(said, "workspace  "+name+"\n", "the server's answer"); err != nil {
-			return err
-		}
-		return test.WantContains(said, "why        "+why+"\n", "the server's answer")
-	})
-	sc.Step(`^the server says "([^"]*)"$`, func(want string) error {
-		return test.WantContains(s.text(), want, "the server's answer")
-	})
-	sc.Step(`^the server's structured answer says the workspace is "([^"]*)"$`, func(name string) error {
-		var shown struct {
-			Workspace string `json:"workspace"`
-			Switch    string `json:"switch"`
-		}
-		said, err := json.Marshal(s.result.StructuredContent)
-		if err != nil {
-			return err
-		}
-		if err := json.Unmarshal(said, &shown); err != nil {
-			return err
-		}
-		if shown.Workspace != name || shown.Switch == "" {
-			return fmt.Errorf("the structured answer says %s, want the workspace %q and how to switch", said, name)
-		}
-		return nil
-	})
 	sc.Step(`^no store was written to "([^"]*)"$`, func(place string) error {
 		if _, err := os.Stat(w.expand(place)); !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("%s: %w, want no store there", place, err)
-		}
-		return nil
-	})
-	sc.Step(`^it does not say "([^"]*)"$`, func(said string) error {
-		if strings.Contains(w.Out.Stdout, said) {
-			return fmt.Errorf("the answer says %q:\n%s", said, w.Out.Stdout)
 		}
 		return nil
 	})

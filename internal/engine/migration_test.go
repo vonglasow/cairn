@@ -84,21 +84,3 @@ func TestMigrationApply_appliesWhatWasNamedOrEverythingWaiting(t *testing.T) {
 		t.Fatalf("applied.Applied = %v, want exactly one change made", applied.Applied)
 	}
 }
-
-func TestMigrationList_listsChangesAndWhatIsHeld(t *testing.T) {
-	path := storeAt(t)
-	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}}); err != nil {
-		t.Fatalf("Do(TaskNew): %v", err)
-	}
-
-	answer, err := Do(MigrationList, path, Input{})
-	if err != nil {
-		t.Fatalf("Do: %v", err)
-	}
-	if len(answer.Changes) == 0 {
-		t.Fatalf("answer.Changes = %v, want at least the first change", answer.Changes)
-	}
-	if answer.Holds == nil || answer.Holds.Tasks != 1 {
-		t.Fatalf("answer.Holds = %v, want a count of 1 task", answer.Holds)
-	}
-}

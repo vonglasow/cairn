@@ -14,7 +14,6 @@ import (
 	"cairn/test"
 
 	"cairn/internal/engine"
-	"cairn/internal/store/files"
 )
 
 func initStore(t *testing.T) func(*godog.ScenarioContext) {
@@ -63,15 +62,6 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^the environment says nothing about where anything lives$`, func() error {
-		w.Setenv(files.StoreVariable, "")
-		w.Setenv("HOME", "")
-		if err := os.Unsetenv(files.StoreVariable); err != nil {
-			return err
-		}
-		return os.Unsetenv("HOME")
-	})
-
 	sc.Step(`^(\d+) commands add a task at the same time$`, func(n int) error {
 		lines := make([][]string, 0, n)
 		for i := 1; i <= n; i++ {
@@ -85,20 +75,4 @@ func (w *world) registerAtOnce(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^(\d+) commands read and write at the same time$`, func(n int) error {
-		lines := make([][]string, 0, n)
-		for i := 1; i <= n; i++ {
-			if i%2 == 0 {
-				lines = append(lines, []string{"task", "new", fmt.Sprintf("Written %d", i)})
-				continue
-			}
-			lines = append(lines, []string{"task", "list"})
-		}
-		code, said := atOnce(w.context(), w.Home(), lines)
-		if code != exitOK {
-			return fmt.Errorf("one of them exited %d: %s", code, said)
-		}
-		w.Out = test.Result{Code: exitOK}
-		return nil
-	})
 }

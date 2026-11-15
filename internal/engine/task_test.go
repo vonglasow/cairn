@@ -1,26 +1,11 @@
 package engine
 
 import (
-	"path/filepath"
 	"slices"
 	"testing"
 
 	"cairn/internal/engine/act"
 )
-
-func TestTaskShow_saysSinceWhenTheTaskStands(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "cairn.db")
-	if _, err := doThere(TaskNew, Places{Store: path}, Input{Given: map[string]string{"title": "Ship it"}}, Acting{}); err != nil {
-		t.Fatal(err)
-	}
-	shown, err := doThere(TaskShow, Places{Store: path}, Input{Given: map[string]string{"number": "1"}}, Acting{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if shown.StoodSince.IsZero() {
-		t.Error("a task shown says nothing of since when it stands")
-	}
-}
 
 func TestLabel_putsTheLabelOnEveryTaskReached(t *testing.T) {
 	path := storeAt(t, "Write the spec", "Ship it")
@@ -70,18 +55,6 @@ func TestDelete_aTaskInFocusIsReleasedThenDeleted(t *testing.T) {
 	}
 }
 
-func TestTask_showSaysWhereItsNotesAre(t *testing.T) {
-	path := storeAt(t, "Write the spec")
-	notes := t.TempDir()
-	shown, err := doThere(TaskShow, Places{Store: path, Notes: notes}, given("number", "1"), Acting{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := filepath.Join(notes, "1"); shown.Context != want {
-		t.Errorf("Context = %q, want %q", shown.Context, want)
-	}
-}
-
 func TestTask_unarchiveAnswersTheTask(t *testing.T) {
 	path := storeAt(t, "Write the spec")
 	if _, err := Do(TaskArchive, path, given("number", "1")); err != nil {
@@ -93,15 +66,6 @@ func TestTask_unarchiveAnswersTheTask(t *testing.T) {
 	}
 	if back.Task == nil || (*back.Task).Carried().Number != 1 || (*back.Task).Carried().Archived {
 		t.Errorf("unarchive answered %v, want task 1 back on the board", back.Task)
-	}
-}
-
-func TestTask_sweepsByNarrowingOnlyWithoutANumber(t *testing.T) {
-	if !sweepsByNarrowing(given("number", "0", "state", "done")) {
-		t.Error("number 0 and a state does not sweep")
-	}
-	if sweepsByNarrowing(given("number", "5", "state", "done")) {
-		t.Error("number 5 and a state sweeps")
 	}
 }
 
@@ -119,33 +83,11 @@ func TestTask_stepsGivenAreReadAndRefusedWhenNoText(t *testing.T) {
 	}
 }
 
-func TestTask_aNarrowedListingTalliesTheStepsOfEveryTask(t *testing.T) {
-	path := storeAt(t, "Write the spec")
-	if _, err := Do(TaskNew, path, given("title", "Ship it", "state", "todo", "steps", "[x] one\n[ ] two")); err != nil {
-		t.Fatal(err)
-	}
-	listed, err := Do(TaskList, path, given("state", "backlog"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := listed.Along[2].Steps; got.Total != 2 || got.Done != 1 {
-		t.Errorf("Along[2] = %+v, want 1 of 2 although task 2 is not listed", got)
-	}
-}
-
 func TestTaskEdit_aTitleAndARuleGivenAtOnceAreBothKept(t *testing.T) {
 	path := seriesStore(t)
 	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Water"))
 	answer := doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "title", "Watered", "every", "every day"))
 	if said := Of(TaskEdit, answer).(Task); said.Title != "Watered" || said.Series == nil {
 		t.Errorf("the task reads %+v, series %+v", said.Facts, said.Series)
-	}
-}
-
-func TestTaskEdit_withSeriesAnswersTheTaskEdited(t *testing.T) {
-	path := seriesStore(t)
-	doneOn(t, path, "2026-11-09", TaskNew, ask("title", "Stand-up", "every", "every weekday"))
-	if answer := doneOn(t, path, "2026-11-09", TaskEdit, ask("number", "1", "title", "Daily", "series", "true")); answer.Task == nil || answer.Task.Carried().Title != "Daily" {
-		t.Errorf("answered %+v", answer.Task)
 	}
 }

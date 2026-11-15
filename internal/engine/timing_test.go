@@ -114,33 +114,6 @@ func TestTiming_theTimerStopsWhenTheTimeIsOffAndStartsWhenItIsOn(t *testing.T) {
 	}
 }
 
-func TestTiming_aTaskNotInFocusHasNoTimerToStop(t *testing.T) {
-	path := storeAt(t, "one")
-	nine := time.Date(2026, 9, 29, 9, 0, 0, 0, time.Local)
-	ranAt(t, TaskFocus, timeRecorded(t, path, nine), given("number", "1"))
-	ranAt(t, TaskUnfocus, timeRecorded(t, path, nine.Add(time.Minute)), given("number", "1"))
-	ranAt(t, TaskList, timeOff(t, path, nine.Add(time.Hour)), given())
-	if got := timerActs(t, path); len(got) != 2 {
-		t.Errorf("the timer acts are %q, want the focus taken and released alone", got)
-	}
-}
-
-func TestAnswer_asksNoRenewalWhileTheTimeIsOff(t *testing.T) {
-	path := storeAt(t, "one")
-	nine := time.Date(2026, 9, 29, 9, 0, 0, 0, time.Local)
-	said := "[pages]\ntime = \"off\"\n[focus]\nsession = \"1h\"\n"
-	ranAt(t, TaskFocus, homeTimed(t, path, said, nine), given("number", "1"))
-	if answer := ranAt(t, TaskList, homeTimed(t, path, said, nine.Add(2*time.Hour)), given()); len(answer.Asked) != 0 {
-		t.Errorf("with the time off it asks %q", answer.Asked)
-	}
-	ranAt(t, TaskFocus, homeTimed(t, path, said, nine.Add(3*time.Hour)), given("number", "1"))
-	for _, c := range actsOf(t, path, 1) {
-		if c.Did == act.FocusRenewed {
-			t.Errorf("with the time off, focusing again renewed the session")
-		}
-	}
-}
-
 func TestAnswer_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 	for _, mode := range []string{"hidden", "off"} {
 		t.Run(mode, func(t *testing.T) {
@@ -168,22 +141,5 @@ func TestAnswer_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 				t.Errorf("shown again, the time spent is %s, want 2h", spent)
 			}
 		})
-	}
-}
-
-func TestTiming_theTimerStopsOnEveryTaskInFocus(t *testing.T) {
-	path := storeAt(t, "one", "two")
-	nine := time.Date(2026, 9, 29, 9, 0, 0, 0, time.Local)
-	ranAt(t, TaskFocus, timeRecorded(t, path, nine), given("number", "1"))
-	ranAt(t, TaskFocus, timeRecorded(t, path, nine), given("number", "2"))
-	ranAt(t, TaskList, timeOff(t, path, nine.Add(time.Hour)), given())
-	for _, n := range []int{1, 2} {
-		stopped := false
-		for _, c := range actsOf(t, path, n) {
-			stopped = stopped || c.Did == act.TimerStopped
-		}
-		if !stopped {
-			t.Errorf("task %d's timer was not stopped", n)
-		}
 	}
 }

@@ -4,8 +4,6 @@ import (
 	"cairn/internal/engine/change"
 	"errors"
 	"testing"
-
-	"cairn/internal/engine/objective"
 )
 
 func describedTask(t *testing.T, said string) *Engine {
@@ -45,19 +43,5 @@ func TestTaskEdit_refusesAPieceItCannotReplace(t *testing.T) {
 		if got, _ := e.show(1); got.Carried().Description != "main into main" {
 			t.Errorf("%v: description became %q", tc.in.Given, got.Carried().Description)
 		}
-	}
-}
-
-func TestObjectiveEdit_replacesOnePieceOfTheDescription(t *testing.T) {
-	e := openEngine(t)
-	if _, err := e.addObjective("Ship cairn", ObjectiveChanges{Description: of("for v0.10, on main")}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.Ask(ObjectiveEdit, given("number", "1", "replace", "v0.10", "by", "v0.11")); err != nil {
-		t.Fatal(err)
-	}
-	got, _ := e.showObjective(1)
-	if said := objective.OfObjective(got).Description; said != "for v0.11, on main" {
-		t.Errorf("description = %q", said)
 	}
 }

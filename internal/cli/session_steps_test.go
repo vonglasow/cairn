@@ -39,16 +39,6 @@ func (w *world) registerSession(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^the focus session of task (\d+) asks "([^"]*)"$`, func(n int, ask string) error {
-		one, err := w.sessionOf(n)
-		if err != nil {
-			return err
-		}
-		if one.Ask != ask {
-			return fmt.Errorf("the focus session of task %d asks %q, want %q", n, one.Ask, ask)
-		}
-		return nil
-	})
 	sc.Step(`^the focus session of task (\d+) asks nothing$`, func(n int) error {
 		one, err := w.sessionOf(n)
 		if err != nil {

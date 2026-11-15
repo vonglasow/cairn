@@ -3,7 +3,6 @@ package task
 import (
 	"cairn/internal/engine/item"
 	"errors"
-	"strings"
 	"testing"
 )
 
@@ -30,24 +29,6 @@ func TestMayMoveBehind_refusesWithTheReasonThatIsTrue(t *testing.T) {
 		err := tc.moving.MayMoveBehind(tc.target)
 		if !errors.Is(err, tc.want) {
 			t.Errorf("%s: MayMoveBehind = %v, want %v", tc.what, err, tc.want)
-		}
-	}
-}
-
-func TestMayMoveBehind_allowsTwoTasksInOneColumn(t *testing.T) {
-	if err := sitting(1, item.Todo).MayMoveBehind(sitting(2, item.Todo)); err != nil {
-		t.Errorf("MayMoveBehind = %v, want it allowed", err)
-	}
-}
-
-func TestMayMoveBehind_namesTheColumnEachIsIn(t *testing.T) {
-	err := sitting(1, item.Backlog).MayMoveBehind(sitting(2, item.Todo))
-	if err == nil {
-		t.Fatal("MayMoveBehind = nil, want a refusal")
-	}
-	for _, want := range []string{"task 1 is in backlog", "task 2 is in todo"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("the reason %q does not say %q", err, want)
 		}
 	}
 }

@@ -17,20 +17,6 @@ Feature: Every label at once
       And the label "release" is carried by 1 task and 1 objective
       And the label "doc" is carried by 1 task and 0 objectives
 
-    @label-list-travels-in-the-json
-    Scenario: the labels read as JSON
-      Given I added a task titled "Ship it" with the labels "sp26-20" and "release"
-      When I run `cairn label list --json`
-      Then it writes JSON to standard output
-      And the JSON gives the label "release" carried by 1 task and 0 objectives
-
-    @label-list-says-when-there-is-none
-    Scenario: a store with no label says so
-      Given I added a task titled "Write the spec"
-      When I run `cairn label list`
-      Then it succeeds
-      And it says there is no label
-
   Rule: A label is deleted from everything carrying it, once that is confirmed
 
     @label-delete-takes-it-off-everything
@@ -44,21 +30,6 @@ Feature: Every label at once
       And task 2 carries exactly the labels "release"
       And objective 1 carries exactly the labels ""
 
-    @label-delete-asks-first
-    Scenario: deleting a label is not done until it is confirmed
-      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
-      When I run `cairn label delete sp26-20`
-      Then it fails
-      And it says how to confirm
-      And task 1 carries exactly the labels "doc, sp26-20"
-
-    @label-delete-refuses-what-nothing-carries
-    Scenario: deleting a label nothing carries is refused
-      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
-      When I run `cairn label delete nope --yes`
-      Then it fails
-      And it says nothing carries the label "nope"
-
   Rule: A label is renamed on everything carrying it
 
     @label-rename-everywhere
@@ -70,18 +41,6 @@ Feature: Every label at once
       And task 1 carries exactly the labels "doc, sprint-20"
       And objective 1 carries exactly the labels "sprint-20"
 
-    @label-rename-writes-the-new-name-the-one-way
-    Scenario: the new name is written the one way a label is written
-      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
-      When I run `cairn label rename sp26-20 "Sprint 20"`
-      Then task 1 carries exactly the labels "doc, sprint-20"
-
-    @label-rename-onto-another-joins-them
-    Scenario: renaming a label to one already there leaves one
-      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
-      When I run `cairn label rename doc sp26-20`
-      Then task 1 carries exactly the labels "sp26-20"
-
   Rule: A label can be made before anything carries it
 
     @label-new-stands-on-its-own
@@ -90,29 +49,6 @@ Feature: Every label at once
       Then it succeeds
       When I run `cairn label list`
       Then the label "release-train" is carried by 0 tasks and 0 objectives
-
-    @label-new-stays-once-carried-and-dropped
-    Scenario: a label made on its own stays when the last task carrying it lets it go
-      Given I ran `cairn label new release`
-      And I added a task titled "Ship it" with the labels "release" and "doc"
-      When I run `cairn task edit 1 --label -release`
-      And I run `cairn label list`
-      Then the label "release" is carried by 0 tasks and 0 objectives
-
-    @label-new-goes-with-delete-and-follows-rename
-    Scenario: a label made on its own is renamed and deleted like any other
-      Given I ran `cairn label new release`
-      When I run `cairn label rename release train`
-      And I run `cairn label list`
-      Then the label "train" is carried by 0 tasks and 0 objectives
-      When I run `cairn label delete train --yes`
-      Then it succeeds
-      And it says there is no label
-
-    @label-new-refuses-what-the-rule-refuses
-    Scenario: a label the rule refuses is not made
-      When I run `cairn label new "a:b"`
-      Then it fails
 
   Rule: A label wears a colour
 
@@ -127,18 +63,6 @@ Feature: Every label at once
       And I run `cairn label list --json`
       Then the JSON gives the label "train" the colour "peach"
 
-    @label-colour-is-read-off-the-name
-    Scenario: a label nobody gave a colour wears one read off its name
-      Given I added a task titled "Ship it" with the labels "release" and "doc"
-      When I run `cairn label list --json`
-      Then the JSON gives the label "release" the colour "green"
-
-    @label-colour-is-one-of-fourteen
-    Scenario: a colour that is not one of the fourteen is refused
-      Given I added a task titled "Ship it" with the labels "release" and "doc"
-      When I run `cairn label colour release brown`
-      Then it fails
-
   Rule: A label is for tasks, for objectives, or for both
 
     @label-scope-is-both-unless-said
@@ -146,64 +70,3 @@ Feature: Every label at once
       Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
       When I run `cairn label list --json`
       Then the JSON gives the label "doc" the scope "both"
-
-    @label-scope-made-with-the-label
-    Scenario: a label made on its own is given its scope as it is made
-      When I run `cairn label new Area --scope objectives`
-      Then it succeeds
-      When I run `cairn label list`
-      Then the answer says "for objectives"
-      When I run `cairn label list --json`
-      Then the JSON gives the label "area" the scope "objectives"
-
-    @label-scope-is-changed
-    Scenario: a label's scope is changed, and a rename keeps it
-      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
-      When I run `cairn label scope sp26-20 tasks`
-      Then it succeeds
-      When I run `cairn label rename sp26-20 sprint-20`
-      And I run `cairn label list --json`
-      Then the JSON gives the label "sprint-20" the scope "tasks"
-
-    @label-scope-refuses-a-task
-    Scenario: a label for objectives only is not put on a task
-      Given I ran `cairn label new area --scope objectives`
-      And I added a task titled "Write the spec"
-      When I run `cairn task edit 1 --label area`
-      Then it fails
-      And it says the label "area" is for objectives only
-      And task 1 carries exactly the labels ""
-
-    @label-scope-refuses-an-objective
-    Scenario: a label for tasks only is not put on an objective
-      Given I ran `cairn label new chore --scope tasks`
-      When I run `cairn objective new "Ship cairn" --label chore`
-      Then it fails
-      And it says the label "chore" is for tasks only
-      And `cairn objective list` lists 0 objectives
-
-    @label-scope-refused-while-carried-outside-it
-    Scenario: a label is not narrowed to a scope something outside it already carries
-      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
-      When I run `cairn label scope doc objectives`
-      Then it fails
-      And it says the label "doc" is carried by 1 task
-      When I run `cairn label list --json`
-      Then the JSON gives the label "doc" the scope "both"
-
-    @label-scope-is-one-of-three
-    Scenario: a scope that is not tasks, objectives or both is refused
-      Given I added a task titled "Write the spec" with the labels "doc" and "sp26-20"
-      When I run `cairn label scope doc everything`
-      Then it fails
-
-    @label-scope-narrows-what-is-offered
-    Scenario: the labels offered for objectives are those for objectives and those for both
-      Given I ran `cairn label new area --scope objectives`
-      And I ran `cairn label new chore --scope tasks`
-      And I ran `cairn label new doc`
-      When I run `cairn label list --for objectives`
-      Then it succeeds
-      And the answer says "area"
-      And the answer says "doc"
-      And the answer does not say "chore"

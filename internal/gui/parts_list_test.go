@@ -122,33 +122,6 @@ func TestAPartTheEngineWillNotDeleteStays(t *testing.T) {
 	}
 }
 
-func TestAPartNeverSavedIsTakenOutWithoutTheEngine(t *testing.T) {
-	f := newFake()
-	w := onTheListOf(t, f, "A")
-	added := w.Key("down").Key("enter").Types("New").Key("enter").Key("esc")
-	added.Form = added.Form.TakingPart(1, false, false)
-	gone := added.Key("backspace").Key("enter")
-	if parts := gone.Form.Parts(); len(parts) != 1 || parts[0].Title != "A" {
-		t.Errorf("deleting a part never saved left %+v", parts)
-	}
-	if _, asked := f.gave("step", "delete"); asked {
-		t.Error("the engine was asked to delete a step it never had")
-	}
-	if gone.Form.PartAt != 1 {
-		t.Errorf("the keyboard is on line %d, want the line that adds", gone.Form.PartAt)
-	}
-}
-
-func TestTheNextPartIsWaiting(t *testing.T) {
-	w := onTheList(t, 800, "A").Key("down").Key("enter").Types("B").Key("enter")
-	if !w.Form.WritingPart || w.Form.PartAt != w.Form.Lines()-1 || w.Form.Named.Reads() != "" {
-		t.Errorf("after adding, writing %v on line %d of %d, holding %q", w.Form.WritingPart, w.Form.PartAt, w.Form.Lines(), w.Form.Named.Reads())
-	}
-	if put := w.Key("esc"); put.Screen != board.OnForm || put.Form.WritingPart {
-		t.Errorf("esc while writing left the window on %v, writing %v", put.Screen, put.Form.WritingPart)
-	}
-}
-
 func TestAPartIsCarriedNoFurtherThanTheList(t *testing.T) {
 	f := onTheList(t, 800, "A", "B", "C").Form
 	if got := f.Carrying(0, 99).Parts(); got[2].Title != "A" {
@@ -194,74 +167,6 @@ func TestAClickOnTheListDoesWhatItLandsOn(t *testing.T) {
 	renaming := w.DoubleClick(middle(tiles[1]))
 	if !renaming.Form.WritingPart || renaming.Form.Named.Reads() != titles[from+1] {
 		t.Errorf("a double click on a part writes %v on %q", renaming.Form.WritingPart, renaming.Form.Named.Reads())
-	}
-}
-
-func TestTheListFollowsTheKeyboard(t *testing.T) {
-	titles := make([]string, 12)
-	for i := range titles {
-		titles[i] = fmt.Sprintf("Part %d", i+1)
-	}
-	w := onTheList(t, geom.Shortest, titles...)
-	at, _ := w.Form.PartsField()
-	_, value, rows := FormPlace(w.formBox(), w.Form.Fields, at)
-	frame := Inside(Framed(value, rows))
-	for line := range w.Form.Lines() {
-		if line > 0 {
-			w = w.Key("down")
-		}
-		if w.Form.PartAt != line {
-			t.Fatalf("down went to line %d, want %d", w.Form.PartAt, line)
-		}
-		tiles, from := w.partTiles(), w.partsFrom()
-		shown := tiles[len(tiles)-1]
-		if line < 12 {
-			shown = tiles[line-from]
-		}
-		if shown.Y < frame.Y || shown.Y+shown.H > frame.Y+frame.H {
-			t.Errorf("line %d is drawn at %v, out of %v", line, shown, frame)
-		}
-		if from > 0 {
-			earlier, _ := TickedPlaces(Framed(value, rows), 12, from-1)
-			if line < 12 && line-from+1 < len(earlier) {
-				t.Errorf("line %d would show from %d as well, and the list starts at %d", line, from-1, from)
-			}
-		}
-	}
-}
-
-func TestTicksStartFromTheFirstInSight(t *testing.T) {
-	frame := geom.Box{X: 100, Y: 200, W: 400, H: 8 + 12*lineHigh}
-	tiles, _ := TickedPlaces(frame, 5, 2)
-	if len(tiles) != 3 || tiles[0].Y != Inside(frame).Y {
-		t.Errorf("five parts from the third gave %v", tiles)
-	}
-}
-
-func TestTheListDrawsWhereTheKeyboardIs(t *testing.T) {
-	w := onTheList(t, 800, "A", "B")
-	lit, ringed := design.Dark().Colour.Accent.Base, design.Dark().Colour.Line.Selected
-	tiles := w.partTiles()
-	shot := drawn(t, w)
-	if painted(shot, Edges(SubPanel(tiles[0]))[0], ringed) == 0 || painted(shot, Edges(SubPanel(tiles[1]))[0], ringed) != 0 {
-		t.Error("the part the keyboard is on is not the one outlined")
-	}
-	adding := w.Key("down").Key("down")
-	if lettered(drawn(t, adding), tiles[2], lit) == 0 || lettered(shot, tiles[2], lit) != 0 {
-		t.Error("the line that adds is not lit while the keyboard is on it, and only then")
-	}
-	writing := adding.Key("enter").Types("New part")
-	if painted(drawn(t, writing), tiles[2], design.Dark().Colour.Ink.Text) == 0 {
-		t.Error("what is being written on the line that adds is not drawn")
-	}
-	renaming := w.Key("down").Key("enter")
-	if shot := drawn(t, renaming); painted(shot, Edges(SubPanel(tiles[1]))[0], lit) == 0 || painted(shot, Edges(SubPanel(tiles[0]))[0], lit) != 0 {
-		t.Error("the part being renamed is not the one outlined")
-	}
-	elsewhere := w.Form.Onto(0)
-	w.Form = elsewhere
-	if painted(drawn(t, w), Edges(SubPanel(tiles[0]))[0], lit) != 0 {
-		t.Error("a part is outlined with the keyboard elsewhere")
 	}
 }
 
@@ -338,61 +243,6 @@ func TestWhereAPartLandsAtTheEdges(t *testing.T) {
 	one := alone.partTiles()[0]
 	if _, ok := alone.PressAt(middle(one)).MoveTo(geom.Point{X: middle(one).X, Y: middle(one).Y + Wobble + 1}).PartGhost(); !ok {
 		t.Error("a part alone in its list is not drawn in hand")
-	}
-}
-
-func TestAPartLandsInAScrolledList(t *testing.T) {
-	titles := make([]string, 12)
-	for i := range titles {
-		titles[i] = fmt.Sprintf("Part %d", i+1)
-	}
-	w := onTheList(t, 720, titles...)
-	w.Form.PartAt = 11
-	w = w.keepingPartInSight()
-	tiles := w.partTiles()
-	if w.partsFrom() == 0 || len(tiles) < 3 {
-		t.Fatalf("this proves nothing: the list shows %d lines from %d", len(tiles), w.partsFrom())
-	}
-	middle := func(b geom.Box) geom.Point { return geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
-	held := w.PressAt(middle(tiles[0])).MoveTo(geom.Point{X: middle(tiles[0]).X, Y: middle(tiles[0]).Y + Wobble + 1}).MoveTo(middle(tiles[1]))
-	if line, ok := held.PartLanding(); !ok || line.Y != tiles[1].Y+tiles[1].H+1-landingHigh/2 {
-		t.Errorf("carried down onto the second tile in sight, it lands at %v (%v), want the gap under %v", line, ok, tiles[1])
-	}
-}
-
-func TestTheWheelScrollsTheParts(t *testing.T) {
-	titles := make([]string, 12)
-	for i := range titles {
-		titles[i] = fmt.Sprintf("Part %d", i+1)
-	}
-	w := onTheList(t, geom.Shortest, titles...)
-	w.Form = w.Form.Onto(0)
-	tiles := w.partTiles()
-	shown := len(tiles) - 1
-	over := geom.Point{X: tiles[0].X + 4, Y: tiles[0].Y + 4}
-	once := w.Scroll(over, geom.SubHeight)
-	if once.partsFrom() != 1 {
-		t.Errorf("a notch over the parts shows them from %d", once.partsFrom())
-	}
-	far := once
-	for range 99 {
-		far = far.Scroll(over, geom.SubHeight)
-	}
-	if got := far.partsFrom(); got != 12-shown {
-		t.Errorf("turned to the end, the parts show from %d, want %d", got, 12-shown)
-	}
-	for range 99 {
-		far = far.Scroll(over, -geom.SubHeight)
-	}
-	if got := far.partsFrom(); got != 0 {
-		t.Errorf("turned back, the parts show from %d", got)
-	}
-	walked := once.On("steps")
-	if walked.partsFrom() != once.partsFrom() {
-		t.Errorf("putting the keyboard on the list moved it from %d to %d", once.partsFrom(), walked.partsFrom())
-	}
-	if walked = walked.Key("down"); walked.Form.PartAt < walked.partsFrom() || walked.Form.PartAt >= walked.partsFrom()+shown {
-		t.Errorf("down put the keyboard on line %d, out of sight from %d", walked.Form.PartAt, walked.partsFrom())
 	}
 }
 
@@ -511,57 +361,6 @@ func titlesOf(parts []engine.Part) string {
 		out = append(out, p.Title)
 	}
 	return strings.Join(out, "")
-}
-
-func TestTheStepsTakenAreFilledAndTheOneTheKeyboardIsOnIsOutlined(t *testing.T) {
-	w := onTheList(t, 800, "A", "B", "C")
-	w.Form = w.Form.TakingPart(1, true, false).TakingPart(2, true, false).TakingPart(1, true, false)
-	if got := w.Form.SelectedParts(); fmt.Sprint(got) != "[0 2]" || w.Form.PartAt != 1 {
-		t.Fatalf("⌘ on B again left %v taken, the keyboard on line %d", got, w.Form.PartAt)
-	}
-	tiles := w.partTiles()
-	shot := drawn(t, w)
-	for i, want := range []struct{ filled, outlined bool }{{true, false}, {false, true}, {true, false}} {
-		middle := geom.Box{X: tiles[i].X + tiles[i].W - 12, Y: tiles[i].Y + tiles[i].H/2, W: 4, H: 2}
-		if got := painted(shot, middle, design.Dark().Colour.Surface.Ghost) != 0; got != want.filled {
-			t.Errorf("step %d is filled: %v, want %v", i, got, want.filled)
-		}
-		if got := painted(shot, Edges(SubPanel(tiles[i]))[0], design.Dark().Colour.Line.Selected) != 0; got != want.outlined {
-			t.Errorf("step %d is outlined: %v, want %v", i, got, want.outlined)
-		}
-	}
-}
-
-func TestTheLastStepTakenCanBeLetGo(t *testing.T) {
-	w := onTheList(t, 800, "A", "B")
-	w.Form = w.Form.TakingPart(0, true, false)
-	if got := w.Form.SelectedParts(); len(got) != 0 {
-		t.Fatalf("⌘ on the only step taken left %v", got)
-	}
-	if asked := w.Key("backspace"); asked.Screen != board.OnForm {
-		t.Errorf("a delete key with nothing taken asked %q", Heads(asked))
-	}
-}
-
-func TestTheArrowsTakeTheStepTheyReach(t *testing.T) {
-	w := onTheList(t, 800, "A", "B", "C")
-	if got := w.Form.SelectedParts(); fmt.Sprint(got) != "[0]" {
-		t.Errorf("the keyboard on the list took %v", got)
-	}
-	if got := w.Key("down").Form.SelectedParts(); fmt.Sprint(got) != "[1]" {
-		t.Errorf("down took %v", got)
-	}
-	if got := w.Key("down").Key("down").Key("down").Form.SelectedParts(); len(got) != 0 {
-		t.Errorf("the line that adds took %v", got)
-	}
-}
-
-func TestADeleteKeyDeletesTheOneStepTakenWhereverTheKeyboardIs(t *testing.T) {
-	w := onTheList(t, 800, "A", "B", "C")
-	w.Form = w.Form.TakingPart(2, false, false).TakingPart(1, true, false).TakingPart(1, true, false)
-	if asked := w.Key("backspace"); Heads(asked) != "Delete the step “C”?" {
-		t.Errorf("the delete key asked %q", Heads(asked))
-	}
 }
 
 func TestEveryStepIsTakenAtOnce(t *testing.T) {

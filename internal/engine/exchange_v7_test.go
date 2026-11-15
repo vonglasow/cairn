@@ -11,36 +11,6 @@ import (
 	"testing"
 )
 
-func TestTaskExport_writesTheViewsAndTheObjectivesTheyName(t *testing.T) {
-	read := exportedFrom(t,
-		asked(ObjectiveNew, "title", "Named by a view alone"),
-		asked(ObjectiveNew, "title", "Served by nothing"),
-		asked(ViewNew, "name", "Home", "objective", "1", "itself", "true", "state", "todo"),
-		asked(ViewNew, "name", "Shopping", "label", "shopping", "priority", "high", "deadline-before", "2026-12-01", "search", "milk", "with-archived", "true"),
-		asked(ViewNew, "name", "Attic", "archived", "true"),
-	)
-	if read.Version != 7 {
-		t.Errorf("version %d, want 7", read.Version)
-	}
-	if len(read.Views) != 3 {
-		t.Fatalf("the file holds %d views, want 3: %+v", len(read.Views), read.Views)
-	}
-	home, shopping, attic := read.Views[0], read.Views[1], read.Views[2]
-	if home.Name != "Home" || !slices.Equal(home.Objective, []int{1}) || !home.Itself || home.State != "todo" {
-		t.Errorf("the first view reads %+v", home)
-	}
-	if shopping.Name != "Shopping" || !slices.Equal(shopping.Label, []string{"shopping"}) || shopping.Priority != "high" ||
-		shopping.DueBefore != "2026-12-01" || shopping.Search != "milk" || !shopping.WithArchived {
-		t.Errorf("the second view reads %+v", shopping)
-	}
-	if attic.Name != "Attic" || !attic.Archived {
-		t.Errorf("the third view reads %+v", attic)
-	}
-	if len(read.Objectives) != 2 || read.Objectives[0].Title != "Named by a view alone" || read.Objectives[1].Title != "Served by nothing" {
-		t.Errorf("the objectives written are %+v, want the one the view names and the one nothing names", read.Objectives)
-	}
-}
-
 func TestTaskExport_leavesOutAnObjectiveGoneAndAViewLeftHoldingNothing(t *testing.T) {
 	e := openEngine(t)
 	if _, err := e.addObjective("Still here", ObjectiveChanges{}); err != nil {

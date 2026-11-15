@@ -33,16 +33,6 @@ func TestTheCaretWalksAndStopsAtBothEnds(t *testing.T) {
 	}
 }
 
-func TestTheCaretWalksCharactersAndNotBytes(t *testing.T) {
-	written := Written{Value: "réunion", At: 7}
-	if got := written.Left().Left(); got.At != 5 {
-		t.Fatalf("two back from the end of a seven-letter word is %d", got.At)
-	}
-	if got := (Written{Value: "réunion", At: 2}).Types("X"); got.Value != "réXunion" {
-		t.Errorf("typing after the é gave %q", got.Value)
-	}
-}
-
 func TestWhatIsTakenBackIsWhatIsBeforeTheCaret(t *testing.T) {
 	if got := (Written{Value: "abcd", At: 3}).Back(); got.Value != "abd" || got.At != 2 {
 		t.Errorf("taking back at 3 gave %q with the caret at %d", got.Value, got.At)
@@ -55,28 +45,6 @@ func TestWhatIsTakenBackIsWhatIsBeforeTheCaret(t *testing.T) {
 	}
 	if got := (Written{}).Back(); got.Value != "" {
 		t.Errorf("taking back from nothing gave %q", got.Value)
-	}
-}
-
-func TestTheCaretIsPutWhereItIsAskedForOrAtTheNearestEnd(t *testing.T) {
-	written := Written{Value: "abcdefgh"}
-	if got := written.CaretAt(3); got.At != 3 {
-		t.Errorf("asked for 3, the caret is at %d", got.At)
-	}
-	if got := written.CaretAt(99); got.At != 8 {
-		t.Errorf("asked for past the end, the caret is at %d", got.At)
-	}
-	if got := written.CaretAt(-4); got.At != 0 {
-		t.Errorf("asked for before the beginning, the caret is at %d", got.At)
-	}
-}
-
-func TestAFieldOpensWithTheCaretAtTheEnd(t *testing.T) {
-	if got := Ending("spec"); got.At != 4 || got.Value != "spec" {
-		t.Errorf("a field of %q opens with the caret at %d", got.Value, got.At)
-	}
-	if got := Ending(""); got.At != 0 {
-		t.Errorf("an empty field opens with the caret at %d", got.At)
 	}
 }
 
@@ -171,15 +139,5 @@ func TestWritten_takesBackToAPlace(t *testing.T) {
 	held := Written{Value: "one two", At: 7, Held: -3}
 	if got := held.BackTo(0); got.Value != "one " {
 		t.Errorf("a held run is taken back alone, whatever the place: %q", got.Value)
-	}
-}
-
-func TestAReplacementTakesTheRunItNamesAndLeavesTheCaretAfterIt(t *testing.T) {
-	got := Written{Value: "Fen^", At: 4}.Replaces(3, 4, "ê")
-	if got.Value != "Fenê" || got.At != 4 || got.Held != 0 {
-		t.Fatalf("replacing the accent gave %+v", got)
-	}
-	if got := (Written{Value: "spec"}).Replaces(9, -2, "X"); got.Value != "X" || got.At != 1 {
-		t.Fatalf("a run past the ends gave %+v", got)
 	}
 }

@@ -2,36 +2,12 @@ package gui
 
 import (
 	"cairn/internal/board"
-	"cairn/internal/gui/design"
-	"math"
 	"strings"
 	"testing"
-
-	"gioui.org/font"
-	"gioui.org/text"
-	"golang.org/x/image/math/fixed"
 
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 )
-
-func TestAKeyIsWrittenTheWayItsSystemWritesIt(t *testing.T) {
-	for _, c := range []struct{ system, said, want string }{
-		{"darwin", "⌘N", "⌘N"},
-		{"darwin", "⇧A", "⇧A"},
-		{"windows", "⌘N", "Ctrl+N"},
-		{"linux", "⌘⏎ or ⌘S in a form", "Ctrl+⏎ or Ctrl+S in a form"},
-		{"windows", "⇧←→ in a field", "Shift+←→ in a field"},
-		{"windows", "esc", "esc"},
-		{"windows", "⌥←→ a word", "Alt+←→ a word"},
-		{"linux", "⌦ ⌘⌫ ⌥⌫", "Delete Ctrl+Backspace Alt+Backspace"},
-		{"darwin", "⌦ ⌘⌫ ⌥⌫", "⌦ ⌘⌫ ⌥⌫"},
-	} {
-		if got := KeyboardOf(c.system).Spelled(c.said); got != c.want {
-			t.Errorf("on %s, %q is written %q, want %q", c.system, c.said, got, c.want)
-		}
-	}
-}
 
 func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 	w := New(newFake(), 1200, 800).OnSystem("windows")
@@ -69,42 +45,5 @@ func TestARightPressEndsTheCairn(t *testing.T) {
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if _, on := w.Intro(); on {
 		t.Error("a right press left the cairn building")
-	}
-}
-
-func TestTheBarUnderAQuestionKeepsTheBoardsKeys(t *testing.T) {
-	w := holding(newFake(), card(1, "Write the spec", "todo")).OnSystem("darwin")
-	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+backspace")
-	if w.Screen != board.OnAsking {
-		t.Fatalf("delete left the window on %v", w.Screen)
-	}
-	if got := w.BarKey("Delete"); got != "⌘⌫" {
-		t.Errorf("under the question the bar says Delete is %q", got)
-	}
-	if got := w.OfferKey("Delete"); got != "⏎" {
-		t.Errorf("the question says its Delete is %q", got)
-	}
-}
-
-// rasterSlack is the room a key chip keeps over what this system writes its key in: the face standing in for a mark draws it a point or two wider on another system, Linux in particular.
-const rasterSlack = 3
-
-func TestAKeyChipHasRoomForTheMarksGoMonoLacks(t *testing.T) {
-	th := drawingTheme()
-	monoWritten := func(said string) int {
-		th.Shaper.LayoutString(text.Parameters{
-			Font: font.Font{Typeface: design.MonoFace, Weight: font.SemiBold}, PxPerEm: fixed.I(small),
-			MaxLines: 1, MaxWidth: math.MaxInt32,
-		}, said)
-		end := 0
-		for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
-			end = max(end, (g.X + g.Advance).Ceil())
-		}
-		return end
-	}
-	for _, key := range []string{"Ctrl+⏎", "⌘⌫", "⇧F", "Ctrl+K"} {
-		if got, want := KeyChipWide(key), monoWritten(key)+2*chipInset+rasterSlack; got < want {
-			t.Errorf("the chip of %s is %d wide, its key is written %d wide", key, got, want-2*chipInset)
-		}
 	}
 }

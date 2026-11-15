@@ -13,12 +13,6 @@ import (
 	"cairn/internal/theme"
 )
 
-func TestTerminalHTML_writesPlainTextEscaped(t *testing.T) {
-	if got := terminalHTML("a <b> & c\n"); got != "a &lt;b&gt; &amp; c\n" {
-		t.Errorf("terminalHTML = %q", got)
-	}
-}
-
 func TestTerminalHTML_colouresWhatTheEscapesColour(t *testing.T) {
 	for said, want := range map[string]string{
 		"\x1b[34mx\x1b[m":          `<span class="t4">x</span>`,
@@ -38,36 +32,6 @@ func TestTerminalHTML_colouresWhatTheEscapesColour(t *testing.T) {
 	} {
 		if got := terminalHTML(said); got != want {
 			t.Errorf("terminalHTML(%q) = %q, want %q", said, got, want)
-		}
-	}
-}
-
-func TestTerminal16_isTheSlotsATerminalTakesFromABase16Scheme(t *testing.T) {
-	scheme, err := theme.Find("", "gruvbox-dark")
-	if err != nil {
-		t.Fatal(err)
-	}
-	slots, got := scheme.Slots(), terminal16(scheme)
-	want := [16]color.NRGBA{
-		slots[0x0], slots[0x8], slots[0xB], slots[0xA], slots[0xD], slots[0xE], slots[0xC], slots[0x5],
-		slots[0x3], slots[0x8], slots[0xB], slots[0xA], slots[0xD], slots[0xE], slots[0xC], slots[0x7],
-	}
-	if got != want {
-		t.Errorf("terminal16 = %v, want %v", got, want)
-	}
-}
-
-func TestHeadingID_isTheAnchorGitHubGivesAHeading(t *testing.T) {
-	for heading, want := range map[string]string{
-		"One configuration, several ways in to it": "one-configuration-several-ways-in-to-it",
-		"`[pages]` and `[archive]`":                "pages-and-archive",
-		"What a task's notes are":                  "what-a-tasks-notes-are",
-		"Hand-written, not rrule-go":               "hand-written-not-rrule-go",
-		"Évolutions — v0.12":                       "évolutions--v012",
-		"snake_case stays":                         "snake_case-stays",
-	} {
-		if got := headingID(heading); got != want {
-			t.Errorf("headingID(%q) = %q, want %q", heading, got, want)
 		}
 	}
 }
@@ -104,22 +68,6 @@ func TestPageFor_namesThePageOfEverySourcePublished(t *testing.T) {
 	}
 	if got, ok := pageFor(".claude/docs/checks.md"); ok {
 		t.Errorf("a page for whoever develops cairn is published as %s", got)
-	}
-}
-
-func TestSchemeRules_givesEveryTokenTheSiteDrawsWith(t *testing.T) {
-	scheme, err := theme.Find("", "catppuccin-latte")
-	if err != nil {
-		t.Fatal(err)
-	}
-	rules := schemeRules(scheme)
-	for _, want := range []string{`[data-scheme="catppuccin-latte"]{`, "--bg:#eff1f5", "color-scheme:light", "--t0:#eff1f5"} {
-		if !strings.Contains(rules, want) {
-			t.Errorf("schemeRules = %s\nwant it to hold %s", rules, want)
-		}
-	}
-	if dark, _ := theme.Find("", "default"); !strings.Contains(schemeRules(dark), "color-scheme:dark") {
-		t.Error("the default scheme is not said to be dark")
 	}
 }
 

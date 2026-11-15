@@ -28,11 +28,6 @@ func valueOf(f board.Form, name string) string {
 	return ""
 }
 
-func walked(f board.Form, by int) board.Form {
-	f.At = min(len(f.Fields)-1, max(0, f.At+by))
-	return f
-}
-
 // OnSystem is the window written for another system than the one it runs on: what a test asks for, so that what it reads does not depend on the machine.
 func (w Window) OnSystem(system string) Window {
 	w.keyboard = KeyboardOf(system)
@@ -111,16 +106,4 @@ func anAct(did, field, became, through string) act.Act {
 		told.Through(through)
 	}
 	return told.Act()
-}
-
-func narrow(line string, _ int) []int {
-	edges := []int{0}
-	for _, r := range line {
-		wide := 9
-		if r == 'i' {
-			wide = 3
-		}
-		edges = append(edges, edges[len(edges)-1]+wide)
-	}
-	return edges
 }

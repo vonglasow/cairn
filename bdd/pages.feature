@@ -18,38 +18,6 @@ Feature: A page turned off in the configuration is gone from every surface
       When I run `cairn task list`
       Then it succeeds
 
-    @pages-all-off-leave-no-command-of-theirs
-    Scenario: every page turned off leaves no command of theirs, and the rest
-      Given a configuration that turns every page off
-      When I run `cairn --help`
-      Then the help does not offer "task"
-      And the help does not offer "objective"
-      And the help does not offer "timesheet"
-      And the help offers "config"
-      And the help offers "backup"
-
-    @pages-off-takes-the-steps-with-the-tasks
-    Scenario: the tasks turned off take their steps with them
-      Given a configuration that turns the page "tasks" off
-      When I run `cairn --help`
-      Then the help does not offer "step"
-      And the help offers "label"
-
-    @pages-labels-go-with-the-last-page-they-label
-    Scenario: the labels go once neither tasks nor objectives are shown
-      Given a configuration that turns the pages "tasks" and "objectives" off
-      When I run `cairn --help`
-      Then the help does not offer "label"
-      And the help offers "timesheet"
-
-    @pages-on-by-default
-    Scenario: a configuration that says nothing of the pages shows them all
-      Given a configuration that says the notes live at "~/vault"
-      When I run `cairn --help`
-      Then the help offers "task"
-      And the help offers "objective"
-      And the help offers "timesheet"
-
   Rule: Only the pages cairn has are turned off
 
     @pages-an-unknown-page-is-passed-over

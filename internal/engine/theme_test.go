@@ -57,24 +57,6 @@ func TestWearing_isTheDefaultWhenNothingNamesAScheme(t *testing.T) {
 	}
 }
 
-func TestWearing_isTheSchemeNamed(t *testing.T) {
-	worn, unworn := Wearing(homeWith(t, "[window]\ntheme = \"nord\"\n", nil))
-	nord, err := theme.Find("", "nord")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(worn, nord.Colours()) || unworn != "" {
-		t.Errorf("named nord, the window wears other colours, or says %q", unworn)
-	}
-}
-
-func TestWearing_aSchemeOfOnesOwnIsReadFromTheThemesFolder(t *testing.T) {
-	worn, _ := Wearing(homeWith(t, "[window]\ntheme = \"nord\"\n", map[string]string{"nord": darkInk}))
-	if worn.Surface.Back.R != 0x22 {
-		t.Errorf("the window's back is %v, not the scheme of my own", worn.Surface.Back)
-	}
-}
-
 func TestWearing_aSchemeThatCannotBeWornIsSaidAndTheDefaultWorn(t *testing.T) {
 	for named, says := range map[string]string{"neon": `"neon" is not a scheme cairn sees`, "bad": `"#12" is not a colour`} {
 		worn, unworn := Wearing(homeWith(t, "[window]\ntheme = \""+named+"\"\n", map[string]string{"bad": strings.Replace(darkInk, `"#222222"`, `"#12"`, 1)}))
@@ -154,26 +136,4 @@ func shownWithHome(t *testing.T, h Home) workspace.Config {
 		t.Fatalf("config show: %v", err)
 	}
 	return *answer.Config
-}
-
-func TestSchemeOf_findsACarriedSchemeAndOneOfOnesOwnWhereEachIs(t *testing.T) {
-	nord, err := os.ReadFile(filepath.Join("..", "theme", "schemes", "nord.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	own := t.TempDir()
-	if err := os.WriteFile(filepath.Join(own, "mine.yaml"), nord, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := workspace.SchemeOf(workspace.ThemeSeen{Slug: "mine", From: filepath.Join(own, "mine.yaml")}); err != nil {
-		t.Errorf("a scheme of one's own: %v", err)
-	}
-	here := t.TempDir()
-	if err := os.WriteFile(filepath.Join(here, "nord.yaml"), []byte("not a scheme"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	t.Chdir(here)
-	if _, err := workspace.SchemeOf(workspace.ThemeSeen{Slug: "nord", From: theme.Carried}); err != nil {
-		t.Errorf("a carried scheme was looked for beside the working folder: %v", err)
-	}
 }

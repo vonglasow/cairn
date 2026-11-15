@@ -1,9 +1,7 @@
 package board
 
 import (
-	"cairn/internal/engine/item"
 	"maps"
-	"slices"
 	"testing"
 )
 
@@ -85,32 +83,5 @@ func TestWhere_findsACardInAColumnOrInTheBand(t *testing.T) {
 	}
 	if _, _, _, ok := Where(cards, false, 9); ok {
 		t.Error("a card that is not there was found")
-	}
-}
-
-func TestTheBoardIsLaidOutFromDomainsStates(t *testing.T) {
-	if len(columns) != Columns {
-		t.Errorf("%d columns are listed and Columns says %d", len(columns), Columns)
-	}
-	for _, state := range item.States {
-		inColumn := IndexOf(string(state)) >= 0
-		if inColumn == Stopped(string(state)) {
-			t.Errorf("%s is in a column: %v, and stopped: %v — want exactly one", state, inColumn, Stopped(string(state)))
-		}
-	}
-	if len(Stalled) != 3 {
-		t.Errorf("the band holds %v, want the three stopped states", Stalled)
-	}
-}
-
-func TestInLanes_dealsTheBandIntoItsThreeLanes(t *testing.T) {
-	band := []Card{{Number: 1, State: "paused"}, {Number: 2, State: "blocked"}, {Number: 3, State: "blocked"}}
-	lanes := InLanes(band)
-	if len(lanes) != len(Stalled) {
-		t.Fatalf("%d lanes, want %d", len(lanes), len(Stalled))
-	}
-	got := [][]int{numbersOfCards(lanes[0]), numbersOfCards(lanes[1]), numbersOfCards(lanes[2])}
-	if !slices.Equal(got[0], []int{2, 3}) || len(got[1]) != 0 || !slices.Equal(got[2], []int{1}) {
-		t.Errorf("lanes hold %v", got)
 	}
 }

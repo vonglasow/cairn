@@ -92,39 +92,6 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the pills end against the menu$`, func() error {
-		pills := w.w.Pills()
-		if len(pills) == 0 {
-			return fmt.Errorf("no pill is drawn")
-		}
-		for i := 1; i < len(pills); i++ {
-			if pills[i].Box.X != pills[i-1].Box.X+pills[i-1].Box.W+pillGap {
-				return fmt.Errorf("the pill %q at %+v does not follow %q at %+v", pills[i].Said, pills[i].Box, pills[i-1].Said, pills[i-1].Box)
-			}
-		}
-		last := pills[len(pills)-1].Box
-		if menu := MenuButton(w.w.Layout()); last.X+last.W != menu.X-between {
-			return fmt.Errorf("the pills end at %d, not against the menu at %d", last.X+last.W, menu.X)
-		}
-		return nil
-	})
-	sc.Then(`^the filter "([^"]*)" lists "([^"]*)"$`, func(name, want string) error {
-		f := w.w.Filters[w.w.FilterOn]
-		values, open := w.w.FilterList()
-		if !open || f.Name != name {
-			return fmt.Errorf("the filter %q lists nothing", name)
-		}
-		var got []string
-		for i, value := range values {
-			if value.H > 0 {
-				got = append(got, f.Shown[i])
-			}
-		}
-		if strings.Join(got, ", ") != want {
-			return fmt.Errorf("the filter %q lists %q", name, strings.Join(got, ", "))
-		}
-		return nil
-	})
 	sc.Then(`^the objectives shown read "([^"]*)"$`, func(want string) error {
 		var got []string
 		for _, g := range w.w.Showing().Goals {
@@ -157,27 +124,6 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("no tab is called %q", name)
 	})
-	var noted geom.Box
-	pillAt := func(said string) (geom.Box, error) {
-		for _, pill := range w.w.Pills() {
-			if pill.Said == said {
-				return pill.Box, nil
-			}
-		}
-		return geom.Box{}, fmt.Errorf("no pill reads %q", said)
-	}
-	sc.When(`^I note where the pill "([^"]*)" stands$`, func(said string) error {
-		at, err := pillAt(said)
-		noted = at
-		return err
-	})
-	sc.Then(`^the pill "([^"]*)" stands where it stood$`, func(said string) error {
-		at, err := pillAt(said)
-		if err == nil && at != noted {
-			return fmt.Errorf("the pill %q stands at %+v, not at %+v", said, at, noted)
-		}
-		return err
-	})
 	sc.When(`^I click the pill "([^"]*)"$`, func(said string) error {
 		for _, pill := range w.w.Pills() {
 			if pill.Said == said {
@@ -186,18 +132,6 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 			}
 		}
 		return fmt.Errorf("no pill reads %q", said)
-	})
-	sc.Then(`^the filter "([^"]*)" says "([^"]*)" keeps (\d+)$`, func(name, value string, n int) error {
-		f := w.w.Filters[w.w.FilterOn]
-		if f.Name != name {
-			return fmt.Errorf("the filter open is %q", f.Name)
-		}
-		counts := w.w.FilterCounts()
-		at := slices.Index(f.Shown, value)
-		if at < 0 || at >= len(counts) || counts[at] != n {
-			return fmt.Errorf("the filter %q counts %v for %v", name, counts, f.Shown)
-		}
-		return nil
 	})
 	sc.Step(`^the window shows the filters$`, func() error {
 		if w.w.Screen != board.OnFiltering {

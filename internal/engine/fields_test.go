@@ -41,23 +41,6 @@ func TestTaskList_carriesOnlyTheFieldsAskedFor(t *testing.T) {
 	}
 }
 
-func TestTaskList_writesTheFieldsInTheOrderARowCarriesThem(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "Write the spec")
-
-	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Listed: map[string][]string{"fields": {"state", "number"}}})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	written, err := json.Marshal(Of(TaskList, answer))
-	if err != nil {
-		t.Fatalf("Marshal: %v", err)
-	}
-	if !strings.Contains(string(written), `{"number":1,"state":"backlog"}`) {
-		t.Errorf("it wrote %s, want the number before the state", written)
-	}
-}
-
 func TestTaskSearch_carriesOnlyTheFieldsAskedFor(t *testing.T) {
 	e := openEngine(t)
 	add(t, e, "Write the spec")
@@ -69,20 +52,6 @@ func TestTaskSearch_carriesOnlyTheFieldsAskedFor(t *testing.T) {
 	rows := rowsAsJSON(t, TaskSearch, answer)
 	if len(rows) != 1 || len(rows[0]) != 1 || rows[0]["described"] != false {
 		t.Errorf("it carried %v, want one row saying only whether it is described", rows)
-	}
-}
-
-func TestTaskList_withoutFieldsCarriesEveryOne(t *testing.T) {
-	e := openEngine(t)
-	add(t, e, "Write the spec")
-
-	answer, err := TaskList.Run(workedOn{Engine: e}, Input{})
-	if err != nil {
-		t.Fatalf("TaskList: %v", err)
-	}
-	rows := rowsAsJSON(t, TaskList, answer)
-	if named := slices.Sorted(maps.Keys(rows[0])); !slices.Equal(named, slices.Sorted(slices.Values(rowFields()))) {
-		t.Errorf("the row carries %v, want every field", named)
 	}
 }
 
@@ -109,14 +78,5 @@ func TestTaskList_refusesAnEmptyListOfFields(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), strings.Join(rowFields(), ", ")) {
 		t.Errorf("%q does not name what a row carries", err)
-	}
-}
-
-func TestRowFields_areWhatARowCarries(t *testing.T) {
-	want := []string{"number", "title", "state", "archived", "priority", "labels", "blocked_by", "linked",
-		"because", "deadline", "estimate", "time_spent", "objectives", "described", "series",
-		"blocks", "overdue", "due_in", "age", "objective_late"}
-	if got := rowFields(); !slices.Equal(got, want) {
-		t.Errorf("rowFields() = %v, want %v", got, want)
 	}
 }

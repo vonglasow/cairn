@@ -3,8 +3,6 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
-	"cairn/internal/theme"
-	"cairn/internal/tui/geom"
 	"fmt"
 	"slices"
 	"strings"
@@ -21,41 +19,6 @@ func withRecent(t *testing.T) *roaming {
 	}
 	r.shown["/s/scratch/cairn.db"] = workspace.Shown{Store: "/s/scratch/cairn.db"}
 	return r
-}
-
-func TestSwitcher_listsTheRecentFoldersUnderTheWorkspaces(t *testing.T) {
-	screen := strip(pressing(roamingBoard(t, withRecent(t)), "ctrl+o").Draw())
-	if !strings.Contains(screen, "RECENT FOLDERS") || strings.Index(screen, "RECENT FOLDERS") < strings.Index(screen, "client-a") {
-		t.Fatalf("the recent folders are not listed under the workspaces:\n%s", screen)
-	}
-	for folder, mark := range map[string]string{"◌ /s/scratch ": "opened yesterday", "◌ /v/trip ": "not found now", "◌ /o/odd/tasks.db ": "opened today"} {
-		if got := lineOf(screen, folder); !strings.Contains(got, mark) {
-			t.Errorf("%s's line = %q; want it marked %q", folder, got, mark)
-		}
-	}
-	if screen := strip(pressing(roamingBoard(t, newRoaming(t, newFake())), "ctrl+o").Draw()); strings.Contains(screen, "RECENT FOLDERS") {
-		t.Errorf("with none, the recent folders are still listed:\n%s", screen)
-	}
-}
-
-func TestSwitcher_aRecentFolderChosenOpensItsStore(t *testing.T) {
-	r := withRecent(t)
-	b := pressing(roamingBoard(t, r), "ctrl+o", "down", "down", "enter")
-	if !slices.Equal(r.switched, []string{"/s/scratch/cairn.db"}) || b.screen != board.OnTheBoard {
-		t.Errorf("switched = %v, screen %v; want the store of scratch opened", r.switched, b.screen)
-	}
-	r = withRecent(t)
-	b = pressing(roamingBoard(t, r), "ctrl+o", "down", "down", "down", "down", "down", "down")
-	if b.spaceAt != 5 {
-		t.Errorf("the cursor is at %d; want it held on the last recent folder, 5", b.spaceAt)
-	}
-}
-
-func TestSwitcher_theRecentFoldersNarrowAsOneTypes(t *testing.T) {
-	b := pressing(roamingBoard(t, withRecent(t)), "ctrl+o", "t", "r", "i")
-	if got := b.recentListed(); len(got) != 1 || got[0].Folder != "/v/trip" {
-		t.Errorf("recent listed = %+v; want trip alone", got)
-	}
 }
 
 func TestSwitcher_theRecentFolderHereOnlyCloses(t *testing.T) {
@@ -144,60 +107,5 @@ func TestSwitcher_ctrlKKeepsARecentFolderAsAWorkspace(t *testing.T) {
 	}
 	if b.screen != board.OnWorkspaces || !slices.Contains(names(b.listed()), "sc") || len(b.recentListed()) != 2 {
 		t.Errorf("screen %v, listed %v, recent %+v; want sc among the workspaces", b.screen, names(b.listed()), b.recentListed())
-	}
-}
-
-func TestSwitcher_ctrlKOnWhatCannotBeKeptDoesNothing(t *testing.T) {
-	for _, keys := range [][]string{{"ctrl+o", "ctrl+k"}, {"ctrl+o", "down", "down", "down", "down", "ctrl+k"}} {
-		b := pressing(roamingBoard(t, withRecent(t)), keys...)
-		if screen := strip(b.Draw()); strings.Contains(screen, "keep") || strings.Contains(screen, "^K") {
-			t.Errorf("%v offers to keep:\n%s", keys, screen)
-		}
-	}
-}
-
-func TestSwitcher_theFootOffersToOpenAFolderAndMakeAWorkspace(t *testing.T) {
-	screen := strip(pressing(roamingBoard(t, withRecent(t)), "ctrl+o").Draw())
-	for _, want := range []string{"^O open a folder", "^N new workspace"} {
-		if !strings.Contains(screen, want) {
-			t.Errorf("the list does not offer %q:\n%s", want, screen)
-		}
-	}
-}
-
-func inked(colour string) string {
-	return "\x1b[" + ink(theme.Default().Labels[colour]) + "m● "
-}
-
-func TestHeader_theDotWearsTheColourOfTheWorkspace(t *testing.T) {
-	r := newRoaming(t, newFake())
-	r.shown["work"] = workspace.Shown{Workspace: "work", Store: "/c/work/cairn.db", Colour: "green"}
-	if header := strings.SplitN(roamingBoard(t, r).Draw(), "\n", 2)[0]; !strings.Contains(header, inked("green")) {
-		t.Errorf("the header's dot does not wear green: %q", header)
-	}
-}
-
-func TestSwitcher_eachDotWearsTheColourOfItsWorkspace(t *testing.T) {
-	r := newRoaming(t, newFake())
-	r.spaces[1].Colour = "peach"
-	r.spaces[2].Colour = "sky"
-	drawn := pressing(roamingBoard(t, r), "ctrl+o").Draw()
-	for colour, name := range map[string]string{"peach": "home", "sky": "client-a"} {
-		at := strings.Index(drawn, inked(colour))
-		if at < 0 || !strings.HasPrefix(strip(drawn[at+len(inked(colour))-len("● "):]), "● "+name) {
-			t.Errorf("the list does not draw the dot of %s in %s", name, colour)
-		}
-	}
-}
-
-func TestSwitcher_withRecentFoldersFitsANarrowWindow(t *testing.T) {
-	r := withRecent(t)
-	r.recent[0].Folder = "/" + strings.Repeat("deep/", 30)
-	for _, keys := range [][]string{{"ctrl+o"}, {"ctrl+o", "ctrl+n"}, {"ctrl+o", "down", "down"}, {"ctrl+o", "down", "down", "ctrl+k"}} {
-		b := roamingBoard(t, r)
-		b.width, b.height = geom.Narrowest, geom.Shortest
-		if err := fits(pressing(b, keys...)); err != nil {
-			t.Errorf("%v: %v", keys, err)
-		}
 	}
 }

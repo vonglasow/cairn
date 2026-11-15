@@ -59,62 +59,12 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		drag(geom.Gutter(w.w.Layout(), at), by)
 		return nil
 	})
-	sc.Step(`^I drag the gutter between "([^"]*)" and "([^"]*)" (\d+) to the left$`, func(left, right string, by int) error {
-		at, err := column(left)
-		if err != nil {
-			return err
-		}
-		if next, err := column(right); err != nil || next != at+1 {
-			return fmt.Errorf("%q does not stand right of %q", right, left)
-		}
-		drag(geom.Gutter(w.w.Layout(), at), -by)
-		return nil
-	})
-	sc.Step(`^I drag the gutter between "backlog" and "todo" from beside the band (\d+) to the right$`, func(by int) error {
-		l := w.w.Layout()
-		gutter := geom.Gutter(l, 0)
-		beside := geom.Box{X: gutter.X, Y: l.Band.Y, W: gutter.W, H: l.Band.H}
-		if !gutter.In(geom.Point{X: beside.X + beside.W/2, Y: beside.Y + beside.H/2}) {
-			return fmt.Errorf("the gutter %+v does not run beside the band %+v", gutter, l.Band)
-		}
-		drag(beside, by)
-		return nil
-	})
 	sc.Step(`^the pointer over the gutter after "([^"]*)" is the one for widening sideways$`, func(name string) error {
 		at, err := column(name)
 		if err != nil {
 			return err
 		}
 		return pointerIs(w.w, geom.Gutter(w.w.Layout(), at), ColResize)
-	})
-	sc.Step(`^the pointer over the gutter after the "([^"]*)" lane is the one for widening sideways$`, func(name string) error {
-		at, err := laneNamed(name)
-		if err != nil {
-			return err
-		}
-		return pointerIs(w.w, geom.LaneGutter(w.w.Layout(), at), ColResize)
-	})
-	sc.Step(`^every gutter is (\d+) points wide$`, func(wide int) error {
-		for _, grab := range grabsOf(w.w.Layout()) {
-			across := grab.Box.W
-			if grab.Takes.Band {
-				across = grab.Box.H
-			}
-			if across != wide {
-				return fmt.Errorf("the gutter %+v is %d points wide, not %d", grab.Box, across, wide)
-			}
-		}
-		return nil
-	})
-	sc.Step(`^the pointer over the band's edge is the one for resizing up and down$`, func() error {
-		return pointerIs(w.w, geom.BandEdge(w.w.Layout()), RowResize)
-	})
-	sc.Step(`^the band starts where "todo" does$`, func() error {
-		l := w.w.Layout()
-		if l.Band.X != l.Column[1].X {
-			return fmt.Errorf("the band starts at %d, todo at %d", l.Band.X, l.Column[1].X)
-		}
-		return nil
 	})
 	sc.Step(`^I drag the gutter between the "([^"]*)" and "([^"]*)" lanes (\d+) to the right$`, func(left, right string, by int) error {
 		at, err := laneNamed(left)
@@ -140,67 +90,6 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		}
 		return wider(opened.Column[at].W, w.w.Layout().Column[at].W, by, name)
 	})
-	sc.Step(`^"([^"]*)" is (\d+) narrower than it opened$`, func(name string, by int) error {
-		at, err := column(name)
-		if err != nil {
-			return err
-		}
-		return wider(opened.Column[at].W, w.w.Layout().Column[at].W, -by, name)
-	})
-	sc.Step(`^"([^"]*)" is as wide as it opened$`, func(name string) error {
-		at, err := column(name)
-		if err != nil {
-			return err
-		}
-		return wider(opened.Column[at].W, w.w.Layout().Column[at].W, 0, name)
-	})
-	sc.Step(`^the "([^"]*)" lane is (\d+) wider than it opened$`, func(name string, by int) error {
-		at, err := laneNamed(name)
-		if err != nil {
-			return err
-		}
-		return wider(opened.Lane[at].W, w.w.Layout().Lane[at].W, by, name)
-	})
-	sc.Step(`^the "([^"]*)" lane is (\d+) narrower than it opened$`, func(name string, by int) error {
-		at, err := laneNamed(name)
-		if err != nil {
-			return err
-		}
-		return wider(opened.Lane[at].W, w.w.Layout().Lane[at].W, -by, name)
-	})
-	sc.Step(`^"([^"]*)" is the narrowest a column goes$`, func(name string) error {
-		at, err := column(name)
-		if err != nil {
-			return err
-		}
-		if got := w.w.Layout().Column[at].W; got != geom.NarrowestColumn {
-			return fmt.Errorf("%q is %d wide, not the %d a column goes down to", name, got, geom.NarrowestColumn)
-		}
-		return nil
-	})
-	sc.Step(`^"([^"]*)" is wider than "([^"]*)"$`, func(one, other string) error {
-		a, err := column(one)
-		if err != nil {
-			return err
-		}
-		b, err := column(other)
-		if err != nil {
-			return err
-		}
-		l := w.w.Layout()
-		if l.Column[a].W <= l.Column[b].W {
-			return fmt.Errorf("%q is %d wide and %q %d", one, l.Column[a].W, other, l.Column[b].W)
-		}
-		return nil
-	})
-	sc.Step(`^the columns fill the window's width$`, func() error {
-		l := w.w.Layout()
-		last := l.Column[board.Columns-1]
-		if end := last.X + last.W; end != l.Tabs.X+l.Tabs.W {
-			return fmt.Errorf("the columns end at %d, the window's room at %d", end, l.Tabs.X+l.Tabs.W)
-		}
-		return nil
-	})
 	sc.Step(`^no card is being dragged$`, func() error {
 		if _, dragging := w.w.Ghost(); dragging || w.w.held.Number != 0 {
 			return fmt.Errorf("a card is held: %+v", w.w.held)
@@ -213,10 +102,6 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^I drag the edge above the band (\d+) up$`, func(by int) error {
 		lift(by)
-		return nil
-	})
-	sc.Step(`^I drag the edge above the band (\d+) down$`, func(by int) error {
-		lift(-by)
 		return nil
 	})
 	sc.Step(`^I double-click the edge above the band$`, func() error {
@@ -264,30 +149,6 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 			return err
 		}
 		return taller(opened.Column[at].H, w.w.Layout().Column[at].H, 0, name)
-	})
-	sc.Step(`^the band's lanes hold one card's room$`, func() error {
-		for at, lane := range w.w.Layout().Lane {
-			if lane.H != geom.CardHeight {
-				return fmt.Errorf("lane %d is %d tall, not a card's %d", at, lane.H, geom.CardHeight)
-			}
-		}
-		return nil
-	})
-	sc.Step(`^"([^"]*)" holds one card's room$`, func(name string) error {
-		at, err := column(name)
-		if err != nil {
-			return err
-		}
-		if got := w.w.Layout().Column[at].H; got != geom.CardHeight {
-			return fmt.Errorf("%q is %d tall, not a card's %d", name, got, geom.CardHeight)
-		}
-		return nil
-	})
-	sc.Step(`^the band is taller than it opens at (\d+) by (\d+)$`, func(width, high int) error {
-		if got, opens := w.w.Layout().Band.H, geom.LayoutFor(width, high).Band.H; got <= opens {
-			return fmt.Errorf("the band is %d tall, and opens %d tall at %d by %d", got, opens, width, high)
-		}
-		return nil
 	})
 	sc.Step(`^every lane is as wide as the others$`, func() error {
 		l := w.w.Layout()

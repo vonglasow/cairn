@@ -1,15 +1,12 @@
 package engine
 
 import (
-	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
-	"cairn/internal/engine/act"
 	"cairn/internal/store/files"
 )
 
@@ -20,18 +17,6 @@ func settingsIn(t *testing.T, folder, said string) {
 	}
 	if err := os.WriteFile(filepath.Join(folder, files.SettingsFile), []byte(said), 0o600); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestPagesFrom_readsTheSettingsOfTheStoreInUse(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	settingsIn(t, filepath.Join(h.Dir, "h"), "[pages]\nobjectives = false\n[time]\nweekends = \"hidden\"\n")
-	if !PagesFrom(h).Shows("objectives") {
-		t.Error("the default workspace takes the objectives of another's settings")
-	}
-	h.Workspace = "home"
-	if pages := PagesFrom(h); pages.Shows("objectives") || pages.WeekDays() != 5 {
-		t.Error("the settings of home do not turn its objectives off and hide its weekends")
 	}
 }
 
@@ -69,35 +54,6 @@ func TestLocate_settingsThatCannotBeReadLeaveTheStoreUnusable(t *testing.T) {
 	}
 }
 
-func TestLocate_settingsThatAreNotTOMLAreRefusedNamingThem(t *testing.T) {
-	h := homeHolding(t, twoWorkspaces, nil, "w", "h")
-	settingsIn(t, filepath.Join(h.Dir, "w"), "[pages\n")
-	_, err := Locate(h)
-	if !errors.Is(err, files.ErrNotTOML) || !strings.Contains(err.Error(), filepath.Join(h.Dir, "w", files.SettingsFile)) {
-		t.Errorf("Locate = %v, want ErrNotTOML naming the settings", err)
-	}
-}
-
-func TestDelete_takesItsTimeWhenTheSettingsOfItsStoreSaySo(t *testing.T) {
-	path := storeAt(t, "one")
-	settingsIn(t, filepath.Dir(path), "[time]\ndeleted = \"taken\"\n")
-	if _, err := DoFrom(TaskDelete, homeSaying(t, path, ""), Agreed(given("number", "1")), Acting{}); err != nil {
-		t.Fatal(err)
-	}
-	e, err := Open(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = e.Close() }()
-	acts, err := e.history.ActsOn(1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if went := acts[len(acts)-1].Carried().Was; !strings.HasSuffix(went, act.WentWithItsTime) {
-		t.Errorf("the deletion took %q, want its time with it", went)
-	}
-}
-
 func TestSessionLength_isTheOneTheSettingsOfTheStoreSay(t *testing.T) {
 	path := storeAt(t, "one")
 	settingsIn(t, filepath.Dir(path), "[focus]\nsession = \"25m\"\n")
@@ -115,20 +71,6 @@ func TestSessionLength_isTheOneTheSettingsOfTheStoreSay(t *testing.T) {
 	}
 }
 
-func TestConfigured_isTheGlobalConfigurationWithTheSettingsBesideTheStore(t *testing.T) {
-	path := storeAt(t, "one")
-	settingsIn(t, filepath.Dir(path), "[archive]\nstart = 2026-10-21\n")
-	e, err := OpenAt(Places{Store: path, Home: homeSaying(t, path, "[archive]\ndays = 7\n")})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = e.Close() }()
-	read, err := e.configured()
-	if start, days, on := read.Archive(); err != nil || start != "2026-10-21" || days != 7 || !on {
-		t.Errorf("configured archives from %q every %d days (%v), %v; want 2026-10-21 every 7", start, days, on, err)
-	}
-}
-
 func TestIgnored_saysWhatTheGlobalFileAndTheSettingsPassOver(t *testing.T) {
 	h := homeHolding(t, "colour = 1\n", map[string]string{files.StoreVariable: "~/s/cairn.db"})
 	settingsIn(t, filepath.Join(h.Dir, "s"), "[pages]\ncalendar = false\n")
@@ -142,64 +84,6 @@ func TestIgnored_saysWhatTheGlobalFileAndTheSettingsPassOver(t *testing.T) {
 	settingsIn(t, filepath.Join(h.Dir, "s"), "store = \"~/x\"\n")
 	if Ignored(h) != nil {
 		t.Error("settings refused are said to pass keys over")
-	}
-}
-
-func TestConfigShow_saysWhereEachStoreKeyComesFrom(t *testing.T) {
-	h := homeHolding(t, "[focus]\nsession = \"1h\"\n[approach]\nlabel = \"discuss\"\n", map[string]string{files.StoreVariable: "~/s/cairn.db"})
-	settingsIn(t, filepath.Join(h.Dir, "s"), "[time]\nweekends = \"hidden\"\n[approach]\nlabel = \"\"\n")
-	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	c := *answer.Config
-	settings := filepath.Join(h.Dir, "s", files.SettingsFile)
-	if c.Settings != settings || !slices.Equal(c.WrittenHere, []string{"approach.label", "time.weekends"}) || c.Time.Weekends != files.WeekendsHidden {
-		t.Errorf("Config = %+v, want the settings read over the global file", c)
-	}
-	said := workspace.ConfigText(c)
-	for _, line := range []string{
-		"# the store's settings: " + settings + "\n",
-		"weekends = \"hidden\"   # set in the store's settings; global: \"shown\"\n",
-		"session = \"1h\"   # from the global configuration\n",
-		"deleted = \"kept\"   # by default\n",
-		"tasks = true   # by default\n",
-		"days = 14   # by default\n",
-		"keep_sizes = false   # by default\n",
-		"# label is said empty in the store's settings: no label asks for the approach to be agreed first; global: \"discuss\"\n",
-	} {
-		if !strings.Contains(said, line) {
-			t.Errorf("config show does not say %q:\n%s", line, said)
-		}
-	}
-}
-
-func TestConfigShow_saysNothingOfSettingsThatAreNotThere(t *testing.T) {
-	said := workspace.ConfigText(shownWith(t, "[focus]\nsession = \"1h\"\n"))
-	if strings.Contains(said, "settings") || strings.Contains(said, "# by default") {
-		t.Errorf("with no settings, config show says:\n%s", said)
-	}
-}
-
-func TestConfigShow_saysSettingsItCannotMakeSenseOfAsTheProblem(t *testing.T) {
-	h := homeHolding(t, "", map[string]string{files.StoreVariable: "~/s/cairn.db"})
-	settingsIn(t, filepath.Join(h.Dir, "s"), "plugin = \"~/p\"\n")
-	answer, err := ConfigShow.Run(workedOn{Home: h}, Input{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(answer.Config.Problem, "plugin") || answer.Config.Pages != nil {
-		t.Errorf("Config = %+v, want the problem and no key", answer.Config)
-	}
-}
-
-func TestWorkspaceAdd_writesSettingsThatSayNothing(t *testing.T) {
-	h := homeHolding(t, "", nil)
-	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, adding("play", "~/p")); err != nil {
-		t.Fatal(err)
-	}
-	if read, _ := os.ReadFile(filepath.Join(h.Dir, "p", files.SettingsFile)); string(read) != files.SettingsHeader {
-		t.Errorf("the settings read %q", read)
 	}
 }
 

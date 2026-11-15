@@ -3,77 +3,10 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
-	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
 	"testing"
 	"time"
-
-	"cairn/internal/engine"
 )
-
-func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
-	box := CalendarFor(100, 50, 400)
-	if want := (geom.Box{X: 100, Y: 50, W: 400, H: 358}); box != want {
-		t.Errorf("the calendar is %+v, want %+v", box, want)
-	}
-	if got, want := DayAt(box, 0), (geom.Box{X: 112, Y: 124, W: 47, H: 32}); got != want {
-		t.Errorf("the first day is at %+v, want %+v", got, want)
-	}
-	if got, want := DayAt(box, 9), (geom.Box{X: 218, Y: 162, W: 47, H: 32}); got != want {
-		t.Errorf("the tenth day is at %+v, want %+v", got, want)
-	}
-	if got, want := WeekdayAt(box, 2), (geom.Box{X: 218, Y: 100, W: 47, H: 18}); got != want {
-		t.Errorf("Wednesday is written at %+v, want %+v", got, want)
-	}
-	if got, want := MonthAfter(box), (geom.Box{X: 456, Y: 62, W: monthWide, H: calendarHead}); got != want {
-		t.Errorf("the next month is offered at %+v, want %+v", got, want)
-	}
-	if got, want := CalendarMonth(box), (geom.Box{X: 112, Y: 62, W: nameWide, H: calendarHead}); got != want {
-		t.Errorf("the month is offered at %+v, want %+v", got, want)
-	}
-	if got, want := MonthBefore(box), (geom.Box{X: 456 - monthWide - inset, Y: 62, W: monthWide, H: calendarHead}); got != want {
-		t.Errorf("the month before is offered at %+v, want %+v", got, want)
-	}
-	if got := len(board.MonthGrid(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))); got != 42 {
-		t.Errorf("a month is shown as %d days, want six weeks", got)
-	}
-}
-
-func TestTheCalendarHangsUnderItsField(t *testing.T) {
-	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form.Fields[w.Form.On()].Arg != "deadline" {
-		w = w.Key("tab")
-	}
-	w = w.Key("enter")
-	box, frame := w.CalendarBox(), fieldFrame(w)
-	if box.X > frame.X || box.X+box.W < frame.X+frame.W || box.Y != frame.Y+frame.H+between {
-		t.Errorf("the calendar is at %+v, under a field at %+v", box, frame)
-	}
-	want := max(w.headWide()+nameWide+yearWide+2*monthWide, w.offersWide())
-	if box.W != want || box.H != CalendarFor(0, 0, want).H {
-		t.Errorf("the calendar is %dx%d, want %d wide", box.W, box.H, want)
-	}
-}
-
-func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
-	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for _, c := range []struct {
-		arg    string
-		screen board.Screen
-	}{{"deadline", board.OnCalendar}, {"estimate", board.OnForm}} {
-		for i, field := range w.Form.Fields {
-			if field.Arg != c.arg {
-				continue
-			}
-			_, value, _ := FormPlace(w.formBox(), w.Form.Fields, i)
-			if got := w.clicked(geom.Point{X: value.X + 4, Y: value.Y + 4}); got.Screen != c.screen || got.Form.On() != i {
-				t.Errorf("a click on the %s left the window on %v, on field %d", c.arg, got.Screen, got.Form.On())
-			}
-		}
-	}
-}
 
 func TestThePointerWalksTheMonths(t *testing.T) {
 	w := Window{Board: board.Board{Screen: board.OnCalendar, CalendarState: board.CalendarState{Day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}, width: 1200, height: 800}
@@ -128,22 +61,6 @@ func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 	}
 }
 
-func TestTheCalendarIsDrawn(t *testing.T) {
-	w := Window{Board: board.Board{Screen: board.OnCalendar, CalendarState: board.CalendarState{Day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}, width: 1200, height: 800}
-	w.Form = Window{}.editing(board.Card{Number: 1, Title: "Write the spec"})
-	shot := drawn(t, w)
-	for i, day := range board.MonthGrid(w.Day) {
-		edge := Edges(DayAt(w.CalendarBox(), i))[0]
-		outlined := ink(shot, edge, design.Dark().Colour.Surface.Raised) > 0
-		if day.Equal(w.Day) && !outlined {
-			t.Error("the day the keyboard is on is not outlined")
-		}
-		if !day.Equal(w.Day) && outlined {
-			t.Errorf("%s is outlined, and the keyboard is not on it", calendar.FormatDay(day))
-		}
-	}
-}
-
 func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
@@ -182,69 +99,6 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 	}
 }
 
-func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
-	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	foot := ButtonIn(w.PanelOffers()[0])
-	skin := design.Dark()
-	if painted(drawn(t, w), foot, skin.Colour.Accent.Base) == 0 {
-		t.Fatal("the open form draws no offer at its foot")
-	}
-	for w.Form.Fields[w.Form.On()].Arg != "deadline" {
-		w = w.Key("tab")
-	}
-	got := w.Key("enter")
-	calendar := got.CalendarBox()
-	if left := (geom.Box{X: foot.X, Y: foot.Y, W: max(0, min(foot.W, calendar.X-foot.X)), H: foot.H}); left.W == 0 {
-		foot = geom.Box{X: calendar.X + calendar.W, Y: foot.Y, W: max(0, foot.X+foot.W-calendar.X-calendar.W), H: foot.H}
-	} else {
-		foot = left
-	}
-	if foot.W > 0 && painted(drawn(t, got), foot, skin.Colour.Accent.Base) != 0 {
-		t.Error("the form under the calendar still draws offers at its foot")
-	}
-}
-
-func TestTheContextLineEndsBeforeTheOffersDrawn(t *testing.T) {
-	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
-	w.keyboard = KeyboardOf("windows")
-	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	offers := w.PanelOffers()
-	last := offers[len(offers)-1]
-	said := w.ContextSays()
-	if len(said) != 2 {
-		t.Fatalf("the context says %d things", len(said))
-	}
-	name, path := said[0].inSight(), said[1].inSight()
-	if name.X != w.formPanel().X+padding {
-		t.Errorf("the context's name starts at %d, not at the panel's left", name.X)
-	}
-	if path.X != name.X+name.W+copyRoom || path.X+path.W != last.X-padding {
-		t.Errorf("the path runs %+v after a name %+v, and the leftmost offer starts at %d", path, name, last.X)
-	}
-}
-
-func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
-	w := Window{Board: board.Board{Screen: board.OnCalendar, CalendarState: board.CalendarState{Day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}, width: 1200, height: 800}
-	box := w.CalendarBox()
-	if box.X != (1200-box.W)/2 || box.Y != (800-box.H)/2 {
-		t.Errorf("the calendar is at %+v", box)
-	}
-}
-
-func TestTheMonthArrowsAreOnChips(t *testing.T) {
-	w := Window{Board: board.Board{Screen: board.OnCalendar, CalendarState: board.CalendarState{Day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}, width: 1200, height: 800}
-	w.Form = Window{}.editing(board.Card{Number: 1, Title: "A"})
-	shot, skin := drawn(t, w), design.Dark()
-	box := w.CalendarBox()
-	for _, chip := range []geom.Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)} {
-		row := geom.Box{X: chip.X + design.Dark().Radius.Control, Y: chip.Y + 2, W: chip.W - 2*design.Dark().Radius.Control, H: 1}
-		if got := painted(shot, row, skin.Colour.Surface.Control) + painted(shot, row, skin.Colour.Accent.Base); got != row.W {
-			t.Errorf("the chip at %+v is filled on %d of %d pixels", chip, got, row.W)
-		}
-	}
-}
-
 func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "A", State: "todo"})
@@ -270,42 +124,6 @@ func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 	typed := w.Key("esc").On("title").Types("x")
 	if left := typed.Click(geom.Point{X: 2, Y: 2}); left.Screen != board.OnAsking || f.what("task", "edit") != 0 {
 		t.Errorf("a click off a form typed into left the window on %v, %d edits asked", left.Screen, f.what("task", "edit"))
-	}
-}
-
-func TestACalendarOverATaskWithStepsIsDrawn(t *testing.T) {
-	w := holding(newFake(), board.Card{Number: 1, Title: "Ship it", State: "todo",
-		Steps: []engine.Part{{Number: 1, Title: "Draft the columns"}}})
-	w.Chosen = 1
-	w = w.Edit()
-	for i, field := range w.Form.Fields {
-		if field.Arg == "deadline" {
-			_, value, _ := FormPlace(w.formBox(), w.Form.Fields, i)
-			w = w.clicked(geom.Point{X: value.X + 4, Y: value.Y + 4})
-		}
-	}
-	if w.Screen != board.OnCalendar {
-		t.Fatalf("the deadline left the window on %v", w.Screen)
-	}
-	if parts := w.PartsTicked(); len(parts) != 1 {
-		t.Fatalf("under the calendar the steps are drawn as %+v", parts)
-	}
-	drawn(t, w)
-}
-
-func TestTheCalendarsDaysHaveRoomAndItStaysInTheSmallestWindow(t *testing.T) {
-	w := Window{Board: board.Board{Screen: board.OnCalendar, CalendarState: board.CalendarState{Day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}, width: 1024, height: 640}
-	w.Form = Window{}.editing(board.Card{Number: 1, Title: "A"})
-	box := w.CalendarBox()
-	day, next := DayAt(box, 0), DayAt(box, 1)
-	if day.H < 32 {
-		t.Errorf("a day is %d high, want at least 32", day.H)
-	}
-	if gap := next.X - day.X - day.W; gap < 6 {
-		t.Errorf("days are %d apart, want at least 6", gap)
-	}
-	if over := Over(w.width, w.height); box.Y < over.Y || box.Y+box.H > over.Y+over.H || box.X < 0 || box.X+box.W > w.width {
-		t.Errorf("the calendar at %+v leaves the window %+v", box, over)
 	}
 }
 

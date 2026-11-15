@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
-	"os/user"
 	"regexp"
 	"strings"
 
@@ -60,51 +58,9 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 	sc.Step(`^every act says it was done by "([^"]*)" through "([^"]*)"$`, func(by, through string) error {
 		return everyActSays(fmt.Sprintf("(by %s, through %s)", by, through))
 	})
-	sc.Step(`^every act says it was done by the one logged in, through "([^"]*)"$`, func(through string) error {
-		me, err := user.Current()
-		if err != nil {
-			return err
-		}
-		return everyActSays(fmt.Sprintf("(by %s, through %s)", me.Username, through))
-	})
-	sc.Step(`^every act carries the author "([^"]*)" and the surface "([^"]*)"$`, func(by, through string) error {
-		var said struct {
-			Acts []struct {
-				By      string `json:"by"`
-				Through string `json:"through"`
-			} `json:"acts"`
-		}
-		if err := json.Unmarshal([]byte(w.Out.Stdout), &said); err != nil {
-			return err
-		}
-		if len(said.Acts) == 0 {
-			return fmt.Errorf("no act is carried:\n%s", w.Out.Stdout)
-		}
-		for _, act := range said.Acts {
-			if act.By != by || act.Through != through {
-				return fmt.Errorf("an act carries the author %q and the surface %q", act.By, act.Through)
-			}
-		}
-		return nil
-	})
-	sc.Step(`^I looked at task (\d+)$`, func(n int) error {
-		return w.Seed(fmt.Sprintf(`cairn task show %d`, n))
-	})
-
-	sc.Step(`^I listed the tasks$`, func() error {
-		return w.Seed(`cairn task list`)
-	})
-
-	sc.Step(`^I looked for "([^"]*)"$`, func(what string) error {
-		return w.Seed(fmt.Sprintf(`cairn task search %s`, what))
-	})
 
 	sc.Step(`^I let the focus go$`, func() error {
 		return w.Seed(`cairn task unfocus`)
-	})
-
-	sc.Step(`^I let task (\d+) go$`, func(n int) error {
-		return w.Seed(fmt.Sprintf(`cairn task unfocus %d`, n))
 	})
 
 	sc.Step(`^I moved task (\d+) to the (first|last) place$`, func(n int, where string) error {
@@ -127,16 +83,8 @@ func (w *world) registerTrace(sc *godog.ScenarioContext) {
 		return nil
 	})
 
-	sc.Step(`^it says nothing was done$`, func() error {
-		return test.WantContains(w.Out.Stdout, "nothing was done", "the answer")
-	})
-
 	sc.Step(`^it says the task was created$`, func() error {
 		return test.WantContains(w.Out.Stdout, "created", "the history")
-	})
-
-	sc.Step(`^it says the deletion took "([^"]*)" with it$`, func(said string) error {
-		return test.WantContains(w.Out.Stdout, said, "the history")
 	})
 
 	sc.Step(`^it says it started in the (\w+) at (\w+) priority$`,

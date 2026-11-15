@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"cairn/internal/engine"
-	"cairn/internal/engine/task"
 )
 
 func openEngine(t *testing.T) *engine.Engine {
@@ -65,16 +64,4 @@ func (a request) with(name string, values ...string) request {
 
 func (a request) input() engine.Input {
 	return engine.Input{Given: a.given, Listed: a.listed, Confirmed: true}
-}
-
-func builtTask(t *testing.T, number int, title string) task.Task {
-	t.Helper()
-	built, err := task.NewTask(title)
-	if err != nil {
-		t.Fatalf("NewTask(%q): %v", title, err)
-	}
-	a := &task.AsTold{}
-	*a = task.From(built)
-	a.Numbered(number)
-	return a.Task()
 }

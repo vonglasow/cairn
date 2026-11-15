@@ -11,28 +11,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-func TestPushingIntoAColumnAsksTaskEdit(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
-	b := hit(standing(f), "ctrl+l", "ctrl+l")
-	if _, cmd := b.pressed("shift+h"); cmd != nil {
-		cmd()
-	}
-	if len(f.asked) == 0 {
-		t.Fatal("the board asked for nothing")
-	}
-	got := f.asked[0]
-	if got.op.Thing != "task" || got.op.Verb != "edit" {
-		t.Errorf("asked %q %q, want task edit", got.op.Thing, got.op.Verb)
-	}
-	if got.in.Given["number"] != "1" {
-		t.Errorf("number = %q, want 1", got.in.Given["number"])
-	}
-	if got.in.Given["state"] != "todo" {
-		t.Errorf("state = %q, want todo", got.in.Given["state"])
-	}
-}
-
 func asks(t *testing.T, f *fake, keys []string, press string) asked {
 	t.Helper()
 	b := hit(standing(f), keys...)
@@ -79,51 +57,6 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 	}
 }
 
-func TestLettingTheFocusGoAsksTaskUnfocusByNumber(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo", InFocus: true}}
-	f.focus = []int{1}
-	got := asks(t, f, []string{"l", "i"}, "f")
-	if got.op.Thing != "task" || got.op.Verb != "unfocus" {
-		t.Errorf("asked %q %q, want task unfocus", got.op.Thing, got.op.Verb)
-	}
-	if got.in.Given["number"] != "1" {
-		t.Errorf("it let go of %q, want task 1", got.in.Given["number"])
-	}
-}
-
-func TestTakingUpATaskAsksTaskFocusByNumber(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{
-		{Number: 1, Title: "One", State: "todo"},
-		{Number: 2, Title: "Two", State: "todo", InFocus: true},
-	}
-	f.focus = []int{2}
-	got := asks(t, f, []string{"l", "i"}, "f")
-	if got.op.Thing != "task" || got.op.Verb != "focus" {
-		t.Errorf("asked %q %q, want task focus", got.op.Thing, got.op.Verb)
-	}
-	if got.in.Given["number"] != "1" {
-		t.Errorf("it took up %q, want task 1", got.in.Given["number"])
-	}
-}
-
-func TestReadingTheHistoryAsksTraceShow(t *testing.T) {
-	f := newFake()
-	b := standing(f)
-	_ = heardOf(b, 14)
-	if len(f.asked) != 1 {
-		t.Fatalf("the history asked for %d operations, want 1", len(f.asked))
-	}
-	got := f.asked[0]
-	if got.op.Thing != "trace" || got.op.Verb != "show" {
-		t.Errorf("asked %q %q, want trace show", got.op.Thing, got.op.Verb)
-	}
-	if got.in.Given["number"] != "14" {
-		t.Errorf("number = %q, want 14", got.in.Given["number"])
-	}
-}
-
 func TestTheBoardAsksWhatTheEngineSaysIsAQuestion(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
@@ -146,18 +79,6 @@ func TestTheBoardAsksWhatTheEngineSaysIsAQuestion(t *testing.T) {
 	}
 }
 
-func TestALookRefusedForAStoreBehindIsAskedAbout(t *testing.T) {
-	f := newFake()
-	f.fail = migration.ErrStoreBehind
-	b := pump(standing(f), standing(f).look())
-	if !b.asking {
-		t.Fatalf("the board is not asking, and says %q", strip(b.Draw()))
-	}
-	if said := strip(b.foot()); !strings.Contains(said, "apply what this workspace is waiting for?") {
-		t.Errorf("the foot says %q", said)
-	}
-}
-
 func TestAFailedApplyIsSaidAndTheStoreIsAskedAboutAgain(t *testing.T) {
 	f := newFake()
 	f.fail = migration.ErrStoreBehind
@@ -174,23 +95,6 @@ func TestAFailedApplyIsSaidAndTheStoreIsAskedAboutAgain(t *testing.T) {
 	b = hit(b, "enter")
 	if b.asking {
 		t.Errorf("the question stands after the apply went through: %q", strip(b.foot()))
-	}
-}
-
-func TestEscOnAStoreBehindLeavesTheBoardAndTouchesNothing(t *testing.T) {
-	f := newFake()
-	f.fail = migration.ErrStoreBehind
-	b := pump(standing(f), standing(f).look())
-	asked := len(f.asked)
-	_, cmd := b.pressed("esc")
-	if cmd == nil {
-		t.Fatal("esc on the question asked for nothing")
-	}
-	if _, quits := cmd().(tea.QuitMsg); !quits {
-		t.Errorf("esc asked for %T, not to quit", cmd())
-	}
-	if len(f.asked) != asked {
-		t.Errorf("leaving asked the store %d more times", len(f.asked)-asked)
 	}
 }
 

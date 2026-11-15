@@ -5,7 +5,6 @@ import (
 	"cairn/internal/engine"
 	"cairn/internal/tui/geom"
 	"fmt"
-	"slices"
 	"strings"
 
 	"cairn/internal/engine/task"
@@ -18,21 +17,6 @@ func (w *world) columnsRead(list string) error {
 		if !strings.Contains(screen, name) {
 			return fmt.Errorf("no column called %q on the board:\n%s", name, screen)
 		}
-	}
-	return nil
-}
-
-func (w *world) bandNamed(name string) error {
-	if !strings.Contains(w.screen(), name) {
-		return fmt.Errorf("the band is not called %q:\n%s", name, w.screen())
-	}
-	return nil
-}
-
-func (w *world) bandCarries(want int) error {
-	_, band := board.Deal(w.cards(), w.b.archived)
-	if len(band) != want {
-		return fmt.Errorf("the band carries %d tasks, not %d", len(band), want)
 	}
 	return nil
 }
@@ -50,41 +34,6 @@ func (w *world) bandReads(list string) error {
 		return fmt.Errorf("the band reads %q, want %q", got, want)
 	}
 	return nil
-}
-
-func (w *world) lanesRead(list string) error {
-	var names []string
-	for _, name := range strings.Split(list, ",") {
-		names = append(names, strings.Trim(strings.TrimSpace(name), `"`))
-	}
-	for _, line := range strings.Split(w.screen(), "\n") {
-		at, read := 0, 0
-		for _, name := range names {
-			i := strings.Index(line[at:], name)
-			if i < 0 {
-				break
-			}
-			at, read = at+i+len(name), read+1
-		}
-		if read == len(names) {
-			return nil
-		}
-	}
-	return fmt.Errorf("no line reads the lanes %q:\n%s", names, w.screen())
-}
-
-func (w *world) laneCarries(lane, title string) error {
-	at := slices.Index(board.Stalled, lane)
-	if at < 0 {
-		return fmt.Errorf("%q is no lane", lane)
-	}
-	_, band := board.Deal(w.cards(), w.b.archived)
-	for _, c := range board.InLanes(band)[at] {
-		if c.Title == title && strings.Contains(w.screen(), title) {
-			return nil
-		}
-	}
-	return fmt.Errorf("the lane %q does not carry %q:\n%s", lane, title, w.screen())
 }
 
 func (w *world) columnCarries(column, title string) error {
@@ -142,13 +91,6 @@ func (w *world) modeIs(name string) error {
 
 func (w *world) tabIs(name string) error { return w.mustSay(name) }
 
-func (w *world) cursorOnColumn(name string) error {
-	if got := board.StateAt(w.b.Where().Column); got != lower(name) {
-		return fmt.Errorf("the cursor is on %q, not on %q", got, lower(name))
-	}
-	return nil
-}
-
 func (w *world) cursorOnTask(title string) error {
 	for _, c := range w.cards() {
 		if c.Number == w.b.Where().Task {
@@ -180,22 +122,6 @@ func (w *world) taskTitled(number int, title string) error {
 	}
 	if told := task.OfTask(found); told.Title != title {
 		return fmt.Errorf("task %d is called %q, not %q", number, told.Title, title)
-	}
-	return nil
-}
-
-func (w *world) asksWhichOf(first, second, third string) error {
-	for _, kind := range []string{first, second, third} {
-		if err := w.mustSay(kind); err != nil {
-			return err
-		}
-	}
-	return w.mustSay("which kind of stopped")
-}
-
-func (w *world) asksNothing() error {
-	if strings.Contains(w.screen(), "which kind of stopped") {
-		return fmt.Errorf("the board asked something it should not have:\n%s", w.screen())
 	}
 	return nil
 }
@@ -242,24 +168,6 @@ func (w *world) cardSays(number int, text string) error {
 	})
 }
 
-func (w *world) cardDescribed(number int) error {
-	return w.rowsOf(number, func(rows []string) error {
-		if strings.Contains(rows[0], GlyphsFor(Unicode).Described) {
-			return nil
-		}
-		return fmt.Errorf("the card for task %d is not marked as described: %q", number, rows[0])
-	})
-}
-
-func (w *world) cardArchived(number int) error {
-	return w.rowsOf(number, func(rows []string) error {
-		if strings.Contains(rows[0], GlyphsFor(Unicode).Archived) {
-			return nil
-		}
-		return fmt.Errorf("the card for task %d is not marked as archived: %q", number, rows[0])
-	})
-}
-
 func (w *world) rowsOf(number int, check func([]string) error) error {
 	for _, c := range w.cards() {
 		if c.Number == number {
@@ -267,25 +175,6 @@ func (w *world) rowsOf(number int, check func([]string) error) error {
 		}
 	}
 	return fmt.Errorf("there is no task %d", number)
-}
-
-func (w *world) goalCardSays(number int, text string) error {
-	found, err := board.Look(w.held)
-	if err != nil {
-		return err
-	}
-	for _, g := range found.Goals {
-		if g.Number != number {
-			continue
-		}
-		for _, row := range w.b.with(PlainSkin()).goalRows(g, w.width-6) {
-			if strings.Contains(row, text) {
-				return nil
-			}
-		}
-		return fmt.Errorf("the card for objective %d never says %q", number, text)
-	}
-	return fmt.Errorf("there is no objective %d", number)
 }
 
 func (w *world) cardInFocus(number int) error {
@@ -307,13 +196,6 @@ func (w *world) boardSaysBefore(first, second string) error {
 	a, b := strings.Index(screen, first), strings.Index(screen, second)
 	if a < 0 || b < 0 || a > b {
 		return fmt.Errorf("the board does not say %q before %q:\n%s", first, second, screen)
-	}
-	return nil
-}
-
-func (w *world) boardSaysOnce(text string) error {
-	if got := strings.Count(w.screen(), text); got != 1 {
-		return fmt.Errorf("the board says %q %d times, not once:\n%s", text, got, w.screen())
 	}
 	return nil
 }
@@ -340,31 +222,6 @@ func (w *world) columnReads(column, list string) error {
 	for i, card := range found.Cards {
 		if card.Title != want[i] {
 			return fmt.Errorf("%q reads %q at place %d, want %q", column, card.Title, i, want[i])
-		}
-	}
-	return nil
-}
-
-func (w *world) ruleBetweenColumns() error {
-	l := geom.LayoutFor(w.width, w.high)
-	lines := strings.Split(w.screen(), "\n")
-	head := -1
-	for i, line := range lines {
-		if strings.Contains(line, "BACKLOG") {
-			head = i
-			break
-		}
-	}
-	if head < 0 {
-		return fmt.Errorf("no column header on the board:\n%s", w.screen())
-	}
-	for gap := 0; gap < board.Columns-1; gap++ {
-		at := geom.Margin + l.Column + gap*(l.Column+1)
-		for _, line := range lines[head : head+2+l.Top] {
-			runes := []rune(line)
-			if len(runes) <= at || runes[at] != '│' {
-				return fmt.Errorf("no rule at column %d of %q:\n%s", at, line, w.screen())
-			}
 		}
 	}
 	return nil

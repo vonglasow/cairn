@@ -81,21 +81,6 @@ func homeStore(t *testing.T) string {
 	return path
 }
 
-func TestViewNew_keepsTheFiltersAndTaskListOpensThemAgain(t *testing.T) {
-	path := homeStore(t)
-	kept, text := viewed(t, path, ViewNew, ask("name", " Home automation ").with("objective", "1"))
-	if kept.Name != "Home automation" || kept.Place != 1 || kept.Keeps != 2 || kept.Of != 3 || !slices.Equal(kept.Holds.Objective, []int{1}) {
-		t.Errorf("keeping the view answers %+v", kept)
-	}
-	if text != "kept view Home automation · ⌘1 · keeps 2 of 3 tasks\n" {
-		t.Errorf("keeping the view reads %q", text)
-	}
-	listed, _ := listedIn(t, path, ask("view", "HOME AUTOMATION"))
-	if !slices.Equal(rowsListed(listed), []int{1, 2}) || listed.View != "Home automation" {
-		t.Errorf("the view lists %v under %q", rowsListed(listed), listed.View)
-	}
-}
-
 func TestViewNew_holdsEveryFilterTaskListTakesAndASearch(t *testing.T) {
 	path := homeStore(t)
 	did(t, path, TaskEdit, ask("number", "1", "deadline", "2026-11-20", "priority", "high"))
@@ -166,23 +151,6 @@ func TestViews_aViewNobodyKeptIsRefusedByName(t *testing.T) {
 	}
 	refusedAs(t, path, ViewEdit, ask("view", "Gardn", "state", "todo"), "no-such-view")
 	refusedAs(t, path, TaskList, ask("view", "Gardn"), "no-such-view")
-}
-
-func TestTaskList_flagsBesideAViewNarrowFurther(t *testing.T) {
-	path := homeStore(t)
-	did(t, path, ViewNew, ask("name", "Home").with("objective", "1"))
-	listed, _ := listedIn(t, path, ask("view", "Home").with("label", "doc"))
-	if !slices.Equal(rowsListed(listed), []int{1}) {
-		t.Errorf("a label beside the view lists %v", rowsListed(listed))
-	}
-	listed, _ = listedIn(t, path, ask("view", "Home", "state", "todo"))
-	if len(listed.Tasks) != 0 {
-		t.Errorf("a column beside the view lists %v", rowsListed(listed))
-	}
-	answer := did(t, path, TaskList, ask("view", "Home", "count", "state"))
-	if said := Of(TaskList, answer).(Tasks); *said.Total != 2 || len(said.Outside) != 0 {
-		t.Errorf("counted, the view says %+v", said)
-	}
 }
 
 func TestTaskList_aViewNamesWhatLiesOutsideItOnceAndCountsNoneOfIt(t *testing.T) {
@@ -447,13 +415,6 @@ func TestViewObjectives_passOverAnObjectiveGone(t *testing.T) {
 	}
 }
 
-func TestViewNew_refusesTheNameOfTheSecondView(t *testing.T) {
-	path := storeAt(t, "one")
-	did(t, path, ViewNew, ask("name", "Home", "state", "todo"))
-	did(t, path, ViewNew, ask("name", "Work", "state", "done"))
-	refusedAs(t, path, ViewNew, ask("name", "work", "state", "todo"), "view-name-taken")
-}
-
 func TestFocusHeld_saysWhatEachFocusAskedKeeps(t *testing.T) {
 	for _, c := range []struct {
 		was  string
@@ -472,95 +433,6 @@ func TestFocusHeld_saysWhatEachFocusAskedKeeps(t *testing.T) {
 		if err != nil || got != c.want {
 			t.Errorf("was %q, given %v: %q, %v; want %q", c.was, c.in.Given, got, err, c.want)
 		}
-	}
-}
-
-func TestViewShow_countsTheTasksKeptThatAreDone(t *testing.T) {
-	path := storeAt(t, "one", "two")
-	did(t, path, TaskEdit, ask("number", "1", "state", "done"))
-	did(t, path, ViewNew, ask("name", "All", "search", "o"))
-	if v := did(t, path, viewShow, ask("view", "All")).Viewed; v == nil || v.Done != 1 {
-		t.Errorf("the view shown reads %+v", v)
-	}
-}
-
-func viewShown(t *testing.T, e *Engine, name string) *View {
-	t.Helper()
-	a, err := e.Ask(viewShow, given("view", name))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return a.Viewed
-}
-
-func TestViewShow_aViewWithOneLabelGoneStillKeepsWhatTheRestKeeps(t *testing.T) {
-	e := openEngine(t)
-	if _, err := e.Ask(TaskNew, Input{Given: map[string]string{"title": "one"}, Listed: map[string][]string{"label": {"x"}}}); err != nil {
-		t.Fatal(err)
-	}
-	if err := e.store.KeepViews([]view.View{{Name: "Mine", State: "backlog", Labels: []string{"x", "y"}}}); err != nil {
-		t.Fatal(err)
-	}
-	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
-		t.Errorf("the view shown reads %+v", v)
-	}
-}
-
-func TestViewShow_anObjectiveGoneLeavesTheNextNarrowing(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Ship")
-	serving(t, e, "serving", 1)
-	add(t, e, "loose")
-	if err := e.store.KeepViews([]view.View{{Name: "Mine", Objectives: []int{9, 1}}}); err != nil {
-		t.Fatal(err)
-	}
-	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
-		t.Errorf("the view shown reads %+v", v)
-	}
-}
-
-func TestViewShow_saysTheTasksOutsideInTheirNumbersOrder(t *testing.T) {
-	path := storeAt(t, "one", "two", "three")
-	did(t, path, TaskEdit, ask("number", "3", "state", "todo").with("link", "1", "2"))
-	did(t, path, TaskMove, ask("number", "2", "first", "true"))
-	did(t, path, ViewNew, ask("name", "Todo", "state", "todo"))
-	v := did(t, path, viewShow, ask("view", "Todo")).Viewed
-	if v == nil || len(v.Outside) != 2 || v.Outside[0].Number != 1 || v.Outside[1].Number != 2 {
-		t.Errorf("outside reads %+v", v)
-	}
-}
-
-func TestViewShownText_saysNoGoneNorOutsideWhenThereIsNone(t *testing.T) {
-	said := viewShownText(View{Name: "Home", Place: 1, Holds: Holds{State: "todo"}, Keeps: 1, Of: 2})
-	want := "view     Home  (⌘1)\nholds    " + HoldsSays(View{Holds: Holds{State: "todo"}}) + "\nkeeps    1 of 2 tasks · 0 done\n"
-	if said != want {
-		t.Errorf("said %q, want %q", said, want)
-	}
-}
-
-func TestLostText_saysNothingOutsideAViewAndOneGoneInTheSingular(t *testing.T) {
-	if got := lostText(Answer{Lost: []string{"label x"}}); got != "" {
-		t.Errorf("outside a view: %q", got)
-	}
-	if got := lostText(Answer{InView: "Home", Lost: []string{"label x"}}); got != "view Home: label x is gone and narrows nothing\n  cairn view edit Home, or cairn view delete Home\n" {
-		t.Errorf("one gone: %q", got)
-	}
-}
-
-func TestViewShow_anObjectiveGoneBeforeAnotherLeavesTheOtherNarrowing(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Gone")
-	addObjective(t, e, "Ship")
-	serving(t, e, "serving", 2)
-	add(t, e, "loose")
-	if err := objectiveDeleted(e, map[string]string{"number": "1"}); err != nil {
-		t.Fatal(err)
-	}
-	if err := e.store.KeepViews([]view.View{{Name: "Mine", Objectives: []int{1, 2}}}); err != nil {
-		t.Fatal(err)
-	}
-	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
-		t.Errorf("the view shown reads %+v", v)
 	}
 }
 

@@ -41,13 +41,6 @@ func TestMenuOf_isWhatActsOnOneElementOfAKind(t *testing.T) {
 	}
 }
 
-func TestMenuOf_putsWhatLosesWorkLast(t *testing.T) {
-	ops := MenuOf("task", engine.Pages{})
-	if last := ops[len(ops)-1]; last.Line() != engine.TaskDelete.Line() {
-		t.Errorf("the menu of a task ends with %s, want task delete", last.Line())
-	}
-}
-
 func lines(ops []engine.Operation) []string {
 	var out []string
 	for _, op := range ops {

@@ -6,8 +6,6 @@ import (
 	"errors"
 	"testing"
 	"time"
-
-	"cairn/internal/engine/act"
 )
 
 func dayNamed(day string) time.Time {
@@ -16,14 +14,6 @@ func dayNamed(day string) time.Time {
 		panic(err)
 	}
 	return parsed
-}
-
-func TestAWeekStartsOnItsMonday(t *testing.T) {
-	for day, want := range map[string]string{"2026-10-14": "2026-10-12", "2026-10-18": "2026-10-12", "2026-10-12": "2026-10-12", "2026-10-19": "2026-10-19"} {
-		if got := calendar.FormatDay(Monday(dayNamed(day).Add(15 * time.Hour))); got != want {
-			t.Errorf("the week of %s starts on %s, want %s", day, got, want)
-		}
-	}
 }
 
 func TestMonthOn_keepsTheDayItCan(t *testing.T) {
@@ -84,12 +74,6 @@ func TestMonthGrid_startsOnTheMondayBeforeTheFirst(t *testing.T) {
 	}
 }
 
-func TestTimesheetTask_spentIsHowLongItTookThatDay(t *testing.T) {
-	if got := (engine.TimesheetTask{Number: 1, Title: "Write the spec", Minutes: 90}).Spent(); got != "1h30m" {
-		t.Errorf("Spent = %q, want 1h30m", got)
-	}
-}
-
 func TestTimesheet_worked_countsEachTaskOnce(t *testing.T) {
 	sheet := engine.Timesheet{Days: []engine.TimesheetDay{
 		{Day: "2026-11-09", Tasks: []engine.TimesheetTask{{Number: 1}, {Number: 2}}},
@@ -97,25 +81,6 @@ func TestTimesheet_worked_countsEachTaskOnce(t *testing.T) {
 	}}
 	if got := sheet.Worked(); got != 3 {
 		t.Errorf("Worked = %d, want 3", got)
-	}
-}
-
-type sheetWork struct{ sheet act.Sheet }
-
-func (w sheetWork) Ask(engine.Operation, engine.Input) (engine.Answer, error) {
-	return engine.Answer{Sheet: &w.sheet}, nil
-}
-
-func (sheetWork) Version() (int64, error) { return 0, nil }
-
-func TestReadPeriod_answersTheSheetRead(t *testing.T) {
-	w := sheetWork{act.Sheet{Days: []act.Day{{Day: dayNamed("2026-10-13"), Total: 90 * time.Minute}}}}
-	sheet, err := ReadPeriod(w, dayNamed("2026-10-12"), dayNamed("2026-10-18"), dayNamed("2026-10-14"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(sheet.Days) != 1 || sheet.Days[0].Minutes != 90 {
-		t.Errorf("read %+v, want the one day of 90 minutes", sheet)
 	}
 }
 

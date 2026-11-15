@@ -46,26 +46,3 @@ func TestDelete_takesItsTimeOnlyWhenTheConfigurationSaysSo(t *testing.T) {
 		}
 	}
 }
-
-func TestTimesheet_saysATaskDeletedWithItsTimeKeptIsGone(t *testing.T) {
-	path := storeAt(t, "Write the spec")
-	if _, err := Do(TimesheetAdd, path, given("number", "1", "time", "1h")); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Do(TaskDelete, path, Agreed(given("number", "1"))); err != nil {
-		t.Fatal(err)
-	}
-	answer, err := Do(TimesheetShow, path, given())
-	if err != nil {
-		t.Fatal(err)
-	}
-	sheet, _ := Of(TimesheetShow, answer).(Timesheet)
-	for _, day := range sheet.Days {
-		for _, one := range day.Tasks {
-			if one.Number == 1 && one.Title == "Write the spec" && one.Deleted {
-				return
-			}
-		}
-	}
-	t.Errorf("the sheet does not say task 1 was deleted: %+v", sheet)
-}

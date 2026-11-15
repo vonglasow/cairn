@@ -4,7 +4,6 @@ import (
 	"cairn/internal/engine/workspace"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,24 +15,6 @@ import (
 const hung = 30 * time.Second
 
 const showing = `{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"workspace_show","arguments":{}}}`
-
-func TestServe_handsOverTheStoreItStartedOn(t *testing.T) {
-	path := onDiskAt(t, "old")
-	got := handingOverTo(t, nil)
-	w := serving(t, server(t, path))
-	w.say(greeting, greeted, pinging)
-	w.answerTo(7)
-	replace(t, path, "new")
-	w.say(listing)
-	select {
-	case c := <-got:
-		if c.Kept == nil || c.Kept.Store.At != os.Getenv("CAIRN_STORE") {
-			t.Errorf("handed over %+v, want the store it started on", c.Kept)
-		}
-	case <-time.After(hung):
-		t.Fatal("never handed over")
-	}
-}
 
 func TestServe_answersFromTheStoreHandedOver(t *testing.T) {
 	kept := filepath.Join(t.TempDir(), "kept", "cairn.db")

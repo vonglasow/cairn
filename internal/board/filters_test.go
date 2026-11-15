@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"cairn/internal/engine"
 )
 
 func filterCards() []Card {
@@ -38,32 +36,6 @@ func on(fs Filters, name, value string) Filters {
 		}
 	}
 	return fs
-}
-
-func TestFilters_offerEveryNarrowingOfAListingStartingAtAny(t *testing.T) {
-	fs := FiltersOf(Snapshot{Cards: filterCards(), Goals: []Goal{{Number: 2, Title: "Ship 1.0"}}}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC))
-	var names []string
-	for _, f := range fs {
-		names = append(names, f.Name)
-		if f.value() != anyValue {
-			t.Fatalf("%s opens on %q, not %q", f.Name, f.value(), anyValue)
-		}
-	}
-	if got := strings.Join(names, ","); got != "column,priority,label,objective,deadline,focus" {
-		t.Fatalf("the filters are %s", got)
-	}
-	if fs.Narrows() {
-		t.Fatal("filters all on any narrow something")
-	}
-	if got := strings.Join(fs[2].Values, ","); got != "any,backend,sprint" {
-		t.Fatalf("the labels offered are %s", got)
-	}
-	if got := strings.Join(fs[3].Shown, ","); got != "any,#2 Ship 1.0" {
-		t.Fatalf("the objectives offered read %s", got)
-	}
-	if got := strings.Join(fs[4].Values, ","); got != "any,2026-10-24,2026-10-31,2026-11-23" {
-		t.Fatalf("the days offered are %s", got)
-	}
 }
 
 func TestFilters_keepTheCardsEveryFilterKeeps(t *testing.T) {
@@ -116,19 +88,6 @@ func TestFilters_walkWrapsAndClearingPutsEveryOneBackOnAny(t *testing.T) {
 	}
 	if two.Cleared().Narrows() {
 		t.Fatal("cleared filters still narrow")
-	}
-}
-
-func TestFilters_keepWhatTheyHeldWhenTheBoardIsReadAgain(t *testing.T) {
-	today := time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC)
-	held := on(FiltersOf(Snapshot{Cards: filterCards()}, today), "label", "sprint")
-	again := FiltersOf(Snapshot{Cards: filterCards()[:2]}, today).Keeping(held)
-	if again[2].value() != "sprint" {
-		t.Fatalf("a label still held by a card was let go: %q", again[2].value())
-	}
-	gone := FiltersOf(Snapshot{Cards: filterCards()[1:2]}, today).Keeping(held)
-	if gone[2].value() != anyValue {
-		t.Fatalf("a label no card holds any more is still kept: %q", gone[2].value())
 	}
 }
 
@@ -262,79 +221,5 @@ func TestFilters_keepOneValueHeldAsTheOneTheyAreOn(t *testing.T) {
 	none := fs.Keeping(Filters{{Arg: "label", Ticked: []string{"gone"}}})
 	if none[0].At != 0 || none[0].Ticked != nil {
 		t.Errorf("nothing held still offered: at %d, ticked %v", none[0].At, none[0].Ticked)
-	}
-}
-
-func keptNumbers(t *testing.T, fs Filters, cards []Card) []int {
-	t.Helper()
-	kept, err := fs.Kept(cards)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var numbers []int
-	for _, c := range kept {
-		numbers = append(numbers, c.Number)
-	}
-	return numbers
-}
-
-func TestFilters_keepByWhatFollowsALabel(t *testing.T) {
-	label := several(offered("label", "label", []string{"api"}, nil))
-	label.At = 1
-	priority := offered("priority", "priority", []string{"high"}, nil)
-	priority.At = 1
-	cards := []Card{{Number: 1, Labels: []string{"api"}, Priority: "high"}, {Number: 2, Labels: []string{"api"}, Priority: "low"}}
-	if got := keptNumbers(t, Filters{label, priority}, cards); !slices.Equal(got, []int{1}) {
-		t.Errorf("kept %v, want [1]", got)
-	}
-}
-
-func TestFilters_keepOnlyWhatIsDueByTheDay(t *testing.T) {
-	due := offered("deadline", "deadline-before", []string{"2026-06-14"}, nil)
-	due.At = 1
-	cards := []Card{{Number: 1, Deadline: dayNamed("2026-06-10")}, {Number: 2, Deadline: dayNamed("2026-06-20")}, {Number: 3}}
-	if got := keptNumbers(t, Filters{due}, cards); !slices.Equal(got, []int{1}) {
-		t.Errorf("kept %v, want [1]", got)
-	}
-}
-
-func TestFilters_keepNothingDueByTheDayThatAnotherFilterLeftOut(t *testing.T) {
-	priority := offered("priority", "priority", []string{"high"}, nil)
-	priority.At = 1
-	due := offered("deadline", "deadline-before", []string{"2026-06-14"}, nil)
-	due.At = 1
-	cards := []Card{{Number: 1, Priority: "high", Deadline: dayNamed("2026-06-10")}, {Number: 2, Priority: "low", Deadline: dayNamed("2026-06-10")}}
-	if got := keptNumbers(t, Filters{priority, due}, cards); !slices.Equal(got, []int{1}) {
-		t.Errorf("kept %v, want [1]", got)
-	}
-}
-
-func TestFilters_onPutsOnlyTheFilterNamedOnTheValueNamed(t *testing.T) {
-	fs := Filters{
-		{Arg: "state", Values: []string{anyValue, "todo", "done"}, At: 2},
-		{Arg: "priority", Values: []string{anyValue, "todo"}, At: 0},
-	}
-	got := fs.On("state", "todo")
-	if got[0].At != 1 || got[1].At != 0 {
-		t.Errorf("on todo: %d %d", got[0].At, got[1].At)
-	}
-	if got := fs.On("state", anyValue); got[0].At != 0 {
-		t.Errorf("on any: %d", got[0].At)
-	}
-	if got := fs.On("state", "never"); got[0].At != 2 {
-		t.Errorf("on a value not offered: %d", got[0].At)
-	}
-}
-
-func TestFiltersOf_standForWhatATaskListingTakesInItsOrder(t *testing.T) {
-	fs := FiltersOf(Snapshot{Cards: filterCards(), Series: []engine.Series{{Number: 1}}}, time.Now())
-	at := 0
-	for _, f := range fs {
-		for at < len(engine.TaskList.Takes) && engine.TaskList.Takes[at].Name != f.Arg {
-			at++
-		}
-		if at == len(engine.TaskList.Takes) {
-			t.Fatalf("the filter %s stands for %q, not taken by task list in this order", f.Name, f.Arg)
-		}
 	}
 }

@@ -112,10 +112,8 @@ func (g Givens) ViewsRead(list string) error {
 
 func (g Givens) registerViews(sc *godog.ScenarioContext) {
 	sc.Step(`^I kept the view "([^"]*)" holding the (label|objective|priority) "([^"]*)"$`, g.IKeptTheViewHolding)
-	sc.Step(`^I linked task (\d+) to task (\d+)$`, g.ILinkedTaskTo)
 	sc.Step(`^I deleted the label "([^"]*)"$`, g.IDeletedTheLabel)
 	sc.Then(`^the view "([^"]*)" holds the (label|priority) "([^"]*)"$`, g.ViewHolds)
 	sc.Then(`^the view "([^"]*)" holds objective (\d+)$`, g.ViewHoldsObjective)
-	sc.Then(`^the view "([^"]*)" holds no label$`, g.ViewHoldsNoLabel)
 	sc.Then(`^the views read (".*")$`, g.ViewsRead)
 }

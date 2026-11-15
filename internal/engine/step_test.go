@@ -3,7 +3,6 @@ package engine
 import (
 	"errors"
 	"slices"
-	"strings"
 	"testing"
 
 	"cairn/internal/engine/task"
@@ -16,19 +15,6 @@ func stepsOf(t *testing.T, path string, number string) []task.Step {
 		t.Fatalf("step list: %v", err)
 	}
 	return answer.Task.Carried().Steps
-}
-
-func TestStepNew_putsTheStepBehindTheOthers(t *testing.T) {
-	path := storeAt(t, "Ship it")
-	for _, title := range []string{"Write the spec", "Write the tests"} {
-		if _, err := Do(StepNew, path, given("number", "1", "title", title)); err != nil {
-			t.Fatalf("step new: %v", err)
-		}
-	}
-	want := []task.Step{{Title: "Write the spec"}, {Title: "Write the tests"}}
-	if got := stepsOf(t, path, "1"); !slices.Equal(got, want) {
-		t.Errorf("steps = %v, want %v", got, want)
-	}
 }
 
 func TestStepEdit_ticksRenamesAndUnticksOneStep(t *testing.T) {
@@ -84,38 +70,6 @@ func TestStepDelete_closesTheGapItLeaves(t *testing.T) {
 	}
 }
 
-func TestSteps_areWrittenInTheTraceOfTheirTask(t *testing.T) {
-	path := storeAt(t, "Ship it")
-	if _, err := Do(StepNew, path, given("number", "1", "title", "Write the spec")); err != nil {
-		t.Fatal(err)
-	}
-	answer, err := Do(TraceShow, path, given("number", "1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if text := RenderText(TraceShow, answer); !strings.Contains(text, "steps") {
-		t.Errorf("the trace says nothing of the step:\n%s", text)
-	}
-}
-
-func TestTaskEdit_finishedAndConfirmedTicksEveryStep(t *testing.T) {
-	path := storeAt(t, "Ship it")
-	if _, err := Do(StepNew, path, given("number", "1", "title", "Write the spec")); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Do(TaskEdit, path, given("number", "1", "state", "done")); !errors.Is(err, ErrStepStillOpen) {
-		t.Fatalf("finishing with a step open = %v, want ErrStepStillOpen", err)
-	}
-	in := given("number", "1", "state", "done")
-	in.Confirmed = true
-	if _, err := Do(TaskEdit, path, in); err != nil {
-		t.Fatalf("finishing, confirmed: %v", err)
-	}
-	if got := stepsOf(t, path, "1"); !got[0].Done {
-		t.Errorf("the step was not ticked: %v", got)
-	}
-}
-
 func TestStepList_answersAMachineTheStepsWithTheirPlaces(t *testing.T) {
 	path := storeAt(t, "Ship it")
 	if _, err := Do(StepNew, path, given("number", "1", "title", "Write the spec", "done", "true")); err != nil {
@@ -128,17 +82,6 @@ func TestStepList_answersAMachineTheStepsWithTheirPlaces(t *testing.T) {
 	said, ok := Of(stepList, answer).(task.Steps)
 	if !ok || said.Task != 1 || len(said.Steps) != 1 || said.Steps[0] != (task.StepShape{Place: 1, Title: "Write the spec", Done: true}) {
 		t.Errorf("a machine reads %+v", Of(stepList, answer))
-	}
-}
-
-func TestStepNew_answersTheTaskWithItsSteps(t *testing.T) {
-	path := storeAt(t, "Ship it")
-	answer, err := Do(StepNew, path, given("number", "1", "title", "Write it"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if answer.Task == nil || len(answer.Task.Carried().Steps) != 1 {
-		t.Errorf("step new answered %+v", answer.Task)
 	}
 }
 

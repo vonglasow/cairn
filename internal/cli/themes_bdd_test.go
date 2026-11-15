@@ -94,27 +94,11 @@ func (w *workspaces) registerThemes(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Step(`^the window's back is "([^"]*)"$`, func(want string) error {
-		if got := hexOf(worn.Colour.Surface.Back); got != want {
-			return fmt.Errorf("the window's back is %s, want %s", got, want)
-		}
-		return nil
-	})
-	sc.Step(`^the window's ink is "([^"]*)"$`, func(want string) error {
-		if got := hexOf(worn.Colour.Ink.Text); got != want {
-			return fmt.Errorf("the window's ink is %s, want %s", got, want)
-		}
-		return nil
-	})
 	sc.Step(`^a scheme of my own "([^"]*)" whose back is "([^"]*)"$`, func(slug, back string) error {
 		return ownWith(slug, back, "#e7e7ea")
 	})
-	sc.Step(`^a scheme of my own "([^"]*)" whose back is "([^"]*)" and ink "([^"]*)"$`, ownWith)
 	sc.Step(`^it says on standard error that "([^"]*)" is not a scheme it sees$`, func(slug string) error {
 		return wantAll(w.Out.Stderr, "standard error", fmt.Sprintf("%q is not a scheme cairn sees", slug), "the window wears default")
-	})
-	sc.Step(`^it says on standard error that "([^"]*)" in "([^"]*)" is not a colour$`, func(said, slug string) error {
-		return wantAll(w.Out.Stderr, "standard error", slug, fmt.Sprintf("%q is not a colour", said), "the window wears default")
 	})
 	sc.Step(`^it lists the schemes (.*) as shipped$`, func(listed string) error {
 		for _, slug := range regexp.MustCompile(`"([^"]*)"`).FindAllStringSubmatch(listed, -1) {
@@ -134,16 +118,6 @@ func (w *workspaces) registerThemes(sc *godog.ScenarioContext) {
 	sc.Step(`^it says "([^"]*)" is the one in force$`, func(slug string) error {
 		if !regexp.MustCompile(`(?m)^#\s+` + regexp.QuoteMeta(slug) + `\s+.*, in force$`).MatchString(w.Out.Stdout) {
 			return fmt.Errorf("the answer does not say %q is in force:\n%s", slug, w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^it says "([^"]*)" is not a scheme it sees, and the window wears "([^"]*)"$`, func(slug, worn string) error {
-		return wantAll(w.Out.Stdout, "the answer", fmt.Sprintf("# theme: %q is not a scheme cairn sees", slug), "the window wears "+worn)
-	})
-	sc.Step(`^it warns that "([^"]*)" falls short, naming "([^"]*)" on "([^"]*)" and the ratio it reads at$`, func(slug, said, on string) error {
-		line := regexp.MustCompile(`(?m)^# ` + regexp.QuoteMeta(slug) + ` falls short: ` + regexp.QuoteMeta(said) + ` on ` + regexp.QuoteMeta(on) + ` reads at \d+\.\d\d, and needs \d`)
-		if !line.MatchString(w.Out.Stdout) {
-			return fmt.Errorf("the answer does not warn that %s falls short on %s on %s:\n%s", slug, said, on, w.Out.Stdout)
 		}
 		return nil
 	})

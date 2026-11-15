@@ -97,15 +97,11 @@ func Locate(h Home) (Places, error) {
 	if err != nil {
 		return Places{}, err
 	}
-	notes := answers.Notes.At
-	if !filepath.IsAbs(notes) {
-		notes = ""
-	}
 	plugin := found.Plugin()
 	if plugin == "" {
 		plugin = app.PluginBeside(answers.Store.At)
 	}
-	return Places{Store: answers.Store.At, Notes: notes, Plugin: plugin, Home: h}, nil
+	return Places{Store: answers.Store.At, Notes: answers.Notes.At, Plugin: plugin, Home: h}, nil
 }
 
 func (h Home) configuration() (files.Places, error) {

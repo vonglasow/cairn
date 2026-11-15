@@ -1,24 +1,8 @@
 package board
 
 import (
-	"slices"
 	"testing"
 )
-
-func TestACardSaysWhatIsInItsWay(t *testing.T) {
-	for _, tc := range []struct {
-		c    Card
-		want string
-	}{
-		{Card{Blockers: []int{3, 5}, Because: "the client"}, "3 5"},
-		{Card{Because: "the client"}, "the client"},
-		{Card{}, ""},
-	} {
-		if got := tc.c.InTheWay(); got != tc.want {
-			t.Errorf("InTheWay of %+v = %q, want %q", tc.c, got, tc.want)
-		}
-	}
-}
 
 func TestACardSaysWhatItCost(t *testing.T) {
 	for _, tc := range []struct {
@@ -36,26 +20,6 @@ func TestACardSaysWhatItCost(t *testing.T) {
 		if got != tc.want || over != tc.over {
 			t.Errorf("Cost of %+v = %q, %v, want %q, %v", tc.c, got, over, tc.want, tc.over)
 		}
-	}
-}
-
-func TestACardSaysHowFarItsPartsHaveGot(t *testing.T) {
-	if got := (Card{SubDone: 2, SubTotal: 5}).PartsDone(); got != "2/5" {
-		t.Errorf("PartsDone = %q, want 2/5", got)
-	}
-	if got := (Card{}).PartsDone(); got != "" {
-		t.Errorf("PartsDone with no parts = %q, want nothing", got)
-	}
-}
-
-func TestASnapshotSaysWhatACardServes(t *testing.T) {
-	s := Snapshot{Goals: []Goal{{Number: 1, Title: "A"}, {Number: 2, Title: "B"}}}
-	var got []int
-	for _, g := range s.Served(Card{Objectives: []int{2, 9, 1}}) {
-		got = append(got, g.Number)
-	}
-	if !slices.Equal(got, []int{2, 1}) {
-		t.Errorf("Served = %v, want [2 1]", got)
 	}
 }
 

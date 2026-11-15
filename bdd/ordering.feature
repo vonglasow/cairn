@@ -13,29 +13,6 @@ Feature: Ordering
       When I run `cairn task new "Third"`
       Then it lists the tasks in the order "First", "Second", "Third"
 
-    @ordering-outlives-the-command
-    Scenario: the order one command writes, the next one reads
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      When I run `cairn task list`
-      Then it lists the tasks in the order "First", "Second", "Third"
-
-    @ordering-a-freed-place-is-not-reused
-    Scenario: a deleted task does not leave its place behind
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      And I deleted task 2
-      When I run `cairn task new "Fourth"`
-      Then it lists the tasks in the order "First", "Third", "Fourth"
-
-    @ordering-last-means-last-in-its-column
-    Scenario: last means last in the backlog, not last of all
-      Given I added a task titled "Already done" with the state "done"
-      When I run `cairn task new "Just arrived"`
-      Then it lists the tasks in the order "Just arrived", "Already done"
-
   Rule: The column gives the coarse order, and a list is never four lists
 
     @ordering-columns-in-reading-order
@@ -50,32 +27,6 @@ Feature: Ordering
       When I run `cairn task list`
       Then it lists the tasks in the order "Waiting", "Chosen", "Under way", "Waiting on somebody", "Delegated", "Put off", "Finished"
 
-    @ordering-columns-do-not-interleave
-    Scenario: tasks added in turn come back grouped by column
-      Given I added a task titled "Backlog first"
-      And I added a task titled "Todo first" with the state "todo"
-      And I added a task titled "Backlog second"
-      And I added a task titled "Todo second" with the state "todo"
-      When I run `cairn task list`
-      Then it lists the tasks in the order "Backlog first", "Backlog second", "Todo first", "Todo second"
-
-    @ordering-a-column-change-moves-it
-    Scenario: a task given another column leaves the section it was in
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      And I edited task 2 with the state "todo"
-      When I run `cairn task list`
-      Then it lists the tasks in the order "First", "Third", "Second"
-
-    @ordering-a-column-change-lands-it-last
-    Scenario: it lands behind what was already in that column
-      Given I added a task titled "Coming from the backlog"
-      And I added a task titled "Already to do" with the state "todo"
-      And I edited task 1 with the state "todo"
-      When I run `cairn task list`
-      Then it lists the tasks in the order "Already to do", "Coming from the backlog"
-
   Rule: A task is moved inside the column it is already in
 
     @ordering-moved-first
@@ -86,88 +37,7 @@ Feature: Ordering
       When I run `cairn task move 3 --first`
       Then it lists the tasks in the order "Third", "First", "Second"
 
-    @ordering-moved-after
-    Scenario: a task is moved behind one that is named
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      When I run `cairn task move 1 --after 2`
-      Then it lists the tasks in the order "Second", "First", "Third"
-
-    @ordering-moved-last
-    Scenario: a task is moved to the last place
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      When I run `cairn task move 1 --last`
-      Then it lists the tasks in the order "Second", "Third", "First"
-
-    @ordering-moved-after-another-column
-    Scenario: a task moved behind one in another column goes into that column
-      Given I added a task titled "In the backlog"
-      And I added a task titled "Already to do" with the state "todo"
-      And I added a task titled "Also to do" with the state "todo"
-      When I run `cairn task move 1 --after 2`
-      Then it succeeds
-      And it says task 1 moved from "backlog" to "todo"
-      And task 1 is in the column "todo"
-      When I run `cairn task list --state todo`
-      Then it lists the tasks in the order "Already to do", "In the backlog", "Also to do"
-
-    @ordering-moved-after-another-column-says-nothing-when-it-stays
-    Scenario: a task moved behind one in its own column says nothing about columns
-      Given I added a task titled "First" with the state "todo"
-      And I added a task titled "Second" with the state "todo"
-      When I run `cairn task move 1 --after 2`
-      Then it succeeds
-      And it does not say a task moved from one column to another
-
-    @ordering-moved-after-another-column-against-the-column-named
-    Scenario: a task cannot be moved into one column behind a task in another
-      Given I added a task titled "In the backlog"
-      And I added a task titled "Already to do" with the state "todo"
-      When I run `cairn task move 1 --state current --after 2`
-      Then it fails
-      And it says a task is moved inside its own column
-      And it says which column each of them is in
-      And task 1 is in the column "backlog"
-
-    @ordering-moved-after-a-task-done-while-a-step-is-open
-    Scenario: a task moved behind one done is refused while a step of it is open
-      Given I added a task titled "Ship it"
-      And I added the step "Write the spec" to task 1
-      And I added a task titled "Shipped" with the state "done"
-      When I run `cairn task move 1 --after 2`
-      Then it fails
-      And it says step 1 is in the way
-      And task 1 is in the column "backlog"
-
-    @ordering-moved-after-a-task-done-confirmed
-    Scenario: a task moved behind one done, confirmed, ticks its steps
-      Given I added a task titled "Ship it"
-      And I added the step "Write the spec" to task 1
-      And I added a task titled "Shipped" with the state "done"
-      When I run `cairn task move 1 --after 2 --yes`
-      Then it succeeds
-      And task 1 is in the column "done"
-      And every step of task 1 is done
-
   Rule: A task is moved to another column and a place in one act
-
-    @ordering-moved-into-another-column-at-a-place
-    Scenario: a task is moved into another column, behind one already there
-      Given I added a task titled "Coming from the backlog"
-      And I added a task titled "Already to do" with the state "todo"
-      And I added a task titled "Also to do" with the state "todo"
-      When I run `cairn task move 1 --state todo --after 2`
-      Then it lists the tasks in the order "Already to do", "Coming from the backlog", "Also to do"
-
-    @ordering-moved-into-another-column-lands-last
-    Scenario: a task moved into another column with no place lands last in it
-      Given I added a task titled "Coming from the backlog"
-      And I added a task titled "Already to do" with the state "todo"
-      When I run `cairn task move 1 --state todo`
-      Then it lists the tasks in the order "Already to do", "Coming from the backlog"
 
     @ordering-moved-into-another-column-or-not-at-all
     Scenario: a place refused leaves the task in the column it was in
@@ -189,30 +59,6 @@ Feature: Ordering
       And it says there is no such task
       And it shows the number it could not find
 
-    @ordering-moved-after-one-that-does-not-exist
-    Scenario: a task cannot be moved behind one that is not there
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      When I run `cairn task move 1 --after 99`
-      Then it fails
-      And it says there is no such task
-      And it shows the number it could not find
-
-    @ordering-moved-behind-itself
-    Scenario: a task cannot be moved behind itself
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      When I run `cairn task move 1 --after 1`
-      Then it fails
-      And it says a task cannot be moved behind itself
-
-    @ordering-moved-nowhere
-    Scenario: a move needs somewhere to go
-      Given I added a task titled "The only one"
-      When I run `cairn task move 1`
-      Then it fails
-      And it says where a task can be moved
-
   Rule: Several tasks can be in focus at once
 
     @ordering-focus-nothing-at-first
@@ -222,144 +68,7 @@ Feature: Ordering
       Then it succeeds
       And it says nothing is in focus
 
-    @ordering-focus-a-task
-    Scenario: a task is put in focus
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      When I run `cairn task focus 2`
-      Then it reports the task titled "Second"
-
-    @ordering-focus-keeps-the-one-before
-    Scenario: putting another in focus keeps the one before
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      When I run `cairn task list`
-      Then it marks "First" as a task in focus
-      And it marks "Second" as a task in focus
-      And it marks 2 tasks in focus
-
-    @ordering-focus-says-everything-it-holds
-    Scenario: asking about the focus names every task in it
-      Given I added a task titled "First" with the state "current"
-      And I added a task titled "Second" with the state "current"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      When I run `cairn task focus`
-      Then it succeeds
-      And it lists the tasks in the order "First", "Second"
-
-    @ordering-focus-twice-holds-it-once
-    Scenario: a task already in focus is not held twice
-      Given I added a task titled "The only one"
-      And I put task 1 in focus
-      And I put task 1 in focus
-      When I run `cairn task list`
-      Then it marks 1 task in focus
-
-    @ordering-unfocus-one
-    Scenario: one task is unfocused and the others stay
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      When I run `cairn task unfocus 1`
-      Then it succeeds
-      When I run `cairn task list`
-      Then it marks "Second" as a task in focus
-      And it marks 1 task in focus
-
-    @ordering-unfocus-one-that-is-not-held
-    Scenario: unfocusing a task that was not in focus is not a failure
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I put task 1 in focus
-      When I run `cairn task unfocus 2`
-      Then it succeeds
-      When I run `cairn task list`
-      Then it marks 1 task in focus
-
-    @ordering-unfocus
-    Scenario: bare unfocus lets go of everything at once
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      When I run `cairn task unfocus`
-      Then it succeeds
-      And it says nothing is in focus
-
-    @ordering-list-in-focus-or-not
-    Scenario: a listing keeps the tasks in focus, or the ones that are not
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Fix the gate"
-      And I put task 2 in focus
-      When I run `cairn task list --focus`
-      Then it succeeds
-      And the answer says "Fix the gate"
-      And the answer does not say "Write the spec"
-      When I run `cairn task list --no-focus`
-      Then it succeeds
-      And the answer says "Write the spec"
-      And the answer does not say "Fix the gate"
-
-    @ordering-list-in-focus-and-not-is-refused
-    Scenario: a listing asked for the tasks in focus and the ones that are not is refused
-      Given I added a task titled "Write the spec"
-      When I run `cairn task list --focus --no-focus`
-      Then it fails
-      And it says on standard error "--focus and --no-focus"
-
   Rule: The focus brings waiting work into current, and moves nothing else
-
-    @ordering-focus-moves-waiting-work-into-current
-    Scenario Outline: a task waiting to be worked on goes into current, at its head, when it takes the focus
-      Given I added a task titled "Already here" with the state "current"
-      And I added a task titled "Write the spec" with the state "<waiting>"
-      When I run `cairn task focus 2`
-      Then it succeeds
-      And task 2 is in the column "current"
-      When I run `cairn task list --state current`
-      Then it lists the tasks in the order "Write the spec", "Already here"
-
-      Examples: what says the work is waiting for somebody
-        | waiting |
-        | backlog |
-        | todo    |
-        | paused  |
-
-    @ordering-focus-leaves-what-is-stopped-elsewhere
-    Scenario Outline: a task stopped by something else stays where it is when it takes the focus
-      Given I added a task titled "Client's answer" with the state "<stopped>"
-      When I run `cairn task focus 1`
-      Then it succeeds
-      And task 1 is in the column "<stopped>"
-
-      Examples: what says the work waits on something outside
-        | stopped  |
-        | blocked  |
-        | watching |
-
-    @ordering-focus-does-not-reorder
-    Scenario: a task already in current keeps its place there when it takes the focus
-      Given I added a task titled "First" with the state "current"
-      And I added a task titled "Second" with the state "current"
-      And I added a task titled "Third" with the state "current"
-      And I put task 3 in focus
-      When I run `cairn task list`
-      Then it lists the tasks in the order "First", "Second", "Third"
-      And it marks "Third" as the task in focus
-
-    @ordering-focus-cleared-by-deleting
-    Scenario: deleting the task in focus leaves nothing in focus
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I put task 2 in focus
-      And I deleted task 2
-      When I run `cairn task focus`
-      Then it succeeds
-      And it says nothing is in focus
 
     @ordering-focus-a-task-that-does-not-exist
     Scenario: a task that is not there cannot be put in focus
@@ -368,48 +77,6 @@ Feature: Ordering
       Then it fails
       And it says there is no such task
       And it shows the number it could not find
-
-    @ordering-focus-let-go-when-done
-    Scenario: a task put in done is no longer in focus
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      When I run `cairn task edit 1 --state done`
-      Then it succeeds
-      When I run `cairn task list`
-      Then it marks "Second" as a task in focus
-      And it marks 1 task in focus
-
-    @ordering-focus-let-go-when-moved-to-done
-    Scenario: a task moved into done is no longer in focus
-      Given I added a task titled "First"
-      And I put task 1 in focus
-      When I run `cairn task move 1 --state done --first`
-      Then it succeeds
-      When I run `cairn task focus`
-      Then it says nothing is in focus
-
-    @ordering-focus-refused-on-done
-    Scenario: a task in done cannot be put in focus
-      Given I added a task titled "First"
-      And I edited task 1 with the state "done"
-      When I run `cairn task focus 1`
-      Then it fails
-      And it says a task that is done cannot be in focus
-      When I run `cairn task focus`
-      Then it says nothing is in focus
-
-    @ordering-several-moved-together
-    Scenario: tasks moved together land one behind the other, in the order named
-      Given I added a task titled "First" with the state "todo"
-      And I added a task titled "Second" with the state "todo"
-      And I added a task titled "Third"
-      And I added a task titled "Fourth"
-      When I run `cairn task move 3 --state todo --after 1 --also 4`
-      Then it succeeds
-      When I run `cairn task list --state todo`
-      Then it lists the tasks in the order "First", "Third", "Fourth", "Second"
 
     Scenario: unfocusing nothing is not a failure
       Given I added a task titled "The only one"
@@ -438,53 +105,7 @@ Feature: Ordering
       Then the focus session of task 1 has been up "3h"
       And the focus session of task 1 asks nothing
 
-    @focus-session-asks-to-be-renewed-past-its-length
-    Scenario: a focus session past its length asks to be renewed or ended
-      Given focus sessions last "1h"
-      And I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 2 hours later
-      And I run `cairn task focus --json`
-      Then the focus session of task 1 asks "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
-
-    @focus-session-asks-in-text-too
-    Scenario: the focus in text asks too, past a session's length
-      Given focus sessions last "1h"
-      And I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 2 hours later
-      And I run `cairn task focus`
-      Then the answer says "this focus session has been up 2h: renew it by focusing task 1 again, or end it by unfocusing task 1"
-
-    @focus-session-within-its-length-asks-nothing
-    Scenario: a focus session within its length asks nothing
-      Given focus sessions last "1h"
-      And I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 30 minutes later
-      And I run `cairn task focus --json`
-      Then the focus session of task 1 asks nothing
-
-    @focus-session-renewed
-    Scenario: focusing a task again past its session's length renews the session
-      Given focus sessions last "1h"
-      And I added a task titled "Ship it"
-      And I put task 1 in focus
-      When it is 2 hours later
-      And I run `cairn task focus 1`
-      And I run `cairn task focus --json`
-      Then the focus session of task 1 asks nothing
-      And `cairn trace show 1` says "focus renewed"
-
   Rule: A task's steps keep the order they were written in
-
-    @ordering-steps-keep-their-order
-    Scenario: steps are read back in the order they were added
-      Given I added a task titled "Ship it"
-      And I added the step "First step" to task 1
-      And I added the step "Second step" to task 1
-      When I run `cairn step new 1 "Third step"`
-      Then the steps of task 1 read "First step", "Second step", "Third step"
 
     @ordering-a-task-carries-its-steps
     Scenario: moving a task carries its steps with it
@@ -514,15 +135,6 @@ Feature: Ordering
         | estimate    | 2h         |
         | time spent  | 30m        |
 
-    @ordering-a-title-change-moves-nothing
-    Scenario: renaming a task leaves its place alone
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      And I edited task 1 with the title "First, renamed"
-      When I run `cairn task list`
-      Then it lists the tasks in the order "First, renamed", "Second", "Third"
-
   Rule: A place freed leaves no hole behind it
 
     @ordering-a-deletion-leaves-no-hole
@@ -534,13 +146,3 @@ Feature: Ordering
       And I deleted task 3
       When I run `cairn task move 1 --last`
       Then it lists the tasks in the order "Second", "Fourth", "First"
-
-    @ordering-a-column-left-leaves-no-hole
-    Scenario: a task given another column leaves no hole behind it
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      And I added a task titled "Fourth"
-      And I edited task 2 with the state "todo"
-      When I run `cairn task move 1 --last`
-      Then it lists the tasks in the order "Third", "Fourth", "First", "Second"

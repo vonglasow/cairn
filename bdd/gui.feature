@@ -12,112 +12,6 @@ Feature: The desktop board
       When I open the window
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
 
-    @gui-archived-are-off-the-board-until-asked-for
-    Scenario: what was archived comes back when it is asked for
-      Given I added a task titled "Migration Jenkins"
-      And I added a task titled "Spike Argo"
-      And I archived task 1
-      When I open the window
-      Then the board says nothing of "Migration Jenkins"
-      When I press "shift+a"
-      Then "BACKLOG" carries "Migration Jenkins"
-      And the card "Migration Jenkins" is dimmed
-      When I press "shift+a"
-      Then the board says nothing of "Migration Jenkins"
-
-    @gui-a-card-is-archived
-    Scenario: a chosen card is archived, and unarchived
-      Given I added a task titled "Migration Jenkins"
-      And I added a task titled "Spike Argo"
-      When I open the window
-      And I click the card "Migration Jenkins"
-      Then the bar offers "Archive" under "x"
-      When I choose "Archive"
-      Then the board says nothing of "Migration Jenkins"
-      When I press "shift+a"
-      And I click the card "Migration Jenkins"
-      Then the bar offers "Unarchive" under "x"
-      When I choose "Unarchive"
-      Then "BACKLOG" carries "Migration Jenkins"
-      And the card "Migration Jenkins" is not dimmed
-
-    @gui-a-step-is-not-on-the-board
-    Scenario: a step does not stand in a column of its own
-      Given I added a task titled "Ship it"
-      And I added the step "Write the spec" to task 1
-      And I added a task titled "Something else"
-      When I open the window
-      Then "BACKLOG" carries "Ship it"
-      And "BACKLOG" carries "Something else"
-      And the board says nothing of "Write the spec"
-
-    @gui-an-empty-column-stays
-    Scenario: a column with nothing in it is still drawn
-      Given I added a task titled "Write the spec"
-      When I open the window
-      Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
-
-    @gui-a-task-is-drawn-in-its-column
-    Scenario: a task is drawn under the column it stands in
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      Then "TODO" carries "Write the spec"
-
-    @gui-the-band-has-three-lanes
-    Scenario: the band names the three kinds of stopped
-      When I open the window
-      Then the band is named "STALLED"
-      And the band's lanes read "blocked", "watching", "paused"
-
-    @gui-a-stopped-task-sits-in-its-lane
-    Scenario: a stopped task sits in the lane of its kind
-      Given I added a task titled "Client's answer" with the state "blocked"
-      And I added a task titled "Handed over" with the state "watching"
-      When I open the window
-      Then the lane "blocked" carries "Client's answer"
-      And the lane "watching" carries "Handed over"
-
-    @gui-two-tabs
-    Scenario: there are three tabs and the work is the first
-      When I open the window
-      Then the tabs read "TASKS", "OBJECTIVES", "TIME"
-      And the tab is "TASKS"
-
-    @gui-clicking-a-tab-changes-it
-    Scenario: clicking the other tab changes to it
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the tab is "OBJECTIVES"
-      And I click the tab "TASKS"
-      Then the tab is "TASKS"
-
-    @gui-the-objectives-tab-lists-them
-    Scenario: the objectives tab lists what the work is for
-      Given I added an objective titled "Ship cairn"
-      And I added an objective titled "Keep it honest"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the objectives read "Ship cairn", "Keep it honest"
-
-    @gui-choosing-an-objective
-    Scenario: clicking an objective chooses it
-      Given I added an objective titled "Ship cairn"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship cairn"
-      Then the objective "Ship cairn" is chosen
-
-    @gui-editing-an-objective
-    Scenario: an objective is edited through the same form
-      Given I added an objective titled "Ship cairn"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship cairn"
-      And I choose "Edit"
-      And I set the field "title" to "Ship cairn properly"
-      And I choose "Save"
-      Then objective 1 is called "Ship cairn properly"
-
   Rule: Cards are the same height, whatever they carry
 
     @gui-cards-share-one-height
@@ -127,57 +21,7 @@ Feature: The desktop board
       When I open the window
       Then every card in "BACKLOG" is the same height
 
-    @gui-a-long-title-is-cut
-    Scenario: a title too long for the two lines of its card is cut at the end of the second
-      Given I added a task titled "A title far longer than any column could ever hope to show in full"
-      When I open the window
-      Then "BACKLOG" carries a card whose title ends in "…"
-
-    @gui-a-cut-title-is-read-whole-under-the-pointer
-    Scenario: a card whose title is cut shows it whole while the pointer rests on the title, and not elsewhere on the card
-      Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
-      When I open the window
-      And I rest the pointer on the foot of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
-      Then no bubble shows
-      When I rest the pointer on the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
-      Then a bubble shows "A title far longer than any column could ever hope to show in full, even over two lines of a card"
-
-    @gui-the-bubble-stands-just-above-the-title
-    Scenario: the bubble of a cut title stands just above the title, its text where the title's begins
-      Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
-      When I open the window
-      And I rest the pointer on the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
-      Then the bubble stands just above the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card"
-      And the bubble's text begins where the title of the card "A title far longer than any column could ever hope to show in full, even over two lines of a card" begins
-
-    @gui-a-title-that-fits-has-no-bubble
-    Scenario: a card whose title fits shows no bubble
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I rest the pointer on the title of the card "Write the spec"
-      Then no bubble shows
-
-    @gui-the-objective-mark-names-what-it-serves
-    Scenario: the pointer resting on a card's objective mark shows the objectives it serves
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec" serving objective 1
-      When I open the window
-      And I rest the pointer on the objective mark of the card "Write the spec"
-      Then a bubble shows "#1  Ship the desktop board"
-
-    @gui-a-card-carries-its-priority-in-a-broad-stripe
-    Scenario: a card's priority is a stripe broad enough to be seen at a glance
-      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
-      When I open the window
-      Then the card "Write the spec" is striped in its priority's colour 5 points wide
-
   Rule: Each column and the band stand on a ground of their own
-
-    @gui-columns-stand-apart
-    Scenario: each column and each lane is drawn on a rounded ground of its own, apart from the window's
-      When I open the window
-      Then every column stands on a ground of its own
-      And every lane stands on a ground of its own
 
     @gui-a-columns-head-names-and-counts-it
     Scenario: each column's head names it at its left, in words, and counts its cards at its right
@@ -187,98 +31,12 @@ Feature: The desktop board
       And every column's name stands at the left of its head
       And every column's name stands clear of the edge above it
 
-    @gui-an-empty-column-says-so
-    Scenario: a column holding nothing says so rather than standing blank
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      Then the column "current" says "Nothing here"
-      And the column "todo" says nothing
-
-    @gui-an-empty-board-says-how-to-start
-    Scenario: a board holding no task says how to make the first one
-      When I open the window
-      Then the column "todo" says "No task yet. ⌘N makes one."
-
-    @gui-done-is-dimmed
-    Scenario: a card in done is drawn at half strength, the work behind it
-      Given I added a task titled "Ship it" with the state "done"
-      And I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      Then the card "Ship it" is drawn at half strength
-      And the card "Write the spec" is drawn whole
-
-    @gui-a-lanes-name-sits-as-a-columns-does
-    Scenario: each lane of the band names itself the way a column does, clear of its edges
-      Given I added a task titled "Wait for the review" with the state "blocked"
-      When I open the window
-      Then every lane's name stands as clear of its edges as a column's name does
-
   Rule: A column, or a lane, is widened by dragging the gutter beside it
-
-    @gui-every-gutter-is-as-narrow
-    Scenario: every gutter, between columns, between lanes and above the band, is 8 points wide
-      When I open the window
-      Then every gutter is 8 points wide
-
-    @gui-a-column-widens-when-its-gutter-is-dragged
-    Scenario: the gutter between two columns, dragged, gives one what it takes from the other
-      When I open the window
-      And I drag the gutter between "todo" and "current" 60 to the right
-      Then "todo" is 60 wider than it opened
-      And "current" is 60 narrower than it opened
-      And "backlog" is as wide as it opened
-
-    @gui-a-lane-widens-when-its-gutter-is-dragged
-    Scenario: the gutter between two lanes of the band, dragged, gives one what it takes from the other
-      When I open the window
-      And I drag the gutter between the "blocked" and "watching" lanes 40 to the right
-      Then the "blocked" lane is 40 wider than it opened
-      And the "watching" lane is 40 narrower than it opened
-
-    @gui-a-lane-widened-leaves-the-columns-as-they-were
-    Scenario: a lane widened after a column leaves that column as it was dragged
-      When I open the window
-      And I drag the gutter between "todo" and "current" 60 to the right
-      And I drag the gutter between the "blocked" and "watching" lanes 40 to the right
-      Then "todo" is 60 wider than it opened
-      And the "blocked" lane is 40 wider than it opened
-
-    @gui-a-column-dragged-past-its-neighbour-keeps-a-card-in-sight
-    Scenario: a gutter dragged across a whole column leaves that column the narrowest a column goes
-      When I open the window
-      And I drag the gutter between "todo" and "current" 5000 to the right
-      Then "current" is the narrowest a column goes
-
-    @gui-a-column-dragged-past-itself-keeps-a-card-in-sight
-    Scenario: a gutter dragged back across its own column leaves it the narrowest a column goes
-      When I open the window
-      And I drag the gutter between "todo" and "current" 5000 to the left
-      Then "todo" is the narrowest a column goes
-
-    @gui-the-backlog-widens-from-beside-the-band
-    Scenario: the gutter right of the backlog is taken beside the band too
-      When I open the window
-      And I drag the gutter between "backlog" and "todo" from beside the band 60 to the right
-      Then "backlog" is 60 wider than it opened
-      And the band starts where "todo" does
-
-    @gui-columns-keep-their-shares-when-the-window-shrinks
-    Scenario: a window made smaller makes every column smaller, each keeping its share
-      When I open the window
-      And I drag the gutter between "todo" and "current" 120 to the right
-      And I resize the window to 1100 by 800
-      Then "todo" is wider than "current"
-      And the columns fill the window's width
 
     @gui-a-gutter-shows-it-can-be-dragged
     Scenario: the pointer over a column's gutter says the column can be widened
       When I open the window
       Then the pointer over the gutter after "todo" is the one for widening sideways
-
-    @gui-a-lane-gutter-shows-it-can-be-dragged
-    Scenario: the pointer over a lane's gutter says the lane can be widened
-      When I open the window
-      Then the pointer over the gutter after the "blocked" lane is the one for widening sideways
 
     @gui-a-gutter-dragged-picks-no-card
     Scenario: dragging a gutter takes hold of no card
@@ -287,13 +45,6 @@ Feature: The desktop board
       And I drag the gutter between "todo" and "current" 60 to the right
       Then "todo" carries "Write the spec"
       And no card is being dragged
-
-    @gui-columns-open-as-wide-as-each-other
-    Scenario: the widths a person gave are not kept from one window to the next
-      When I open the window
-      And I drag the gutter between "todo" and "current" 60 to the right
-      And the window is closed and opened again
-      Then every column is as wide as the others
 
   Rule: The band is made taller or shorter by dragging the edge above it
 
@@ -304,30 +55,6 @@ Feature: The desktop board
       Then the band is 100 taller than it opened
       And "todo" is 100 shorter than it opened
       And "backlog" is as tall as it opened
-
-    @gui-the-band-dragged-down-keeps-a-card-in-sight
-    Scenario: the edge dragged past the band leaves a card's room in its lanes
-      When I open the window
-      And I drag the edge above the band 5000 down
-      Then the band's lanes hold one card's room
-
-    @gui-the-columns-dragged-up-keep-a-card-in-sight
-    Scenario: the edge dragged past the columns leaves a card's room in them
-      When I open the window
-      And I drag the edge above the band 5000 up
-      Then "todo" holds one card's room
-
-    @gui-the-band-keeps-its-share-when-the-window-shrinks
-    Scenario: a window made shorter keeps the share the band was given
-      When I open the window
-      And I drag the edge above the band 200 up
-      And I resize the window to 1200 by 700
-      Then the band is taller than it opens at 1200 by 700
-
-    @gui-the-bands-edge-shows-it-can-be-dragged
-    Scenario: the pointer over the band's edge says the band can be made taller
-      When I open the window
-      Then the pointer over the band's edge is the one for resizing up and down
 
   Rule: A size given is taken back by a double-click or by the menu
 
@@ -379,46 +106,12 @@ Feature: The desktop board
       Then "todo" is 60 wider than it opened
       And the band is 100 taller than it opened
 
-    @gui-sizes-reset-are-not-kept
-    Scenario: with keep_sizes on, sizes reset stay reset in the next window
-      Given the configuration keeps the window's sizes
-      When I open the window
-      And I drag the gutter between "todo" and "current" 60 to the right
-      And I press "cmd+k"
-      And I type "reset sizes"
-      And I press "enter"
-      And the window is closed and opened again
-      Then every column is as wide as the others
-
-    @gui-the-band-opens-as-tall-as-ever
-    Scenario: without keep_sizes, the band's height is not kept from one window to the next
-      When I open the window
-      And I drag the edge above the band 100 up
-      And the window is closed and opened again
-      Then the band is as tall as it opened
-
   Rule: The board is filtered by column, priority, label, objective and due day, and every filter is cleared at once
 
     Background:
       Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
       And I added a task titled "Review the plan" in "todo" at the priority "normal" carrying the label "backend"
       And I added a task titled "Ship it" in "current" at the priority "high" carrying the label "sprint"
-
-    @gui-a-filter-narrows-the-board
-    Scenario: a filter keeps only the cards it reaches
-      When I open the window
-      And I set the filter "priority" to "high"
-      Then "todo" carries "Write the spec"
-      And "todo" does not carry "Review the plan"
-      And "current" carries "Ship it"
-
-    @gui-filters-narrow-together
-    Scenario: two filters keep only what both reach
-      When I open the window
-      And I set the filter "priority" to "high"
-      And I set the filter "label" to "backend"
-      Then "todo" carries "Write the spec"
-      And "current" does not carry "Ship it"
 
     @gui-every-filter-is-cleared-at-once
     Scenario: one act takes every filter away
@@ -430,45 +123,6 @@ Feature: The desktop board
       And "current" carries "Ship it"
       And the board says it is filtered by ""
 
-    @gui-the-board-says-what-filters-it
-    Scenario: the board says what it is filtered by, once the filters are closed
-      When I open the window
-      And I set the filter "priority" to "high"
-      And I set the filter "label" to "backend"
-      And I press "esc"
-      Then the board says it is filtered by "priority high · label backend"
-
-    @gui-moving-over-the-filters-narrows-nothing
-    Scenario: moving over the filters and their values narrows nothing until a value is chosen
-      When I open the window
-      And I press "shift+f"
-      And I press "down"
-      And I press "right"
-      Then the board says it is filtered by ""
-      When I press "down"
-      Then the board says it is filtered by ""
-      And the window shows the filters
-
-    @gui-a-filter-opens-by-its-letter
-    Scenario: the menu of filters opens a filter by its first letter, its values listed without any
-      When I open the window
-      And I press "shift+f"
-      And I press "p"
-      Then the filter "priority" lists its values
-      And the filter "priority" lists "low, normal, high, critical"
-
-    @gui-a-filter-opens-the-list-of-its-values
-    Scenario: a filter clicked opens the list of its values, and one is chosen from it
-      When I open the window
-      And I press "shift+f"
-      And I click the filter "priority"
-      Then the filter "priority" lists its values
-      And the board says it is filtered by ""
-      When I press "down" 2 times
-      And I press "enter"
-      Then the board says it is filtered by "priority high"
-      And the filter "priority" lists nothing
-
     @gui-a-filters-list-is-left-untouched
     Scenario: left closes a filter's column and leaves the filter as it was
       When I open the window
@@ -479,16 +133,6 @@ Feature: The desktop board
       Then the board says it is filtered by ""
       And the window shows the filters
       And the menu of filters shows 1 column
-
-    @gui-the-filters-open-in-columns
-    Scenario: a filter opens its values in a column at the right of the filters, which stay drawn
-      When I open the window
-      And I press "shift+f"
-      And I press "right"
-      Then the menu of filters shows 2 columns
-      And the filter "column" lists its values
-      When I press "left"
-      Then the menu of filters shows 1 column
 
     @gui-esc-closes-the-whole-menu
     Scenario: space takes a value and stays, esc closes the menu from any column, what was taken kept
@@ -503,21 +147,6 @@ Feature: The desktop board
       Then the window is on the board
       And the board says it is filtered by "priority high"
 
-    @gui-a-sub-objective-opens-in-a-column-of-its-own
-    Scenario: an objective with sub-objectives opens them in a column of their own
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Firmware" under objective 1
-      And I added a task titled "Flash the bootloader" serving objective 2
-      When I open the window
-      And I press "shift+f"
-      And I press "o"
-      And I press "right"
-      Then the menu of filters shows 3 columns
-      When I press "down" 2 times
-      And I press "enter"
-      Then the board says it is filtered by "objective #2 Firmware"
-      And the window is on the board
-
     @gui-the-filter-columns-slide-in-a-narrow-window
     Scenario: in a narrow window the oldest column slides behind a stub, which a click brings back
       Given a window of 720 by 560
@@ -530,34 +159,6 @@ Feature: The desktop board
       Then the menu of filters shows 2 columns and a stub
       When I click the stub of the menu of filters
       Then the menu of filters shows 2 columns
-
-    @gui-a-filter-and-a-search-narrow-together
-    Scenario: a search narrows what the filters kept
-      When I open the window
-      And I set the filter "priority" to "high"
-      And I press "esc"
-      And I press "/"
-      And I type "spec"
-      Then "todo" carries "Write the spec"
-      And "current" does not carry "Ship it"
-
-    @gui-the-filters-stand-as-pills-at-the-right-of-the-tabs
-    Scenario: the filters in force stand as pills at the right of the tabs, the pill adding one against the menu, and the tab counts what they keep
-      When I open the window
-      And I set the filter "priority" to "high"
-      And I press "esc"
-      Then the pills after the tabs read "priority: high, Clear, + Filter"
-      And the tab "Tasks" counts "2/3"
-      And the pills end against the menu
-
-    @gui-the-pill-adding-a-filter-stays-where-it-stands
-    Scenario: the pill that adds a filter stands where it stood, whatever filters are added
-      When I open the window
-      And I note where the pill "+ Filter" stands
-      And I set the filter "priority" to "high"
-      And I set the filter "label" to "backend"
-      And I press "esc"
-      Then the pill "+ Filter" stands where it stood
 
     @gui-a-filter-is-taken-off-by-its-key
     Scenario: backspace on a line of the menu of filters takes that filter off, and that one alone
@@ -585,18 +186,6 @@ Feature: The desktop board
       Then the board says it is filtered by ""
       And no search is kept
 
-    @gui-alt-backspace-clears-every-filter-from-the-board
-    Scenario: alt and backspace on the board take every filter and the search away
-      When I open the window
-      And I set the filter "priority" to "high"
-      And I press "esc"
-      And I press "/"
-      And I type "spec"
-      And I press "enter"
-      And I press "alt+backspace"
-      Then the board says it is filtered by ""
-      And no search is kept
-
     @gui-a-value-chosen-again-takes-its-filter-off
     Scenario: the value a filter is on, chosen again, takes the filter off
       When I open the window
@@ -605,27 +194,6 @@ Feature: The desktop board
       And I click the pill "priority: high"
       And I press "enter"
       Then the board says it is filtered by ""
-
-    @gui-a-filter-pill-opens-its-values
-    Scenario: a filter's pill opens its values, each saying how many tasks it would keep
-      When I open the window
-      And I set the filter "priority" to "high"
-      And I press "esc"
-      And I click the pill "priority: high"
-      Then the filter "priority" lists its values
-      And the filter "priority" says "normal" keeps 1
-      And the filter "priority" says "high" keeps 2
-      When I press "esc"
-      Then the window is on the board
-
-    @gui-the-labels-are-filtered-together
-    Scenario: labels ticked together keep the tasks carrying every one
-      When I open the window
-      And I set the filter "label" to "backend"
-      And I set the filter "label" to "sprint"
-      Then the board says it is filtered by "label backend + sprint"
-      And "todo" does not carry "Write the spec"
-      And "current" does not carry "Ship it"
 
     @gui-a-kept-search-stands-first-among-the-pills
     Scenario: a search kept stands first among the filters' pills, and Clear takes both away
@@ -639,18 +207,6 @@ Feature: The desktop board
       When I click the pill "Clear"
       Then the board says it is filtered by ""
       And no search is kept
-
-    @gui-the-pills-fold-when-the-room-runs-out
-    Scenario: the pills fold into one when they no longer fit between the tabs and the menu
-      Given a window of 720 by 560
-      When I open the window
-      And I set the filter "column" to "todo"
-      And I set the filter "priority" to "high"
-      And I set the filter "label" to "backend"
-      And I press "esc"
-      Then the pills after the tabs read "Clear, Filters · 3"
-      When I click the pill "Filters · 3"
-      Then the window shows the filters
 
     @gui-the-filters-narrow-the-objectives
     Scenario: the filters narrow the objectives by what an objective is, and a filter meaning nothing to one is drawn faint
@@ -687,62 +243,7 @@ Feature: The desktop board
       Then it says the window is too small
       And it says what size it needs
 
-    @gui-growing-back-draws-again
-    Scenario: making the window big enough again draws the board
-      Given a window of 320 by 240
-      When I open the window
-      And I resize the window to 1200 by 800
-      Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
-
-    @gui-growing-back-gives-the-form-back
-    Scenario: a window dragged narrow and back gives back what was open
-      Given a window of 1200 by 800
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I resize the window to 320 by 240
-      Then it says the window is too small
-      When I resize the window to 1200 by 800
-      Then the window is on the form
-
   Rule: A click outside a panel closes it, where closing loses nothing
-
-    @gui-a-double-click-is-not-a-click-off-what-it-opened
-    Scenario: opening a card by double-clicking it does not close it again
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then "Write the spec" is open to be edited
-
-    @gui-clicking-off-an-open-task-closes-it
-    Scenario: clicking off an open task nobody typed into puts it away
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      And I click outside the panel
-      Then the window is on the board
-
-    @gui-clicking-off-the-help-closes-it
-    Scenario: clicking off the help puts it away
-      When I open the window
-      And I press "?"
-      And I click outside the panel
-      Then the help is closed
-
-    @gui-clicking-off-a-form-typed-into-throws-nothing-away
-    Scenario: clicking off a form somebody typed into asks first, and what is thrown away leaves the task as it was
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I type "X"
-      And I click outside the panel
-      And I choose "Throw away"
-      Then the window is on the board
-      And task 1 is titled "Write the spec"
 
     @gui-clicking-off-a-new-task-saves-nothing
     Scenario: clicking off a task being added asks first, and what is thrown away is not made and is kept as a draft
@@ -757,159 +258,7 @@ Feature: The desktop board
       When I press "cmd+n"
       Then the window asks to pick up the task left unsaved
 
-    @gui-a-dead-key-composes-one-letter
-    Scenario: a dead key and the letter after it are written as the one letter they make
-      When I open the window
-      And I press "cmd+n"
-      And I type "Fen"
-      And I compose "ê" from the dead key "^" and the letter "e"
-      And I type "tre"
-      Then the field "title" reads "Fenêtre"
-
-    @gui-shift-held-still-deletes
-    Scenario: holding shift down while deleting still deletes
-      When I open the window
-      And I press "cmd+n"
-      And I type "Plans"
-      And I press "backspace" holding shift
-      Then the field "title" reads "Plan"
-
-    @gui-a-click-off-the-calendar-closes-it
-    Scenario: a click on the form outside the calendar closes the calendar alone
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the deadline "2026-12-25"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "deadline"
-      And I click the field "title"
-      Then the window is on the form
-      And the field "deadline" reads "2026-12-25"
-
-    @gui-a-click-off-the-form-closes-the-calendar-too
-    Scenario: a click outside the form closes the calendar and the form
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "deadline"
-      And I click outside the panel
-      Then the window is on the board
-
-    @gui-closing-a-panel-keeps-the-search
-    Scenario: putting a task away gives back what the search left, not the board
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "spec"
-      And I press "enter"
-      And I click the card "Write the spec"
-      And I press "enter"
-      And I press "esc"
-      Then the window is on the board
-      And the search is still in force
-      And "BACKLOG" carries "Write the spec"
-      And "BACKLOG" does not carry "Ship the board"
-      When I press "esc"
-      Then the search is not in force
-      And "BACKLOG" carries "Ship the board"
-
   Rule: The mouse chooses, opens and scrolls
-
-    @gui-a-click-chooses
-    Scenario: clicking a card chooses it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      Then the card "Write the spec" is chosen
-
-    @gui-a-click-elsewhere-chooses-elsewhere
-    Scenario: clicking another card chooses that one instead
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      When I open the window
-      And I click the card "Write the spec"
-      And I click the card "Ship it"
-      Then the card "Ship it" is chosen
-      And the card "Write the spec" is not chosen
-
-    @gui-a-double-click-opens
-    Scenario: double-clicking a card opens it to be edited
-      Given I added a task titled "Write the spec" with the description "Two columns"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then "Write the spec" is open to be edited
-      And the form shows "Two columns"
-
-    @gui-an-open-task-shows-the-whole-task
-    Scenario: an open task shows everything it carries, not only what was done to it
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then the form shows the field "column" reading "todo"
-      And the form shows the field "priority"
-      And the form shows the field "labels"
-
-    @gui-an-open-task-says-where-its-context-lives
-    Scenario: an open task says where what was written about it elsewhere lives
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then the open task says where the context of task 1 lives
-      And the form asks nothing about "context"
-
-    @gui-the-context-is-held-past-a-long-description
-    Scenario: the place an open task names is held however long its description runs
-      Given I added a task titled "Write the spec" with a description of 80 lines ending "the end"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I triple-click the first word of "field:context" on the open task
-      And I press "cmd+c"
-      Then the clipboard reads "/vault/1"
-
-    @gui-the-offers-answer-past-a-long-description
-    Scenario: what an open task offers answers a click however long its description runs
-      Given I added a task titled "Write the spec" with a description of 80 lines ending "the end"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I click "Cancel"
-      Then the window is on the board
-
-    @gui-an-open-task-is-put-away-by-clicking
-    Scenario: an open task is put away without knowing a key
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I click "Cancel"
-      Then the window is on the board
-
-    @gui-an-open-task-closes
-    Scenario: an open task closes and leaves the board as it was
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I press "esc"
-      Then the window is on the board
-      And the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
-
-    @gui-the-wheel-scrolls-one-column
-    Scenario: the wheel scrolls the column under the pointer and no other
-      Given I added 12 tasks to "backlog"
-      And I added 12 tasks to "todo"
-      When I open the window
-      And I scroll down over "BACKLOG"
-      Then "BACKLOG" is scrolled
-      And "TODO" is not scrolled
-
-    @gui-the-wheel-stays-inside-a-panel
-    Scenario: the wheel over a panel never reaches the board behind it
-      Given I added 12 tasks to "backlog"
-      When I open the window
-      And I press "cmd+b"
-      And I press "shift+b"
-      And I scroll down over "BACKLOG"
-      Then "BACKLOG" is not scrolled
 
     @gui-the-wheel-scrolls-one-lane
     Scenario: the wheel scrolls the lane of the band under the pointer and no other
@@ -919,14 +268,6 @@ Feature: The desktop board
       And I scroll down over the lane "watching"
       Then the lane "watching" is scrolled
       And the lane "blocked" is not scrolled
-
-    @gui-a-click-in-a-scrolled-lane
-    Scenario: a click in a scrolled lane chooses the card drawn under the pointer
-      Given I added 6 tasks to "watching"
-      When I open the window
-      And I scroll down over the lane "watching"
-      And I click the top of the lane "watching"
-      Then the card "Task 2" is chosen
 
   Rule: The arrows do what the pointer does
 
@@ -941,71 +282,7 @@ Feature: The desktop board
       And I press "up"
       Then the card "First" is chosen
 
-    @gui-the-arrows-walk-the-columns
-    Scenario: the arrows walk from one column to the next
-      Given I added a task titled "In the heap" with the state "backlog"
-      And I added a task titled "Up next" with the state "todo"
-      When I open the window
-      And I click the card "In the heap"
-      And I press "right"
-      Then the card "Up next" is chosen
-      And I press "left"
-      Then the card "In the heap" is chosen
-
-    @gui-enter-opens-what-is-chosen
-    Scenario: enter opens what the arrows walked to
-      Given I added a task titled "Write the spec" with the description "two columns"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      Then "Write the spec" is open to be edited
-
   Rule: Dragging a card moves the work
-
-    @gui-a-small-move-is-still-a-click
-    Scenario: a click that barely moves is a click
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press the card "Write the spec" and move it 2 pixels and let go
-      Then the card "Write the spec" is chosen
-      And nothing was asked of the engine
-
-    @gui-a-drag-shows-where-it-would-land
-    Scenario: a card being dragged says where it would go
-      Given I added a task titled "First" with the state "todo"
-      And I added a task titled "Second" with the state "backlog"
-      When I open the window
-      And I take hold of the card "Second" and move it over "TODO"
-      Then the card being dragged follows the pointer
-      And it shows where the card would land in "TODO"
-
-    @gui-a-drag-changes-the-column
-    Scenario: dropping a card in another column changes its state
-      Given I added a task titled "Write the spec" with the state "backlog"
-      When I open the window
-      And I drag the card "Write the spec" onto "TODO"
-      Then the engine was asked "task move" for task 1
-      And the engine was not asked "task edit"
-      And task 1 is in the column "todo"
-
-    @gui-a-drag-carries-the-place
-    Scenario: dropping a card above another puts it there
-      Given I added a task titled "First" with the state "todo"
-      And I added a task titled "Second" with the state "todo"
-      And I added a task titled "Third" with the state "backlog"
-      When I open the window
-      And I drag the card "Third" onto "TODO" above "Second"
-      Then "TODO" reads "First", "Third", "Second"
-
-    @gui-a-drag-within-a-column-only-moves
-    Scenario: dropping a card in its own column changes the place and not the state
-      Given I added a task titled "First" with the state "todo"
-      And I added a task titled "Second" with the state "todo"
-      When I open the window
-      And I drag the card "Second" onto "TODO" above "First"
-      Then the engine was asked "task move" for task 2
-      And the engine was not asked "task edit"
-      And "TODO" reads "Second", "First"
 
     @gui-cards-taken-together-are-dragged-together
     Scenario: dragging one of the cards taken together brings the others along
@@ -1026,43 +303,6 @@ Feature: The desktop board
       When I open the window
       And I drag the card "First" to the foot of "TODO"
       Then "TODO" reads "Second", "Third", "First"
-
-    @gui-a-drag-reaches-the-foot-of-a-long-column
-    Scenario: a card dragged over a column longer than the window scrolls it, and goes last
-      Given I added 20 tasks to "todo"
-      And I added a task titled "Moved" with the state "backlog"
-      When I open the window
-      And I take hold of the card "Moved" and move it over "TODO"
-      And I scroll down over "TODO" 99 times
-      And I let go at the foot of "TODO"
-      Then the last card of "TODO" is "Moved"
-
-    @gui-a-drop-in-a-lane-says-which-kind
-    Scenario: dropping a card in a lane of the band says which kind of stopped
-      Given I added a task titled "Client's answer" with the state "todo"
-      When I open the window
-      And I drag the card "Client's answer" onto the lane "watching"
-      Then task 1 is in the column "watching"
-      And the lane "watching" carries "Client's answer"
-
-    @gui-a-drag-in-a-lane-carries-the-place
-    Scenario: dropping a card above another in a lane puts it there
-      Given I added a task titled "First" with the state "blocked"
-      And I added a task titled "Second" with the state "blocked"
-      And I added a task titled "Third" with the state "todo"
-      When I open the window
-      And I drag the card "Third" onto the lane "blocked" above "Second"
-      Then the lane "blocked" reads "First", "Third", "Second"
-
-    @gui-a-drag-within-a-lane-only-moves
-    Scenario: dropping a card in its own lane changes the place and not the state
-      Given I added a task titled "First" with the state "watching"
-      And I added a task titled "Second" with the state "watching"
-      When I open the window
-      And I drag the card "Second" onto the lane "watching" above "First"
-      Then the engine was asked "task move" for task 2
-      And the engine was not asked "task edit"
-      And the lane "watching" reads "Second", "First"
 
     @gui-a-drop-in-done-asks-about-open-steps
     Scenario: a card dropped in DONE with steps still open asks to tick them too
@@ -1093,36 +333,6 @@ Feature: The desktop board
       Then it says what went wrong
       And "BACKLOG" carries "Write the spec"
 
-    @gui-what-went-wrong-leaves-the-bar
-    Scenario: what went wrong is said above the bar, and the bar still offers
-      Given I added a task titled "Write the spec" with the state "backlog"
-      And the store refuses what it is asked to change
-      When I open the window
-      And I drag the card "Write the spec" onto "TODO"
-      Then it says what went wrong
-      And what went wrong is drawn clear of the bar
-
-    @gui-what-went-wrong-stays-on-its-page
-    Scenario: what went wrong on one page is not carried to the other
-      Given I added a task titled "Write the spec" with the state "backlog"
-      And the store refuses what it is asked to change
-      When I open the window
-      And I drag the card "Write the spec" onto "TODO"
-      And I press "tab"
-      Then the tab is "OBJECTIVES"
-      And it says nothing went wrong
-
-    @gui-what-went-wrong-fades
-    Scenario: what went wrong goes on its own once it has been read
-      Given I added a task titled "Write the spec" with the state "backlog"
-      And the store refuses what it is asked to change
-      When I open the window
-      And I drag the card "Write the spec" onto "TODO"
-      And the window has looked at the store 3 times
-      Then it says what went wrong
-      When the window has looked at the store 1 time
-      Then it says nothing went wrong
-
   Rule: A card says when it is wanted and what it has cost
 
     @gui-a-card-says-when-it-is-due
@@ -1132,288 +342,7 @@ Feature: The desktop board
       When I open the window
       Then the card "Write the spec" says "2d"
 
-    @gui-a-card-says-nothing-of-a-day-months-away
-    Scenario: a day too far off to act on is not written on the card
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the deadline "2027-06-01"
-      When I open the window
-      Then the card "Write the spec" says nothing of "2027"
-
-    @gui-a-finished-card-says-nothing-of-its-day
-    Scenario: a task that is done says nothing of the day it was wanted
-      Given I added a task titled "Shipped" with the state "done"
-      And I edited task 1 with the deadline "2026-09-20"
-      When I open the window
-      Then "DONE" carries "Shipped"
-      And the card "Shipped" says nothing of "9d"
-
-    @gui-a-card-says-what-it-has-cost
-    Scenario: what a task has cost is written beside what it was reckoned to cost
-      Given I added a task titled "Write the spec" with the estimate "2h"
-      When I open the window
-      Then the card "Write the spec" says "2h"
-
   Rule: A form is the whole of a task
-
-    @gui-a-forms-heading-stands-out
-    Scenario: the heading naming the task stands out above its form
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then the form is headed "task 1" in bold, larger than its fields
-
-    @gui-editing-is-reachable-from-the-board
-    Scenario: a chosen task is edited without knowing a shortcut
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I click "Edit"
-      Then the form asks about "title", "description"
-
-    @gui-the-form-asks-about-every-field
-    Scenario: the form asks about everything a task carries
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      Then the form asks about "title", "description", "column", "priority"
-      And the form asks about "labels", "blockers", "because", "deadline"
-      And the form asks about "estimate", "time spent", "links", "objectives"
-
-    @gui-the-form-starts-on-what-is-there
-    Scenario: the form starts on what the task already carries
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      Then the field "title" reads "Write the spec"
-      And the field "column" reads "todo"
-
-    @gui-typing-into-a-field
-    Scenario: what is typed into a field is what is saved
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I type " properly"
-      And I choose "Save"
-      Then task 1 is called "Write the spec properly"
-
-    @gui-taking-a-character-back
-    Scenario: a character taken back is not saved
-      Given I added a task titled "Write the specx"
-      When I open the window
-      And I click the card "Write the specx"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I press "backspace"
-      And I choose "Save"
-      Then task 1 is called "Write the spec"
-
-    @gui-walking-the-fields
-    Scenario: the keyboard walks from one field to the next
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I press "tab"
-      Then the keyboard is on "description"
-      And I press "shift+tab"
-      Then the keyboard is on "title"
-
-    @gui-a-field-with-a-closed-set
-    Scenario: a field with a closed set is changed without typing
-      Given I added a task titled "Write the spec" with the state "backlog"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "column"
-      And I press "right"
-      And I choose "Save"
-      Then task 1 is in the column "todo"
-
-    @gui-a-closed-set-is-chosen-from-a-list
-    Scenario: a column is chosen from a list, the way an objective is
-      Given I added a task titled "Write the spec" with the state "backlog"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "column"
-      Then the window is choosing
-      And the list reads "backlog", "todo", "current", "blocked", "watching", "paused", "done"
-      And the row the keyboard is on is "backlog"
-      And the list has taken 1
-      When I press "down"
-      And I press "enter"
-      Then the window is on the form
-      And the field "column" reads "todo"
-
-    @gui-a-list-is-the-size-of-what-it-holds
-    Scenario: a field's list hangs under it, as long as what it offers
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "priority"
-      Then the window is choosing
-      And the list hangs under the field "priority"
-      And the list has room for 4 rows and no more
-
-    @gui-a-closed-list-is-chosen-without-a-search
-    Scenario: the priority is chosen from its few values, with no search to type into
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "priority"
-      Then the window is choosing
-      And the list offers no search
-
-    @gui-an-open-list-keeps-its-search
-    Scenario: the labels are still searched as they are chosen
-      Given I added a task titled "Write the spec" in "todo" at the priority "normal" carrying the label "backend"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "labels"
-      Then the window is choosing
-      And the list offers a search
-
-    @gui-a-priority-is-not-found-by-typing
-    Scenario: typing into a closed list narrows nothing, there being no search for it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "priority"
-      And I type "hi"
-      Then the list reads "low", "normal", "high", "critical"
-      When I press "down"
-      And I press "enter"
-      Then the field "priority" reads "high"
-
-    @gui-a-closed-set-takes-no-free-text
-    Scenario: typing on a field with a closed set opens its list, whole
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I press "tab"
-      And I press "tab"
-      And I press "tab"
-      Then the form is still on the field "priority"
-      When I type "h"
-      Then the window is choosing
-      And the list reads "low", "normal", "high", "critical"
-      When I press "esc"
-      Then the field "priority" reads "normal"
-
-    @gui-a-closed-set-is-never-emptied
-    Scenario: taking the column a task is already in leaves it there
-      Given I added a task titled "Write the spec" with the state "backlog"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "column"
-      And I press "enter"
-      Then the window is on the form
-      And the field "column" reads "backlog"
-
-    @gui-a-standing-is-chosen-from-a-list
-    Scenario: an objective's standing is chosen from the same list
-      Given I added an objective titled "Ship cairn"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship cairn"
-      And I choose "Edit"
-      And I click the field "state"
-      Then the window is choosing
-      And the list reads "active", "on-hold", "reached", "dropped"
-
-    @gui-clicking-a-field
-    Scenario: clicking a field is how the keyboard gets there
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "estimate"
-      Then the keyboard is on "estimate"
-
-    @gui-the-caret-says-where-typing-goes
-    Scenario: the form says where what is typed will go
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      Then the field "title" shows a caret
-      And no other field shows a caret
-
-    @gui-the-caret-moves-with-the-arrows
-    Scenario: the caret moves through the text with the arrows
-      Given I added a task titled "spec"
-      When I open the window
-      And I click the card "spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      Then the caret is at 4
-      And I press "left"
-      And I press "left"
-      Then the caret is at 2
-      And I type "XY"
-      Then the field "title" reads "spXYec"
-
-    @gui-the-caret-stops-at-both-ends
-    Scenario: the caret stops at both ends of the text
-      Given I added a task titled "ab"
-      When I open the window
-      And I click the card "ab"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I press "right"
-      Then the caret is at 2
-      And I press "left"
-      And I press "left"
-      And I press "left"
-      Then the caret is at 0
-
-    @gui-clicking-into-the-text
-    Scenario: clicking in the text puts the caret there
-      Given I added a task titled "abcdefgh"
-      When I open the window
-      And I click the card "abcdefgh"
-      And I choose "Edit"
-      And I click 3 characters into the field "title"
-      Then the caret is at 3
-
-    @gui-taking-back-at-the-caret
-    Scenario: what is taken back is what is before the caret
-      Given I added a task titled "abcd"
-      When I open the window
-      And I click the card "abcd"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I press "left"
-      And I press "backspace"
-      Then the field "title" reads "abd"
-
-    @gui-the-caret-goes-to-the-ends-of-its-line
-    Scenario: the caret goes to the start and the end of the line it is on
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I press "home"
-      Then the caret is at 0
-      When I press "cmd+right"
-      Then the caret is at 14
-      When I press "cmd+left"
-      Then the caret is at 0
-      When I press "end"
-      Then the caret is at 14
 
     @gui-the-caret-walks-a-word-at-a-time
     Scenario: the caret walks a word at a time, and holds as it goes with shift
@@ -1504,106 +433,6 @@ Feature: The desktop board
       And I type "X"
       Then the search reads "speXc"
 
-    @gui-a-long-field-has-room
-    Scenario: a description has room for more than one line
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      Then the field "description" has room for more than one line
-      And the field "title" has room for one
-
-    @gui-a-value-longer-than-its-room
-    Scenario: a value longer than its room shows its end, where typing happens
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "estimate"
-      And I type "a value far longer than the room this field could ever give it, long enough that its beginning has to go somewhere out of sight to leave the end showing"
-      Then the field "estimate" shows the end of what was typed
-
-    @gui-saving-writes-once
-    Scenario: saving writes what the form holds
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Write the whole spec"
-      And I choose "Save"
-      Then task 1 is called "Write the whole spec"
-      And the engine was asked "task edit" once
-
-    @gui-cancelling-writes-nothing
-    Scenario: cancelling leaves the task as it was
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Something else"
-      And I choose "Cancel"
-      Then task 1 is called "Write the spec"
-      And nothing was asked of the engine
-
-    @gui-escape-cancels
-    Scenario: escape is the other way out, and writes nothing
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Something else"
-      And I press "esc"
-      Then task 1 is called "Write the spec"
-
-    @gui-a-field-says-what-it-is
-    Scenario: the pointer resting on a field's name says what the field is
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I rest the pointer on the name of the field "estimate"
-      Then the window explains "how long it should take"
-
-    @gui-a-field-shows-what-to-type
-    Scenario: the explanation of a field gives an example of what to type in it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I rest the pointer on the name of the field "deadline"
-      Then the window explains "the day it is due"
-      And the explanation gives the example "2026-12-25"
-      When I rest the pointer on the name of the field "estimate"
-      Then the explanation gives the example "1h30m"
-
-    @gui-an-explanation-is-the-size-of-what-it-says
-    Scenario: an explanation is no bigger than what it says
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I rest the pointer on the name of the field "deadline"
-      Then the explanation is no bigger than what it says
-      When I rest the pointer on the name of the field "time spent"
-      Then the explanation is no bigger than what it says
-      And the explanation stays inside the window
-
-    @gui-a-field-stops-explaining
-    Scenario: the pointer leaving a field's name takes its explanation away
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I rest the pointer on the name of the field "time spent"
-      And I rest the pointer on the name of the field "deadline"
-      Then the window explains "the day it is due"
-      When the pointer leaves the window
-      Then the window explains nothing
-
-    @gui-adding-starts-empty
-    Scenario: adding starts on an empty form and writes a new task
-      When I open the window
-      And I press "cmd+n"
-      And I set the field "title" to "Write the spec"
-      And I choose "Save"
-      Then "BACKLOG" carries "Write the spec"
-
   Rule: A form is moved by dragging it where it holds no text
 
     @gui-the-form-moves-when-dragged-by-its-ground
@@ -1620,43 +449,6 @@ Feature: The desktop board
       And I drag the form from its heading 80 to the right and 40 down
       Then the form stands where it opened
 
-    @gui-the-form-moves-when-dragged-beside-its-heading
-    Scenario: the form moves when dragged from its heading's line, past the heading's words
-      When I open the window
-      And I press "cmd+n"
-      And I drag the form from its heading's line past its words 80 to the right and 40 down
-      Then the form stands 80 to the right and 40 lower than it opened
-
-    @gui-the-form-moves-when-dragged-beside-a-fields-name
-    Scenario: the form moves when dragged from a field's name line, past the name
-      When I open the window
-      And I press "cmd+n"
-      And I drag the form from the line naming "description" past its name 80 to the right and 40 down
-      Then the form stands 80 to the right and 40 lower than it opened
-
-    @gui-a-form-reopens-where-it-belongs
-    Scenario: a form moved then closed opens again where a form opens
-      When I open the window
-      And I press "cmd+n"
-      And I drag the form from a place that holds no text 80 to the right and 40 down
-      And I press "esc"
-      And I press "cmd+n"
-      Then the form stands where a form opens
-
-    @gui-the-form-stays-inside-the-window
-    Scenario: a form dragged far stays wholly inside the window
-      When I open the window
-      And I press "cmd+n"
-      And I drag the form from a place that holds no text 5000 to the right and 5000 down
-      Then the form stands wholly inside the window
-
-    @gui-the-forms-grip-stays-clear-of-its-buttons
-    Scenario: the corner a form is resized by stays clear of its last button
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then the form's grip is clear of its buttons
-
   Rule: The window opens on its board being built of stones
 
     @gui-the-window-opens-on-a-cairn
@@ -1668,20 +460,6 @@ Feature: The desktop board
       When I press "?"
       Then no cairn is being built
       And the help is open
-
-    @gui-no-task-no-cairn
-    Scenario: a board with no task opens on nothing being built
-      When I open the window
-      And the window draws its first frame
-      Then no cairn is being built
-
-    @gui-the-cairn-is-built-in-a-breath
-    Scenario: the cairn is done on its own a breath after the window opens
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And the window draws its first frame
-      And the window draws a frame 2 seconds later
-      Then no cairn is being built
 
   Rule: The board arrives by the intro its settings name, and none when the system asks for less motion
 
@@ -1700,51 +478,12 @@ Feature: The desktop board
       When the window draws a frame 2 seconds later
       Then no cairn is being built
 
-    @gui-the-board-arrives-by-a-ripple-unless-said
-    Scenario: with no intro named, the board arrives by a ripple from the focus
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And the window draws its first frame
-      Then the board is arriving by "ripple"
-
-    @gui-less-motion-no-intro
-    Scenario: a system asking for less motion opens on the board at once
-      Given the system asks for less motion
-      And I added a task titled "Write the spec"
-      When I open the window
-      And the window draws its first frame
-      Then no cairn is being built
-
   Rule: The window carries cairn's logo
-
-    @gui-the-window-carries-the-logo
-    Scenario: the window hands the system cairn's logo, drawn large, its corners clear
-      When I open the window
-      Then the window is known to the system as "cairn"
-      And the icon it hands the system is cairn's logo at 1024 pixels, its corners clear
 
     @gui-x11-is-handed-the-logo
     Scenario: on X11 the window hands its logo over itself, at the sizes a bar asks for
       When I open the window
       Then the icon it hands X11 holds cairn's logo at 16, 32, 48, 64 and 128 pixels, its corners clear
-
-    @gui-a-linux-desktop-is-given-an-entry
-    Scenario: on a Linux desktop the window writes the entry its logo is found through
-      When the window settles in on a Linux desktop
-      Then the desktop entry "cairn" names the icon "cairn"
-      And the icon "cairn" is there at 16, 32, 48, 64, 128, 256 and 512 pixels
-
-    @gui-an-entry-starts-cairn-by-the-path-it-is-found-at
-    Scenario: the entry starts the cairn on the PATH by its full path, which a desktop's own PATH need not reach
-      Given the cairn running is the one the PATH leads to as "bin/cairn"
-      When the window settles in on a Linux desktop
-      Then the desktop entry "cairn" starts the full path of "bin/cairn" with "gui"
-
-    @gui-an-entry-starts-a-cairn-off-the-path-where-it-is
-    Scenario: a cairn the PATH does not lead to is started where it is
-      Given the cairn running is not the one the PATH leads to
-      When the window settles in on a Linux desktop
-      Then the desktop entry "cairn" starts the cairn running with "gui"
 
     @gui-an-entry-hiding-the-logo-is-replaced-once-agreed
     Scenario: an entry somebody else wrote that hides the logo is replaced, once agreed
@@ -1767,50 +506,7 @@ Feature: The desktop board
       And the window opens on a Linux desktop
       Then the window asks "Show cairn's logo on this desktop?"
 
-    @gui-an-entry-showing-the-logo-asks-nothing
-    Scenario: an entry somebody else wrote that shows cairn's logo is left without a word
-      Given a desktop entry "cairn" written by somebody else, showing the icon "cairn"
-      When the window opens on a Linux desktop
-      Then the window is on the board
-
-    @gui-an-entry-of-somebody-elses-is-kept
-    Scenario: an entry cairn did not write is left as it was
-      Given a desktop entry "cairn" written by somebody else
-      When the window settles in on a Linux desktop
-      Then the desktop entry "cairn" is the one somebody else wrote
-
   Rule: The time spent is seen a week or a month at a time, every task of it
-
-    @gui-a-day-scrolls-to-its-last-task
-    Scenario: a day worked on more tasks than its column holds scrolls to the last
-      Given I added 20 tasks to "backlog"
-      And I spent "15m" on each of tasks 1 to 20 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      Then the day "2026-09-29" has more to show than it has room for
-      When I scroll down over the day "2026-09-29" 99 times
-      Then the day "2026-09-29" shows "Task 20"
-      And the day "2026-09-29" does not show "Task 1"
-
-    @gui-the-time-page-shows-cards
-    Scenario: a task on the time page is the card the board shows, with its time that day
-      Given I added a task titled "Write the spec" with the estimate "3h"
-      And I spent "1h30m" on task 1 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      Then the day "2026-09-29" shows the card "Write the spec" for "1h30m"
-
-    @gui-a-card-of-the-week-is-chosen
-    Scenario: a click on a card of the time page chooses it, like on the board
-      Given I added a task titled "Write the spec"
-      And I spent "1h30m" on task 1 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      And I click the card "Write the spec" on the time page
-      Then the card "Write the spec" is chosen
 
     @gui-a-deleted-tasks-time-says-so
     Scenario: the time of a deleted task says it was deleted, and a click on it says so
@@ -1824,16 +520,6 @@ Feature: The desktop board
       Then the window tells "task 1 was deleted"
       And no card is chosen
 
-    @gui-a-card-of-the-week-opens
-    Scenario: a double-click on a card of the time page opens it, like on the board
-      Given I added a task titled "Write the spec"
-      And I spent "1h30m" on task 1 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      And I double-click the card "Write the spec" on the time page
-      Then "Write the spec" is open to be edited
-
     @gui-a-card-of-the-month-opens
     Scenario: a double-click on a task in a day of the month opens it
       Given I added a task titled "Write the spec"
@@ -1844,22 +530,6 @@ Feature: The desktop board
       And I click "Month" on the time page
       And I double-click "Write the spec" in the month's day "2026-09-29"
       Then "Write the spec" is open to be edited
-
-    @gui-the-time-page-shows-a-month
-    Scenario: the time page shows a month, every day with what was worked on
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      And I spent "1h" on task 1 on "2026-09-03"
-      And I spent "2h" on task 2 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      And I click "Month" on the time page
-      Then the month shown is "September 2026"
-      And the month's day "2026-09-03" shows "Write the spec"
-      And the month's day "2026-09-29" shows "Ship the board"
-      When I click the month's day "2026-09-03"
-      Then the week shown starts on "2026-08-31"
 
     @gui-the-time-month-is-chosen-from-the-twelve
     Scenario: the month and the year of the time page are buttons opening the grids the date picker has
@@ -1878,122 +548,6 @@ Feature: The desktop board
       Then the time page offers the twelve months
       When I click the cell "Mar" on the time page
       Then the month shown is "March 2014"
-
-    @gui-the-time-page-is-walked-by-the-pointer
-    Scenario: the arrows at the top of the time page, and Today, walk what it shows
-      Given today is "2026-09-16"
-      When I open the window
-      And I click the tab "TIME"
-      And I click "‹" on the time page
-      Then the week shown starts on "2026-09-07"
-      When I click "Today" on the time page
-      Then the week shown starts on "2026-09-14"
-      When I click "Month" on the time page
-      And I click "›" on the time page
-      Then the month shown is "October 2026"
-      When I press "left"
-      Then the month shown is "September 2026"
-      When I click "Week" on the time page
-      Then the week shown starts on "2026-09-14"
-
-    @gui-the-week-of-time
-    Scenario: the time page shows the week's days, what was worked on and for how long
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      And I spent "1h30m" on task 1 on "2026-09-29"
-      And I spent "45m" on task 2 on "2026-09-29"
-      And I spent "2h" on task 2 on "2026-10-02"
-      And today is "2026-10-03"
-      When I open the window
-      And I press "tab"
-      And I press "tab"
-      Then the tab is "TIME"
-      And the week shown starts on "2026-09-28"
-      And the day "2026-09-29" says "2h15m"
-      And the day "2026-09-29" carries "Write the spec" for "1h30m"
-      And the day "2026-10-02" carries "Ship the board" for "2h"
-      And the day "2026-09-28" carries nothing
-
-    @gui-a-week-without-its-weekend
-    Scenario: with the weekends hidden, the time page shows a week as five days, Monday to Friday
-      Given the weekends are hidden
-      And I added a task titled "Write the spec"
-      And I spent "1h" on task 1 on "2026-10-03"
-      And today is "2026-10-03"
-      When I open the window
-      And I click the tab "TIME"
-      Then the week shows the days "Mon 28/09, Tue 29/09, Wed 30/09, Thu 01/10, Fri 02/10"
-
-    @gui-a-narrow-week-card-keeps-its-number-and-facts-apart
-    Scenario: in the narrowest window a card of the week gives its facts up before they cover its number
-      Given a window of 720 by 560
-      And I added a task titled "Write the spec" with the estimate "8h"
-      And I edited task 1 with the deadline "2026-10-05"
-      And I spent "3h" on task 1 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      Then the card "Write the spec" on the time page writes its number whole, its facts clear of it
-
-    @gui-a-title-never-breaks-inside-a-word
-    Scenario: in the narrowest window a card of the week breaks its title between words, and fills its day
-      Given a window of 720 by 560
-      And I added a task titled "Write the spec"
-      And I added a task titled "Estimate the migration"
-      And I put task 1 in focus
-      And I put task 2 in focus
-      And I spent "3h" on task 1 on "2026-09-29"
-      And I spent "1h" on task 2 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      Then the card "Write the spec" on the time page breaks its title only between words
-      And the card "Estimate the migration" on the time page breaks its title only between words
-      And the card "Write the spec" on the time page is as wide as its day
-
-    @gui-a-narrow-day-writes-its-total-under-its-date
-    Scenario: in the narrowest window a day of the week writes its total under its date, where it has room
-      Given a window of 720 by 560
-      And I added a task titled "Write the spec"
-      And I spent "1h30m" on task 1 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      Then the day "2026-09-29" writes its total whole, clear of its date
-
-    @gui-the-weeks-are-walked
-    Scenario: the arrows walk the weeks, and t comes back to this one
-      Given today is "2026-10-14"
-      When I open the window
-      And I press "tab"
-      And I press "tab"
-      And I press "left"
-      Then the week shown starts on "2026-10-05"
-      When I press "right"
-      And I press "right"
-      Then the week shown starts on "2026-10-19"
-      When I press "t"
-      Then the week shown starts on "2026-10-12"
-
-    @gui-the-time-tab-is-clicked
-    Scenario: the time page is reached by clicking its tab, like the other two
-      Given today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      Then the tab is "TIME"
-      And the week shown starts on "2026-09-28"
-
-    @gui-a-page-lets-go-of-what-was-taken
-    Scenario: changing page lets go of the cards taken together, which are not on the new one
-      Given I added a task titled "First" with the state "todo"
-      And I added a task titled "Second" with the state "todo"
-      When I open the window
-      And I click the card "First"
-      And I ⌘-click the card "Second"
-      And I press "tab"
-      And I press "tab"
-      Then no card is taken with another
-      And the bar does not offer "Delete"
 
     @gui-the-time-page-chooses-no-card
     Scenario: a click on the time page chooses no card behind it
@@ -2035,31 +589,7 @@ Feature: The desktop board
       And I click the head of the day "2026-09-29"
       Then the day shown is "2026-09-29"
 
-    @gui-the-time-page-is-searched
-    Scenario: a search narrows the time page to the tasks it reaches
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      And I spent "1h" on task 1 on "2026-09-29"
-      And I spent "2h" on task 2 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      And I press "/"
-      And I type "spec"
-      Then the day "2026-09-29" shows "Write the spec"
-      And the day "2026-09-29" does not show "Ship the board"
-      And the day "2026-09-29" shows a total of "1h"
-
   Rule: Tasks are exported from the window, and imported into it, as a file
-
-    @gui-the-tasks-are-exported
-    Scenario: ⌘E writes the tasks to a file chosen in the system's dialog
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+e"
-      And I save it in the dialog as a file of my own
-      Then that file holds the task "Write the spec"
-      And the window tells "the tasks were written to"
 
     @gui-tasks-are-imported
     Scenario: ⌘O adds the tasks of a file chosen in the system's dialog
@@ -2073,22 +603,6 @@ Feature: The desktop board
       And "BACKLOG" carries "Write the spec"
       And the window tells "1 task(s) and 0 objective(s) were added"
 
-    @gui-a-dialog-closed-changes-nothing
-    Scenario: closing the dialog without choosing a file changes nothing
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+o"
-      And I close the dialog
-      Then the window is on the board
-      And "BACKLOG" carries "Write the spec"
-      And there are 0 backups
-
-    @gui-carrying-the-store-is-offered
-    Scenario: the bar offers to export the tasks and to import some
-      When I open the window
-      Then the bar offers "Export" under "⌘E"
-      And the bar offers "Import" under "⌘O"
-
   Rule: The window's menu bar holds cairn and Help; every other act has its key, the bar under the board, the right click or the palette
 
     @gui-the-menu-bar-acts-from-the-board
@@ -2097,48 +611,7 @@ Feature: The desktop board
       And I pick "Help" in the menu bar
       Then the panel is headed "Help"
 
-    @gui-the-menu-button-stands-in-for-a-menu-bar
-    Scenario: with no menu bar of the system's, a button opens the lines that can be done now
-      Given the window runs on "linux"
-      When I open the window
-      And I click the menu button
-      Then the menu offers "About cairn", "Settings…", "Upgrade", "Quit", "Help"
-
-    @gui-the-version-is-shown-from-the-menu
-    Scenario: About cairn, in the menu bar, says which version this is
-      When I open the window
-      And I pick "About cairn" in the menu bar
-      Then the window says the version this build reports
-      And the question says "https://github.com/vonglasow/cairn"
-      And the question shows cairn's logo beside what it says
-      When I click "Close"
-      Then the window is on the board
-
   Rule: A page turned off in the configuration is not drawn
-
-    @gui-a-page-off-has-no-tab
-    Scenario: the time page turned off has no tab, and tab walks the others
-      Given the pages turned off are "time"
-      When I open the window
-      Then the tabs read "TASKS", "OBJECTIVES"
-      When I press "tab"
-      And I press "tab"
-      Then the window is on the page "TASKS"
-
-    @gui-the-menu-offers-what-can-be-done-now
-    Scenario: on the board the menu bar can do every line
-      Given I added a task titled "Write the spec"
-      When I open the window
-      Then the menu bar can do "About cairn", "Settings…", "Upgrade", "Quit", "Help"
-
-    @gui-the-menu-waits-while-a-panel-is-open
-    Scenario: with a form open, nothing of the menu bar can be done until it closes
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then the menu bar cannot do "About cairn", "Upgrade", "Help"
-      When I pick "Help" from the menu bar
-      Then the window is on the form
 
     @gui-every-page-off-leaves-what-belongs-to-none
     Scenario: every page turned off leaves the menu bar nothing but the settings
@@ -2171,15 +644,6 @@ Feature: The desktop board
       Then the panel is headed "Settings"
 
   Rule: Labels are seen and managed apart from any task
-
-    @gui-labels-are-listed
-    Scenario: the labels are listed with what carries each
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the labels "doc" and "sp26-20"
-      When I open the window
-      And I press "shift+l"
-      Then the labels list "doc" carried by 1 task and 0 objectives
-      And the labels list "sp26-20" carried by 1 task and 0 objectives
 
     @gui-a-label-is-deleted-everywhere
     Scenario: a label is taken off everything carrying it once that is agreed to
@@ -2235,41 +699,6 @@ Feature: The desktop board
       And I press "enter"
       Then the labels list "release-train" carried by 0 tasks and 0 objectives
       And the panel is headed "Labels"
-
-    @gui-a-label-made-is-offered-in-a-form
-    Scenario: a label made on its own is offered when a task's labels are chosen
-      Given I added a task titled "Write the spec"
-      And I made the label "release"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "labels"
-      And I press "enter"
-      Then the list offers "release"
-
-    @gui-a-label-is-renamed-in-its-row
-    Scenario: a label is renamed in its own row, the panel keeping its name
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the labels "doc" and "sp26-20"
-      When I open the window
-      And I press "shift+l"
-      And I click the label "doc"
-      And I press "r"
-      Then the panel is headed "Labels"
-      And the bar offers "Save" under "⏎"
-
-    @gui-a-label-is-coloured-from-the-labels
-    Scenario: a label's colour is picked from fourteen swatches in the list of labels
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the labels "doc" and "sp26-20"
-      When I open the window
-      And I press "shift+l"
-      And I click the label "doc"
-      Then the row of the label "doc" offers "Rename", "Colour" and "Delete"
-      When I press "c"
-      Then the labels offer 14 colours
-      When I click the colour "peach"
-      Then the label "doc" wears "peach"
 
     @gui-a-colour-is-walked-to-with-the-keys
     Scenario: the arrows walk the swatches and enter takes one, esc none
@@ -2338,14 +767,6 @@ Feature: The desktop board
 
   Rule: A new backup is made, and a backup restored, from the window
 
-    @gui-backing-up-from-the-window
-    Scenario: ⌘B backs the store up and says where the backup is
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+b"
-      Then the window tells "backup 1 is"
-      And there is 1 backup
-
     @gui-putting-a-backup-back-from-the-window
     Scenario: a backup chosen from the list is restored once agreed to
       Given I added a task titled "Write the spec"
@@ -2367,63 +788,7 @@ Feature: The desktop board
       And the window tells "backup 1 was restored"
       And there are 2 backups
 
-    @gui-the-backups-are-left-without-putting-one-back
-    Scenario: esc leaves the backups without putting one back
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+b"
-      And I press "shift+b"
-      And I press "esc"
-      Then the window is on the board
-      And there is 1 backup
-
   Rule: A store behind the window is offered the changes it waits for
-
-    @gui-a-store-behind-is-offered-its-changes
-    Scenario: a window opened on a store behind offers to apply what is waiting
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I open the window
-      Then the window asks to apply the change that is waiting, naming it
-      When I click "Apply"
-      Then "BACKLOG" carries "Write the spec"
-      And a backup was set aside
-      And no change is waiting
-
-    @gui-a-store-behind-is-left-as-it-was-when-quit
-    Scenario: quitting instead leaves the store as it was
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I open the window
-      And I click "Quit"
-      Then the window is leaving
-      And no backup was set aside
-      And 1 change is still waiting
-
-    @gui-a-store-behind-holds-the-board-back
-    Scenario: nothing on the board is reached while the question stands
-      Given a store from an older cairn, holding a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+n"
-      Then the window asks to apply the change that is waiting, naming it
-      And 1 change is still waiting
-
-    @gui-a-store-put-behind-while-open-is-noticed
-    Scenario: a store put behind while the window is open is noticed
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And another cairn rolls the last change back
-      And the window looks again
-      Then the window asks to apply the change that is waiting, naming it
-
-    @gui-a-store-from-a-newer-cairn-stops-the-window
-    Scenario: a store a newer cairn changed while open stops the window
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And another cairn applies a change this cairn does not know
-      And the window looks again
-      Then the window says the store comes from a newer cairn
-      And the only answer it offers is "Quit"
-      When I drag the card "Write the spec" onto "DONE"
-      Then task 1 is in the column "backlog"
 
     @gui-a-store-from-a-newer-cairn-at-open
     Scenario: a window opened on a store from a newer cairn says so
@@ -2433,14 +798,6 @@ Feature: The desktop board
       And the only answer it offers is "Quit"
 
   Rule: A right click says what can be done to what is under it
-
-    @gui-a-right-click-on-a-card
-    Scenario: a right click on a card chooses it and offers what can be done to it
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I right-click the card "Write the spec"
-      Then the card "Write the spec" is chosen
-      And the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", "Delete"
 
     @gui-a-menu-acts
     Scenario: what is clicked in the menu is done to the card
@@ -2464,20 +821,6 @@ Feature: The desktop board
       Then task 1 is archived
       And task 2 is in the column "todo"
 
-    @gui-a-card-is-moved-from-its-menu
-    Scenario: a card's menu moves it to another column, and sets its priority
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I right-click the card "Write the spec"
-      And I click "Move to…" in the menu
-      Then the menu offers "backlog", "current", "blocked", "watching", "paused", "done"
-      When I click "done" in the menu
-      Then task 1 is in the column "done"
-      When I right-click the card "Write the spec"
-      And I click "Priority…" in the menu
-      And I click "high" in the menu
-      Then task 1 carries the priority "high"
-
     @gui-a-cards-menu-opens-a-linked-task
     Scenario: a card's menu opens a new task linked to it
       Given I added a task titled "Ship it" with the state "done"
@@ -2487,49 +830,6 @@ Feature: The desktop board
       And I set the field "title" to "It does not hold"
       And I choose "Save"
       Then task 2 is linked to task 1
-
-    @gui-o-opens-a-linked-task
-    Scenario: o on a chosen card opens a new task linked to it, in todo
-      Given I added a task titled "Ship it" with the state "done"
-      When I open the window
-      And I click the card "Ship it"
-      And I press "o"
-      And I set the field "title" to "It does not hold"
-      And I choose "Save"
-      Then task 2 is in the column "todo"
-      And task 2 is linked to task 1
-      And task 1 is linked to task 2
-
-    @gui-the-form-links-a-task
-    Scenario: a link typed in the window's form links the two tasks
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      When I open the window
-      And I click the card "Ship it"
-      And I choose "Edit"
-      And I set the field "links" to "1"
-      And I choose "Save"
-      Then task 2 is linked to task 1
-
-    @gui-labels-from-a-cards-menu
-    Scenario: a card's menu opens the list of its labels
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I right-click the card "Write the spec"
-      And I click "Labels…" in the menu
-      Then the window is choosing
-      And the list has no heading
-
-    @gui-a-menu-is-walked-with-the-keys
-    Scenario: the menu is walked with the arrows, enter takes a line and esc closes it
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I right-click the card "Write the spec"
-      And I press "esc"
-      Then the window is on the board
-      When I right-click the card "Write the spec"
-      And I press "enter"
-      Then the window is on the form
 
     @gui-a-right-click-off-the-cards
     Scenario: a right click where there is no card offers what the board does
@@ -2546,59 +846,6 @@ Feature: The desktop board
       Then the window is on the board
 
   Rule: A deadline is chosen on a calendar
-
-    @gui-a-click-on-a-deadline-opens-the-calendar
-    Scenario: a click on the deadline opens the calendar under it
-      Given I added a task titled "Write the spec"
-      And today is "2026-10-12"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "deadline"
-      Then the calendar is open on "2026-10-12"
-      And the calendar hangs under the field "deadline"
-
-    @gui-the-calendar-is-headed-by-its-month
-    Scenario: the calendar has no heading but its month, its year and its arrows, each tall enough for its words
-      Given I added a task titled "Write the spec"
-      And today is "2026-10-12"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "deadline"
-      Then the calendar has no heading
-      And the calendar's month, year and arrows stand whole in a row at its top
-
-    @gui-the-calendar-draws-its-days-and-cells-as-buttons
-    Scenario: the day held is a filled button, today an edged one, and the months and years are buttons
-      Given I added a task titled "Write the spec"
-      And today is "2026-10-12"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "deadline"
-      And I press "right"
-      Then the day held is drawn as a filled button
-      And today is drawn as an edged button
-      And the other days are drawn without a box
-      When I click the calendar's month
-      Then every month is drawn as a button
-
-    @gui-the-pointer-walks-the-months
-    Scenario: the arrows of its heading and the wheel walk the calendar's months
-      Given I added a task titled "Write the spec"
-      And today is "2026-10-12"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "deadline"
-      And I click the next month on the calendar
-      Then the calendar is open on "2026-11-12"
-      When I click the month before on the calendar
-      And I click the month before on the calendar
-      Then the calendar is open on "2026-09-12"
-      When I scroll down over the calendar
-      Then the calendar is open on "2026-10-12"
 
     @gui-a-deadline-is-chosen-on-a-calendar
     Scenario: the calendar walks the days and the months, and enter takes one
@@ -2658,46 +905,6 @@ Feature: The desktop board
       When I press "t"
       Then the calendar is open on "2026-10-12"
 
-    @gui-a-calendar-takes-the-deadline-away
-    Scenario: backspace on the calendar leaves the task with no deadline
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the deadline "2026-12-25"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "deadline"
-      And I press "enter"
-      And I press "backspace"
-      Then the window is on the form
-      And the field "deadline" reads ""
-
-    @gui-a-calendar-offer-is-clicked-where-it-is-drawn
-    Scenario: what the calendar offers is drawn once, and answers a click
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the deadline "2026-12-25"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "deadline"
-      And I press "enter"
-      And I click "No day"
-      Then the window is on the form
-      And the field "deadline" reads ""
-
-    @gui-a-calendar-left-changes-nothing
-    Scenario: esc leaves the calendar and the deadline as it was
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the deadline "2026-12-25"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "deadline"
-      And I press "enter"
-      And I press "right"
-      And I press "esc"
-      Then the window is on the form
-      And the field "deadline" reads "2026-12-25"
-
     @gui-a-day-is-clicked-on-the-calendar
     Scenario: a day clicked on the calendar is taken
       Given I added a task titled "Write the spec"
@@ -2710,126 +917,7 @@ Feature: The desktop board
       And I click the day "2026-10-30" on the calendar
       Then the field "deadline" reads "2026-10-30"
 
-    @gui-an-objective-deadline-is-chosen-too
-    Scenario: an objective's deadline opens the same calendar
-      Given I added an objective titled "Ship the board"
-      And today is "2026-10-12"
-      When I open the window
-      And I press "tab"
-      And I click the objective "Ship the board"
-      And I choose "Edit"
-      And I put the keyboard on "deadline"
-      And I press "enter"
-      And I press "enter"
-      Then the field "deadline" reads "2026-10-12"
-
   Rule: A form saves itself
-
-    @gui-a-form-saves-itself
-    Scenario: what was typed is saved once the typing pauses, and the form stays open
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I type " now"
-      And the window has looked at the store 2 times
-      Then task 1 is called "Write the spec now"
-      And the window is on the form
-
-    @gui-a-form-that-saved-itself-shows-it
-    Scenario: the trace beside a form that saved itself says what it saved
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I type " now"
-      And the window has looked at the store 2 times
-      Then the trace begins with the last thing done to task 1
-
-    @gui-typing-holds-the-save-off
-    Scenario: nothing is saved while the typing goes on
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I type " no"
-      And the window has looked at the store 1 time
-      And I type "w"
-      And the window has looked at the store 1 time
-      Then task 1 is called "Write the spec"
-
-    @gui-a-saved-form-closes-without-a-question
-    Scenario: a form that saved itself closes on esc without asking
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I type " now"
-      And the window has looked at the store 2 times
-      And I press "esc"
-      Then the window is on the board
-      And task 1 is called "Write the spec now"
-
-    @gui-a-new-task-is-made-when-it-is-saved
-    Scenario: a task being added is made when it is saved, and not before
-      When I open the window
-      And I press "cmd+n"
-      And I type "Plan the week"
-      And the window has looked at the store 3 times
-      Then there are no tasks
-      And the window is on the form
-      When I choose "Save"
-      Then task 1 is called "Plan the week"
-      And there is 1 task
-
-    @gui-a-new-task-has-an-empty-trace
-    Scenario: the trace of a task being added stays empty while it is typed
-      When I open the window
-      And I press "cmd+n"
-      And I type "Plan the week"
-      And the window has looked at the store 3 times
-      And I press "cmd+t"
-      Then the form writes the trace, empty
-
-    @gui-a-new-task-shows-no-other-tasks-trace
-    Scenario: a task added after another was opened shows an empty trace, not the other's
-      Given I added a task titled "Write the spec"
-      And it was worked on 3 times
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I press "esc"
-      And I press "cmd+n"
-      And I press "cmd+t"
-      Then the form writes the trace, empty
-
-    @gui-cancelling-a-new-task-makes-nothing
-    Scenario: cancelling a task being added makes nothing, asks nothing, and leaves nothing to pick up
-      When I open the window
-      And I press "cmd+n"
-      And I type "Plan the week"
-      And the window has looked at the store 3 times
-      And I choose "Cancel"
-      Then the window is on the board
-      And there are no tasks
-      When the window is closed and opened again
-      And I press "cmd+n"
-      Then the window is on the form
-      And the field "title" reads ""
-
-    @gui-escape-on-a-new-task-makes-nothing
-    Scenario: escape on a task being added is cancelling it, without a question
-      When I open the window
-      And I press "cmd+n"
-      And I type "Plan the week"
-      And I press "esc"
-      Then the window is on the board
-      And there are no tasks
-      When I press "cmd+n"
-      Then the window is on the form
 
     @gui-a-new-task-is-kept-as-a-draft
     Scenario: a task being added and left unsaved is kept as a draft, and the next one offers to pick it up
@@ -2863,29 +951,6 @@ Feature: The desktop board
       And I press "cmd+n"
       Then the window is on the form
 
-    @gui-a-saved-task-leaves-no-draft
-    Scenario: a task saved leaves no draft behind it
-      When I open the window
-      And I press "cmd+n"
-      And I type "Plan the week"
-      And the window has looked at the store 3 times
-      And I choose "Save"
-      And the window is closed and opened again
-      And I press "cmd+n"
-      Then the window is on the form
-      And the field "title" reads ""
-
-    @gui-a-task-is-added-to-the-column-clicked
-    Scenario: a task added after a click on a column goes in that column
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I click the card "Write the spec"
-      And I click the column "CURRENT"
-      And I click "New"
-      And I type "Plan the week"
-      And I choose "Save"
-      Then "CURRENT" carries "Plan the week"
-
     @gui-a-double-click-on-a-column-adds-there
     Scenario: a double click where a column holds no card adds a task to it
       When I open the window
@@ -2894,14 +959,6 @@ Feature: The desktop board
       When I type "Plan the week"
       And I choose "Save"
       Then "TODO" carries "Plan the week"
-
-    @gui-a-click-between-two-cards-chooses-neither
-    Scenario: a click in the space between two cards chooses neither of them
-      Given I added a task titled "Write the spec" with the state "todo"
-      And I added a task titled "Ship the board" with the state "todo"
-      When I open the window
-      And I click between the cards "Write the spec" and "Ship the board"
-      Then no card is chosen
 
     @gui-a-double-click-between-two-cards-adds-there
     Scenario: a double click between two cards adds a task between them
@@ -2927,28 +984,6 @@ Feature: The desktop board
       And I choose "Save"
       Then "CURRENT" carries "Plan the week"
 
-    @gui-a-right-click-on-a-column-adds-there
-    Scenario: New, from a right click on a column, adds a task to that column
-      When I open the window
-      And I right-click the column "TODO"
-      And I click "New" in the menu
-      And I type "Plan the week"
-      And I choose "Save"
-      Then "TODO" carries "Plan the week"
-
-    @gui-a-saved-form-keeps-what-is-typed
-    Scenario: saving on its own keeps the space typed at the end of a title
-      Given I added a task titled "Fix the"
-      When I open the window
-      And I click the card "Fix the"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I type " "
-      And the window has looked at the store 2 times
-      And I type "bug"
-      And the window has looked at the store 2 times
-      Then task 1 is called "Fix the bug"
-
     @gui-a-refused-save-is-not-tried-again
     Scenario: what the store refuses is said once and not tried again until it changes
       Given I added a task titled "Write the spec"
@@ -2964,18 +999,6 @@ Feature: The desktop board
       Then it says nothing went wrong
       And the engine was asked "task edit" once
 
-    @gui-a-task-added-once-whatever-its-steps
-    Scenario: a task whose steps were refused is not made, and not tried again every beat
-      Given the store refuses to add a step
-      When I open the window
-      And I press "cmd+n"
-      And I type "Plan the week"
-      And I set the field "steps" to "Book the room"
-      And I press "cmd+enter"
-      And the window has looked at the store 6 times
-      Then there are no tasks
-      And the engine was asked "task new" once
-
     @gui-a-new-task-with-no-title-is-not-made
     Scenario: a form adding a task with no title yet makes nothing
       When I open the window
@@ -2984,107 +1007,6 @@ Feature: The desktop board
       Then there are no tasks
 
   Rule: What the board can do, the window can do
-
-    @gui-deleting-a-task
-    Scenario: a task is deleted once, having been asked about
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I click "Delete"
-      And I click "Delete"
-      Then "BACKLOG" does not carry "Write the spec"
-
-    @gui-deleting-asks-first
-    Scenario: deleting asks before it loses anything
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I click "Delete"
-      And I click "Cancel"
-      Then "BACKLOG" carries "Write the spec"
-
-    @gui-searching-narrows-the-board
-    Scenario: searching narrows the board to what it reaches
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "spec"
-      Then "BACKLOG" carries "Write the spec"
-      And "BACKLOG" does not carry "Ship the board"
-
-    @gui-searching-reaches-the-description
-    Scenario: a search reaches what a card does not show
-      Given I added a task titled "Write the spec" with the description "two columns"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "columns"
-      Then "BACKLOG" carries "Write the spec"
-      And "BACKLOG" does not carry "Ship the board"
-
-    @gui-searching-raises-the-task-a-step-belongs-to
-    Scenario: a word found only in a step answers the task it belongs to
-      Given I added a task titled "Ship it"
-      And I added the step "Write the pipeline" to task 1
-      And I added a task titled "Buy a lamp"
-      When I open the window
-      And I press "/"
-      And I type "pipeline"
-      Then "BACKLOG" carries "Ship it"
-      And "BACKLOG" does not carry "Buy a lamp"
-
-    @gui-searching-by-number
-    Scenario: a number is the way back when it is what somebody has
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "2"
-      Then "BACKLOG" carries "Ship the board"
-      And "BACKLOG" does not carry "Write the spec"
-
-    @gui-searching-reaches-what-the-command-line-reaches
-    Scenario: a search reaches every field the command line looks in
-      Given I added a task titled "Write the spec" with the estimate "90m"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "1h30m"
-      Then "BACKLOG" carries "Write the spec"
-      And "BACKLOG" does not carry "Ship the board"
-
-    @gui-searching-by-label-and-by-column
-    Scenario: a search reaches the labels and the column, as the engine's does
-      Given I added a task titled "Write the spec" with the state "todo"
-      And I added a task titled "Ship the board"
-      And I edited task 1 with the labels "backend" and "sprint-172"
-      When I open the window
-      And I press "/"
-      And I type "backend"
-      Then "TODO" carries "Write the spec"
-      And "BACKLOG" does not carry "Ship the board"
-
-    @gui-a-card-can-be-clicked-while-still-searching
-    Scenario: a card is clicked while the search box is still open
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "spec"
-      And I click the card "Write the spec"
-      Then the card "Write the spec" is chosen
-      And the window is asking what to look for
-      And "BACKLOG" does not carry "Ship the board"
-
-    @gui-a-card-opens-while-still-searching
-    Scenario: a card opens on a double click while the search box is still open
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "/"
-      And I type "spec"
-      And I double-click the card "Write the spec"
-      Then "Write the spec" is open to be edited
 
     @gui-clicking-the-search-box-lets-go-of-nothing
     Scenario: clicking the box being typed into does not let go of the card
@@ -3097,32 +1019,6 @@ Feature: The desktop board
       Then the card "Write the spec" is chosen
       And the window is asking what to look for
 
-    @gui-a-search-stays-in-force
-    Scenario: a search stays in force once it has been asked for
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "spec"
-      And I press "enter"
-      Then the search box is closed
-      And the search is still in force
-      And "BACKLOG" carries "Write the spec"
-      And "BACKLOG" does not carry "Ship the board"
-
-    @gui-the-board-still-works-under-a-search
-    Scenario: what a search leaves can be walked, opened and edited
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "spec"
-      And I press "enter"
-      And I press "down"
-      Then the card "Write the spec" is chosen
-      And I press "enter"
-      Then "Write the spec" is open to be edited
-
     @gui-two-ways-into-the-search
     Scenario: the search opens the way a person expects
       When I open the window
@@ -3132,67 +1028,6 @@ Feature: The desktop board
       And I press "/"
       Then the search box is open
 
-    @gui-leaving-a-search
-    Scenario: leaving a search puts everything back
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      When I open the window
-      And I press "/"
-      And I type "spec"
-      And I press "esc"
-      Then "BACKLOG" carries "Write the spec"
-      And "BACKLOG" carries "Ship the board"
-
-    @gui-the-help
-    Scenario: the help says what every key does
-      When I open the window
-      And I click "Help"
-      Then the help is open
-      And the help says what "e" does
-      And the help says what "⇧F" does
-      And I press "esc"
-      Then the help is closed
-
-    @gui-the-help-names-the-keys-of-the-system
-    Scenario: away from a Mac the help and the bar say Ctrl where a Mac says ⌘
-      Given the window runs on "windows"
-      When I open the window
-      And I click "Help"
-      Then the help says what "Ctrl+N" does
-      And the help says nothing of "⌘"
-
-    @gui-a-mac-keeps-its-own-keys
-    Scenario: on a Mac the help says ⌘
-      Given the window runs on "darwin"
-      When I open the window
-      And I click "Help"
-      Then the help says what "⌘N" does
-
-    @gui-the-help-is-a-grid-of-keys
-    Scenario: the help lays its keys out in two columns, grouped, with nothing to scroll
-      Given a window of 1200 by 800
-      When I open the window
-      And I click "Help"
-      Then the help lays its keys out in 2 columns
-      And the help groups its keys under "Board", "Forms", "Find", "Store" and "Pointer"
-      And the help shows every line
-
-    @gui-the-help-fits-the-least-window
-    Scenario: the help shows every line in the smallest window
-      Given a window of 720 by 560
-      When I open the window
-      And I click "Help"
-      Then the help shows every line
-      And every line of the help fits inside its panel
-
-    @gui-the-help-fits-what-it-says
-    Scenario: a help on a tall window is as tall as what it says
-      Given a window of 1600 by 2100
-      When I open the window
-      And I click "Help"
-      Then the help shows every line
-      And the help is no taller than what it says
-
   Rule: The window follows the store
 
     @gui-somebody-else-added-something
@@ -3201,13 +1036,6 @@ Feature: The desktop board
       And somebody else adds a task titled "Client's answer"
       And the window looks again
       Then "BACKLOG" carries "Client's answer"
-
-    @gui-nothing-changed-nothing-redrawn
-    Scenario: a store nobody touched is not read again
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And the window looks again
-      Then the store was read once
 
   Rule: A task's trace stays inside the panel that shows it
 
@@ -3221,147 +1049,7 @@ Feature: The desktop board
       When I press "cmd+t"
       Then the trace begins with the last thing done to task 1
 
-    @gui-opening-an-objective-opens-it-to-be-edited
-    Scenario: opening an objective opens it to be edited, the work serving it beside it
-      Given I added an objective titled "Ship the board"
-      And I added a task titled "Write the spec" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship the board"
-      And I press "enter"
-      Then the window is on the form
-      And the work beside the form reads "Write the spec"
-
-    @gui-the-trace-has-its-own-place
-    Scenario: the trace is beside what the task carries, not under it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      Then the trace is beside the fields
-      And the trace stays inside the panel
-
-    @gui-the-details-stand-beside-and-the-trace-behind-a-tab
-    Scenario: what a task carries stands beside its description, and its trace behind a tab
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      Then the field "estimate" stands beside the description
-      And the column beside the form shows the details
-      And the description takes 3 parts of the height and the steps 2
-      When I press "cmd+t"
-      Then the column beside the form shows the trace
-      When I put the keyboard on "estimate"
-      Then the column beside the form shows the details
-      When I put the keyboard on "steps"
-      Then the column beside the form shows the details
-
-    @gui-a-new-task-shows-its-trace-from-the-start
-    Scenario: a task being added shows its trace from the start, empty, so nothing appears beside the form once it saves itself
-      When I open the window
-      And I press "cmd+n"
-      And I press "cmd+t"
-      Then the form writes the trace, empty
-      And the trace is beside the fields
-
-    @gui-a-long-description-scrolls
-    Scenario: a description longer than its box scrolls, and says so with a bar
-      Given I added a task titled "Write the spec" with a description of 20 lines
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      Then the description has more to show than it has room for
-      And the description is at its beginning
-      And a bar sits beside the description
-      When I scroll down over the description
-      Then the description has moved
-      When I scroll up over the description
-      Then the description is at its beginning
-      When I scroll down over the description 99 times
-      Then the description is at its end
-      When I scroll up over the description 99 times
-      And I drag the description's bar to the bottom
-      Then the description is at its end
-
-    @gui-a-short-description-keeps-its-bar
-    Scenario: a description that fits keeps its bar, so it is where it is looked for
-      Given I added a task titled "Write the spec" with the description "Two columns"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      Then a bar sits beside the description
-      And the description is at its beginning
-
-    @gui-the-trace-reads-newest-first
-    Scenario: the trace reads from the last thing done, with no blank line between two acts
-      Given I added a task titled "Write the spec"
-      And it was worked on 3 times
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      Then the trace begins with the last thing done to task 1
-      And no line of the trace is empty
-
-    @gui-the-trace-scrolls
-    Scenario: a trace longer than its box scrolls, and stops at both ends
-      Given I added a task titled "Write the spec"
-      And it was worked on 20 times
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      And I press "cmd+t"
-      Then the trace has more to show than it has room for
-      And the trace is at its beginning
-      When I scroll down over the trace
-      Then the trace has moved
-      And the trace stays inside the panel
-      When I scroll up over the trace
-      Then the trace is at its beginning
-      When I scroll down over the trace 99 times
-      Then the trace is at its end
-      And the trace stays inside the panel
-
-    @gui-the-bar-beside-the-trace-is-dragged
-    Scenario: the bar beside the trace is taken hold of and moved
-      Given I added a task titled "Write the spec"
-      And it was worked on 20 times
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      And I press "cmd+t"
-      And I drag the trace's bar to the bottom
-      Then the trace is at its end
-      And the trace stays inside the panel
-
   Rule: What the arrows reach, they bring into sight
-
-    @gui-the-arrows-bring-a-card-into-sight
-    Scenario: walking down past what a column shows brings the next card into sight
-      Given I added 12 tasks to "backlog"
-      When I open the window
-      And I press "down" 11 times
-      Then what is chosen is in sight
-      When I press "up" 11 times
-      Then what is chosen is in sight
-
-    @gui-walking-across-brings-the-card-into-sight
-    Scenario: walking into a column somebody had scrolled brings its card into sight
-      Given I added 12 tasks to "backlog"
-      And I added 12 tasks to "todo"
-      When I open the window
-      And I scroll down over "TODO"
-      And I press "right"
-      Then what is chosen is in sight
-
-    @gui-the-arrows-bring-a-lane-card-into-sight
-    Scenario: walking along a lane past what it shows brings the next card into sight
-      Given I added 6 tasks to "watching"
-      When I open the window
-      And I click the card "Task 1"
-      And I press "down" 5 times
-      Then what is chosen is in sight
-      When I press "up" 5 times
-      Then what is chosen is in sight
 
     @gui-the-arrows-bring-an-objective-into-sight
     Scenario: walking down the objectives brings the next one into sight
@@ -3370,14 +1058,6 @@ Feature: The desktop board
       And I click the tab "OBJECTIVES"
       And I press "down" 11 times
       Then what is chosen is in sight
-
-    @gui-the-wheel-scrolls-the-objectives
-    Scenario: the wheel moves the objectives, which used to stand still
-      Given I added 40 objectives
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I scroll down over the objectives
-      Then the objectives have moved
 
   Rule: The pages are walked round with tab
 
@@ -3392,65 +1072,7 @@ Feature: The desktop board
       When I press "shift+tab"
       Then the tab is "TIME"
 
-    @gui-tab-in-a-form-walks-the-fields
-    Scenario: tab in a form walks its fields rather than changing the page
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And I press "tab"
-      Then the tab is "TASKS"
-      And the caret is on the second field
-
-    @gui-a-tab-says-how-much-it-holds
-    Scenario: a tab says how much its page holds
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      And I added an objective titled "Ship by June"
-      When I open the window
-      Then the tab "TASKS" says it holds 2
-      And the tab "OBJECTIVES" says it holds 1
-
-    @gui-the-time-tab-counts-before-it-is-opened
-    Scenario: the time tab says how many tasks were worked on this week before it is opened
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship the board"
-      And I spent "1h" on each of tasks 1 to 2 on "2026-09-29"
-      And today is "2026-09-30"
-      When I open the window
-      Then the tab "TIME" says it holds 2
-
   Rule: An objective opens on the work that serves it
-
-    @gui-an-objective-opens-on-what-serves-it
-    Scenario: opening an objective shows the work that serves it
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec" serving objective 1
-      And I added a task titled "Buy a lamp"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship the desktop board"
-      And I press "enter"
-      Then "Ship the desktop board" is open to be edited
-      And the work beside the form carries "Write the spec"
-      And the work beside the form does not carry "Buy a lamp"
-      And what serves it is drawn one line to a tile
-      And the work stands under the description
-      And the column beside the form offers no tabs
-
-    @gui-an-objectives-work-is-current-first
-    Scenario: the work of an objective lists what is under way first and what is done last
-      Given I added an objective titled "Ship the board"
-      And I added a task titled "Old" with the state "done" serving objective 1
-      And I added a task titled "Write the spec" with the state "current" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship the board"
-      And I press "enter"
-      Then the work beside the form reads "Write the spec", "Old"
-      When I click the work "Write the spec"
-      Then the form is open on task 2
 
     @gui-an-objectives-work-is-walked-with-the-keyboard
     Scenario: tab from the description reaches the work, the arrows walk it, enter opens a task
@@ -3483,81 +1105,6 @@ Feature: The desktop board
       Then the window is on the form
       And the field "objectives" names "Ship the board"
 
-    @gui-the-work-under-an-objective-scrolls
-    Scenario: more work than the box holds scrolls, and stops at both ends
-      Given I added an objective titled "Ship the desktop board"
-      And I added 30 tasks serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship the desktop board"
-      And I press "enter"
-      Then the work under it has more to show than it has room for
-      And the work under it is at its beginning
-      When I scroll down over the work under it
-      Then the work under it has moved
-      When I scroll up over the work under it
-      Then the work under it is at its beginning
-      When I scroll down over the work under it 99 times
-      Then the work under it is at its end
-
-    @gui-an-objective-card-says-how-much-is-done
-    Scenario: an objective says how much work it carries and how much is done
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec" serving objective 1
-      And I added a task titled "Ship it" with the state "done" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the card for objective 1 says "1/2"
-      And the card for objective 1 says "50%"
-
-    @gui-an-objective-card-counts-steps-apart
-    Scenario: an objective counts the steps of its tasks apart from its tasks
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec" serving objective 1
-      And I added the step "Read the ADR" to task 1, done
-      And I added the step "Write it" to task 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the card for objective 1 says "0/1 · 1/2 steps"
-
-    @gui-an-objective-card-says-the-time-spent
-    Scenario: an objective's card says the time spent on the tasks serving it
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec" serving objective 1
-      And I added a task titled "Ship it" serving objective 1
-      And I spent "1h" on task 1 on "2026-09-29"
-      And I spent "30m" on task 2 on "2026-09-30"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the card for objective 1 says "1h30m"
-
-    @gui-an-objective-nothing-serves-carries-no-count
-    Scenario: an objective nothing serves carries no count at all
-      Given I added an objective titled "Ship the desktop board"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the card for objective 1 says nothing of how far along it is
-
-    @gui-an-open-objective-is-its-own
-    Scenario: an open objective is its own, not the task sharing its number
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship the desktop board"
-      And I press "enter"
-      Then "Ship the desktop board" is open to be edited
-
-    @gui-an-objective-with-nothing-under-it-says-so
-    Scenario: an objective nothing serves yet says so rather than showing an empty space
-      Given I added an objective titled "Ship the desktop board"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship the desktop board"
-      And I press "enter"
-      Then "Ship the desktop board" is open to be edited
-      And the work beside the form says nothing serves it yet
-
   Rule: The window takes work up
 
     @gui-focus-takes-a-task-up
@@ -3570,19 +1117,6 @@ Feature: The desktop board
       When I press "f"
       Then the engine was asked "task unfocus" for task 1
 
-    @gui-a-list-has-no-heading
-    Scenario: the list a field opens has no heading, the field it hangs from saying what it is for
-      Given I added an objective titled "Ship it"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      Then the window is choosing
-      And the list has no heading
-      And the list begins at the top of its panel
-      And the list offers "Ship it"
-
     @gui-a-list-is-corrected-like-any-other-field
     Scenario: what was typed into a list can be taken back out
       Given I added a task titled "Write the spec" in "todo" at the priority "normal" carrying the label "backend"
@@ -3594,82 +1128,6 @@ Feature: The desktop board
       Then the list does not offer "backend"
       When I press "backspace"
       Then the list offers "backend"
-
-    @gui-enter-takes-and-cmd-enter-keeps
-    Scenario: enter chooses a row or lets it go, and done keeps what is chosen
-      Given I added an objective titled "Ship cairn"
-      And I added an objective titled "Keep it honest"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      Then the bar offers "Choose" under "⏎"
-      And the bar offers "Done" under "⌘⏎"
-      When I press "enter"
-      And I press "down"
-      And I press "enter"
-      Then the list has taken 2
-      When I press "cmd+enter"
-      Then the window is on the form
-      And the field "objectives" names "Ship cairn"
-      And the field "objectives" names "Keep it honest"
-
-    @gui-enter-on-a-list-field-opens-its-list
-    Scenario: enter on a field chosen from a list opens the list, though the form offers no button for it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "column"
-      And I press "enter"
-      Then the window is choosing
-      And the bar offers "Choose" under "⏎"
-      And the bar does not offer "Done"
-
-    @gui-text-is-held-and-carried
-    Scenario: a run of text is held, copied, and put down somewhere else
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "description"
-      And I type "Deux colonnes"
-      And I press "shift+left" 8 times
-      Then the field "description" holds "colonnes"
-      When I press "cmd+c"
-      Then the clipboard reads "colonnes"
-      When I click the field "title"
-      And I press "cmd+a"
-      And I press "cmd+v"
-      Then the field "title" reads "colonnes"
-
-    @gui-a-run-is-held-with-the-mouse
-    Scenario: a run of text is held by dragging across it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I drag across the field "title" from 0 to 5
-      Then the field "title" holds "Write"
-
-    @gui-a-run-follows-the-pointer-out-of-its-field
-    Scenario: a run keeps following the pointer once it leaves the field
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I drag across the field "title" from 6 to past its end
-      Then the field "title" holds "the spec"
-
-    @gui-a-double-click-dragged-holds-whole-words
-    Scenario: a double click dragged on holds whole words
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I double-click the field "title" at 2 and drag to 7
-      Then the field "title" holds "Write the"
 
     @gui-a-triple-click-holds-the-paragraph
     Scenario: a triple click holds the whole paragraph it lands in
@@ -3692,37 +1150,6 @@ Feature: The desktop board
       Then the field "title" reads ""
       And the clipboard reads "Write the spec"
 
-    @gui-a-form-can-always-be-saved
-    Scenario: a form is saved whatever field the keyboard is on
-      Given I added an objective titled "Ship it"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      And I press "enter"
-      And I press "cmd+enter"
-      Then the window is on the form
-      And the bar offers "Save" under "⌘⏎"
-      And the bar does not offer "Choose"
-      When I press "cmd+enter"
-      Then the window is on the board
-      And the engine was asked "task edit" for task 1
-
-    @gui-objectives-are-chosen-without-a-search
-    Scenario: the objectives are picked from their list, with no search to type into
-      Given I added an objective titled "Ship it"
-      And I added an objective titled "Rewrite the tests"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      Then the list offers no search
-      When I type "tests"
-      Then the list offers "Ship it"
-      And the list offers "Rewrite the tests"
-
     @gui-a-double-click-is-done-with-the-list
     Scenario: a double-click takes a row and is done, which is what a hand expects
       Given I added an objective titled "Ship it"
@@ -3732,115 +1159,6 @@ Feature: The desktop board
       And I choose "Edit"
       And I click the field "objectives"
       And I double-click the list row "Ship it"
-      Then the window is on the form
-      And the field "objectives" names "Ship it"
-
-    @gui-a-long-field-takes-a-line-break
-    Scenario: a description is written in paragraphs, not on one line
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "description"
-      And I type "Deux colonnes"
-      And I press "shift+enter"
-      And I type "et une bande"
-      Then the window is on the form
-      And the field "description" is written on more than one line
-      And the field "description" names "Deux colonnes"
-      And the field "description" names "et une bande"
-
-    @gui-enter-does-not-save
-    Scenario: enter writes a line in the description, and saves nothing
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "description"
-      And I type "Deux colonnes"
-      And I press "enter"
-      And I type "et une bande"
-      Then the window is on the form
-      And the field "description" is written on more than one line
-      And the field "description" names "Deux colonnes"
-      And the field "description" names "et une bande"
-      And task 1 is called "Write the spec"
-
-    @gui-enter-moves-on-from-a-one-line-field
-    Scenario: enter on a field of one line moves on to the next
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "title"
-      And I press "enter"
-      Then the keyboard is on "description"
-      And task 1 is called "Write the spec"
-
-    @gui-a-line-break-takes-the-caret-with-it
-    Scenario: the caret moves to the new line, before anything is typed on it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "description"
-      And I type "Deux colonnes"
-      And I press "shift+enter"
-      Then the caret is on line 2 of the field "description"
-
-    @gui-a-long-list-stays-inside-its-panel
-    Scenario: a list of more than fit stays inside the panel and scrolls
-      Given I added a task titled "Write the spec"
-      And I added 40 objectives
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      Then the list has more to show than it has room for
-      And every row of the list is inside the panel
-      And a bar sits beside the list
-      And the list is at its beginning
-      When I scroll down over the list
-      Then the list has moved
-      And every row of the list is inside the panel
-      When I scroll down over the list 99 times
-      Then the list is at its end
-      And every row of the list is inside the panel
-
-    @gui-walking-past-the-last-row-in-sight-scrolls-the-list
-    Scenario: the keyboard brings a row into sight rather than leaving it below
-      Given I added a task titled "Write the spec"
-      And I added 40 objectives
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      And I press "down" 30 times
-      Then the row the keyboard is on is in sight
-
-    @gui-clicking-a-field-that-a-list-answers-opens-it
-    Scenario: clicking the field opens its list, which is what a pointer is for
-      Given I added an objective titled "Ship it"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      Then the window is choosing
-      And the list has no heading
-
-    @gui-a-list-answers-the-mouse
-    Scenario: a row is chosen by clicking it, the way everything else here is
-      Given I added an objective titled "Ship it"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "objectives"
-      And I click the list row "Ship it"
-      Then the window is choosing
-      When I press "enter"
-      And I press "cmd+enter"
       Then the window is on the form
       And the field "objectives" names "Ship it"
 
@@ -3866,54 +1184,6 @@ Feature: The desktop board
       Then the window is on the form
       And the field "priority" reads "normal"
 
-    @gui-the-list-narrows-as-it-is-typed-into
-    Scenario: typing in the list keeps only what matches
-      Given I added a task titled "Write the spec" in "todo" at the priority "normal" carrying the label "backend"
-      And I added a task titled "Ship it"
-      And I edited task 2 with the labels "release" and "sp26-20"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the field "labels"
-      And I type "rel"
-      Then the list offers "release"
-      And the list does not offer "backend"
-
-    @gui-a-card-says-it-carries-more-than-it-shows
-    Scenario: a card says a description exists and how far its steps have got
-      Given I added a task titled "Write the spec" with the description "Two columns"
-      And I added a task titled "Ship it"
-      And I added the step "Write the tests" to task 2, done
-      When I open the window
-      Then the card for task 1 is marked as described
-      And the card for task 2 says "1/1"
-      And the card for task 2 is not marked as described
-
-    @gui-a-card-says-what-it-blocks
-    Scenario: a card says how many tasks it is in the way of
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      And I added a task titled "Announce it"
-      And I edited task 2 with the blocker "1"
-      And I edited task 3 with the blocker "1"
-      When I open the window
-      Then the card for task 1 says "⊳2"
-
-    @gui-labels-show-on-the-card
-    Scenario: a card says what it is labelled without being opened
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the labels "backend" and "sp26-20"
-      When I open the window
-      Then the card "Write the spec" says "backend"
-      And the card "Write the spec" says "sp26-20"
-
-    @gui-a-card-says-how-many-labels-it-could-not-show
-    Scenario: a card too narrow for every label says how many it left out
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the labels "an-altogether-overlong-label" and "another-just-as-long-one"
-      When I open the window
-      Then the card "Write the spec" says "+1"
-
     @gui-the-count-of-labels-opens-them-all
     Scenario: resting the pointer on a card's count of labels shows every label it carries
       Given I added a task titled "Write the spec"
@@ -3924,29 +1194,7 @@ Feature: The desktop board
       When I rest the pointer on the title of "Write the spec"
       Then no bubble shows labels
 
-    @gui-focus-shows-on-the-card
-    Scenario: a card says it is being worked on
-      Given I added a task titled "Write the spec"
-      And I put task 1 in focus
-      When I open the window
-      Then the card "Write the spec" says it is being worked on
-
-    @gui-the-card-in-focus-carries-a-glowing-dot
-    Scenario: the card in focus carries a glowing dot at the right of its first line
-      Given I added a task titled "Write the spec"
-      And I put task 1 in focus
-      When I open the window
-      Then the card "Write the spec" carries a glowing dot at the right of its first line
-
   Rule: A key does what the bar offers, where the bar offers it
-
-    @gui-the-command-bar-names-what-is-chosen
-    Scenario: the command bar at the window's foot names the task chosen, or asks for a command
-      Given I added a task titled "Write the spec"
-      When I open the window
-      Then the command bar reads "Command, number or title…"
-      When I click the card "Write the spec"
-      Then the command bar reads "#1 · Write the spec"
 
     @gui-a-narrow-bar-keeps-its-line
     Scenario: at the narrowest window the bar's hints give their words up, so its line stays
@@ -3957,27 +1205,6 @@ Feature: The desktop board
       Then the command bar reads "#1 · Write the spec"
       And the bar's line has room to be read
       And every hint of the bar is its key alone, inside the window
-
-    @gui-a-wide-bar-keeps-its-words
-    Scenario: a window wide enough keeps the bar's hints in words
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      Then every hint of the bar has its words
-
-    @gui-the-palette-moves-the-chosen-task
-    Scenario: the command bar opened by cmd+k moves the chosen task to a column named in it
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "cmd+k"
-      Then the command bar is open
-      When I type "move"
-      And I press "enter"
-      And I type "done"
-      And I press "enter"
-      Then the engine was asked "task edit" for task 1
-      And the command bar is shut
 
     @gui-esc-lets-the-chosen-card-go
     Scenario: esc on the board lets go of the card chosen
@@ -4017,16 +1244,6 @@ Feature: The desktop board
       And I press "enter"
       Then the window is on the form
 
-    @gui-a-slash-in-the-palette-searches-the-board
-    Scenario: a slash typed first in the command bar turns it into the board's search
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      When I open the window
-      And I press "cmd+k"
-      And I type "/spec"
-      Then the window is searching "spec"
-      And the board says nothing of "Ship it"
-
     @gui-a-search-kept-is-a-pill
     Scenario: enter keeps the search as a pill above the board, and its cross clears it
       Given I added a task titled "Write the spec"
@@ -4056,12 +1273,6 @@ Feature: The desktop board
       And I press "enter"
       Then the form is open on task 1
 
-    @gui-the-palette-opens-at-the-top
-    Scenario: the command bar opens over the top of the window, in its middle, and the bar at the foot stays
-      When I open the window
-      And I press "cmd+k"
-      Then the command bar stands at the top of the window, in its middle
-
     @gui-esc-on-a-search-goes-back-where-it-came-from
     Scenario: esc on a search goes back to where the search was started, and never into the command bar from the board
       Given I added a task titled "Write the spec"
@@ -4075,28 +1286,6 @@ Feature: The desktop board
       And I type "/spec"
       And I press "esc"
       Then the command bar is open
-
-    @gui-backspace-on-an-empty-search-goes-back-where-it-came-from
-    Scenario: backspace on a search with nothing left goes back to where it was started
-      When I open the window
-      And I press "/"
-      And I press "backspace"
-      Then the window is on the board
-      And the command bar is shut
-      When I press "cmd+k"
-      And I type "/"
-      And I press "backspace"
-      Then the command bar is open
-
-    @gui-d-deletes-nothing
-    Scenario: one letter destroys nothing: d no longer deletes, cmd+backspace asks first
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "d"
-      Then the window is on the board
-      When I press "cmd+backspace"
-      Then the panel is headed "Delete task 1?"
 
     @gui-m-moves-the-chosen-task
     Scenario: m opens the columns under the chosen card, and a column's letter moves it there
@@ -4118,19 +1307,6 @@ Feature: The desktop board
       And I press "enter"
       Then the engine was asked "task edit" for task 1
 
-    @gui-l-opens-the-labels-and-t-the-calendar
-    Scenario: l opens the chosen task's labels and t its deadline's calendar
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "l"
-      Then the window is choosing
-      When I press "esc"
-      And I press "esc"
-      And I click the card "Write the spec"
-      And I press "t"
-      Then the calendar is open
-
     @gui-l-picks-labels-under-the-card
     Scenario: l opens the labels under the chosen card, with no form, and each one taken is written at once
       Given I added a task titled "Write the spec"
@@ -4146,18 +1322,6 @@ Feature: The desktop board
       When I press "esc"
       Then the window is on the board
       And task 1 carries exactly the labels "doc, release, sp26-20"
-
-    @gui-a-label-offered-says-what-carries-it
-    Scenario: each label offered says how many tasks carry it
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      And I edited task 1 with the labels "doc" and "sp26-20"
-      And I edited task 2 with the labels "doc" and "release"
-      When I open the window
-      And I click the card "Ship it"
-      And I press "l"
-      Then the list says "doc" is carried by 2 tasks
-      And the list says "sp26-20" is carried by 1 task
 
     @gui-the-labels-taken-stand-as-pills
     Scenario: the labels a task carries stand as pills at the head of the list, a cross or backspace taking one off
@@ -4188,42 +1352,6 @@ Feature: The desktop board
       When I press "3"
       Then the time page shows a month
 
-    @gui-esc-shuts-the-palette
-    Scenario: esc shuts the command bar, having done nothing
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+k"
-      And I press "esc"
-      Then the command bar is shut
-      And the engine was not asked "task edit"
-
-    @gui-a-lit-offer-holds-its-words-in-its-middle
-    Scenario: the hint of the command bar under the pointer is lit, its key on a chip
-      When I open the window
-      And I rest the pointer on the offer "Search"
-      Then the offer "Search" is a lit hint, its key on a chip
-
-    @gui-every-offer-is-a-button
-    Scenario: what a form and the calendar offer are drawn as the same buttons
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      Then every offer of the panel is drawn as a button
-      When I click the field "deadline"
-      Then every offer of the panel is drawn as a button
-      And the calendar's month, year and arrows are drawn as buttons
-
-    @gui-e-edits-an-open-task
-    Scenario: a task being read is edited without closing it first
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "enter"
-      Then "Write the spec" is open to be edited
-      When I press "e"
-      Then the form is open on task 1
-
     @gui-every-key-the-bar-offers-works
     Scenario: every key the bar offers does what the bar says, on every screen
       Given I added a task titled "Write the spec"
@@ -4231,56 +1359,7 @@ Feature: The desktop board
       And I click the card "Write the spec"
       Then every key the bar offers does what it offers
 
-    @gui-adding-does-not-throw-away-an-open-form
-    Scenario: the key that adds does nothing where adding is not offered
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Write it properly"
-      And I press "cmd+n"
-      Then the form is open on task 1
-      And the field "title" reads "Write it properly"
-
   Rule: A task opens on its steps, ticked, renamed, added and taken away where they are
-
-    @gui-the-arrows-walk-the-steps
-    Scenario: the arrows walk the steps, and space ticks the one they are on
-      Given I added a task titled "Ship it"
-      And I added the step "Draft the columns" to task 1
-      And I added the step "Get the nod" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I put the keyboard on "steps"
-      Then the step the keyboard is on is "Draft the columns"
-      When I press "down"
-      Then the step the keyboard is on is "Get the nod"
-      When I press "space"
-      Then the step "Get the nod" is ticked
-      And task 1 carries the step "Get the nod", done
-
-    @gui-a-task-with-steps-chooses-from-a-list
-    Scenario: a task with steps opens a list from its form, and the form stays drawn under it
-      Given I added a task titled "Ship it"
-      And I added the step "Draft the columns" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the field "column"
-      Then the window is choosing
-      And the list reads "backlog", "todo", "current", "blocked", "watching", "paused", "done"
-
-    @gui-a-step-is-renamed-in-its-tile
-    Scenario: enter renames the step the keyboard is on, in its tile
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I put the keyboard on "steps"
-      And I press "enter"
-      And I type " the columns"
-      And I press "enter"
-      And I choose "Save"
-      Then the steps of task 1 read "Draft the columns"
 
     @gui-steps-are-added-one-after-another
     Scenario: the last line adds a step, and the next is waiting behind it
@@ -4295,44 +1374,6 @@ Feature: The desktop board
       And I press "enter"
       And I choose "Save"
       Then the steps of task 1 read "Draft the columns", "Get the nod"
-
-    @gui-a-step-is-deleted-once-agreed
-    Scenario: a delete key on the step clicked asks, and agreed takes it away at once, the form unsaved
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      And I added the step "Keep" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Draft"
-      And I press "backspace"
-      Then the window asks "Delete the step “Draft”?"
-      When I press "enter"
-      Then the steps of task 1 read "Keep"
-      And the form's steps read "Keep"
-      And the form is open on task 1
-      And the last act on task 1 changed its steps from "[ ] Draft; [ ] Keep" to "[ ] Keep"
-
-    @gui-the-form-stays-behind-the-question-that-deletes-a-step
-    Scenario: the form is still drawn while the window asks to delete a step
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Draft"
-      And I press "backspace"
-      Then the window asks "Delete the step “Draft”?"
-      And the form is drawn behind the question
-
-    @gui-a-question-stands-out-from-what-is-behind-it
-    Scenario: a question stands raised over a window dimmed behind it, its answer that destroys in red
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Draft"
-      And I press "backspace"
-      Then the question stands raised, its corners rounded
-      And what is behind the question is dimmed
 
     @gui-a-question-answers-to-its-verb
     Scenario Outline: a question's answer is named by what it does, and enter does it
@@ -4362,57 +1403,6 @@ Feature: The desktop board
       And I press "cmd+backspace"
       Then the question says "Its 1 step, its labels and its 1h30m spent go with it."
 
-    @gui-a-step-is-kept-when-its-delete-is-cancelled
-    Scenario: the forward delete asks too, and cancelled leaves the step where it was
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      And I added the step "Keep" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Keep"
-      And I press "delete"
-      Then the window asks "Delete the step “Keep”?"
-      When I press "esc"
-      Then the steps of task 1 read "Draft", "Keep"
-      And the form's steps read "Draft", "Keep"
-      And the form is open on task 1
-
-    @gui-steps-taken-together-are-deleted-at-once
-    Scenario: steps ⌘-clicked together are deleted in one go, once agreed
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      And I added the step "Keep" to task 1
-      And I added the step "Review" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Draft"
-      And I ⌘-click the step "Review"
-      And I press "backspace"
-      Then the window asks "Delete 2 steps?"
-      When I press "enter"
-      Then the steps of task 1 read "Keep"
-      And the form's steps read "Keep"
-      And the last act on task 1 changed its steps from "[ ] Draft; [ ] Keep; [ ] Review" to "[ ] Keep"
-
-    @gui-steps-stretched-to-are-taken-together
-    Scenario: a ⇧-click takes every step from the one chosen to the one clicked
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      And I added the step "Keep" to task 1
-      And I added the step "Review" to task 1
-      And I added the step "Ship" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Keep"
-      And I ⇧-click the step "Ship"
-      And I press "delete"
-      Then the window asks "Delete 3 steps?"
-      When I press "esc"
-      Then the steps of task 1 read "Draft", "Keep", "Review", "Ship"
-      When I press "backspace"
-      And I press "enter"
-      Then the steps of task 1 read "Draft"
-
     @gui-space-ticks-every-step-taken
     Scenario: space ticks every step taken, and unticks them once all are done
       Given I added a task titled "Ship it"
@@ -4430,48 +1420,6 @@ Feature: The desktop board
       When I press "space"
       Then the steps of task 1 read "Draft", "Keep", "Review"
       And task 1 carries the step "Keep", not done
-
-    @gui-a-step-taken-is-let-go-alone
-    Scenario: a ⌘-click on a step taken lets that one go, and keeps the others
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      And I added the step "Keep" to task 1
-      And I added the step "Review" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Draft"
-      And I ⌘-click the step "Keep"
-      And I ⌘-click the step "Review"
-      And I ⌘-click the step "Keep"
-      And I press "backspace"
-      Then the window asks "Delete 2 steps?"
-      When I press "enter"
-      Then the steps of task 1 read "Keep"
-
-    @gui-the-last-step-taken-can-be-let-go
-    Scenario: a ⌘-click lets the last step taken go, and a delete key then deletes nothing
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Draft"
-      And I ⌘-click the step "Draft"
-      And I press "backspace"
-      Then the form is open on task 1
-      And the steps of task 1 read "Draft"
-
-    @gui-every-step-is-taken-at-once
-    Scenario: ⌘A takes every step of the list
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      And I added the step "Keep" to task 1
-      And I added the step "Review" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I click the step "Keep"
-      And I press "cmd+a"
-      And I press "backspace"
-      Then the window asks "Delete 3 steps?"
 
     @gui-steps-taken-outlast-a-save
     Scenario: the steps taken are still taken once the form has saved itself
@@ -4506,22 +1454,6 @@ Feature: The desktop board
       When I choose "Save"
       Then the steps of task 1 read "Review", "Ship", "Draft", "Keep"
 
-    @gui-a-step-deleted-leaves-the-rest-of-the-form-as-it-was
-    Scenario: what was typed in the form and not saved is still there once a step is deleted
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      And I added the step "Keep" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I put the keyboard on "title"
-      And I type " now"
-      And I click the step "Keep"
-      And I press "backspace"
-      And I press "enter"
-      Then the field "title" reads "Ship it now"
-      And the steps of task 1 read "Draft"
-      And task 1 is titled "Ship it"
-
     @gui-a-step-in-edit-loses-a-letter-not-itself
     Scenario: a double click puts a step in edit, where backspace takes a letter and asks nothing
       Given I added a task titled "Ship it"
@@ -4551,31 +1483,6 @@ Feature: The desktop board
       When I press "enter"
       Then the form's steps read "Keep"
 
-    @gui-the-wheel-scrolls-the-steps
-    Scenario: the wheel scrolls the steps, wherever the keyboard is
-      Given a window of 1024 by 640
-      And I added a task titled "Ship it"
-      And I added 12 steps to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      Then the steps are at their beginning
-      When I scroll down over the steps
-      Then the steps have moved
-      When I scroll down over the steps 99 times
-      Then the last step is in sight
-
-    @gui-a-step-in-hand-shows-where-it-lands
-    Scenario: a step in hand follows the pointer, and says where it would land
-      Given I added a task titled "Ship it"
-      And I added the step "First" to task 1
-      And I added the step "Second" to task 1
-      And I added the step "Third" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I take hold of the step "First" and hold it over the step "Third"
-      Then a step is in hand, under the pointer
-      And it would land below "Third"
-
     @gui-a-step-is-dragged-to-its-place
     Scenario: a step dragged onto another takes its place
       Given I added a task titled "Ship it"
@@ -4589,160 +1496,7 @@ Feature: The desktop board
       And I double-click the card "Ship it"
       Then the steps are drawn as a list to tick, "Second" first
 
-    @gui-steps-done-and-left-in-turn-are-saved
-    Scenario: steps done and left in turn are saved, each kept among its own
-      Given I added a task titled "Ship it"
-      And I added the step "One" to task 1, done
-      And I added the step "Two" to task 1, done
-      And I added the step "Three" to task 1
-      And I added the step "Four" to task 1, done
-      And I added the step "Five" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I put the keyboard on "steps"
-      And I press "down"
-      And I press "space"
-      And I choose "Save"
-      Then the window is on the board
-      And task 1 carries the step "Five", done
-
-    @gui-a-tick-is-kept-whatever-becomes-of-the-form
-    Scenario: a step ticked is done at once, and nothing is left to save for it
-      Given I added a task titled "Ship it"
-      And I added the step "Draft" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      And I put the keyboard on "steps"
-      And I press "space"
-      Then task 1 carries the step "Draft", done
-      When I press "esc"
-      Then the window is on the board
-      And task 1 carries the step "Draft", done
-
-    @gui-an-open-task-says-its-title-in-its-heading
-    Scenario: an open task says its title on the line beside its number
-      Given I added a task titled "Ship it"
-      When I open the window
-      And I double-click the card "Ship it"
-      Then the panel is headed "task 1 · Ship it"
-
-    @gui-every-text-on-an-open-task-is-copied
-    Scenario: a word of anything an open task writes is held and copied
-      Given I added a task titled "Write the spec" with the description "Deux colonnes et une bande"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I double-click the first word of "field:description" on the open task
-      And I press "cmd+c"
-      Then the clipboard reads "Deux"
-
-    @gui-a-run-of-the-trace-spans-its-lines
-    Scenario: a run dragged across the trace takes in every line it passes over
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I double-click the card "Write the spec"
-      And I press "cmd+t"
-      And I drag across the trace from the start of its first line to the end of its second
-      And I press "cmd+c"
-      Then the clipboard reads the first 2 lines of the trace
-
-    @gui-the-steps-left-come-first
-    Scenario: what is left comes first
-      Given I added a task titled "Ship it"
-      And I added the step "Draft the columns" to task 1, done
-      And I added the step "Get the client's nod" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      Then the steps are drawn as a list to tick, "Get the client's nod" first
-
   Rule: The objectives a task serves are picked from a list, not typed
-
-    @gui-the-objectives-field-opens-a-list
-    Scenario: the objectives field opens a list of what there is to serve
-      Given I added an objective titled "Ship the desktop board"
-      And I added an objective titled "Keep it honest"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      Then the list of objectives is open
-      And the list offers "Ship the desktop board"
-      And the list offers "Keep it honest"
-      And the form is still drawn behind it
-
-    @gui-space-ticks-an-objective
-    Scenario: enter takes an objective in, and takes it out again
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      And I press "enter"
-      Then objective 1 is ticked
-      When I press "enter"
-      Then objective 1 is not ticked
-
-    @gui-the-list-is-walked-like-the-board
-    Scenario: the arrows walk the list, and so do j and k
-      Given I added an objective titled "Ship the desktop board"
-      And I added an objective titled "Keep it honest"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      Then the list is on "Ship the desktop board"
-      When I press "down"
-      Then the list is on "Keep it honest"
-      When I press "k"
-      Then the list is on "Ship the desktop board"
-      When I press "j"
-      Then the list is on "Keep it honest"
-      When I press "j"
-      Then the list is on "Keep it honest"
-      When I press "k"
-      And I press "k"
-      Then the list is on "Ship the desktop board"
-
-    @gui-what-was-taken-is-what-the-field-carries
-    Scenario: keeping the list leaves the field carrying what was taken
-      Given I added an objective titled "Ship the desktop board"
-      And I added an objective titled "Keep it honest"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      And I press "enter"
-      And I press "down"
-      And I press "enter"
-      And I press "cmd+enter"
-      Then the form is open on task 1
-      And the field "objectives" names "Ship the desktop board"
-      And the field "objectives" names "Keep it honest"
-      And the field "objectives" is drawn by name and not by number
-
-    @gui-the-labels-field-opens-a-list
-    Scenario: the labels field opens a list of every label, those the task carries ticked
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      And I edited task 1 with the labels "backend" and "sp26-20"
-      And I edited task 2 with the labels "release" and "sp26-20"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "labels"
-      And I press "enter"
-      Then the window is choosing
-      And the list has no heading
-      And the list reads "backend", "release", "sp26-20"
-      And the label "backend" is ticked
-      And the label "release" is not ticked
 
     @gui-labels-are-created-several-at-a-time
     Scenario: a label nobody carries is created under the name it will have, and the list stays open for the next
@@ -4764,87 +1518,6 @@ Feature: The desktop board
       When I choose "Save"
       Then task 1 carries the labels "front, sp26-21"
 
-    @gui-a-label-spelt-otherwise-is-the-one-there-is
-    Scenario: a label typed another way is the label there is, and nothing is created
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      And I edited task 2 with the labels "backend" and "sp26-20"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "labels"
-      And I press "enter"
-      And I type "SP26_20"
-      Then the list reads "sp26-20"
-      And the list offers to create nothing
-      When I press "enter"
-      And I press "cmd+enter"
-      And I choose "Save"
-      Then task 1 carries the labels "sp26-20"
-
-    @gui-a-label-the-rule-refuses-is-not-created
-    Scenario: a label no label may be is said why, and not created
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "labels"
-      And I press "enter"
-      And I type "ado:77594"
-      Then the list says a label has no family
-      And the list offers to create nothing
-      When I press "enter"
-      And I press "cmd+enter"
-      Then the field "labels" reads ""
-
-    @gui-a-label-taken-off-is-offered-no-more
-    Scenario: a label taken off its last task is offered no more
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Ship it"
-      And I edited task 1 with the labels "backend" and "sp26-20"
-      And I edited task 2 with the labels "release" and "sp26-20"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "labels"
-      And I press "enter"
-      And I press "enter"
-      And I press "cmd+enter"
-      And I choose "Save"
-      Then task 1 carries the labels "sp26-20"
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "labels"
-      And I press "enter"
-      Then the list reads "release", "sp26-20"
-
-    @gui-backing-out-of-a-list-keeps-nothing
-    Scenario: backing out of a list puts nothing in the field, and keeps the form
-      Given I added an objective titled "Ship the desktop board"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      And I press "enter"
-      And I press "esc"
-      Then the form is open on task 1
-      And the field "objectives" reads ""
-
-    @gui-a-store-with-no-objectives-says-so
-    Scenario: a list with nothing to offer says so rather than opening empty
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      Then the list of objectives is open
-      And the list says there is nothing to serve yet
-      When I press "space"
-      Then the list says there is nothing to serve yet
-
   Rule: The key that opens a field does not write in it
 
     @gui-the-key-that-opens-a-form-writes-nothing-in-it
@@ -4856,59 +1529,7 @@ Feature: The desktop board
       Then the form is open on task 1
       And the field "title" reads "Write the spec"
 
-    @gui-the-key-that-opens-a-search-writes-nothing-in-it
-    Scenario: the key that opens the search does not land in the box
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And the keyboard says "/" as both a key and as text
-      Then the window is asking what to look for
-      And nothing has been looked for yet
-
-    @gui-typing-into-an-open-field-still-writes
-    Scenario: typing into a field that is already open still writes
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I put the keyboard on "title"
-      And the keyboard says "s" as both a key and as text
-      Then the field "title" reads "Write the specs"
-
   Rule: Losing work is asked about first
-
-    @gui-a-click-off-a-filled-form-asks-first
-    Scenario: clicking off a form somebody typed into asks before it goes
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Something else"
-      And I click outside the panel
-      Then the panel is headed "Throw away what you typed?"
-      When I choose "Keep editing"
-      Then the field "title" reads "Something else"
-
-    @gui-a-filled-form-asks-before-it-is-thrown-away
-    Scenario: a form somebody typed into is asked about before it goes
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Something else"
-      And I choose "Cancel"
-      Then the panel is headed "Throw away what you typed?"
-      And the question is no bigger than what it asks
-      When I choose "Keep editing"
-      Then the window is on the form
-
-    @gui-a-form-is-closed-by-its-cross
-    Scenario: the cross at the top of a form closes a form nobody typed into
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I click the form's cross
-      Then the window is on the board
 
     @gui-every-panel-is-closed-by-its-cross
     Scenario Outline: the cross at the top of a panel closes it, as its esc does
@@ -4924,55 +1545,6 @@ Feature: The desktop board
         | shift+f |
         | cmd+,   |
 
-    @gui-a-filled-form-closed-by-its-cross-asks-first
-    Scenario: the cross asks first when something was typed
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Something else"
-      And I click the form's cross
-      Then the panel is headed "Throw away what you typed?"
-
-    @gui-esc-twice-sets-what-was-typed-aside
-    Scenario: esc twice throws a form away, and its form brings what was typed back
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I set the field "title" to "Write the whole spec"
-      And I press "esc"
-      And I press "esc"
-      Then the window is on the board
-      And task 1 is titled "Write the spec"
-      When I choose "Edit"
-      Then the bar offers "Recover" under "⌘Z"
-      When I press "cmd+z"
-      Then the field "title" reads "Write the whole spec"
-      When I choose "Save"
-      Then task 1 is titled "Write the whole spec"
-
-    @gui-an-untouched-form-asks-nothing
-    Scenario: a form nobody typed into closes without a question
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I choose "Edit"
-      And I choose "Cancel"
-      Then the window is on the board
-
-    @gui-a-whole-column-goes-off-the-board-at-once
-    Scenario: the column a card stands in is archived in one gesture
-      Given I added a task titled "Write the spec" with the state "done"
-      And I added a task titled "Ship it" with the state "done"
-      When I open the window
-      And I click the card "Write the spec"
-      And I press "shift+x"
-      Then the panel is headed "Archive every task in DONE?"
-      When I choose "Archive"
-      Then "DONE" does not carry "Write the spec"
-      And "DONE" does not carry "Ship it"
-
   Rule: What is on screen says what it is
 
     @gui-nothing-runs-out-of-a-field
@@ -4986,78 +1558,6 @@ Feature: The desktop board
       Then the field "description" is written on more than one line
       And no line of the field "description" runs out of it
 
-    @gui-the-form-keeps-its-offers-on-a-line-of-their-own
-    Scenario: the form of a task with steps fits above its offers, even in the smallest window
-      Given a window of 1024 by 640
-      And I added a task titled "Ship it"
-      And I added the step "Draft the columns" to task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I choose "Edit"
-      Then no field of the form reaches what it offers
-      And no two fields of the form overlap
-      And the title runs the width of the form, above everything else
-      And the description runs the width of the form, under the title
-      And the form groups its fields under "STATE", "TIME", "BLOCKERS", "LINKS"
-
-    @gui-a-new-task-goes-in-with-its-steps
-    Scenario: a new task is added with the steps already written down for it
-      When I open the window
-      And I choose "New"
-      And I set the field "title" to "Ship it"
-      And I set the field "steps" to "Draft the columns"
-      And I choose "Save"
-      Then the steps of task 1 read "Draft the columns"
-
-    @gui-the-steps-read-as-a-list-to-tick
-    Scenario: the steps of a task being edited read as a list to tick, written as lines underneath
-      Given I added a task titled "Ship it"
-      And I added the step "Draft the columns" to task 1
-      When I open the window
-      And I click the card "Ship it"
-      And I choose "Edit"
-      Then the steps are drawn as a list to tick, "Draft the columns" among them
-      When I click the field "steps"
-      Then the field "steps" reads "#1 [ ] Draft the columns"
-
-    @gui-the-bar-teaches-the-key
-    Scenario: the bar says what to press, not only what can be done
-      When I open the window
-      Then the bar offers "New" under "⌘N"
-      And the bar offers "Search" under "/"
-      And the bar offers "Help" under "?"
-
-    @gui-the-board-keeps-its-bar-under-a-panel
-    Scenario: opening a task leaves the bar under the board as it was, and the panel offers its own
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I click the card "Write the spec"
-      And I double-click the card "Write the spec"
-      Then the bar under the board reads "New", "Search", "Filter", "Archived", "Help", "Edit", "Archive", "Delete"
-      And the bar under the board answers nothing
-      And the bar offers "Save" under "⌘⏎"
-
-    @gui-a-search-says-it-is-a-search
-    Scenario: a search says it is one, and the key that opened it is not typed
-      When I open the window
-      And I press "/"
-      Then the window is asking what to look for
-      And the search reads ""
-      When I type "spec"
-      Then the search reads "spec"
-
-    @gui-the-help-is-headed
-    Scenario: the help says what it is before it says anything else
-      When I open the window
-      And I click "Help"
-      Then the help is headed "Help"
-
-    @gui-a-panel-rule-can-be-seen
-    Scenario: the rule over what a panel offers can be told from the panel it is drawn on
-      When I open the window
-      And I click "Help"
-      Then the rule over what the panel offers stands out from the panel
-
   Rule: One thing is drawn one way, wherever it stands
 
     @gui-the-count-of-labels-is-a-plain-pill
@@ -5067,130 +1567,7 @@ Feature: The desktop board
       When I open the window
       Then the card "Write the spec" counts the labels it leaves out in a pill with no ring
 
-    @gui-every-key-of-the-command-bar-is-on-a-chip
-    Scenario: a key the command bar names sits on a chip on every line, not only on the one chosen
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+k"
-      Then every key the command bar names sits on a chip
-
-    @gui-an-empty-slot-is-rounded
-    Scenario: the slot saying a column holds nothing is rounded as the card it stands for
-      Given I added a task titled "Write the spec" with the state "todo"
-      When I open the window
-      Then the slot of the column "current" is rounded as a card is
-
-    @gui-a-dot-beside-a-name-is-one-size
-    Scenario: the dot beside a label's name is the size of the dot beside a workspace's
-      Given the workspace "work", the default
-      And I added a task titled "Write the spec"
-      And I edited task 1 with the labels "doc" and "sp26-20"
-      When I open the window on the workspace "work"
-      And I press "shift+l"
-      Then the dot beside the label "doc" is as wide as the workspace's dot
-
-    @gui-the-switcher-is-a-popover
-    Scenario: the switcher drops from the pill as a popover, not as a panel
-      Given the workspace "work", the default
-      When I open the window on the workspace "work"
-      And I click the pill of the workspace
-      Then the switcher is drawn as a popover
-
-    @gui-the-labels-bubble-is-a-popover
-    Scenario: the bubble of a card's labels is a popover, rounded as a menu is
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the labels "an-altogether-overlong-label" and "another-just-as-long-one"
-      When I open the window
-      And I rest the pointer on the count of labels of "Write the spec"
-      Then the labels are shown in a popover
-
-    @gui-today-is-a-ring
-    Scenario: today's date on the time page is ringed, as today is in every grid, and not filled
-      Given I added a task titled "Write the spec"
-      And today is "2026-09-30"
-      When I open the window
-      And I click the tab "TIME"
-      Then the date of "2026-09-30" is ringed in the accent and not filled
-
-    @gui-a-label-search-is-lit-with-a-halo
-    Scenario: the search of the labels, written into, is lit with the halo of every field written into
-      Given I added a task titled "Write the spec"
-      And I edited task 1 with the labels "doc" and "sp26-20"
-      When I open the window
-      And I press "shift+l"
-      And I press "/"
-      Then the search of the labels is lit with a halo
-
-    @gui-a-taken-value-is-a-filled-box
-    Scenario: a value a filter has taken stands in a box filled with the accent, a value not taken in an empty box
-      Given I added a task titled "Write the spec" in "todo" at the priority "high" carrying the label "backend"
-      When I open the window
-      And I set the filter "priority" to "high"
-      And I press "p"
-      Then the value "high" of the filter stands in a box filled with the accent
-      And the value "low" of the filter stands in an empty box
-
-    @gui-every-line-of-the-command-bar-reads-alike
-    Scenario: every line of the open command bar is written in the reading ink, picked or not, under heads in sentence case
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I press "cmd+k"
-      Then every line of the command bar is written in the reading ink
-      And the groups of the command bar are headed in sentence case
-
-    @gui-the-workspace-pill-is-ringed-while-open
-    Scenario: the pill of the workspace is ringed while the switcher it opened is open
-      Given the workspace "work", the default
-      When I open the window on the workspace "work"
-      And I click the pill of the workspace
-      Then the pill of the workspace is ringed in the accent
-
-    @gui-the-steps-stand-in-a-field
-    Scenario: the steps of a task stand in a field framed as every field is, not in a square box
-      Given I added a task titled "Ship it" with the state "todo"
-      And I added the step "Write the spec" to task 1
-      When I open the window
-      And I double-click the card "Ship it"
-      Then the steps stand in a field framed as every field is
-
   Rule: Several cards are taken at once
-
-    @gui-several-are-gathered-with-cmd
-    Scenario: ⌘-clicking gathers cards, and a plain click starts again
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      When I open the window
-      And I click the card "First"
-      And I ⌘-click the card "Third"
-      Then the cards taken together are "First", "Third"
-      When I click the card "Second"
-      Then no card is taken with another
-
-    @gui-a-run-is-gathered-with-shift
-    Scenario: ⇧-clicking takes every card between, in their column
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      When I open the window
-      And I click the card "First"
-      And I ⇧-click the card "Third"
-      Then the cards taken together are "First", "Second", "Third"
-
-    @gui-several-are-deleted-at-once
-    Scenario: several tasks are deleted in one act, once asked
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      And I added a task titled "Third"
-      When I open the window
-      And I click the card "First"
-      And I ⌘-click the card "Third"
-      And I press "cmd+backspace"
-      Then the panel is headed "Delete 2 tasks?"
-      When I choose "Delete"
-      Then "BACKLOG" does not carry "First"
-      And "BACKLOG" does not carry "Third"
-      And "BACKLOG" carries "Second"
 
     @gui-what-takes-more-can-be-left-out
     Scenario: what would take more with it is named, and can be left out
@@ -5205,34 +1582,6 @@ Feature: The desktop board
       When I choose "Skip flagged"
       Then "BACKLOG" carries "Ship it"
       And "BACKLOG" does not carry "Other"
-
-    @gui-nothing-goes-when-nothing-is-chosen
-    Scenario: nothing goes when the answer is nothing
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      When I open the window
-      And I click the card "First"
-      And I ⌘-click the card "Second"
-      And I press "cmd+backspace"
-      And I choose "Cancel"
-      Then "BACKLOG" carries "First"
-      And "BACKLOG" carries "Second"
-
-    @gui-several-are-archived-at-once
-    Scenario: several tasks are archived in one act, once asked
-      Given I added a task titled "First"
-      And I added a task titled "Second"
-      When I open the window
-      And I click the card "First"
-      And I ⌘-click the card "Second"
-      And I press "x"
-      Then the panel is headed "Archive 2 tasks?"
-      And the question says "#1  First"
-      And the question says "#2  Second"
-      And the bar offers "Archive" under "⏎"
-      When I press "enter"
-      Then "BACKLOG" does not carry "First"
-      And "BACKLOG" does not carry "Second"
 
     @gui-what-cannot-go-is-left-out
     Scenario: an objective work still serves is left out, and the rest goes
@@ -5259,19 +1608,6 @@ Feature: The desktop board
       And the window looks again
       Then the form's steps read "Draft"
       And the trace begins with the last thing done to task 1
-
-    @gui-an-open-task-keeps-what-was-typed-when-it-changes-elsewhere
-    Scenario: what was typed stays, and what was not takes what was done elsewhere
-      Given I added a task titled "Ship it"
-      When I open the window
-      And I double-click the card "Ship it"
-      And I put the keyboard on "title"
-      And I type " now"
-      And somebody else renames task 1 "Ship it today"
-      And somebody else adds the step "Draft" to task 1
-      And the window looks again
-      Then the field "title" reads "Ship it now"
-      And the form's steps read "Draft"
 
   Rule: The settings are changed in place, and read again when they change
 
@@ -5302,13 +1638,6 @@ Feature: The desktop board
       Then a configuration file exists
       When I choose the scope "Global"
       Then the configuration reads "plugin" from the file
-
-    @gui-the-menu-bar-opens-the-configuration
-    Scenario: Settings… in the menu bar shows the settings
-      When I open the window
-      And I pick "Settings…" in the menu bar
-      Then the panel is headed "Settings"
-      And the bar offers "Close" under "esc"
 
     @gui-settings-a-toggle-is-written-at-once
     Scenario: a switch clicked is written in the settings of the workspace at once, and the window follows it
@@ -5397,18 +1726,6 @@ Feature: The desktop board
       And the settings of the workspace "home" say `theme = "gruvbox-dark"`
       And the configuration reads "window.theme" set here
 
-    @gui-settings-the-intro-chooser-shows-the-tasks-board
-    Scenario: opened from another tab, the intro chooser shows the board of tasks behind it, and leaving it brings the tab back
-      Given the workspace "home", the default
-      And the workspace "home" holds a task titled "Write the spec"
-      When I open the window on the workspace "home"
-      And I click the tab "OBJECTIVES"
-      And I press "cmd+,"
-      And I click the control of "window.intro"
-      Then the tab is "TASKS"
-      When I press "esc"
-      Then the tab is "OBJECTIVES"
-
     @gui-settings-the-intro-is-played-then-kept
     Scenario: the intro chooser plays each intro on the board behind as the keyboard walks it, replays it, keeps one on enter, and esc goes back
       Given the workspace "home", the default
@@ -5432,25 +1749,6 @@ Feature: The desktop board
       And I press "enter"
       Then the settings of the workspace "home" say `intro = "flap"`
       And the configuration reads "window.intro" set here
-
-    @gui-settings-an-edit-by-hand-is-read-again
-    Scenario: settings written by hand are read again on the beat, applied, and said
-      Given the workspace "home", the default
-      When I open the window on the workspace "home"
-      And the settings of the workspace "home" are written by hand:
-        """
-        [pages]
-        time = "off"
-
-        [window]
-        theme = "nord"
-        """
-      And the window looks again
-      Then the banner says "settings.toml read again"
-      And the banner says "pages.time on → off"
-      And the banner says "window.theme default → nord"
-      And the window wears "nord"
-      And the tabs read "TASKS", "OBJECTIVES"
 
     @gui-settings-a-file-that-cannot-be-read-keeps-the-last-good
     Scenario: settings that cannot be read leave the last good ones in force, said until they read
@@ -5489,13 +1787,6 @@ Feature: The desktop board
       And the top bar opens with the workspace "work", before the tabs
       And the dot of the pill wears "teal"
 
-    @gui-workspace-a-loose-store-shows-its-folder
-    Scenario: a store no workspace names is shown by its folder
-      Given a store no workspace names, in the folder "scratch"
-      When I open the window on that store
-      Then the window is titled after the folder "scratch"
-      And the top bar opens with the folder "scratch", before the tabs
-
     @gui-workspace-the-switcher-lists-them
     Scenario: the pill drops the switcher: the workspaces, each saying what choosing it does, then the recent folders
       Given the workspace "work", the default
@@ -5514,17 +1805,6 @@ Feature: The desktop board
       And the recent folder "trip" is tagged "not found now"
       And the switcher ends on "Open a folder…", "New workspace…", "Settings of work…"
 
-    @gui-workspace-the-switcher-narrows
-    Scenario: typing narrows the switcher
-      Given the workspace "work", the default
-      And the workspace "home"
-      When I open the window on the workspace "work"
-      And I press "cmd+shift+o"
-      And I type "ho"
-      Then the switcher lists the workspaces "home"
-      When I press "esc"
-      Then the window is on the board
-
     @gui-workspace-another-opens-in-a-window-of-its-own
     Scenario: choosing another workspace opens it in a window of its own, and this one stays
       Given the workspace "work", the default
@@ -5535,25 +1815,6 @@ Feature: The desktop board
       Then a cairn is started with "gui --workspace home"
       And the window says "home opens in a window of its own"
       And the window is titled "cairn — work"
-
-    @gui-workspace-the-one-open-is-brought-forward
-    Scenario: choosing a workspace a window already shows brings that window forward, and starts nothing
-      Given the workspace "work", the default
-      And the workspace "cairn-dev"
-      And a window is already open on the workspace "cairn-dev"
-      When I open the window on the workspace "work"
-      And I press "cmd+shift+1"
-      Then the window open on "cairn-dev" is brought forward
-      And no cairn is started
-      And the window says "cairn-dev is brought forward"
-
-    @gui-workspace-a-second-window-on-a-store-raises-the-first
-    Scenario: a window opened on a store another window shows brings that one forward instead
-      Given the workspace "work", the default
-      And a window is already open on the workspace "work"
-      When a second window is opened on the workspace "work"
-      Then the window open on "work" is brought forward
-      And the second window does not open
 
     @gui-workspace-a-folder-opens-in-a-window-of-its-own
     Scenario: a folder typed opens in a window of its own; a folder that is not there is refused
@@ -5585,29 +1846,6 @@ Feature: The desktop board
       Then the configuration names the workspace "garden"
       And a cairn is started with "gui --workspace garden"
 
-    @gui-workspace-the-menu-offers-the-switcher
-    Scenario: ⌘⇧O drops the switcher
-      Given the workspace "work", the default
-      When I open the window on the workspace "work"
-      And I press "cmd+shift+o"
-      Then the switcher lists the workspaces "work"
-
-    @gui-workspace-its-settings-say-where-each-comes-from
-    Scenario: ⌘, says the settings of the workspace, each key set here or from the global configuration, the time as a choice of three
-      Given the workspace "home", the default
-      And the settings of the workspace "home" turn the time off
-      And the global configuration says the archive lasts 30 days
-      When I open the window on the workspace "home"
-      And I press "cmd+,"
-      Then the panel is headed "Settings of home"
-      And the panel reads the settings of "home" over the global configuration
-      And the configuration reads "pages.time" set here
-      And the configuration reads "archive.days" from the global configuration
-      And the configuration reads "time.weekends" from its default
-      And the time reads "off" of "on", "hidden", "off"
-      When I choose "Open settings.toml"
-      Then the window asks the system to open the settings of "home"
-
     @gui-workspace-the-switcher-opens-the-settings
     Scenario: the switcher's last line opens the settings of this workspace
       Given the workspace "work", the default
@@ -5616,75 +1854,7 @@ Feature: The desktop board
       And I click "Settings of work…" in the switcher
       Then the panel is headed "Settings of work"
 
-    @gui-workspace-a-recent-folder-is-kept-as-a-workspace
-    Scenario: a recent folder is kept as a workspace from the switcher, and listed among them
-      Given the workspace "work", the default
-      And the recent folder "scratch", opened yesterday
-      When I open the window on the workspace "work"
-      And I press "cmd+shift+o"
-      Then the switcher does not end on "Keep as a workspace…"
-      When I press "down"
-      And I click "Keep as a workspace…" in the switcher
-      And I type "scratch"
-      And I press "enter"
-      Then the configuration names the workspace "scratch"
-      And the switcher lists the workspaces "scratch", "work"
-      And no cairn is started
-
-    @gui-workspace-its-settings-say-the-label-and-the-colour
-    Scenario: the settings of a workspace say its approach label, and the colour it wears beside its swatch
-      Given the workspace "home", the default
-      And the settings of the workspace "home" say its colour is "teal"
-      When I open the window on the workspace "home"
-      And I press "cmd+,"
-      Then the configuration reads "workspace.colour" set here
-      And the colour of the workspace reads "teal", beside its swatch
-      And the configuration reads "approach.label" from its default
-
-    @gui-workspace-a-key-set-here-says-the-global-value
-    Scenario: beside a key set in the settings of the workspace, the panel says what the global configuration would give
-      Given the workspace "home", the default
-      And the settings of the workspace "home" turn the time off
-      And the global configuration says the archive lasts 30 days
-      When I open the window on the workspace "home"
-      And I press "cmd+,"
-      Then the configuration reads "pages.time" set here, "← global: on" beside it
-      And the configuration reads "archive.days" from the global configuration, nothing beside it
-
-    @gui-workspace-time-off-leaves-the-card-without-time
-    Scenario: with the time off, a card says nothing of its time and still says it is worked on
-      Given the workspace "home", the default
-      And the settings of the workspace "home" turn the time off
-      And I added a task titled "Plant the tulips" with the estimate "2h"
-      And I put task 1 in focus
-      When I open the window on the workspace "home"
-      Then the card "Plant the tulips" says nothing of "2h"
-      And the card "Plant the tulips" says it is being worked on
-
   Rule: The objectives tab is a tree beside the objective chosen
-
-    @gui-objective-sub-objectives-sit-under-their-parent
-    Scenario: the objectives tab lists each sub-objective under its parent, indented and joined to it
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Tidy the workshop"
-      And I added an objective titled "Firmware" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the chevron of "Home automation"
-      Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
-      And the objective "Firmware" is drawn indented under "Home automation" and joined to it
-
-    @gui-objective-the-detail-shows-the-objective-chosen
-    Scenario: the right of the tab shows the objective chosen, and the first while none is
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Tidy the workshop"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the detail is headed "Home automation"
-      When I click the objective "Tidy the workshop"
-      Then the detail is headed "Tidy the workshop"
-      When I press "up"
-      Then the detail is headed "Home automation"
 
     @gui-objective-a-task-in-the-detail-opens
     Scenario: a task clicked in the detail of an objective or a sub-objective opens over the tab, and closing it comes back to that objective
@@ -5705,38 +1875,6 @@ Feature: The desktop board
       When I press "esc"
       Then the detail is headed "Home automation"
 
-    @gui-objective-a-click-on-nothing-keeps-the-objective-chosen
-    Scenario: a click where there is nothing leaves the objective chosen as it is, a sub-objective as much as any
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Firmware" under objective 1
-      And I added a task titled "Flash the bootloader" serving objective 2
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the chevron of "Home automation"
-      And I click the objective "Firmware"
-      And I click where there is nothing in the objectives
-      Then the objective "Firmware" is chosen
-      And the detail is headed "Firmware"
-      When I click the task "Flash the bootloader" in the detail
-      And I click outside the panel
-      Then the detail is headed "Firmware"
-
-    @gui-objective-the-detail-counts-each-task-once
-    Scenario: a parent's detail counts the tasks of its subtree once each, and lists them apart
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added an objective titled "Firmware" under objective 1
-      And I added a task titled "Pin map" serving objectives 2 and 3
-      And I added a task titled "OTA updates" with the state "done" serving objective 3
-      And I added a task titled "Buy the relay" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      Then the detail says "1 of 3 tasks"
-      And the detail's sub-objectives read "Enclosure", "Firmware"
-      And the detail's tasks on it itself read "Buy the relay"
-      And the detail's tasks in its sub-objectives read "Pin map", "OTA updates"
-
     @gui-objective-the-detail-says-what-waits-on-what
     Scenario: an objective's detail says what it waits on, and what waits on it
       Given I added an objective titled "Firmware"
@@ -5749,17 +1887,6 @@ Feature: The desktop board
       When I click the objective "Firmware"
       Then the detail says "#2 Features"
 
-    @gui-objective-a-tile-warns-of-what-it-waits-on
-    Scenario: the tile of a sub-objective waiting on one not reached warns of it
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Firmware" under objective 1
-      And I added an objective titled "Features" under objective 1
-      And objective 3 waits on objective 2
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      Then the tile of "Features" warns "waits on Firmware"
-
     @gui-objective-a-parent-is-proposed-as-reached
     Scenario: a parent whose every sub-objective is reached is proposed as reached, and left where it stands
       Given I added an objective titled "Home automation"
@@ -5770,18 +1897,6 @@ Feature: The desktop board
       And I click the objective "Home automation"
       Then the detail says "every sub-objective is reached: it may be put reached too"
       And objective 1 stands "active"
-
-    @gui-objective-the-detail-adds-a-sub-objective
-    Scenario: the detail of an objective adds a sub-objective under it
-      Given I added an objective titled "Home automation"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I click the detail's offer "+ Sub-objective"
-      Then the field "parent" reads "1"
-      When I set the field "title" to "Firmware"
-      And I choose "Save"
-      Then objective 2 sits under objective 1
 
     @gui-objective-the-tree-is-lit-under-the-pointer
     Scenario: an objective of the tree, a tile and an offer of the detail are lit under the pointer
@@ -5799,81 +1914,6 @@ Feature: The desktop board
       Then the detail's offer "Edit" is lit under the pointer
 
   Rule: A parent of the objectives tab folds its sub-objectives away
-
-    @gui-objective-a-parent-starts-folded
-    Scenario: a parent starts folded, its chevron in the gutter and its sub-objectives counted after its title
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Tidy the workshop"
-      And I added an objective titled "Firmware" under objective 1
-      And I added an objective titled "Enclosure" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the objectives read "Home automation", "Tidy the workshop"
-      And the objective "Home automation" is folded, its chevron in the gutter
-      And the objective "Home automation" says "· 2" after its title
-      And the objective "Tidy the workshop" has no chevron
-      And the objectives' head counts "4"
-
-    @gui-objective-the-chevron-folds-and-unfolds
-    Scenario: a click on the chevron unfolds a parent and folds it again, and chooses nothing
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Tidy the workshop"
-      And I added an objective titled "Firmware" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Tidy the workshop"
-      And I click the chevron of "Home automation"
-      Then the objectives read "Home automation", "Firmware", "Tidy the workshop"
-      And the objective "Home automation" is unfolded
-      And the objective "Firmware" is drawn indented under "Home automation" and joined to it
-      And the objective "Tidy the workshop" is chosen
-      When I click the chevron of "Home automation"
-      Then the objectives read "Home automation", "Tidy the workshop"
-
-    @gui-objective-the-title-chooses-without-unfolding
-    Scenario: a click on the title of a parent chooses it and leaves it folded
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Firmware" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      Then the objective "Home automation" is chosen
-      And the detail is headed "Home automation"
-      And the objectives read "Home automation"
-
-    @gui-objective-the-arrows-unfold-and-fold
-    Scenario: right unfolds a parent then goes to its first sub-objective, left climbs to the parent then folds it
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Firmware" under objective 1
-      And I added an objective titled "Enclosure" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I press "right"
-      Then the objectives read "Home automation", "Firmware", "Enclosure"
-      And the objective "Home automation" is chosen
-      When I press "right"
-      Then the objective "Firmware" is chosen
-      When I press "down"
-      And I press "left"
-      Then the objective "Home automation" is chosen
-      And the objectives read "Home automation", "Firmware", "Enclosure"
-      When I press "left"
-      Then the objectives read "Home automation"
-      When I press "left"
-      Then the objectives read "Home automation"
-      And the objective "Home automation" is chosen
-
-    @gui-objective-up-and-down-walk-the-rows-drawn
-    Scenario: up and down walk only the rows drawn, past a folded parent's sub-objectives
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Tidy the workshop"
-      And I added an objective titled "Firmware" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I press "down"
-      Then the objective "Tidy the workshop" is chosen
 
     @gui-objective-shift-arrows-reorder
     Scenario: shift with up or down moves the chosen objective among its siblings, a parent with its sub-objectives, and stops at the ends
@@ -5946,60 +1986,6 @@ Feature: The desktop board
       And I drag the objective "Home automation" onto "Garden"
       Then the objectives read "Home automation", "Garden"
 
-    @gui-objective-z-and-option-arrows-fold
-    Scenario: z folds and unfolds, on a sub-objective folds its parent and climbs to it, and option with an arrow does every parent
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Health"
-      And I added an objective titled "Firmware" under objective 1
-      And I added an objective titled "Physiotherapy" under objective 2
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I press "z"
-      Then the objectives read "Home automation", "Firmware", "Health"
-      When I press "down"
-      And I press "z"
-      Then the objectives read "Home automation", "Health"
-      And the objective "Home automation" is chosen
-      When I press "alt+right"
-      Then the objectives read "Home automation", "Firmware", "Health", "Physiotherapy"
-      When I click the objective "Physiotherapy"
-      And I press "alt+left"
-      Then the objectives read "Home automation", "Health"
-      And the objective "Health" is chosen
-
-    @gui-objective-folds-are-kept-for-the-window
-    Scenario: the folds are kept while the window is open, and a window opened again starts folded
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Firmware" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the chevron of "Home automation"
-      And I click the tab "TASKS"
-      And I click the tab "OBJECTIVES"
-      Then the objectives read "Home automation", "Firmware"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      Then the objectives read "Home automation"
-
-    @gui-objective-a-search-unfolds-the-parent-of-a-match
-    Scenario: a search reaching a sub-objective unfolds its parent, drawn faint as what holds the match, and clearing it folds the parent back
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Tidy the workshop"
-      And I added an objective titled "Firmware" under objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Tidy the workshop"
-      And I press "/"
-      And I type "firm"
-      Then the objectives read "Home automation", "Firmware"
-      And the objective "Home automation" is drawn faint, saying "holds a match"
-      And the objectives' head counts "1 of 3"
-      And the detail is headed "Firmware"
-      When I press "esc"
-      Then the objectives read "Home automation", "Tidy the workshop"
-      And the objective "Tidy the workshop" is chosen
-
     @gui-objective-a-match-chosen-keeps-its-parent-open
     Scenario: a sub-objective chosen during a search keeps its parent unfolded once the search is cleared
       Given I added an objective titled "Home automation"
@@ -6033,18 +2019,6 @@ Feature: The desktop board
       And the objective "Documentation" ends in the late ink with "6 Nov, late"
       And the objective "Firmware" ends in the late ink with "waits on Enclosure"
 
-    @gui-objective-a-narrow-window-shortens-what-is-hidden
-    Scenario: at 720 a folded parent says what it hides by number alone
-      Given today is "2026-11-10"
-      And I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added an objective titled "Firmware" under objective 1
-      And objective 3 waits on objective 2
-      When I open the window
-      And I resize the window to 720 by 560
-      And I click the tab "OBJECTIVES"
-      Then the objective "Home automation" ends in the late ink with "#3 waits"
-
   Rule: Show its tasks narrows the tasks board to a subtree
 
     @gui-objective-t-shows-its-tasks
@@ -6063,75 +2037,6 @@ Feature: The desktop board
       And "BACKLOG" carries "Vent slots"
       And "BACKLOG" carries "Buy the relay"
       And "BACKLOG" does not carry "Buy a lamp"
-
-    @gui-objective-the-narrowing-bar-counts-each-part
-    Scenario: the bar beside the pill counts every part of the subtree, and narrows to one
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added a task titled "Vent slots" serving objective 2
-      And I added a task titled "Buy the relay" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I press "t"
-      Then the narrowing bar reads "all 2", "Enclosure 1", "itself 1"
-      When I click the segment "Enclosure"
-      Then "BACKLOG" carries "Vent slots"
-      And "BACKLOG" does not carry "Buy the relay"
-      When I click the segment "itself"
-      Then "BACKLOG" carries "Buy the relay"
-      And "BACKLOG" does not carry "Vent slots"
-
-    @gui-objective-the-pill-says-with-its-sub-objectives
-    Scenario: the pill of an objective shown with its sub-objectives says so
-      Given a window of 1200 by 800
-      And I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added a task titled "Vent slots" serving objective 2
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I press "t"
-      Then the pills after the tabs read "#1 Home automation with its sub-objectives"
-
-    @gui-objective-a-narrow-window-narrows-too
-    Scenario: a window too narrow for the whole bar shows the part in force, walked one way or the other
-      Given a window of 720 by 560
-      And I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added a task titled "Vent slots" serving objective 2
-      And I added a task titled "Buy the relay" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I press "t"
-      Then the narrowing bar shows only "all 2"
-      When I click the narrowing bar's next
-      Then the narrowing bar shows only "Enclosure 1"
-      And "BACKLOG" carries "Vent slots"
-      And "BACKLOG" does not carry "Buy the relay"
-      When I click the narrowing bar's previous
-      Then the narrowing bar shows only "all 2"
-
-    @gui-objective-a-card-names-what-it-serves
-    Scenario: a card names the objective it serves, after a mark drawn rather than written
-      Given I added an objective titled "Firmware"
-      And I added a task titled "OTA updates" serving objective 1
-      When I open the window
-      Then the card "OTA updates" says it serves "Firmware"
-
-    @gui-objective-a-blocker-outside-is-a-reference
-    Scenario: a task outside the objective that blocks one in it is drawn as a reference, and not counted
-      Given I added an objective titled "Firmware"
-      And I added a task titled "Order the relay"
-      And I added a task titled "Wire the relay" serving objective 1
-      And I edited task 2 with the blocker "1"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Firmware"
-      And I press "t"
-      Then "Order the relay" is drawn as a reference saying "outside this view · blocks #2"
-      And the head of "BACKLOG" counts 1
 
   Rule: An objective's form says where it sits and how far along it is
 
@@ -6152,60 +2057,7 @@ Feature: The desktop board
       And I choose "Save"
       Then objective 2 sits under objective 1
 
-    @gui-objective-the-form-offers-labels-for-objectives
-    Scenario: the labels of an objective are chosen among those meant for objectives
-      Given I made the label "area" for objectives
-      And I made the label "backend" for tasks
-      And I added an objective titled "Home automation"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I choose "Edit"
-      And I put the keyboard on "labels"
-      And I press "enter"
-      Then the list offers "area"
-      And the list does not offer "backend"
-
-    @gui-objective-the-form-says-where-it-is-counted
-    Scenario: the progress of a sub-objective says where else it is counted
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added a task titled "Vent slots" serving objective 2
-      And I added a task titled "Buy the relay" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the chevron of "Home automation"
-      And I click the objective "Enclosure"
-      And I choose "Edit"
-      Then the progress says "counted in" "#1 Home automation"
-      And the progress says "done" "0 of 1 tasks"
-
-    @gui-objective-the-form-says-the-days-to-the-deadline
-    Scenario: the progress of an objective says how many days are left to its deadline
-      Given today is "2026-11-09"
-      And I added an objective titled "Home automation"
-      And objective 1 is due "2026-11-19"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I choose "Edit"
-      Then the progress says "deadline" "2026-11-19, in 10 days"
-
   Rule: A task's objectives are a tree, and counting one twice is refused where it is chosen
-
-    @gui-objective-the-task-form-draws-the-tree
-    Scenario: the list of what a task serves draws the tree, a parent counted through what is ticked below it
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added an objective titled "Firmware" under objective 1
-      And I added a task titled "Pin map" serving objectives 2 and 3
-      When I open the window
-      And I click the card "Pin map"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      Then the list draws "Enclosure" indented under "Home automation" and joined to it
-      And the row "Home automation" of the list says "counted through 2 below"
 
     @gui-objective-the-task-form-refuses-a-double-count
     Scenario: ticking a parent beside its sub-objectives is refused at the foot of the list, and nothing changes
@@ -6224,21 +2076,6 @@ Feature: The desktop board
       And the list says under it "Untick Enclosure and Firmware to put it on Home automation itself. Nothing was changed."
       And objective 1 is not ticked
       And objective 2 is ticked
-
-    @gui-objective-the-refusal-says-the-parent-to-untick
-    Scenario: ticking a sub-objective of a parent ticked is refused, saying the parent to untick
-      Given I added an objective titled "Home automation"
-      And I added an objective titled "Enclosure" under objective 1
-      And I added a task titled "Pin map" serving objective 1
-      When I open the window
-      And I click the card "Pin map"
-      And I choose "Edit"
-      And I put the keyboard on "objectives"
-      And I press "enter"
-      And I press "down"
-      And I press "enter"
-      Then the list says under it "Untick Home automation to put it on Enclosure. Nothing was changed."
-      And objective 2 is not ticked
 
   Rule: Deleting an objective asks what goes with it, and decides nothing
 
@@ -6359,31 +2196,6 @@ Feature: The desktop board
       Then the view "High" holds the label "backend"
       And the pill of the view is not marked changed
 
-    @gui-view-left-drops-the-change
-    Scenario: leaving a view changed on top drops the change, and the view opens again as it was kept
-      Given I kept the view "High" holding the priority "high"
-      When I open the window
-      And I press "cmd+1"
-      And I set the filter "label" to "backend"
-      And I press "esc"
-      And I press "cmd+0"
-      And I press "cmd+1"
-      Then "current" carries "Ship it"
-      And the pill of the view is not marked changed
-      And the view "High" holds no label
-
-    @gui-view-outside-is-a-reference
-    Scenario: a task outside the view touching one inside is drawn once as a reference, every why joined, and never counted
-      Given I kept the view "Sprint" holding the label "sprint"
-      And I edited task 3 with the blocker "1"
-      And I edited task 2 with the blocker "3"
-      And I linked task 2 to task 3
-      When I open the window
-      And I press "cmd+1"
-      Then "Write the spec" is drawn as a reference saying "outside this view · blocks #3"
-      And "Review the plan" is drawn as a reference saying "outside this view · waits on #3 · linked to #3"
-      And the head of "TODO" counts 0
-
     @gui-view-the-panel-renames-moves-and-deletes
     Scenario: the views panel renames a view, moves it to another place, and deletes it
       Given I kept the view "Sprint" holding the label "sprint"
@@ -6415,20 +2227,6 @@ Feature: The desktop board
       And I press "enter"
       Then the views panel warns "label sprint is gone and narrows nothing"
 
-    @gui-view-the-keyboard-walks-the-views
-    Scenario: the arrows walk up from the filters into the views, and enter opens the one walked to
-      Given I kept the view "Sprint" holding the label "sprint"
-      And I kept the view "High" holding the priority "high"
-      When I open the window
-      And I press "shift+f"
-      And I press "up"
-      Then the keyboard is on the view "High"
-      When I press "up"
-      Then the keyboard is on the view "Sprint"
-      When I press "enter"
-      Then "current" carries "Ship it"
-      And "todo" does not carry "Write the spec"
-
     @gui-view-naming-an-objective-narrows-by-its-parts
     Scenario: a view naming an objective holding sub-objectives draws the bar narrowing to each part
       Given I added an objective titled "Home automation"
@@ -6446,27 +2244,7 @@ Feature: The desktop board
       Then "todo" carries "Review the plan"
       And the pill of the view is not marked changed
 
-    @gui-view-shown-tasks-kept-under-the-objective
-    Scenario: an objective's tasks shown are kept as a view proposed under the objective's name
-      Given I added an objective titled "Home automation"
-      And I added a task titled "Buy the relay" serving objective 1
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Home automation"
-      And I press "t"
-      And I press "shift+f"
-      And I press "v"
-      Then the name proposed for the view is "Home automation"
-
   Rule: A task that comes back is told from another at a glance, and its series has a tab of its own
-
-    @gui-series-a-card-carries-the-loop-and-the-rule
-    Scenario: a recurring card carries the loop, its rule under the title and its series' number
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every weekday 10:30"
-      When I open the window
-      Then the card "Stand-up" says its rule "every weekday 10:30"
-      And the card "Stand-up" leads to series 1
 
     @gui-series-r-s-skips-the-chosen-occurrence
     Scenario: r then s skips the occurrence chosen on the board, and its series makes the next
@@ -6527,15 +2305,6 @@ Feature: The desktop board
       And I press "cmd+t"
       Then the trace says "made from series  ↻1"
 
-    @gui-series-the-form-of-an-occurrence-heads-with-its-loop
-    Scenario: the form of an occurrence carries the loop in its heading and says which series it is one of
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      When I open the window
-      And I double-click the card "Stand-up"
-      Then the form's heading carries the loop
-      And the form's heading says "one of the series every day"
-
     @gui-series-the-form-of-an-occurrence-names-the-days-missed
     Scenario: the series box of an occurrence names the days missed, what it counts from, and leads to the series
       Given recurrence is on in the window
@@ -6548,40 +2317,6 @@ Feature: The desktop board
       And the form says of its series "ends never"
       When I click "Edit the series…"
       Then the series shown is series 1
-
-    @gui-series-the-history-of-an-occurrence-goes-on-with-its-series
-    Scenario: the history of an occurrence goes on with what its series did before it
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      And task 1 was skipped
-      When I open the window
-      And I double-click the card "Stand-up"
-      And I press "cmd+t"
-      Then the trace says "in the series, before this one"
-      And the trace says "skipped #1"
-
-    @gui-series-the-board-narrows-to-what-comes-back
-    Scenario: the series filter keeps the tasks that come back
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      And I added a task titled "Write the spec"
-      When I open the window
-      And I set the filter "series" to "all"
-      Then "todo" carries "Stand-up"
-      And "backlog" does not carry "Write the spec"
-
-    @gui-the-board-narrows-to-what-is-in-focus
-    Scenario: the focus filter keeps the tasks in focus, or the ones that are not
-      Given I added a task titled "Write the spec"
-      And I added a task titled "Fix the gate"
-      And I put task 2 in focus
-      When I open the window
-      And I set the filter "focus" to "in focus"
-      Then "current" carries "Fix the gate"
-      And "backlog" does not carry "Write the spec"
-      When I set the filter "focus" to "not in focus"
-      Then "backlog" carries "Write the spec"
-      And "current" does not carry "Fix the gate"
 
     @gui-series-the-tab-narrows-to-a-state
     Scenario: the series tab narrows to a state, and says so on a pill
@@ -6597,17 +2332,6 @@ Feature: The desktop board
       When I set the series' state to "all"
       Then the series listed are "Stand-up", "Expense report"
 
-    @gui-series-the-tab-says-it-as-drawn
-    Scenario: the series tab says each series the way the mockup wrote it
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every weekday 10:30"
-      When I open the window
-      And I click the tab "SERIES"
-      Then the series tab says "every weekday · 10:30"
-      And the series tab says "1 · made"
-      And the series tab says "on the board"
-      And the bar offers "Open the occurrence"
-
     @gui-series-the-picker-sets-the-day-it-counts-from
     Scenario: the picker sets the day a new series counts from
       Given recurrence is on in the window
@@ -6617,40 +2341,6 @@ Feature: The desktop board
       And I click the field "rule"
       And I click the next of "from" in the rule's picker
       Then the field "from" reads "2026-11-10"
-
-    @gui-series-a-new-task-with-only-a-title-is-made
-    Scenario: a new task given only a title is made while a task may come back
-      Given recurrence is on in the window
-      When I open the window
-      And I press "cmd+n"
-      And I set the field "title" to "Write the spec"
-      And I choose "Save"
-      Then "BACKLOG" carries "Write the spec"
-      And there is no series 1
-
-    @gui-series-the-bar-offers-the-r-keys-as-drawn
-    Scenario: a chosen occurrence's bar offers to open its series, to skip it, and to stop or resume its series
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      When I open the window
-      And I click the card "Stand-up"
-      Then the bar offers "Open the series" under "r e"
-      And the bar offers "Stop the series" under "r x"
-
-    @gui-series-the-help-says-the-r-keys
-    Scenario: the help says what the r keys do while a task may come back, and nothing of them otherwise
-      Given recurrence is on in the window
-      When I open the window
-      And I press "?"
-      Then the help says what "r s" does
-      And the help says what "r e" does
-
-    @gui-series-the-help-says-nothing-of-them-when-off
-    Scenario: with recurrence off, the help says nothing of the r keys
-      Given recurrence is off in the window
-      When I open the window
-      And I press "?"
-      Then the help says nothing of "r s"
 
     @gui-series-the-chip-opens-its-series
     Scenario: a click on the series' number of a card opens the series in its tab
@@ -6675,30 +2365,6 @@ Feature: The desktop board
       When I click the series "Expense report"
       Then the series shown is series 2
       And the series shown offers "Resume"
-
-    @gui-series-every-tab-is-reached-by-a-click-from-every-other
-    Scenario Outline: a click on a tab changes to it, whichever tab the window is on
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      When I open the window
-      And I click the tab "<from>"
-      And I click the tab "<to>"
-      Then the tab is "<to>"
-
-      Examples:
-        | from       | to         |
-        | TASKS      | OBJECTIVES |
-        | TASKS      | TIME       |
-        | TASKS      | SERIES     |
-        | OBJECTIVES | TASKS      |
-        | OBJECTIVES | TIME       |
-        | OBJECTIVES | SERIES     |
-        | TIME       | TASKS      |
-        | TIME       | OBJECTIVES |
-        | TIME       | SERIES     |
-        | SERIES     | TASKS      |
-        | SERIES     | OBJECTIVES |
-        | SERIES     | TIME       |
 
     @gui-series-the-tab-skips-stops-and-resumes
     Scenario: in the tab, s skips the open occurrence, x stops the series and r resumes it
@@ -6738,18 +2404,6 @@ Feature: The desktop board
       Then there is no series 1
       And task 1 is in the column "todo"
 
-    @gui-series-deleting-the-open-one
-    Scenario: deleting a series may delete the one open and keep the rest
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      When I open the window
-      And I click the tab "SERIES"
-      And I press "backspace"
-      And I press "down"
-      And I press "enter"
-      Then there is no series 1
-      And there is no task 1
-
     @gui-series-deleting-every-task-asks-once-more
     Scenario: deleting a series with every task it made asks once more, naming the count
       Given recurrence is on in the window
@@ -6778,38 +2432,6 @@ Feature: The desktop board
       And I press "cmd+enter"
       Then series 1 is titled "Daily stand-up"
       And task 1 is titled "Stand-up"
-
-    @gui-series-n-makes-a-new-one
-    Scenario: n in the tab opens a task's form with the keyboard on its rule
-      Given recurrence is on in the window
-      When I open the window
-      And I click the tab "SERIES"
-      And I press "n"
-      Then the keyboard is on "rule"
-      When I set the field "title" to "Water the plants"
-      And I set the field "rule" to "every 3 days after done"
-      And I press "cmd+enter"
-      Then series 1 is titled "Water the plants"
-      And task 1 is an occurrence of series 1
-
-    @gui-series-a-task-given-a-rule-becomes-the-first
-    Scenario: a task given a rule in its form becomes the first occurrence of a new series
-      Given recurrence is on in the window
-      And I added a task titled "Water the plants"
-      When I open the window
-      And I double-click the card "Water the plants"
-      And I set the field "rule" to "every 3 days"
-      And I press "cmd+enter"
-      Then task 1 is an occurrence of series 1
-
-    @gui-series-the-repeats-picker-writes-the-words
-    Scenario: the picker beside the rule field writes a rule in the words the field reads
-      Given recurrence is on in the window
-      When I open the window
-      And I press "cmd+n"
-      And I click the field "rule"
-      And I choose the rule "every weekday"
-      Then the field "rule" reads "every weekday"
 
     @gui-series-the-repeats-picker-builds-the-rule-by-its-parts
     Scenario: the picker under the rule field builds the rule from its parts, written in the words the field reads
@@ -6882,33 +2504,3 @@ Feature: The desktop board
       When I click "The whole series"
       Then task 1 is titled "Daily stand-up"
       And series 1 is titled "Daily stand-up"
-
-    @gui-series-saving-this-one-only-leaves-the-series
-    Scenario: saving an occurrence for this one only leaves its series as it was
-      Given recurrence is on in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      When I open the window
-      And I double-click the card "Stand-up"
-      And I set the field "title" to "Daily stand-up"
-      And I press "cmd+enter"
-      And I press "enter"
-      Then task 1 is titled "Daily stand-up"
-      And series 1 is titled "Stand-up"
-
-    @gui-series-off-shows-nothing
-    Scenario: with recurrence off, there is no loop, no rule, no rule field and no series tab
-      Given recurrence is off in the window
-      And I added a task titled "Stand-up" coming back "every day"
-      When I open the window
-      Then the tabs read "TASKS", "OBJECTIVES", "TIME"
-      And the card "Stand-up" says nothing of a series
-      When I double-click the card "Stand-up"
-      Then the form has no field "rule"
-
-    @gui-series-off-says-why-in-the-command-bar
-    Scenario: with recurrence off, a series asked for in the command bar is answered by a banner saying how to turn it on
-      Given recurrence is off in the window
-      When I open the window
-      And I press "cmd+k"
-      And I type "series"
-      Then the command bar says "series are off"

@@ -1,15 +1,11 @@
 package cli
 
 import (
-	"cairn/internal/engine/item"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/cucumber/godog"
-
-	"cairn/internal/engine/task"
-	"cairn/test"
 )
 
 var quoted = regexp.MustCompile(`"([^"]*)"`)
@@ -52,16 +48,6 @@ func listedInOrder(rows []string, list string) error {
 	return nil
 }
 
-func columnsNamed(said string) []string {
-	named := []string{}
-	for _, state := range item.States {
-		if strings.Contains(said, string(state)) {
-			named = append(named, string(state))
-		}
-	}
-	return named
-}
-
 func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 	sc.Step(`^it says on standard error "([^"]*)"$`, w.itSaysOnStandardError)
 	sc.Step(`^it lists the tasks in the order (.+)$`, func(list string) error {
@@ -69,46 +55,4 @@ func (w *world) registerOrdering(sc *godog.ScenarioContext) {
 		return listedInOrder(rowsOf(w.Out.Stdout, false), list)
 	})
 
-	marked := func(title string) error {
-		for _, line := range strings.Split(w.Out.Stdout, "\n") {
-			if strings.Contains(line, title) && strings.Contains(line, task.InFocusMark) {
-				return nil
-			}
-		}
-		return fmt.Errorf("%q is not marked as in focus:\n%s", title, w.Out.Stdout)
-	}
-	sc.Step(`^it marks "([^"]*)" as the task in focus$`, marked)
-	sc.Step(`^it marks "([^"]*)" as a task in focus$`, marked)
-
-	sc.Step(`^it marks nothing else$`, func() error {
-		return marksExactly(w.Out.Stdout, 1)
-	})
-	sc.Step(`^it marks (\d+) tasks? in focus$`, func(n int) error {
-		return marksExactly(w.Out.Stdout, n)
-	})
-
-	sc.Step(`^it says task (\d+) moved from "([^"]*)" to "([^"]*)"$`, func(n int, from, to string) error {
-		return test.WantContains(w.Out.Stdout, fmt.Sprintf("task %d moved from %s to %s\n", n, from, to), "the answer")
-	})
-	sc.Step(`^it does not say a task moved from one column to another$`, func() error {
-		if strings.Contains(w.Out.Stdout, " moved from ") {
-			return fmt.Errorf("it says a task changed column:\n%s", w.Out.Stdout)
-		}
-		return nil
-	})
-	sc.Step(`^it says which column each of them is in$`, func() error {
-		if named := columnsNamed(w.Out.Stderr); len(named) < 2 {
-			return fmt.Errorf("the reason names %v, want the column each of the two is in:\n%s",
-				named, w.Out.Stderr)
-		}
-		return nil
-	})
-
-}
-
-func marksExactly(out string, want int) error {
-	if got := strings.Count(out, task.InFocusMark); got != want {
-		return fmt.Errorf("%d lines are marked as in focus, want %d:\n%s", got, want, out)
-	}
-	return nil
 }

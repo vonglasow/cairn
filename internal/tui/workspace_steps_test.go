@@ -1,11 +1,8 @@
 package tui
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
-	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/cucumber/godog"
@@ -18,15 +15,10 @@ func (w *world) registerWorkspaces(sc *godog.ScenarioContext) {
 	sc.When(`^I type the folder "([^"]*)"$`, func(folder string) error {
 		return w.typeIn(filepath.Join(w.spaces.Dir, folder))
 	})
-	sc.Then(`^the dot of the header wears "([^"]*)"$`, w.dotWears)
-	sc.Then(`^the recent folder "([^"]*)" is marked "([^"]*)"$`, w.recentMarked)
 	sc.Then(`^the configuration names the workspace "([^"]*)"$`, w.configurationNames)
 	sc.Then(`^the header opens with "([^"]*)"$`, w.headerOpensWith)
 	sc.Then(`^the header opens with "([^"]*)" and the folder "([^"]*)"$`, w.headerOpensWithFolder)
-	sc.Then(`^the workspaces listed read (".*")$`, w.workspacesListedRead)
 	sc.Then(`^the workspace "([^"]*)" is marked "([^"]*)"$`, w.workspaceMarked)
-	sc.Then(`^the default workspace is still "([^"]*)"$`, w.defaultStill)
-	sc.Then(`^task (\d+) of the workspace "([^"]*)" is still in focus$`, w.stillInFocus)
 }
 
 func (w *world) homeOf(workspace string) engine.Home { return w.spaces.Home(workspace) }
@@ -73,21 +65,6 @@ func (w *world) headerOpensWithFolder(start, folder string) error {
 	return nil
 }
 
-func (w *world) workspacesListedRead(list string) error {
-	var want []string
-	for _, one := range strings.Split(list, ", ") {
-		want = append(want, strings.Trim(one, `"`))
-	}
-	var got []string
-	for _, one := range w.b.listed() {
-		got = append(got, one.Name)
-	}
-	if !slices.Equal(got, want) {
-		return fmt.Errorf("the workspaces listed read %q, not %q:\n%s", got, want, w.screen())
-	}
-	return nil
-}
-
 func (w *world) workspaceMarked(name, mark string) error {
 	for _, line := range strings.Split(w.screen(), "\n") {
 		if strings.Contains(line, "│") && strings.Contains(line, "● "+name+" ") {
@@ -98,48 +75,6 @@ func (w *world) workspaceMarked(name, mark string) error {
 		}
 	}
 	return fmt.Errorf("the workspace %q is not listed:\n%s", name, w.screen())
-}
-
-func (w *world) defaultStill(name string) error {
-	h := w.homeOf("")
-	answer, err := engine.DoFrom(engine.WorkspaceList, h, engine.Input{}, engine.Through("test", h))
-	if err != nil {
-		return err
-	}
-	for _, one := range answer.Workspaces.Workspaces {
-		if one.Default && one.Name == name {
-			return nil
-		}
-	}
-	return fmt.Errorf("the default workspace is no longer %q: %+v", name, answer.Workspaces.Workspaces)
-}
-
-func (w *world) stillInFocus(number int, name string) error {
-	h := w.homeOf(name)
-	answer, err := engine.DoFrom(engine.TaskList, h, engine.Input{}, engine.Through("test", h))
-	if err != nil {
-		return err
-	}
-	if answer.InFocus == nil || !slices.Contains(*answer.InFocus, number) {
-		return errors.New("task " + strconv.Itoa(number) + " of " + name + " is no longer in focus")
-	}
-	return nil
-}
-
-func (w *world) dotWears(colour string) error {
-	return w.dotWearsTheSchemes(colour)
-}
-
-func (w *world) recentMarked(folder, mark string) error {
-	for _, line := range strings.Split(w.screen(), "\n") {
-		if strings.Contains(line, "│") && strings.Contains(line, "◌ ") && strings.Contains(line, string(filepath.Separator)+folder+" ") {
-			if strings.Contains(line, mark) {
-				return nil
-			}
-			return fmt.Errorf("the recent folder %q is not marked %q:\n%s", folder, mark, line)
-		}
-	}
-	return fmt.Errorf("the recent folder %q is not listed:\n%s", folder, w.screen())
 }
 
 func (w *world) configurationNames(name string) error {

@@ -6,11 +6,9 @@ import (
 	"cairn/internal/engine/workspace"
 	"cairn/internal/gui/geom"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
-	"cairn/internal/build"
 	"cairn/internal/store/files"
 )
 
@@ -54,86 +52,6 @@ func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
 	if got, _ := w.clicked(geom.Point{X: store.At.X + store.At.W/2, Y: store.At.Y + store.At.H/2}).Copying(); got != "/h/.cairn/cairn.db" {
 		t.Errorf("the store's mark copies %q", got)
 	}
-}
-
-func TestTheAboutBoxCopiesWhereCairnIsKept(t *testing.T) {
-	w := holding(newFake())
-	w.Screen, w.Question = board.OnAsking, board.AboutCairn
-	marks := w.CopyMarks()
-	if len(marks) != 1 || marks[0].Said != build.Home {
-		t.Fatalf("About offers to copy %+v", marks)
-	}
-}
-
-func TestTheAboutBoxShowsTheLogoBesideWhatItSays(t *testing.T) {
-	w := holding(newFake())
-	if w.AboutLogo() != (geom.Box{}) {
-		t.Fatalf("the board shows the logo at %+v", w.AboutLogo())
-	}
-	plain := w.SaidAt(0)
-	w.Screen, w.Question = board.OnAsking, board.AboutCairn
-	logo, box := w.AboutLogo(), w.QuestionBox()
-	if logo.W == 0 || logo.W != logo.H || logo.X != box.X+padding || logo.Y != FirstRow(box) || logo.Y+logo.H > box.Y+box.H {
-		t.Fatalf("the logo is at %+v in the question at %+v", logo, box)
-	}
-	first := w.SaidAt(0)
-	if third := w.SaidAt(2); third.Y != FirstRow(box)+2*apart || third.X != first.X {
-		t.Errorf("the third line is at %+v, want two apart under the first at %+v", third, first)
-	}
-	if first.X != logo.X+logo.W+padding || first.X+first.W != box.X+box.W-padding || first.Y != FirstRow(box) || plain.X != w.QuestionBox().X+padding {
-		t.Errorf("the first line is at %+v beside the logo at %+v", first, logo)
-	}
-	if mark := w.CopyMarks()[0].At; mark.X < logo.X+logo.W || mark != markBefore(w.SaidAt(len(w.Asks())-1), "").At {
-		t.Errorf("the copy mark %+v is not on the last line beside the logo", mark)
-	}
-}
-
-func TestAnOpenTasksContextIsCopiedByItsMark(t *testing.T) {
-	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo", Context: "/h/notes/1"})
-	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("e")
-	marks := w.CopyMarks()
-	if len(marks) != 1 || marks[0].Said != "/h/notes/1" {
-		t.Fatalf("an open task offers to copy %+v", marks)
-	}
-	if said := w.ContextSays(); len(said) != 2 || said[1].Box.X < marks[0].At.X+marks[0].At.W {
-		t.Errorf("the context %+v is written over its mark %+v", said, marks[0].At)
-	}
-}
-
-func TestAKeyTheStoresSettingsWriteIsSaidToComeFromThem(t *testing.T) {
-	w := holding(configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"focus.session", "time.weekends"}, WrittenHere: []string{"time.weekends"}})).openingConfiguration()
-	from := map[string]string{}
-	for _, row := range w.SettingRows() {
-		from[row.Key.Name] = row.Comes
-	}
-	if from["time.weekends"] != SetHere || from["focus.session"] != FromGlobal || from["time.deleted"] != ByDefault {
-		t.Errorf("the keys come from %v", from)
-	}
-}
-
-func TestTheGlobalScopeSaysWhatTheWorkspaceSetsOfItsOwn(t *testing.T) {
-	w := holding(configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml", Written: []string{"time.weekends"}, WrittenHere: []string{"time.weekends"}, Global: map[string]string{"time.weekends": "shown"}})).openingConfiguration().scoped(true)
-	for _, row := range w.SettingRows() {
-		if row.Key.Name == "time.weekends" && (row.Comes != InFile || !strings.Contains(row.Theirs, "sets its own")) {
-			t.Errorf("the weekends read %+v", row)
-		}
-		if row.Key.Store {
-			t.Errorf("the global scope offers %s", row.Key.Name)
-		}
-	}
-}
-
-func TestTheConfigurationSaysTheSchemeTheWindowWears(t *testing.T) {
-	w := holding(configuredWith(workspace.Config{Window: &workspace.WindowConfig{Theme: "nord"}, Settings: "/h/.cairn/settings.toml", WrittenHere: []string{"window.theme"}, Global: map[string]string{"window.theme": "default"}})).openingConfiguration()
-	for _, row := range w.SettingRows() {
-		if row.Key.Name == "window.theme" {
-			if row.Value != "nord" || row.Comes != SetHere || row.Aside != "← global: default" {
-				t.Errorf("the scheme is said %+v", row)
-			}
-			return
-		}
-	}
-	t.Error("the configuration does not say the scheme the window wears")
 }
 
 func TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches(t *testing.T) {

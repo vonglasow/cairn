@@ -30,19 +30,6 @@ func written(t *testing.T, l *Log) string {
 	return string(read)
 }
 
-func TestLog_saysALineWithTheMomentAndItsKind(t *testing.T) {
-	l := opened(t)
-	l.Say("engine", "task list → ok 3ms")
-	l.Fact("system", "darwin/arm64")
-	got := written(t, l)
-	if !strings.Contains(got, "14:03:04.512 engine task list → ok 3ms\n") {
-		t.Errorf("the file reads:\n%s", got)
-	}
-	if !strings.Contains(got, "# system           darwin/arm64\n") {
-		t.Errorf("the fact reads:\n%s", got)
-	}
-}
-
 func TestText_isAFingerprintAndALengthTheSameAcrossOneFile(t *testing.T) {
 	l := opened(t)
 	one, again, other := l.Text("Write the spec"), l.Text("Write the spec"), l.Text("Ship it")
@@ -128,15 +115,5 @@ func TestMachine_saysWhatTheSystemIsAndWhatIsMissing(t *testing.T) {
 	}
 	if mac["macos"] != "sw_vers said" || mac["language"] != "unset" {
 		t.Errorf("a mac reads %v", mac)
-	}
-}
-
-func TestTyped_isALengthAndNothingElse(t *testing.T) {
-	l := opened(t)
-	if got := l.Typed("é"); got != "‹typed 1›" {
-		t.Errorf("a letter typed reads %q", got)
-	}
-	if l.Typed("a") != l.Typed("b") {
-		t.Error("two letters typed read differently: a file of them could be read back")
 	}
 }

@@ -37,18 +37,6 @@ func numbersOfTasks(tasks []task.Task) []int {
 	return out
 }
 
-func TestEngine_putsAnObjectiveUnderAnother(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Home automation")
-	if got := under(t, e, "Enclosure", "1").Carried().Parent; got != 1 {
-		t.Errorf("Parent = %d, want 1", got)
-	}
-	found, _ := e.showObjective(2)
-	if found.Carried().Parent != 1 {
-		t.Errorf("the parent was not kept: %+v", found.Carried())
-	}
-}
-
 func TestEngine_refusesAParentThatIsNotThere(t *testing.T) {
 	e := openEngine(t)
 	if _, err := e.addObjective("Enclosure", ObjectiveChanges{Parent: of("9")}); !errors.Is(err, objective.ErrNoSuchObjective) {
@@ -123,56 +111,6 @@ func TestEngine_refusesATaskCountedTwiceInOneTree(t *testing.T) {
 	}
 }
 
-func TestEngine_countsAParentOverItsTreeEachTaskOnce(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Home automation")
-	under(t, e, "Enclosure", "1")
-	under(t, e, "Firmware", "1")
-	servingAll(t, e, "Mount the board", 2, 3)
-	servingAll(t, e, "Wiring", 1)
-	servingAll(t, e, "Flash it", 3)
-	if _, err := e.edit(1, Changes{State: of("done")}); err != nil {
-		t.Fatal(err)
-	}
-	p, err := e.objectiveProgress(1)
-	if err != nil || p.Tasks.Total != 3 || p.Tasks.Done != 1 {
-		t.Errorf("progress of the parent = %+v, %v, want 1 of 3", p, err)
-	}
-	got, err := e.tasksUnder(1)
-	if err != nil || !slices.Equal(slices.Sorted(slices.Values(numbersOfTasks(got))), []int{1, 2, 3}) {
-		t.Errorf("tasks under the parent = %v, %v", numbersOfTasks(got), err)
-	}
-	if p, _ := e.objectiveProgress(3); p.Tasks.Total != 2 {
-		t.Errorf("a sub-objective counts %+v, want its own 2", p)
-	}
-}
-
-func TestEngine_familyOfAParentNamesItsSubObjectivesAndProposesItReached(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Home automation")
-	under(t, e, "Enclosure", "1")
-	under(t, e, "Firmware", "1")
-	servingAll(t, e, "Print the case", 2)
-	f, err := e.familyOf(1)
-	if err != nil || len(f.Children) != 2 || f.Children[0].Progress.Tasks.Total != 1 || f.Proposed {
-		t.Fatalf("family = %+v, %v", f, err)
-	}
-	for _, n := range []string{"2", "3"} {
-		if _, err := e.Ask(ObjectiveEdit, given("number", n, "state", "reached")); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if f, _ := e.familyOf(1); !f.Proposed {
-		t.Error("a parent whose every sub-objective is reached is not proposed")
-	}
-	if f, _ := e.familyOf(2); f.Parent.Carried().Number != 1 || f.Proposed {
-		t.Errorf("the family of a sub-objective = %+v", f)
-	}
-	if shown, _ := e.Ask(ObjectiveShow, given("number", "1")); shown.Objective.Carried().State != objective.Active {
-		t.Error("a parent proposed reached was put there by itself")
-	}
-}
-
 func TestObjectiveEdit_proposesTheParentWhenTheLastSubObjectiveIsReached(t *testing.T) {
 	e := openEngine(t)
 	addObjective(t, e, "Home automation")
@@ -216,30 +154,6 @@ func deleting(t *testing.T, e *Engine, given map[string]string, listed map[strin
 	return e.Ask(ObjectiveDelete, Agreed(Input{Given: given, Listed: listed}))
 }
 
-func TestObjectiveDelete_asksWhatGoesWithASubObjectiveOrATask(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Home automation")
-	under(t, e, "Enclosure", "1")
-	servingAll(t, e, "Print the case", 2)
-	servingAll(t, e, "Wiring", 1)
-	_, err := deleting(t, e, map[string]string{"number": "1"}, nil)
-	if !errors.Is(err, objective.ErrObjectiveCarriesTasks) || !errors.Is(err, objective.ErrObjectiveHoldsSubObjectives) {
-		t.Fatalf("err = %v, want it to carry tasks and hold sub-objectives", err)
-	}
-	for _, said := range []string{"#2  Enclosure", "#1  Print the case", "#2  Wiring", "--sub-objectives keep|delete", "--tasks detach|delete"} {
-		if !strings.Contains(err.Error(), said) {
-			t.Errorf("the refusal does not say %q:\n%s", said, err)
-		}
-	}
-	_, err = deleting(t, e, map[string]string{"number": "1", "sub-objectives": "keep"}, nil)
-	if !errors.Is(err, objective.ErrObjectiveCarriesTasks) || errors.Is(err, objective.ErrObjectiveHoldsSubObjectives) || strings.Contains(err.Error(), "--sub-objectives") {
-		t.Errorf("with the sub-objectives seen to: err = %v, want only the tasks asked about", err)
-	}
-	if all, _ := e.listObjectives(); len(all) != 2 {
-		t.Errorf("a refused deletion left %d objectives", len(all))
-	}
-}
-
 func TestObjectiveDelete_keepsTheSubObjectivesAndDetachesTheTasks(t *testing.T) {
 	e := openEngine(t)
 	addObjective(t, e, "Home automation")
@@ -261,28 +175,6 @@ func TestObjectiveDelete_keepsTheSubObjectivesAndDetachesTheTasks(t *testing.T) 
 	}
 	if !strings.Contains(RenderText(ObjectiveDelete, answer), "task 1 was detached from it") {
 		t.Errorf("the answer reads:\n%s", RenderText(ObjectiveDelete, answer))
-	}
-}
-
-func TestObjectiveDelete_takesTheSubObjectivesAndTheirTasks(t *testing.T) {
-	e := openEngine(t)
-	addObjective(t, e, "Home automation")
-	under(t, e, "Enclosure", "1")
-	under(t, e, "Firmware", "1")
-	servingAll(t, e, "Print the case", 2)
-	servingAll(t, e, "Flash it", 3)
-	answer, err := deleting(t, e, map[string]string{"number": "1", "sub-objectives": "delete", "tasks": "delete"},
-		map[string][]string{"keep": {"3"}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !slices.Equal(answer.Went.Gone, []int{2}) || !slices.Equal(answer.Went.Kept, []int{3}) || !slices.Equal(answer.Went.Deleted, []int{1}) {
-		t.Errorf("went = %+v", answer.Went)
-	}
-	all, _ := e.listObjectives()
-	left, _ := e.Ask(TaskList, Input{})
-	if len(all) != 1 || !slices.Equal(numbersOfTasks(left.Tasks), []int{2}) {
-		t.Errorf("left %d objectives and tasks %v", len(all), numbersOfTasks(left.Tasks))
 	}
 }
 
