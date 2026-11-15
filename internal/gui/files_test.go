@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"errors"
 	"io"
 	"os"
@@ -167,8 +168,8 @@ func TestImportingAddsTheTasksOfTheFileChosen(t *testing.T) {
 	copied := written(t, "some tasks")
 	added := w.FileTaken().Filed(Filed{Ask: ask, Chosen: copied, Called: "/Downloads/tasks.json"})
 	in, ok := f.gave("task", "import")
-	if !ok || in.Given["from"] != copied || added.Screen() != OnTheBoard {
-		t.Errorf("the engine was asked %+v and the window is on %v", in, added.Screen())
+	if !ok || in.Given["from"] != copied || added.Screen != board.OnTheBoard {
+		t.Errorf("the engine was asked %+v and the window is on %v", in, added.Screen)
 	}
 	if added.Note() != "0 task(s) and 0 objective(s) were added from tasks.json" {
 		t.Errorf("the window tells %q", added.Note())

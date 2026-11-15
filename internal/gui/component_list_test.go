@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"image"
 	"slices"
 	"strings"
@@ -20,8 +22,8 @@ func cardTitled(title string) board.Card {
 }
 
 func TestAConnectorRunsDownAndElbowsIntoWhatItJoins(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 20, H: 40}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 20, H: 40}
 	shot, drawn := drawnAlone(t, 60, 70, func(k Kit) { Connector{Elbow: 15}.Draw(k, box) })
 	if got := pixel(shot, box.X, box.Y+35); got != s.Colour.Line.Edge {
 		t.Errorf("a connector with more below does not run to its foot: %v", got)
@@ -42,7 +44,7 @@ func TestAConnectorRunsDownAndElbowsIntoWhatItJoins(t *testing.T) {
 }
 
 func TestAListItemIsIndentedByItsDepthAndJoinedToItsParent(t *testing.T) {
-	slot := Box{X: 10, Y: 10, W: 400, H: ItemHigh}
+	slot := geom.Box{X: 10, Y: 10, W: 400, H: ItemHigh}
 	_, top := drawnAlone(t, 440, 80, func(k Kit) {
 		ListItem{Number: "#4", Title: "Home automation", Standing: "active", Counts: "1/2 · 50%", Done: 1, Total: 2}.Draw(k, slot)
 	})
@@ -67,9 +69,9 @@ func TestAListItemIsIndentedByItsDepthAndJoinedToItsParent(t *testing.T) {
 }
 
 func TestAListItemHasNoGroundAtRestAndIsRingedWhenChosen(t *testing.T) {
-	s := Dark()
-	slot := Box{X: 10, Y: 10, W: 300, H: ItemHigh}
-	inside := func(item Box) (int, int) { return item.X + item.W - 30, item.Y + item.H - 4 }
+	s := design.Dark()
+	slot := geom.Box{X: 10, Y: 10, W: 300, H: ItemHigh}
+	inside := func(item geom.Box) (int, int) { return item.X + item.W - 30, item.Y + item.H - 4 }
 	rest, _ := drawnAlone(t, 340, 80, func(k Kit) { ListItem{Title: "Rest"}.Draw(k, slot) })
 	if x, y := inside(ItemOf(slot, 0)); pixel(rest, x, y) != s.Colour.Surface.Back {
 		t.Error("an item at rest stands on a ground")
@@ -88,8 +90,8 @@ func TestAListItemHasNoGroundAtRestAndIsRingedWhenChosen(t *testing.T) {
 }
 
 func TestTheStandingMarksAreDrawnInTheirStandingsInk(t *testing.T) {
-	s := Dark()
-	box := Box{X: 4, Y: 4, W: 13, H: 13}
+	s := design.Dark()
+	box := geom.Box{X: 4, Y: 4, W: 13, H: 13}
 	for _, state := range []string{"active", "on-hold", "reached", "dropped"} {
 		shot, drawn := drawnAlone(t, 21, 21, func(k Kit) { StandingMark{State: state}.Draw(k, box) })
 		if lettered(shot, box, s.Colour.Standing[state].Ink) == 0 {
@@ -110,8 +112,8 @@ func TestTheStandingMarksAreDrawnInTheirStandingsInk(t *testing.T) {
 }
 
 func TestTheServesMarkIsADiamondDrawnInTheInkGiven(t *testing.T) {
-	s := Dark()
-	box := Box{X: 4, Y: 4, W: 13, H: 13}
+	s := design.Dark()
+	box := geom.Box{X: 4, Y: 4, W: 13, H: 13}
 	shot, drawn := drawnAlone(t, 21, 21, func(k Kit) { ServesMark{Ink: s.Colour.Ink.Faint}.Draw(k, box) })
 	if lettered(shot, box, s.Colour.Ink.Faint) == 0 {
 		t.Error("the mark is not drawn in the ink given")
@@ -125,10 +127,10 @@ func TestTheServesMarkIsADiamondDrawnInTheInkGiven(t *testing.T) {
 }
 
 func TestAHeadingWritesItsNumberBesideItsTitle(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 300, H: 26}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 300, H: 26}
 	shot, _ := drawnAlone(t, 330, 50, func(k Kit) { Heading{Said: "Home", Number: "#4"}.Draw(k, box) })
-	if lettered(shot, Box{X: box.X + 40, Y: box.Y, W: 80, H: box.H}, s.Colour.Ink.Low) == 0 {
+	if lettered(shot, geom.Box{X: box.X + 40, Y: box.Y, W: 80, H: box.H}, s.Colour.Ink.Low) == 0 {
 		t.Error("the number is not written beside the title, in the low ink")
 	}
 }
@@ -138,13 +140,13 @@ func TestFactsWriteEachNameBesideItsValueAndTheAsideUnder(t *testing.T) {
 	if got := facts.High(); got != 3*lineHigh {
 		t.Errorf("two facts, one with an aside, are %d high, want %d", got, 3*lineHigh)
 	}
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 300, H: facts.High()}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 300, H: facts.High()}
 	shot, drawn := drawnAlone(t, 330, 80, func(k Kit) { facts.Draw(k, box) })
-	if lettered(shot, Box{X: box.X + factName, Y: box.Y, W: 100, H: lineHigh}, s.Colour.Ink.Text) == 0 {
+	if lettered(shot, geom.Box{X: box.X + factName, Y: box.Y, W: 100, H: lineHigh}, s.Colour.Ink.Text) == 0 {
 		t.Error("a value is not written in the ink beside its name")
 	}
-	if lettered(shot, Box{X: box.X + factName, Y: box.Y + 2*lineHigh, W: 100, H: lineHigh}, s.Colour.Ink.Faint) == 0 {
+	if lettered(shot, geom.Box{X: box.X + factName, Y: box.Y + 2*lineHigh, W: 100, H: lineHigh}, s.Colour.Ink.Faint) == 0 {
 		t.Error("the aside is not written faint under its value")
 	}
 	if want := []Drawing{{Part: "facts", At: box, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
@@ -153,8 +155,8 @@ func TestFactsWriteEachNameBesideItsValueAndTheAsideUnder(t *testing.T) {
 }
 
 func TestFiguresWriteTheLateOneInTheLateInk(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 400, H: FiguresHigh}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 400, H: FiguresHigh}
 	shot, drawn := drawnAlone(t, 430, 60, func(k Kit) {
 		Figures{Said: []Figure{{Figure: "46", Word: "done"}, {Figure: "2", Word: "missed", Late: true}}}.Draw(k, box)
 	})
@@ -170,8 +172,8 @@ func TestFiguresWriteTheLateOneInTheLateInk(t *testing.T) {
 }
 
 func TestABannerRefusesInTheWrongsTonesAndWarnsInOnHolds(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 300, H: 60}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 300, H: 60}
 	refused, drawn := drawnAlone(t, 330, 90, func(k Kit) { Banner{Said: "Already counted", Then: "Untick both."}.Draw(k, box) })
 	if got := pixel(refused, box.X+box.W-6, box.Y+box.H-6); got != s.Colour.State.Danger {
 		t.Errorf("a refusal stands on %v, not the danger's ground", got)
@@ -195,8 +197,8 @@ func TestABannerRefusesInTheWrongsTonesAndWarnsInOnHolds(t *testing.T) {
 }
 
 func TestACardInTileLayoutSaysItsCountsItsNotesAndItsWarning(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 220, H: TileHigh}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 220, H: TileHigh}
 	tile := &GoalTile{Number: "#7", Title: "Features", State: "on-hold", Chip: "project", Done: 1, Total: 3, Counts: "1 of 3 · 33%",
 		Notes: []string{"#44 also in Firmware"}, Warn: "waits on Firmware"}
 	shot, drawn := drawnAlone(t, 250, 150, func(k Kit) { Card{Goal: tile, Chosen: true}.Draw(k, box) })
@@ -210,8 +212,8 @@ func TestACardInTileLayoutSaysItsCountsItsNotesAndItsWarning(t *testing.T) {
 }
 
 func TestAReferenceCardSaysWhyItIsThereInTheLateInk(t *testing.T) {
-	s := Dark()
-	slot := Box{X: 10, Y: 10, W: 240, H: CardHeight}
+	s := design.Dark()
+	slot := geom.Box{X: 10, Y: 10, W: 240, H: geom.CardHeight}
 	shot, _ := drawnAlone(t, 270, 120, func(k Kit) {
 		Card{Face: cardTitled("Order the relay"), Reference: true, Why: "outside this view · blocks #2", Colour: func(string) string { return "" }}.Draw(k, slot)
 	})
@@ -221,14 +223,14 @@ func TestAReferenceCardSaysWhyItIsThereInTheLateInk(t *testing.T) {
 }
 
 func TestFiguresGiveEachFigureTheRoomItsWeightTakes(t *testing.T) {
-	th, s := drawingTheme(), Dark()
-	boxes := map[string]Box{}
-	defer noting(th, func(_ layout.Context, _ *material.Theme, b Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
+	th, s := drawingTheme(), design.Dark()
+	boxes := map[string]geom.Box{}
+	defer noting(th, func(_ layout.Context, _ *material.Theme, b geom.Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
 		boxes[said] = b
 	})()
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(600, 100)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	Figures{Said: []Figure{{Figure: "—", Word: "spent"}, {Figure: "3", Word: "left"}, {Figure: "14h50m", Word: "spent"}}}.Draw(NewKit(gtx, th, s, &Drawn{}), Box{X: 0, Y: 0, W: 600, H: FiguresHigh})
+	Figures{Said: []Figure{{Figure: "—", Word: "spent"}, {Figure: "3", Word: "left"}, {Figure: "14h50m", Word: "spent"}}}.Draw(NewKit(gtx, th, s, &Drawn{}), geom.Box{X: 0, Y: 0, W: 600, H: FiguresHigh})
 	for _, figure := range []string{"—", "3", "14h50m"} {
 		label := material.Label(th, unit.Sp(float32(s.Type.Figure)), figure)
 		label.Font.Weight = font.SemiBold

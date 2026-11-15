@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/gui/geom"
+
 	"gioui.org/font"
 	"gioui.org/text"
 )
@@ -12,7 +14,7 @@ type Ring struct {
 }
 
 // Draw draws the ring round at, leaving what it rings as it was.
-func (r Ring) Draw(k Kit, at Box) Box {
+func (r Ring) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("ring", at)
 	ink := k.skin.Colour.Line.Selected
 	if r.Target {
@@ -26,7 +28,7 @@ func (r Ring) Draw(k Kit, at Box) Box {
 type TodayMark struct{ Radius int }
 
 // Draw draws the ring round at.
-func (t TodayMark) Draw(k Kit, at Box) Box {
+func (t TodayMark) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("today", at)
 	ringed(k, at, t.Radius, k.skin.Colour.Accent.Base)
 	return at
@@ -39,7 +41,7 @@ type DayCell struct {
 }
 
 // Draw draws the day in at and writes its number in the middle.
-func (d DayCell) Draw(k Kit, at Box) Box {
+func (d DayCell) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("day", at)
 	if d.Picked {
 		rounded(k.gtx, at, k.skin.Radius.Control, k.skin.Colour.Accent.Base)
@@ -67,11 +69,11 @@ type Swatch struct {
 }
 
 // Draw draws the swatch in at, its ring round it.
-func (s Swatch) Draw(k Kit, at Box) Box {
+func (s Swatch) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("swatch", at)
 	if s.Picked {
 		hair := k.skin.Space.Hair
-		ring := Box{X: at.X - hair, Y: at.Y - hair, W: at.W + 2*hair, H: at.H + 2*hair}
+		ring := geom.Box{X: at.X - hair, Y: at.Y - hair, W: at.W + 2*hair, H: at.H + 2*hair}
 		rounded(k.gtx, ring, k.skin.Radius.Full(ring), k.skin.Colour.Ink.Text)
 	}
 	rounded(k.gtx, at, k.skin.Radius.Full(at), k.skin.Colour.Labels[s.Colour])
@@ -85,7 +87,7 @@ type WorkspacePill struct {
 }
 
 // Draw draws the pill in at.
-func (p WorkspacePill) Draw(k Kit, at Box) Box {
+func (p WorkspacePill) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("workspace", at)
 	rounded(k.gtx, at, k.skin.Radius.Row, k.skin.Colour.Surface.Control)
 	in := k.inside("workspace")
@@ -108,7 +110,7 @@ func (p WorkspacePill) Draw(k Kit, at Box) Box {
 type Scrollbar struct{ Lines, Rows, At int }
 
 // Draw draws the track along at and the thumb on it, and nothing when every line is in sight.
-func (s Scrollbar) Draw(k Kit, at Box) Box {
+func (s Scrollbar) Draw(k Kit, at geom.Box) geom.Box {
 	if s.Lines <= s.Rows {
 		return at
 	}
@@ -122,7 +124,7 @@ func (s Scrollbar) Draw(k Kit, at Box) Box {
 type Backdrop struct{}
 
 // Draw lays the back over at.
-func (Backdrop) Draw(k Kit, at Box) Box {
+func (Backdrop) Draw(k Kit, at geom.Box) geom.Box {
 	fill(k.gtx, k.put("backdrop", at), k.skin.Colour.Surface.Back)
 	return at
 }
@@ -131,7 +133,7 @@ func (Backdrop) Draw(k Kit, at Box) Box {
 type InfoBox struct{}
 
 // Draw lays the box over at.
-func (InfoBox) Draw(k Kit, at Box) Box {
+func (InfoBox) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("info", at)
 	rounded(k.gtx, at, k.skin.Radius.Card, k.skin.Colour.Surface.Card)
 	return at

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/gui/geom"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"cairn/internal/board"
 	"cairn/internal/store/files"
 	"cairn/internal/theme"
 )
@@ -28,9 +30,9 @@ func (w *world) settingRow(key string) (SettingRow, error) {
 	return SettingRow{}, fmt.Errorf("the settings hold no %q in the scope %q", key, w.w.SettingsScope())
 }
 
-func (w *world) clickIn(b Box) {
-	w.w = w.w.Hovering(Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
-	w.w = w.w.clicked(Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
+func (w *world) clickIn(b geom.Box) {
+	w.w = w.w.Hovering(geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
+	w.w = w.w.clicked(geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
 }
 
 func (w *world) settingInSight(key string) (SettingRow, error) {
@@ -139,7 +141,7 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 			w.clickIn(row.Parts[at])
 			return nil
 		}
-		w.w = w.w.Hovering(Point{X: row.Name.X + 2, Y: row.Name.Y + 2})
+		w.w = w.w.Hovering(geom.Point{X: row.Name.X + 2, Y: row.Name.Y + 2})
 		if row, err = w.settingRow(key); err != nil {
 			return err
 		}
@@ -173,9 +175,9 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		before := w.w.Configured()
+		before := w.w.Configured
 		w.clickIn(row.Control)
-		if !row.Fixed || len(row.Offers) > 0 || w.w.Configured().File != before.File || w.w.keyWriting != "" {
+		if !row.Fixed || len(row.Offers) > 0 || w.w.Configured.File != before.File || w.w.KeyWriting != "" {
 			return fmt.Errorf("the row %q offers %+v", key, row)
 		}
 		return nil
@@ -232,9 +234,9 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the banner says "([^"]*)"$`, func(said string) error {
 		var all []string
-		board := w.w
-		board.screen = OnTheBoard
-		for _, b := range board.BoardBanners() {
+		looked := w.w
+		looked.Screen = board.OnTheBoard
+		for _, b := range looked.BoardBanners() {
 			all = append(all, b.Said, b.Then)
 		}
 		if !strings.Contains(strings.Join(all, "\n"), said) {

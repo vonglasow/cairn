@@ -1,7 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
 	"strconv"
 	"strings"
 
@@ -23,7 +25,7 @@ type switcherState struct {
 	placeRead bool
 	spaces    []workspace.Workspace
 	recent    []workspace.RecentFolder
-	typed     Written
+	typed     board.Written
 	on        int
 	asking    spaceAsking
 	newSpace  string
@@ -93,8 +95,8 @@ func (w Window) PlaceSays() string { return w.switcher.place.Name() }
 // Loose says whether the store the window shows is one no workspace names.
 func (w Window) Loose() bool { return w.switcher.place.Configured() == "" }
 
-func (w Window) placeAt(l Layout) Box {
-	return Box{X: l.Tabs.X, Y: l.Tabs.Y + between, W: placeRoom + w.placeTextWide(), H: l.Tabs.H - between}
+func (w Window) placeAt(l geom.Layout) geom.Box {
+	return geom.Box{X: l.Tabs.X, Y: l.Tabs.Y + between, W: placeRoom + w.placeTextWide(), H: l.Tabs.H - between}
 }
 
 const placeRoom = 2*padding + dotSide + 2*between + placeCaret
@@ -104,7 +106,7 @@ func (w Window) placeTextWide() int {
 }
 
 func (w Window) placeText() int {
-	room := min(placeWide, placeLeast+max(0, w.width-Narrowest)) - placeRoom
+	room := min(placeWide, placeLeast+max(0, w.width-geom.Narrowest)) - placeRoom
 	if room < placeWords {
 		return 0
 	}
@@ -119,24 +121,24 @@ func (w Window) PlaceShown() string {
 	return w.PlaceSays()
 }
 
-func (w Window) switcherPathAt(p Point) ([]string, Box, int) {
-	if w.screen != OnWorkspaces {
-		return nil, Box{}, 0
+func (w Window) switcherPathAt(p geom.Point) ([]string, geom.Box, int) {
+	if w.Screen != board.OnWorkspaces {
+		return nil, geom.Box{}, 0
 	}
 	for _, line := range w.SwitcherLines() {
 		if line.At.In(p) && line.Folder != "" {
 			return []string{line.Folder}, line.At, line.At.W
 		}
 	}
-	return nil, Box{}, 0
+	return nil, geom.Box{}, 0
 }
 
 // PlaceParts is where the pill draws its dot, its name and its caret.
-func PlaceParts(pill Box) (dot, name, caret Box) {
-	dot = Box{X: pill.X + padding, Y: pill.Y + (pill.H-dotSide)/2, W: dotSide, H: dotSide}
-	caret = Box{X: pill.X + pill.W - padding - placeCaret, Y: pill.Y + (pill.H-placeCaret)/2, W: placeCaret, H: placeCaret}
+func PlaceParts(pill geom.Box) (dot, name, caret geom.Box) {
+	dot = geom.Box{X: pill.X + padding, Y: pill.Y + (pill.H-dotSide)/2, W: dotSide, H: dotSide}
+	caret = geom.Box{X: pill.X + pill.W - padding - placeCaret, Y: pill.Y + (pill.H-placeCaret)/2, W: placeCaret, H: placeCaret}
 	x := dot.X + dot.W + between
-	name = Box{X: x, Y: pill.Y + (pill.H-lineHigh)/2, W: caret.X - between - x, H: lineHigh}
+	name = geom.Box{X: x, Y: pill.Y + (pill.H-lineHigh)/2, W: caret.X - between - x, H: lineHigh}
 	return dot, name, caret
 }
 
@@ -149,8 +151,8 @@ func (w Window) openingSwitcher() Window {
 	if got.Workspaces != nil {
 		w.switcher.spaces, w.switcher.recent = got.Workspaces.Workspaces, got.Workspaces.Recent
 	}
-	w.switcher.typed, w.switcher.on, w.switcher.asking = Written{}, 0, narrowing
-	w.screen = OnWorkspaces
+	w.switcher.typed, w.switcher.on, w.switcher.asking = board.Written{}, 0, narrowing
+	w.Screen = board.OnWorkspaces
 	return w
 }
 
@@ -158,7 +160,7 @@ func (w Window) openingSwitcher() Window {
 type SwitcherLine struct {
 	Name, Folder, Colour, Tag, Key string
 	Recent, Here, Gone, On         bool
-	At                             Box
+	At                             geom.Box
 	to                             engine.Elsewhere
 	keeps                          string
 }
@@ -194,7 +196,7 @@ func (w Window) spaceLine(place int, one workspace.Workspace) SwitcherLine {
 }
 
 func (w Window) recentLine(one workspace.RecentFolder) SwitcherLine {
-	line := SwitcherLine{Name: one.Name(), Folder: one.Shown(), Recent: true, Gone: one.NotFound, Tag: one.Said(w.now), to: engine.Elsewhere{Store: one.Store}}
+	line := SwitcherLine{Name: one.Name(), Folder: one.Shown(), Recent: true, Gone: one.NotFound, Tag: one.Said(w.Now), to: engine.Elsewhere{Store: one.Store}}
 	if !one.NotFound {
 		line.keeps = one.Folder
 	}
@@ -222,7 +224,7 @@ func (w Window) switcherChoices() []SwitcherLine {
 }
 
 // SwitcherBox is the switcher, dropped under the pill: its line, the workspaces, the recent folders, and its three acts.
-func (w Window) SwitcherBox() Box {
+func (w Window) SwitcherBox() geom.Box {
 	l := w.Layout()
 	pill := l.Place
 	lines := w.switcherChoices()
@@ -231,8 +233,8 @@ func (w Window) SwitcherBox() Box {
 		rows++
 	}
 	top := pill.Y + pill.H + between
-	most := max(4, (w.height-margin-top-2*inset)/menuRow)
-	return Box{X: pill.X, Y: top, W: min(switchWide, w.width-2*margin), H: min(rows, most)*menuRow + 2*inset}
+	most := max(4, (w.height-geom.Margin-top-2*inset)/menuRow)
+	return geom.Box{X: pill.X, Y: top, W: min(switchWide, w.width-2*geom.Margin), H: min(rows, most)*menuRow + 2*inset}
 }
 
 func (w Window) hasRecent(lines []SwitcherLine) bool {
@@ -244,21 +246,21 @@ func (w Window) hasRecent(lines []SwitcherLine) bool {
 	return false
 }
 
-func switcherRow(box Box, i int) Box {
-	return Box{X: box.X + inset, Y: box.Y + inset + i*menuRow, W: box.W - 2*inset, H: menuRow}
+func switcherRow(box geom.Box, i int) geom.Box {
+	return geom.Box{X: box.X + inset, Y: box.Y + inset + i*menuRow, W: box.W - 2*inset, H: menuRow}
 }
 
 // SwitcherField is the line at the switcher's head, where a name narrows it or a folder is typed.
-func (w Window) SwitcherField() Box { return switcherRow(w.SwitcherBox(), 0) }
+func (w Window) SwitcherField() geom.Box { return switcherRow(w.SwitcherBox(), 0) }
 
 // SwitcherHeads is where the switcher's two groups are headed, the second only when a recent folder is listed.
-func (w Window) SwitcherHeads() []Box {
+func (w Window) SwitcherHeads() []geom.Box {
 	box := w.SwitcherBox()
-	heads := []Box{switcherRow(box, 1)}
+	heads := []geom.Box{switcherRow(box, 1)}
 	lines := w.SwitcherLines()
 	for _, line := range lines {
 		if line.Recent {
-			heads = append(heads, Box{X: line.At.X, Y: line.At.Y - menuRow, W: line.At.W, H: menuRow})
+			heads = append(heads, geom.Box{X: line.At.X, Y: line.At.Y - menuRow, W: line.At.W, H: menuRow})
 			break
 		}
 	}
@@ -300,7 +302,7 @@ func (w Window) SwitcherLines() []SwitcherLine {
 // SwitcherAct is one of the three acts at the switcher's foot: what it says, the key doing it, and where it is drawn.
 type SwitcherAct struct {
 	Said, Key string
-	At        Box
+	At        geom.Box
 }
 
 func (w Window) chosenLine() (SwitcherLine, bool) {
@@ -351,7 +353,7 @@ func (w Window) SwitcherAsks() string {
 }
 
 // SwitcherTyped is what is typed in the switcher's line.
-func (w Window) SwitcherTyped() Written { return w.switcher.typed }
+func (w Window) SwitcherTyped() board.Written { return w.switcher.typed }
 
 func (w Window) onWorkspaces(name string) Window {
 	if w.switcher.asking != narrowing {
@@ -360,7 +362,7 @@ func (w Window) onWorkspaces(name string) Window {
 	lines := w.switcherChoices()
 	switch name {
 	case "esc":
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 	case "up":
 		w.switcher.on = max(0, w.switcher.on-1)
 	case "down":
@@ -392,7 +394,7 @@ func (w Window) byPlace(name string) (Window, bool) {
 
 func (w Window) choosingByPlace(name string) Window {
 	opened := w.openingSwitcher()
-	if opened.err != nil {
+	if opened.Err != nil {
 		return opened
 	}
 	if chosen, ok := opened.byPlace(name); ok {
@@ -403,7 +405,7 @@ func (w Window) choosingByPlace(name string) Window {
 
 func (w Window) choosingLine(line SwitcherLine) Window {
 	if line.Here {
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 		return w
 	}
 	return w.askingApart(line.to, line.Name)
@@ -417,7 +419,7 @@ func (w Window) askingApart(to engine.Elsewhere, named string) Window {
 func (w Window) askingInSwitcher(name string) Window {
 	switch name {
 	case "esc":
-		w.switcher.asking, w.switcher.typed = narrowing, Written{}
+		w.switcher.asking, w.switcher.typed = narrowing, board.Written{}
 	case "backspace":
 		w.switcher.typed = w.switcher.typed.Back()
 	case "enter":
@@ -426,7 +428,7 @@ func (w Window) askingInSwitcher(name string) Window {
 		case aFolder:
 			return w.askingApart(engine.Elsewhere{Folder: typed}, typed)
 		case aName:
-			w.switcher.newSpace, w.switcher.asking, w.switcher.typed = typed, itsFolder, Written{}
+			w.switcher.newSpace, w.switcher.asking, w.switcher.typed = typed, itsFolder, board.Written{}
 		case itsFolder:
 			return w.makingWorkspace(w.switcher.newSpace, typed)
 		case keepingAs:
@@ -458,22 +460,22 @@ func (w Window) keepingFolder(name, folder string) Window {
 func (w Window) actingInSwitcher(said string) Window {
 	switch said {
 	case OpenFolderSays:
-		w.switcher.asking, w.switcher.typed = aFolder, Written{}
+		w.switcher.asking, w.switcher.typed = aFolder, board.Written{}
 		w.fileAsk = &FileAsk{Folder: true}
 	case NewWorkspaceSays:
-		w.switcher.asking, w.switcher.typed = aName, Written{}
+		w.switcher.asking, w.switcher.typed = aName, board.Written{}
 	case KeepAsWorkspaceSays:
 		line, _ := w.chosenLine()
-		w.switcher.asking, w.switcher.typed, w.switcher.keeping = keepingAs, Written{}, line.keeps
+		w.switcher.asking, w.switcher.typed, w.switcher.keeping = keepingAs, board.Written{}, line.keeps
 	default:
 		return w.openingConfiguration()
 	}
 	return w
 }
 
-func (w Window) clickingWorkspaces(p Point) Window {
+func (w Window) clickingWorkspaces(p geom.Point) Window {
 	if !w.SwitcherBox().In(p) {
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 		return w
 	}
 	for _, line := range w.SwitcherLines() {
@@ -508,8 +510,8 @@ func (w Window) Went(g Went) Window {
 	if g.Err != nil {
 		return w.failing(g.Err)
 	}
-	if w.screen == OnWorkspaces {
-		w.screen = OnTheBoard
+	if w.Screen == board.OnWorkspaces {
+		w.Screen = board.OnTheBoard
 	}
 	if g.Raised {
 		return w.telling(w.switcher.named + " is brought forward")

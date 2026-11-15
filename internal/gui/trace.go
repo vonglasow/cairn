@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"strings"
 
@@ -39,14 +40,14 @@ func KeyTrace(e event.Event, mask func(string) string) (string, bool) {
 	return "", false
 }
 
-var screenNames = map[Screen]string{
-	OnTheBoard: "board", OnForm: "form", OnSearch: "search", OnAsking: "asking", OnHelp: "help",
-	OnChoosing: "choosing", OnCalendar: "calendar", OnMenu: "menu", OnBackups: "backups",
-	OnLabels: "labels", OnFiltering: "filtering", OnConfiguration: "configuration", OnPalette: "palette", OnWorkspaces: "workspaces",
-	OnKeeping: "keeping", OnViews: "views", OnSeriesFates: "series fates", OnRule: "rule",
+var screenNames = map[board.Screen]string{
+	board.OnTheBoard: "board", board.OnForm: "form", board.OnSearch: "search", board.OnAsking: "asking", board.OnHelp: "help",
+	board.OnChoosing: "choosing", board.OnCalendar: "calendar", board.OnMenu: "menu", board.OnBackups: "backups",
+	board.OnLabels: "labels", board.OnFiltering: "filtering", board.OnConfiguration: "configuration", board.OnPalette: "palette", board.OnWorkspaces: "workspaces",
+	board.OnKeeping: "keeping", board.OnViews: "views", board.OnSeriesFates: "series fates", board.OnRule: "rule",
 }
 
 // Seen is what the window shows, the way debug mode writes it down each time it changes: the screen, the page, and the card or objective chosen.
 func (w Window) Seen() string {
-	return fmt.Sprintf("screen=%s tab=%s chosen=%d", screenNames[w.screen], strings.ToLower(Pages[w.tab]), w.chosen)
+	return fmt.Sprintf("screen=%s tab=%s chosen=%d", screenNames[w.Screen], strings.ToLower(Pages[w.Tab]), w.Chosen)
 }

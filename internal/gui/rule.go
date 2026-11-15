@@ -4,6 +4,7 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/series"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"time"
@@ -45,9 +46,9 @@ const (
 )
 
 func (w Window) openingRule() Window {
-	field := w.form.Fields()[w.form.On()]
+	field := w.Form.Fields[w.Form.On()]
 	from := ""
-	for _, f := range w.form.Fields() {
+	for _, f := range w.Form.Fields {
 		if f.Name == board.FromField().Name {
 			from = f.Value
 		}
@@ -56,26 +57,26 @@ func (w Window) openingRule() Window {
 	if rule, err := series.ParseRule(field.Value); err == nil {
 		w.ruling.parts = rule.Parts()
 	}
-	w.screen = OnRule
+	w.Screen = board.OnRule
 	return w
 }
 
 func (w Window) closingRule(keep bool) Window {
 	if !keep {
-		w.form = w.form.Writes(Ending(w.ruling.was))
+		w.Form = w.Form.Writes(board.Ending(w.ruling.was))
 		w = w.fromSet(w.ruling.since)
 	}
-	w.screen = OnForm
+	w.Screen = board.OnForm
 	return w
 }
 
 func (w Window) fromSet(day string) Window {
-	if !slices.ContainsFunc(w.form.Fields(), func(f board.Field) bool { return f.Name == board.FromField().Name }) {
+	if !slices.ContainsFunc(w.Form.Fields, func(f board.Field) bool { return f.Name == board.FromField().Name }) {
 		return w
 	}
-	at := w.form.at
-	w.form = w.form.Set(board.FromField().Name, day)
-	w.form.at = at
+	at := w.Form.At
+	w.Form = w.Form.Set(board.FromField().Name, day)
+	w.Form.At = at
 	return w
 }
 
@@ -205,7 +206,7 @@ func ticked(p series.RuleParts) []bool {
 }
 
 func (w Window) ruled(line, at int) Window {
-	choices := ruleChoices(line, w.ruling, w.today())
+	choices := ruleChoices(line, w.ruling, w.Today())
 	if at < 0 || at >= len(choices) {
 		return w
 	}
@@ -232,7 +233,7 @@ func (w Window) ruled(line, at int) Window {
 			p.Times = ruleTimesFirst
 		}
 		if at == 2 {
-			p.Until = series.DayOf(w.today()).AddDate(0, 0, 7*ruleUntilFirst)
+			p.Until = series.DayOf(w.Today()).AddDate(0, 0, 7*ruleUntilFirst)
 		}
 	case ruleEnd:
 		p = endAt(p, choices[at], at)
@@ -243,7 +244,7 @@ func (w Window) ruled(line, at int) Window {
 		p.Days = nil
 	}
 	w.ruling.parts, w.ruling.line = p, line
-	w.form = w.form.Writes(Ending(p.Words()))
+	w.Form = w.Form.Writes(board.Ending(p.Words()))
 	return w
 }
 
@@ -288,7 +289,7 @@ func (w Window) onRule(name string) Window {
 			w.ruling.day = (w.ruling.day + by + len(Weekdays)) % len(Weekdays)
 			return w
 		}
-		return w.ruled(line, ruleOnOf(line, w.ruling, w.today())+by)
+		return w.ruled(line, ruleOnOf(line, w.ruling, w.Today())+by)
 	case "space":
 		if line == ruleOn {
 			return w.ruled(ruleOn, w.ruling.day)
@@ -297,7 +298,7 @@ func (w Window) onRule(name string) Window {
 	return w
 }
 
-func (w Window) clickingRule(p Point) Window {
+func (w Window) clickingRule(p geom.Point) Window {
 	picker := w.RulePicked()
 	if !picker.Box.In(p) {
 		return w.clickedOff(p)
@@ -320,7 +321,7 @@ func (w Window) clickingRule(p Point) Window {
 
 // RulePicked is the picker as it stands: each part's choices and the one chosen, laid out under what the field reads back.
 func (w Window) RulePicked() RulePicker {
-	today := w.today()
+	today := w.Today()
 	lines := make([]RuleLine, ruleComes+1)
 	for i := range lines {
 		lines[i].Choices = ruleChoices(i, w.ruling, today)
@@ -330,10 +331,10 @@ func (w Window) RulePicked() RulePicker {
 	return RulePickerFor(w.ruleHung(), lines)
 }
 
-func (w Window) ruleHung() Point {
+func (w Window) ruleHung() geom.Point {
 	field := fieldFrame(w)
-	if read, ok := RepeatsReadAt(w.formBox(), w.form.Fields()); ok && read.Y > field.Y {
+	if read, ok := RepeatsReadAt(w.formBox(), w.Form.Fields); ok && read.Y > field.Y {
 		field.H = read.Y + read.H - field.Y
 	}
-	return Hung(field, Box{X: margin, Y: margin, W: w.width - 2*margin, H: w.height - 2*margin}, ruleWide, RulePickerHigh())
+	return Hung(field, geom.Box{X: geom.Margin, Y: geom.Margin, W: w.width - 2*geom.Margin, H: w.height - 2*geom.Margin}, ruleWide, RulePickerHigh())
 }

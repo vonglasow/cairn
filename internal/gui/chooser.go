@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"path/filepath"
 	"strconv"
 
@@ -22,7 +24,7 @@ type schemeOffered struct {
 type ChooserTile struct {
 	Slug string
 	Tile SchemeTile
-	At   Box
+	At   geom.Box
 }
 
 func themesFolder(c workspace.Config) string { return filepath.Join(filepath.Dir(c.File), "themes") }
@@ -50,20 +52,20 @@ func offeredFrom(seen workspace.ThemeSeen) schemeOffered {
 func (w Window) openingChooser() Window {
 	w.tiles = nil
 	for _, own := range []bool{false, true} {
-		for _, seen := range w.configured.Themes {
+		for _, seen := range w.Configured.Themes {
 			if (seen.From != theme.Carried) == own {
 				w.tiles = append(w.tiles, offeredFrom(seen))
 			}
 		}
 	}
-	w.chooserOpen, w.tileOn, w.settingsAt = true, 0, 0
+	w.ChooserOpen, w.TileOn, w.SettingsAt = true, 0, 0
 	worn := w.WornScheme()
 	for i, one := range w.tiles {
 		if one.seen.Slug == worn {
-			w.tileOn = i
+			w.TileOn = i
 		}
 	}
-	w.previewing = worn
+	w.Previewing = worn
 	return w
 }
 
@@ -73,7 +75,7 @@ func (w Window) inChooser(name string) Window {
 	if step == 0 {
 		return w
 	}
-	at := w.tileOn
+	at := w.TileOn
 	for next := at + step; next >= 0 && next < len(w.tiles); next += step {
 		if w.tiles[next].bad == "" {
 			at = next
@@ -84,29 +86,29 @@ func (w Window) inChooser(name string) Window {
 }
 
 func (w Window) previewingTile(at int) Window {
-	w.tileOn, w.previewing = at, w.tiles[at].seen.Slug
+	w.TileOn, w.Previewing = at, w.tiles[at].seen.Slug
 	for _, tile := range w.ChooserTiles() {
 		region := w.chooserRegion()
-		if tile.Slug != w.previewing {
+		if tile.Slug != w.Previewing {
 			continue
 		}
 		if tile.At.Y < region.Y {
-			w.settingsAt -= region.Y - tile.At.Y + sectionHigh
+			w.SettingsAt -= region.Y - tile.At.Y + sectionHigh
 		} else if tile.At.Y+tile.At.H > region.Y+region.H {
-			w.settingsAt += tile.At.Y + tile.At.H - region.Y - region.H + padding
+			w.SettingsAt += tile.At.Y + tile.At.H - region.Y - region.H + padding
 		}
-		w.settingsAt = max(0, w.settingsAt)
+		w.SettingsAt = max(0, w.SettingsAt)
 	}
 	return w
 }
 
-func (w Window) clickingChooser(p Point) Window {
+func (w Window) clickingChooser(p geom.Point) Window {
 	if !w.chooserRegion().In(p) {
 		return w
 	}
 	for i, tile := range w.ChooserTiles() {
 		if tile.At.In(p) && w.tiles[i].bad == "" {
-			if w.tileOn == i {
+			if w.TileOn == i {
 				return w.wearing()
 			}
 			return w.previewingTile(i)
@@ -116,13 +118,13 @@ func (w Window) clickingChooser(p Point) Window {
 }
 
 func (w Window) wearing() Window {
-	slug := w.previewing
-	w.chooserOpen, w.previewing, w.settingsAt = false, "", 0
+	slug := w.Previewing
+	w.ChooserOpen, w.Previewing, w.SettingsAt = false, "", 0
 	return w.setting("window.theme", slug)
 }
 
 func (w Window) leavingChooser() Window {
-	w.chooserOpen, w.previewing, w.settingsAt = false, "", 0
+	w.ChooserOpen, w.Previewing, w.SettingsAt = false, "", 0
 	return w
 }
 
@@ -137,10 +139,10 @@ func (w Window) chooserColumns() int {
 func (w Window) ChooserHeads() []SettingSection {
 	region := w.chooserRegion()
 	shipped, own := w.tilesCounted()
-	heads := []SettingSection{{Name: "Shipped", Count: strconv.Itoa(shipped), At: Box{X: region.X, Y: region.Y - w.settingsAt + padding, W: region.W, H: lineHigh}}}
+	heads := []SettingSection{{Name: "Shipped", Count: strconv.Itoa(shipped), At: geom.Box{X: region.X, Y: region.Y - w.SettingsAt + padding, W: region.W, H: lineHigh}}}
 	rows := (shipped + w.chooserColumns() - 1) / w.chooserColumns()
 	y := heads[0].At.Y + sectionHigh - padding + rows*(tileHigh+tileGap)
-	return append(heads, SettingSection{Name: "Yours · " + tilde(themesFolder(w.configured)), Count: strconv.Itoa(own), At: Box{X: region.X, Y: y + padding, W: region.W, H: lineHigh}})
+	return append(heads, SettingSection{Name: "Yours · " + tilde(themesFolder(w.Configured)), Count: strconv.Itoa(own), At: geom.Box{X: region.X, Y: y + padding, W: region.W, H: lineHigh}})
 }
 
 func (w Window) tilesCounted() (shipped, own int) {
@@ -173,7 +175,7 @@ func (w Window) ChooserTiles() []ChooserTile {
 			head = heads[1]
 		}
 		top := head.At.Y + head.At.H + between
-		box := Box{X: region.X + (at%cols)*(wide+tileGap), Y: top + (at/cols)*(tileHigh+tileGap), W: wide, H: tileHigh}
+		box := geom.Box{X: region.X + (at%cols)*(wide+tileGap), Y: top + (at/cols)*(tileHigh+tileGap), W: wide, H: tileHigh}
 		warn := ""
 		if n := len(one.seen.Short); n > 0 {
 			warn = "falls short ×" + strconv.Itoa(n)
@@ -184,7 +186,7 @@ func (w Window) ChooserTiles() []ChooserTile {
 		}
 		tiles = append(tiles, ChooserTile{Slug: one.seen.Slug, At: box, Tile: SchemeTile{
 			Colours: one.colours, Name: one.seen.Slug, Kind: kind, Warn: warn, Bad: one.bad,
-			Worn: one.seen.InForce, Keyed: i == w.tileOn,
+			Worn: one.seen.InForce, Keyed: i == w.TileOn,
 		}})
 		at++
 	}
@@ -192,44 +194,31 @@ func (w Window) ChooserTiles() []ChooserTile {
 }
 
 func (w Window) shortSaid() string {
-	if w.tileOn < len(w.tiles) {
-		if one := w.tiles[w.tileOn]; len(one.seen.Short) > 0 && !w.narrow() {
+	if w.TileOn < len(w.tiles) {
+		if one := w.tiles[w.TileOn]; len(one.seen.Short) > 0 && !w.narrow() {
 			return one.seen.Slug + ": " + one.seen.Short[0]
 		}
 	}
 	return ""
 }
 
-// WornScheme is the scheme the window shows: the one previewed while the chooser is open, otherwise the one in force.
-func (w Window) WornScheme() string {
-	if w.chooserOpen && w.previewing != "" {
-		return w.previewing
-	}
-	for _, seen := range w.configured.Themes {
-		if seen.InForce {
-			return seen.Slug
-		}
-	}
-	return theme.DefaultSlug
-}
-
 // Skin is what the window wears now: the scheme previewed while the chooser is open, otherwise the one in force.
-func (w Window) Skin() Skin {
-	if w.chooserOpen && w.previewing != "" {
+func (w Window) Skin() design.Skin {
+	if w.ChooserOpen && w.Previewing != "" {
 		for _, one := range w.tiles {
-			if one.seen.Slug == w.previewing && one.bad == "" {
-				return Skinned(one.colours)
+			if one.seen.Slug == w.Previewing && one.bad == "" {
+				return design.Skinned(one.colours)
 			}
 		}
 	}
 	if w.skin != nil {
 		return *w.skin
 	}
-	return Dark()
+	return design.Dark()
 }
 
 // Wearing is the window wearing the skin given until its configuration says another scheme.
-func (w Window) Wearing(s Skin) Window {
+func (w Window) Wearing(s design.Skin) Window {
 	w.skin = &s
 	return w
 }
@@ -240,15 +229,15 @@ func (w Window) wornFrom(got workspace.Config) Window {
 			continue
 		}
 		if offered := offeredFrom(seen); offered.bad == "" {
-			s := Skinned(offered.colours)
+			s := design.Skinned(offered.colours)
 			w.skin = &s
 		}
 	}
 	return w
 }
 
-func (w Window) chooserRegion() Box {
+func (w Window) chooserRegion() geom.Box {
 	box := w.SettingsBox()
 	body := SettingsBody(box)
-	return Box{X: body.X + rowsPad, Y: body.Y + inset, W: body.W - 2*rowsPad, H: body.H - inset}
+	return geom.Box{X: body.X + rowsPad, Y: body.Y + inset, W: body.W - 2*rowsPad, H: body.H - inset}
 }

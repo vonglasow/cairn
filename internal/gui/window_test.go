@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"fmt"
 
 	"strconv"
@@ -19,12 +20,12 @@ func TestAClickChoosesTheCardUnderIt(t *testing.T) {
 	w := holding(f, card(1, "Write the spec", "todo"), card(2, "Ship it", "todo"))
 
 	w = w.clicked(middleOf(w, 1, 0))
-	if w.Chosen() != 1 {
-		t.Fatalf("chose %d, want task 1", w.Chosen())
+	if w.Chosen != 1 {
+		t.Fatalf("chose %d, want task 1", w.Chosen)
 	}
 	w = w.clicked(middleOf(w, 1, 1))
-	if w.Chosen() != 2 {
-		t.Fatalf("chose %d, want task 2", w.Chosen())
+	if w.Chosen != 2 {
+		t.Fatalf("chose %d, want task 2", w.Chosen)
 	}
 }
 
@@ -32,9 +33,9 @@ func TestAClickOnNothingChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0))
-	w = w.clicked(Point{X: 0, Y: 0})
-	if w.Chosen() != 0 {
-		t.Fatalf("clicking the margin left %d chosen", w.Chosen())
+	w = w.clicked(geom.Point{X: 0, Y: 0})
+	if w.Chosen != 0 {
+		t.Fatalf("clicking the margin left %d chosen", w.Chosen)
 	}
 }
 
@@ -43,17 +44,17 @@ func TestADoubleClickOpensTheDetail(t *testing.T) {
 	w := holding(f, card(1, "Write the spec", "todo"))
 
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	if w.Screen() != OnForm {
-		t.Fatalf("the window is on %v, want the detail", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the window is on %v, want the detail", w.Screen)
 	}
-	if w.Chosen() != 1 {
-		t.Fatalf("the detail is open on %d", w.Chosen())
+	if w.Chosen != 1 {
+		t.Fatalf("the detail is open on %d", w.Chosen)
 	}
 	if f.what("trace", "show") != 1 {
 		t.Error("the detail did not ask for the task's history")
 	}
-	if w = w.Key("esc"); w.Screen() != OnTheBoard {
-		t.Fatalf("escape left the window on %v", w.Screen())
+	if w = w.Key("esc"); w.Screen != board.OnTheBoard {
+		t.Fatalf("escape left the window on %v", w.Screen)
 	}
 }
 
@@ -63,11 +64,11 @@ func TestAClickThatBarelyMovesIsStillAClick(t *testing.T) {
 
 	at := middleOf(w, 0, 0)
 	w = w.PressAt(at)
-	w = w.MoveTo(Point{X: at.X + 2, Y: at.Y + 1})
-	w = w.LetGo(Point{X: at.X + 2, Y: at.Y + 1})
+	w = w.MoveTo(geom.Point{X: at.X + 2, Y: at.Y + 1})
+	w = w.LetGo(geom.Point{X: at.X + 2, Y: at.Y + 1})
 
-	if w.Chosen() != 1 {
-		t.Errorf("chose %d, want task 1", w.Chosen())
+	if w.Chosen != 1 {
+		t.Errorf("chose %d, want task 1", w.Chosen)
 	}
 	if len(f.asked) != 0 {
 		t.Errorf("the store was asked %d things for a click", len(f.asked))
@@ -82,7 +83,7 @@ func TestTheWheelScrollsOneColumnAndNoOther(t *testing.T) {
 	}
 	w := holding(f, many...)
 
-	w = w.Scroll(middleOf(w, 0, 0), CardHeight)
+	w = w.Scroll(middleOf(w, 0, 0), geom.CardHeight)
 	if w.scroll[0] == 0 {
 		t.Error("the backlog did not scroll")
 	}
@@ -95,11 +96,11 @@ func TestScrollingStopsAtBothEnds(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "backlog"))
 
-	w = w.Scroll(middleOf(w, 0, 0), -CardHeight)
+	w = w.Scroll(middleOf(w, 0, 0), -geom.CardHeight)
 	if w.scroll[0] != 0 {
 		t.Errorf("scrolled to %d above the first card", w.scroll[0])
 	}
-	w = w.Scroll(middleOf(w, 0, 0), CardHeight*20)
+	w = w.Scroll(middleOf(w, 0, 0), geom.CardHeight*20)
 	if w.scroll[0] != 0 {
 		t.Errorf("one card scrolled to %d, and it all fits", w.scroll[0])
 	}
@@ -108,12 +109,12 @@ func TestScrollingStopsAtBothEnds(t *testing.T) {
 func TestAWindowTooSmallSaysSo(t *testing.T) {
 	f := newFake()
 	w := New(f, 320, 240)
-	if w.Screen() != TooSmallToDraw {
-		t.Fatalf("the window is on %v", w.Screen())
+	if w.Screen != board.TooSmallToDraw {
+		t.Fatalf("the window is on %v", w.Screen)
 	}
 	w = w.Resized(1200, 800)
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("growing back left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("growing back left the window on %v", w.Screen)
 	}
 }
 
@@ -121,7 +122,7 @@ func TestTheWindowFollowsTheStoreOnlyWhenItMoved(t *testing.T) {
 	f := newFake()
 	f.version = 7
 	w := holding(f, card(1, "Write the spec", "backlog"))
-	w.version = 7
+	w.Version = 7
 
 	w = w.Wonder()
 	if f.what("task", "list") != 0 {
@@ -139,7 +140,7 @@ func TestTheWindowReadsTheStoreAgainEachMinuteATaskIsInFocus(t *testing.T) {
 	f.version, f.focus = 7, []int{1}
 	start := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "current", InFocus: true}).At(start).Look()
-	w.version = 7
+	w.Version = 7
 	listed := f.what("task", "list")
 	w = w.At(start.Add(30 * time.Second)).Wonder()
 	if f.what("task", "list") != listed {
@@ -151,7 +152,7 @@ func TestTheWindowReadsTheStoreAgainEachMinuteATaskIsInFocus(t *testing.T) {
 	}
 	f.focus = nil
 	idle := holding(f, card(1, "Write the spec", "current")).At(start).Look()
-	idle.version = 7
+	idle.Version = 7
 	listed = f.what("task", "list")
 	idle.At(start.Add(time.Hour)).Wonder()
 	if f.what("task", "list") != listed {
@@ -173,12 +174,12 @@ func TestAReleaseWhereNoCardWasHeldIsStillAClick(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	tab := TabAt(w.Layout(), 1)
-	at := Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2}
+	at := geom.Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2}
 
 	w = w.PressAt(at)
 	w = w.LetGo(at)
-	if w.Tab() != Objectives {
-		t.Fatalf("pressing and releasing on a tab left the window on %v", w.Tab())
+	if w.Tab != board.Objectives {
+		t.Fatalf("pressing and releasing on a tab left the window on %v", w.Tab)
 	}
 }
 
@@ -197,9 +198,9 @@ func TestTheBarOffersEditingAndClickingItOpensTheForm(t *testing.T) {
 		t.Fatalf("the bar offers %v, and none of them edits", w.Offers())
 	}
 	box := w.BarOffers()[at]
-	w = w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
-	if w.Screen() != OnForm {
-		t.Fatalf("clicking Edit left the window on %v", w.Screen())
+	w = w.clicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+	if w.Screen != board.OnForm {
+		t.Fatalf("clicking Edit left the window on %v", w.Screen)
 	}
 }
 
@@ -216,20 +217,20 @@ func TestTheBarOffersNothingToEditWithNothingChosen(t *testing.T) {
 func TestTheObjectivesTabListsChoosesAndEdits(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{
+	w.Snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
 	tab := TabAt(w.Layout(), 1)
-	w = w.clicked(Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2})
+	w = w.clicked(geom.Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2})
 
 	second := GoalAt(w.Layout(), 1, 0)
-	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
-	if w.Chosen() != 4 {
-		t.Fatalf("clicking the second objective chose %d", w.Chosen())
+	w = w.clicked(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	if w.Chosen != 4 {
+		t.Fatalf("clicking the second objective chose %d", w.Chosen)
 	}
 	w = w.Choose("Edit")
-	if !w.Form().ForObjective {
+	if !w.Form.ForObjective {
 		t.Fatal("editing an objective opened a task's form")
 	}
 	w = w.Choose("Save")
@@ -241,12 +242,12 @@ func TestTheObjectivesTabListsChoosesAndEdits(t *testing.T) {
 func TestClickingBelowTheObjectivesChoosesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
-	w.tab = Objectives
+	w.Snap = board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
+	w.Tab = board.Objectives
 
 	below := GoalAt(w.Layout(), 4, 0)
-	if got := w.clicked(Point{X: below.X + below.W/2, Y: below.Y + below.H/2}); got.Chosen() != 0 {
-		t.Errorf("clicking below the list chose %d", got.Chosen())
+	if got := w.clicked(geom.Point{X: below.X + below.W/2, Y: below.Y + below.H/2}); got.Chosen != 0 {
+		t.Errorf("clicking below the list chose %d", got.Chosen)
 	}
 }
 
@@ -258,7 +259,7 @@ func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 	})
 
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	shown := w.Form().Fields()
+	shown := w.Form.Fields
 	if len(shown) == 0 {
 		t.Fatal("the detail shows nothing of the task")
 	}
@@ -282,7 +283,7 @@ func TestTheDetailShowsEveryFieldOfTheTask(t *testing.T) {
 func TestTheDetailShowsNothingWithNoTaskOpen(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if got := w.Form().Fields(); len(got) != 0 {
+	if got := w.Form.Fields; len(got) != 0 {
 		t.Errorf("a board with no detail open shows %d fields", len(got))
 	}
 }
@@ -290,23 +291,23 @@ func TestTheDetailShowsNothingWithNoTaskOpen(t *testing.T) {
 func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{
+	w.Snap = board.Snapshot{
 		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "backlog"}},
 		Goals: []board.Goal{
 			{Number: 3, Title: "Ship cairn", State: "active"},
 			{Number: 4, Title: "Keep it honest", State: "active"},
 		},
 	}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 
 	for at, want := range map[int]int{0: 3, 1: 4} {
 		box := GoalAt(w.Layout(), at, 0)
-		got := w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
-		if got.Screen() != OnForm {
-			t.Fatalf("double-clicking objective %d left the window on %v", at, got.Screen())
+		got := w.doubleClicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		if got.Screen != board.OnForm {
+			t.Fatalf("double-clicking objective %d left the window on %v", at, got.Screen)
 		}
-		if got.Chosen() != want {
-			t.Errorf("double-clicking objective %d opened %d, want %d", at, got.Chosen(), want)
+		if got.Chosen != want {
+			t.Errorf("double-clicking objective %d opened %d, want %d", at, got.Chosen, want)
 		}
 	}
 }
@@ -314,22 +315,22 @@ func TestDoubleClickingAnObjectiveOpensThatObjective(t *testing.T) {
 func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{
+	w.Snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 
 	first := GoalAt(w.Layout(), 0, 0)
-	w = w.doubleClicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
-	if w.Chosen() != 3 {
-		t.Fatalf("the detail opened on %d", w.Chosen())
+	w = w.doubleClicked(geom.Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	if w.Chosen != 3 {
+		t.Fatalf("the detail opened on %d", w.Chosen)
 	}
 
 	second := ItemOf(GoalAt(w.Layout(), 1, 0), 0)
-	w = w.clicked(Point{X: second.X + inset, Y: second.Y + second.H/2})
-	if w.Chosen() != 3 {
-		t.Errorf("clicking behind an open detail changed it to %d", w.Chosen())
+	w = w.clicked(geom.Point{X: second.X + inset, Y: second.Y + second.H/2})
+	if w.Chosen != 3 {
+		t.Errorf("clicking behind an open detail changed it to %d", w.Chosen)
 	}
 
 	for i, offer := range w.Offers() {
@@ -337,10 +338,10 @@ func TestAPanelOverTheBoardHasTheWindow(t *testing.T) {
 			continue
 		}
 		box := w.PanelOffers()[i]
-		w = w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		w = w.clicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	}
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("Cancel left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("Cancel left the window on %v", w.Screen)
 	}
 }
 
@@ -350,7 +351,7 @@ func TestNoCardIsPickedUpFromBehindAPanel(t *testing.T) {
 	w = w.doubleClicked(middleOf(w, 1, 0))
 
 	w = w.PressAt(middleOf(w, 1, 0))
-	w = w.MoveTo(Point{X: 20, Y: 400})
+	w = w.MoveTo(geom.Point{X: 20, Y: 400})
 	if w.Dragging() {
 		t.Error("a card was dragged out from behind an open detail")
 	}
@@ -359,13 +360,13 @@ func TestNoCardIsPickedUpFromBehindAPanel(t *testing.T) {
 func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
-	w.tab = Objectives
+	w.Snap = board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
+	w.Tab = board.Objectives
 
 	box := GoalAt(w.Layout(), 0, 0)
-	w = w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+	w = w.doubleClicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 
-	shown := w.Form().Fields()
+	shown := w.Form.Fields
 	if len(shown) == 0 {
 		t.Fatal("an objective's detail shows nothing")
 	}
@@ -382,27 +383,27 @@ func TestTheDetailOfAnObjectiveShowsWhatItCarries(t *testing.T) {
 func TestATaskAndAnObjectiveOfTheSameNumberAreToldApart(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{
+	w.Snap = board.Snapshot{
 		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "backlog"}},
 		Goals: []board.Goal{{Number: 1, Title: "Ship cairn", State: "active"}},
 	}
 
-	w.tab = Objectives
+	w.Tab = board.Objectives
 	box := GoalAt(w.Layout(), 0, 0)
-	goal := w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
-	if got := goal.Form().Fields(); len(got) == 0 || got[0].Value != "Ship cairn" {
+	goal := w.doubleClicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+	if got := goal.Form.Fields; len(got) == 0 || got[0].Value != "Ship cairn" {
 		t.Errorf("the detail of objective 1 shows %v", got)
 	}
-	if goal.Edit().Form().ForObjective != true {
+	if goal.Edit().Form.ForObjective != true {
 		t.Error("editing objective 1 opened a task's form")
 	}
 
-	w.tab = Tasks
+	w.Tab = board.Tasks
 	task := w.doubleClicked(middleOf(w, 0, 0))
-	if got := task.Form().Fields(); len(got) == 0 || got[0].Value != "Write the spec" {
+	if got := task.Form.Fields; len(got) == 0 || got[0].Value != "Write the spec" {
 		t.Errorf("the detail of task 1 shows %v", got)
 	}
-	if task.Edit().Form().ForObjective {
+	if task.Edit().Form.ForObjective {
 		t.Error("editing task 1 opened an objective's form")
 	}
 }
@@ -413,26 +414,26 @@ func TestDeletingAsksBeforeItLosesAnything(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0))
 
 	asked := w.Choose("Delete")
-	if asked.Screen() != OnAsking {
-		t.Fatalf("Delete left the window on %v", asked.Screen())
+	if asked.Screen != board.OnAsking {
+		t.Fatalf("Delete left the window on %v", asked.Screen)
 	}
 	if len(f.asked) != 0 {
 		t.Fatal("it deleted before asking")
 	}
-	if got := asked.Choose("Cancel"); got.Screen() != OnTheBoard || len(f.asked) != 0 {
+	if got := asked.Choose("Cancel"); got.Screen != board.OnTheBoard || len(f.asked) != 0 {
 		t.Error("cancelling deleted it anyway")
 	}
 	if got := asked.Choose("Delete"); f.what("task", "delete") != 1 {
 		t.Errorf("agreeing asked for %d deletes and left the window on %v",
-			f.what("task", "delete"), got.Screen())
+			f.what("task", "delete"), got.Screen)
 	}
 }
 
 func TestDeletingAnObjective(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
-	w.tab, w.chosen, w.chosenGoal = Objectives, 3, true
+	w.Snap = board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}}
+	w.Tab, w.Chosen, w.ChosenGoal = board.Objectives, 3, true
 
 	w = w.Choose("Delete").Choose("Delete")
 	if f.what("objective", "delete") != 1 {
@@ -455,8 +456,8 @@ func TestTheHelpSaysWhatEverythingDoes(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	w = w.Choose("Help")
-	if w.Screen() != OnHelp {
-		t.Fatalf("Help left the window on %v", w.Screen())
+	if w.Screen != board.OnHelp {
+		t.Fatalf("Help left the window on %v", w.Screen)
 	}
 	said := w.Helping()
 	if len(said) == 0 {
@@ -471,8 +472,8 @@ func TestTheHelpSaysWhatEverythingDoes(t *testing.T) {
 			t.Errorf("the help says nothing about %q", about)
 		}
 	}
-	if got := w.Key("esc"); got.Screen() != OnTheBoard {
-		t.Fatalf("escape left the help on %v", got.Screen())
+	if got := w.Key("esc"); got.Screen != board.OnTheBoard {
+		t.Fatalf("escape left the help on %v", got.Screen)
 	}
 }
 
@@ -492,7 +493,7 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 	if got := Heads(w.Key("?")); got != "Help" {
 		t.Errorf("the help is headed %q", got)
 	}
-	for screen, want := range map[Screen]string{OnFiltering: "Filters", OnLabels: "Labels"} {
+	for screen, want := range map[board.Screen]string{board.OnFiltering: "Filters", board.OnLabels: "Labels"} {
 		if got := HeadsOn(w, screen); got != want {
 			t.Errorf("a panel is headed %q, not its name, %q", got, want)
 		}
@@ -501,7 +502,7 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 		t.Errorf("adding a task is headed %q", got)
 	}
 	second := TabAt(w.Layout(), 1)
-	goals := w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	goals := w.clicked(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	if got := Heads(goals.Key("cmd+n")); got != "New objective" {
 		t.Errorf("adding an objective is headed %q", got)
 	}
@@ -512,25 +513,25 @@ func TestThePagesAreWalkedRound(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	for _, c := range []struct {
 		keys []string
-		want Tab
+		want board.Tab
 	}{
-		{[]string{"tab"}, Objectives},
-		{[]string{"tab", "tab"}, Time},
-		{[]string{"tab", "tab", "tab"}, Tasks},
-		{[]string{"shift+tab"}, Time},
-		{[]string{"shift+tab", "shift+tab"}, Objectives},
-		{[]string{"tab", "shift+tab"}, Tasks},
+		{[]string{"tab"}, board.Objectives},
+		{[]string{"tab", "tab"}, board.Time},
+		{[]string{"tab", "tab", "tab"}, board.Tasks},
+		{[]string{"shift+tab"}, board.Time},
+		{[]string{"shift+tab", "shift+tab"}, board.Objectives},
+		{[]string{"tab", "shift+tab"}, board.Tasks},
 	} {
 		got := w
 		for _, key := range c.keys {
 			got = got.Key(key)
 		}
-		if got.Tab() != c.want {
-			t.Errorf("%v from the first page lands on %v, want %v", c.keys, got.Tab(), c.want)
+		if got.Tab != c.want {
+			t.Errorf("%v from the first page lands on %v, want %v", c.keys, got.Tab, c.want)
 		}
 	}
-	if got := w.clicked(middleOf(w, 1, 0)).other(1); got.Chosen() != 0 {
-		t.Errorf("after changing page, task %d is still chosen", got.Chosen())
+	if got := w.clicked(middleOf(w, 1, 0)).other(1); got.Chosen != 0 {
+		t.Errorf("after changing page, task %d is still chosen", got.Chosen)
 	}
 }
 
@@ -569,7 +570,7 @@ func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("cmd+t")
 	over := BesideBox(w.formPanel())
-	at := Point{X: over.X + over.W/2, Y: over.Y + over.H/2}
+	at := geom.Point{X: over.X + over.W/2, Y: over.Y + over.H/2}
 
 	if got := w.Scroll(at, 3*lineHigh).History(); got != 3 {
 		t.Errorf("turned by three lines, the history is at %d", got)
@@ -577,7 +578,7 @@ func TestTheWheelMovesAHistoryByWholeLines(t *testing.T) {
 	if got := w.Scroll(at, lineHigh-1).History(); got != 0 {
 		t.Errorf("turned by less than a line, the history is at %d", got)
 	}
-	if got := w.Scroll(Point{X: 1, Y: 1}, 9*lineHigh).History(); got != 0 {
+	if got := w.Scroll(geom.Point{X: 1, Y: 1}, 9*lineHigh).History(); got != 0 {
 		t.Errorf("turned away from the history, it is at %d", got)
 	}
 }
@@ -586,14 +587,14 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
 	for i := 1; i <= 60; i++ {
-		w.snap.Goals = append(w.snap.Goals, board.Goal{Number: i, Title: "Ship it", State: "live"})
+		w.Snap.Goals = append(w.Snap.Goals, board.Goal{Number: i, Title: "Ship it", State: "live"})
 	}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 	run := GoalsRun(w.Layout())
 
-	end := len(w.snap.Goals)*ItemHigh - run.H
+	end := len(w.Snap.Goals)*ItemHigh - run.H
 	if end <= 0 {
-		t.Fatalf("%d objectives in a run of %d all fit: this proves nothing", len(w.snap.Goals), run.H)
+		t.Fatalf("%d objectives in a run of %d all fit: this proves nothing", len(w.Snap.Goals), run.H)
 	}
 	if got := w.settledGoals(9999); got != end {
 		t.Errorf("scrolled past the end, the objectives stand at %d, want %d", got, end)
@@ -605,7 +606,7 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 	if got := w.followingGoal(1).goals; got != 0 {
 		t.Errorf("following the second objective moved the list to %d", got)
 	}
-	last := len(w.snap.Goals) - 1
+	last := len(w.Snap.Goals) - 1
 	if got, want := w.followingGoal(last).goals, end; got != want {
 		t.Errorf("following the last objective moved the list to %d, want %d", got, want)
 	}
@@ -618,20 +619,20 @@ func TestHowFarTheObjectivesScroll(t *testing.T) {
 func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap.Goals = []board.Goal{
+	w.Snap.Goals = []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "live"},
 		{Number: 4, Title: "Keep it honest", State: "live"},
 	}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 	l := w.Layout()
 
-	w.chosen, w.chosenGoal = 4, true
+	w.Chosen, w.ChosenGoal = 4, true
 	box, run, ok := w.WhereChosen()
 	if !ok {
 		t.Fatal("the chosen objective is drawn nowhere")
 	}
 	at := 0
-	for i, g := range board.Sorted(w.snap.Goals) {
+	for i, g := range board.Sorted(w.Snap.Goals) {
 		if g.Number == 4 {
 			at = i
 		}
@@ -642,7 +643,7 @@ func TestWhereAChosenObjectiveIsDrawn(t *testing.T) {
 	if run != GoalsRun(l) {
 		t.Errorf("it is drawn in %+v, want %+v", run, GoalsRun(l))
 	}
-	w.chosen = 99
+	w.Chosen = 99
 	if _, _, ok := w.WhereChosen(); ok {
 		t.Error("an objective that is not there was said to be drawn somewhere")
 	}
@@ -652,13 +653,13 @@ func TestAPanelUnderAnotherKeepsItsOwnHeading(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 7, Title: "Write the spec", State: "todo"})
 	open := onTheObjectives(w)
-	if open.Screen() != OnChoosing {
-		t.Fatalf("the list did not open: %v", open.Screen())
+	if open.Screen != board.OnChoosing {
+		t.Fatalf("the list did not open: %v", open.Screen)
 	}
 	if got := Heads(open); got != "" {
 		t.Errorf("the list is headed %q", got)
 	}
-	if got := HeadsOn(open, OnForm); got != "task 7 · Write the spec" {
+	if got := HeadsOn(open, board.OnForm); got != "task 7 · Write the spec" {
 		t.Errorf("the form under it is headed %q, not its own", got)
 	}
 }
@@ -670,7 +671,7 @@ func TestTheWheelStopsAtAPanel(t *testing.T) {
 		cards = append(cards, card(i, "Une de plus", "backlog"))
 	}
 	w := holding(f, cards...)
-	middle := Point{X: w.width / 2, Y: w.height / 2}
+	middle := geom.Point{X: w.width / 2, Y: w.height / 2}
 	for _, what := range []struct {
 		name string
 		on   Window
@@ -701,19 +702,19 @@ func TestOnlyTheFirstButtonActs(t *testing.T) {
 func TestAnOfferAnswersWhereItIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{
+	w.Snap = board.Snapshot{
 		Cards: []board.Card{card(1, "Write the spec", "todo")},
 		Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}},
 	}
 	w = onTheObjectives(w)
-	if w.Screen() != OnChoosing {
-		t.Fatalf("the list did not open: %v", w.Screen())
+	if w.Screen != board.OnChoosing {
+		t.Fatalf("the list did not open: %v", w.Screen)
 	}
 
 	box := w.ChoosingBox()
 	for i, offer := range w.Offers() {
 		at := w.offersAlong(box)[i]
-		got, on := w.offerAt(Point{X: at.X + 10, Y: at.Y + at.H/2})
+		got, on := w.offerAt(geom.Point{X: at.X + 10, Y: at.Y + at.H/2})
 		if !on || got != offer {
 			t.Errorf("the word %q drawn at %+v answers %q, %v", offer, at, got, on)
 		}
@@ -725,16 +726,16 @@ func TestAClosedSetIsAnsweredByThePointer(t *testing.T) {
 	w := holding(f, card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	box := w.formBox()
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	for i, field := range fields {
 		if field.Name != "column" {
 			continue
 		}
 		value := formValue(box, fields, i)
-		got := w.clicked(Point{X: value.X + 10, Y: value.Y + value.H/2})
-		if got.Screen() != OnChoosing || len(got.Choosing()) != len(field.Choices) {
+		got := w.clicked(geom.Point{X: value.X + 10, Y: value.Y + value.H/2})
+		if got.Screen != board.OnChoosing || len(got.Choosing()) != len(field.Choices) {
 			t.Errorf("clicking the column field left the window on %v, offering %d",
-				got.Screen(), len(got.Choosing()))
+				got.Screen, len(got.Choosing()))
 		}
 		return
 	}
@@ -752,21 +753,21 @@ func TestEveryBarCanBePulled(t *testing.T) {
 		cards[0].Steps = append(cards[0].Steps, engine.Part{Number: i + 1, Title: fmt.Sprintf("Step %d", i+1)})
 	}
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Cards: cards}
+	w.Snap = board.Snapshot{Cards: cards}
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("cmd+t")
 
 	box := w.formPanel()
 	_, saying, _, _, _ := w.sayingOn()
 	for _, c := range []struct {
 		what  string
-		track Box
+		track geom.Box
 		read  func(Window) int
 	}{
 		{"the history", BesideBar(box), func(w Window) int { return w.History() }},
 		{"the description", saying, func(w Window) int { return w.Saying() }},
 	} {
-		middle := Point{X: c.track.X + c.track.W/2, Y: c.track.Y + 4}
-		far := Point{X: middle.X, Y: c.track.Y + c.track.H + 999}
+		middle := geom.Point{X: c.track.X + c.track.W/2, Y: c.track.Y + 4}
+		far := geom.Point{X: middle.X, Y: c.track.Y + c.track.H + 999}
 		pulled := w.PressAt(middle).MoveTo(far).LetGo(far)
 		if c.read(pulled) == c.read(w) {
 			t.Errorf("pulling the bar beside %s left it at %d", c.what, c.read(w))
@@ -781,16 +782,16 @@ func TestAClickOnAWrappedTextLandsOnItsOwnLine(t *testing.T) {
 	w = w.Types(strings.Repeat("une ligne de description assez longue pour envelopper ", 5))
 
 	box := Over(w.width, w.height)
-	fields := w.Form().Fields()
-	var value Box
+	fields := w.Form.Fields
+	var value geom.Box
 	for i, field := range fields {
 		if field.Arg == "desc" {
 			value = formValue(box, fields, i)
 		}
 	}
 	inside := Inside(Framed(value, longRows))
-	first := w.clicked(Point{X: inside.X + 20, Y: inside.Y + lineHigh/2}).Form().Writing().At
-	third := w.clicked(Point{X: inside.X + 20, Y: inside.Y + 2*lineHigh + lineHigh/2}).Form().Writing().At
+	first := w.clicked(geom.Point{X: inside.X + 20, Y: inside.Y + lineHigh/2}).Form.Writing().At
+	third := w.clicked(geom.Point{X: inside.X + 20, Y: inside.Y + 2*lineHigh + lineHigh/2}).Form.Writing().At
 	if third <= first {
 		t.Errorf("a click on the third line gave %d and on the first %d", third, first)
 	}
@@ -802,12 +803,12 @@ func TestTheWindowKnowsWhatThePointerIsOver(t *testing.T) {
 		t.Fatal("something is hovered before the pointer has moved")
 	}
 	first := w.BarOffers()[0]
-	w = Pointed(w, pointer.Move, Point{X: first.X + first.W/2, Y: first.Y + first.H/2}, 0)
+	w = Pointed(w, pointer.Move, geom.Point{X: first.X + first.W/2, Y: first.Y + first.H/2}, 0)
 	said, over := w.Hovered()
 	if !over || said != w.Offers()[0] {
 		t.Fatalf("the pointer is over %q %v, want the first offer", said, over)
 	}
-	w = Pointed(w, pointer.Leave, Point{}, 0)
+	w = Pointed(w, pointer.Leave, geom.Point{}, 0)
 	if _, over := w.Hovered(); over {
 		t.Fatal("the pointer left the window and something is still hovered")
 	}
@@ -816,18 +817,18 @@ func TestTheWindowKnowsWhatThePointerIsOver(t *testing.T) {
 func TestShrinkingAndGrowingBackKeepsWhatWasOpen(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types("x")
-	if w.Screen() != OnForm {
-		t.Fatalf("the form did not open: %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the form did not open: %v", w.Screen)
 	}
 	small := w.Resized(200, 100)
-	if small.Screen() != TooSmallToDraw {
-		t.Fatalf("a window of 200 by 100 drew the board: %v", small.Screen())
+	if small.Screen != board.TooSmallToDraw {
+		t.Fatalf("a window of 200 by 100 drew the board: %v", small.Screen)
 	}
 	back := small.Resized(1200, 800)
-	if back.Screen() != OnForm {
-		t.Fatalf("growing back left the window on %v", back.Screen())
+	if back.Screen != board.OnForm {
+		t.Fatalf("growing back left the window on %v", back.Screen)
 	}
-	if !back.Form().Changed() {
+	if !back.Form.Changed() {
 		t.Error("what was typed did not come back with the form")
 	}
 }
@@ -839,21 +840,21 @@ func TestTheListsBarCanBePulled(t *testing.T) {
 		goals = append(goals, board.Goal{Number: i, Title: "Objective " + strconv.Itoa(i)})
 	}
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "One", State: "todo"}}, Goals: goals}
+	w.Snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "One", State: "todo"}}, Goals: goals}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Arg == "objective" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	w = w.Choose("Choose")
-	if w.Screen() != OnChoosing {
-		t.Fatalf("the list did not open: %v", w.Screen())
+	if w.Screen != board.OnChoosing {
+		t.Fatalf("the list did not open: %v", w.Screen)
 	}
 	box := w.ChoosingBox()
 	track := ChoosingBar(box)
-	w = w.PressAt(Point{X: track.X + track.W/2, Y: track.Y + 2}).
-		MoveTo(Point{X: track.X + track.W/2, Y: track.Y + track.H - 2})
+	w = w.PressAt(geom.Point{X: track.X + track.W/2, Y: track.Y + 2}).
+		MoveTo(geom.Point{X: track.X + track.W/2, Y: track.Y + track.H - 2})
 	if w.ChoosingFromRow() == 0 {
 		t.Fatal("pulling the list's bar to the bottom left it at the top")
 	}
@@ -878,7 +879,7 @@ func TestOnlyTheOfferUnderThePointerIsLit(t *testing.T) {
 		}
 	}
 	first := w.BarOffers()[0]
-	w = w.Hovering(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	w = w.Hovering(geom.Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
 	if !w.Lighting(offers[0]) {
 		t.Fatalf("%q is not lit with the pointer on it", offers[0])
 	}
@@ -887,9 +888,9 @@ func TestOnlyTheOfferUnderThePointerIsLit(t *testing.T) {
 	}
 }
 
-func onLaneCard(w Window, lane, at int) Point {
+func onLaneCard(w Window, lane, at int) geom.Point {
 	box := w.Layout().LaneCardAt(lane, at, 0)
-	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+	return geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
 func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
@@ -898,8 +899,8 @@ func TestScrollingADescriptionToTheEndShowsItsLastLine(t *testing.T) {
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.DoubleClick(middleOf(w, 1, 0))
-	if w.Screen() != OnForm {
-		t.Fatalf("the task did not open: %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the task did not open: %v", w.Screen)
 	}
 	frame, _, lines, rows, ok := w.sayingOn()
 	if !ok {
@@ -923,23 +924,23 @@ func TestATaskOpensOnTheTopOfItsDescription(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	frame, _, lines, _, _ := w.sayingOn()
 	for range len(lines.Said) {
-		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
+		w = w.Scroll(geom.Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
 	}
 	if w.Saying() == 0 {
 		t.Fatal("this proves nothing: the long description was not scrolled")
 	}
 	w = w.Cancel()
 	w = w.clicked(middleOf(w, 1, 1)).DoubleClick(middleOf(w, 1, 1))
-	if w.Screen() != OnForm || w.Chosen() != 2 {
-		t.Fatalf("the short task did not open: %v on %d", w.Screen(), w.Chosen())
+	if w.Screen != board.OnForm || w.Chosen != 2 {
+		t.Fatalf("the short task did not open: %v on %d", w.Screen, w.Chosen)
 	}
 	if got := w.Saying(); got != 0 {
 		t.Fatalf("the short task opened with its description scrolled to %d", got)
 	}
 	w = w.Cancel().clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "description" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	w = w.inSightOfTheCaret().Cancel()

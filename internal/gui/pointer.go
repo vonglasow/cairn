@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"strings"
@@ -11,8 +12,8 @@ import (
 )
 
 // Click chooses whatever is under the pointer, and nothing when there is nothing there.
-func (w Window) Click(p Point) Window {
-	if w.stranded() {
+func (w Window) Click(p geom.Point) Window {
+	if w.Stranded() {
 		if BlankOffer(w.width, w.height).In(p) {
 			return w.openingConfiguration()
 		}
@@ -24,27 +25,27 @@ func (w Window) Click(p Point) Window {
 	if tabbed, ok := w.clickingBesideTab(p); ok {
 		return tabbed
 	}
-	if w.screen == OnForm {
+	if w.Screen == board.OnForm {
 		if opened, ok := w.clickingWork(p); ok {
 			return opened
 		}
 	}
-	if w.screen == OnTheBoard && !w.native && MenuButton(w.Layout()).In(p) {
+	if w.Screen == board.OnTheBoard && !w.native && MenuButton(w.Layout()).In(p) {
 		return w.openingMenuBar()
 	}
-	if w.screen == OnMenu {
+	if w.Screen == board.OnMenu {
 		return w.clickingMenu(p)
 	}
-	if w.screen == OnWorkspaces {
+	if w.Screen == board.OnWorkspaces {
 		return w.clickingWorkspaces(p)
 	}
-	if w.screen == OnTheBoard && w.Layout().Place.In(p) {
+	if w.Screen == board.OnTheBoard && w.Layout().Place.In(p) {
 		return w.openingSwitcher()
 	}
-	if w.screen == OnPalette {
+	if w.Screen == board.OnPalette {
 		return w.clickingPalette(p)
 	}
-	if w.screen == OnTheBoard && CommandLine(w.Layout(), w.BarOffers()).In(p) {
+	if w.Screen == board.OnTheBoard && CommandLine(w.Layout(), w.BarOffers()).In(p) {
 		return w.openingPalette()
 	}
 	if clicked, on := w.clickingPills(p); on {
@@ -62,38 +63,38 @@ func (w Window) Click(p Point) Window {
 	if clicked, on := w.clickingBanners(p); on {
 		return clicked
 	}
-	if w.screen == OnConfiguration {
+	if w.Screen == board.OnConfiguration {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
 		}
-		if !w.introsOpen && !w.chooserOpen && !w.SettingsBox().In(p) && len(w.ColourSwatches()) == 0 {
+		if !w.IntrosOpen && !w.ChooserOpen && !w.SettingsBox().In(p) && len(w.ColourSwatches()) == 0 {
 			return w.leavingSettings()
 		}
 		return w.clickingSettings(p)
 	}
-	if w.screen == OnBackups {
+	if w.Screen == board.OnBackups {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
 		}
 		return w.clickingBackups(p)
 	}
-	if w.screen == OnLabels {
+	if w.Screen == board.OnLabels {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
 		}
 		return w.clickingLabels(p)
 	}
-	if w.screen == OnFiltering {
+	if w.Screen == board.OnFiltering {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
 		}
 		return w.clickingFilters(p)
 	}
-	if w.screen == OnKeeping || w.screen == OnViews {
+	if w.Screen == board.OnKeeping || w.Screen == board.OnViews {
 		if offer, on := w.offerAt(p); on {
 			return w.Choose(offer)
 		}
-		if w.screen == OnKeeping {
+		if w.Screen == board.OnKeeping {
 			return w.clickingKeeping(p)
 		}
 		return w.clickingViewsPanel(p)
@@ -101,73 +102,73 @@ func (w Window) Click(p Point) Window {
 	if offer, on := w.offerAt(p); on {
 		return w.Choose(offer)
 	}
-	if w.screen == OnFates {
+	if w.Screen == board.OnFates {
 		return w.clickingFates(p)
 	}
-	if w.screen == OnSeriesFates {
+	if w.Screen == board.OnSeriesFates {
 		return w.clickingSeriesFates(p)
 	}
-	if w.screen == OnChoosing {
+	if w.Screen == board.OnChoosing {
 		return w.clickingList(p)
 	}
-	if w.screen == OnRule {
+	if w.Screen == board.OnRule {
 		return w.clickingRule(p)
 	}
-	if w.screen == OnCalendar && !w.CalendarBox().In(p) {
+	if w.Screen == board.OnCalendar && !w.CalendarBox().In(p) {
 		return w.clickedOff(p)
 	}
-	if w.screen == OnCalendar {
+	if w.Screen == board.OnCalendar {
 		if walked, on := w.monthClicked(p); on {
 			return walked
 		}
 		w, _ = w.dayClicked(p)
 		return w
 	}
-	if edit, ok := w.OccurrenceEdit(); ok && w.screen == OnForm && edit.In(p) {
+	if edit, ok := w.OccurrenceEdit(); ok && w.Screen == board.OnForm && edit.In(p) {
 		return w.Choose(EditTheSeries)
 	}
 	if at, on := w.fieldAt(p); on {
 		reached := w.reaching(at, p)
-		w.form = w.form.onto(at)
-		if chosenFromAList(w.form.Fields()[at]) {
+		w.Form = w.Form.Onto(at)
+		if chosenFromAList(w.Form.Fields[at]) {
 			return w.choosingList()
 		}
-		if chosenOnACalendar(w.form.Fields()[at]) {
+		if chosenOnACalendar(w.Form.Fields[at]) {
 			return w.openingCalendar()
 		}
-		if chosenFromRules(w.form.Fields()[at]) {
+		if chosenFromRules(w.Form.Fields[at]) {
 			return w.openingRule()
 		}
 		return w.CaretInto(reached)
 	}
-	if w.closesOnAClickOff() && !w.panel().In(p) {
+	if w.ClosesOnAClickOff() && !w.panel().In(p) {
 		return w.clickedOff(p)
 	}
-	if w.screen == OnSearch {
+	if w.Screen == board.OnSearch {
 		if Searching(w.Layout()).In(p) {
 			return w
 		}
-	} else if w.screen != OnTheBoard {
+	} else if w.Screen != board.OnTheBoard {
 		return w
 	}
 	if tab, on := w.tabAt(p); on {
 		return w.onPage(tab)
 	}
-	if w.tab == Time {
+	if w.Tab == board.Time {
 		return w.clickingTime(p)
 	}
 	if n, on := w.seriesChipAt(p); on {
 		return w.onSeries(n)
 	}
 	at := w.at(p)
-	if at == 0 && w.tab == Objectives {
+	if at == 0 && w.Tab == board.Objectives {
 		return w
 	}
 	return w.aiming(p).choosingAt(at)
 }
 
-func (w Window) aiming(p Point) Window {
-	if w.tab != Tasks {
+func (w Window) aiming(p geom.Point) Window {
+	if w.Tab != board.Tasks {
 		return w
 	}
 	if state, _, found := w.where(w.Layout(), p); found {
@@ -177,7 +178,7 @@ func (w Window) aiming(p Point) Window {
 }
 
 // Hovering answers the window the pointer resting at a point leaves behind.
-func (w Window) Hovering(p Point) Window {
+func (w Window) Hovering(p geom.Point) Window {
 	w.over, w.hovered = w.offerAt(p)
 	w.explaining = w.nameAt(p)
 	w.resting, w.restingAt, w.restingWide = w.cutTitleAt(p)
@@ -201,7 +202,7 @@ func (w Window) Hovering(p Point) Window {
 	}
 	w.pointed = w.slotAt(p)
 	w.bubbled, w.bubbledFrom = w.countAt(p)
-	if w.screen == OnConfiguration {
+	if w.Screen == board.OnConfiguration {
 		w = w.hoveringSettings(p)
 	}
 	return w
@@ -211,12 +212,12 @@ func (w Window) Hovering(p Point) Window {
 func (w Window) Bubble() string { return strings.Join(w.resting, "\n") }
 
 // BubbleBox is where the bubble is drawn and the lines it says, and whether there is one.
-func (w Window) BubbleBox() (Box, []string, bool) {
+func (w Window) BubbleBox() (geom.Box, []string, bool) {
 	if w.resting == nil {
-		return Box{}, nil, false
+		return geom.Box{}, nil, false
 	}
 	m := w.measured()
-	room := min(2*w.restingWide, w.width-2*margin) - 2*padding
+	room := min(2*w.restingWide, w.width-2*geom.Margin) - 2*padding
 	var lines []string
 	for _, said := range w.resting {
 		lines = append(lines, m.Wrapped(said, evenly(m, said, room, plain), plain).Said...)
@@ -228,17 +229,17 @@ func (w Window) BubbleBox() (Box, []string, bool) {
 	wide := widest + 2*padding
 	high := len(lines)*lineHigh + 2*inset
 	near := w.restingAt
-	x := max(margin, min(near.X-padding, w.width-margin-wide))
+	x := max(geom.Margin, min(near.X-padding, w.width-geom.Margin-wide))
 	y := near.Y - high - inset
-	if y < margin {
+	if y < geom.Margin {
 		y = near.Y + near.H + inset
 	}
-	return Box{X: x, Y: max(margin, min(y, w.height-margin-high)), W: wide, H: high}, lines, true
+	return geom.Box{X: x, Y: max(geom.Margin, min(y, w.height-geom.Margin-high)), W: wide, H: high}, lines, true
 }
 
-func (w Window) cutTitleAt(p Point) ([]string, Box, int) {
-	if w.screen != OnTheBoard || w.tab != Tasks {
-		return nil, Box{}, 0
+func (w Window) cutTitleAt(p geom.Point) ([]string, geom.Box, int) {
+	if w.Screen != board.OnTheBoard || w.Tab != board.Tasks {
+		return nil, geom.Box{}, 0
 	}
 	for _, placed := range w.Placed() {
 		title := PartsOf(placed.Slot).Title
@@ -246,82 +247,82 @@ func (w Window) cutTitleAt(p Point) ([]string, Box, int) {
 			return []string{placed.Card.Title}, title, placed.Slot.W
 		}
 	}
-	return nil, Box{}, 0
+	return nil, geom.Box{}, 0
 }
 
-func (w Window) servedAt(p Point) ([]string, Box, int) {
-	if w.screen != OnTheBoard || w.tab != Tasks {
-		return nil, Box{}, 0
+func (w Window) servedAt(p geom.Point) ([]string, geom.Box, int) {
+	if w.Screen != board.OnTheBoard || w.Tab != board.Tasks {
+		return nil, geom.Box{}, 0
 	}
 	for _, placed := range w.Placed() {
 		if !placed.Within.In(p) || !placed.Slot.In(p) {
 			continue
 		}
-		mark := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now, w.pages).ServesAt
+		mark := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.Now, w.Pages).ServesAt
 		if !mark.In(p) {
 			continue
 		}
 		var said []string
 		for _, n := range placed.Card.Objectives {
 			line := "#" + strconv.Itoa(n)
-			if g, ok := w.snap.Goal(n); ok {
+			if g, ok := w.Snap.Goal(n); ok {
 				line += "  " + g.Title
 			}
 			said = append(said, line)
 		}
 		return said, mark, placed.Slot.W
 	}
-	return nil, Box{}, 0
+	return nil, geom.Box{}, 0
 }
 
-func (w Window) titleCut(c board.Card, slot Box) bool {
+func (w Window) titleCut(c board.Card, slot geom.Box) bool {
 	m := w.measured()
 	first, rest := TitleRoom(c, PartsOf(slot).Title)
 	lines := TitleLines(c.Title, first, rest, func(said string) int { return ends(m, said, reads) })
 	return strings.HasSuffix(lines[len(lines)-1], "…") && !strings.HasSuffix(c.Title, "…")
 }
 
-func (w Window) countAt(p Point) ([]string, Box) {
-	if w.screen != OnTheBoard || w.tab != Tasks {
-		return nil, Box{}
+func (w Window) countAt(p geom.Point) ([]string, geom.Box) {
+	if w.Screen != board.OnTheBoard || w.Tab != board.Tasks {
+		return nil, geom.Box{}
 	}
 	for _, placed := range w.Placed() {
 		if !placed.Within.In(p) || !placed.Slot.In(p) {
 			continue
 		}
-		if more := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now, w.pages).More; more.In(p) {
+		if more := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.Now, w.Pages).More; more.In(p) {
 			return placed.Card.Labels, more
 		}
 	}
-	return nil, Box{}
+	return nil, geom.Box{}
 }
 
 // LabelsBubbled is every label of the card whose count the pointer rests on, and nothing when it rests on none.
 func (w Window) LabelsBubbled() []string { return w.bubbled }
 
 // LabelsBubbleBox is where the bubble of those labels is drawn, under their count, and each label's pill in it, wrapped to its width.
-func (w Window) LabelsBubbleBox() (Box, []Box, bool) {
+func (w Window) LabelsBubbleBox() (geom.Box, []geom.Box, bool) {
 	if len(w.bubbled) == 0 {
-		return Box{}, nil, false
+		return geom.Box{}, nil, false
 	}
 	m := w.measured()
 	inner := labelsBubbleWide - 2*inset*2
-	var pills []Box
+	var pills []geom.Box
 	x, y := 0, 0
 	for _, label := range w.bubbled {
 		wide := min(inner, ends(m, label, small)+2*pillPad)
 		if x > 0 && x+wide > inner {
 			x, y = 0, y+pillHigh+pillGap
 		}
-		pills = append(pills, Box{X: x, Y: y, W: wide, H: pillHigh})
+		pills = append(pills, geom.Box{X: x, Y: y, W: wide, H: pillHigh})
 		x += wide + pillGap
 	}
 	high := y + pillHigh + 2*inset*2
-	at := Point{X: min(w.bubbledFrom.X, w.width-margin-labelsBubbleWide), Y: w.bubbledFrom.Y + w.bubbledFrom.H + inset}
-	if at.Y+high > w.height-margin {
+	at := geom.Point{X: min(w.bubbledFrom.X, w.width-geom.Margin-labelsBubbleWide), Y: w.bubbledFrom.Y + w.bubbledFrom.H + inset}
+	if at.Y+high > w.height-geom.Margin {
 		at.Y = w.bubbledFrom.Y - inset - high
 	}
-	box := Box{X: at.X, Y: at.Y, W: labelsBubbleWide, H: high}
+	box := geom.Box{X: at.X, Y: at.Y, W: labelsBubbleWide, H: high}
 	for i := range pills {
 		pills[i].X += box.X + 2*inset
 		pills[i].Y += box.Y + 2*inset
@@ -331,36 +332,36 @@ func (w Window) LabelsBubbleBox() (Box, []Box, bool) {
 
 const labelsBubbleWide = 180
 
-func (w Window) slotAt(p Point) Box {
-	if w.screen == OnTheBoard && w.tab == Objectives {
+func (w Window) slotAt(p geom.Point) geom.Box {
+	if w.Screen == board.OnTheBoard && w.Tab == board.Objectives {
 		return w.goalSlotAt(p)
 	}
-	if w.screen == OnTheBoard && w.tab == Series {
+	if w.Screen == board.OnTheBoard && w.Tab == board.Series {
 		return w.seriesSlotAt(p)
 	}
-	if w.screen != OnTheBoard || w.tab != Tasks {
-		return Box{}
+	if w.Screen != board.OnTheBoard || w.Tab != board.Tasks {
+		return geom.Box{}
 	}
 	for _, placed := range w.Placed() {
 		if placed.Within.In(p) && placed.Slot.In(p) {
 			return placed.Slot
 		}
 	}
-	return Box{}
+	return geom.Box{}
 }
 
 // Away is the window the pointer having left it leaves behind.
 func (w Window) Away() Window {
-	w.over, w.hovered, w.explaining, w.resting, w.restingAt, w.pointed = "", false, 0, nil, Box{}, Box{}
-	w.bubbled, w.bubbledFrom = nil, Box{}
+	w.over, w.hovered, w.explaining, w.resting, w.restingAt, w.pointed = "", false, 0, nil, geom.Box{}, geom.Box{}
+	w.bubbled, w.bubbledFrom = nil, geom.Box{}
 	return w
 }
 
-func (w Window) nameAt(p Point) int {
-	if w.screen != OnForm {
+func (w Window) nameAt(p geom.Point) int {
+	if w.Screen != board.OnForm {
 		return 0
 	}
-	fields := w.form.Fields()
+	fields := w.Form.Fields
 	for i := range fields {
 		if name, _, _ := FormPlace(w.formBox(), fields, i); name.In(p) {
 			return i + 1
@@ -371,8 +372,8 @@ func (w Window) nameAt(p Point) int {
 
 // Explains is what the field whose name the pointer rests on is, as the engine says it; nothing when it rests on no field's name.
 func (w Window) Explains() string {
-	fields := w.form.Fields()
-	if w.screen != OnForm || w.explaining == 0 || w.explaining > len(fields) {
+	fields := w.Form.Fields
+	if w.Screen != board.OnForm || w.explaining == 0 || w.explaining > len(fields) {
 		return ""
 	}
 	return fields[w.explaining-1].Means
@@ -380,7 +381,7 @@ func (w Window) Explains() string {
 
 // ExplainsBy is the example of what to type in the field whose name the pointer rests on, and nothing when there is none to give.
 func (w Window) ExplainsBy() string {
-	fields := w.form.Fields()
+	fields := w.Form.Fields
 	if w.Explains() == "" {
 		return ""
 	}
@@ -391,10 +392,10 @@ func (w Window) ExplainsBy() string {
 const ExampleSays = "e.g. "
 
 // Explanation is the box a field's explanation is drawn in and the lines it says — what the field is, then an example of what to type — as wide and as high as those lines and no more, and whether anything is explained at all.
-func (w Window) Explanation() (Box, []string, bool) {
+func (w Window) Explanation() (geom.Box, []string, bool) {
 	said := w.Explains()
 	if said == "" {
-		return Box{}, nil, false
+		return geom.Box{}, nil, false
 	}
 	m := w.measured()
 	lines := m.Wrapped(said, evenly(m, said, tipWide-2*padding, small), small).Said
@@ -405,7 +406,7 @@ func (w Window) Explanation() (Box, []string, bool) {
 	for _, line := range lines {
 		widest = max(widest, ends(m, line, small))
 	}
-	name, _, _ := FormPlace(w.formBox(), w.form.Fields(), w.explaining-1)
+	name, _, _ := FormPlace(w.formBox(), w.Form.Fields, w.explaining-1)
 	return ExplainedAt(name, w.width, widest+2*padding, len(lines)), lines, true
 }
 
@@ -423,14 +424,14 @@ func evenly(m Measure, said string, room, size int) int {
 	return most
 }
 
-func (w Window) cutValueAt(p Point) ([]string, Box, int) {
-	if w.screen != OnForm {
-		return nil, Box{}, 0
+func (w Window) cutValueAt(p geom.Point) ([]string, geom.Box, int) {
+	if w.Screen != board.OnForm {
+		return nil, geom.Box{}, 0
 	}
-	fields := w.form.Fields()
+	fields := w.Form.Fields
 	for i, field := range fields {
 		_, value, rows := FormPlace(w.formBox(), fields, i)
-		if !value.In(p) || field.Long || field.Arg == "label" || field.Name == "steps" || i == w.form.On() {
+		if !value.In(p) || field.Long || field.Arg == "label" || field.Name == "steps" || i == w.Form.On() {
 			continue
 		}
 		said := w.FieldSays(field)
@@ -438,18 +439,18 @@ func (w Window) cutValueAt(p Point) ([]string, Box, int) {
 			return []string{said}, value, value.W
 		}
 	}
-	return nil, Box{}, 0
+	return nil, geom.Box{}, 0
 }
 
 // ExplainedAt is where a field's explanation is drawn: just under its name, as wide and as high as asked, kept inside the window.
-func ExplainedAt(name Box, width, wide, lines int) Box {
-	x := min(name.X, width-margin-wide)
-	return Box{X: max(margin, x), Y: name.Y + name.H + inset, W: wide, H: lines*lineHigh + 2*inset}
+func ExplainedAt(name geom.Box, width, wide, lines int) geom.Box {
+	x := min(name.X, width-geom.Margin-wide)
+	return geom.Box{X: max(geom.Margin, x), Y: name.Y + name.H + inset, W: wide, H: lines*lineHigh + 2*inset}
 }
 
 // ExplainedLine is where the line at of an explanation is written inside its box.
-func ExplainedLine(tip Box, at int) Box {
-	return Box{X: tip.X + padding, Y: tip.Y + inset + at*lineHigh, W: tip.W - 2*padding, H: lineHigh}
+func ExplainedLine(tip geom.Box, at int) geom.Box {
+	return geom.Box{X: tip.X + padding, Y: tip.Y + inset + at*lineHigh, W: tip.W - 2*padding, H: lineHigh}
 }
 
 const tipWide = 360
@@ -457,7 +458,7 @@ const tipWide = 360
 // Lighting says whether an offer is the one the pointer is resting on, which is the one thing in the window that says a word can be clicked.
 func (w Window) Lighting(offer string) bool { return w.hovered && w.over == offer }
 
-func (w Window) goalAt(p Point) int {
+func (w Window) goalAt(p geom.Point) int {
 	l := w.Layout()
 	if !GoalsRun(l).In(p) {
 		return 0
@@ -470,116 +471,116 @@ func (w Window) goalAt(p Point) int {
 	return 0
 }
 
-func (w Window) tabAt(p Point) (Tab, bool) {
+func (w Window) tabAt(p geom.Point) (board.Tab, bool) {
 	l := w.Layout()
 	for i, tab := range w.Shown() {
 		if TabAt(l, i).In(p) {
 			return tab, true
 		}
 	}
-	return w.tab, false
+	return w.Tab, false
 }
 
 // DoubleClick opens the detail of the card under the pointer, which is where the description and the history are.
-func (w Window) DoubleClick(p Point) Window {
-	if w.stranded() {
+func (w Window) DoubleClick(p geom.Point) Window {
+	if w.Stranded() {
 		return w
 	}
-	if widening, on := gutterAt(w.Layout(), w.sizes, p); on && w.tab == Tasks && w.screen == OnTheBoard {
+	if widening, on := gutterAt(w.Layout(), w.sizes, p); on && w.Tab == board.Tasks && w.Screen == board.OnTheBoard {
 		return w.resized(widening.Evened())
 	}
-	if w.screen == OnChoosing {
+	if w.Screen == board.OnChoosing {
 		box := w.ChoosingBox()
-		if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.choosingFrom, p); on {
-			w.choosing = at
+		if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.ChoosingFrom, p); on {
+			w.ChoosingOn = at
 			w = w.taking()
-			if w.screen == OnChoosing {
+			if w.Screen == board.OnChoosing {
 				return w.keeping()
 			}
 		}
 		return w
 	}
-	if at, on := w.partUnder(p); on && w.screen == OnForm {
-		field, _ := w.form.partsField()
-		w.form = w.form.onto(field)
-		w.form.partAt = at
-		w.form = w.form.naming()
+	if at, on := w.partUnder(p); on && w.Screen == board.OnForm {
+		field, _ := w.Form.PartsField()
+		w.Form = w.Form.Onto(field)
+		w.Form.PartAt = at
+		w.Form = w.Form.Naming()
 		return w
 	}
-	if w.screen == OnForm {
+	if w.Screen == board.OnForm {
 		if at, on := w.fieldAt(p); on {
 			return w.holdingBy(at, p, Words)
 		}
 		return w.word(p)
 	}
-	if w.screen != OnTheBoard && w.screen != OnSearch {
+	if w.Screen != board.OnTheBoard && w.Screen != board.OnSearch {
 		return w
 	}
 	number := w.at(p)
-	if _, _, inColumn := w.where(w.Layout(), p); number == 0 && inColumn && w.tab == Tasks && w.screen == OnTheBoard {
+	if _, _, inColumn := w.where(w.Layout(), p); number == 0 && inColumn && w.Tab == board.Tasks && w.Screen == board.OnTheBoard {
 		w = w.aiming(p)
 		behind := w.above(p)
 		w = w.startingNew()
-		w.form.behind = behind
+		w.Form.Behind = behind
 		return w
 	}
 	if number == 0 {
 		return w
 	}
-	w.chosen, w.chosenGoal = number, w.tab == Objectives
+	w.Chosen, w.ChosenGoal = number, w.Tab == board.Objectives
 	return w.opening()
 }
 
 // TripleClick holds the paragraph under the pointer, on an open task and in a field of the form: the third press of the gesture every text answers.
-func (w Window) TripleClick(p Point) Window {
+func (w Window) TripleClick(p geom.Point) Window {
 	if at, on := w.fieldAt(p); on {
 		return w.holdingBy(at, p, Paragraphs)
 	}
-	if w.screen == OnForm {
+	if w.Screen == board.OnForm {
 		return w.paragraph(p)
 	}
 	return w
 }
 
-func (w Window) holdingBy(at int, p Point, by Unit) Window {
+func (w Window) holdingBy(at int, p geom.Point, by Unit) Window {
 	reached := w.reaching(at, p)
-	w.form = w.form.onto(at)
-	from, to := runOf(w.form.Writing().Reads(), by, reached)
-	held := w.form.Writing()
+	w.Form = w.Form.Onto(at)
+	from, to := runOf(w.Form.Writing().Reads(), by, reached)
+	held := w.Form.Writing()
 	held.At, held.Held = to, from-to
-	w.form = w.form.Writes(held)
+	w.Form = w.Form.Writes(held)
 	w.holdingText, w.growing, w.anchor = true, by, Picked{From: from, To: to}
 	return w
 }
 
 // PressAt takes hold of whatever is under the pointer, without deciding yet whether this is a click or a drag.
-func (w Window) PressAt(p Point) Window {
-	w.pressed, w.pressedOn = true, w.screen
-	if w.stranded() {
+func (w Window) PressAt(p geom.Point) Window {
+	w.pressed, w.pressedOn = true, w.Screen
+	if w.Stranded() {
 		return w
 	}
-	if w.screen == OnChoosing {
+	if w.Screen == board.OnChoosing {
 		w.draggingChoosing = ChoosingBar(w.ChoosingBox()).In(p)
 		return w
 	}
 	if taken, ok := w.takingPanel(p); ok {
 		return taken
 	}
-	if w.screen == OnForm {
+	if w.Screen == board.OnForm {
 		if _, bar, _, _, long := w.sayingOn(); long && bar.In(p) {
 			w.draggingSaying = true
 			return w
 		}
 		if at, on := w.partUnder(p); on {
-			field, _ := w.form.partsField()
+			field, _ := w.Form.PartsField()
 			w = w.keepingPartInSight()
-			w.form = w.form.onto(field)
-			if w.gathering || w.stretching || !slices.Contains(w.form.takenParts(), at) {
-				w.form = w.form.takingPart(at, w.gathering, w.stretching)
+			w.Form = w.Form.Onto(field)
+			if w.gathering || w.stretching || !slices.Contains(w.Form.TakenParts(), at) {
+				w.Form = w.Form.TakingPart(at, w.gathering, w.stretching)
 			} else {
-				w.form.partAt = at
+				w.Form.PartAt = at
 			}
-			w.form.carried = at + 1
+			w.Form.Carried = at + 1
 			w.held = Held{From: p, At: p}
 			return w
 		}
@@ -595,7 +596,7 @@ func (w Window) PressAt(p Point) Window {
 			w.draggingBar = true
 			return w
 		}
-		if w.form.ForObjective && w.besideShown() && w.workBar().In(p) {
+		if w.Form.ForObjective && w.BesideShown() && w.workBar().In(p) {
 			w.draggingServing = true
 			return w
 		}
@@ -605,16 +606,16 @@ func (w Window) PressAt(p Point) Window {
 		}
 		return w.picking(p)
 	}
-	if w.screen != OnTheBoard {
+	if w.Screen != board.OnTheBoard {
 		return w
 	}
-	if w.tab == Objectives {
+	if w.Tab == board.Objectives {
 		if n := w.goalAt(p); n != 0 {
 			w.grabbedGoal, w.held = n, Held{From: p, At: p}
 		}
 		return w
 	}
-	if widening, on := gutterAt(w.Layout(), w.sizes, p); on && w.tab == Tasks {
+	if widening, on := gutterAt(w.Layout(), w.sizes, p); on && w.Tab == board.Tasks {
 		w.widening = widening
 		return w
 	}
@@ -623,7 +624,7 @@ func (w Window) PressAt(p Point) Window {
 }
 
 // MoveTo follows the pointer, and past Wobble says the card is being dragged.
-func (w Window) MoveTo(p Point) Window {
+func (w Window) MoveTo(p geom.Point) Window {
 	if w.widening.On {
 		w.sizes = w.widening.To(p)
 		return w
@@ -642,11 +643,11 @@ func (w Window) MoveTo(p Point) Window {
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
 		return w
 	}
-	if w.holdingText && w.screen == OnForm {
-		held := w.form.Writing()
-		fixed, moving := Stretched(held.Reads(), w.growing, w.anchor, w.reaching(w.form.On(), p))
+	if w.holdingText && w.Screen == board.OnForm {
+		held := w.Form.Writing()
+		fixed, moving := Stretched(held.Reads(), w.growing, w.anchor, w.reaching(w.Form.On(), p))
 		held.At, held.Held = moving, fixed-moving
-		w.form = w.form.Writes(held)
+		w.Form = w.Form.Writes(held)
 		return w.inSightOfTheCaret()
 	}
 	if w.draggingSaying {
@@ -659,16 +660,16 @@ func (w Window) MoveTo(p Point) Window {
 	}
 	if w.draggingChoosing {
 		box := w.ChoosingBox()
-		w.choosingFrom = w.settledChoosing(
+		w.ChoosingFrom = w.settledChoosing(
 			Reached(ChoosingBar(box), len(w.Choosing()), ChoosingRows(box), p))
 		return w
 	}
 	if w.draggingServing {
-		room := max(1, w.workFrame().H/SubHeight)
-		w.serving = w.settledServing(Reached(w.workBar(), len(w.Under())+1, room, p) * SubHeight)
+		room := max(1, w.workFrame().H/geom.SubHeight)
+		w.serving = w.settledServing(Reached(w.workBar(), len(w.Under())+1, room, p) * geom.SubHeight)
 		return w
 	}
-	if w.held.Number == 0 && w.form.carried == 0 && w.grabbedGoal == 0 {
+	if w.held.Number == 0 && w.Form.Carried == 0 && w.grabbedGoal == 0 {
 		return w
 	}
 	w.held.At = p
@@ -682,7 +683,7 @@ func (w Window) MoveTo(p Point) Window {
 }
 
 // LetGo drops the card, or lets a click be a click.
-func (w Window) LetGo(p Point) Window {
+func (w Window) LetGo(p geom.Point) Window {
 	if w.widening.On {
 		w.widening, w.pressed = Widening{}, false
 		return w.resized(w.sizes)
@@ -712,20 +713,20 @@ func (w Window) LetGo(p Point) Window {
 	}
 	if w.holdingText {
 		w.holdingText = false
-		if w.form.Writing().Holding() {
+		if w.Form.Writing().Holding() {
 			return w
 		}
 	}
 	waiting, was := w.pressed, w.pressedOn
 	w.pressed = false
-	if !waiting || was != w.screen {
+	if !waiting || was != w.Screen {
 		w.held, w.grabbedGoal = Held{}, 0
 		return w
 	}
 	if w.grabbedGoal != 0 {
 		return w.lettingGoOfAGoal(p)
 	}
-	if w.form.carried != 0 {
+	if w.Form.Carried != 0 {
 		return w.lettingGoOfAPart(p)
 	}
 	if w.Dragging() {
@@ -740,26 +741,26 @@ func turning(spare, by int) (lines, left int) {
 	return total / lineHigh, total % lineHigh
 }
 
-func (w Window) wheeling(by int, p Point, now time.Time) Window {
+func (w Window) wheeling(by int, p geom.Point, now time.Time) Window {
 	goingOn := !w.wheelAt.IsZero() && now.Sub(w.wheelAt) < Still()
 	w.wheelAt = now
-	if goingOn && w.wheelOn != w.screen {
+	if goingOn && w.wheelOn != w.Screen {
 		return w
 	}
-	w.wheelOn = w.screen
+	w.wheelOn = w.Screen
 	return w.Scroll(p, by)
 }
 
 // Scroll moves the column under the pointer, and no other.
-func (w Window) Scroll(p Point, by int) Window {
-	if w.screen == OnConfiguration {
+func (w Window) Scroll(p geom.Point, by int) Window {
+	if w.Screen == board.OnConfiguration {
 		return w.scrollingSettings(by)
 	}
-	if w.screen == OnForm {
+	if w.Screen == board.OnForm {
 		if frame, ok := w.partsFrame(); ok && frame.In(p) {
 			return w.scrollingParts(by)
 		}
-		if w.form.ForObjective && w.besideShown() && w.workFrame().In(p) {
+		if w.Form.ForObjective && w.BesideShown() && w.workFrame().In(p) {
 			w.serving = w.settledServing(w.serving + by)
 			return w
 		}
@@ -770,31 +771,31 @@ func (w Window) Scroll(p Point, by int) Window {
 		}
 		return w.scrollingSaying(p, by)
 	}
-	if w.screen == OnHelp || w.screen == OnAsking || w.screen == OnMenu {
+	if w.Screen == board.OnHelp || w.Screen == board.OnAsking || w.Screen == board.OnMenu {
 		return w
 	}
-	if w.screen == OnCalendar {
+	if w.Screen == board.OnCalendar {
 		return w.scrollingMonths(p, by)
 	}
-	if w.screen == OnBackups {
+	if w.Screen == board.OnBackups {
 		return w.scrollingBackups(p, by)
 	}
-	if w.screen == OnLabels {
+	if w.Screen == board.OnLabels {
 		return w.scrollingLabels(p, by)
 	}
-	if w.screen == OnChoosing {
+	if w.Screen == board.OnChoosing {
 		box := w.ChoosingBox()
 		if ChoosingRun(box).In(p) || ChoosingBar(box).In(p) {
 			lines, left := turning(w.spareChoosing, by)
-			w.choosingFrom, w.spareChoosing = w.settledChoosing(w.choosingFrom+lines), left
+			w.ChoosingFrom, w.spareChoosing = w.settledChoosing(w.ChoosingFrom+lines), left
 		}
 		return w
 	}
 	l := w.Layout()
-	if w.tab == Time {
+	if w.Tab == board.Time {
 		return w.scrollingDay(p, by)
 	}
-	if w.tab == Objectives {
+	if w.Tab == board.Objectives {
 		if GoalsRun(l).In(p) {
 			w.goals = w.settledGoals(w.goals + by)
 		}
@@ -813,66 +814,66 @@ func (w Window) Scroll(p Point, by int) Window {
 	return w
 }
 
-func (w Window) at(p Point) int {
-	if w.tab == Objectives {
+func (w Window) at(p geom.Point) int {
+	if w.Tab == board.Objectives {
 		return w.goalAt(p)
 	}
-	if w.tab == Time {
+	if w.Tab == board.Time {
 		return w.timeCardAt(p)
 	}
 	l := w.Layout()
 	if column, _, found := l.Under(p, 0); found {
-		return cardOn(w.inColumn(column), p.Y-l.Column[column].Y+w.scroll[column])
+		return cardOn(w.InColumn(column), p.Y-l.Column[column].Y+w.scroll[column])
 	}
 	if lane, found := l.LaneUnder(p); found {
-		return cardOn(w.inLane(lane), p.Y-l.Lane[lane].Y+w.lanes[lane])
+		return cardOn(w.InLane(lane), p.Y-l.Lane[lane].Y+w.lanes[lane])
 	}
 	return 0
 }
 
 func cardOn(here []board.Card, down int) int {
-	index := down / CardHeight
-	if index >= len(here) || down%CardHeight >= CardHeight-gap {
+	index := down / geom.CardHeight
+	if index >= len(here) || down%geom.CardHeight >= geom.CardHeight-geom.Gap {
 		return 0
 	}
 	return here[index].Number
 }
 
-func (w Window) above(p Point) int {
+func (w Window) above(p geom.Point) int {
 	l := w.Layout()
 	column, _, found := l.Under(p, 0)
 	if !found {
 		return 0
 	}
-	here := w.inColumn(column)
+	here := w.InColumn(column)
 	down := p.Y - l.Column[column].Y + w.scroll[column]
-	if index := down / CardHeight; index < len(here) && down%CardHeight >= CardHeight-gap {
+	if index := down / geom.CardHeight; index < len(here) && down%geom.CardHeight >= geom.CardHeight-geom.Gap {
 		return here[index].Number
 	}
 	return 0
 }
 
-func (w Window) dropped(number int, p Point) Window {
+func (w Window) dropped(number int, p geom.Point) Window {
 	state, place, found := w.where(w.Layout(), p)
 	w.held = Held{}
 	if !found {
 		return w
 	}
 	given := map[string]string{"number": strconv.Itoa(number)}
-	if state != w.stateOf(number) {
+	if state != w.StateOf(number) {
 		given["state"] = state
 	}
 	for name, value := range place {
 		given[name] = value
 	}
 	var along []string
-	if w.isTaken(number) {
+	if w.IsTaken(number) {
 		for _, other := range w.Taken() {
 			if other != number {
 				along = append(along, strconv.Itoa(other))
 			}
 		}
-		w.taken = nil
+		w.Gathered = nil
 	}
 	in := engine.Input{Given: given, Listed: map[string][]string{"also": along}}
 	if len(given) == 1 && len(along) == 0 {
@@ -881,16 +882,16 @@ func (w Window) dropped(number int, p Point) Window {
 	return w.asking(engine.TaskMove, in)
 }
 
-func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {
+func (w Window) where(l geom.Layout, p geom.Point) (state string, place map[string]string, found bool) {
 	if lane, in := l.LaneUnder(p); in {
-		all := w.inLane(lane)
+		all := w.InLane(lane)
 		return board.Stalled[lane], placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Lane[lane], w.lanes[lane], p, len(all)))), true
 	}
 	for i := range board.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}
-		all := w.inColumn(i)
+		all := w.InColumn(i)
 		return board.StateAt(i), placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Column[i], w.scroll[i], p, len(all)))), true
 	}
 	return "", nil, false
@@ -917,8 +918,8 @@ func placeAfter(here []board.Card, at int) map[string]string {
 	return map[string]string{"after": strconv.Itoa(here[at-1].Number)}
 }
 
-func landed(body Box, scrolled int, p Point, room int) int {
-	return max(0, min(room, (p.Y-body.Y+scrolled+CardHeight/2)/CardHeight))
+func landed(body geom.Box, scrolled int, p geom.Point, room int) int {
+	return max(0, min(room, (p.Y-body.Y+scrolled+geom.CardHeight/2)/geom.CardHeight))
 }
 
 func (w Window) besideHeld(cards []board.Card) []board.Card {
@@ -927,14 +928,14 @@ func (w Window) besideHeld(cards []board.Card) []board.Card {
 	}
 	kept := make([]board.Card, 0, len(cards))
 	for _, c := range cards {
-		if c.Number != w.held.Number && (!w.isTaken(w.held.Number) || !w.isTaken(c.Number)) {
+		if c.Number != w.held.Number && (!w.IsTaken(w.held.Number) || !w.IsTaken(c.Number)) {
 			kept = append(kept, c)
 		}
 	}
 	return kept
 }
 
-func (w Window) openedAt(l Layout) (column, at int, open bool) {
+func (w Window) openedAt(l geom.Layout) (column, at int, open bool) {
 	if !w.Dragging() {
 		return 0, 0, false
 	}
@@ -943,13 +944,13 @@ func (w Window) openedAt(l Layout) (column, at int, open bool) {
 	}
 	for i := range board.Columns {
 		if l.Column[i].In(w.held.At) {
-			return i, landed(l.Column[i], w.scroll[i], w.held.At, len(w.inColumn(i))), true
+			return i, landed(l.Column[i], w.scroll[i], w.held.At, len(w.InColumn(i))), true
 		}
 	}
 	return 0, 0, false
 }
 
-func (w Window) openedInLane(l Layout) (lane, at int, open bool) {
+func (w Window) openedInLane(l geom.Layout) (lane, at int, open bool) {
 	if !w.Dragging() {
 		return 0, 0, false
 	}
@@ -957,35 +958,35 @@ func (w Window) openedInLane(l Layout) (lane, at int, open bool) {
 	if !in {
 		return 0, 0, false
 	}
-	return lane, landed(l.Lane[lane], w.lanes[lane], w.held.At, len(w.inLane(lane))), true
+	return lane, landed(l.Lane[lane], w.lanes[lane], w.held.At, len(w.InLane(lane))), true
 }
 
-func (w Window) clickedOff(p Point) Window {
-	if w.pickingLabels && w.screen == OnChoosing {
+func (w Window) clickedOff(p geom.Point) Window {
+	if w.PickingLabels && w.Screen == board.OnChoosing {
 		return w.leavingThePicker()
 	}
-	if w.screen == OnCalendar && w.calendarKey != "" {
+	if w.Screen == board.OnCalendar && w.calendarKey != "" {
 		return w.leavingCalendar()
 	}
-	overForm := w.screen == OnChoosing || w.screen == OnCalendar || w.screen == OnRule
-	if w.screen == OnCalendar || w.screen == OnRule {
-		w.screen = OnForm
-	} else if w.screen == OnChoosing {
+	overForm := w.Screen == board.OnChoosing || w.Screen == board.OnCalendar || w.Screen == board.OnRule
+	if w.Screen == board.OnCalendar || w.Screen == board.OnRule {
+		w.Screen = board.OnForm
+	} else if w.Screen == board.OnChoosing {
 		w = w.Choose("Cancel")
-	} else if w.screen != OnForm {
+	} else if w.Screen != board.OnForm {
 		w = w.Choose("Close")
 	}
 	if overForm && w.formPanel().In(p) {
 		return w
 	}
-	if w.screen != OnForm {
+	if w.Screen != board.OnForm {
 		return w
 	}
-	if w.form.Changed() {
-		w.screen, w.question = OnAsking, aboutLeaving
+	if w.Form.Changed() {
+		w.Screen, w.Question = board.OnAsking, board.AboutLeaving
 		return w
 	}
-	if w.form.Adding && !w.form.ForObjective {
+	if w.Form.Adding && !w.Form.ForObjective {
 		return w.leavingUnsaved()
 	}
 	return w.Choose("Close")

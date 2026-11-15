@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strings"
 	"testing"
@@ -11,7 +12,7 @@ func TestAnObjectiveTooLongForTheFilterIsCutAndShownWholeUnderThePointer(t *test
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Spec", State: "todo", Objectives: []int{1}})
 	long := "#1 Objective: late, its deadline past and nobody left to say why"
-	w.snap.Goals = []board.Goal{{Number: 1, Title: strings.TrimPrefix(long, "#1 ")}}
+	w.Snap.Goals = []board.Goal{{Number: 1, Title: strings.TrimPrefix(long, "#1 ")}}
 	w = w.Key("shift+f").Key("o")
 	columns, _ := w.FilterColumns()
 	for _, column := range columns {
@@ -20,15 +21,15 @@ func TestAnObjectiveTooLongForTheFilterIsCutAndShownWholeUnderThePointer(t *test
 		}
 	}
 	values, open := w.FilterList()
-	at := slices.Index(w.Filters()[w.FilterOn()].Shown, long)
+	at := slices.Index(w.Filters[w.FilterOn].Shown, long)
 	if !open || at < 0 {
-		t.Fatalf("the objective is not offered: %v", w.Filters()[w.FilterOn()].Shown)
+		t.Fatalf("the objective is not offered: %v", w.Filters[w.FilterOn].Shown)
 	}
 	named, count := FilterValueParts(values[at])
 	if named.X+named.W > count.X {
 		t.Errorf("the name runs to %d, over its count at %d", named.X+named.W, count.X)
 	}
-	w = w.Hovering(Point{X: named.X + named.W/2, Y: named.Y + named.H/2})
+	w = w.Hovering(geom.Point{X: named.X + named.W/2, Y: named.Y + named.H/2})
 	if w.Bubble() != long {
 		t.Errorf("the pointer on the cut title shows %q", w.Bubble())
 	}

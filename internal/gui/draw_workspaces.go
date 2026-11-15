@@ -1,15 +1,18 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
+
 	"gioui.org/font"
 	"gioui.org/text"
 )
 
-func drawPlace(k Kit, l Layout, w Window) {
+func drawPlace(k Kit, l geom.Layout, w Window) {
 	if l.Place.W == 0 {
 		return
 	}
-	pill := WorkspacePill{Name: w.PlaceShown(), Loose: w.Loose(), Open: w.Screen() == OnWorkspaces}
+	pill := WorkspacePill{Name: w.PlaceShown(), Loose: w.Loose(), Open: w.Screen == board.OnWorkspaces}
 	if !pill.Loose {
 		pill.Colour = w.Place().Colour
 	}
@@ -28,7 +31,7 @@ func drawSwitcher(k Kit, w Window) {
 		said := asks + "  "
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, said, small, font.Font{}, text.Start)
 		at := ends(m, said, small)
-		line = Box{X: line.X + at, Y: line.Y, W: line.W - at, H: line.H}
+		line = geom.Box{X: line.X + at, Y: line.Y, W: line.W - at, H: line.H}
 	}
 	if w.SwitcherTyped().Reads() == "" && w.SwitcherAsks() == "" {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, SwitcherSays, reads)
@@ -44,7 +47,7 @@ func drawSwitcher(k Kit, w Window) {
 	}
 	acts := SwitcherActs(w)
 	if len(acts) > 0 {
-		Rule{}.Draw(in, Box{X: box.X, Y: acts[0].At.Y - 1, W: box.W})
+		Rule{}.Draw(in, geom.Box{X: box.X, Y: acts[0].At.Y - 1, W: box.W})
 	}
 	for _, act := range acts {
 		row := Row{Said: act.Said}
@@ -52,7 +55,7 @@ func drawSwitcher(k Kit, w Window) {
 		if act.Key != "" {
 			spelled := w.keyboard.Spelled(act.Key)
 			inside := Inside(act.At)
-			row.Chip(in, KeyChip{Key: spelled}, Box{X: inside.X + inside.W - KeyChipWide(spelled), Y: act.At.Y, H: act.At.H})
+			row.Chip(in, KeyChip{Key: spelled}, geom.Box{X: inside.X + inside.W - KeyChipWide(spelled), Y: act.At.Y, H: act.At.H})
 		}
 	}
 }
@@ -61,20 +64,20 @@ func drawSwitcherLine(k Kit, m Measure, one SwitcherLine) {
 	line := Row{Picked: one.On}
 	line.Draw(k, one.At)
 	row := Inside(one.At)
-	dot := Box{X: row.X, Y: row.Y + (row.H-dotSide)/2, W: dotSide, H: dotSide}
+	dot := geom.Box{X: row.X, Y: row.Y + (row.H-dotSide)/2, W: dotSide, H: dotSide}
 	ink := k.skin.Colour.Ink.Text
 	if one.Gone {
 		ink = k.skin.Colour.Ink.Faint
 	}
 	right := row.X + row.W
 	if one.Key != "" {
-		chip := line.Chip(k, KeyChip{Key: one.Key}, Box{X: right - KeyChipWide(one.Key), Y: one.At.Y, H: one.At.H})
+		chip := line.Chip(k, KeyChip{Key: one.Key}, geom.Box{X: right - KeyChipWide(one.Key), Y: one.At.Y, H: one.At.H})
 		right = chip.X - between
 	}
 	tag := ends(m, one.Tag, small)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: right - tag, Y: row.Y, W: tag, H: row.H}, one.Tag, small, font.Font{}, text.End)
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: right - tag, Y: row.Y, W: tag, H: row.H}, one.Tag, small, font.Font{}, text.End)
 	right -= tag + padding
 	x := dot.X + dot.W + between
 	Dot{Colour: one.Colour, Ring: one.Gone || one.Recent}.Draw(k, dot)
-	sayStyled(k.gtx, k.th, ink, Box{X: x, Y: row.Y, W: max(0, right-x), H: row.H}, one.Name, reads, font.Medium, 1, text.Start)
+	sayStyled(k.gtx, k.th, ink, geom.Box{X: x, Y: row.Y, W: max(0, right-x), H: row.H}, one.Name, reads, font.Medium, 1, text.Start)
 }

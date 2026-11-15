@@ -1,7 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
 	"context"
 	"errors"
 	"fmt"
@@ -109,8 +111,8 @@ func (w *world) switcherLine(name string, recent bool) (SwitcherLine, error) {
 	return SwitcherLine{}, fmt.Errorf("the switcher does not list %q: %+v", name, w.w.SwitcherLines())
 }
 
-func (w *world) clickAt(b Box) {
-	w.w = w.w.clicked(Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
+func (w *world) clickAt(b geom.Box) {
+	w.w = w.w.clicked(geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
 	w.handingApart()
 }
 
@@ -222,8 +224,8 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the switcher lists the workspaces (".*")$`, func(list string) error {
-		if w.w.Screen() != OnWorkspaces {
-			return fmt.Errorf("the window is on %v, not the switcher", w.w.Screen())
+		if w.w.Screen != board.OnWorkspaces {
+			return fmt.Errorf("the window is on %v, not the switcher", w.w.Screen)
 		}
 		var got []string
 		for _, line := range w.w.SwitcherLines() {
@@ -287,7 +289,7 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the window says "([^"]*)"$`, func(want string) error {
-		said := w.w.told
+		said := w.w.Telling
 		if err := w.w.Wrong(); err != nil {
 			said += " " + err.Error()
 		}

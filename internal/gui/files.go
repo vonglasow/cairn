@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/backup"
 	"cairn/internal/engine/calendar"
 	"errors"
@@ -70,7 +71,7 @@ func (w Window) exportingTasks() Window {
 		_ = os.RemoveAll(dir)
 		return w.failing(err)
 	}
-	w.fileAsk = &FileAsk{Save: true, Name: "cairn-tasks-" + calendar.FormatDay(w.now) + ".json", From: from}
+	w.fileAsk = &FileAsk{Save: true, Name: "cairn-tasks-" + calendar.FormatDay(w.Now) + ".json", From: from}
 	return w
 }
 
@@ -99,10 +100,10 @@ func (w Window) Filed(got Filed) Window {
 func (w Window) folderChosen(got Filed) Window {
 	switch {
 	case errors.Is(got.Err, ErrNoPicker):
-		w.switcher.asking, w.switcher.typed = aFolder, Written{}
+		w.switcher.asking, w.switcher.typed = aFolder, board.Written{}
 		return w
 	case got.Declined:
-		w.switcher.asking, w.switcher.typed = narrowing, Written{}
+		w.switcher.asking, w.switcher.typed = narrowing, board.Written{}
 		return w
 	case got.Err != nil:
 		return w.failing(got.Err)

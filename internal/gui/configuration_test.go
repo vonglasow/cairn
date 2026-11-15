@@ -4,6 +4,7 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/label"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strings"
 	"testing"
@@ -50,14 +51,14 @@ func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
 		t.Fatalf("the configuration offers %d paths to copy: %+v", len(marks), marks)
 	}
 	store := marks[0]
-	if got, _ := w.clicked(Point{X: store.At.X + store.At.W/2, Y: store.At.Y + store.At.H/2}).Copying(); got != "/h/.cairn/cairn.db" {
+	if got, _ := w.clicked(geom.Point{X: store.At.X + store.At.W/2, Y: store.At.Y + store.At.H/2}).Copying(); got != "/h/.cairn/cairn.db" {
 		t.Errorf("the store's mark copies %q", got)
 	}
 }
 
 func TestTheAboutBoxCopiesWhereCairnIsKept(t *testing.T) {
 	w := holding(newFake())
-	w.screen, w.question = OnAsking, aboutCairn
+	w.Screen, w.Question = board.OnAsking, board.AboutCairn
 	marks := w.CopyMarks()
 	if len(marks) != 1 || marks[0].Said != build.Home {
 		t.Fatalf("About offers to copy %+v", marks)
@@ -66,11 +67,11 @@ func TestTheAboutBoxCopiesWhereCairnIsKept(t *testing.T) {
 
 func TestTheAboutBoxShowsTheLogoBesideWhatItSays(t *testing.T) {
 	w := holding(newFake())
-	if w.AboutLogo() != (Box{}) {
+	if w.AboutLogo() != (geom.Box{}) {
 		t.Fatalf("the board shows the logo at %+v", w.AboutLogo())
 	}
 	plain := w.SaidAt(0)
-	w.screen, w.question = OnAsking, aboutCairn
+	w.Screen, w.Question = board.OnAsking, board.AboutCairn
 	logo, box := w.AboutLogo(), w.QuestionBox()
 	if logo.W == 0 || logo.W != logo.H || logo.X != box.X+padding || logo.Y != FirstRow(box) || logo.Y+logo.H > box.Y+box.H {
 		t.Fatalf("the logo is at %+v in the question at %+v", logo, box)
@@ -148,12 +149,12 @@ func TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches(t *testing.T) {
 		return SettingRow{}
 	}
 	dating := w.acting(row(w, "archive.start"), -1)
-	if dating.Screen() != OnCalendar {
-		t.Fatalf("archive.start opens %v, want the calendar", dating.Screen())
+	if dating.Screen != board.OnCalendar {
+		t.Fatalf("archive.start opens %v, want the calendar", dating.Screen)
 	}
 	dated := dating.dated(time.Date(2026, 11, 2, 0, 0, 0, 0, time.Local))
-	if in, ok := f.gave("config", "set"); dated.Screen() != OnConfiguration || !ok || in.Given["key"] != "archive.start" || in.Given["value"] != "2026-11-02" {
-		t.Errorf("the day taken set %+v (%v), back on %v", in, ok, dated.Screen())
+	if in, ok := f.gave("config", "set"); dated.Screen != board.OnConfiguration || !ok || in.Given["key"] != "archive.start" || in.Given["value"] != "2026-11-02" {
+		t.Errorf("the day taken set %+v (%v), back on %v", in, ok, dated.Screen)
 	}
 	colouring := w.acting(row(w, "workspace.colour"), -1)
 	if got := len(colouring.ColourSwatches()); got != len(label.LabelColours) {
@@ -168,9 +169,9 @@ func TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches(t *testing.T) {
 func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNotSaved(t *testing.T) {
 	w := holding(configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml"})).openingConfiguration()
 	box := w.SettingsBox()
-	outside := Point{X: box.X / 2, Y: box.Y + box.H/2}
-	if closed := w.Click(outside); closed.Screen() != OnTheBoard {
-		t.Errorf("a click outside the settings leaves the window on %v", closed.Screen())
+	outside := geom.Point{X: box.X / 2, Y: box.Y + box.H/2}
+	if closed := w.Click(outside); closed.Screen != board.OnTheBoard {
+		t.Errorf("a click outside the settings leaves the window on %v", closed.Screen)
 	}
 	var typed Window
 	for _, row := range w.SettingRows() {
@@ -180,14 +181,14 @@ func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNo
 		}
 	}
 	asked := typed.Click(outside)
-	if asked.Screen() != OnAsking || !slices.Equal(asked.Offers(), []string{"Throw away", "Keep editing"}) {
-		t.Fatalf("a click outside with a value typed leaves %v offering %v", asked.Screen(), asked.Offers())
+	if asked.Screen != board.OnAsking || !slices.Equal(asked.Offers(), []string{"Throw away", "Keep editing"}) {
+		t.Fatalf("a click outside with a value typed leaves %v offering %v", asked.Screen, asked.Offers())
 	}
-	if kept := asked.Choose("Keep editing"); kept.Screen() != OnConfiguration || kept.keyWriting == "" {
-		t.Errorf("keep editing goes to %v, writing %q", kept.Screen(), kept.keyWriting)
+	if kept := asked.Choose("Keep editing"); kept.Screen != board.OnConfiguration || kept.KeyWriting == "" {
+		t.Errorf("keep editing goes to %v, writing %q", kept.Screen, kept.KeyWriting)
 	}
-	if thrown := asked.Choose("Throw away"); thrown.Screen() != OnTheBoard {
-		t.Errorf("throw away goes to %v", thrown.Screen())
+	if thrown := asked.Choose("Throw away"); thrown.Screen != board.OnTheBoard {
+		t.Errorf("throw away goes to %v", thrown.Screen)
 	}
 }
 

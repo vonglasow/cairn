@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/label"
 	"slices"
 	"testing"
@@ -13,19 +14,19 @@ func TestALabelSaysWhatCarriesIt(t *testing.T) {
 }
 
 func TestTheLabelsOfferWhatCanBeDoneToOne(t *testing.T) {
-	w := Window{screen: OnLabels, labelsState: labelsState{carried: []label.Carried{{Label: "doc", Tasks: 1}}}}
+	w := Window{Board: board.Board{LabelsState: board.LabelsState{Carried: []label.Carried{{Label: "doc", Tasks: 1}}}, Screen: board.OnLabels}}
 	if offers := w.Offers(); !slices.Equal(offers, []string{"New label", "Close"}) {
 		t.Errorf("the labels offer %v", offers)
 	}
-	w.seeking = true
+	w.Seeking = true
 	if offers := w.Offers(); !slices.Equal(offers, []string{"Cancel"}) {
 		t.Errorf("a search that finds labels offers %v", offers)
 	}
-	w.sought = Written{}.Types("release")
+	w.Sought = board.Written{}.Types("release")
 	if offers := w.Offers(); !slices.Equal(offers, []string{"Create", "Cancel"}) {
 		t.Errorf("a search that finds none offers %v", offers)
 	}
-	w.seeking, w.renaming = false, true
+	w.Seeking, w.Renaming = false, true
 	if offers := w.Offers(); !slices.Equal(offers, []string{"Save", "Cancel"}) {
 		t.Errorf("a rename offers %v", offers)
 	}

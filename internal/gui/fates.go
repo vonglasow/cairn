@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"strconv"
 	"strings"
 
@@ -15,14 +16,14 @@ type FateRow struct {
 	Choices []string
 	Fates   []board.Fate
 	On      int
-	At      Box
-	Choice  Box
-	Picks   []Box
+	At      geom.Box
+	Choice  geom.Box
+	Picks   []geom.Box
 }
 
 // Fates is the question deleting an objective asks, row by row: each sub-objective deleted or kept as level one, the tasks it touches deleted or detached; nothing chosen for the person.
 type Fates struct {
-	Box, Heading, Said, SubsHead, TasksHead, Note Box
+	Box, Heading, Said, SubsHead, TasksHead, Note geom.Box
 	Rows                                          []FateRow
 	Asks, NoteSays                                string
 }
@@ -40,37 +41,37 @@ const (
 )
 
 func (w Window) deletingGoal(n int) Window {
-	d := w.snap.Deleting(n)
+	d := w.Snap.Deleting(n)
 	if !d.Asks() {
-		w.screen = OnAsking
+		w.Screen = board.OnAsking
 		return w
 	}
-	w.screen, w.fates, w.fateRow = OnFates, d, 0
+	w.Screen, w.Fates, w.FateRow = board.OnFates, d, 0
 	return w
 }
 
 // FatesAsked lays the question out over the window.
 func (w Window) FatesAsked() Fates {
-	d := w.fates
-	g, _ := w.snap.Goal(d.Number)
+	d := w.Fates
+	g, _ := w.Snap.Goal(d.Number)
 	var f Fates
 	for _, sub := range d.Subs {
-		s, _ := w.snap.Goal(sub)
+		s, _ := w.Snap.Goal(sub)
 		f.Rows = append(f.Rows, FateRow{Said: "#" + strconv.Itoa(sub) + " " + s.Title, Sub: sub, Choices: subChoices, Fates: subFates, On: fateAt(subFates, d.FateOf(sub))})
 	}
 	touched := d.Touched()
 	if d.AsksTasks() {
 		said := numbersSaid(touched)
-		if len(touched) == len(board.Serving(w.snap.Cards, d.Number)) {
+		if len(touched) == len(board.Serving(w.Snap.Cards, d.Number)) {
 			said += " on " + g.Title + " itself"
 		}
 		f.Rows = append(f.Rows, FateRow{Said: said, Choices: taskChoices, Fates: taskFates, On: fateAt(taskFates, d.TasksFate())})
 	}
 	f.Asks = "It holds " + strconv.Itoa(len(d.Subs)) + " sub-objective" + plural(len(d.Subs)) + " and touches " + strconv.Itoa(len(touched)) + " task" + plural(len(touched)) + ". Say what becomes of each."
 	f.NoteSays = "Detached tasks stay on the board and serve nothing. The tasks of a sub-objective kept follow it."
-	wide := min(fatesWide, w.width-2*margin)
-	high := FirstRow(Box{}) + lineHigh + padding + len(f.Rows)*fateHigh + 2*(lineHigh+inset) + 2*lineHigh + padding + barHigh + padding
-	f.Box = Box{X: (w.width - wide) / 2, Y: max(margin, (w.height-high)/3), W: wide, H: high}
+	wide := min(fatesWide, w.width-2*geom.Margin)
+	high := FirstRow(geom.Box{}) + lineHigh + padding + len(f.Rows)*fateHigh + 2*(lineHigh+inset) + 2*lineHigh + padding + geom.BarHigh + padding
+	f.Box = geom.Box{X: (w.width - wide) / 2, Y: max(geom.Margin, (w.height-high)/3), W: wide, H: high}
 	f.Heading = FormHeading(f.Box)
 	y := FirstRow(f.Box)
 	f.Said = RowIn(f.Box, y, lineHigh)
@@ -91,9 +92,9 @@ func (w Window) FatesAsked() Fates {
 		for j := len(row.Choices) - 1; j >= 0; j-- {
 			seg := ends(m, row.Choices[j], small) + 2*padding
 			x -= seg
-			row.Picks = append([]Box{{X: x, Y: row.At.Y + 3, W: seg, H: row.At.H - 6}}, row.Picks...)
+			row.Picks = append([]geom.Box{{X: x, Y: row.At.Y + 3, W: seg, H: row.At.H - 6}}, row.Picks...)
 		}
-		row.Choice = Box{X: x, Y: row.At.Y + 3, W: row.At.X + row.At.W - inset - x, H: row.At.H - 6}
+		row.Choice = geom.Box{X: x, Y: row.At.Y + 3, W: row.At.X + row.At.W - inset - x, H: row.At.H - 6}
 		y += fateHigh
 	}
 	f.Note = RowIn(f.Box, y+inset, 2*lineHigh)
@@ -119,7 +120,7 @@ func numbersSaid(numbers []int) string {
 
 // DeletesSays is what the button that deletes says: the objectives it deletes, and the tasks when they go too.
 func (w Window) DeletesSays() string {
-	d := w.fates
+	d := w.Fates
 	gone := []int{d.Number}
 	for _, sub := range d.Subs {
 		if d.FateOf(sub) == board.DeleteIt {
@@ -144,11 +145,11 @@ func (w Window) fated(row, at int) Window {
 	}
 	fate := f.Rows[row].Fates[at]
 	if f.Rows[row].Sub != 0 {
-		w.fates = w.fates.Choose(f.Rows[row].Sub, fate)
+		w.Fates = w.Fates.Choose(f.Rows[row].Sub, fate)
 	} else {
-		w.fates = w.fates.Tasks(fate)
+		w.Fates = w.Fates.Tasks(fate)
 	}
-	w.fateRow = min(row, len(w.FatesAsked().Rows)-1)
+	w.FateRow = min(row, len(w.FatesAsked().Rows)-1)
 	return w
 }
 
@@ -156,33 +157,33 @@ func (w Window) onFates(name string) Window {
 	f := w.FatesAsked()
 	switch name {
 	case "down", "j":
-		w.fateRow = min(len(f.Rows)-1, w.fateRow+1)
+		w.FateRow = min(len(f.Rows)-1, w.FateRow+1)
 	case "up", "k":
-		w.fateRow = max(0, w.fateRow-1)
+		w.FateRow = max(0, w.FateRow-1)
 	case "left", "h", "right", "l":
-		row := f.Rows[w.fateRow]
+		row := f.Rows[w.FateRow]
 		at := 0
 		if name == "right" || name == "l" {
 			at = len(row.Choices) - 1
 		}
-		return w.fated(w.fateRow, at)
+		return w.fated(w.FateRow, at)
 	}
 	return w
 }
 
 func (w Window) confirmingFates() Window {
-	if !w.fates.Ready() {
+	if !w.Fates.Ready() {
 		return w
 	}
-	w.screen = OnTheBoard
-	if _, err := w.work.Ask(engine.ObjectiveDelete, w.fates.Input()); err != nil {
+	w.Screen = board.OnTheBoard
+	if _, err := w.work.Ask(engine.ObjectiveDelete, w.Fates.Input()); err != nil {
 		return w.failing(err)
 	}
-	w.chosen, w.chosenGoal = 0, false
+	w.Chosen, w.ChosenGoal = 0, false
 	return w.Look()
 }
 
-func (w Window) clickingFates(p Point) Window {
+func (w Window) clickingFates(p geom.Point) Window {
 	if !w.FatesAsked().Box.In(p) {
 		return w
 	}
@@ -198,23 +199,23 @@ func (w Window) clickingFates(p Point) Window {
 
 func drawFates(k Kit, w Window) {
 	f := w.FatesAsked()
-	Veil{}.Draw(k, Box{W: w.width, H: w.height})
+	Veil{}.Draw(k, geom.Box{W: w.width, H: w.height})
 	k = k.inside("veil")
 	Panel{}.Draw(k, f.Box)
 	in := k.inside("panel")
-	g, _ := w.snap.Goal(w.fates.Number)
+	g, _ := w.Snap.Goal(w.Fates.Number)
 	Heading{Said: "Delete " + g.Title, Number: "#" + strconv.Itoa(g.Number)}.Draw(in, f.Heading)
 	say(k.gtx, k.th, k.skin.Colour.Ink.Faint, f.Said, fits(k.gtx, k.th, f.Asks, f.Said.W, reads), reads)
 	if f.SubsHead.H > 0 {
-		Head{Said: "Sub-objectives", Count: strconv.Itoa(len(w.fates.Subs))}.Draw(in, f.SubsHead)
+		Head{Said: "Sub-objectives", Count: strconv.Itoa(len(w.Fates.Subs))}.Draw(in, f.SubsHead)
 	}
 	if f.TasksHead.H > 0 {
-		Head{Said: "Tasks", Count: strconv.Itoa(len(w.fates.Touched()))}.Draw(in, f.TasksHead)
+		Head{Said: "Tasks", Count: strconv.Itoa(len(w.Fates.Touched()))}.Draw(in, f.TasksHead)
 	}
 	for i, row := range f.Rows {
-		r := Row{Picked: i == w.fateRow}
+		r := Row{Picked: i == w.FateRow}
 		r.Draw(in, row.At)
-		say(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: row.At.X + padding, Y: row.At.Y + (row.At.H-lineHigh)/2, W: max(0, row.Choice.X-row.At.X-2*padding), H: lineHigh}, row.Said, reads)
+		say(k.gtx, k.th, k.skin.Colour.Ink.Text, geom.Box{X: row.At.X + padding, Y: row.At.Y + (row.At.H-lineHigh)/2, W: max(0, row.Choice.X-row.At.X-2*padding), H: lineHigh}, row.Said, reads)
 		Segmented{Said: row.Choices, At: row.Picks, On: row.On, Small: true}.Draw(in.inside("row"), row.Choice)
 	}
 	sayOver(k.gtx, k.th, k.skin.Colour.Ink.Faint, f.Note, f.NoteSays, small, 2)

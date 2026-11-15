@@ -2,6 +2,7 @@ package cli
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
 	"context"
 	"fmt"
 	"image/color"
@@ -60,13 +61,13 @@ palette:
 func hexOf(c color.NRGBA) string { return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B) }
 
 func (w *workspaces) registerThemes(sc *godog.ScenarioContext) {
-	var worn *gui.Skin
+	var worn *design.Skin
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		worn = nil
 		return ctx, nil
 	})
 	opening := func(line string) error {
-		w.window = func(_ board.Work, _ engine.Pages, look gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(_ board.Work, _ engine.Pages, look design.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
 			worn = &look
 			return nil
 		}
@@ -88,7 +89,7 @@ func (w *workspaces) registerThemes(sc *godog.ScenarioContext) {
 		return opening("cairn gui --workspace " + name)
 	})
 	sc.Step(`^the window wears the colours it always wore$`, func() error {
-		if !reflect.DeepEqual(worn.Colour, gui.Dark().Colour) {
+		if !reflect.DeepEqual(worn.Colour, design.Dark().Colour) {
 			return fmt.Errorf("the window wears other colours: its back is %s", hexOf(worn.Colour.Surface.Back))
 		}
 		return nil

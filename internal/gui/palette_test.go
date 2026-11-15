@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"strings"
 	"testing"
 	"time"
@@ -25,14 +27,14 @@ func says(rows []PaletteRow) []string {
 func TestCmdKOpensThePaletteAndEscShutsIt(t *testing.T) {
 	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	open := w.Key("cmd+k")
-	if open.Screen() != OnPalette {
-		t.Fatalf("cmd+k left the window on %v", open.Screen())
+	if open.Screen != board.OnPalette {
+		t.Fatalf("cmd+k left the window on %v", open.Screen)
 	}
-	if shut := open.Key("esc"); shut.Screen() != OnTheBoard {
-		t.Errorf("esc left the window on %v", shut.Screen())
+	if shut := open.Key("esc"); shut.Screen != board.OnTheBoard {
+		t.Errorf("esc left the window on %v", shut.Screen)
 	}
-	if shut := open.Key("backspace"); shut.Screen() != OnTheBoard {
-		t.Errorf("backspace on nothing typed left the window on %v", shut.Screen())
+	if shut := open.Key("backspace"); shut.Screen != board.OnTheBoard {
+		t.Errorf("backspace on nothing typed left the window on %v", shut.Screen)
 	}
 }
 
@@ -60,12 +62,12 @@ func TestTypingNarrowsThePaletteWordByWord(t *testing.T) {
 func TestAMoveAsksForItsColumnThenAsksTheEngine(t *testing.T) {
 	f, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+k").Types("move").Key("enter")
-	if w.Screen() != OnPalette || len(w.PaletteRows()) != len(engine.States()) {
+	if w.Screen != board.OnPalette || len(w.PaletteRows()) != len(engine.States()) {
 		t.Fatalf("a move asks %v", says(w.PaletteRows()))
 	}
 	w = w.Types("done").Key("enter")
-	if wrote := f.wrote(); w.Screen() != OnTheBoard || len(wrote) != 1 || wrote[0].in.Given["state"] != "done" {
-		t.Errorf("moving to done left the window on %v having asked %+v", w.Screen(), f.asked)
+	if wrote := f.wrote(); w.Screen != board.OnTheBoard || len(wrote) != 1 || wrote[0].in.Given["state"] != "done" {
+		t.Errorf("moving to done left the window on %v having asked %+v", w.Screen, f.asked)
 	}
 }
 
@@ -97,8 +99,8 @@ func TestThePaletteFindsATaskByTitleAndOpensIt(t *testing.T) {
 	for range at {
 		w = w.Key("down")
 	}
-	if w = w.Key("enter"); w.Screen() != OnForm || w.Chosen() != 2 {
-		t.Errorf("opening it left the window on %v with %d chosen", w.Screen(), w.Chosen())
+	if w = w.Key("enter"); w.Screen != board.OnForm || w.Chosen != 2 {
+		t.Errorf("opening it left the window on %v with %d chosen", w.Screen, w.Chosen)
 	}
 }
 
@@ -123,20 +125,20 @@ func TestWhatThePaletteDidIsOfferedAgain(t *testing.T) {
 func TestAClickOnTheBarsLineOpensThePalette(t *testing.T) {
 	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	line := CommandLine(w.Layout(), w.BarOffers())
-	if got := w.clicked(Point{X: line.X + 40, Y: line.Y + line.H/2}); got.Screen() != OnPalette {
-		t.Errorf("a click on the bar's line left the window on %v", got.Screen())
+	if got := w.clicked(geom.Point{X: line.X + 40, Y: line.Y + line.H/2}); got.Screen != board.OnPalette {
+		t.Errorf("a click on the bar's line left the window on %v", got.Screen)
 	}
 }
 
 func TestThePaletteIsDrawnUnderTheTabs(t *testing.T) {
 	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("cmd+k")
-	w = w.At(w.now.Add(time.Second))
+	w = w.At(w.Now.Add(time.Second))
 	box, l := w.PaletteBox(), w.Layout()
 	if box.Y != l.Tabs.Y+l.Tabs.H || box.X+box.W/2 != w.width/2 || box.Y+box.H > l.Bar.Y {
 		t.Errorf("the palette at %+v is not under the tabs %+v, above the bar %+v", box, l.Tabs, l.Bar)
 	}
-	if painted(drawn(t, w), Box{X: box.X + box.W/2, Y: box.Y + 4, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
+	if painted(drawn(t, w), geom.Box{X: box.X + box.W/2, Y: box.Y + 4, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 1 {
 		t.Error("the palette is not drawn")
 	}
 }
@@ -159,11 +161,11 @@ func TestEveryActionOfThePaletteSaysItsKey(t *testing.T) {
 
 func TestASearchSaysHowManyItKeepsOfHowMany(t *testing.T) {
 	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"}, board.Card{Number: 2, Title: "Ship it", State: "todo"}, board.Card{Number: 3, Title: "Spec the bar", State: "todo"})
-	if got := w.TabCount(Tasks); got != "3" {
+	if got := w.TabCount(board.Tasks); got != "3" {
 		t.Errorf("a board nobody searches counts %q", got)
 	}
 	w = w.Key("/").Types("spec")
-	if got := w.TabCount(Tasks); got != "2/3" {
+	if got := w.TabCount(board.Tasks); got != "2/3" {
 		t.Errorf("searching spec counts %q", got)
 	}
 }
@@ -185,7 +187,7 @@ func TestThePaletteRisesAsItOpens(t *testing.T) {
 
 func TestTheCommandBarsChosenRowSaysEnterOnAChip(t *testing.T) {
 	w := holding(newFake(), card(1, "Write the spec", "todo")).Key("cmd+k")
-	w = w.At(w.now.Add(time.Second))
+	w = w.At(w.Now.Add(time.Second))
 	lines := w.PaletteLines()
 	var chosen PaletteLine
 	for _, line := range lines {
@@ -197,7 +199,7 @@ func TestTheCommandBarsChosenRowSaysEnterOnAChip(t *testing.T) {
 	if chip.X+chip.W > chosen.Box.X+chosen.Box.W || chip.W == 0 {
 		t.Fatalf("the chip %+v is not inside the row %+v", chip, chosen.Box)
 	}
-	if painted(drawn(t, w), Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.ChipOnControl) != 1 {
+	if painted(drawn(t, w), geom.Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, design.Dark().Colour.Surface.ChipOnControl) != 1 {
 		t.Error("the chosen row draws no chip for enter")
 	}
 }
@@ -210,7 +212,7 @@ func TestARecentLineSaysHowLongAgoItWasDone(t *testing.T) {
 	if len(rows) == 0 || rows[len(rows)-1].Group != paletteRecentGroup {
 		t.Fatalf("the command bar lists %+v", rows)
 	}
-	if got := rows[len(rows)-1].Ago(w.now); got != "2 min ago" {
+	if got := rows[len(rows)-1].Ago(w.Now); got != "2 min ago" {
 		t.Errorf("a line done two minutes ago says %q", got)
 	}
 	if got := rows[len(rows)-1].Ago(start.Add(10 * time.Second)); got != "just now" {

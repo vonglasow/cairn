@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"errors"
 	"image"
 	"strconv"
@@ -25,7 +27,7 @@ func TestEveryPointerEventItsGesture(t *testing.T) {
 	if pressed.held.Number != 1 {
 		t.Errorf("a press took hold of %d", pressed.held.Number)
 	}
-	dragged := Pointed(pressed, pointer.Drag, Point{X: at.X + 50, Y: at.Y}, 0)
+	dragged := Pointed(pressed, pointer.Drag, geom.Point{X: at.X + 50, Y: at.Y}, 0)
 	if !dragged.Dragging() {
 		t.Error("a drag did not begin one")
 	}
@@ -37,18 +39,18 @@ func TestEveryPointerEventItsGesture(t *testing.T) {
 		t.Errorf("the drop asked for %d moves and %d edits, want one move", f.what("task", "move"), f.what("task", "edit"))
 	}
 
-	scrolled := Pointed(w, pointer.Scroll, at, CardHeight)
+	scrolled := Pointed(w, pointer.Scroll, at, geom.CardHeight)
 	if scrolled.scroll[0] != w.scroll[0] {
 		t.Log("scrolling a column that fits changes nothing, as it should")
 	}
-	if same := Pointed(w, pointer.Enter, at, 0); same.Chosen() != w.Chosen() {
+	if same := Pointed(w, pointer.Enter, at, 0); same.Chosen != w.Chosen {
 		t.Error("a kind of event this board has no use for did something")
 	}
 }
 
 func TestWhenTwoPressesAreOneDoubleClick(t *testing.T) {
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
-	at := Point{X: 100, Y: 100}
+	at := geom.Point{X: 100, Y: 100}
 
 	if Twice(time.Time{}, now, at, at) {
 		t.Error("the first press of all was read as a second")
@@ -59,13 +61,13 @@ func TestWhenTwoPressesAreOneDoubleClick(t *testing.T) {
 	if Twice(now, now.Add(Twin()+time.Millisecond), at, at) {
 		t.Error("two presses too far apart in time were read as one gesture")
 	}
-	if !Twice(now, now.Add(time.Millisecond), at, Point{X: at.X + Wobble, Y: at.Y}) {
+	if !Twice(now, now.Add(time.Millisecond), at, geom.Point{X: at.X + Wobble, Y: at.Y}) {
 		t.Error("a hand that moved within the grip is still in the same place")
 	}
-	if Twice(now, now.Add(time.Millisecond), at, Point{X: at.X + Wobble + 1, Y: at.Y}) {
+	if Twice(now, now.Add(time.Millisecond), at, geom.Point{X: at.X + Wobble + 1, Y: at.Y}) {
 		t.Error("a press somewhere else was read as a double-click")
 	}
-	if Twice(now, now.Add(time.Millisecond), at, Point{X: at.X, Y: at.Y + Wobble + 1}) {
+	if Twice(now, now.Add(time.Millisecond), at, geom.Point{X: at.X, Y: at.Y + Wobble + 1}) {
 		t.Error("a press below the last one was read as a double-click")
 	}
 }
@@ -74,30 +76,30 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	if got := Typed(w, "N", key.ModCommand); got.Screen() != OnForm {
-		t.Errorf("⌘N left the window on %v", got.Screen())
+	if got := Typed(w, "N", key.ModCommand); got.Screen != board.OnForm {
+		t.Errorf("⌘N left the window on %v", got.Screen)
 	}
-	if got := Typed(w, "N", key.ModCtrl); got.Screen() != OnForm {
-		t.Errorf("ctrl+N left the window on %v", got.Screen())
+	if got := Typed(w, "N", key.ModCtrl); got.Screen != board.OnForm {
+		t.Errorf("ctrl+N left the window on %v", got.Screen)
 	}
 	opened := w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	if got := Typed(opened, string(key.NameEscape), 0); got.Screen() != OnTheBoard {
-		t.Errorf("escape left the window on %v", got.Screen())
+	if got := Typed(opened, string(key.NameEscape), 0); got.Screen != board.OnTheBoard {
+		t.Errorf("escape left the window on %v", got.Screen)
 	}
-	if got := Typed(w, "Q", 0); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
+	if got := Typed(w, "Q", 0); got.Screen != board.OnTheBoard || len(f.wrote()) != 0 {
 		t.Error("a key nobody bound did something")
 	}
-	if got := Typed(w, "A", key.ModShift); !got.archived {
+	if got := Typed(w, "A", key.ModShift); !got.Archived {
 		t.Error("⇧A did not show what was archived")
 	}
-	if got := Typed(Typed(w, "A", key.ModShift), "A", key.ModShift); got.archived {
+	if got := Typed(Typed(w, "A", key.ModShift), "A", key.ModShift); got.Archived {
 		t.Error("⇧A twice did not hide it again")
 	}
-	if got := Typed(w, "?", key.ModShift); got.Screen() != OnHelp {
-		t.Errorf("? left the window on %v, not the help", got.Screen())
+	if got := Typed(w, "?", key.ModShift); got.Screen != board.OnHelp {
+		t.Errorf("? left the window on %v, not the help", got.Screen)
 	}
-	if got := Typed(w, "/", key.ModShift); got.Screen() != OnSearch {
-		t.Errorf("a shifted punctuation key left the window on %v", got.Screen())
+	if got := Typed(w, "/", key.ModShift); got.Screen != board.OnSearch {
+		t.Errorf("a shifted punctuation key left the window on %v", got.Screen)
 	}
 }
 
@@ -110,18 +112,18 @@ func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 	})
 
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	if got := ink(drawn(t, w), Over(w.width, w.height), Dark().Colour.Surface.Back); got == 0 {
+	if got := ink(drawn(t, w), Over(w.width, w.height), design.Dark().Colour.Surface.Back); got == 0 {
 		t.Fatal("the detail is blank")
 	}
 }
 
 func TestAddingOnTheObjectivesTabAsksAnObjectivesQuestions(t *testing.T) {
-	form := Window{}.adding(Objectives, "")
+	form := Window{}.adding(board.Objectives, "")
 	if !form.ForObjective {
 		t.Fatal("adding on the objectives tab opened a task's form")
 	}
 	for _, absent := range []string{"blockers", "parent", "objectives"} {
-		if form.ValueOf(absent) != "" {
+		if valueOf(form, absent) != "" {
 			t.Errorf("an objective's form asks about %q", absent)
 		}
 	}
@@ -156,7 +158,7 @@ func TestADropRefusedChangesNothingAndSaysSo(t *testing.T) {
 func TestATaskTheReadingDoesNotHoldStillMoves(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "backlog"})
-	w.snap.Cards[0].Number = 7
+	w.Snap.Cards[0].Number = 7
 
 	at := middleOf(w, 0, 0)
 	w = w.PressAt(at)
@@ -192,13 +194,13 @@ func TestTheTwoLengthsOfTime(t *testing.T) {
 
 func TestTheGripOfADoubleClickInBothDirections(t *testing.T) {
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
-	at := Point{X: 100, Y: 100}
+	at := geom.Point{X: 100, Y: 100}
 	soon := now.Add(time.Millisecond)
 
-	if !Twice(now, soon, at, Point{X: at.X, Y: at.Y + Wobble}) {
+	if !Twice(now, soon, at, geom.Point{X: at.X, Y: at.Y + Wobble}) {
 		t.Errorf("a hand that moved %d down is still in the same place", Wobble)
 	}
-	if !Twice(now, soon, at, Point{X: at.X + Wobble, Y: at.Y + Wobble}) {
+	if !Twice(now, soon, at, geom.Point{X: at.X + Wobble, Y: at.Y + Wobble}) {
 		t.Error("a hand that moved the grip in both directions is still in the same place")
 	}
 }
@@ -209,14 +211,14 @@ func TestClickingATabChangesToIt(t *testing.T) {
 	l := w.Layout()
 
 	second := TabAt(l, 1)
-	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
-	if w.Tab() != Objectives {
-		t.Fatalf("clicking the second tab left the window on %v", w.Tab())
+	w = w.clicked(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	if w.Tab != board.Objectives {
+		t.Fatalf("clicking the second tab left the window on %v", w.Tab)
 	}
 	first := TabAt(l, 0)
-	w = w.clicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
-	if w.Tab() != Tasks {
-		t.Fatalf("clicking the first tab left the window on %v", w.Tab())
+	w = w.clicked(geom.Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	if w.Tab != board.Tasks {
+		t.Fatalf("clicking the first tab left the window on %v", w.Tab)
 	}
 }
 
@@ -224,15 +226,15 @@ func TestClickingBesideTheTabsChangesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
-	beside := Point{X: l.Tabs.X + l.Tabs.W - 10, Y: l.Tabs.Y + l.Tabs.H/2}
-	if got := w.clicked(beside); got.Tab() != Tasks {
-		t.Errorf("clicking beside the tabs left the window on %v", got.Tab())
+	beside := geom.Point{X: l.Tabs.X + l.Tabs.W - 10, Y: l.Tabs.Y + l.Tabs.H/2}
+	if got := w.clicked(beside); got.Tab != board.Tasks {
+		t.Errorf("clicking beside the tabs left the window on %v", got.Tab)
 	}
 }
 
 func TestExactlyTheSpanOfADoubleClick(t *testing.T) {
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
-	at := Point{X: 100, Y: 100}
+	at := geom.Point{X: 100, Y: 100}
 	if !Twice(now, now.Add(Twin()), at, at) {
 		t.Errorf("two presses exactly %v apart are one gesture", Twin())
 	}
@@ -249,13 +251,13 @@ func TestAFrameOfEventsScrollsBackUp(t *testing.T) {
 	}
 	w := holding(f, many...)
 	l := w.Layout()
-	over := Point{X: l.Column[1].X + l.Column[1].W/2, Y: l.Column[1].Y + l.Column[1].H/2}
-	w = w.Scroll(over, CardHeight*3)
+	over := geom.Point{X: l.Column[1].X + l.Column[1].W/2, Y: l.Column[1].Y + l.Column[1].H/2}
+	w = w.Scroll(over, geom.CardHeight*3)
 
 	got, _, _ := frames(t, w, pointer.Event{
 		Kind:     pointer.Scroll,
 		Position: at(w, 1, 0),
-		Scroll:   f32.Pt(0, -float32(CardHeight)),
+		Scroll:   f32.Pt(0, -float32(geom.CardHeight)),
 	})
 	if got.scroll[1] >= w.scroll[1] {
 		t.Fatalf("scrolling up left the column at %d, having been at %d", got.scroll[1], w.scroll[1])
@@ -304,14 +306,14 @@ func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: strings.Join(said, "\n")})
 	w = w.doubleClicked(middleOf(w, 1, 0))
-	if w.Screen() != OnForm {
-		t.Fatalf("the task did not open: %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the task did not open: %v", w.Screen)
 	}
 	box, _, _, _, long := w.sayingOn()
 	if !long {
 		t.Fatal("the open task shows no description")
 	}
-	over := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+	over := geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 
 	if got := Pointed(w, pointer.Scroll, over, lineHigh); got.Saying() == 0 {
 		t.Error("the wheel over the description left it where it was")
@@ -333,20 +335,20 @@ func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
 
 	one, g := Pointing(w, Gesture{}, pointer.Press, at, 0, now)
 	one, g = Pointing(one, g, pointer.Release, at, 0, now)
-	if one.Screen() != OnTheBoard || one.Chosen() != 1 {
-		t.Fatalf("one click left the window on %v, choosing %d", one.Screen(), one.Chosen())
+	if one.Screen != board.OnTheBoard || one.Chosen != 1 {
+		t.Fatalf("one click left the window on %v, choosing %d", one.Screen, one.Chosen)
 	}
 
 	two, g := Pointing(one, g, pointer.Press, at, 0, now.Add(time.Millisecond))
 	two, _ = Pointing(two, g, pointer.Release, at, 0, now.Add(time.Millisecond))
-	if two.Screen() != OnForm {
-		t.Errorf("the second click left the window on %v, not the task it opened", two.Screen())
+	if two.Screen != board.OnForm {
+		t.Errorf("the second click left the window on %v, not the task it opened", two.Screen)
 	}
 
 	apart, g := Pointing(one, g, pointer.Press, at, 0, now.Add(Twin()+time.Second))
 	apart, _ = Pointing(apart, g, pointer.Release, at, 0, now.Add(Twin()+time.Second))
-	if apart.Screen() != OnTheBoard {
-		t.Errorf("two clicks a second apart opened the task anyway: %v", apart.Screen())
+	if apart.Screen != board.OnTheBoard {
+		t.Errorf("two clicks a second apart opened the task anyway: %v", apart.Screen)
 	}
 }
 
@@ -360,15 +362,15 @@ func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 		t.Error("a press took hold of nothing")
 	}
 	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Drag,
-		Point{X: at.X + Wobble + 1, Y: at.Y}, 0); !got.held.Moved {
+		geom.Point{X: at.X + Wobble + 1, Y: at.Y}, 0); !got.held.Moved {
 		t.Error("a drag did not move what the press had taken hold of")
 	}
-	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Release, at, 0); got.Chosen() != 1 {
+	if got := Pointed(Pointed(w, pointer.Press, at, 0), pointer.Release, at, 0); got.Chosen != 1 {
 		t.Error("a release did not finish the click it belonged to")
 	}
 	open := w.doubleClicked(at)
 	box, _, _, _, _ := open.sayingOn()
-	over := Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+	over := geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 	if got := Pointed(open, pointer.Scroll, over, 5*lineHigh); got.Saying() == 0 {
 		t.Error("a scroll moved nothing")
 	}
@@ -383,14 +385,14 @@ func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
 	}
 
 	got := pasting(w, strings.NewReader("colonnes"))
-	if said := got.Form().ValueOf("title"); said != "colonnes" {
+	if said := valueOf(got.Form, "title"); said != "colonnes" {
 		t.Errorf("the title reads %q after pasting", said)
 	}
 	if got.Pasting() {
 		t.Error("the window is still waiting for a clipboard it has been given")
 	}
 	broken := pasting(w, failing{})
-	if said := broken.Form().ValueOf("title"); said != "Write the spec" {
+	if said := valueOf(broken.Form, "title"); said != "Write the spec" {
 		t.Errorf("a clipboard that would not open left the title as %q", said)
 	}
 	if broken.Pasting() {
@@ -411,7 +413,7 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 	w := holding(newFake(), cards...)
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	frame, _, _, _, _ := w.sayingOn()
-	over := Point{X: max(frame.X, w.Layout().Column[1].X) + 10, Y: frame.Y + 10}
+	over := geom.Point{X: max(frame.X, w.Layout().Column[1].X) + 10, Y: frame.Y + 10}
 	if !w.Layout().Column[1].In(over) || !frame.In(over) {
 		t.Fatal("this proves nothing: there is no column under the description")
 	}
@@ -426,8 +428,8 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 		t.Fatal("the turn did not scroll the description")
 	}
 	w = w.Key("esc")
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("esc left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("esc left the window on %v", w.Screen)
 	}
 	for i := 2; i < 10; i++ {
 		w = turn(w, time.Duration(i)*16*time.Millisecond)
@@ -441,8 +443,8 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 		t.Fatal("a fresh turn over the board after a pause of Still() did not scroll it")
 	}
 	w = w.DoubleClick(middleOf(w, 1, 0))
-	if w.Screen() != OnForm {
-		t.Fatalf("the task did not open: %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the task did not open: %v", w.Screen)
 	}
 	w = turn(w, fresh+16*time.Millisecond)
 	if w.Saying() != 0 {
@@ -452,22 +454,22 @@ func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 
 func TestShiftHeldDoesNotStopADeletion(t *testing.T) {
 	w := holding(newFake()).Key("cmd+n").Types("Plans").Key("left")
-	if got := Typed(w, string(key.NameDeleteBackward), key.ModShift).Form().Writing().Reads(); got != "Plas" {
+	if got := Typed(w, string(key.NameDeleteBackward), key.ModShift).Form.Writing().Reads(); got != "Plas" {
 		t.Errorf("⇧⌫ left %q", got)
 	}
-	if got := Typed(w, string(key.NameDeleteForward), key.ModShift).Form().Writing().Reads(); got != "Plan" {
+	if got := Typed(w, string(key.NameDeleteForward), key.ModShift).Form.Writing().Reads(); got != "Plan" {
 		t.Errorf("⇧⌦ left %q", got)
 	}
 }
 
 func TestEveryScreenThatWritesTakesWhatTheSystemTypes(t *testing.T) {
 	w := holding(newFake())
-	w.screen = OnLabels
+	w.Screen = board.OnLabels
 	w = w.makingLabel()
-	if _, writes := w.Typed(); !writes || !takesTyping(w.Screen()) {
-		t.Fatalf("a label being named writes %v, and the system's typing reaches it %v", writes, takesTyping(w.Screen()))
+	if _, writes := w.Typed(); !writes || !takesTyping(w.Screen) {
+		t.Fatalf("a label being named writes %v, and the system's typing reaches it %v", writes, takesTyping(w.Screen))
 	}
-	for _, s := range []Screen{OnForm, OnSearch, OnChoosing, OnPalette, OnLabels} {
+	for _, s := range []board.Screen{board.OnForm, board.OnSearch, board.OnChoosing, board.OnPalette, board.OnLabels} {
 		if !takesTyping(s) {
 			t.Errorf("screen %v does not take the system's typing", s)
 		}

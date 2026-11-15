@@ -16,16 +16,6 @@ func (w Window) KeysDown(held key.Modifiers) Window {
 	return w
 }
 
-// Taken is what is taken together, in the order it was taken: nothing, or two and more.
-func (w Window) Taken() []int {
-	if len(w.taken) < 2 {
-		return nil
-	}
-	return w.taken
-}
-
-func (w Window) isTaken(number int) bool { return slices.Contains(w.Taken(), number) }
-
 func (w Window) choosingAt(number int) Window {
 	if number != 0 && w.gathering {
 		return w.gather(number)
@@ -33,86 +23,47 @@ func (w Window) choosingAt(number int) Window {
 	if number != 0 && w.stretching {
 		return w.stretch(number)
 	}
-	w.taken = nil
-	w.chosen, w.chosenGoal = number, w.tab == Objectives
-	if w.chosenGoal {
+	w.Gathered = nil
+	w.Chosen, w.ChosenGoal = number, w.Tab == board.Objectives
+	if w.ChosenGoal {
 		return w.openingParentOf(number)
 	}
 	return w
 }
 
 func (w Window) gather(number int) Window {
-	if len(w.taken) == 0 && w.chosen != 0 {
-		w.taken = []int{w.chosen}
+	if len(w.Gathered) == 0 && w.Chosen != 0 {
+		w.Gathered = []int{w.Chosen}
 	}
-	if at := slices.Index(w.taken, number); at >= 0 {
-		w.taken = slices.Delete(slices.Clone(w.taken), at, at+1)
+	if at := slices.Index(w.Gathered, number); at >= 0 {
+		w.Gathered = slices.Delete(slices.Clone(w.Gathered), at, at+1)
 		return w
 	}
-	w.taken = append(slices.Clone(w.taken), number)
-	w.chosen, w.chosenGoal = number, w.tab == Objectives
+	w.Gathered = append(slices.Clone(w.Gathered), number)
+	w.Chosen, w.ChosenGoal = number, w.Tab == board.Objectives
 	return w
 }
 
 func (w Window) stretch(number int) Window {
-	for _, run := range w.runs() {
-		from, to := slices.Index(run, w.chosen), slices.Index(run, number)
+	for _, run := range w.Runs() {
+		from, to := slices.Index(run, w.Chosen), slices.Index(run, number)
 		if from < 0 || to < 0 {
 			continue
 		}
-		w.taken = slices.Clone(run[min(from, to) : max(from, to)+1])
-		w.chosen, w.chosenGoal = number, w.tab == Objectives
+		w.Gathered = slices.Clone(run[min(from, to) : max(from, to)+1])
+		w.Chosen, w.ChosenGoal = number, w.Tab == board.Objectives
 		return w
 	}
 	return w.gather(number)
 }
 
-func (w Window) runs() [][]int {
-	numbers := func(cards []board.Card) []int {
-		var out []int
-		for _, c := range cards {
-			out = append(out, c.Number)
-		}
-		return out
-	}
-	if w.tab == Objectives {
-		var goals []int
-		for _, g := range board.Sorted(w.Showing().Goals) {
-			goals = append(goals, g.Number)
-		}
-		return [][]int{goals}
-	}
-	var runs [][]int
-	for i := range board.Columns {
-		runs = append(runs, numbers(w.inColumn(i)))
-	}
-	for i := range board.Stalled {
-		runs = append(runs, numbers(w.inLane(i)))
-	}
-	return runs
-}
-
-func (w Window) asksAboutSeveral() bool {
-	return w.question == aboutDeletingSeveral || w.question == aboutArchivingSeveral
-}
-
-func (w Window) askingSeveral(about Question) Window {
-	w.screen, w.question = OnAsking, about
+func (w Window) askingSeveral(about board.Question) Window {
+	w.Screen, w.Question = board.OnAsking, about
 	return w
 }
 
-func (w Window) flags() []board.Flag {
-	if w.question == aboutArchivingSeveral {
-		return board.ArchivingTasks(w.snap, w.Taken())
-	}
-	if w.chosenGoal {
-		return board.DeletingGoals(w.snap, w.Taken())
-	}
-	return board.DeletingTasks(w.snap, w.Taken())
-}
-
 func (w Window) severalSays() []Said {
-	flags := w.flags()
+	flags := w.Flags()
 	taken := w.Taken()
 	var said []Said
 	for i, n := range taken {
@@ -120,7 +71,7 @@ func (w Window) severalSays() []Said {
 			said = append(said, Said{Means: "and " + strconv.Itoa(len(taken)-i) + " more"})
 			break
 		}
-		line := "#" + strconv.Itoa(n) + "  " + w.titleOf(n)
+		line := "#" + strconv.Itoa(n) + "  " + w.TitleOf(n)
 		for _, f := range flags {
 			if f.Number == n {
 				line += " — " + f.Says
@@ -133,43 +84,19 @@ func (w Window) severalSays() []Said {
 
 const severalNamed = 6
 
-func (w Window) titleOf(n int) string {
-	if w.chosenGoal {
-		g, _ := w.snap.Goal(n)
-		return g.Title
-	}
-	c, _ := w.snap.Card(n)
-	return c.Title
-}
-
-func (w Window) severalOffers() []string {
-	if slices.ContainsFunc(w.flags(), func(f board.Flag) bool { return !f.Refused }) {
-		return []string{w.agreeingVerb(), "Skip flagged", "Cancel"}
-	}
-	return []string{w.agreeingVerb(), "Cancel"}
-}
-
 func (w Window) actingOnSeveral(onlyRefused bool) Window {
-	kept := board.LeavingOut(w.Taken(), w.flags(), onlyRefused)
+	kept := board.LeavingOut(w.Taken(), w.Flags(), onlyRefused)
 	op := engine.TaskDelete
-	if w.chosenGoal {
+	if w.ChosenGoal {
 		op = engine.ObjectiveDelete
 	}
-	if w.question == aboutArchivingSeveral {
+	if w.Question == board.AboutArchivingSeveral {
 		op = engine.TaskArchive
 	}
-	w.screen, w.question = OnTheBoard, aboutDeleting
+	w.Screen, w.Question = board.OnTheBoard, board.AboutDeleting
 	if len(kept) == 0 {
 		return w
 	}
-	w.taken = nil
+	w.Gathered = nil
 	return w.asking(op, engine.Agreed(board.Several(kept)))
-}
-
-func (w Window) severalHead() string {
-	verb := "Delete "
-	if w.question == aboutArchivingSeveral {
-		verb = "Archive "
-	}
-	return verb + strconv.Itoa(len(w.Taken())) + " " + w.kind() + "s?"
 }

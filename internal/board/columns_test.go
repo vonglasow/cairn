@@ -142,10 +142,10 @@ func TestOnTheBoard_leavesArchivedOutUnlessAskedFor(t *testing.T) {
 		{Number: 1, State: "done", Archived: true},
 		{Number: 2, State: "done"},
 	}
-	if laid := OnTheBoard(cards, false); len(laid) != 1 || laid[0].Number != 2 {
+	if laid := Laid(cards, false); len(laid) != 1 || laid[0].Number != 2 {
 		t.Fatalf("the board laid out %v, not task 2 on its own", laid)
 	}
-	if laid := OnTheBoard(cards, true); len(laid) != 2 {
+	if laid := Laid(cards, true); len(laid) != 2 {
 		t.Fatalf("asked for, the archived stayed off the board: %v", laid)
 	}
 }

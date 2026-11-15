@@ -1,15 +1,17 @@
 package gui
 
 import (
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"image/color"
 	"slices"
 	"testing"
 )
 
 func TestASegmentedControlIsOneTrackItsChosenSegmentInsetAllRound(t *testing.T) {
-	s := Dark()
-	segments := []Box{{X: 12, Y: 10, W: 60, H: 30}, {X: 72, Y: 10, W: 60, H: 30}, {X: 132, Y: 10, W: 60, H: 30}}
-	track := Box{X: 10, Y: 10, W: 184, H: 30}
+	s := design.Dark()
+	segments := []geom.Box{{X: 12, Y: 10, W: 60, H: 30}, {X: 72, Y: 10, W: 60, H: 30}, {X: 132, Y: 10, W: 60, H: 30}}
+	track := geom.Box{X: 10, Y: 10, W: 184, H: 30}
 	seg := Segmented{Said: []string{"Day", "Week", "Month"}, At: segments, On: 1}
 	shot, drawn := drawnAlone(t, 210, 50, func(k Kit) { seg.Draw(k, track) })
 	if got := pixel(shot, track.X+2, track.Y+2); got == s.Colour.Surface.Control {
@@ -35,16 +37,16 @@ func TestASegmentedControlIsOneTrackItsChosenSegmentInsetAllRound(t *testing.T) 
 	counted, _ := drawnAlone(t, 210, 50, func(k Kit) {
 		Segmented{Said: []string{"todo", "done"}, Counts: []string{"12", "3"}, At: segments[:2], Small: true}.Draw(k, track)
 	})
-	if lettered(counted, Box{X: segments[0].X + segments[0].W/2, Y: segments[0].Y, W: segments[0].W / 2, H: segments[0].H}, s.Colour.Ink.Low) == 0 {
+	if lettered(counted, geom.Box{X: segments[0].X + segments[0].W/2, Y: segments[0].Y, W: segments[0].W / 2, H: segments[0].H}, s.Colour.Ink.Low) == 0 {
 		t.Error("a segment's count is not written after its word, low")
 	}
 }
 
 func TestATabIsGroundedOnlyWhenItIsOpen(t *testing.T) {
-	s := Dark()
-	at := []Box{{X: 10, Y: 10, W: 140, H: 34}, {X: 150, Y: 10, W: 140, H: 34}}
+	s := design.Dark()
+	at := []geom.Box{{X: 10, Y: 10, W: 140, H: 34}, {X: 150, Y: 10, W: 140, H: 34}}
 	shot, drawn := drawnAlone(t, 300, 60, func(k Kit) {
-		Tabs{Said: []string{"Tasks", "Time"}, Counts: []string{"38", "0"}, At: at, On: 0}.Draw(k, Box{X: 10, Y: 10, W: 280, H: 34})
+		Tabs{Said: []string{"Tasks", "Time"}, Counts: []string{"38", "0"}, At: at, On: 0}.Draw(k, geom.Box{X: 10, Y: 10, W: 280, H: 34})
 	})
 	if got := pixel(shot, at[0].X+at[0].W-4, at[0].Y+at[0].H/2); got != s.Colour.Surface.Control {
 		t.Errorf("the open tab stands on %v", got)
@@ -61,8 +63,8 @@ func TestATabIsGroundedOnlyWhenItIsOpen(t *testing.T) {
 }
 
 func TestARowIsGroundedByWhatItIsAndWritesInTheReadingInk(t *testing.T) {
-	s := Dark()
-	row := Box{X: 10, Y: 10, W: 200, H: 28}
+	s := design.Dark()
+	row := geom.Box{X: 10, Y: 10, W: 200, H: 28}
 	for _, c := range []struct {
 		row         Row
 		ground, ink color.NRGBA
@@ -87,15 +89,15 @@ func TestARowIsGroundedByWhatItIsAndWritesInTheReadingInk(t *testing.T) {
 }
 
 func TestARowGroundsTheChipAndThePillInsideIt(t *testing.T) {
-	s := Dark()
-	row := Box{X: 10, Y: 10, W: 200, H: 28}
+	s := design.Dark()
+	row := geom.Box{X: 10, Y: 10, W: 200, H: 28}
 	for _, picked := range []bool{false, true} {
-		var chip, pill Box
+		var chip, pill geom.Box
 		shot, drawn := drawnAlone(t, 230, 50, func(k Kit) {
 			r := Row{Picked: picked}
 			r.Draw(k, row)
-			chip = r.Chip(k, KeyChip{Key: "esc"}, Box{X: row.X + 150, Y: row.Y, H: row.H})
-			pill = r.Pill(k, Pill{Said: "deploy"}, Box{X: row.X + 60, Y: row.Y + 6, W: 60, H: pillHigh})
+			chip = r.Chip(k, KeyChip{Key: "esc"}, geom.Box{X: row.X + 150, Y: row.Y, H: row.H})
+			pill = r.Pill(k, Pill{Said: "deploy"}, geom.Box{X: row.X + 60, Y: row.Y + 6, W: 60, H: pillHigh})
 		})
 		chipGround, pillGround := s.Colour.Surface.Control, s.Colour.Surface.Control
 		if picked {
@@ -114,8 +116,8 @@ func TestARowGroundsTheChipAndThePillInsideIt(t *testing.T) {
 }
 
 func TestAFieldIsOneFrameLitWithItsHaloWhileWrittenInto(t *testing.T) {
-	s := Dark()
-	frame := Box{X: 20, Y: 20, W: 160, H: 30}
+	s := design.Dark()
+	frame := geom.Box{X: 20, Y: 20, W: 160, H: 30}
 	rest, drawn := drawnAlone(t, 200, 70, func(k Kit) { Field{}.Draw(k, frame) })
 	if got := pixel(rest, frame.X+frame.W/2, frame.Y); got != s.Colour.Line.Rule {
 		t.Errorf("a field at rest is edged in %v", got)
@@ -142,8 +144,8 @@ func TestAFieldIsOneFrameLitWithItsHaloWhileWrittenInto(t *testing.T) {
 }
 
 func TestACheckIsABoxEmptyDoneOrTaken(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: checkSide, H: checkSide}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: checkSide, H: checkSide}
 	empty, drawn := drawnAlone(t, 40, 40, func(k Kit) { Check{}.Draw(k, box) })
 	if got := pixel(empty, box.X+box.W/2, box.Y); got != s.Colour.Line.Edge {
 		t.Errorf("an empty box is edged in %v", got)
@@ -172,17 +174,17 @@ func TestACheckIsABoxEmptyDoneOrTaken(t *testing.T) {
 }
 
 func TestProgressIsATrackOfThreeAndWhatIsDoneOnIt(t *testing.T) {
-	s := Dark()
-	at := Box{X: 10, Y: 10, W: 200, H: lineHigh}
+	s := design.Dark()
+	at := geom.Box{X: 10, Y: 10, W: 200, H: lineHigh}
 	shot, drawn := drawnAlone(t, 230, 40, func(k Kit) { Progress{Done: 1, Total: 2, Said: "1/2"}.Draw(k, at) })
 	mid := at.Y + at.H/2
 	if pixel(shot, at.X+20, mid-1) != s.Colour.State.Done || pixel(shot, at.X+20, mid-3) == s.Colour.State.Done {
 		t.Error("what is done is not three high")
 	}
-	if painted(shot, Box{X: at.X, Y: mid - 1, W: at.W, H: 1}, s.Colour.Surface.Control) == 0 {
+	if painted(shot, geom.Box{X: at.X, Y: mid - 1, W: at.W, H: 1}, s.Colour.Surface.Control) == 0 {
 		t.Error("what is left is not drawn on the track")
 	}
-	if lettered(shot, Box{X: at.X + at.W - 30, Y: at.Y, W: 30, H: at.H}, s.Colour.Ink.Low) == 0 {
+	if lettered(shot, geom.Box{X: at.X + at.W - 30, Y: at.Y, W: 30, H: at.H}, s.Colour.Ink.Low) == 0 {
 		t.Error("the count is not written at the right")
 	}
 	if want := []Drawing{{Part: "progress", At: at, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
@@ -199,8 +201,8 @@ func TestProgressIsATrackOfThreeAndWhatIsDoneOnIt(t *testing.T) {
 }
 
 func TestARingIsChosenOrTargetAtItsElementsRadius(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 80, H: 40}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 80, H: 40}
 	for _, c := range []struct {
 		ring Ring
 		ink  color.NRGBA
@@ -229,13 +231,13 @@ func TestARingIsChosenOrTargetAtItsElementsRadius(t *testing.T) {
 }
 
 func TestAHeadIsFaintAtFiveHundredItsCountLowAtTheRight(t *testing.T) {
-	s := Dark()
-	at := Box{X: 10, Y: 10, W: 200, H: lineHigh}
+	s := design.Dark()
+	at := geom.Box{X: 10, Y: 10, W: 200, H: lineHigh}
 	shot, drawn := drawnAlone(t, 230, 40, func(k Kit) { Head{Said: "Recent", Count: "5"}.Draw(k, at) })
-	if lettered(shot, Box{X: at.X, Y: at.Y, W: 60, H: at.H}, s.Colour.Ink.Faint) == 0 {
+	if lettered(shot, geom.Box{X: at.X, Y: at.Y, W: 60, H: at.H}, s.Colour.Ink.Faint) == 0 {
 		t.Error("the head is not written faint")
 	}
-	if lettered(shot, Box{X: at.X + at.W - 20, Y: at.Y, W: 20, H: at.H}, s.Colour.Ink.Low) == 0 {
+	if lettered(shot, geom.Box{X: at.X + at.W - 20, Y: at.Y, W: 20, H: at.H}, s.Colour.Ink.Low) == 0 {
 		t.Error("the count is not written low at the right")
 	}
 	if want := []Drawing{{Part: "head", At: at, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
@@ -244,10 +246,10 @@ func TestAHeadIsFaintAtFiveHundredItsCountLowAtTheRight(t *testing.T) {
 }
 
 func TestAScrollbarIsATrackAndAThumbWhereTheLinesAre(t *testing.T) {
-	s := Dark()
-	track := Box{X: 10, Y: 10, W: 10, H: 100}
+	s := design.Dark()
+	track := geom.Box{X: 10, Y: 10, W: 10, H: 100}
 	shot, drawn := drawnAlone(t, 40, 130, func(k Kit) {
-		fill(k.gtx, Box{W: 40, H: 130}, s.Colour.Surface.Raised)
+		fill(k.gtx, geom.Box{W: 40, H: 130}, s.Colour.Surface.Raised)
 		Scrollbar{Lines: 20, Rows: 5, At: 15}.Draw(k, track)
 	})
 	thumb := Thumb(track, 20, 5, 15)
@@ -260,8 +262,8 @@ func TestAScrollbarIsATrackAndAThumbWhereTheLinesAre(t *testing.T) {
 }
 
 func TestASwatchIsItsColourRingedWhenPicked(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 18, H: 18}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 18, H: 18}
 	shot, drawn := drawnAlone(t, 40, 40, func(k Kit) { Swatch{Colour: "mauve", Picked: true}.Draw(k, box) })
 	if pixel(shot, box.X+9, box.Y+9) != s.Colour.Labels["mauve"] || pixel(shot, box.X+9, box.Y-1) != s.Colour.Ink.Text {
 		t.Error("a picked swatch is not its colour ringed in the reading ink")
@@ -276,8 +278,8 @@ func TestASwatchIsItsColourRingedWhenPicked(t *testing.T) {
 }
 
 func TestADayCellIsPickedFilledTodayRingedOrPlain(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 40, H: 30}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 40, H: 30}
 	picked, drawn := drawnAlone(t, 60, 50, func(k Kit) { DayCell{Said: "9", Picked: true, Today: true}.Draw(k, box) })
 	if pixel(picked, box.X+box.W/2, box.Y+1) != s.Colour.Accent.Base || lettered(picked, box, s.Colour.Ink.OnAccent) == 0 {
 		t.Error("a picked day is not filled with the accent and written on it")
@@ -299,8 +301,8 @@ func TestADayCellIsPickedFilledTodayRingedOrPlain(t *testing.T) {
 }
 
 func TestAWorkspacePillIsAControlRingedWhileItsSwitcherIsOpen(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 128, H: 34}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 128, H: 34}
 	shot, drawn := drawnAlone(t, 150, 60, func(k Kit) { WorkspacePill{Name: "work", Colour: "green", Open: true}.Draw(k, box) })
 	if pixel(shot, box.X+box.W/2, box.Y) != s.Colour.Accent.Base || pixel(shot, box.X+box.W/2, box.Y+2) != s.Colour.Surface.Control {
 		t.Error("an open pill is not a control ringed in the accent")
@@ -315,8 +317,8 @@ func TestAWorkspacePillIsAControlRingedWhileItsSwitcherIsOpen(t *testing.T) {
 }
 
 func TestATileIsARoundedLineOfAListGhostedWhenPicked(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 200, H: 26}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 200, H: 26}
 	for _, c := range []struct {
 		tile Tile
 		want color.NRGBA
@@ -332,12 +334,12 @@ func TestATileIsARoundedLineOfAListGhostedWhenPicked(t *testing.T) {
 }
 
 func TestTheCommandBarIsFramedAndItsHintsLitUnderThePointer(t *testing.T) {
-	s := Dark()
-	bar := Box{X: 10, Y: 10, W: 300, H: 32}
+	s := design.Dark()
+	bar := geom.Box{X: 10, Y: 10, W: 300, H: 32}
 	shot, drawn := drawnAlone(t, 330, 60, func(k Kit) {
 		Bar{}.Draw(k, bar)
-		Hint{Key: "n", Word: "new", Lit: true}.Draw(k, Box{X: 100, Y: bar.Y, W: 80, H: bar.H})
-		Hint{Key: "e", Word: "edit", Faint: true}.Draw(k, Box{X: 200, Y: bar.Y, W: 80, H: bar.H})
+		Hint{Key: "n", Word: "new", Lit: true}.Draw(k, geom.Box{X: 100, Y: bar.Y, W: 80, H: bar.H})
+		Hint{Key: "e", Word: "edit", Faint: true}.Draw(k, geom.Box{X: 200, Y: bar.Y, W: 80, H: bar.H})
 	})
 	if pixel(shot, bar.X+bar.W/2, bar.Y) != s.Colour.Line.Rule || pixel(shot, bar.X+20, bar.Y+bar.H/2) != s.Colour.Surface.Raised {
 		t.Error("the bar is not a raised ground edged with a rule")
@@ -345,7 +347,7 @@ func TestTheCommandBarIsFramedAndItsHintsLitUnderThePointer(t *testing.T) {
 	if pixel(shot, 100+2, bar.Y+bar.H/2) != s.Colour.Surface.Hover {
 		t.Error("a lit hint is not on the hover's ground")
 	}
-	if lettered(shot, Box{X: 200, Y: bar.Y, W: 80, H: bar.H}, s.Colour.Ink.Faint) == 0 {
+	if lettered(shot, geom.Box{X: 200, Y: bar.Y, W: 80, H: bar.H}, s.Colour.Ink.Faint) == 0 {
 		t.Error("a faint hint is not written faint")
 	}
 	if want := []string{"bar", "hint", "hint/key", "hint", "hint/key"}; !slices.Equal(parts(drawn), want) {
@@ -354,30 +356,30 @@ func TestTheCommandBarIsFramedAndItsHintsLitUnderThePointer(t *testing.T) {
 }
 
 func TestTheSmallPartsAreDrawnInTheirBoxAndRecorded(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 14, H: 14}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 14, H: 14}
 	ink := s.Colour.Ink.Faint
 	for _, c := range []struct {
 		part string
-		draw func(k Kit) Box
+		draw func(k Kit) geom.Box
 		ink  color.NRGBA
 	}{
-		{"cross", func(k Kit) Box { return Cross{Ink: ink}.Draw(k, box) }, ink},
-		{"chevron", func(k Kit) Box { return Chevron{Ink: ink}.Draw(k, box) }, ink},
-		{"calendar", func(k Kit) Box { return CalendarMark{Ink: ink}.Draw(k, box) }, ink},
-		{"grip", func(k Kit) Box { return Grip{Ink: ink}.Draw(k, box) }, ink},
-		{"focus", func(k Kit) Box { return FocusDot{}.Draw(k, box) }, s.Colour.Accent.Base},
-		{"copy", func(k Kit) Box { return CopyMark{}.Draw(k, box) }, s.Colour.Ink.Low},
-		{"menu", func(k Kit) Box { return MenuMark{}.Draw(k, box) }, s.Colour.Accent.Base},
-		{"struck", func(k Kit) Box { return Struck{}.Draw(k, box) }, s.Colour.Ink.Faint},
-		{"landing", func(k Kit) Box { return Landing{}.Draw(k, box) }, s.Colour.Accent.Base},
-		{"spent", func(k Kit) Box { return Spent{}.Draw(k, box) }, s.Colour.Accent.Base},
-		{"backdrop", func(k Kit) Box { return Backdrop{}.Draw(k, box) }, s.Colour.Surface.Back},
-		{"info", func(k Kit) Box { return InfoBox{}.Draw(k, box) }, s.Colour.Surface.Card},
+		{"cross", func(k Kit) geom.Box { return Cross{Ink: ink}.Draw(k, box) }, ink},
+		{"chevron", func(k Kit) geom.Box { return Chevron{Ink: ink}.Draw(k, box) }, ink},
+		{"calendar", func(k Kit) geom.Box { return CalendarMark{Ink: ink}.Draw(k, box) }, ink},
+		{"grip", func(k Kit) geom.Box { return Grip{Ink: ink}.Draw(k, box) }, ink},
+		{"focus", func(k Kit) geom.Box { return FocusDot{}.Draw(k, box) }, s.Colour.Accent.Base},
+		{"copy", func(k Kit) geom.Box { return CopyMark{}.Draw(k, box) }, s.Colour.Ink.Low},
+		{"menu", func(k Kit) geom.Box { return MenuMark{}.Draw(k, box) }, s.Colour.Accent.Base},
+		{"struck", func(k Kit) geom.Box { return Struck{}.Draw(k, box) }, s.Colour.Ink.Faint},
+		{"landing", func(k Kit) geom.Box { return Landing{}.Draw(k, box) }, s.Colour.Accent.Base},
+		{"spent", func(k Kit) geom.Box { return Spent{}.Draw(k, box) }, s.Colour.Accent.Base},
+		{"backdrop", func(k Kit) geom.Box { return Backdrop{}.Draw(k, box) }, s.Colour.Surface.Back},
+		{"info", func(k Kit) geom.Box { return InfoBox{}.Draw(k, box) }, s.Colour.Surface.Card},
 	} {
-		var got Box
+		var got geom.Box
 		shot, drawn := drawnAlone(t, 40, 40, func(k Kit) {
-			fill(k.gtx, Box{W: 40, H: 40}, s.Colour.Surface.Raised)
+			fill(k.gtx, geom.Box{W: 40, H: 40}, s.Colour.Surface.Raised)
 			got = c.draw(k)
 		})
 		if got != box {
@@ -386,7 +388,7 @@ func TestTheSmallPartsAreDrawnInTheirBoxAndRecorded(t *testing.T) {
 		if lettered(shot, box, c.ink) == 0 {
 			t.Errorf("the %s is not drawn in %v", c.part, c.ink)
 		}
-		if painted(shot, Box{X: 0, Y: 0, W: 40, H: box.Y - 1}, c.ink) != 0 {
+		if painted(shot, geom.Box{X: 0, Y: 0, W: 40, H: box.Y - 1}, c.ink) != 0 {
 			t.Errorf("the %s is drawn outside its box", c.part)
 		}
 		if want := []Drawing{{Part: c.part, At: box, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
@@ -396,20 +398,20 @@ func TestTheSmallPartsAreDrawnInTheirBoxAndRecorded(t *testing.T) {
 }
 
 func TestAStoneIsAShadedShapeRecordedInItsBounds(t *testing.T) {
-	s := Dark()
-	shape := []Point{{X: 10, Y: 10}, {X: 30, Y: 12}, {X: 28, Y: 30}, {X: 12, Y: 28}}
-	shot, drawn := drawnAlone(t, 40, 40, func(k Kit) { Stone{Shape: shape, Shade: s.stoneOf(0)}.Draw(k, Box{}) })
-	if inked(shot, Box{X: 15, Y: 15, W: 10, H: 10}, s.Colour.Surface.Back) == 0 {
+	s := design.Dark()
+	shape := []geom.Point{{X: 10, Y: 10}, {X: 30, Y: 12}, {X: 28, Y: 30}, {X: 12, Y: 28}}
+	shot, drawn := drawnAlone(t, 40, 40, func(k Kit) { Stone{Shape: shape, Shade: s.StoneOf(0)}.Draw(k, geom.Box{}) })
+	if inked(shot, geom.Box{X: 15, Y: 15, W: 10, H: 10}, s.Colour.Surface.Back) == 0 {
 		t.Error("the stone is not drawn")
 	}
-	if want := []Drawing{{Part: "stone", At: Box{X: 10, Y: 10, W: 20, H: 20}, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
+	if want := []Drawing{{Part: "stone", At: geom.Box{X: 10, Y: 10, W: 20, H: 20}, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
 		t.Errorf("the stone recorded %+v", drawn)
 	}
 }
 
 func TestAFilterPillIsDrawnByItsKind(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 120, H: 22}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 120, H: 22}
 	for _, c := range []struct {
 		pill   FilterPill
 		ground color.NRGBA
@@ -432,10 +434,10 @@ func TestAFilterPillIsDrawnByItsKind(t *testing.T) {
 }
 
 func TestAScrollbarWithNothingToScrollIsNotDrawn(t *testing.T) {
-	s := Dark()
-	track := Box{X: 10, Y: 10, W: 10, H: 100}
+	s := design.Dark()
+	track := geom.Box{X: 10, Y: 10, W: 10, H: 100}
 	shot, drawn := drawnAlone(t, 40, 130, func(k Kit) {
-		fill(k.gtx, Box{W: 40, H: 130}, s.Colour.Surface.Raised)
+		fill(k.gtx, geom.Box{W: 40, H: 130}, s.Colour.Surface.Raised)
 		Scrollbar{Lines: 3, Rows: 5}.Draw(k, track)
 	})
 	if pixel(shot, track.X+5, track.Y+track.H/2) != s.Colour.Surface.Raised {
@@ -447,7 +449,7 @@ func TestAScrollbarWithNothingToScrollIsNotDrawn(t *testing.T) {
 }
 
 func TestAViewsPillIsDrawnAsAFilterInForceAndMarkedWhenChanged(t *testing.T) {
-	box := Box{X: 10, Y: 10, W: 140, H: 22}
+	box := geom.Box{X: 10, Y: 10, W: 140, H: 22}
 	for _, c := range []struct {
 		pill  FilterPill
 		parts []string
@@ -456,7 +458,7 @@ func TestAViewsPillIsDrawnAsAFilterInForceAndMarkedWhenChanged(t *testing.T) {
 		{FilterPill{Kind: PillView, Name: "view", Said: "view Home", Changed: true}, []string{"filter", "filter/dot", "filter/cross"}},
 	} {
 		shot, drawn := drawnAlone(t, 160, 40, func(k Kit) { c.pill.Draw(k, box) })
-		if got := pixel(shot, box.X+box.W/2, box.Y+box.H-3); got != Dark().Colour.Surface.Tint {
+		if got := pixel(shot, box.X+box.W/2, box.Y+box.H-3); got != design.Dark().Colour.Surface.Tint {
 			t.Errorf("a view's pill stands on %v", got)
 		}
 		if !slices.Equal(parts(drawn), c.parts) {
@@ -466,9 +468,9 @@ func TestAViewsPillIsDrawnAsAFilterInForceAndMarkedWhenChanged(t *testing.T) {
 }
 
 func TestALateDotWearsTheLateInk(t *testing.T) {
-	box := Box{X: 4, Y: 4, W: 8, H: 8}
+	box := geom.Box{X: 4, Y: 4, W: 8, H: 8}
 	shot, _ := drawnAlone(t, 16, 16, func(k Kit) { Dot{Late: true}.Draw(k, box) })
-	if got := pixel(shot, 8, 8); got != Dark().Colour.State.Late {
+	if got := pixel(shot, 8, 8); got != design.Dark().Colour.State.Late {
 		t.Errorf("a late dot is %v", got)
 	}
 }

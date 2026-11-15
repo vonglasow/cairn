@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"cairn/internal/board"
 	"cairn/internal/engine"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"image"
 	"image/color"
@@ -41,7 +43,7 @@ func offScreen(t *testing.T, wide, high int) *headless.Window {
 
 func drawn(t *testing.T, w Window) *image.RGBA {
 	t.Helper()
-	shot, err := Shot(w, drawingTheme(), Dark())
+	shot, err := Shot(w, drawingTheme(), design.Dark())
 	if err == nil {
 		return shot
 	}
@@ -53,7 +55,7 @@ func drawn(t *testing.T, w Window) *image.RGBA {
 }
 
 func drawnInAStep(th *material.Theme, w Window) (*image.RGBA, error) {
-	shot, err := Shot(w, th, Dark())
+	shot, err := Shot(w, th, design.Dark())
 	if err != nil && os.Getenv(windowless) != "" {
 		return nil, godog.ErrSkip
 	}
@@ -66,7 +68,7 @@ func drawnInAStep(th *material.Theme, w Window) (*image.RGBA, error) {
 func drawsWithoutFault(th *material.Theme, w Window) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("drawing the window panicked on screen %v: %v", w.Screen(), r)
+			err = fmt.Errorf("drawing the window panicked on screen %v: %v", w.Screen, r)
 		}
 	}()
 	var ops op.Ops
@@ -75,11 +77,11 @@ func drawsWithoutFault(th *material.Theme, w Window) (err error) {
 		Constraints: layout.Exact(image.Pt(w.width, w.height)),
 		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
 	}
-	Draw(NewKit(gtx, th, Dark(), &Drawn{}), w)
+	Draw(NewKit(gtx, th, design.Dark(), &Drawn{}), w)
 	return nil
 }
 
-func ink(shot *image.RGBA, b Box, back color.NRGBA) int {
+func ink(shot *image.RGBA, b geom.Box, back color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
 		for x := b.X; x < b.X+b.W; x++ {
@@ -99,17 +101,17 @@ func TestTheBoardIsDrawnWhereTheLayoutSaysItIs(t *testing.T) {
 		board.Card{Number: 2, Title: "Client's answer", State: "blocked"})
 
 	shot := drawn(t, w)
-	back := Dark().Colour.Surface.Back
+	back := design.Dark().Colour.Surface.Back
 	l := w.Layout()
 
 	for what, on := range map[string]struct {
-		box    Box
+		box    geom.Box
 		ground color.NRGBA
 	}{
 		"the tabs":            {l.Tabs, back},
-		"the todo header":     {l.Head[1], Dark().Colour.Surface.Ground},
-		"the first todo card": {l.CardAt(1, 0, 0), Dark().Colour.Surface.Ground},
-		"the blocked lane":    {l.Lane[0], Dark().Colour.Surface.Ground},
+		"the todo header":     {l.Head[1], design.Dark().Colour.Surface.Ground},
+		"the first todo card": {l.CardAt(1, 0, 0), design.Dark().Colour.Surface.Ground},
+		"the blocked lane":    {l.Lane[0], design.Dark().Colour.Surface.Ground},
 		"the bar":             {l.Bar, back},
 	} {
 		if got := ink(shot, on.box, on.ground); got == 0 {
@@ -118,7 +120,7 @@ func TestTheBoardIsDrawnWhereTheLayoutSaysItIs(t *testing.T) {
 	}
 
 	empty := l.CardAt(3, 0, 0)
-	if got := painted(shot, inside(empty), Dark().Colour.Surface.Raised); got != 0 {
+	if got := painted(shot, inside(empty), design.Dark().Colour.Surface.Raised); got != 0 {
 		t.Errorf("an empty column drew %d pixels of a card where its first card would be", got)
 	}
 }
@@ -128,19 +130,19 @@ func TestAWindowTooSmallDrawsItsMessageAndNoBoard(t *testing.T) {
 	w := New(f, 400, 300)
 
 	shot := drawn(t, w)
-	back := Dark().Colour.Surface.Back
-	if got := ink(shot, Box{W: 400, H: 300}, back); got == 0 {
+	back := design.Dark().Colour.Surface.Back
+	if got := ink(shot, geom.Box{W: 400, H: 300}, back); got == 0 {
 		t.Fatal("a window too small drew nothing at all")
 	}
-	bottom := Box{X: 0, Y: 290, W: 400, H: 10}
+	bottom := geom.Box{X: 0, Y: 290, W: 400, H: 10}
 	if got := ink(shot, bottom, back); got != 0 {
 		t.Errorf("a window too small drew %d pixels of board along its bottom", got)
 	}
 }
 
-func inside(b Box) Box { return Box{X: b.X + 1, Y: b.Y, W: b.W - 2, H: b.H} }
+func inside(b geom.Box) geom.Box { return geom.Box{X: b.X + 1, Y: b.Y, W: b.W - 2, H: b.H} }
 
-func inked(shot *image.RGBA, b Box, ground color.NRGBA) int {
+func inked(shot *image.RGBA, b geom.Box, ground color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
 		for x := b.X; x < b.X+b.W; x++ {
@@ -153,7 +155,7 @@ func inked(shot *image.RGBA, b Box, ground color.NRGBA) int {
 }
 
 // lettered counts the pixels of words in an ink: a face's strokes are anti-aliased, and a thin one never covers a whole pixel, so a pixel within a few steps of the ink counts. Shapes are counted exactly, by painted.
-func lettered(shot *image.RGBA, b Box, want color.NRGBA) int {
+func lettered(shot *image.RGBA, b geom.Box, want color.NRGBA) int {
 	close := func(a, b uint8) bool { return a >= b-min(b, 12) && a <= b+min(255-b, 12) }
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
@@ -166,7 +168,7 @@ func lettered(shot *image.RGBA, b Box, want color.NRGBA) int {
 	return count
 }
 
-func lit(shot *image.RGBA, b Box, above uint8) int {
+func lit(shot *image.RGBA, b geom.Box, above uint8) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
 		for x := b.X; x < b.X+b.W; x++ {
@@ -178,7 +180,7 @@ func lit(shot *image.RGBA, b Box, above uint8) int {
 	return count
 }
 
-func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
+func painted(shot *image.RGBA, b geom.Box, want color.NRGBA) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
 		for x := b.X; x < b.X+b.W; x++ {
@@ -192,19 +194,19 @@ func painted(shot *image.RGBA, b Box, want color.NRGBA) int {
 
 func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 	w := aFixturesBoard(t)
-	skin := Dark()
+	skin := design.Dark()
 	for _, c := range []struct {
 		what   string
-		screen Screen
+		screen board.Screen
 		lit    bool
 	}{
-		{"the board", OnTheBoard, true},
-		{"an open task", OnForm, false},
-		{"a form", OnForm, false},
+		{"the board", board.OnTheBoard, true},
+		{"an open task", board.OnForm, false},
+		{"a form", board.OnForm, false},
 	} {
 		v := w.clicked(middleOf(w, 1, 0))
-		v.screen = c.screen
-		if c.screen == OnForm {
+		v.Screen = c.screen
+		if c.screen == board.OnForm {
 			v = v.Edit()
 		}
 		first := v.barAlong(v.BoardOffers())[0]
@@ -223,7 +225,7 @@ func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	box := w.Layout().CardAt(1, 0, 0)
-	edge := Dark().Colour.Line.Selected
+	edge := design.Dark().Colour.Line.Selected
 
 	plain := painted(drawn(t, w), box, edge)
 	chosen := painted(drawn(t, w.clicked(middleOf(w, 1, 0))), box, edge)
@@ -237,11 +239,11 @@ func TestTheFormIsDrawnOverTheBoard(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	shot := drawn(t, w)
-	if got := ink(shot, Over(w.width, w.height), Dark().Colour.Surface.Back); got == 0 {
+	if got := ink(shot, Over(w.width, w.height), design.Dark().Colour.Surface.Back); got == 0 {
 		t.Fatal("the form is blank")
 	}
 	l := w.Layout()
-	if got := ink(shot, l.Head[0], Dark().Colour.Surface.Back); got == 0 {
+	if got := ink(shot, l.Head[0], design.Dark().Colour.Surface.Back); got == 0 {
 		t.Error("the form hid the board behind it rather than sitting over it")
 	}
 }
@@ -252,7 +254,7 @@ func TestWhatWentWrongIsDrawnAlongTheBottom(t *testing.T) {
 	w := New(f, 1200, 800).Wonder()
 
 	shot := drawn(t, w)
-	if got := ink(shot, WrongBox(w.Layout()), Dark().Colour.Surface.Back); got == 0 {
+	if got := ink(shot, WrongBox(w.Layout()), design.Dark().Colour.Surface.Back); got == 0 {
 		t.Fatal("nothing was said about a store out of reach")
 	}
 }
@@ -266,11 +268,11 @@ func TestWhatWentWrongLeavesTheBarDrawn(t *testing.T) {
 		t.Fatal("nothing went wrong to be drawn")
 	}
 	shot := drawn(t, w)
-	if got := ink(shot, WrongBox(w.Layout()), Dark().Colour.Surface.Back); got == 0 {
+	if got := ink(shot, WrongBox(w.Layout()), design.Dark().Colour.Surface.Back); got == 0 {
 		t.Error("what went wrong is not drawn")
 	}
 	for i := range w.Offers() {
-		if got := ink(shot, w.BarOffers()[i], Dark().Colour.Surface.Raised); got == 0 {
+		if got := ink(shot, w.BarOffers()[i], design.Dark().Colour.Surface.Raised); got == 0 {
 			t.Errorf("offer %d is not drawn while something went wrong", i)
 		}
 	}
@@ -281,14 +283,14 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 
 	shot := drawn(t, w)
-	back := Dark().Colour.Surface.Ground
+	back := design.Dark().Colour.Surface.Ground
 	l := w.Layout()
 	if got := ink(shot, l.Lane[0], back); got == 0 {
 		t.Error("the blocked lane is empty and holds a blocked task")
 	}
 	for _, lane := range []int{1, 2} {
 		card := l.LaneCardAt(lane, 0, 0)
-		if got := painted(shot, inside(card), Dark().Colour.Surface.Raised); got != 0 {
+		if got := painted(shot, inside(card), design.Dark().Colour.Surface.Raised); got != 0 {
 			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", board.Stalled[lane], got)
 		}
 	}
@@ -300,7 +302,7 @@ func TestTheDetailShowsOnlyTheTaskItWasOpenedOn(t *testing.T) {
 		board.Card{Number: 1, Title: "Write the spec", State: "todo", Description: "the first"},
 		board.Card{Number: 2, Title: "Ship it", State: "todo", Description: "the second"})
 
-	box, written := Over(w.width, w.height), Dark().Colour.Ink.Text
+	box, written := Over(w.width, w.height), design.Dark().Colour.Ink.Text
 	first := painted(drawn(t, w.doubleClicked(middleOf(w, 1, 0))), box, written)
 	second := painted(drawn(t, w.doubleClicked(middleOf(w, 1, 1))), box, written)
 	if first == 0 || second == 0 {
@@ -317,10 +319,10 @@ func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
-	lit := Dark().Colour.Accent.Base
+	lit := design.Dark().Colour.Accent.Base
 	first := painted(drawn(t, w), box, lit)
 
-	w.form = w.form.Set("priority", "high")
+	w.Form = w.Form.Set("priority", "high")
 	moved := painted(drawn(t, w), box, lit)
 	if first == moved {
 		t.Error("moving the keyboard to another field drew the same thing")
@@ -330,7 +332,7 @@ func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
 func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 	w := aFixturesBoard(t)
 	l := w.Layout()
-	open := Dark().Colour.Surface.Control
+	open := design.Dark().Colour.Surface.Control
 
 	shot := drawn(t, w)
 	if painted(shot, TabAt(l, 0), open) == 0 {
@@ -341,7 +343,7 @@ func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 	}
 
 	second := TabAt(l, 1)
-	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.clicked(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	shot = drawn(t, w)
 	if painted(shot, TabAt(l, 1), open) == 0 {
 		t.Error("after clicking it, the second tab is not open")
@@ -355,10 +357,10 @@ func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 	box := w.Layout().LaneCardAt(0, 0, 0)
-	edge := Dark().Colour.Line.Selected
+	edge := design.Dark().Colour.Line.Selected
 
 	plain := painted(drawn(t, w), box, edge)
-	chosen := painted(drawn(t, w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})), box, edge)
+	chosen := painted(drawn(t, w.clicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})), box, edge)
 	if chosen <= plain {
 		t.Errorf("a chosen lane card drew %d pixels of outline and an unchosen one %d", chosen, plain)
 	}
@@ -371,7 +373,7 @@ func TestTwoCardsOfOneKindStackDownTheirLane(t *testing.T) {
 		board.Card{Number: 2, Title: "Supplier's answer", State: "blocked"})
 
 	shot := drawn(t, w)
-	back := Dark().Colour.Surface.Back
+	back := design.Dark().Colour.Surface.Back
 	if got := ink(shot, w.Layout().LaneCardAt(0, 0, 0), back); got == 0 {
 		t.Error("the first card of the lane is not there")
 	}
@@ -385,7 +387,7 @@ func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.doubleClicked(middleOf(w, 1, 0))
 
-	if got := painted(drawn(t, w), Over(w.width, w.height), Dark().Colour.Ink.Text); got == 0 {
+	if got := painted(drawn(t, w), Over(w.width, w.height), design.Dark().Colour.Ink.Text); got == 0 {
 		t.Fatal("the detail drew no name at all")
 	}
 }
@@ -396,23 +398,23 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := w.formBox()
-	lit := Dark().Colour.Accent.Base
-	rowOf := func(i int) Box {
-		return Framed(formValue(box, w.Form().Fields(), i), formRows(box, w.Form().Fields(), i))
+	lit := design.Dark().Colour.Accent.Base
+	rowOf := func(i int) geom.Box {
+		return Framed(formValue(box, w.Form.Fields, i), formRows(box, w.Form.Fields, i))
 	}
 
 	shot := drawn(t, w)
 	if painted(shot, rowOf(0), lit) == 0 {
 		t.Error("the field the keyboard is on is not lit")
 	}
-	for i := 1; i < len(w.Form().Fields()); i++ {
+	for i := 1; i < len(w.Form.Fields); i++ {
 		if got := painted(shot, rowOf(i), lit); got != 0 {
 			t.Errorf("field %d is lit and the keyboard is not on it: %d pixels", i, got)
 		}
 	}
 
-	w.form = w.form.Set("priority", "high")
-	on := w.Form().On()
+	w.Form = w.Form.Set("priority", "high")
+	on := w.Form.On()
 	shot = drawn(t, w)
 	if painted(shot, rowOf(on), lit) == 0 {
 		t.Errorf("field %d is where the keyboard is and is not lit", on)
@@ -435,7 +437,7 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 		Constraints: layout.Exact(image.Pt(w.width*2, w.height*2)),
 		Metric:      unit.Metric{PxPerDp: 2, PxPerSp: 2},
 	}
-	Draw(NewKit(gtx, drawingTheme(), Dark(), &Drawn{}), w)
+	Draw(NewKit(gtx, drawingTheme(), design.Dark(), &Drawn{}), w)
 	if err := window.Frame(gtx.Ops); err != nil {
 		t.Fatalf("drawing: %v", err)
 	}
@@ -445,12 +447,12 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 	}
 
 	box := w.Layout().CardAt(1, 0, 0)
-	twice := Box{X: box.X * 2, Y: box.Y * 2, W: box.W * 2, H: box.H * 2}
-	if got := ink(shot, twice, Dark().Colour.Surface.Ground); got == 0 {
+	twice := geom.Box{X: box.X * 2, Y: box.Y * 2, W: box.W * 2, H: box.H * 2}
+	if got := ink(shot, twice, design.Dark().Colour.Surface.Ground); got == 0 {
 		t.Error("nothing was drawn where two pixels to the dp puts the first card")
 	}
-	empty := Box{X: box.X + box.W/2, Y: box.Y + box.H/2, W: box.W/2 - 2, H: box.H / 4}
-	if got := painted(shot, empty, Dark().Colour.Surface.Raised); got != 0 {
+	empty := geom.Box{X: box.X + box.W/2, Y: box.Y + box.H/2, W: box.W/2 - 2, H: box.H / 4}
+	if got := painted(shot, empty, design.Dark().Colour.Surface.Raised); got != 0 {
 		t.Errorf("%d pixels of a card were drawn as though one pixel were one dp", got)
 	}
 }
@@ -462,13 +464,13 @@ func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 		board.Card{Number: 2, Title: "Second", State: "todo"})
 
 	second := w.Layout().CardAt(1, 1, 0)
-	inDp := Point{X: second.X + second.W/2, Y: second.Y + second.H/2}
+	inDp := geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2}
 	inPixels := f32.Pt(float32(inDp.X*2), float32(inDp.Y*2))
 
 	if got := Dp(inPixels, 2); got != inDp {
 		t.Fatalf("a pointer at %v on a two-pixel screen is at %v in dp, want %v", inPixels, got, inDp)
 	}
-	if got := w.clicked(Dp(inPixels, 2)).Chosen(); got != 2 {
+	if got := w.clicked(Dp(inPixels, 2)).Chosen; got != 2 {
 		t.Errorf("the pointer chose task %d", got)
 	}
 }
@@ -476,25 +478,25 @@ func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 func TestTheObjectivesTabIsDrawnAsAListBesideADetail(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{
+	w.Snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 
 	shot := drawn(t, w)
-	back := Dark().Colour.Surface.Back
+	back := design.Dark().Colour.Surface.Back
 	l := w.Layout()
 	for at := range 2 {
-		if got := ink(shot, GoalAt(l, at, 0), Dark().Colour.Surface.Ground); got == 0 {
+		if got := ink(shot, GoalAt(l, at, 0), design.Dark().Colour.Surface.Ground); got == 0 {
 			t.Errorf("objective %d is not drawn", at)
 		}
 	}
 	list, detail := SplitOf(l)
-	if got := ink(shot, Box{X: list.X + list.W, Y: list.Y + list.H/2, W: gap, H: 1}, back); got != 0 {
-		t.Errorf("the list and the detail touch: %d pixels between them", gap-got)
+	if got := ink(shot, geom.Box{X: list.X + list.W, Y: list.Y + list.H/2, W: geom.Gap, H: 1}, back); got != 0 {
+		t.Errorf("the list and the detail touch: %d pixels between them", geom.Gap-got)
 	}
-	if painted(shot, Box{X: detail.X + detail.W - 4, Y: detail.Y + detail.H/2, W: 1, H: 1}, Dark().Colour.Surface.Ground) != 1 {
+	if painted(shot, geom.Box{X: detail.X + detail.W - 4, Y: detail.Y + detail.H/2, W: 1, H: 1}, design.Dark().Colour.Surface.Ground) != 1 {
 		t.Error("the detail does not stand on a ground")
 	}
 }
@@ -505,7 +507,7 @@ func TestTheBarDrawsWhatItOffers(t *testing.T) {
 
 	shot := drawn(t, w)
 	for i := range w.Offers() {
-		if got := ink(shot, w.BarOffers()[i], Dark().Colour.Surface.Raised); got == 0 {
+		if got := ink(shot, w.BarOffers()[i], design.Dark().Colour.Surface.Raised); got == 0 {
 			t.Errorf("offer %d is not drawn", i)
 		}
 	}
@@ -522,11 +524,11 @@ func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
 
 	shot := drawn(t, w)
 	ghost, _ := w.Ghost()
-	if got := painted(shot, ghost, Dark().Colour.Surface.Back); got == ghost.W*ghost.H {
+	if got := painted(shot, ghost, design.Dark().Colour.Surface.Back); got == ghost.W*ghost.H {
 		t.Error("the card being dragged is not drawn")
 	}
 	landing, _ := w.Landing()
-	if got := painted(shot, landing, Dark().Colour.Accent.Base); got == 0 {
+	if got := painted(shot, landing, design.Dark().Colour.Accent.Base); got == 0 {
 		t.Error("where the card would land is not drawn")
 	}
 }
@@ -546,7 +548,7 @@ func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 			Constraints: layout.Exact(image.Pt(wide, high)),
 			Metric:      unit.Metric{PxPerDp: perDp, PxPerSp: perDp},
 		}
-		Draw(NewKit(gtx, drawingTheme(), Dark(), &Drawn{}), w)
+		Draw(NewKit(gtx, drawingTheme(), design.Dark(), &Drawn{}), w)
 		if err := window.Frame(gtx.Ops); err != nil {
 			t.Fatalf("drawing: %v", err)
 		}
@@ -555,11 +557,11 @@ func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 			t.Fatalf("reading the pixels back: %v", err)
 		}
 		title := PartsOf(w.Layout().CardAt(1, 0, 0)).Title
-		box := Box{
+		box := geom.Box{
 			X: int(float32(title.X) * perDp), Y: int(float32(title.Y) * perDp),
 			W: int(float32(title.W) * perDp), H: int(float32(title.H) * perDp),
 		}
-		return float64(ink(shot, box, Dark().Colour.Surface.Raised)) / float64(box.W*box.H)
+		return float64(ink(shot, box, design.Dark().Colour.Surface.Raised)) / float64(box.W*box.H)
 	}
 
 	one, two := density(1), density(2)
@@ -598,8 +600,8 @@ func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 func TestNothingInHandDrawsNothingInMidAir(t *testing.T) {
 	w := aFixturesBoard(t)
 	l := w.Layout()
-	between := Box{X: l.Column[0].X + l.Column[0].W, Y: l.Column[0].Y, W: gap, H: l.Column[0].H}
-	if got := painted(drawn(t, w), between, Dark().Colour.Surface.Ghost); got != 0 {
+	between := geom.Box{X: l.Column[0].X + l.Column[0].W, Y: l.Column[0].Y, W: geom.Gap, H: l.Column[0].H}
+	if got := painted(drawn(t, w), between, design.Dark().Colour.Surface.Ghost); got != 0 {
 		t.Errorf("%d pixels of a card in mid-air were drawn with nothing in hand", got)
 	}
 }
@@ -607,19 +609,19 @@ func TestNothingInHandDrawsNothingInMidAir(t *testing.T) {
 func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{
+	w.Snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 
 	first := GoalAt(w.Layout(), 0, 0)
-	edge := Dark().Colour.Line.Selected
+	edge := design.Dark().Colour.Line.Selected
 	plain := painted(drawn(t, w), first, edge)
 
-	chosen := w.clicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
-	if chosen.Chosen() != 3 {
-		t.Fatalf("clicking the first objective chose %d", chosen.Chosen())
+	chosen := w.clicked(geom.Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	if chosen.Chosen != 3 {
+		t.Fatalf("clicking the first objective chose %d", chosen.Chosen)
 	}
 	shot := drawn(t, chosen)
 	if painted(shot, first, edge) <= plain {
@@ -637,12 +639,12 @@ func TestASearchNarrowsWhatIsDrawn(t *testing.T) {
 		board.Card{Number: 1, Title: "Write the spec", State: "backlog"},
 		board.Card{Number: 2, Title: "Ship the board", State: "backlog"})
 
-	both := ink(drawn(t, w), w.Layout().CardAt(0, 1, 0), Dark().Colour.Surface.Ground)
+	both := ink(drawn(t, w), w.Layout().CardAt(0, 1, 0), design.Dark().Colour.Surface.Ground)
 	if both == 0 {
 		t.Fatal("the second card is not drawn to begin with")
 	}
 	narrowed := w.Key("/").Types("spec")
-	if got := ink(drawn(t, narrowed), inside(narrowed.Layout().CardAt(0, 1, 0)), Dark().Colour.Surface.Ground); got != 0 {
+	if got := ink(drawn(t, narrowed), inside(narrowed.Layout().CardAt(0, 1, 0)), design.Dark().Colour.Surface.Ground); got != 0 {
 		t.Errorf("a search left %d pixels of a card it does not reach", got)
 	}
 }
@@ -653,10 +655,10 @@ func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
 	w = w.Key("/").Types("spec")
 
 	shot := drawn(t, w)
-	if got := lettered(shot, Searching(w.Layout()), Dark().Colour.Ink.Text); got == 0 {
+	if got := lettered(shot, Searching(w.Layout()), design.Dark().Colour.Ink.Text); got == 0 {
 		t.Error("what is being searched for is not shown along the bottom")
 	}
-	if got := painted(shot, Message(w.width, w.height), Dark().Colour.Ink.Text); got != 0 {
+	if got := painted(shot, Message(w.width, w.height), design.Dark().Colour.Ink.Text); got != 0 {
 		t.Errorf("%d pixels of the search were written across the middle of the board", got)
 	}
 }
@@ -666,10 +668,10 @@ func TestTheHelpAndTheQuestionAreDrawn(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0))
 
 	box := Over(w.width, w.height)
-	if got := painted(drawn(t, w.Choose("Help")), box, Dark().Colour.Ink.Text); got == 0 {
+	if got := painted(drawn(t, w.Choose("Help")), box, design.Dark().Colour.Ink.Text); got == 0 {
 		t.Error("the help is blank")
 	}
-	if got := painted(drawn(t, w.Choose("Delete")), box, Dark().Colour.Ink.Text); got == 0 {
+	if got := painted(drawn(t, w.Choose("Delete")), box, design.Dark().Colour.Ink.Text); got == 0 {
 		t.Error("the question asked before deleting is blank")
 	}
 }
@@ -679,15 +681,15 @@ func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
-	fields := w.Form().Fields()
-	valueOf := func(i int) Box {
+	fields := w.Form.Fields
+	valueOf := func(i int) geom.Box {
 		value := formValue(box, fields, i)
 		return value
 	}
 
 	on := w.On("title")
-	with := painted(drawn(t, on), valueOf(0), Dark().Colour.Accent.Base)
-	without := painted(drawn(t, on.On("priority")), valueOf(0), Dark().Colour.Accent.Base)
+	with := painted(drawn(t, on), valueOf(0), design.Dark().Colour.Accent.Base)
+	without := painted(drawn(t, on.On("priority")), valueOf(0), design.Dark().Colour.Accent.Base)
 	if with <= without {
 		t.Errorf("the title carried %d pixels of caret with the keyboard on it and %d without", with, without)
 	}
@@ -705,15 +707,15 @@ func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description")
 
 	box := Over(w.width, w.height)
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	value := formValue(box, fields, 1)
 	value.H = lineHigh * formRows(box, fields, 1)
 
 	shot := drawn(t, w)
 	rows := 0
 	for row := range formRows(box, fields, 1) {
-		line := Box{X: value.X, Y: value.Y + row*lineHigh, W: value.W, H: lineHigh}
-		if painted(shot, line, Dark().Colour.Ink.Text) > 0 {
+		line := geom.Box{X: value.X, Y: value.Y + row*lineHigh, W: value.W, H: lineHigh}
+		if painted(shot, line, design.Dark().Colour.Ink.Text) > 0 {
 			rows++
 		}
 	}
@@ -728,24 +730,24 @@ func TestTheOpenTabStandsOnAPill(t *testing.T) {
 	shot := drawn(t, w)
 
 	open, shut := TabAt(l, 0), TabAt(l, 1)
-	if got := painted(shot, Box{X: open.X + 3, Y: open.Y + open.H/2, W: 4, H: 1}, Dark().Colour.Surface.Control); got != 4 {
+	if got := painted(shot, geom.Box{X: open.X + 3, Y: open.Y + open.H/2, W: 4, H: 1}, design.Dark().Colour.Surface.Control); got != 4 {
 		t.Error("the open tab does not stand on a pill")
 	}
-	if got := painted(shot, Box{X: open.X, Y: open.Y, W: 1, H: 1}, Dark().Colour.Surface.Back); got != 1 {
+	if got := painted(shot, geom.Box{X: open.X, Y: open.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Back); got != 1 {
 		t.Error("the open tab's pill is not rounded")
 	}
-	if got := painted(shot, shut, Dark().Colour.Surface.Control); got != 0 {
+	if got := painted(shot, shut, design.Dark().Colour.Surface.Control); got != 0 {
 		t.Errorf("a shut tab drew %d pixels of a pill", got)
 	}
-	if got := painted(shot, Box{X: shut.X, Y: shut.Y + shut.H/2, W: 3, H: 1}, Dark().Colour.Surface.Back); got != 3 {
+	if got := painted(shot, geom.Box{X: shut.X, Y: shut.Y + shut.H/2, W: 3, H: 1}, design.Dark().Colour.Surface.Back); got != 3 {
 		t.Error("a shut tab does not stand on the window's ground")
 	}
 }
 
 func TestTheColumnsStandClearOfTheTabs(t *testing.T) {
-	l := LayoutFor(1280, 840)
-	if got := l.Head[0].Y - (l.Tabs.Y + l.Tabs.H); got < gap {
-		t.Errorf("the columns start %d below the tabs, and a gap is %d", got, gap)
+	l := geom.LayoutFor(1280, 840)
+	if got := l.Head[0].Y - (l.Tabs.Y + l.Tabs.H); got < geom.Gap {
+		t.Errorf("the columns start %d below the tabs, and a gap is %d", got, geom.Gap)
 	}
 }
 
@@ -755,15 +757,15 @@ func TestASearchSaysWhatItIs(t *testing.T) {
 	l := w.Layout()
 	box := Searching(l)
 
-	off := painted(drawn(t, w), box, Dark().Colour.Surface.Raised)
+	off := painted(drawn(t, w), box, design.Dark().Colour.Surface.Raised)
 	on := drawn(t, w.Key("/"))
-	if got := painted(on, box, Dark().Colour.Surface.Raised); got <= off {
-		t.Errorf("the search drew %d pixels of box and the bar behind it %d", painted(on, box, Dark().Colour.Surface.Raised), off)
+	if got := painted(on, box, design.Dark().Colour.Surface.Raised); got <= off {
+		t.Errorf("the search drew %d pixels of box and the bar behind it %d", painted(on, box, design.Dark().Colour.Surface.Raised), off)
 	}
-	if got := lettered(on, SearchWord(box), Dark().Colour.Ink.Faint); got == 0 {
+	if got := lettered(on, SearchWord(box), design.Dark().Colour.Ink.Faint); got == 0 {
 		t.Error("the search box does not say what it is")
 	}
-	typed := lettered(drawn(t, w.Key("/").Types("spec")), SearchInto(box), Dark().Colour.Ink.Text)
+	typed := lettered(drawn(t, w.Key("/").Types("spec")), SearchInto(box), design.Dark().Colour.Ink.Text)
 	if typed == 0 {
 		t.Error("what was typed was not drawn where the search box types")
 	}
@@ -776,11 +778,11 @@ func TestAPanelSaysWhatItIsAndDrawsItsKeysOnChips(t *testing.T) {
 	help := w.Key("?")
 
 	shot := drawn(t, help)
-	if got := painted(shot, HeadingAt(box), Dark().Colour.Ink.Text); got == 0 {
+	if got := painted(shot, HeadingAt(box), design.Dark().Colour.Ink.Text); got == 0 {
 		t.Error("the help does not say what it is")
 	}
 	name, _ := FieldRow(box, FirstRow(box))
-	if got := painted(shot, Chip(name), Dark().Colour.Surface.Back); got == 0 {
+	if got := painted(shot, Chip(name), design.Dark().Colour.Surface.Back); got == 0 {
 		t.Error("the first key of the help is not on a chip")
 	}
 }
@@ -826,8 +828,8 @@ func TestAPanelButtonWritesItsWordThenItsKeyOnAChip(t *testing.T) {
 	if button := ButtonIn(boxes[at]); word.X < button.X || chip.X+chip.W > button.X+button.W {
 		t.Errorf("the word %+v and the chip %+v run out of the button %+v", word, chip, button)
 	}
-	back, _, under := Dark().button(w.OfferLook(at, "Close"))
-	if painted(drawn(t, w), Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, under) != 1 || painted(drawn(t, w), Box{X: word.X - 2, Y: chip.Y + 1, W: 1, H: 1}, back) != 1 {
+	back, _, under := buttonColours(design.Dark(), w.OfferLook(at, "Close"))
+	if painted(drawn(t, w), geom.Box{X: chip.X + chip.W/2, Y: chip.Y + 1, W: 1, H: 1}, under) != 1 || painted(drawn(t, w), geom.Box{X: word.X - 2, Y: chip.Y + 1, W: 1, H: 1}, back) != 1 {
 		t.Error("the key does not stand on a chip of its own inside the button")
 	}
 }
@@ -838,8 +840,8 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	box := Over(w.width, w.height)
-	fields := w.Form().Fields()
-	frameOf := func(name string) Box {
+	fields := w.Form.Fields
+	frameOf := func(name string) geom.Box {
 		for i, field := range fields {
 			if field.Name == name {
 				value := formValue(box, fields, i)
@@ -847,20 +849,20 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 			}
 		}
 		t.Fatalf("the form has no field %q", name)
-		return Box{}
+		return geom.Box{}
 	}
 
 	shot := drawn(t, w)
 	on, off := frameOf("title"), frameOf("priority")
-	for what, frame := range map[string]Box{"the field typed into": on, "a field not typed into": off} {
-		if got := painted(shot, frame, Dark().Colour.Surface.Field); got == 0 {
+	for what, frame := range map[string]geom.Box{"the field typed into": on, "a field not typed into": off} {
+		if got := painted(shot, frame, design.Dark().Colour.Surface.Field); got == 0 {
 			t.Errorf("%s is not drawn in a box", what)
 		}
 	}
-	if painted(shot, Edges(on)[0], Dark().Colour.Accent.Base) == 0 {
+	if painted(shot, Edges(on)[0], design.Dark().Colour.Accent.Base) == 0 {
 		t.Error("the box of the field typed into is not lit")
 	}
-	if got := painted(shot, Edges(off)[0], Dark().Colour.Accent.Base); got != 0 {
+	if got := painted(shot, Edges(off)[0], design.Dark().Colour.Accent.Base); got != 0 {
 		t.Errorf("a field nobody is typing into has %d pixels of lit edge", got)
 	}
 }
@@ -871,8 +873,8 @@ func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description")
 
 	box := Over(w.width, w.height)
-	fields := w.Form().Fields()
-	var frame Box
+	fields := w.Form.Fields
+	var frame geom.Box
 	for i, field := range fields {
 		if field.Name == "description" {
 			value := formValue(box, fields, i)
@@ -883,20 +885,20 @@ func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	shot := drawn(t, w.Types(long))
 
 	inside := Inside(frame)
-	first := Box{X: inside.X, Y: inside.Y, W: inside.W, H: lineHigh}
-	second := Box{X: inside.X, Y: inside.Y + lineHigh, W: inside.W, H: lineHigh}
-	if painted(shot, first, Dark().Colour.Ink.Text) == 0 {
+	first := geom.Box{X: inside.X, Y: inside.Y, W: inside.W, H: lineHigh}
+	second := geom.Box{X: inside.X, Y: inside.Y + lineHigh, W: inside.W, H: lineHigh}
+	if painted(shot, first, design.Dark().Colour.Ink.Text) == 0 {
 		t.Error("nothing was written on the first line")
 	}
-	if painted(shot, second, Dark().Colour.Ink.Text) == 0 {
+	if painted(shot, second, design.Dark().Colour.Ink.Text) == 0 {
 		t.Error("nothing went onto the second line: it was cut rather than wrapped")
 	}
-	past := Box{X: frame.X + frame.W, Y: frame.Y, W: 40, H: frame.H}
-	if got := painted(shot, past, Dark().Colour.Ink.Text); got != 0 {
+	past := geom.Box{X: frame.X + frame.W, Y: frame.Y, W: 40, H: frame.H}
+	if got := painted(shot, past, design.Dark().Colour.Ink.Text); got != 0 {
 		t.Errorf("%d pixels of writing ran out of the right of the box", got)
 	}
-	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: between}
-	if got := painted(shot, under, Dark().Colour.Ink.Text); got != 0 {
+	under := geom.Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: between}
+	if got := painted(shot, under, design.Dark().Colour.Ink.Text); got != 0 {
 		t.Errorf("%d pixels of writing ran out of the bottom of the box", got)
 	}
 }
@@ -908,35 +910,35 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	}
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("cmd+t")
-	if w.Screen() != OnForm {
-		t.Fatalf("the window is on %v, not the detail", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the window is on %v, not the detail", w.Screen)
 	}
 
 	box := w.formPanel()
 	frame, track := BesideBox(box), BesideBar(box)
 	shot := drawn(t, w)
 
-	if lettered(shot, Inside(frame), Dark().Colour.Ink.Faint) == 0 {
+	if lettered(shot, Inside(frame), design.Dark().Colour.Ink.Faint) == 0 {
 		t.Error("nothing of the history was drawn in its box")
 	}
-	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: lineHigh}
-	if got := lettered(shot, under, Dark().Colour.Ink.Faint); got != 0 {
+	under := geom.Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: lineHigh}
+	if got := lettered(shot, under, design.Dark().Colour.Ink.Faint); got != 0 {
 		t.Errorf("%d pixels of history ran out of the bottom of its box", got)
 	}
 
-	high := Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
-	low := Box{X: track.X, Y: track.Y + track.H*3/4, W: track.W, H: track.H / 4}
-	if painted(shot, high, Dark().Colour.Line.Edge) == 0 {
+	high := geom.Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
+	low := geom.Box{X: track.X, Y: track.Y + track.H*3/4, W: track.W, H: track.H / 4}
+	if painted(shot, high, design.Dark().Colour.Line.Edge) == 0 {
 		t.Error("the grip is not at the top of a history nobody has scrolled")
 	}
-	if got := painted(shot, low, Dark().Colour.Line.Edge); got != 0 {
+	if got := painted(shot, low, design.Dark().Colour.Line.Edge); got != 0 {
 		t.Errorf("the grip has %d pixels at the bottom of a history nobody has scrolled", got)
 	}
-	ended := drawn(t, w.Scroll(Point{X: frame.X + frame.W/2, Y: frame.Y + frame.H/2}, 999*lineHigh))
-	if painted(ended, low, Dark().Colour.Line.Edge) == 0 {
+	ended := drawn(t, w.Scroll(geom.Point{X: frame.X + frame.W/2, Y: frame.Y + frame.H/2}, 999*lineHigh))
+	if painted(ended, low, design.Dark().Colour.Line.Edge) == 0 {
 		t.Error("the grip is not at the bottom of a history scrolled to its end")
 	}
-	if lettered(ended, Inside(frame), Dark().Colour.Ink.Faint) == 0 {
+	if lettered(ended, Inside(frame), design.Dark().Colour.Ink.Faint) == 0 {
 		t.Error("a history scrolled to its end shows nothing")
 	}
 }
@@ -948,14 +950,14 @@ func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 		goals = append(goals, board.Goal{Number: i, Title: "Ship it", State: "live"})
 	}
 	w := holding(f)
-	w.snap.Goals = goals
+	w.Snap.Goals = goals
 	l := w.Layout()
 	second := TabAt(l, 1)
-	w = w.clicked(Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
-	w = w.Scroll(Point{X: l.Column[0].X + 10, Y: l.Column[0].Y + 10}, 3*CardHeight)
+	w = w.clicked(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
+	w = w.Scroll(geom.Point{X: l.Column[0].X + 10, Y: l.Column[0].Y + 10}, 3*geom.CardHeight)
 
-	above := Box{X: l.Column[0].X, Y: l.Tabs.Y + l.Tabs.H, W: l.Column[0].W, H: gap}
-	if got := painted(drawn(t, w), above, Dark().Colour.Surface.Raised); got != 0 {
+	above := geom.Box{X: l.Column[0].X, Y: l.Tabs.Y + l.Tabs.H, W: l.Column[0].W, H: geom.Gap}
+	if got := painted(drawn(t, w), above, design.Dark().Colour.Surface.Raised); got != 0 {
 		t.Errorf("%d pixels of objective were drawn above the run they belong in", got)
 	}
 }
@@ -970,14 +972,14 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 		})
 	}
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{
+	w.Snap = board.Snapshot{
 		Cards: cards,
 		Goals: []board.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 30}},
 	}
 	w = w.Key("tab")
 	w = w.clicked(goalMiddle(w, 1)).Key("enter")
-	if w.Screen() != OnForm || !w.ChosenGoal() {
-		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen(), w.ChosenGoal())
+	if w.Screen != board.OnForm || !w.ChosenGoal {
+		t.Fatalf("the window is on %v with a goal chosen: %v", w.Screen, w.ChosenGoal)
 	}
 
 	frame := w.workFrame()
@@ -985,25 +987,25 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	shot := drawn(t, w)
 
 	check := SubCheck(w.ServingCardAt(0))
-	strip := func(b Box) Box { return Box{X: check.X, Y: b.Y, W: check.W, H: b.H} }
-	if painted(shot, strip(frame), Dark().Colour.Ink.Faint) == 0 {
+	strip := func(b geom.Box) geom.Box { return geom.Box{X: check.X, Y: b.Y, W: check.W, H: b.H} }
+	if painted(shot, strip(frame), design.Dark().Colour.Ink.Faint) == 0 {
 		t.Error("no tile was drawn in the box beside the form")
 	}
-	under := Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: SubHeight}
-	if got := painted(shot, strip(under), Dark().Colour.Ink.Faint); got != 0 {
+	under := geom.Box{X: frame.X, Y: frame.Y + frame.H, W: frame.W, H: geom.SubHeight}
+	if got := painted(shot, strip(under), design.Dark().Colour.Ink.Faint); got != 0 {
 		t.Errorf("%d pixels of tile ran out of the bottom of the box", got)
 	}
 
-	high := Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
-	if painted(shot, high, Dark().Colour.Line.Edge) == 0 {
+	high := geom.Box{X: track.X, Y: track.Y, W: track.W, H: track.H / 4}
+	if painted(shot, high, design.Dark().Colour.Line.Edge) == 0 {
 		t.Error("the grip is not at the top of a list nobody has scrolled")
 	}
 	walked := w
 	for range w.ServingRows() + 2 {
-		walked = walked.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, SubHeight)
+		walked = walked.Scroll(geom.Point{X: frame.X + 4, Y: frame.Y + 4}, geom.SubHeight)
 	}
 	scrolled := drawn(t, walked)
-	if painted(scrolled, high, Dark().Colour.Line.Edge) == painted(shot, high, Dark().Colour.Line.Edge) {
+	if painted(scrolled, high, design.Dark().Colour.Line.Edge) == painted(shot, high, design.Dark().Colour.Line.Edge) {
 		t.Error("the grip did not move when the list was scrolled")
 	}
 }
@@ -1011,7 +1013,7 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{
+	w.Snap = board.Snapshot{
 		Goals: []board.Goal{{Number: 1, Title: "Ship the desktop board", State: "active"}},
 	}
 	w = w.Key("tab")
@@ -1019,10 +1021,10 @@ func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 
 	frame := BesideBox(Over(w.width, w.height))
 	shot := drawn(t, w)
-	if lettered(shot, Inside(frame), Dark().Colour.Ink.Faint) == 0 {
+	if lettered(shot, Inside(frame), design.Dark().Colour.Ink.Faint) == 0 {
 		t.Error("the box says nothing where an objective nothing serves should say so")
 	}
-	if got := painted(shot, Box{X: frame.X, Y: frame.Y, W: edgeWide, H: frame.H}, Dark().Colour.Accent.Base); got != 0 {
+	if got := painted(shot, geom.Box{X: frame.X, Y: frame.Y, W: edgeWide, H: frame.H}, design.Dark().Colour.Accent.Base); got != 0 {
 		t.Errorf("%d pixels of tile were drawn for an objective nothing serves", got)
 	}
 }
@@ -1030,7 +1032,7 @@ func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{
+	w.Snap = board.Snapshot{
 		Goals: []board.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 12}},
 	}
 	w = w.Key("tab")
@@ -1040,28 +1042,28 @@ func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 		t.Fatalf("Counted = %q", said)
 	}
 	_, _, steps := ItemLine(ItemOf(GoalAt(w.Layout(), 0, 0), 0))
-	if painted(drawn(t, w), steps, Dark().Colour.State.Done) == 0 {
+	if painted(drawn(t, w), steps, design.Dark().Colour.State.Done) == 0 {
 		t.Error("the objective's card draws no bar of the tasks done")
 	}
-	if lettered(drawn(t, w), steps, Dark().Colour.Ink.Low) == 0 {
+	if lettered(drawn(t, w), steps, design.Dark().Colour.Ink.Low) == 0 {
 		t.Error("the objective's card does not say its count beside its bar")
 	}
 }
 
-func goalMiddle(w Window, number int) Point {
+func goalMiddle(w Window, number int) geom.Point {
 	for at, g := range board.Sorted(w.Showing().Goals) {
 		if g.Number == number {
 			box := GoalAt(w.Layout(), at, w.goals)
-			return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+			return geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 		}
 	}
-	return Point{}
+	return geom.Point{}
 }
 
 func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{
+	w.Snap = board.Snapshot{
 		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
 		Goals: []board.Goal{
 			{Number: 1, Title: "Ship the desktop board", State: "active"},
@@ -1069,31 +1071,31 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 		},
 	}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+	for w.Form.Fields[w.Form.On()].Arg != "objective" {
 		w = w.Key("tab")
 	}
 	w = w.Key("enter")
-	if w.Screen() != OnChoosing {
-		t.Fatalf("the window is on %v, not the list", w.Screen())
+	if w.Screen != board.OnChoosing {
+		t.Fatalf("the window is on %v, not the list", w.Screen)
 	}
 
 	box := w.ChoosingBox()
 	first := ChoosingRow(box, ChoosingFrom(box))
 	shot := drawn(t, w)
 
-	if painted(shot, Box{X: first.X + first.W/2, Y: first.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.Control) != 1 {
+	if painted(shot, geom.Box{X: first.X + first.W/2, Y: first.Y + 1, W: 1, H: 1}, design.Dark().Colour.Surface.Control) != 1 {
 		t.Error("the row the keyboard is on does not stand on a pill")
 	}
-	if painted(shot, Box{X: first.X, Y: first.Y, W: 1, H: 1}, Dark().Colour.Surface.Control) != 0 {
+	if painted(shot, geom.Box{X: first.X, Y: first.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Control) != 0 {
 		t.Error("the lit row's corner is not rounded")
 	}
 	second := ChoosingRow(box, ChoosingFrom(box)+apart)
-	if got := painted(shot, second, Dark().Colour.Surface.Control); got != 0 {
+	if got := painted(shot, second, design.Dark().Colour.Surface.Control); got != 0 {
 		t.Errorf("%d pixels lit a row the keyboard is not on", got)
 	}
 
-	moved := inked(drawn(t, w.Key("down")), first, Dark().Colour.Surface.Raised)
-	ticked := inked(drawn(t, w.Key("enter").Key("down")), first, Dark().Colour.Surface.Raised)
+	moved := inked(drawn(t, w.Key("down")), first, design.Dark().Colour.Surface.Raised)
+	ticked := inked(drawn(t, w.Key("enter").Key("down")), first, design.Dark().Colour.Surface.Raised)
 	if ticked <= moved {
 		t.Errorf("a ticked row paints %d and an unticked one %d: no mark was drawn", ticked, moved)
 	}
@@ -1102,16 +1104,16 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w.Snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+	for w.Form.Fields[w.Form.On()].Arg != "objective" {
 		w = w.Key("tab")
 	}
 	w = w.Key("enter")
 
 	box := w.ChoosingBox()
 	value := RowIn(box, ChoosingFrom(box), lineHigh)
-	if painted(drawn(t, w), value, Dark().Colour.Ink.Faint) == 0 {
+	if painted(drawn(t, w), value, design.Dark().Colour.Ink.Faint) == 0 {
 		t.Error("the list says nothing where it should say there is nothing to serve")
 	}
 }
@@ -1194,14 +1196,14 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 		board.Card{Number: 2, Title: "Carries", State: "todo", Description: "something written", SubDone: 1, SubTotal: 3},
 	)
 	shot := drawn(t, w)
-	beside := func(at int) Box {
+	beside := func(at int) geom.Box {
 		number := PartsOf(w.Layout().CardAt(1, at, 0)).Number
-		return Box{X: number.X + number.W/2, Y: number.Y, W: number.W / 2, H: number.H}
+		return geom.Box{X: number.X + number.W/2, Y: number.Y, W: number.W / 2, H: number.H}
 	}
-	if got := ink(shot, beside(0), Dark().Colour.Surface.Card); got != 0 {
+	if got := ink(shot, beside(0), design.Dark().Colour.Surface.Card); got != 0 {
 		t.Errorf("a card carrying nothing drew %d pixels beside its number", got)
 	}
-	if got := ink(shot, PartsOf(w.Layout().CardAt(1, 1, 0)).Steps, Dark().Colour.Surface.Card); got == 0 {
+	if got := ink(shot, PartsOf(w.Layout().CardAt(1, 1, 0)).Steps, design.Dark().Colour.Surface.Card); got == 0 {
 		t.Error("a card carrying a description and its parts drew nothing beside its number")
 	}
 }
@@ -1209,12 +1211,12 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w.Snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	box := Over(w.width, w.height)
-	fields := w.Form().Fields()
-	var value Box
+	fields := w.Form.Fields
+	var value geom.Box
 	for i, field := range fields {
 		if field.Name == "title" {
 			value = formValue(box, fields, i)
@@ -1222,13 +1224,13 @@ func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	}
 	inside := Inside(Framed(value, 1))
 
-	loose := ink(drawn(t, w), inside, Dark().Colour.Surface.Field)
-	held := ink(drawn(t, w.Key("cmd+a")), inside, Dark().Colour.Surface.Field)
+	loose := ink(drawn(t, w), inside, design.Dark().Colour.Surface.Field)
+	held := ink(drawn(t, w.Key("cmd+a")), inside, design.Dark().Colour.Surface.Field)
 	if held <= loose {
 		t.Errorf("holding the whole field painted %d pixels and letting go %d: "+
 			"the run is not drawn", held, loose)
 	}
-	some := ink(drawn(t, w.Key("shift+left").Key("shift+left")), inside, Dark().Colour.Surface.Field)
+	some := ink(drawn(t, w.Key("shift+left").Key("shift+left")), inside, design.Dark().Colour.Surface.Field)
 	if some <= loose || some >= held {
 		t.Errorf("a run of two characters painted %d, between %d and %d expected",
 			some, loose, held)
@@ -1241,8 +1243,8 @@ func TestEveryCardHasAnEdge(t *testing.T) {
 
 	for at, what := range map[int]string{0: "the chosen card", 1: "a card nobody chose"} {
 		parts := PartsOf(w.Layout().CardAt(1, at, 0))
-		top := Box{X: parts.Panel.X, Y: parts.Panel.Y, W: parts.Panel.W, H: 1}
-		if ink(shot, top, Dark().Colour.Surface.Back) == 0 {
+		top := geom.Box{X: parts.Panel.X, Y: parts.Panel.Y, W: parts.Panel.W, H: 1}
+		if ink(shot, top, design.Dark().Colour.Surface.Back) == 0 {
 			t.Errorf("%s is drawn without an edge", what)
 		}
 	}
@@ -1271,14 +1273,14 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	shot := drawn(t, w)
 	box := w.formBox()
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name != "labels" && field.Name != "column" {
 			continue
 		}
-		value, rows := formValue(box, w.Form().Fields(), i), formRows(box, w.Form().Fields(), i)
+		value, rows := formValue(box, w.Form.Fields, i), formRows(box, w.Form.Fields, i)
 		inside := Inside(Framed(value, rows))
-		_, labelInk := Dark().LabelPill(w.LabelColour("backend"))
-		if painted(shot, inside, Dark().Colour.Ink.Text) == 0 && lettered(shot, inside, Dark().Colour.Ink.Faint) == 0 && lettered(shot, inside, labelInk) == 0 {
+		_, labelInk := design.Dark().LabelPill(w.LabelColour("backend"))
+		if painted(shot, inside, design.Dark().Colour.Ink.Text) == 0 && lettered(shot, inside, design.Dark().Colour.Ink.Faint) == 0 && lettered(shot, inside, labelInk) == 0 {
 			t.Errorf("%q writes nothing", field.Name)
 		}
 	}
@@ -1287,17 +1289,17 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 func TestAQuestionNamesWhatItAsksAboutByNumberAndTitle(t *testing.T) {
 	cards := []board.Card{card(1, "First", "todo"), {Number: 2, Title: "Gone", State: "todo", Archived: true}}
 	w := holding(newFake(), cards...)
-	w.archived = true
+	w.Archived = true
 	asked := w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShortcut).clicked(middleOf(w, 1, 1)).KeysDown(0).Key("x")
-	if asked.Screen() != OnAsking {
-		t.Fatalf("archiving two left the window on %v", asked.Screen())
+	if asked.Screen != board.OnAsking {
+		t.Fatalf("archiving two left the window on %v", asked.Screen)
 	}
 	said := asked.Asks()
 	if len(said) != 2 || said[0].Means != "#1  First" || said[1].Means != "#2  Gone — it is already archived" {
 		t.Errorf("the question says %+v", said)
 	}
 	box := asked.QuestionBox()
-	if lettered(drawn(t, asked), RowIn(box, FirstRow(box), lineHigh), Dark().Colour.Ink.Low) == 0 {
+	if lettered(drawn(t, asked), RowIn(box, FirstRow(box), lineHigh), design.Dark().Colour.Ink.Low) == 0 {
 		t.Error("the question's first line is not written")
 	}
 }
@@ -1306,7 +1308,7 @@ func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
 	w := holding(newFake(),
 		board.Card{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "A step"}}},
 		board.Card{Number: 3, Title: "Gone", State: "done", Archived: true})
-	if got := w.Holds(Tasks); got != 1 {
+	if got := w.Holds(board.Tasks); got != 1 {
 		t.Errorf("the tasks tab says %d, and the board lays out 1", got)
 	}
 }
@@ -1319,13 +1321,13 @@ func TestADragDrawsALineWhereTheCardWouldLandAndMovesNothing(t *testing.T) {
 		board.Card{Number: 3, Title: "Third", State: "backlog"})
 	l := w.Layout()
 	second := l.CardAt(1, 1, 0)
-	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
+	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
 
 	landing, ok := w.Landing()
 	if !ok || landing != LineAbove(second) {
 		t.Errorf("the card would land at %+v, want the line above Second, %+v", landing, LineAbove(second))
 	}
-	slots := map[int]Box{}
+	slots := map[int]geom.Box{}
 	for _, p := range w.Placed() {
 		slots[p.Card.Number] = p.Slot
 	}
@@ -1335,7 +1337,7 @@ func TestADragDrawsALineWhereTheCardWouldLandAndMovesNothing(t *testing.T) {
 	if slots[1] != l.CardAt(1, 0, 0) || slots[2] != l.CardAt(1, 1, 0) {
 		t.Errorf("First is at %+v and Second at %+v: the column moved", slots[1], slots[2])
 	}
-	w = w.MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H*3/4})
+	w = w.MoveTo(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H*3/4})
 	if landing, _ := w.Landing(); landing != LineAbove(l.CardAt(1, 2, 0)) {
 		t.Errorf("over the lower half of Second the card would land at %+v, want the line after it", landing)
 	}
@@ -1360,13 +1362,13 @@ func TestADragDrawsALineInALaneAndMovesNothing(t *testing.T) {
 		board.Card{Number: 3, Title: "Third", State: "backlog"})
 	l := w.Layout()
 	second := l.LaneCardAt(0, 1, 0)
-	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
+	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
 
 	landing, ok := w.Landing()
 	if !ok || landing != LineAbove(second) {
 		t.Errorf("the card would land at %+v, want the line above Second", landing)
 	}
-	slots := map[int]Box{}
+	slots := map[int]geom.Box{}
 	for _, p := range w.Placed() {
 		slots[p.Card.Number] = p.Slot
 	}
@@ -1375,7 +1377,7 @@ func TestADragDrawsALineInALaneAndMovesNothing(t *testing.T) {
 	}
 }
 
-func paintedNear(shot *image.RGBA, b Box, want color.NRGBA, by int) int {
+func paintedNear(shot *image.RGBA, b geom.Box, want color.NRGBA, by int) int {
 	count := 0
 	for y := b.Y; y < b.Y+b.H; y++ {
 		for x := b.X; x < b.X+b.W; x++ {
@@ -1391,7 +1393,7 @@ func paintedNear(shot *image.RGBA, b Box, want color.NRGBA, by int) int {
 func within(a, b uint8, by int) bool { return max(int(a)-int(b), int(b)-int(a)) <= by }
 
 func dimmed(c color.NRGBA) color.NRGBA {
-	veil := Dark().Colour.Surface.Veil
+	veil := design.Dark().Colour.Surface.Veil
 	mix := func(under, over uint8) uint8 {
 		return uint8((int(under)*(255-int(veil.A)) + int(over)*int(veil.A)) / 255)
 	}
@@ -1399,16 +1401,16 @@ func dimmed(c color.NRGBA) color.NRGBA {
 }
 
 func TestACardDroppedOverItsOwnLowerHalfStaysBehindTheOneBefore(t *testing.T) {
-	for name, slot := range map[string]func(Layout, int) Box{
-		"column": func(l Layout, at int) Box { return l.CardAt(1, at, 0) },
-		"lane":   func(l Layout, at int) Box { return l.LaneCardAt(0, at, 0) },
+	for name, slot := range map[string]func(geom.Layout, int) geom.Box{
+		"column": func(l geom.Layout, at int) geom.Box { return l.CardAt(1, at, 0) },
+		"lane":   func(l geom.Layout, at int) geom.Box { return l.LaneCardAt(0, at, 0) },
 	} {
 		state := map[string]string{"column": "todo", "lane": "blocked"}[name]
 		f := newFake()
 		w := holding(f, card(1, "First", state), card(2, "Second", state))
 		own := slot(w.Layout(), 1)
-		w = w.PressAt(Point{X: own.X + own.W/2, Y: own.Y + own.H/2})
-		lower := Point{X: own.X + own.W/2, Y: own.Y + own.H*3/4}
+		w = w.PressAt(geom.Point{X: own.X + own.W/2, Y: own.Y + own.H/2})
+		lower := geom.Point{X: own.X + own.W/2, Y: own.Y + own.H*3/4}
 		w.MoveTo(lower).LetGo(lower)
 		in, asked := f.gave("task", "move")
 		if !asked || in.Given["after"] != "1" {
@@ -1435,38 +1437,38 @@ func drawnOps(t *testing.T, wide, high int, do func(gtx layout.Context)) *image.
 }
 
 func TestARoundedBoxLeavesItsCornersToWhatIsUnder(t *testing.T) {
-	skin := Dark()
-	box := Box{X: 10, Y: 10, W: 60, H: 40}
+	skin := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 60, H: 40}
 	shot := drawnOps(t, 80, 60, func(gtx layout.Context) {
-		fill(gtx, Box{W: 80, H: 60}, skin.Colour.Surface.Back)
+		fill(gtx, geom.Box{W: 80, H: 60}, skin.Colour.Surface.Back)
 		rounded(gtx, box, 8, skin.Colour.Surface.Card)
 	})
-	if painted(shot, Box{X: 10, Y: 10, W: 1, H: 1}, skin.Colour.Surface.Back) != 1 {
+	if painted(shot, geom.Box{X: 10, Y: 10, W: 1, H: 1}, skin.Colour.Surface.Back) != 1 {
 		t.Error("the corner of a rounded box is painted")
 	}
-	if painted(shot, Box{X: 40, Y: 30, W: 1, H: 1}, skin.Colour.Surface.Card) != 1 || painted(shot, Box{X: 10, Y: 30, W: 1, H: 1}, skin.Colour.Surface.Card) != 1 {
+	if painted(shot, geom.Box{X: 40, Y: 30, W: 1, H: 1}, skin.Colour.Surface.Card) != 1 || painted(shot, geom.Box{X: 10, Y: 30, W: 1, H: 1}, skin.Colour.Surface.Card) != 1 {
 		t.Error("a rounded box is not painted inside its edges")
 	}
 }
 
 func TestARaisedPanelCastsAShadowUnderIt(t *testing.T) {
-	skin := Dark()
-	box := Box{X: 20, Y: 10, W: 60, H: 40}
+	skin := design.Dark()
+	box := geom.Box{X: 20, Y: 10, W: 60, H: 40}
 	shot := drawnOps(t, 100, 80, func(gtx layout.Context) {
-		fill(gtx, Box{W: 100, H: 80}, skin.Colour.Surface.Back)
+		fill(gtx, geom.Box{W: 100, H: 80}, skin.Colour.Surface.Back)
 		raised(NewKit(gtx, drawingTheme(), skin, &Drawn{}), box, skin.Radius.Panel, skin.Colour.Surface.Raised)
 	})
 	under := shot.RGBAAt(50, box.Y+box.H+4)
 	if under.R >= skin.Colour.Surface.Back.R && under.G >= skin.Colour.Surface.Back.G {
 		t.Errorf("under the panel reads %v, no darker than the window's %v", under, skin.Colour.Surface.Back)
 	}
-	if painted(shot, Box{X: 50, Y: 30, W: 1, H: 1}, skin.Colour.Surface.Raised) != 1 {
+	if painted(shot, geom.Box{X: 50, Y: 30, W: 1, H: 1}, skin.Colour.Surface.Raised) != 1 {
 		t.Error("the panel itself is not painted")
 	}
 }
 
 func TestTheSkinTellsItsStatesApart(t *testing.T) {
-	skin := Dark()
+	skin := design.Dark()
 	pairs := [][2]color.NRGBA{{skin.Colour.Surface.Card, skin.Colour.Surface.Ground}, {skin.Colour.Surface.Card, skin.Colour.Surface.Hover}, {skin.Colour.Surface.Card, skin.Colour.Surface.Tint}, {skin.Colour.Line.Selected, skin.Colour.Accent.Base}, {skin.Colour.Surface.Ground, skin.Colour.Surface.Back}, {skin.Colour.Surface.Control, skin.Colour.Surface.Card}}
 	for _, pair := range pairs {
 		if pair[0] == pair[1] {
@@ -1479,10 +1481,10 @@ func TestAPanelIsRaisedRoundedAndHasNoEdge(t *testing.T) {
 	w := aFixturesBoard(t).Key("?")
 	box := w.HelpBox()
 	shot := drawn(t, w)
-	if painted(shot, Box{X: box.X, Y: box.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
+	if painted(shot, geom.Box{X: box.X, Y: box.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 0 {
 		t.Error("the panel's corner is not rounded")
 	}
-	if painted(shot, Box{X: box.X, Y: box.Y + box.H/2, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
+	if painted(shot, geom.Box{X: box.X, Y: box.Y + box.H/2, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 1 {
 		t.Error("the panel is edged rather than standing on its own ground")
 	}
 }
@@ -1503,11 +1505,11 @@ func TestThePanelsOffersAreButtonsRightAlignedTheirVerbLast(t *testing.T) {
 	}
 	shot := drawn(t, w)
 	verb := ButtonIn(along[0])
-	if painted(shot, Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, Dark().Colour.Accent.Base) != 3 {
+	if painted(shot, geom.Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, design.Dark().Colour.Accent.Base) != 3 {
 		t.Errorf("the panel's verb %q is not filled with the accent", w.Offers()[0])
 	}
 	other := ButtonIn(along[len(along)-1])
-	if painted(shot, Box{X: other.X + 3, Y: other.Y + 2, W: 3, H: 1}, Dark().Colour.Surface.Control) != 3 {
+	if painted(shot, geom.Box{X: other.X + 3, Y: other.Y + 2, W: 3, H: 1}, design.Dark().Colour.Surface.Control) != 3 {
 		t.Errorf("%q is not a plain button", w.Offers()[len(along)-1])
 	}
 }
@@ -1515,11 +1517,11 @@ func TestThePanelsOffersAreButtonsRightAlignedTheirVerbLast(t *testing.T) {
 func TestAnAnswerThatDestroysIsRed(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Delete")
-	if w.Screen() != OnAsking {
-		t.Fatalf("deleting asked nothing: %v", w.Screen())
+	if w.Screen != board.OnAsking {
+		t.Fatalf("deleting asked nothing: %v", w.Screen)
 	}
 	verb := ButtonIn(w.offersAlong(w.panel())[0])
-	if painted(drawn(t, w), Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, Dark().Colour.State.Danger) != 3 {
+	if painted(drawn(t, w), geom.Box{X: verb.X + 3, Y: verb.Y + 2, W: 3, H: 1}, design.Dark().Colour.State.Danger) != 3 {
 		t.Errorf("%q is not drawn red", w.Offers()[0])
 	}
 }
@@ -1528,10 +1530,10 @@ func TestTheCommandBarIsARoundedPanelWithItsHintsAtTheRight(t *testing.T) {
 	w := aFixturesBoard(t)
 	bar := w.Layout().Bar
 	shot := drawn(t, w)
-	if painted(shot, Box{X: bar.X, Y: bar.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
+	if painted(shot, geom.Box{X: bar.X, Y: bar.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 0 {
 		t.Error("the command bar's corner is not rounded")
 	}
-	if painted(shot, Box{X: bar.X + bar.W/2, Y: bar.Y + 3, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
+	if painted(shot, geom.Box{X: bar.X + bar.W/2, Y: bar.Y + 3, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 1 {
 		t.Error("the command bar does not stand on a panel's ground")
 	}
 	hints := w.BarOffers()
@@ -1547,16 +1549,16 @@ func TestTheCardInHandIsRaised(t *testing.T) {
 	shot := drawn(t, w)
 	ghost, _ := w.Ghost()
 	under := shot.RGBAAt(ghost.X+ghost.W/2, ghost.Y+ghost.H+1)
-	if under.R >= Dark().Colour.Surface.Ground.R {
+	if under.R >= design.Dark().Colour.Surface.Ground.R {
 		t.Errorf("under the card in hand reads %v: it casts no shadow", under)
 	}
-	if painted(shot, Box{X: ghost.X, Y: ghost.Y, W: 1, H: 1}, Dark().Colour.Surface.Ghost) != 0 {
+	if painted(shot, geom.Box{X: ghost.X, Y: ghost.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Ghost) != 0 {
 		t.Error("the card in hand's corner is not rounded")
 	}
 }
 
 func TestStonesSitCloseInTheirCourse(t *testing.T) {
-	panel := Box{X: 10, Y: 10, W: 220, H: 80}
+	panel := geom.Box{X: 10, Y: 10, W: 220, H: 80}
 	stones := StonesOf(panel, 7)
 	for i := 1; i < len(stones); i++ {
 		left, right := stones[i-1], stones[i]
@@ -1584,10 +1586,10 @@ func TestTheStonesGrainIsTheSameEveryRunAndNotFlat(t *testing.T) {
 }
 
 func TestALandedStoneIsNotOneFlatColour(t *testing.T) {
-	stone := []Point{{X: 10, Y: 10}, {X: 50, Y: 9}, {X: 90, Y: 10}, {X: 90, Y: 40}, {X: 50, Y: 41}, {X: 10, Y: 40}}
+	stone := []geom.Point{{X: 10, Y: 10}, {X: 50, Y: 9}, {X: 90, Y: 10}, {X: 90, Y: 40}, {X: 50, Y: 41}, {X: 10, Y: 40}}
 	shot := drawnOps(t, 100, 50, func(gtx layout.Context) {
-		fill(gtx, Box{W: 100, H: 50}, Dark().Colour.Surface.Back)
-		Stone{Shape: stone, Shade: Dark().stoneOf(1)}.Draw(NewKit(gtx, drawingTheme(), Dark(), &Drawn{}), Box{})
+		fill(gtx, geom.Box{W: 100, H: 50}, design.Dark().Colour.Surface.Back)
+		Stone{Shape: stone, Shade: design.Dark().StoneOf(1)}.Draw(NewKit(gtx, drawingTheme(), design.Dark(), &Drawn{}), geom.Box{})
 	})
 	colours := map[color.RGBA]bool{}
 	for y := 14; y < 36; y++ {
@@ -1602,41 +1604,41 @@ func TestALandedStoneIsNotOneFlatColour(t *testing.T) {
 
 func TestAnObjectivesStandingIsAPillInItsOwnColour(t *testing.T) {
 	w := New(newFake(), 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Wait", State: "on-hold"}}}
+	w.Snap = board.Snapshot{Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Wait", State: "on-hold"}}}
 	w = w.Key("tab")
 	for _, g := range w.Reading().Goals {
-		w.chosen, w.chosenGoal = g.Number, true
+		w.Chosen, w.ChosenGoal = g.Number, true
 		line := w.Detail().Line
-		want := Dark().Colour.Standing[g.State].Back
-		if painted(drawn(t, w), Box{X: line.X + 4, Y: line.Y + line.H/2, W: 1, H: 1}, want) != 1 {
+		want := design.Dark().Colour.Standing[g.State].Back
+		if painted(drawn(t, w), geom.Box{X: line.X + 4, Y: line.Y + line.H/2, W: 1, H: 1}, want) != 1 {
 			t.Errorf("objective %d, %s, does not stand on its colour at %+v", g.Number, g.State, line)
 		}
 		mark, _, _ := ItemLine(ItemOf(GoalAt(w.Layout(), g.Number-1, 0), 0))
-		if lettered(drawn(t, w), mark, Dark().Colour.Standing[g.State].Ink) == 0 {
+		if lettered(drawn(t, w), mark, design.Dark().Colour.Standing[g.State].Ink) == 0 {
 			t.Errorf("objective %d, %s, is not marked in its standing's ink in the list", g.Number, g.State)
 		}
 	}
-	if Dark().Colour.Standing["active"].Back == Dark().Colour.Standing["on-hold"].Back {
+	if design.Dark().Colour.Standing["active"].Back == design.Dark().Colour.Standing["on-hold"].Back {
 		t.Error("an active objective and one on hold stand on the same colour")
 	}
 }
 
 func TestAWindowTooSmallSaysSoInItsMiddle(t *testing.T) {
 	w := New(newFake(), 600, 400)
-	if w.Screen() != TooSmallToDraw {
-		t.Fatalf("a window 600 by 400 is on %v", w.Screen())
+	if w.Screen != board.TooSmallToDraw {
+		t.Fatalf("a window 600 by 400 is on %v", w.Screen)
 	}
 	shot := drawn(t, w)
 	line := Message(w.width, w.height)
-	if lettered(shot, Box{X: line.X, Y: line.Y, W: 40, H: line.H}, Dark().Colour.Ink.Faint) != 0 {
+	if lettered(shot, geom.Box{X: line.X, Y: line.Y, W: 40, H: line.H}, design.Dark().Colour.Ink.Faint) != 0 {
 		t.Error("the message starts at the window's edge rather than in its middle")
 	}
-	if lettered(shot, Box{X: w.width/2 - 20, Y: line.Y, W: 40, H: line.H}, Dark().Colour.Ink.Faint) == 0 {
+	if lettered(shot, geom.Box{X: w.width/2 - 20, Y: line.Y, W: 40, H: line.H}, design.Dark().Colour.Ink.Faint) == 0 {
 		t.Error("the message is not written in the window's middle, in the faint ink")
 	}
 }
 
-func inkGaps(shot *image.RGBA, chip Box) (int, int) {
+func inkGaps(shot *image.RGBA, chip geom.Box) (int, int) {
 	ground := shot.RGBAAt(chip.X+chip.W/2, chip.Y)
 	top, bottom := -1, -1
 	for y := chip.Y; y < chip.Y+chip.H; y++ {
@@ -1669,13 +1671,13 @@ func TestAKeyIsCentredOnItsChipWhateverItsGlyphs(t *testing.T) {
 func TestSayWith_notesWhatIsSaidOnlyToTheNoteOfTheThemeSayingIt(t *testing.T) {
 	mine, other := Theme(), Theme()
 	var noted []string
-	notesSaid.Store(mine, sayNote(func(_ layout.Context, _ *material.Theme, _ Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
+	notesSaid.Store(mine, sayNote(func(_ layout.Context, _ *material.Theme, _ geom.Box, said string, _ int, _ font.Font, _ int, _ text.Alignment) {
 		noted = append(noted, said)
 	}))
 	defer notesSaid.Delete(mine)
 	gtx := layout.Context{Ops: new(op.Ops), Constraints: layout.Exact(image.Pt(200, 40)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	sayWith(gtx, other, color.NRGBA{}, Box{W: 200, H: 40}, "theirs", 12, font.Font{}, 1, text.Start)
-	sayWith(gtx, mine, color.NRGBA{}, Box{W: 200, H: 40}, "mine", 12, font.Font{}, 1, text.Start)
+	sayWith(gtx, other, color.NRGBA{}, geom.Box{W: 200, H: 40}, "theirs", 12, font.Font{}, 1, text.Start)
+	sayWith(gtx, mine, color.NRGBA{}, geom.Box{W: 200, H: 40}, "mine", 12, font.Font{}, 1, text.Start)
 	if !slices.Equal(noted, []string{"mine"}) {
 		t.Errorf("noted %q, want only what this theme said", noted)
 	}

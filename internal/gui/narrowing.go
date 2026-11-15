@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,10 +13,10 @@ type Narrowing struct {
 	Root       int
 	Segments   []board.Segment
 	On         int
-	Box        Box
-	At         []Box
+	Box        geom.Box
+	At         []geom.Box
 	Compact    bool
-	Back, Next Box
+	Back, Next geom.Box
 	Said       string
 }
 
@@ -26,16 +27,16 @@ const WithItsSubsSays = "with its sub-objectives"
 
 // Narrowing is the bar the board draws beside its pills, and nothing when neither the objective filter nor the view in force is on one objective holding sub-objectives, or when not even its compact form has room.
 func (w Window) Narrowing() Narrowing {
-	if w.tab != Tasks || (w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch && w.screen != OnKeeping) {
+	if w.Tab != board.Tasks || (w.Screen != board.OnTheBoard && w.Screen != board.OnFiltering && w.Screen != board.OnSearch && w.Screen != board.OnKeeping) {
 		return Narrowing{}
 	}
-	value, ok := w.narrowingTaken()
+	value, ok := w.NarrowingTaken()
 	if !ok {
 		return Narrowing{}
 	}
 	root, _ := strconv.Atoi(strings.TrimSuffix(value, " itself"))
-	root = w.snap.TreeOf(root)
-	n := Narrowing{Root: root, Segments: w.snap.Segments(root, w.snap.Viewed(w.viewing, board.OnTheBoard(w.snap.Cards, w.archived)))}
+	root = w.Snap.TreeOf(root)
+	n := Narrowing{Root: root, Segments: w.Snap.Segments(root, w.Snap.Viewed(w.Viewing, board.Laid(w.Snap.Cards, w.Archived)))}
 	if len(n.Segments) == 0 {
 		return Narrowing{}
 	}
@@ -53,11 +54,11 @@ func (w Window) Narrowing() Narrowing {
 	tab := TabAt(w.Layout(), 0)
 	y := tab.Y + (tab.H-searchPillHigh)/2
 	if end-wide-narrowingLeast >= start {
-		n.Box = Box{X: end - wide, Y: y, W: wide, H: searchPillHigh}
+		n.Box = geom.Box{X: end - wide, Y: y, W: wide, H: searchPillHigh}
 		x := n.Box.X
 		for _, s := range n.Segments {
 			seg := narrowingWide(m, s)
-			n.At = append(n.At, Box{X: x, Y: y, W: seg, H: searchPillHigh})
+			n.At = append(n.At, geom.Box{X: x, Y: y, W: seg, H: searchPillHigh})
 			x += seg
 		}
 		return n
@@ -72,11 +73,11 @@ func (w Window) Narrowing() Narrowing {
 	if room := seg - narrowingWide(m, board.Segment{Count: on.Count}); ends(m, on.Name, small) > room {
 		n.Said = cutToFit(on.Name, room, func(said string) int { return ends(m, said, small) })
 	}
-	n.Box = Box{X: end - wide, Y: y, W: wide, H: searchPillHigh}
-	n.Back = Box{X: n.Box.X, Y: y, W: chevronRoom, H: searchPillHigh}
-	n.At = make([]Box, len(n.Segments))
-	n.At[n.On] = Box{X: n.Back.X + chevronRoom, Y: y, W: seg, H: searchPillHigh}
-	n.Next = Box{X: n.At[n.On].X + seg, Y: y, W: chevronRoom, H: searchPillHigh}
+	n.Box = geom.Box{X: end - wide, Y: y, W: wide, H: searchPillHigh}
+	n.Back = geom.Box{X: n.Box.X, Y: y, W: chevronRoom, H: searchPillHigh}
+	n.At = make([]geom.Box, len(n.Segments))
+	n.At[n.On] = geom.Box{X: n.Back.X + chevronRoom, Y: y, W: seg, H: searchPillHigh}
+	n.Next = geom.Box{X: n.At[n.On].X + seg, Y: y, W: chevronRoom, H: searchPillHigh}
 	return n
 }
 
@@ -87,25 +88,6 @@ func narrowingWide(m Measure, s board.Segment) int {
 }
 
 const segmentPad = 7
-
-func (w Window) narrowingTaken() (string, bool) {
-	if taken, ok := w.objectiveTaken(); ok {
-		return taken, true
-	}
-	if v, in := w.inView(); in && len(v.Holds.Objective) == 1 && !v.Holds.Itself {
-		return strconv.Itoa(v.Holds.Objective[0]), true
-	}
-	return "", false
-}
-
-func (w Window) objectiveTaken() (string, bool) {
-	for _, f := range w.filters {
-		if taken := f.Taken(); f.Arg == "objective" && len(taken) == 1 {
-			return taken[0], true
-		}
-	}
-	return "", false
-}
 
 func (w Window) pillsRun() (start, end int) {
 	l := w.Layout()
@@ -123,18 +105,18 @@ func (w Window) narrowedTo(at int) Window {
 		return w
 	}
 	value := n.Segments[at].Value
-	if v, in := w.inView(); in && len(v.Holds.Objective) == 1 && strconv.Itoa(v.Holds.Objective[0]) == value {
-		if i := slices.IndexFunc(w.filters, func(f board.Filter) bool { return f.Arg == "objective" }); i >= 0 {
+	if v, in := w.InView(); in && len(v.Holds.Objective) == 1 && strconv.Itoa(v.Holds.Objective[0]) == value {
+		if i := slices.IndexFunc(w.Filters, func(f board.Filter) bool { return f.Arg == "objective" }); i >= 0 {
 			return w.takingOff(i)
 		}
 		return w
 	}
-	w.filters = board.FiltersOf(w.snap, w.today()).Keeping(w.filters).On("objective", value)
+	w.Filters = board.FiltersOf(w.Snap, w.Today()).Keeping(w.Filters).On("objective", value)
 	return w
 }
 
-func (w Window) clickingNarrowing(p Point) (Window, bool) {
-	if w.screen != OnTheBoard {
+func (w Window) clickingNarrowing(p geom.Point) (Window, bool) {
+	if w.Screen != board.OnTheBoard {
 		return w, false
 	}
 	n := w.Narrowing()
@@ -167,7 +149,7 @@ func drawNarrowing(k Kit, w Window) {
 	}
 	s := Segmented{At: n.At, On: n.On, Small: true}
 	if n.Compact {
-		s.At, s.On, s.Back, s.Next = []Box{n.At[n.On]}, 0, n.Back, n.Next
+		s.At, s.On, s.Back, s.Next = []geom.Box{n.At[n.On]}, 0, n.Back, n.Next
 		s.Said, s.Counts = []string{n.Said}, []string{strconv.Itoa(n.Segments[n.On].Count)}
 		s.Draw(k, n.Box)
 		return
@@ -181,22 +163,22 @@ func drawNarrowing(k Kit, w Window) {
 
 // References are the tasks the board leaves out that block, wait on or are linked to one it shows, each where its column would have it after the cards it holds: shown while a view or the objective filter narrows the board, and never counted.
 func (w Window) References() []Placed {
-	if (w.viewing == "" && !w.filters.NarrowsBy("objective")) || w.tab != Tasks {
+	if (w.Viewing == "" && !w.Filters.NarrowsBy("objective")) || w.Tab != board.Tasks {
 		return nil
 	}
 	shown := w.Showing().Cards
-	refs := board.Touching(shown, board.OnTheBoard(w.snap.Cards, w.archived))
+	refs := board.Touching(shown, board.Laid(w.Snap.Cards, w.Archived))
 	if len(refs) == 0 {
 		return nil
 	}
 	l := w.Layout()
-	dealt, _ := board.Deal(shown, w.archived)
+	dealt, _ := board.Deal(shown, w.Archived)
 	var cards []board.Card
 	says := map[int]string{}
 	for _, r := range refs {
 		cards, says[r.Card.Number] = append(cards, r.Card), r.Says()
 	}
-	theirs, _ := board.Deal(cards, w.archived)
+	theirs, _ := board.Deal(cards, w.Archived)
 	var out []Placed
 	for i, column := range theirs {
 		after := len(dealt[i].Cards)

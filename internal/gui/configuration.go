@@ -1,15 +1,16 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/label"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
-	"time"
 
 	"cairn/internal/engine"
 	"cairn/internal/store/files"
@@ -44,34 +45,6 @@ const (
 	SetHereOffer   = "Set here"
 )
 
-type configurationState struct {
-	configured  workspace.Config
-	configHere  bool
-	opens       string
-	stamp       workspace.ConfigStamp
-	readAt      time.Time
-	trouble     *workspace.Trouble
-	changed     []workspace.ConfigChange
-	changedIn   string
-	changedFor  int
-	global      bool
-	settingsAt  int
-	rowOn       int
-	hoverKey    string
-	keyWriting  string
-	keyWritten  Written
-	refusedKey  string
-	refusedSay  string
-	chooserOpen bool
-	introsOpen  bool
-	introFrom   Tab
-	introOn     int
-	tileOn      int
-	previewing  string
-	tiles       []schemeOffered
-	skin        *Skin
-}
-
 func (w Window) readingConfig() (workspace.Config, bool) {
 	got, err := w.work.Ask(engine.ConfigShow, engine.Input{})
 	if err != nil || got.Config == nil {
@@ -85,15 +58,15 @@ func (w Window) openingConfiguration() Window {
 	if !ok {
 		return w.failing(errNoConfiguration)
 	}
-	if got.Problem == "" || w.configured.File == "" {
-		w.configured = got
+	if got.Problem == "" || w.Configured.File == "" {
+		w.Configured = got
 	}
 	w = w.troubledBy(got)
-	_, missing := os.Stat(w.configured.File)
-	w.configHere = missing == nil
-	w.global = !w.HereOffered()
-	w.screen, w.rowOn, w.settingsAt, w.chooserOpen, w.keyWriting, w.refusedKey = OnConfiguration, -1, 0, false, "", ""
-	w.introsOpen = false
+	_, missing := os.Stat(w.Configured.File)
+	w.ConfigHere = missing == nil
+	w.Global = !w.HereOffered()
+	w.Screen, w.RowOn, w.SettingsAt, w.ChooserOpen, w.KeyWriting, w.RefusedKey = board.OnConfiguration, -1, 0, false, "", ""
+	w.IntrosOpen = false
 	return w
 }
 
@@ -112,12 +85,12 @@ func (w Window) writingConfiguration() Window {
 
 // HereOffered says whether the settings of the store shown are a scope of their own: the store is a workspace's, or settings are already beside it.
 func (w Window) HereOffered() bool {
-	return w.switcher.place.Configured() != "" || w.configured.Settings != ""
+	return w.switcher.place.Configured() != "" || w.Configured.Settings != ""
 }
 
 // SettingsScope is the scope the settings write: the workspace's name, the folder of the store, or Global.
 func (w Window) SettingsScope() string {
-	if w.global {
+	if w.Global {
 		return "Global"
 	}
 	return w.hereName()
@@ -132,24 +105,17 @@ func (w Window) hereName() string {
 
 // SettingsPath is what the panel says beside the scope: the name of the file written, and of the one it lies over or under; the whole path is copied from the mark before it.
 func (w Window) SettingsPath() string {
-	global := filepath.Base(w.configured.File)
-	if w.global {
+	global := filepath.Base(w.Configured.File)
+	if w.Global {
 		if w.HereOffered() {
 			return global + " · under every workspace's own settings"
 		}
 		return global
 	}
 	if w.narrow() {
-		return filepath.Base(workspace.SettingsOf(w.configured))
+		return filepath.Base(workspace.SettingsOf(w.Configured))
 	}
-	return filepath.Base(workspace.SettingsOf(w.configured)) + " over " + global
-}
-
-func (w Window) settingsWritten() string {
-	if w.global {
-		return w.configured.File
-	}
-	return workspace.SettingsOf(w.configured)
+	return filepath.Base(workspace.SettingsOf(w.Configured)) + " over " + global
 }
 
 func tilde(path string) string {
@@ -170,9 +136,9 @@ type SettingRow struct {
 	Offers                      []string
 	Off, Fixed                  bool
 	Said                        string
-	At, Name, Control, From     Box
-	OfferAt                     []Box
-	Parts                       []Box
+	At, Name, Control, From     geom.Box
+	OfferAt                     []geom.Box
+	Parts                       []geom.Box
 	Words                       []string
 }
 
@@ -180,30 +146,19 @@ type SettingRow struct {
 type SettingSection struct {
 	Name, Count string
 	First       int
-	At          Box
-}
-
-func (w Window) keysShown() []files.Key {
-	var shown []files.Key
-	for _, key := range files.Keys() {
-		if w.global && key.Store || !w.global && key.Machine {
-			continue
-		}
-		shown = append(shown, key)
-	}
-	return shown
+	At          geom.Box
 }
 
 func (w Window) rowOfKey(key files.Key) SettingRow {
-	c := w.configured
+	c := w.Configured
 	row := SettingRow{Key: key, Value: w.valueShown(key.Name), Words: key.Words}
 	here, global := slices.Contains(c.WrittenHere, key.Name), slices.Contains(c.Written, key.Name)
 	switch {
 	case key.Name == "store" || key.Name == "notes":
 		row.Comes, row.Fixed = WhenOpened, true
-	case w.global && global:
+	case w.Global && global:
 		row.Comes, row.Offers = InFile, []string{ResetToDefault}
-	case w.global:
+	case w.Global:
 		row.Comes = ByDefault
 	case here:
 		row.Comes, row.Offers = SetHere, []string{ResetToGlobal}
@@ -215,33 +170,26 @@ func (w Window) rowOfKey(key files.Key) SettingRow {
 	default:
 		row.Comes = ByDefault
 	}
-	if w.global && here && w.HereOffered() {
+	if w.Global && here && w.HereOffered() {
 		row.Theirs = "· " + w.hereName() + " sets its own: " + workspace.ValueIn(c, key.Name)
 	}
-	if !row.Fixed && row.Comes != SetHere && row.Comes != InFile && w.hoverKey == key.Name && !w.global {
+	if !row.Fixed && row.Comes != SetHere && row.Comes != InFile && w.hoverKey == key.Name && !w.Global {
 		row.Offers = []string{SetHereOffer}
 	}
 	if w.narrow() && len(row.Offers) > 0 && row.Offers[0] == ResetToGlobal {
 		row.Offers = []string{ResetShort}
 	}
-	if w.trouble != nil && w.trouble.File == w.scopeFile() {
+	if w.Troubled != nil && w.Troubled.File == w.SettingsWritten() {
 		row.Off, row.Offers = true, nil
 	}
-	if w.refusedKey == key.Name {
-		row.Said = w.refusedSay
+	if w.RefusedKey == key.Name {
+		row.Said = w.RefusedSay
 	}
 	return row
 }
 
-func (w Window) scopeFile() string {
-	if w.global {
-		return w.configured.File
-	}
-	return workspace.SettingsOf(w.configured)
-}
-
 func (w Window) valueShown(key string) string {
-	c := w.configured
+	c := w.Configured
 	switch key {
 	case "store":
 		return tilde(c.Store.At)
@@ -249,7 +197,7 @@ func (w Window) valueShown(key string) string {
 		return tilde(c.Notes.At)
 	}
 	value := workspace.ValueIn(c, key)
-	if global, ok := c.Global[key]; ok && w.global {
+	if global, ok := c.Global[key]; ok && w.Global {
 		value = global
 	}
 	if value == workspace.NotSaid {
@@ -276,12 +224,12 @@ func (w Window) SettingSections() []SettingSection {
 			sections = append(sections, SettingSection{Name: name, Count: itoa(count), First: first})
 		}
 	}
-	if !w.global {
+	if !w.Global {
 		sections = append(sections, SettingSection{Name: files.SectionPlaces, Count: "global", First: -1})
 	}
 	nav := SettingsNav(w.SettingsBox())
 	for i := range sections {
-		sections[i].At = Box{X: nav.X + inset*2, Y: nav.Y + padding + i*navRow, W: nav.W - inset*4, H: navRow}
+		sections[i].At = geom.Box{X: nav.X + inset*2, Y: nav.Y + padding + i*navRow, W: nav.W - inset*4, H: navRow}
 	}
 	return sections
 }
@@ -304,71 +252,71 @@ const (
 )
 
 // SettingsBox is the panel of the settings in a window of that size: as wide and as tall as it is drawn, or the room the window has less a margin.
-func SettingsBox(width, height int) Box {
+func SettingsBox(width, height int) geom.Box {
 	wide, high := min(settingsWide, width-2*settingsMargin), min(settingsHigh, height-2*settingsMargin)
-	return Box{X: (width - wide) / 2, Y: (height - high) / 2, W: wide, H: high}
+	return geom.Box{X: (width - wide) / 2, Y: (height - high) / 2, W: wide, H: high}
 }
 
-func (w Window) settingsOpens() Box {
-	if w.introsOpen {
+func (w Window) settingsOpens() geom.Box {
+	if w.IntrosOpen {
 		return IntrosBox(w.width, w.height)
 	}
-	if w.chooserOpen {
+	if w.ChooserOpen {
 		return ChooserBox(w.width, w.height)
 	}
 	return SettingsBox(w.width, w.height)
 }
 
 // ChooserBox is the panel the theme chooser is drawn in, a little wider than the settings.
-func ChooserBox(width, height int) Box {
+func ChooserBox(width, height int) geom.Box {
 	wide, high := min(900, width-2*settingsMargin), min(settingsHigh, height-2*settingsMargin)
-	return Box{X: (width - wide) / 2, Y: (height - high) / 2, W: wide, H: high}
+	return geom.Box{X: (width - wide) / 2, Y: (height - high) / 2, W: wide, H: high}
 }
 
 func (w Window) narrow() bool { return SettingsBox(w.width, w.height).W < settingsWide }
 
 // ScopeAt is the line under the heading: the scope chosen, and the file it writes.
-func ScopeAt(box Box) Box {
+func ScopeAt(box geom.Box) geom.Box {
 	head := HeadingAt(box)
-	return Box{X: box.X + padding, Y: head.Y + head.H + padding, W: box.W - 2*padding, H: scopeHigh}
+	return geom.Box{X: box.X + padding, Y: head.Y + head.H + padding, W: box.W - 2*padding, H: scopeHigh}
 }
 
 // SettingsBody is what lies between the scope and the foot: the sections and the rows.
-func SettingsBody(box Box) Box {
+func SettingsBody(box geom.Box) geom.Box {
 	scope := ScopeAt(box)
 	top := scope.Y + scope.H + padding
 	foot := PanelOfferAt(box, 0).Y - between
-	return Box{X: box.X, Y: top, W: box.W, H: foot - top}
+	return geom.Box{X: box.X, Y: top, W: box.W, H: foot - top}
 }
 
 // SettingsNav is the column the sections are listed down at the left of the body, none at the narrowest.
-func SettingsNav(box Box) Box {
+func SettingsNav(box geom.Box) geom.Box {
 	if box.W < settingsWide {
-		return Box{}
+		return geom.Box{}
 	}
 	body := SettingsBody(box)
-	return Box{X: body.X, Y: body.Y, W: navWide, H: body.H}
+	return geom.Box{X: body.X, Y: body.Y, W: navWide, H: body.H}
 }
 
 // SettingsRows is where the rows scroll: the body right of the sections.
-func SettingsRows(box Box) Box {
+func SettingsRows(box geom.Box) geom.Box {
 	body, nav := SettingsBody(box), SettingsNav(box)
 	x := body.X + nav.W + rowsPad
-	return Box{X: x, Y: body.Y + inset, W: body.X + body.W - rowsPad - x, H: body.H - inset}
+	return geom.Box{X: x, Y: body.Y + inset, W: body.X + body.W - rowsPad - x, H: body.H - inset}
 }
 
 // ScopeSegments is where the two scopes are laid on the scope's line: the workspace's, then Global; one only when the store has no settings of its own.
-func (w Window) ScopeSegments() []Box {
+func (w Window) ScopeSegments() []geom.Box {
 	scope := ScopeAt(w.SettingsBox())
 	m := w.measured()
-	var boxes []Box
+	var boxes []geom.Box
 	x := scope.X + 2
 	for i, said := range w.scopeWords() {
 		wide := ends(m, said, small) + 2*pickerPad
 		if i == 0 && w.HereOffered() {
 			wide += dotSide + between
 		}
-		boxes = append(boxes, Box{X: x, Y: scope.Y + 2, W: wide, H: scope.H - 4})
+		boxes = append(boxes, geom.Box{X: x, Y: scope.Y + 2, W: wide, H: scope.H - 4})
 		x += wide + 2
 	}
 	return boxes
@@ -382,11 +330,11 @@ func (w Window) scopeWords() []string {
 }
 
 // ScopePathAt is where the path the scope writes is said, after its segments.
-func (w Window) ScopePathAt() Box {
+func (w Window) ScopePathAt() geom.Box {
 	scope, segments := ScopeAt(w.SettingsBox()), w.ScopeSegments()
 	last := segments[len(segments)-1]
 	x := last.X + last.W + 2 + padding + copyRoom
-	return Box{X: x, Y: scope.Y + (scope.H-lineHigh)/2, W: max(0, scope.X+scope.W-x), H: lineHigh}
+	return geom.Box{X: x, Y: scope.Y + (scope.H-lineHigh)/2, W: max(0, scope.X+scope.W-x), H: lineHigh}
 }
 
 // SettingRows is every row of the settings in the scope shown, laid out down the rows' column, scrolled.
@@ -394,7 +342,7 @@ func (w Window) SettingRows() []SettingRow {
 	rows := SettingsRows(w.SettingsBox())
 	keys := w.keysShown()
 	out := make([]SettingRow, 0, len(keys))
-	y, section := rows.Y-w.settingsAt, ""
+	y, section := rows.Y-w.SettingsAt, ""
 	for _, key := range keys {
 		if key.Section != section {
 			section = key.Section
@@ -408,7 +356,7 @@ func (w Window) SettingRows() []SettingRow {
 		if row.Said != "" {
 			high += lineHigh
 		}
-		row = w.laidRow(row, Box{X: rows.X - padding + 2, Y: y, W: rows.W + 2*(padding-2), H: high})
+		row = w.laidRow(row, geom.Box{X: rows.X - padding + 2, Y: y, W: rows.W + 2*(padding-2), H: high})
 		out = append(out, row)
 		y += high
 	}
@@ -429,7 +377,7 @@ func (w Window) SectionHeads() []SettingSection {
 					count++
 				}
 			}
-			heads = append(heads, SettingSection{Name: section, Count: itoa(count), First: i, At: Box{X: rows.X, Y: row.At.Y - sectionHigh + padding, W: rows.W, H: lineHigh}})
+			heads = append(heads, SettingSection{Name: section, Count: itoa(count), First: i, At: geom.Box{X: rows.X, Y: row.At.Y - sectionHigh + padding, W: rows.W, H: lineHigh}})
 		}
 	}
 	return heads
@@ -441,25 +389,25 @@ func (w Window) settingsLength() int {
 		return 0
 	}
 	last := rows[len(rows)-1]
-	return last.At.Y + last.At.H + w.settingsAt - SettingsRows(w.SettingsBox()).Y + padding
+	return last.At.Y + last.At.H + w.SettingsAt - SettingsRows(w.SettingsBox()).Y + padding
 }
 
-func (w Window) laidRow(row SettingRow, at Box) SettingRow {
+func (w Window) laidRow(row SettingRow, at geom.Box) SettingRow {
 	row.At = at
-	inner := Box{X: at.X + padding - 2, Y: at.Y, W: at.W - 2*(padding-2), H: at.H}
-	line := Box{X: inner.X, Y: inner.Y + between, W: inner.W, H: rowHigh - 2*between}
+	inner := geom.Box{X: at.X + padding - 2, Y: at.Y, W: at.W - 2*(padding-2), H: at.H}
+	line := geom.Box{X: inner.X, Y: inner.Y + between, W: inner.W, H: rowHigh - 2*between}
 	if w.narrow() {
-		row.From = Box{X: inner.X, Y: line.Y + line.H, W: inner.W, H: stackedHigh - rowHigh}
+		row.From = geom.Box{X: inner.X, Y: line.Y + line.H, W: inner.W, H: stackedHigh - rowHigh}
 	} else {
-		row.From = Box{X: inner.X + inner.W - fromWide, Y: line.Y, W: fromWide, H: line.H}
+		row.From = geom.Box{X: inner.X + inner.W - fromWide, Y: line.Y, W: fromWide, H: line.H}
 	}
 	right := inner.X + inner.W
 	if !w.narrow() {
 		right = row.From.X - padding
 	}
 	wide := w.controlWide(row)
-	row.Control = Box{X: right - wide, Y: line.Y + (line.H-controlHigh)/2, W: wide, H: controlHigh}
-	row.Name = Box{X: inner.X, Y: line.Y, W: max(0, row.Control.X-padding-inner.X), H: line.H}
+	row.Control = geom.Box{X: right - wide, Y: line.Y + (line.H-controlHigh)/2, W: wide, H: controlHigh}
+	row.Name = geom.Box{X: inner.X, Y: line.Y, W: max(0, row.Control.X-padding-inner.X), H: line.H}
 	row.Parts = w.controlParts(row)
 	row.OfferAt = w.offersOfRow(row)
 	return row
@@ -496,23 +444,23 @@ func (w Window) controlWide(row SettingRow) int {
 		least = 80 + ends(m, row.Key.Unit, small)
 	}
 	said := row.Value
-	if w.keyWriting == row.Key.Name {
-		said = w.keyWritten.Reads()
+	if w.KeyWriting == row.Key.Name {
+		said = w.KeyWritten.Reads()
 	}
 	return min(260, max(least, monoWide(said, small)+2*pickerPad+ends(m, row.Key.Unit, small)))
 }
 
-func (w Window) controlParts(row SettingRow) []Box {
+func (w Window) controlParts(row SettingRow) []geom.Box {
 	switch row.Key.Kind {
 	case files.KindBool:
-		return []Box{ToggleAt(row.Control)}
+		return []geom.Box{ToggleAt(row.Control)}
 	case files.KindWords:
 		m := w.measured()
-		var parts []Box
+		var parts []geom.Box
 		x := row.Control.X + 2
 		for _, word := range row.Words {
 			wide := ends(m, word, small) + 2*pickerPad
-			parts = append(parts, Box{X: x, Y: row.Control.Y + 2, W: wide, H: row.Control.H - 4})
+			parts = append(parts, geom.Box{X: x, Y: row.Control.Y + 2, W: wide, H: row.Control.H - 4})
 			x += wide
 		}
 		return parts
@@ -520,15 +468,15 @@ func (w Window) controlParts(row SettingRow) []Box {
 	return nil
 }
 
-func (w Window) offersOfRow(row SettingRow) []Box {
+func (w Window) offersOfRow(row SettingRow) []geom.Box {
 	m := w.measured()
 	x := row.From.X + row.From.W
-	var boxes []Box
+	var boxes []geom.Box
 	for i := len(row.Offers) - 1; i >= 0; i-- {
 		wide := ends(m, row.Offers[i], small) + 2*between + 4
 		x -= wide
-		boxes = append([]Box{{X: x, Y: row.From.Y + (row.From.H-smallButton)/2, W: wide, H: smallButton}}, boxes...)
-		x -= gap
+		boxes = append([]geom.Box{{X: x, Y: row.From.Y + (row.From.H-smallButton)/2, W: wide, H: smallButton}}, boxes...)
+		x -= geom.Gap
 	}
 	return boxes
 }
@@ -538,12 +486,12 @@ const smallButton = 22
 // SettingsFootSays is what the foot of the settings says at its left.
 func (w Window) SettingsFootSays() string {
 	switch {
-	case w.introsOpen:
+	case w.IntrosOpen:
 		return ""
-	case w.chooserOpen:
+	case w.ChooserOpen:
 		return w.shortSaid()
-	case w.trouble != nil && w.trouble.File == w.scopeFile():
-		if w.HereOffered() && !w.global {
+	case w.Troubled != nil && w.Troubled.File == w.SettingsWritten():
+		if w.HereOffered() && !w.Global {
 			return "Global stays editable"
 		}
 		return "Fix the file and it is read again"
@@ -552,9 +500,6 @@ func (w Window) SettingsFootSays() string {
 	}
 	return SettingsFoot
 }
-
-// Configured is the configuration the window holds in force: the last one read that could be read.
-func (w Window) Configured() workspace.Config { return w.configured }
 
 func itoa(n int) string {
 	if n == 0 {
@@ -568,61 +513,61 @@ func itoa(n int) string {
 }
 
 func (w Window) onConfiguration(name string) Window {
-	if w.introsOpen {
+	if w.IntrosOpen {
 		return w.inIntros(name)
 	}
-	if w.chooserOpen {
+	if w.ChooserOpen {
 		return w.inChooser(name)
 	}
 	if w.colourKey != "" {
 		switch name {
 		case "right", "l":
-			w.colourPick = min(len(label.LabelColours)-1, w.colourPick+1)
+			w.ColourPick = min(len(label.LabelColours)-1, w.ColourPick+1)
 		case "left", "h":
-			w.colourPick = max(0, w.colourPick-1)
+			w.ColourPick = max(0, w.ColourPick-1)
 		case "enter", "space":
-			return w.colouredSetting(w.colourPick)
+			return w.colouredSetting(w.ColourPick)
 		case "esc":
 			w.colourKey = ""
 		}
 		return w
 	}
-	if w.keyWriting != "" {
+	if w.KeyWriting != "" {
 		switch name {
 		case "enter":
 			return w.settingEdited()
 		case "esc":
-			w.keyWriting = ""
+			w.KeyWriting = ""
 		case "backspace":
-			w.keyWritten = w.keyWritten.Back()
+			w.KeyWritten = w.KeyWritten.Back()
 		case "left":
-			w.keyWritten = w.keyWritten.Left()
+			w.KeyWritten = w.KeyWritten.Left()
 		case "right":
-			w.keyWritten = w.keyWritten.Right()
+			w.KeyWritten = w.KeyWritten.Right()
 		}
 		return w
 	}
 	rows := w.SettingRows()
 	switch name {
 	case "down", "j":
-		w.rowOn = min(len(rows)-1, w.rowOn+1)
+		w.RowOn = min(len(rows)-1, w.RowOn+1)
 		return w.rowInSight()
 	case "up", "k":
-		w.rowOn = max(0, w.rowOn-1)
+		w.RowOn = max(0, w.RowOn-1)
 		return w.rowInSight()
 	case "tab":
-		return w.scoped(!w.global)
+		return w.scoped(!w.Global)
 	case "enter", "space", " ":
-		if w.rowOn >= 0 && w.rowOn < len(rows) {
-			return w.acting(rows[w.rowOn], -1)
+		if w.RowOn >= 0 && w.RowOn < len(rows) {
+			return w.acting(rows[w.RowOn], -1)
 		}
 	case "backspace":
-		if w.rowOn >= 0 && w.rowOn < len(rows) && len(rows[w.rowOn].Offers) > 0 && rows[w.rowOn].Offers[0] != SetHereOffer {
-			return w.unsetting(rows[w.rowOn].Key.Name)
+		if w.RowOn >= 0 && w.RowOn < len(rows) && len(rows[w.RowOn].Offers) > 0 && rows[w.RowOn].Offers[0] != SetHereOffer {
+			return w.unsetting(rows[w.RowOn].Key.Name)
 		}
 	case "left", "right":
-		if w.rowOn >= 0 && w.rowOn < len(rows) && rows[w.rowOn].Key.Kind == files.KindWords {
-			row := rows[w.rowOn]
+		if w.RowOn >= 0 && w.RowOn < len(rows) && rows[w.RowOn].Key.Kind == files.KindWords {
+			row := rows[w.RowOn]
 			at := slices.Index(row.Words, row.Value)
 			if name == "left" {
 				at = max(0, at-1)
@@ -637,17 +582,17 @@ func (w Window) onConfiguration(name string) Window {
 
 func (w Window) rowInSight() Window {
 	rows, region := w.SettingRows(), SettingsRows(w.SettingsBox())
-	if w.rowOn < 0 || w.rowOn >= len(rows) {
+	if w.RowOn < 0 || w.RowOn >= len(rows) {
 		return w
 	}
-	row := rows[w.rowOn]
+	row := rows[w.RowOn]
 	switch {
 	case row.At.Y < region.Y:
-		w.settingsAt -= region.Y - row.At.Y + sectionHigh
+		w.SettingsAt -= region.Y - row.At.Y + sectionHigh
 	case row.At.Y+row.At.H > region.Y+region.H:
-		w.settingsAt += row.At.Y + row.At.H - region.Y - region.H
+		w.SettingsAt += row.At.Y + row.At.H - region.Y - region.H
 	}
-	w.settingsAt = max(0, w.settingsAt)
+	w.SettingsAt = max(0, w.SettingsAt)
 	return w
 }
 
@@ -655,7 +600,7 @@ func (w Window) scoped(global bool) Window {
 	if !global && !w.HereOffered() {
 		return w
 	}
-	w.global, w.settingsAt, w.rowOn, w.keyWriting, w.refusedKey = global, 0, -1, "", ""
+	w.Global, w.SettingsAt, w.RowOn, w.KeyWriting, w.RefusedKey = global, 0, -1, "", ""
 	return w
 }
 
@@ -683,12 +628,12 @@ func (w Window) acting(row SettingRow, word int) Window {
 	case files.KindIntro:
 		return w.openingIntros()
 	case files.KindColour:
-		w.colourKey, w.colourPick = row.Key.Name, max(0, slices.Index(label.LabelColours, row.Value))
+		w.colourKey, w.ColourPick = row.Key.Name, max(0, slices.Index(label.LabelColours, row.Value))
 		return w
 	case files.KindDay:
 		return w.openingCalendarFor(row.Key.Name, row.Value)
 	}
-	w.keyWriting, w.keyWritten, w.refusedKey = row.Key.Name, Written{}.Types(row.Value).All(), ""
+	w.KeyWriting, w.KeyWritten, w.RefusedKey = row.Key.Name, board.Written{}.Types(row.Value).All(), ""
 	return w
 }
 
@@ -704,16 +649,16 @@ func (w Window) filling(global bool) Window {
 }
 
 func (w Window) leavingSettings() Window {
-	if w.keyWriting != "" {
-		w.screen, w.question = OnAsking, aboutLeavingSettings
+	if w.KeyWriting != "" {
+		w.Screen, w.Question = board.OnAsking, board.AboutLeavingSettings
 		return w
 	}
 	return w.Choose("Close")
 }
 
 func (w Window) settingEdited() Window {
-	key, value := w.keyWriting, strings.TrimSpace(w.keyWritten.Reads())
-	w.keyWriting = ""
+	key, value := w.KeyWriting, strings.TrimSpace(w.KeyWritten.Reads())
+	w.KeyWriting = ""
 	if key == "approach.label" || value != "" {
 		return w.setting(key, value)
 	}
@@ -722,27 +667,27 @@ func (w Window) settingEdited() Window {
 
 func (w Window) setting(key, value string) Window {
 	in := engine.Input{Given: map[string]string{"key": key, "value": value}}
-	if w.global {
+	if w.Global {
 		in.Given["global"] = "true"
 	}
 	if _, err := w.work.Ask(engine.ConfigSet, in); err != nil {
-		w.refusedKey, w.refusedSay = key, err.Error()
+		w.RefusedKey, w.RefusedSay = key, err.Error()
 		return w
 	}
-	w.refusedKey = ""
+	w.RefusedKey = ""
 	return w.applyingOwn()
 }
 
 func (w Window) unsetting(key string) Window {
 	in := engine.Input{Given: map[string]string{"key": key}}
-	if w.global {
+	if w.Global {
 		in.Given["global"] = "true"
 	}
 	if _, err := w.work.Ask(engine.ConfigUnset, in); err != nil {
-		w.refusedKey, w.refusedSay = key, err.Error()
+		w.RefusedKey, w.RefusedSay = key, err.Error()
 		return w
 	}
-	w.refusedKey = ""
+	w.RefusedKey = ""
 	return w.applyingOwn()
 }
 
@@ -752,15 +697,15 @@ func (w Window) applyingOwn() Window {
 		return w
 	}
 	w = w.takingConfig(got)
-	w.stamp = workspace.StampOf(got)
+	w.Stamp = workspace.StampOf(got)
 	return w
 }
 
-func (w Window) clickingSettings(p Point) Window {
-	if w.introsOpen {
+func (w Window) clickingSettings(p geom.Point) Window {
+	if w.IntrosOpen {
 		return w.clickingIntros(p)
 	}
-	if w.chooserOpen {
+	if w.ChooserOpen {
 		return w.clickingChooser(p)
 	}
 	for i, segment := range w.ScopeSegments() {
@@ -781,7 +726,7 @@ func (w Window) clickingSettings(p Point) Window {
 		if !row.At.In(p) {
 			continue
 		}
-		w.rowOn = i
+		w.RowOn = i
 		for j, offer := range row.OfferAt {
 			if offer.In(p) {
 				return w.offeredOnRow(row, row.Offers[j])
@@ -828,14 +773,14 @@ func (w Window) toSection(section SettingSection) Window {
 	}
 	rows := w.SettingRows()
 	if section.First >= 0 && section.First < len(rows) {
-		w.settingsAt = max(0, rows[section.First].At.Y-sectionHigh+w.settingsAt-SettingsRows(w.SettingsBox()).Y)
+		w.SettingsAt = max(0, rows[section.First].At.Y-sectionHigh+w.SettingsAt-SettingsRows(w.SettingsBox()).Y)
 	}
 	return w
 }
 
-func (w Window) hoveringSettings(p Point) Window {
+func (w Window) hoveringSettings(p geom.Point) Window {
 	w.hoverKey = ""
-	if w.chooserOpen || w.introsOpen || !SettingsRows(w.SettingsBox()).In(p) {
+	if w.ChooserOpen || w.IntrosOpen || !SettingsRows(w.SettingsBox()).In(p) {
 		return w
 	}
 	for _, row := range w.SettingRows() {
@@ -848,31 +793,31 @@ func (w Window) hoveringSettings(p Point) Window {
 
 func (w Window) scrollingSettings(by int) Window {
 	region := SettingsRows(w.SettingsBox())
-	w.settingsAt = min(max(0, w.settingsLength()-region.H), max(0, w.settingsAt+by))
+	w.SettingsAt = min(max(0, w.settingsLength()-region.H), max(0, w.SettingsAt+by))
 	return w
 }
 
 func (w Window) choosingOnSettings(name string) (Window, bool) {
-	if w.screen != OnConfiguration {
+	if w.Screen != board.OnConfiguration {
 		return w, false
 	}
-	if w.introsOpen {
+	if w.IntrosOpen {
 		return w.choosingOnIntros(name)
 	}
 	switch {
 	case name == OpenSettings:
-		w.opens = workspace.SettingsOf(w.configured)
+		w.Opens = workspace.SettingsOf(w.Configured)
 		return w.filling(false), true
 	case name == OpenGlobal:
-		w.opens = w.configured.File
+		w.Opens = w.Configured.File
 		return w.filling(true), true
 	case name == WriteWhole:
 		return w.writingConfiguration(), true
 	case name == OpenThemes:
-		w.opens = themesFolder(w.configured)
+		w.Opens = themesFolder(w.Configured)
 	case strings.HasPrefix(name, "Wear "):
 		return w.wearing(), true
-	case name == "Cancel" && w.chooserOpen:
+	case name == "Cancel" && w.ChooserOpen:
 		return w.leavingChooser(), true
 	default:
 		return w, false
@@ -881,17 +826,17 @@ func (w Window) choosingOnSettings(name string) (Window, bool) {
 }
 
 func (w Window) settingsOffers() []string {
-	if w.introsOpen {
+	if w.IntrosOpen {
 		return w.introsOffers()
 	}
-	if w.chooserOpen {
-		return []string{"Wear " + w.previewing, "Cancel", OpenThemes}
+	if w.ChooserOpen {
+		return []string{"Wear " + w.Previewing, "Cancel", OpenThemes}
 	}
 	offers := []string{"Close"}
 	switch {
-	case w.global && !w.configHere:
+	case w.Global && !w.ConfigHere:
 		return append(offers, WriteWhole)
-	case w.global:
+	case w.Global:
 		return append(offers, OpenGlobal)
 	}
 	return append(offers, OpenSettings)
@@ -899,11 +844,11 @@ func (w Window) settingsOffers() []string {
 
 func (w Window) settingsShortcut(offer string) string {
 	switch {
-	case w.introsOpen:
+	case w.IntrosOpen:
 		return w.introsShortcut(offer)
-	case w.keyWriting != "":
+	case w.KeyWriting != "":
 		return ""
-	case w.chooserOpen && strings.HasPrefix(offer, "Wear "):
+	case w.ChooserOpen && strings.HasPrefix(offer, "Wear "):
 		return "enter"
 	case offer == "Cancel" || offer == "Close":
 		return "esc"
@@ -913,35 +858,24 @@ func (w Window) settingsShortcut(offer string) string {
 
 func (w Window) troubledBy(got workspace.Config) Window {
 	if got.Problem == "" {
-		w.trouble = nil
+		w.Troubled = nil
 		return w
 	}
-	trouble := workspace.TroubleIn(got, w.configured)
-	w.trouble = &trouble
+	trouble := workspace.TroubleIn(got, w.Configured)
+	w.Troubled = &trouble
 	return w
 }
 
-// Trouble is the file the window cannot read while it is open, and why: nothing when every file reads.
-func (w Window) Trouble() (workspace.Trouble, bool) {
-	if w.trouble == nil {
-		return workspace.Trouble{}, false
-	}
-	return *w.trouble, true
-}
-
-// ReadAgain is what the window says of a configuration it read again: the file, and each key that changed with what it was.
-func (w Window) ReadAgain() (string, []workspace.ConfigChange) { return w.changedIn, w.changed }
-
 func (w Window) rereading() Window {
-	if w.configured.File == "" {
+	if w.Configured.File == "" {
 		return w
 	}
-	stamp, moved := w.stamp.Moved()
-	w.stamp = stamp
-	if w.changed != nil {
+	stamp, moved := w.Stamp.Moved()
+	w.Stamp = stamp
+	if w.Changed != nil {
 		var gone bool
-		if w.changedFor, gone = lingered(w.changedFor); gone {
-			w.changed, w.changedFor = nil, 0
+		if w.ChangedFor, gone = lingered(w.ChangedFor); gone {
+			w.Changed, w.ChangedFor = nil, 0
 		}
 	}
 	if !moved {
@@ -954,26 +888,26 @@ func (w Window) rereading() Window {
 	if got.Problem != "" {
 		return w.troubledBy(got)
 	}
-	changes := workspace.ConfigChanges(w.configured, got)
+	changes := workspace.ConfigChanges(w.Configured, got)
 	in := filepath.Base(got.File)
 	for _, change := range changes {
-		if slices.Contains(got.WrittenHere, change.Key) || slices.Contains(w.configured.WrittenHere, change.Key) {
+		if slices.Contains(got.WrittenHere, change.Key) || slices.Contains(w.Configured.WrittenHere, change.Key) {
 			in = files.SettingsFile
 		}
 	}
-	w.trouble = nil
+	w.Troubled = nil
 	w = w.takingConfig(got)
 	if len(changes) > 0 {
-		w.changed, w.changedIn, w.changedFor = changes, in, 0
+		w.Changed, w.ChangedIn, w.ChangedFor = changes, in, 0
 	}
 	return w
 }
 
 func (w Window) takingConfig(got workspace.Config) Window {
-	was := w.configured
-	w.configured, w.readAt = got, w.now
+	was := w.Configured
+	w.Configured, w.ReadAt = got, w.Now
 	_, missing := os.Stat(got.File)
-	w.configHere = missing == nil
+	w.ConfigHere = missing == nil
 	if got.Window != nil && (was.Window == nil || was.Window.Theme != got.Window.Theme || w.skin == nil) {
 		w = w.wornFrom(got)
 	}
@@ -981,7 +915,7 @@ func (w Window) takingConfig(got workspace.Config) Window {
 	w = w.readingPlace()
 	if pages := engine.PagesOf(got); was.File == "" || !samePages(pages, engine.PagesOf(was)) {
 		w = w.Paged(pages)
-		if w.version != 0 {
+		if w.Version != 0 {
 			w = w.Look()
 		}
 	}
@@ -1003,18 +937,15 @@ func (w Window) ReadingConfiguration() Window {
 	if !ok || got.Problem != "" {
 		return w
 	}
-	w.configured, w.readAt, w.stamp = got, w.now, workspace.StampOf(got)
+	w.Configured, w.ReadAt, w.Stamp = got, w.Now, workspace.StampOf(got)
 	_, missing := os.Stat(got.File)
-	w.configHere = missing == nil
+	w.ConfigHere = missing == nil
 	return w
 }
 
-// OpenAsked is the file the window wants the system to open, if any.
-func (w Window) OpenAsked() (string, bool) { return w.opens, w.opens != "" }
-
 // OpenTaken says the loop has handed the file asked for to the system.
 func (w Window) OpenTaken() Window {
-	w.opens = ""
+	w.Opens = ""
 	return w
 }
 
@@ -1049,4 +980,25 @@ func HandOver(path string) error {
 }
 
 // SettingsBox is the panel of the settings in this window.
-func (w Window) SettingsBox() Box { return w.placedPanel(OnConfiguration, w.settingsOpens()) }
+func (w Window) SettingsBox() geom.Box {
+	return w.placedPanel(board.OnConfiguration, w.settingsOpens())
+}
+
+func (w Window) keysShown() []files.Key {
+	var shown []files.Key
+	for _, key := range files.Keys() {
+		if w.Global && key.Store || !w.Global && key.Machine {
+			continue
+		}
+		shown = append(shown, key)
+	}
+	return shown
+}
+
+// GhostShows is how much of what is dragged shows: what the configuration says, or config.DefaultGhost.
+func (w Window) GhostShows() float32 {
+	if w.Configured.Window != nil && w.Configured.Window.Ghost > 0 {
+		return float32(w.Configured.Window.Ghost) / 100
+	}
+	return float32(files.DefaultGhost) / 100
+}

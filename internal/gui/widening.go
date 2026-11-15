@@ -1,6 +1,9 @@
 package gui
 
-import "cairn/internal/board"
+import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
+)
 
 // Widening is a gutter, or the edge above the band, being dragged: which one, where the pointer took it, the layout it was taken in and the sizes the board had then.
 type Widening struct {
@@ -8,12 +11,12 @@ type Widening struct {
 	Lane  bool
 	Band  bool
 	At    int
-	From  Point
-	Taken Layout
-	Was   Sizes
+	From  geom.Point
+	Taken geom.Layout
+	Was   geom.Sizes
 }
 
-func gutterAt(l Layout, was Sizes, p Point) (Widening, bool) {
+func gutterAt(l geom.Layout, was geom.Sizes, p geom.Point) (Widening, bool) {
 	for _, grab := range grabsOf(l) {
 		if grab.Box.In(p) {
 			taken := grab.Takes
@@ -36,19 +39,19 @@ const (
 
 // Grab is a place a drag can take hold of, and the widening it starts there.
 type Grab struct {
-	Box   Box
+	Box   geom.Box
 	Takes Widening
 }
 
-func grabsOf(l Layout) []Grab {
+func grabsOf(l geom.Layout) []Grab {
 	var grabs []Grab
 	for at := range board.Columns - 1 {
-		grabs = append(grabs, Grab{Gutter(l, at), Widening{At: at}})
+		grabs = append(grabs, Grab{geom.Gutter(l, at), Widening{At: at}})
 	}
 	for at := range len(l.Lane) - 1 {
-		grabs = append(grabs, Grab{LaneGutter(l, at), Widening{Lane: true, At: at}})
+		grabs = append(grabs, Grab{geom.LaneGutter(l, at), Widening{Lane: true, At: at}})
 	}
-	return append(grabs, Grab{BandEdge(l), Widening{Band: true}})
+	return append(grabs, Grab{geom.BandEdge(l), Widening{Band: true}})
 }
 
 // Pointer is the shape the pointer takes while this gutter, or the band's edge, is held or hovered: up and down for the band, sideways for the rest.
@@ -61,14 +64,14 @@ func (g Widening) Pointer() Pointer {
 
 // Grabs are the places of the board a drag takes hold of: the gutters between columns and between lanes, and the band's edge.
 func (w Window) Grabs() []Grab {
-	if w.Blank() || w.tab != Tasks || w.screen != OnTheBoard {
+	if w.Blank() || w.Tab != board.Tasks || w.Screen != board.OnTheBoard {
 		return nil
 	}
 	return grabsOf(w.Layout())
 }
 
 // PointerAt is the shape the pointer calls for at p: the one of the gutter or the edge being dragged wherever it is, otherwise the one of the grab it is over.
-func (w Window) PointerAt(p Point) Pointer {
+func (w Window) PointerAt(p geom.Point) Pointer {
 	if w.widening.On {
 		return w.widening.Pointer()
 	}
@@ -81,21 +84,21 @@ func (w Window) PointerAt(p Point) Pointer {
 }
 
 // To is the sizes the board takes with the pointer at p: the columns, the lanes, or the band, as they were when the gutter was taken, with the pair beside it given what the pointer went; everything else as it was.
-func (g Widening) To(p Point) Sizes {
+func (g Widening) To(p geom.Point) geom.Sizes {
 	by := g.Was
 	switch {
 	case g.Band:
-		by.Band = Raised(g.Taken.Column[1].H, g.Taken.Band.H, g.From.Y-p.Y)
+		by.Band = geom.Raised(g.Taken.Column[1].H, g.Taken.Band.H, g.From.Y-p.Y)
 	case g.Lane:
-		copy(by.Lane[:], Widened(g.Taken.Lane[:], g.At, p.X-g.From.X))
+		copy(by.Lane[:], geom.Widened(g.Taken.Lane[:], g.At, p.X-g.From.X))
 	default:
-		copy(by.Column[:], Widened(g.Taken.Column[:], g.At, p.X-g.From.X))
+		copy(by.Column[:], geom.Widened(g.Taken.Column[:], g.At, p.X-g.From.X))
 	}
 	return by
 }
 
 // Evened is the sizes the board had with what this gutter shares given back: every column, or every lane, as wide as the others, or the band as tall as it opens.
-func (g Widening) Evened() Sizes {
+func (g Widening) Evened() geom.Sizes {
 	by := g.Was
 	switch {
 	case g.Band:

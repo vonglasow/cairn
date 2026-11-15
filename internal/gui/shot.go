@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/gui/design"
 	"fmt"
 	"image"
 
@@ -12,7 +13,7 @@ import (
 )
 
 // Shot is the window drawn off screen in the skin given, as its pixels: what a picture of it shows.
-func Shot(w Window, th *material.Theme, skin Skin) (*image.RGBA, error) {
+func Shot(w Window, th *material.Theme, skin design.Skin) (*image.RGBA, error) {
 	window, err := headless.NewWindow(w.width, w.height)
 	if err != nil {
 		return nil, fmt.Errorf("no headless window here: %w", err)

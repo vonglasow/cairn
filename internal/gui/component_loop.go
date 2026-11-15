@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/gui/geom"
 	"image/color"
 	"strconv"
 
@@ -14,7 +15,7 @@ import (
 type LoopMark struct{ Ink color.NRGBA }
 
 // Draw draws the loop in at.
-func (l LoopMark) Draw(k Kit, at Box) Box {
+func (l LoopMark) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("loop", at)
 	reach := float32(min(at.W, at.H))/2 - 1.5
 	cx, cy := float32(at.X)+float32(at.W)/2, float32(at.Y)+float32(at.H)/2
@@ -48,13 +49,13 @@ const loopSide = markSide - 2
 func SeriesNumberWide(n, size int) int { return loopSide + 1 + monoWide(strconv.Itoa(n), size) }
 
 // Draw draws the number in at, the loop at its left.
-func (s SeriesNumber) Draw(k Kit, at Box) Box {
+func (s SeriesNumber) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("series", at)
 	size := s.Size
 	if size == 0 {
 		size = small
 	}
-	LoopMark{Ink: s.Ink}.Draw(k.inside("series"), Box{X: at.X, Y: at.Y + (at.H-loopSide)/2, W: loopSide, H: loopSide})
-	sayIn(k.gtx, k.th, s.Ink, Box{X: at.X + loopSide + 1, Y: at.Y, W: max(0, at.W-loopSide-1), H: at.H}, strconv.Itoa(s.Number), size, k.skin.Type.Mono, text.Start)
+	LoopMark{Ink: s.Ink}.Draw(k.inside("series"), geom.Box{X: at.X, Y: at.Y + (at.H-loopSide)/2, W: loopSide, H: loopSide})
+	sayIn(k.gtx, k.th, s.Ink, geom.Box{X: at.X + loopSide + 1, Y: at.Y, W: max(0, at.W-loopSide-1), H: at.H}, strconv.Itoa(s.Number), size, k.skin.Type.Mono, text.Start)
 	return at
 }

@@ -2,9 +2,12 @@
 
 package gui
 
-import "os/exec"
+import (
+	"cairn/internal/gui/motion"
+	"os/exec"
+)
 
 func lessMotion() bool {
 	said, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "enable-animations").Output()
-	return err == nil && AnimationsOff(string(said))
+	return err == nil && motion.AnimationsOff(string(said))
 }

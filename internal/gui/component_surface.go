@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"image/color"
 	"strconv"
 
@@ -11,7 +13,7 @@ import (
 type Ground struct{ Raised bool }
 
 // Draw lays the ground over at.
-func (g Ground) Draw(k Kit, at Box) Box {
+func (g Ground) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("ground", at)
 	ink := k.skin.Colour.Surface.Ground
 	if g.Raised {
@@ -28,7 +30,7 @@ type Panel struct {
 }
 
 // Draw raises the panel over at, its shadow under it, writes its head, and draws the grip it is resized by when it moves.
-func (p Panel) Draw(k Kit, at Box) Box {
+func (p Panel) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("panel", at)
 	raised(k, at, k.skin.Radius.Panel, k.skin.Colour.Surface.Raised)
 	if p.Head != "" {
@@ -47,10 +49,10 @@ type Heading struct {
 }
 
 // Draw writes the heading in at.
-func (h Heading) Draw(k Kit, at Box) Box {
+func (h Heading) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("heading", at)
 	if h.Number == "" {
-		sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, at, h.Said, HeadingSize, HeadingWeight, 1, text.Start)
+		sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, at, h.Said, design.HeadingSize, design.HeadingWeight, 1, text.Start)
 		return at
 	}
 	numbered := monoWide(h.Number, reads)
@@ -58,10 +60,10 @@ func (h Heading) Draw(k Kit, at Box) Box {
 		numbered = loopSide + 1 + numbered
 	}
 	room := max(0, at.W-numbered-markSpace)
-	said := fits(k.gtx, k.th, h.Said, room, HeadingSize)
-	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: at.X, Y: at.Y, W: room, H: at.H}, said, HeadingSize, HeadingWeight, 1, text.Start)
-	x := at.X + min(room, ends(measuredIn(k.th, HeadingWeight), said, HeadingSize)) + markSpace
-	number := Box{X: x, Y: at.Y + (at.H-lineHigh)/2 + 1, W: numbered, H: lineHigh}
+	said := fits(k.gtx, k.th, h.Said, room, design.HeadingSize)
+	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, geom.Box{X: at.X, Y: at.Y, W: room, H: at.H}, said, design.HeadingSize, design.HeadingWeight, 1, text.Start)
+	x := at.X + min(room, ends(measuredIn(k.th, design.HeadingWeight), said, design.HeadingSize)) + markSpace
+	number := geom.Box{X: x, Y: at.Y + (at.H-lineHigh)/2 + 1, W: numbered, H: lineHigh}
 	if n, err := strconv.Atoi(h.Number); h.Loop && err == nil {
 		SeriesNumber{Number: n, Ink: k.skin.Colour.Accent.Base, Size: reads}.Draw(k.inside("heading"), number)
 		return at
@@ -74,7 +76,7 @@ func (h Heading) Draw(k Kit, at Box) Box {
 type Popover struct{}
 
 // Draw raises the popover over at, its shadow under it.
-func (Popover) Draw(k Kit, at Box) Box {
+func (Popover) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("popover", at)
 	raised(k, at, k.skin.Radius.Ground, k.skin.Colour.Surface.Raised)
 	return at
@@ -84,13 +86,13 @@ func (Popover) Draw(k Kit, at Box) Box {
 type Veil struct{ Light bool }
 
 // Draw lays the veil over at.
-func (v Veil) Draw(k Kit, at Box) Box {
+func (v Veil) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("veil", at)
 	fill(k.gtx, at, v.ink(k.skin))
 	return at
 }
 
-func (v Veil) ink(s Skin) color.NRGBA {
+func (v Veil) ink(s design.Skin) color.NRGBA {
 	if v.Light {
 		return s.Colour.Surface.VeilLight
 	}
@@ -101,14 +103,14 @@ func (v Veil) ink(s Skin) color.NRGBA {
 type Rule struct{ Upright bool }
 
 // Draw draws the rule along the top of at, or down its left side when upright, in the line of the layer it is on.
-func (r Rule) Draw(k Kit, at Box) Box {
+func (r Rule) Draw(k Kit, at geom.Box) geom.Box {
 	line := k.skin.Colour.Line.Rule
 	if k.layer == LayerPanel || k.layer == LayerPopover {
 		line = k.skin.Colour.Line.Raised
 	}
-	along := Box{X: at.X, Y: at.Y, W: at.W, H: k.skin.Size.Rule}
+	along := geom.Box{X: at.X, Y: at.Y, W: at.W, H: k.skin.Size.Rule}
 	if r.Upright {
-		along = Box{X: at.X, Y: at.Y, W: k.skin.Size.Rule, H: at.H}
+		along = geom.Box{X: at.X, Y: at.Y, W: k.skin.Size.Rule, H: at.H}
 	}
 	rule := k.put("rule", along)
 	fill(k.gtx, rule, line)

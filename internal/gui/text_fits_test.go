@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"image"
 	"os"
@@ -22,8 +24,8 @@ import (
 )
 
 type saidAt struct {
-	box  Box
-	ink  Box
+	box  geom.Box
+	ink  geom.Box
 	said string
 	high int
 }
@@ -71,7 +73,7 @@ func noting(th *material.Theme, note sayNote) func() {
 
 func textDrawnWith(th *material.Theme, w Window) []saidAt {
 	var noted []saidAt
-	stop := noting(th, func(gtx layout.Context, th *material.Theme, b Box, said string, size int, face font.Font, lines int, along text.Alignment) {
+	stop := noting(th, func(gtx layout.Context, th *material.Theme, b geom.Box, said string, size int, face font.Font, lines int, along text.Alignment) {
 		boxed := gtx
 		boxed.Constraints = layout.Constraints{Max: image.Pt(max(b.W, 1), 1<<20)}
 		recorded := op.Record(boxed.Ops)
@@ -80,7 +82,7 @@ func textDrawnWith(th *material.Theme, w Window) []saidAt {
 		label.MaxLines = lines
 		laid := label.Layout(boxed).Size
 		recorded.Stop()
-		ink := Box{X: b.X, Y: b.Y, W: min(laid.X, b.W), H: min(laid.Y, b.H)}
+		ink := geom.Box{X: b.X, Y: b.Y, W: min(laid.X, b.W), H: min(laid.Y, b.H)}
 		switch along {
 		case text.End:
 			ink.X = b.X + b.W - ink.W
@@ -92,16 +94,16 @@ func textDrawnWith(th *material.Theme, w Window) []saidAt {
 	defer stop()
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(w.width, w.height)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	Draw(NewKit(gtx, th, Dark(), &Drawn{}), w)
+	Draw(NewKit(gtx, th, design.Dark(), &Drawn{}), w)
 	return noted
 }
 
-var pinnedSizes = []image.Point{{Narrowest, Shortest}, {1200, 800}}
+var pinnedSizes = []image.Point{{geom.Narrowest, geom.Shortest}, {1200, 800}}
 
 func (w Window) choosingFirstList() Window {
-	for at, f := range w.form.Fields() {
+	for at, f := range w.Form.Fields {
 		if chosenFromAList(f) {
-			w.form = w.form.onto(at)
+			w.Form = w.Form.Onto(at)
 			return w.choosingList()
 		}
 	}
@@ -122,9 +124,9 @@ func everyScreen(w Window) []struct {
 		{"the board", w},
 		{"a chosen card", card},
 		{"a task's form", card.Edit()},
-		{"the help", func() Window { h := w; h.screen = OnHelp; return h }()},
-		{"the objectives", w.onPage(Objectives)},
-		{"the time", w.onPage(Time)},
+		{"the help", func() Window { h := w; h.Screen = board.OnHelp; return h }()},
+		{"the objectives", w.onPage(board.Objectives)},
+		{"the time", w.onPage(board.Time)},
 		{"the labels", w.listingLabels()},
 		{"the backups", w.backingUp().listingBackups()},
 		{"the filters", w.filteringBoard()},
@@ -136,15 +138,15 @@ func everyScreen(w Window) []struct {
 		{"a list chosen from", card.Edit().choosingFirstList()},
 		{"a question", card.Key("shift+x")},
 		{"the switcher", w.openingSwitcher()},
-		{"a chosen objective", w.onPage(Objectives).Key("right")},
-		{"an objective's form", w.onPage(Objectives).Key("right").Edit()},
+		{"a chosen objective", w.onPage(board.Objectives).Key("right")},
+		{"an objective's form", w.onPage(board.Objectives).Key("right").Edit()},
 		{"a task's trace", card.Edit().togglingTrace()},
-		{"the week", w.onPage(Time)},
-		{"the week before", w.onPage(Time).Key("left")},
-		{"a day", w.onPage(Time).ranged("Day")},
-		{"the month", w.onPage(Time).ranged("Month")},
-		{"the months", func() Window { m := w.onPage(Time).ranged("Month"); m.grid = viewMonths; return m }()},
-		{"the years", func() Window { m := w.onPage(Time).ranged("Month"); m.grid = viewYears; return m }()},
+		{"the week", w.onPage(board.Time)},
+		{"the week before", w.onPage(board.Time).Key("left")},
+		{"a day", w.onPage(board.Time).ranged("Day")},
+		{"the month", w.onPage(board.Time).ranged("Month")},
+		{"the months", func() Window { m := w.onPage(board.Time).ranged("Month"); m.Grid = board.ViewMonths; return m }()},
+		{"the years", func() Window { m := w.onPage(board.Time).ranged("Month"); m.Grid = board.ViewYears; return m }()},
 		{"an objective holding sub-objectives", parent},
 		{"its tasks shown", parent.Key("t")},
 		{"its tasks narrowed", parent.Key("t").Key("]")},
@@ -171,24 +173,24 @@ func seriesScreens(w Window) []struct {
 	w    Window
 } {
 	r := w.Paged(engine.Pages{}).Look()
-	tab := r.onPage(Series)
+	tab := r.onPage(board.Series)
 	stopped := tab
 	for _, s := range tab.SeriesListed() {
 		if s.State == "stopped" {
-			stopped.seriesOn = s.Number
+			stopped.SeriesOn = s.Number
 		}
 	}
 	occurrence := r
-	for _, c := range r.snap.Cards {
-		if c.Series != nil && !c.Archived && occurrence.chosen == 0 {
-			occurrence.chosen = c.Number
+	for _, c := range r.Snap.Cards {
+		if c.Series != nil && !c.Archived && occurrence.Chosen == 0 {
+			occurrence.Chosen = c.Number
 		}
 	}
 	asked := occurrence.Edit()
-	asked.form = asked.form.Set("title", "Daily stand-up, again")
+	asked.Form = asked.Form.Set("title", "Daily stand-up, again")
 	asked = asked.Save()
 	off := w.openingPalette()
-	off.palette.typed, off.palette.opened = Written{Value: "series", At: 6}, off.now.Add(-time.Second)
+	off.palette.typed, off.palette.opened = board.Written{Value: "series", At: 6}, off.Now.Add(-time.Second)
 	return []struct {
 		name string
 		w    Window
@@ -205,12 +207,12 @@ func seriesScreens(w Window) []struct {
 		{"a rule built by its parts", tab.Key("n").openingRule().ruled(ruleUnit, 1).ruled(ruleOn, 3).ruled(ruleEnds, 2).Key("down")},
 		{"a rule read back", func() Window {
 			n := tab.Key("n")
-			n.form = n.form.Writes(Ending("every other thursday 14:00"))
+			n.Form = n.Form.Writes(board.Ending("every other thursday 14:00"))
 			return n
 		}()},
 		{"the board marking its series", r},
 		{"a chosen occurrence", occurrence},
-		{"the help, with the series", func() Window { h := r; h.screen = OnHelp; return h }()},
+		{"the help, with the series", func() Window { h := r; h.Screen = board.OnHelp; return h }()},
 		{"an occurrence's form", occurrence.Edit()},
 		{"saving an occurrence asked", asked},
 		{"the command bar, recurrence off", off},
@@ -220,30 +222,30 @@ func seriesScreens(w Window) []struct {
 func viewScreens(w Window) (viewed, changed, keeping Window) {
 	viewed = w.Key("cmd+1")
 	changed = w.Key("cmd+2").filteringBoard()
-	changed.filters = changed.filters.On("state", "todo")
-	changed.screen = OnTheBoard
+	changed.Filters = changed.Filters.On("state", "todo")
+	changed.Screen = board.OnTheBoard
 	keeping = w.filteringBoard()
-	keeping.filters = keeping.filters.On("priority", "high").On("state", "current")
+	keeping.Filters = keeping.Filters.On("priority", "high").On("state", "current")
 	return viewed, changed, keeping.Key("v")
 }
 
 func objectiveScreens(w Window) (parent, sub, refused Window) {
-	for _, g := range w.snap.Goals {
+	for _, g := range w.Snap.Goals {
 		if len(g.Children) > 0 && parent.width == 0 {
-			parent = w.onPage(Objectives)
-			parent.chosen, parent.chosenGoal = g.Number, true
+			parent = w.onPage(board.Objectives)
+			parent.Chosen, parent.ChosenGoal = g.Number, true
 			sub = parent
-			sub.chosen = g.Children[0]
+			sub.Chosen = g.Children[0]
 		}
 	}
-	for _, c := range w.snap.Cards {
-		if g, ok := w.snap.Goal(sub.chosen); ok && slices.Contains(c.Objectives, g.Number) && refused.width == 0 {
+	for _, c := range w.Snap.Cards {
+		if g, ok := w.Snap.Goal(sub.Chosen); ok && slices.Contains(c.Objectives, g.Number) && refused.width == 0 {
 			refused = w
-			refused.chosen = c.Number
+			refused.Chosen = c.Number
 			refused = onField(refused.Edit(), "objective")
 			for i, one := range refused.Choosing() {
 				if one.Number == g.Parent {
-					refused.choosing = i
+					refused.ChoosingOn = i
 				}
 			}
 			refused = refused.taking()

@@ -174,7 +174,7 @@ func (b Board) segments() []board.Segment {
 	}
 	if value, ok := b.objectiveShown(); ok && b.tab == Tasks {
 		root, _ := strconv.Atoi(strings.TrimSuffix(value, " itself"))
-		return b.snap.Segments(b.snap.TreeOf(root), board.OnTheBoard(b.snap.Cards, b.archived))
+		return b.snap.Segments(b.snap.TreeOf(root), board.Laid(b.snap.Cards, b.archived))
 	}
 	return nil
 }

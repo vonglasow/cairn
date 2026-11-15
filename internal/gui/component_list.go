@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/gui/geom"
 	"image/color"
 	"strconv"
 
@@ -18,7 +19,7 @@ type Connector struct {
 }
 
 // Draw draws the connector down the left of at, its elbow Elbow down from at's top, or in its middle when Elbow is nought.
-func (c Connector) Draw(k Kit, at Box) Box {
+func (c Connector) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("connector", at)
 	x, top := float32(at.X)+0.5, float32(at.Y)
 	elbow := float32(at.Y+c.Elbow) + 0.5
@@ -67,12 +68,12 @@ const (
 )
 
 // Draw draws the item in its slot at, the gap under it left empty; with a gutter, its chevron stands left of the slot and the line joining it to its parent hangs from the chevron's middle.
-func (i ListItem) Draw(k Kit, at Box) Box {
+func (i ListItem) Draw(k Kit, at geom.Box) geom.Box {
 	_, top, _ := ItemLine(ItemOf(at, 0))
 	elbow := top.Y + top.H/2 - at.Y
 	if i.Depth > 0 && i.Gutter {
 		from := at.X - foldGutter/2
-		Connector{Last: i.Last, Elbow: elbow}.Draw(k, Box{X: from, Y: at.Y, W: ItemOf(at, i.Depth).X - from, H: at.H})
+		Connector{Last: i.Last, Elbow: elbow}.Draw(k, geom.Box{X: from, Y: at.Y, W: ItemOf(at, i.Depth).X - from, H: at.H})
 	} else if i.Depth > 0 {
 		Connector{Last: i.Last, Elbow: elbow}.Draw(k, JoinOf(at, i.Depth))
 	}
@@ -81,7 +82,7 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 		side := 1
 		if i.Fold == FoldedOpen {
 			side = 0
-			Connector{Elbow: at.Y + at.H - chevron.Y - chevron.H}.Draw(k, Box{X: chevron.X + chevron.W/2, Y: chevron.Y + chevron.H, H: at.Y + at.H - chevron.Y - chevron.H})
+			Connector{Elbow: at.Y + at.H - chevron.Y - chevron.H}.Draw(k, geom.Box{X: chevron.X + chevron.W/2, Y: chevron.Y + chevron.H, H: at.Y + at.H - chevron.Y - chevron.H})
 		}
 		Chevron{Ink: k.skin.Colour.Ink.Faint, Side: side}.Draw(k, ChevronIn(chevron))
 	}
@@ -94,7 +95,7 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 	case i.Hovered:
 		rounded(k.gtx, item, k.skin.Radius.Card, k.skin.Colour.Surface.Hover)
 	}
-	Stripe{Priority: i.Priority}.Draw(in, Box{X: item.X, Y: item.Y + edgeInset, W: edgeWide, H: item.H - 2*edgeInset})
+	Stripe{Priority: i.Priority}.Draw(in, geom.Box{X: item.X, Y: item.Y + edgeInset, W: edgeWide, H: item.H - 2*edgeInset})
 	mark, first, second := ItemLine(item)
 	if i.Standing != "" {
 		StandingMark{State: i.Standing}.Draw(in, mark)
@@ -102,23 +103,23 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 	m := k.measured()
 	end := first.X + first.W
 	if i.Chip != "" {
-		chip := Box{X: end - ends(m, i.Chip, small) - 2*pillPad, Y: first.Y + (first.H-pillHigh)/2, W: ends(m, i.Chip, small) + 2*pillPad, H: pillHigh}
+		chip := geom.Box{X: end - ends(m, i.Chip, small) - 2*pillPad, Y: first.Y + (first.H-pillHigh)/2, W: ends(m, i.Chip, small) + 2*pillPad, H: pillHigh}
 		LabelChip{Label: i.Chip, Colour: i.ChipColour}.Draw(in, chip)
 		end = chip.X - pillGap
 	}
 	if i.Badge != "" {
-		pill := Box{X: end - ends(m, i.Badge, small) - 2*pillPad, Y: first.Y + (first.H-pillHigh)/2, W: ends(m, i.Badge, small) + 2*pillPad, H: pillHigh}
+		pill := geom.Box{X: end - ends(m, i.Badge, small) - 2*pillPad, Y: first.Y + (first.H-pillHigh)/2, W: ends(m, i.Badge, small) + 2*pillPad, H: pillHigh}
 		Pill{Said: i.Badge, Tone: ToneStanding, Standing: i.BadgeStanding}.Draw(in, pill)
 		end = pill.X - pillGap
 	}
 	numbered := monoWide(i.Number, small)
 	if n, err := strconv.Atoi(i.Number); i.Loop && err == nil {
 		numbered = SeriesNumberWide(n, small)
-		SeriesNumber{Number: n, Ink: k.skin.Colour.Accent.Base}.Draw(in, Box{X: first.X, Y: first.Y, W: numbered, H: first.H})
+		SeriesNumber{Number: n, Ink: k.skin.Colour.Accent.Base}.Draw(in, geom.Box{X: first.X, Y: first.Y, W: numbered, H: first.H})
 	} else {
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: first.X, Y: first.Y, W: numbered, H: first.H}, i.Number, small, k.skin.Type.Mono, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: first.X, Y: first.Y, W: numbered, H: first.H}, i.Number, small, k.skin.Type.Mono, text.Start)
 	}
-	title := Box{X: first.X + numbered + markSpace, Y: first.Y, W: max(0, end-first.X-numbered-markSpace), H: first.H}
+	title := geom.Box{X: first.X + numbered + markSpace, Y: first.Y, W: max(0, end-first.X-numbered-markSpace), H: first.H}
 	kids := 0
 	if i.Kids != "" {
 		kids = ends(m, i.Kids, small) + markSpace
@@ -131,7 +132,7 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, title, written, reads, font.Medium, 1, text.Start)
 	if i.Kids != "" {
 		x := title.X + min(title.W, ends(m, written, reads)) + markSpace
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: x, Y: first.Y, W: kids, H: first.H}, i.Kids, small, font.Font{}, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: x, Y: first.Y, W: kids, H: first.H}, i.Kids, small, font.Font{}, text.Start)
 	}
 	counted := second
 	if i.Signal != "" {
@@ -147,8 +148,8 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 	}
 	if i.Says != "" || i.Aside != "" {
 		aside := min(second.W, ends(m, i.Aside, small)+2)
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: second.X + second.W - aside, Y: second.Y, W: aside, H: second.H}, i.Aside, small, font.Font{}, text.End)
-		says := Box{X: second.X, Y: second.Y, W: max(0, second.W-aside-padding), H: second.H}
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: second.X + second.W - aside, Y: second.Y, W: aside, H: second.H}, i.Aside, small, font.Font{}, text.End)
+		says := geom.Box{X: second.X, Y: second.Y, W: max(0, second.W-aside-padding), H: second.H}
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, says, fits(k.gtx, k.th, i.Says, says.W, small), small)
 	}
 	return item
@@ -158,7 +159,7 @@ func (i ListItem) Draw(k Kit, at Box) Box {
 type StandingMark struct{ State string }
 
 // Draw draws the mark in at.
-func (s StandingMark) Draw(k Kit, at Box) Box {
+func (s StandingMark) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("standing", at)
 	ink := k.skin.Colour.Ink.Faint
 	if inked, ok := k.skin.Colour.Standing[s.State]; ok {
@@ -201,7 +202,7 @@ func (s StandingMark) Draw(k Kit, at Box) Box {
 type ServesMark struct{ Ink color.NRGBA }
 
 // Draw draws the diamond in at.
-func (s ServesMark) Draw(k Kit, at Box) Box {
+func (s ServesMark) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("serves", at)
 	x, y := float32(at.X)+float32(at.W)/2, float32(at.Y)+float32(at.H)/2
 	reach := float32(min(at.W, at.H))/2 - 1
@@ -250,12 +251,12 @@ func (f Facts) Within(high int) Facts {
 }
 
 // Draw writes the facts down at.
-func (f Facts) Draw(k Kit, at Box) Box {
+func (f Facts) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("facts", at)
 	y := at.Y
 	for _, one := range f.Lines {
-		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: at.X, Y: y, W: factName, H: lineHigh}, one.Name, small)
-		value := Box{X: at.X + factName, Y: y, W: max(0, at.W-factName), H: lineHigh}
+		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: at.X, Y: y, W: factName, H: lineHigh}, one.Name, small)
+		value := geom.Box{X: at.X + factName, Y: y, W: max(0, at.W-factName), H: lineHigh}
 		ink := k.skin.Colour.Ink.Text
 		if one.Late {
 			ink = k.skin.Colour.State.Late
@@ -263,7 +264,7 @@ func (f Facts) Draw(k Kit, at Box) Box {
 		say(k.gtx, k.th, ink, value, fits(k.gtx, k.th, one.Value, value.W, reads), reads)
 		y += lineHigh
 		if one.Aside != "" {
-			say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: value.X, Y: y, W: value.W, H: lineHigh}, fits(k.gtx, k.th, one.Aside, value.W, small), small)
+			say(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: value.X, Y: y, W: value.W, H: lineHigh}, fits(k.gtx, k.th, one.Aside, value.W, small), small)
 			y += lineHigh
 		}
 	}
@@ -280,7 +281,7 @@ type Figure struct {
 type Figures struct{ Said []Figure }
 
 // Draw writes the figures along at.
-func (f Figures) Draw(k Kit, at Box) Box {
+func (f Figures) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("figures", at)
 	m := k.measured()
 	x := at.X
@@ -293,13 +294,13 @@ func (f Figures) Draw(k Kit, at Box) Box {
 			ink = k.skin.Colour.State.Late
 		}
 		wide := ends(m, one.Figure, k.skin.Type.Figure) + 2
-		sayStyled(k.gtx, k.th, ink, Box{X: x, Y: at.Y, W: max(0, min(wide, at.X+at.W-x)), H: at.H}, one.Figure, k.skin.Type.Figure, font.SemiBold, 1, text.Start)
+		sayStyled(k.gtx, k.th, ink, geom.Box{X: x, Y: at.Y, W: max(0, min(wide, at.X+at.W-x)), H: at.H}, one.Figure, k.skin.Type.Figure, font.SemiBold, 1, text.Start)
 		x += wide + inset
 		said := min(ends(m, one.Word, small)+2, at.X+at.W-x)
 		if said <= 0 {
 			break
 		}
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: x, Y: at.Y + at.H - lineHigh - 2, W: said, H: lineHigh}, one.Word, small, font.Font{}, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: x, Y: at.Y + at.H - lineHigh - 2, W: said, H: lineHigh}, one.Word, small, font.Font{}, text.Start)
 		x += said + 2*padding
 	}
 	return at
@@ -324,7 +325,7 @@ func BannerHigh(m Measure, said, then string, wide int) int {
 const bannerPad = 8
 
 // Draw draws the banner over at and writes it inside.
-func (b Banner) Draw(k Kit, at Box) Box {
+func (b Banner) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("banner", at)
 	ground, ink := k.skin.Colour.State.Danger, k.skin.Colour.State.Wrong
 	if b.Warn {
@@ -335,14 +336,14 @@ func (b Banner) Draw(k Kit, at Box) Box {
 	}
 	rounded(k.gtx, at, k.skin.Radius.Card, ground)
 	m := k.measured()
-	inside := Box{X: at.X + bannerPad, Y: at.Y + bannerPad, W: at.W - 2*bannerPad - b.Room}
+	inside := geom.Box{X: at.X + bannerPad, Y: at.Y + bannerPad, W: at.W - 2*bannerPad - b.Room}
 	said := m.Wrapped(b.Said, inside.W, reads).Said
 	for i, line := range said {
-		sayStyled(k.gtx, k.th, ink, Box{X: inside.X, Y: inside.Y + i*lineHigh, W: inside.W, H: lineHigh}, line, reads, font.SemiBold, 1, text.Start)
+		sayStyled(k.gtx, k.th, ink, geom.Box{X: inside.X, Y: inside.Y + i*lineHigh, W: inside.W, H: lineHigh}, line, reads, font.SemiBold, 1, text.Start)
 	}
 	y := inside.Y + len(said)*lineHigh
 	for i, line := range m.Wrapped(b.Then, inside.W, small).Said {
-		say(k.gtx, k.th, ink, Box{X: inside.X, Y: y + i*lineHigh, W: inside.W, H: lineHigh}, line, small)
+		say(k.gtx, k.th, ink, geom.Box{X: inside.X, Y: y + i*lineHigh, W: inside.W, H: lineHigh}, line, small)
 	}
 	return at
 }

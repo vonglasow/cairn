@@ -4,17 +4,15 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/backup"
 	"cairn/internal/engine/calendar"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"strconv"
 
 	"cairn/internal/engine"
 )
 
-// Note is what the window last said that is not something gone wrong: where a backup lies, which one was put back.
-func (w Window) Note() string { return w.told }
-
 func (w Window) telling(said string) Window {
-	w.told, w.toldFor = said, 0
+	w.Telling, w.ToldFor = said, 0
 	return w
 }
 
@@ -26,21 +24,9 @@ func (w Window) backingUp() Window {
 	return w.telling(fmt.Sprintf("backup %d is %s", made.Backup.Number, made.Backup.Path))
 }
 
-// Backups is what the list of backups holds, as the engine listed them.
-func (w Window) Backups() []backup.Backup { return w.backups }
-
-type backupsState struct {
-	backups     []backup.Backup
-	backupOn    int
-	backupsFrom int
-}
-
 func backupSays(one backup.Backup) string {
 	return "backup " + strconv.Itoa(one.Number) + "   " + calendar.FormatMoment(one.Made) + "   " + backup.FormatSize(one.Size)
 }
-
-// BackupOn is the line of the list the keyboard is on.
-func (w Window) BackupOn() int { return w.backupOn }
 
 func (w Window) listingBackups() Window {
 	kept, err := w.work.Ask(engine.BackupList, engine.Input{})
@@ -50,69 +36,68 @@ func (w Window) listingBackups() Window {
 	if len(kept.Backups) == 0 {
 		return w.telling("no backup yet: ⌘B makes one")
 	}
-	w.backups, w.backupOn, w.backupsFrom, w.screen = kept.Backups, 0, 0, OnBackups
+	w.Backups, w.BackupOn, w.BackupsFrom, w.Screen = kept.Backups, 0, 0, board.OnBackups
 	return w
 }
 
 func (w Window) onBackups(name string) Window {
 	switch name {
 	case "down", "j":
-		w.backupOn = min(len(w.backups)-1, w.backupOn+1)
-		w.backupsFrom = max(w.backupsFrom, w.backupOn-w.BackupsRoom()+1)
+		w.BackupOn = min(len(w.Backups)-1, w.BackupOn+1)
+		w.BackupsFrom = max(w.BackupsFrom, w.BackupOn-w.BackupsRoom()+1)
 	case "up", "k":
-		w.backupOn = max(0, w.backupOn-1)
-		w.backupsFrom = min(w.backupsFrom, w.backupOn)
+		w.BackupOn = max(0, w.BackupOn-1)
+		w.BackupsFrom = min(w.BackupsFrom, w.BackupOn)
 	case "enter":
-		w.screen, w.question = OnAsking, aboutPuttingBack
+		w.Screen, w.Question = board.OnAsking, board.AboutPuttingBack
 	case "esc":
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 	}
 	return w
 }
 
 func (w Window) puttingBack() Window {
-	number := w.backups[w.backupOn].Number
-	w.screen, w.question = OnTheBoard, aboutDeleting
+	number := w.Backups[w.BackupOn].Number
+	w.Screen, w.Question = board.OnTheBoard, board.AboutDeleting
 	if _, err := w.work.Ask(engine.BackupRestore, engine.Agreed(board.Numbered(number))); err != nil {
 		return w.failing(err)
 	}
 	return w.Look().telling(fmt.Sprintf("backup %d was restored", number))
 }
 
-// BackupsFrom is the first backup of the list in sight.
-func (w Window) BackupsFrom() int { return w.backupsFrom }
-
-func (w Window) scrollingBackups(p Point, by int) Window {
+func (w Window) scrollingBackups(p geom.Point, by int) Window {
 	if !w.BackupsBox().In(p) {
 		return w
 	}
 	lines, left := turning(w.spareChoosing, by)
 	w.spareChoosing = left
-	w.backupsFrom = max(0, min(w.backupsFrom+lines, len(w.backups)-w.BackupsRoom()))
+	w.BackupsFrom = max(0, min(w.BackupsFrom+lines, len(w.Backups)-w.BackupsRoom()))
 	return w
 }
 
 // BackupsRoom is how many backups the list shows at once: the lines between its heading and its offers.
 func (w Window) BackupsRoom() int { return listRoom(w.BackupsBox()) }
 
-func listRoom(box Box) int {
+func listRoom(box geom.Box) int {
 	return max(1, (PanelOfferAt(box, 0).Y-padding-FirstRow(box)-between)/menuRow)
 }
 
-func (w Window) clickingBackups(p Point) Window {
+func (w Window) clickingBackups(p geom.Point) Window {
 	box := w.BackupsBox()
-	for i := w.backupsFrom; i < min(len(w.backups), w.backupsFrom+w.BackupsRoom()); i++ {
-		if ListRowAt(box, i-w.backupsFrom).In(p) {
-			w.backupOn = i
-			w.screen, w.question = OnAsking, aboutPuttingBack
+	for i := w.BackupsFrom; i < min(len(w.Backups), w.BackupsFrom+w.BackupsRoom()); i++ {
+		if ListRowAt(box, i-w.BackupsFrom).In(p) {
+			w.BackupOn = i
+			w.Screen, w.Question = board.OnAsking, board.AboutPuttingBack
 			return w
 		}
 	}
 	if !box.In(p) {
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 	}
 	return w
 }
 
 // ListRowAt is where the i-th line of a list panel in sight is written: a backup, a label.
-func ListRowAt(box Box, i int) Box { return MenuRowAt(Box{X: box.X, Y: FirstRow(box), W: box.W}, i) }
+func ListRowAt(box geom.Box, i int) geom.Box {
+	return MenuRowAt(geom.Box{X: box.X, Y: FirstRow(box), W: box.W}, i)
+}

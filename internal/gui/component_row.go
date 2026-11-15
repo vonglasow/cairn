@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/gui/geom"
+
 	"gioui.org/font"
 	"gioui.org/text"
 )
@@ -13,7 +15,7 @@ type Row struct {
 }
 
 // Draw draws the row's ground over at and writes its words inside it.
-func (r Row) Draw(k Kit, at Box) Box {
+func (r Row) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("row", at)
 	if r.Hover {
 		rounded(k.gtx, at, k.skin.Radius.Row, k.skin.Colour.Surface.Hover)
@@ -33,23 +35,23 @@ func (r Row) Draw(k Kit, at Box) Box {
 }
 
 // Chip draws a key on the row, on the chip a picked row's ground calls for.
-func (r Row) Chip(k Kit, c KeyChip, at Box) Box {
+func (r Row) Chip(k Kit, c KeyChip, at geom.Box) geom.Box {
 	c.OnControl = r.Picked
 	return c.Draw(k.inside("row"), at)
 }
 
 // Check draws the box before the row's value, taken or not.
-func (r Row) Check(k Kit, c Check, at Box) Box {
+func (r Row) Check(k Kit, c Check, at geom.Box) geom.Box {
 	return c.Draw(k.inside("row"), at)
 }
 
 // Connector draws the line joining the row to the one it sits under, in the room left of its box.
-func (r Row) Connector(k Kit, c Connector, at Box) Box {
+func (r Row) Connector(k Kit, c Connector, at geom.Box) geom.Box {
 	return c.Draw(k.inside("row"), at)
 }
 
 // Pill draws a pill on the row, on the ground a picked row's ground calls for.
-func (r Row) Pill(k Kit, p Pill, at Box) Box {
+func (r Row) Pill(k Kit, p Pill, at geom.Box) geom.Box {
 	p.OnControl = r.Picked
 	return p.Draw(k.inside("row"), at)
 }
@@ -58,7 +60,7 @@ func (r Row) Pill(k Kit, p Pill, at Box) Box {
 type Head struct{ Said, Count string }
 
 // Draw writes the head in at.
-func (h Head) Draw(k Kit, at Box) Box {
+func (h Head) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("head", at)
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Faint, at, h.Said, small, font.Medium, 1, text.Start)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, at, h.Count, small, k.skin.Type.Mono, text.End)
@@ -69,7 +71,7 @@ func (h Head) Draw(k Kit, at Box) Box {
 type Tile struct{ Picked bool }
 
 // Draw lays the tile's ground over at.
-func (t Tile) Draw(k Kit, at Box) Box {
+func (t Tile) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("tile", at)
 	ground := k.skin.Colour.Surface.Raised
 	if t.Picked {
@@ -83,7 +85,7 @@ func (t Tile) Draw(k Kit, at Box) Box {
 type Struck struct{}
 
 // Draw draws the line along at.
-func (Struck) Draw(k Kit, at Box) Box {
+func (Struck) Draw(k Kit, at geom.Box) geom.Box {
 	fill(k.gtx, k.put("struck", at), k.skin.Colour.Ink.Faint)
 	return at
 }
@@ -92,7 +94,7 @@ func (Struck) Draw(k Kit, at Box) Box {
 type Landing struct{}
 
 // Draw draws the line along at.
-func (Landing) Draw(k Kit, at Box) Box {
+func (Landing) Draw(k Kit, at geom.Box) geom.Box {
 	fill(k.gtx, k.put("landing", at), k.skin.Colour.Accent.Base)
 	return at
 }
@@ -101,7 +103,7 @@ func (Landing) Draw(k Kit, at Box) Box {
 type Bar struct{}
 
 // Draw lays the bar over at.
-func (Bar) Draw(k Kit, at Box) Box {
+func (Bar) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("bar", at)
 	framed(k, at, k.skin.Radius.Ground, k.skin.Colour.Line.Rule, k.skin.Colour.Surface.Raised)
 	return at
@@ -114,17 +116,17 @@ type Hint struct {
 }
 
 // Draw draws the hint in at.
-func (h Hint) Draw(k Kit, at Box) Box {
+func (h Hint) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("hint", at)
 	if h.Lit {
-		rounded(k.gtx, Box{X: at.X, Y: at.Y + 3, W: at.W - hintSpace, H: at.H - 6}, k.skin.Radius.Row, k.skin.Colour.Surface.Hover)
+		rounded(k.gtx, geom.Box{X: at.X, Y: at.Y + 3, W: at.W - hintSpace, H: at.H - 6}, k.skin.Radius.Row, k.skin.Colour.Surface.Hover)
 	}
-	chip := KeyChip{Key: h.Key}.Draw(k.inside("hint"), Box{X: at.X + hintSpace/2, Y: at.Y, H: at.H})
+	chip := KeyChip{Key: h.Key}.Draw(k.inside("hint"), geom.Box{X: at.X + hintSpace/2, Y: at.Y, H: at.H})
 	ink := k.skin.Colour.Ink.Text
 	if h.Faint {
 		ink = k.skin.Colour.Ink.Faint
 	}
 	from := chip.X + chip.W + hintSpace
-	sayIn(k.gtx, k.th, ink, Box{X: from, Y: at.Y + (at.H-lineHigh)/2, W: at.X + at.W - from, H: lineHigh}, h.Word, reads, font.Font{}, text.Start)
+	sayIn(k.gtx, k.th, ink, geom.Box{X: from, Y: at.Y + (at.H-lineHigh)/2, W: at.X + at.W - from, H: lineHigh}, h.Word, reads, font.Font{}, text.Start)
 	return at
 }

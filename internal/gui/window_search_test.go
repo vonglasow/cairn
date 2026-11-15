@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"testing"
 
 	"cairn/test"
@@ -14,8 +15,8 @@ func TestSearchingNarrowsTheBoardToWhatItReaches(t *testing.T) {
 		board.Card{Number: 2, Title: "Ship the board", State: "backlog"})
 
 	w = w.Key("/")
-	if w.Screen() != OnSearch {
-		t.Fatalf("/ left the window on %v", w.Screen())
+	if w.Screen != board.OnSearch {
+		t.Fatalf("/ left the window on %v", w.Screen)
 	}
 	w = w.Types("spec")
 	if got := len(w.Showing().Cards); got != 1 {
@@ -45,8 +46,8 @@ func TestLeavingASearchPutsEverythingBack(t *testing.T) {
 	if got := len(w.Showing().Cards); got != 2 {
 		t.Errorf("leaving the search left %d tasks showing", got)
 	}
-	if w.Screen() != OnTheBoard {
-		t.Errorf("leaving the search left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Errorf("leaving the search left the window on %v", w.Screen)
 	}
 }
 
@@ -62,11 +63,11 @@ func TestASearchThatReachesNothingShowsNothing(t *testing.T) {
 func TestASearchReachesObjectives(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{Goals: []board.Goal{
+	w.Snap = test.Searchable(board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}})
-	w.tab = Objectives
+	w.Tab = board.Objectives
 
 	w = w.Key("/").Types("honest")
 	if got := len(w.Showing().Goals); got != 1 {
@@ -82,20 +83,20 @@ func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "réunion", State: "backlog"})
 
 	w = w.Key("/").Types("réu")
-	if got := w.Key("backspace").looking.Reads(); got != "ré" {
+	if got := w.Key("backspace").Looking.Reads(); got != "ré" {
 		t.Fatalf("taking one back left %q", got)
 	}
-	if got := w.Key("backspace").Key("backspace").looking.Reads(); got != "r" {
+	if got := w.Key("backspace").Key("backspace").Looking.Reads(); got != "r" {
 		t.Errorf("taking two back left %q", got)
 	}
 	empty := w.Key("esc").Key("/")
 	for range 3 {
 		empty = empty.Key("backspace")
 	}
-	if got := empty.looking.Reads(); got != "" {
+	if got := empty.Looking.Reads(); got != "" {
 		t.Errorf("an empty search reads %q", got)
 	}
-	if got := w.Key("esc").Key("backspace").looking.Reads(); got != "" {
+	if got := w.Key("esc").Key("backspace").Looking.Reads(); got != "" {
 		t.Errorf("backspace on the board left a search of %q", got)
 	}
 }
@@ -103,15 +104,15 @@ func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo")).Choose("Search")
-	if w.Screen() != OnSearch {
-		t.Fatalf("the window is on %v", w.Screen())
+	if w.Screen != board.OnSearch {
+		t.Fatalf("the window is on %v", w.Screen)
 	}
 	if len(w.Offers()) == 0 {
 		t.Fatal("a search offers nothing, so nothing can be pointed at")
 	}
 	at := w.BarOffers()[len(w.Offers())-1]
-	got := w.clicked(Point{X: at.X + 10, Y: at.Y + at.H/2})
-	if got.Screen() == OnSearch {
+	got := w.clicked(geom.Point{X: at.X + 10, Y: at.Y + at.H/2})
+	if got.Screen == board.OnSearch {
 		t.Error("clicking the last offer left the window in the search")
 	}
 }
@@ -119,14 +120,14 @@ func TestASearchCanBeLeftWithThePointer(t *testing.T) {
 func TestEscapeOutOfTheSearchByTheKey(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("/").Types("spec")
-	if w.Screen() != OnSearch || w.looking.Reads() == "" {
-		t.Fatalf("the search did not open: %v %q", w.Screen(), w.looking.Reads())
+	if w.Screen != board.OnSearch || w.Looking.Reads() == "" {
+		t.Fatalf("the search did not open: %v %q", w.Screen, w.Looking.Reads())
 	}
 	w = w.Key("esc")
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("escape left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("escape left the window on %v", w.Screen)
 	}
-	if w.looking.Reads() != "" {
-		t.Fatalf("escape left the board narrowed to %q", w.looking.Reads())
+	if w.Looking.Reads() != "" {
+		t.Fatalf("escape left the board narrowed to %q", w.Looking.Reads())
 	}
 }

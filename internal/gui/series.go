@@ -4,20 +4,13 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/series"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"strings"
 
 	"cairn/internal/engine"
 )
-
-type seriesState struct {
-	seriesOn    int
-	seriesFate  int
-	fateOf      int
-	seriesChord bool
-	seriesIn    int
-}
 
 // The offers of a series shown, and what the bar offers on its tab.
 const (
@@ -31,38 +24,16 @@ const (
 	EditTheSeries    = "Edit the series…"
 )
 
-// SeriesListed is the series the tab lists for what is searched and the state it is narrowed to: the active ones, then the stopped ones.
-func (w Window) SeriesListed() []engine.Series {
-	return board.InState(board.ShownSeries(w.snap.Series, w.looking.Reads()), w.SeriesState())
-}
-
-// SeriesState is the state the series' tab is narrowed to: all, active or stopped.
-func (w Window) SeriesState() string { return board.SeriesStates[w.seriesIn] }
-
 func (w Window) walkingSeriesState() Window {
-	w.seriesIn = (w.seriesIn + 1) % len(board.SeriesStates)
+	w.SeriesIn = (w.SeriesIn + 1) % len(board.SeriesStates)
 	return w
-}
-
-// SeriesShown is the series the right of the tab shows: the one chosen, or the first listed while none is.
-func (w Window) SeriesShown() (engine.Series, bool) {
-	all := w.SeriesListed()
-	for _, s := range all {
-		if s.Number == w.seriesOn {
-			return s, true
-		}
-	}
-	if len(all) == 0 {
-		return engine.Series{}, false
-	}
-	return all[0], true
 }
 
 // SeriesRow is one line of the list of series: a head naming the active or the stopped ones and how many, or a series, and where it stands.
 type SeriesRow struct {
 	Head, Count string
 	Series      engine.Series
-	At          Box
+	At          geom.Box
 }
 
 var seriesHeads = map[string]string{"active": "Active", "stopped": "Stopped"}
@@ -72,7 +43,7 @@ func (w Window) SeriesRows() []SeriesRow {
 	list, _ := SplitOf(w.Layout())
 	all := w.SeriesListed()
 	var rows []SeriesRow
-	y, state := list.Y+gap, ""
+	y, state := list.Y+geom.Gap, ""
 	for _, s := range all {
 		if s.State != state {
 			state = s.State
@@ -82,21 +53,13 @@ func (w Window) SeriesRows() []SeriesRow {
 					count++
 				}
 			}
-			rows = append(rows, SeriesRow{Head: seriesHeads[state], Count: strconv.Itoa(count), At: NameIn(Box{X: list.X, Y: y - gap, W: list.W, H: headHigh})})
-			y += headHigh - gap
+			rows = append(rows, SeriesRow{Head: seriesHeads[state], Count: strconv.Itoa(count), At: NameIn(geom.Box{X: list.X, Y: y - geom.Gap, W: list.W, H: geom.HeadHigh})})
+			y += geom.HeadHigh - geom.Gap
 		}
-		rows = append(rows, SeriesRow{Series: s, At: Box{X: list.X + gap, Y: y, W: list.W - 2*gap, H: ItemHigh}})
+		rows = append(rows, SeriesRow{Series: s, At: geom.Box{X: list.X + geom.Gap, Y: y, W: list.W - 2*geom.Gap, H: ItemHigh}})
 		y += ItemHigh
 	}
 	return rows
-}
-
-// SeriesWhen is what a series' line says at its right: its next day, or the day it was stopped.
-func (w Window) SeriesWhen(s engine.Series) string {
-	if s.State == "stopped" {
-		return "since " + board.DaySaid(s.Stopped, w.now)
-	}
-	return board.NextDaySaid(s, w.now)
 }
 
 // StandingOfSeries is the standing a series' state is drawn in: an active one as an active objective, a stopped one as one on hold.
@@ -110,32 +73,32 @@ func StandingOfSeries(s engine.Series) string {
 // OccurrenceLine is one occurrence the detail of a series lists, and where.
 type OccurrenceLine struct {
 	Occurrence series.Occurrence
-	At         Box
+	At         geom.Box
 }
 
 // SeriesDetail is the right of the series tab: the series shown and where each of its parts stands.
 type SeriesDetail struct {
 	Series                              engine.Series
-	Box, Heading, Badge, Sentence, Next Box
-	Template, SoFar, Now                Box
+	Box, Heading, Badge, Sentence, Next geom.Box
+	Template, SoFar, Now                geom.Box
 	TemplateFacts                       Facts
 	Figures                             []Figure
 	NowSays                             []string
-	OccurrencesHead, Foot, FootSaid     Box
+	OccurrencesHead, Foot, FootSaid     geom.Box
 	OccurrencesSaid, OccurrencesAside   string
 	NextSays, FootSays                  string
 	Lines                               []string
-	LinesAt                             Box
+	LinesAt                             geom.Box
 	Occurrences                         []OccurrenceLine
 	Offers                              []string
-	Buttons                             []Box
+	Buttons                             []geom.Box
 }
 
 const (
 	footLeast      = 80
 	boxLeast       = 170
 	seriesBoxHigh  = 6*lineHigh + 2*padding
-	occurrenceHigh = SubHeight
+	occurrenceHigh = geom.SubHeight
 )
 
 // SeriesOffers is what the detail of a series offers: changing it, skipping its open occurrence, stopping or resuming it, deleting it.
@@ -157,67 +120,67 @@ func (w Window) SeriesDetail() SeriesDetail {
 	if !ok {
 		return d
 	}
-	inside := Box{X: box.X + detailPad, Y: box.Y + detailPad, W: box.W - 2*detailPad, H: box.H - 2*detailPad}
+	inside := geom.Box{X: box.X + detailPad, Y: box.Y + detailPad, W: box.W - 2*detailPad, H: box.H - 2*detailPad}
 	m := w.measured()
 	badge := engine.StandingSaid(s)
 	badgeWide := ends(m, badge, small) + 2*pillPad
 	y := inside.Y
-	d.Heading = Box{X: inside.X, Y: y, W: max(0, inside.W-badgeWide-gap), H: buttonHigh}
-	d.Badge = Box{X: inside.X + inside.W - badgeWide, Y: y + (buttonHigh-pillHigh)/2, W: badgeWide, H: pillHigh}
+	d.Heading = geom.Box{X: inside.X, Y: y, W: max(0, inside.W-badgeWide-geom.Gap), H: buttonHigh}
+	d.Badge = geom.Box{X: inside.X + inside.W - badgeWide, Y: y + (buttonHigh-pillHigh)/2, W: badgeWide, H: pillHigh}
 	y += buttonHigh + between
-	d.Sentence = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+	d.Sentence = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 	y += lineHigh
 	d.NextSays = NextSays(s)
-	d.Next = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+	d.Next = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 	y += lineHigh + padding
 
 	d.Offers = SeriesOffers(s)
 	foot := inside.Y + inside.H - buttonHigh
 	end := inside.X + inside.W
 	widths := w.widthsOf(d.Offers)
-	if sumOf(widths)+(len(d.Offers)-1)*gap > inside.W {
+	if sumOf(widths)+(len(d.Offers)-1)*geom.Gap > inside.W {
 		d.Offers = shortOffers(d.Offers)
 		widths = w.tightWidths(d.Offers)
 	}
-	for len(d.Offers) > 1 && sumOf(widths)+(len(d.Offers)-1)*gap > inside.W {
+	for len(d.Offers) > 1 && sumOf(widths)+(len(d.Offers)-1)*geom.Gap > inside.W {
 		d.Offers, widths = d.Offers[1:], widths[1:]
 	}
 	for i := len(widths) - 1; i >= 0; i-- {
 		end -= widths[i]
-		d.Buttons = append([]Box{{X: end, Y: foot, W: widths[i], H: buttonHigh}}, d.Buttons...)
-		end -= gap
+		d.Buttons = append([]geom.Box{{X: end, Y: foot, W: widths[i], H: buttonHigh}}, d.Buttons...)
+		end -= geom.Gap
 	}
-	d.Foot = Box{X: inside.X, Y: foot - between - 1, W: inside.W, H: 1}
+	d.Foot = geom.Box{X: inside.X, Y: foot - between - 1, W: inside.W, H: 1}
 	if room := end - inside.X; room >= footLeast {
 		d.FootSays = FootSaid(s)
-		d.FootSaid = Box{X: inside.X, Y: foot + (buttonHigh-lineHigh)/2, W: room, H: lineHigh}
+		d.FootSaid = geom.Box{X: inside.X, Y: foot + (buttonHigh-lineHigh)/2, W: room, H: lineHigh}
 	}
 
 	third := (inside.W - 2*padding) / 3
 	if s.State == "active" && third < boxLeast {
 		d.Lines = []string{"Template: " + engine.TemplateSaid(s.Template), SoFarSays(s)}
-		d.LinesAt = Box{X: inside.X, Y: y, W: inside.W, H: 2 * lineHigh}
+		d.LinesAt = geom.Box{X: inside.X, Y: y, W: inside.W, H: 2 * lineHigh}
 		y += 2*lineHigh + padding
 	}
 	if s.State == "active" && third >= boxLeast && foot-y > seriesBoxHigh+lineHigh {
-		d.Template = Box{X: inside.X, Y: y, W: third, H: seriesBoxHigh}
-		d.SoFar = Box{X: inside.X + third + padding, Y: y, W: third, H: seriesBoxHigh}
-		d.Now = Box{X: inside.X + 2*(third+padding), Y: y, W: inside.W - 2*(third+padding), H: seriesBoxHigh}
+		d.Template = geom.Box{X: inside.X, Y: y, W: third, H: seriesBoxHigh}
+		d.SoFar = geom.Box{X: inside.X + third + padding, Y: y, W: third, H: seriesBoxHigh}
+		d.Now = geom.Box{X: inside.X + 2*(third+padding), Y: y, W: inside.W - 2*(third+padding), H: seriesBoxHigh}
 		d.TemplateFacts = templateFacts(s.Template)
 		d.Figures = []Figure{{Figure: strconv.Itoa(s.Done), Word: "done"}, {Figure: strconv.Itoa(s.Skipped), Word: "skipped"},
 			{Figure: strconv.Itoa(s.Missed), Word: "missed", Late: s.Missed > 0}}
-		d.NowSays = w.nowSaid(s)
+		d.NowSays = w.NowSaid(s)
 		y += seriesBoxHigh + padding
 	}
 	d.OccurrencesSaid = "Occurrences · " + strconv.Itoa(len(s.Occurrences))
 	d.OccurrencesAside = OccurrencesAside(s)
-	d.OccurrencesHead = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+	d.OccurrencesHead = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 	y += lineHigh + inset
 	for _, o := range s.Occurrences {
 		if y+occurrenceHigh > d.Foot.Y-between {
 			break
 		}
-		d.Occurrences = append(d.Occurrences, OccurrenceLine{Occurrence: o, At: Box{X: inside.X, Y: y, W: inside.W, H: occurrenceHigh}})
+		d.Occurrences = append(d.Occurrences, OccurrenceLine{Occurrence: o, At: geom.Box{X: inside.X, Y: y, W: inside.W, H: occurrenceHigh}})
 		y += occurrenceHigh
 	}
 	return d
@@ -297,56 +260,6 @@ func domainOrNothing(said string) string {
 	return said
 }
 
-func (w Window) nowSaid(s engine.Series) []string {
-	if len(s.Open) == 0 {
-		return []string{"Nothing open.", "The next is made on its day."}
-	}
-	c, found := w.snap.Card(s.Open[0])
-	if !found {
-		return []string{"#" + strconv.Itoa(s.Open[0])}
-	}
-	said := c.State
-	if text, show, _, _ := board.OccurrenceDay(c, w.now); show {
-		said += " · " + text
-	}
-	if c.SubTotal > 0 {
-		said += " · " + strconv.Itoa(c.SubDone) + " of " + strconv.Itoa(c.SubTotal) + " steps"
-	}
-	return []string{"#" + strconv.Itoa(c.Number) + " " + c.Title, said, "One open at a time; the next is made when it is done or skipped."}
-}
-
-// OccurrenceSays is what a line of the occurrences says: its day, its task, its title, where it stands and the time spent on it.
-func (w Window) OccurrenceSays(o series.Occurrence) (day, number, title, is, spent string) {
-	day = board.DaySaid(o.Day, w.now)
-	number, title = "—", "no task made"
-	if o.Task != 0 {
-		number = "#" + strconv.Itoa(o.Task)
-		title = w.occurrenceTitle(o.Task)
-	}
-	is = o.Is
-	if o.Archived {
-		is += " · archived"
-	}
-	if !o.Archived && o.Task != 0 && slices.Contains(engine.States(), o.Is) && o.Is != "done" {
-		is = "on the board"
-	}
-	spent = o.TimeSpent
-	if spent == "" {
-		spent = "—"
-	}
-	return day, number, title, is, spent
-}
-
-func (w Window) occurrenceTitle(n int) string {
-	if c, found := w.snap.Card(n); found {
-		return c.Title
-	}
-	if s, found := w.SeriesShown(); found {
-		return s.Title
-	}
-	return ""
-}
-
 func (w Window) seriesKey(name string) (Window, bool) {
 	switch name {
 	case "up", "down":
@@ -378,7 +291,7 @@ func (w Window) walkingSeries(by int) Window {
 			at = i
 		}
 	}
-	w.seriesOn = all[min(len(all)-1, max(0, at+by))].Number
+	w.SeriesOn = all[min(len(all)-1, max(0, at+by))].Number
 	return w
 }
 
@@ -391,10 +304,10 @@ func (w Window) openingOccurrence() Window {
 }
 
 func (w Window) openingTask(n int) Window {
-	if _, found := w.snap.Card(n); !found {
+	if _, found := w.Snap.Card(n); !found {
 		return w
 	}
-	w.chosen, w.chosenGoal = n, false
+	w.Chosen, w.ChosenGoal = n, false
 	return w.Edit()
 }
 
@@ -433,10 +346,10 @@ func (w Window) seriesActing(offer string) Window {
 			offer = long
 		}
 	}
-	w.seriesOn = s.Number
+	w.SeriesOn = s.Number
 	switch offer {
 	case EditSeriesSays:
-		w.form, w.screen, w.formMoved = asOpened(Form{Number: s.Number, ForSeries: true, fields: board.SeriesFields(s)}), OnForm, Point{}
+		w.Form, w.Screen, w.formMoved = board.AsOpened(board.Form{Number: s.Number, ForSeries: true, Fields: board.SeriesFields(s)}), board.OnForm, geom.Point{}
 		return w.beside()
 	case SkipNextSays:
 		if len(s.Open) == 0 {
@@ -448,40 +361,40 @@ func (w Window) seriesActing(offer string) Window {
 	case ResumeSeriesSays:
 		return w.asking(engine.SeriesResume, board.Numbered(s.Number))
 	case DeleteSeriesSays:
-		w.screen, w.fateOf, w.seriesFate = OnSeriesFates, s.Number, 0
+		w.Screen, w.FateOf, w.SeriesFate = board.OnSeriesFates, s.Number, 0
 		return w
 	}
 	return w
 }
 
 func (w Window) onSeries(n int) Window {
-	w = w.onPage(Series)
-	w.seriesOn = n
+	w = w.onPage(board.Series)
+	w.SeriesOn = n
 	return w
 }
 
 func (w Window) startingSeries() Window {
 	fields := withRepeats(board.AddingFields(board.StateAt(1)))
-	w.form, w.screen, w.formMoved = asOpened(Form{Adding: true, fields: fields}), OnForm, Point{}
+	w.Form, w.Screen, w.formMoved = board.AsOpened(board.Form{Adding: true, Fields: fields}), board.OnForm, geom.Point{}
 	for i, f := range fields {
 		if f.Arg == board.RepeatsField().Arg {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	return w.beside()
 }
 
-func (w Window) clickingSeries(p Point) (Window, bool) {
-	if w.screen != OnTheBoard || w.tab != Series {
+func (w Window) clickingSeries(p geom.Point) (Window, bool) {
+	if w.Screen != board.OnTheBoard || w.Tab != board.Series {
 		return w, false
 	}
 	list, detail := SplitOf(w.Layout())
-	if page := (Box{X: list.X, Y: list.Y, W: detail.X + detail.W - list.X, H: list.H}); !page.In(p) {
+	if page := (geom.Box{X: list.X, Y: list.Y, W: detail.X + detail.W - list.X, H: list.H}); !page.In(p) {
 		return w, false
 	}
 	for _, row := range w.SeriesRows() {
 		if row.Head == "" && row.At.In(p) {
-			w.seriesOn = row.Series.Number
+			w.SeriesOn = row.Series.Number
 			return w, true
 		}
 	}
@@ -499,7 +412,7 @@ func (w Window) clickingSeries(p Point) (Window, bool) {
 	return w, true
 }
 
-func (w Window) seriesSlotAt(p Point) Box {
+func (w Window) seriesSlotAt(p geom.Point) geom.Box {
 	for _, row := range w.SeriesRows() {
 		if row.Head == "" && row.At.In(p) {
 			return row.At
@@ -516,7 +429,7 @@ func (w Window) seriesSlotAt(p Point) Box {
 			return line.At
 		}
 	}
-	return Box{}
+	return geom.Box{}
 }
 
 // The answers to the question saving an occurrence asks.
@@ -525,74 +438,53 @@ const (
 	WholeSeriesSays = "The whole series"
 )
 
-func (w Window) asksWhole() bool {
-	if w.form.Adding || w.form.ForObjective || w.form.ForSeries || w.form.answered || !w.pages.Recurs() {
-		return false
-	}
-	c, found := w.snap.Card(w.form.Number)
-	return found && board.ChangesTheSeries(c, w.form.fields)
-}
-
-func (w Window) changedOfTheSeries() string {
-	var names []string
-	for _, f := range w.form.fields {
-		if f.Value != f.Was && board.ChangesTheSeries(board.Card{Series: &series.Occurs{}}, []board.Field{f}) {
-			names = append(names, f.Name)
-		}
-	}
-	if len(names) < 2 {
-		return strings.Join(names, "")
-	}
-	return strings.Join(names[:len(names)-1], ", ") + " and its " + names[len(names)-1]
-}
-
 func (w Window) choosingOnSeries(name string) (Window, bool) {
 	switch {
-	case w.screen == OnSeriesFates && name == DeleteTheSeriesSays:
+	case w.Screen == board.OnSeriesFates && name == DeleteTheSeriesSays:
 		return w.confirmingSeriesFate(), true
-	case w.screen == OnSeriesFates:
-		w.screen = OnTheBoard
+	case w.Screen == board.OnSeriesFates:
+		w.Screen = board.OnTheBoard
 		return w, true
-	case w.screen == OnAsking && w.question == aboutDeletingSeriesTasks && name == "Delete":
+	case w.Screen == board.OnAsking && w.Question == board.AboutDeletingSeriesTasks && name == "Delete":
 		return w.deletingSeries(), true
-	case w.screen == OnAsking && w.question == aboutDeletingSeriesTasks:
-		w.screen, w.question = OnSeriesFates, aboutDeleting
+	case w.Screen == board.OnAsking && w.Question == board.AboutDeletingSeriesTasks:
+		w.Screen, w.Question = board.OnSeriesFates, board.AboutDeleting
 		return w, true
-	case w.screen == OnAsking && w.question == aboutSeriesSave && (name == ThisOneOnlySays || name == WholeSeriesSays):
-		w.screen, w.question = OnForm, aboutDeleting
-		w.form.whole, w.form.answered = name == WholeSeriesSays, true
+	case w.Screen == board.OnAsking && w.Question == board.AboutSeriesSave && (name == ThisOneOnlySays || name == WholeSeriesSays):
+		w.Screen, w.Question = board.OnForm, board.AboutDeleting
+		w.Form.Whole, w.Form.Answered = name == WholeSeriesSays, true
 		saved := w.Save()
-		if saved.screen == OnForm {
-			saved.form.whole, saved.form.answered = false, false
+		if saved.Screen == board.OnForm {
+			saved.Form.Whole, saved.Form.Answered = false, false
 		}
 		return saved, true
-	case w.screen == OnAsking && w.question == aboutSeriesSave:
-		w.screen, w.question = OnForm, aboutDeleting
+	case w.Screen == board.OnAsking && w.Question == board.AboutSeriesSave:
+		w.Screen, w.Question = board.OnForm, board.AboutDeleting
 		return w, true
 	case name == NewSeriesSays:
 		return w.startingSeries(), true
-	case w.screen == OnTheBoard && w.tab == Series && name == OpenOccurrence:
+	case w.Screen == board.OnTheBoard && w.Tab == board.Series && name == OpenOccurrence:
 		return w.openingOccurrence(), true
-	case w.screen == OnTheBoard && w.tab == Series && slices.Contains([]string{"Edit", "Skip", StopSeriesSays, ResumeSeriesSays}, name):
+	case w.Screen == board.OnTheBoard && w.Tab == board.Series && slices.Contains([]string{"Edit", "Skip", StopSeriesSays, ResumeSeriesSays}, name):
 		return w.seriesActing(name), true
-	case w.screen == OnForm && name == EditTheSeries:
-		if c, found := w.snap.Card(w.form.Number); found && c.Series != nil {
-			w.screen, w.form = OnTheBoard, Form{}
+	case w.Screen == board.OnForm && name == EditTheSeries:
+		if c, found := w.Snap.Card(w.Form.Number); found && c.Series != nil {
+			w.Screen, w.Form = board.OnTheBoard, board.Form{}
 			return w.onSeries(c.Series.Series), true
 		}
 	}
 	return w.actingOnOccurrence(name)
 }
 
-func (w Window) seriesChipAt(p Point) (int, bool) {
-	if w.screen != OnTheBoard || w.tab != Tasks {
+func (w Window) seriesChipAt(p geom.Point) (int, bool) {
+	if w.Screen != board.OnTheBoard || w.Tab != board.Tasks {
 		return 0, false
 	}
 	for _, placed := range w.Placed() {
 		if !placed.Within.In(p) || !placed.Slot.In(p) || placed.Card.Series == nil {
 			continue
 		}
-		row := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.now, w.pages)
+		row := CardRowOf(placed.Card, PartsOf(placed.Slot).Number, w.measured(), w.Now, w.Pages)
 		if row.SeriesAt.In(p) {
 			return row.Series, true
 		}
@@ -608,13 +500,8 @@ const (
 	ResumeTheSeries = "Resume the series"
 )
 
-func (w Window) occurrenceChosen() (board.Card, bool) {
-	c, found := w.snap.Card(w.chosen)
-	return c, found && w.chosen != 0 && !w.chosenGoal && c.Series != nil && w.pages.Recurs()
-}
-
 func (w Window) chording(name string) Window {
-	c, ok := w.occurrenceChosen()
+	c, ok := w.OccurrenceChosen()
 	if !ok {
 		return w
 	}
@@ -632,10 +519,10 @@ func (w Window) chording(name string) Window {
 }
 
 func (w Window) occurrenceOffers() []string {
-	if w.form.Adding || w.form.ForObjective || w.form.ForSeries || !w.pages.Recurs() {
+	if w.Form.Adding || w.Form.ForObjective || w.Form.ForSeries || !w.Pages.Recurs() {
 		return nil
 	}
-	c, found := w.snap.Card(w.form.Number)
+	c, found := w.Snap.Card(w.Form.Number)
 	if !found || c.Series == nil || board.Finished(c) {
 		return nil
 	}
@@ -646,15 +533,15 @@ func (w Window) occurrenceOffers() []string {
 }
 
 func (w Window) actingOnOccurrence(offer string) (Window, bool) {
-	c, _ := w.occurrenceChosen()
-	if w.screen == OnForm {
-		c, _ = w.snap.Card(w.form.Number)
+	c, _ := w.OccurrenceChosen()
+	if w.Screen == board.OnForm {
+		c, _ = w.Snap.Card(w.Form.Number)
 	}
 	if c.Series == nil {
 		return w, false
 	}
 	leaving := func(w Window) Window {
-		w.screen, w.form = OnTheBoard, Form{}
+		w.Screen, w.Form = board.OnTheBoard, board.Form{}
 		return w
 	}
 	switch offer {
@@ -671,14 +558,14 @@ func (w Window) actingOnOccurrence(offer string) (Window, bool) {
 }
 
 // OccurrenceBox is where the form of an occurrence says its series, under its details, and whether there is room for it.
-func (w Window) OccurrenceBox() (Box, bool) {
-	if w.screen != OnForm || w.Tracing() || len(w.occurrenceOffers()) == 0 {
-		return Box{}, false
+func (w Window) OccurrenceBox() (geom.Box, bool) {
+	if w.Screen != board.OnForm || w.Tracing() || len(w.occurrenceOffers()) == 0 {
+		return geom.Box{}, false
 	}
-	fields := w.form.Fields()
+	fields := w.Form.Fields
 	bottom := FirstRow(w.formPanel())
 	for i, f := range fields {
-		if _, sectional := sectionOf(f); !sectional {
+		if _, sectional := board.SectionOf(f); !sectional {
 			continue
 		}
 		_, value, rows := FormPlace(w.formBox(), fields, i)
@@ -686,9 +573,9 @@ func (w Window) OccurrenceBox() (Box, bool) {
 		bottom = max(bottom, frame.Y+frame.H)
 	}
 	right := FormBeside(w.formPanel())
-	box := Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: 2*padding + occurrenceHeadHigh + 2*between + lineHigh + w.occurrenceFacts().High()}
+	box := geom.Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: 2*padding + occurrenceHeadHigh + 2*between + lineHigh + w.occurrenceFacts().High()}
 	if box.Y+box.H > FormRule(w.formPanel()).Y-padding {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	return box, true
 }
@@ -696,21 +583,21 @@ func (w Window) OccurrenceBox() (Box, bool) {
 const occurrenceHeadHigh = 24
 
 // OccurrenceEdit is the button at the head of the box saying an occurrence's series, which opens the series in its tab.
-func (w Window) OccurrenceEdit() (Box, bool) {
+func (w Window) OccurrenceEdit() (geom.Box, bool) {
 	box, ok := w.OccurrenceBox()
 	if !ok {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	wide := buttonWordWide(w.measured(), EditTheSeries) + KeyChipWide("r e") + hintSpace + 2*padding
-	return Box{X: box.X + box.W - padding - wide, Y: box.Y + padding, W: wide, H: occurrenceHeadHigh}, true
+	return geom.Box{X: box.X + box.W - padding - wide, Y: box.Y + padding, W: wide, H: occurrenceHeadHigh}, true
 }
 
 func (w Window) occurrenceFacts() Facts {
-	c, _ := w.snap.Card(w.form.Number)
+	c, _ := w.Snap.Card(w.Form.Number)
 	if c.Series == nil {
 		return Facts{}
 	}
-	s, _ := w.snap.SeriesOf(c.Series.Series)
+	s, _ := w.Snap.SeriesOf(c.Series.Series)
 	rule, _ := series.ParseRule(c.Series.Rule)
 	anchored := "On the calendar"
 	if rule.AfterDone() {
@@ -753,10 +640,10 @@ type OccurrenceHead struct{ Title, Number, Under string }
 
 // OccurrenceHeading is the heading of the form open on an occurrence, and whether the form is open on one.
 func (w Window) OccurrenceHeading() (OccurrenceHead, bool) {
-	if !formShown(w.screen) || w.form.Adding || w.form.ForSeries || w.form.ForObjective || w.form.Number == 0 || !w.pages.Recurs() {
+	if !formShown(w.Screen) || w.Form.Adding || w.Form.ForSeries || w.Form.ForObjective || w.Form.Number == 0 || !w.Pages.Recurs() {
 		return OccurrenceHead{}, false
 	}
-	c, found := w.snap.Card(w.form.Number)
+	c, found := w.Snap.Card(w.Form.Number)
 	if !found || c.Series == nil {
 		return OccurrenceHead{}, false
 	}
@@ -769,19 +656,19 @@ func drawOccurrenceBeside(k Kit, w Window) {
 	if !ok {
 		return
 	}
-	c, _ := w.snap.Card(w.form.Number)
+	c, _ := w.Snap.Card(w.Form.Number)
 	card := InfoBox{}.Draw(k, at)
 	in := k.inside("info")
-	inside := Box{X: card.X + padding, Y: card.Y + padding, W: card.W - 2*padding, H: card.H - 2*padding}
+	inside := geom.Box{X: card.X + padding, Y: card.Y + padding, W: card.W - 2*padding, H: card.H - 2*padding}
 	edit, _ := w.OccurrenceEdit()
-	Head{Said: SeriesHead}.Draw(in, Box{X: inside.X, Y: inside.Y + (occurrenceHeadHigh-lineHigh)/2, W: edit.X - inside.X - gap, H: lineHigh})
+	Head{Said: SeriesHead}.Draw(in, geom.Box{X: inside.X, Y: inside.Y + (occurrenceHeadHigh-lineHigh)/2, W: edit.X - inside.X - geom.Gap, H: lineHigh})
 	Button{Said: EditTheSeries, Key: "r e", Keyed: true}.Draw(in, edit)
-	says := Box{X: inside.X, Y: inside.Y + occurrenceHeadHigh + between, W: inside.W, H: lineHigh}
-	LoopMark{Ink: in.skin.Colour.Ink.OnTint}.Draw(in, Box{X: says.X, Y: says.Y + (lineHigh-loopSide)/2, W: loopSide, H: loopSide})
-	often := Box{X: says.X + loopSide + inset, Y: says.Y, W: says.W - loopSide - inset, H: lineHigh}
+	says := geom.Box{X: inside.X, Y: inside.Y + occurrenceHeadHigh + between, W: inside.W, H: lineHigh}
+	LoopMark{Ink: in.skin.Colour.Ink.OnTint}.Draw(in, geom.Box{X: says.X, Y: says.Y + (lineHigh-loopSide)/2, W: loopSide, H: loopSide})
+	often := geom.Box{X: says.X + loopSide + inset, Y: says.Y, W: says.W - loopSide - inset, H: lineHigh}
 	say(in.gtx, in.th, in.skin.Colour.Ink.OnTint, often, fits(in.gtx, in.th, c.Series.Says, often.W, reads), reads)
 	facts := w.occurrenceFacts()
-	facts.Draw(in, Box{X: inside.X, Y: says.Y + lineHigh + between, W: inside.W, H: facts.High()})
+	facts.Draw(in, geom.Box{X: inside.X, Y: says.Y + lineHigh + between, W: inside.W, H: facts.High()})
 }
 
 // SeriesHead is what the form of an occurrence heads the box saying its series with.

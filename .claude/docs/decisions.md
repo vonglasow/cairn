@@ -75,6 +75,8 @@ develops cairn meets: one line per decision, and where its reason lives.
 | Linux is checked by hand, in a container, before a version | it needs Docker, which no hook may assume | [release.md](release.md) |
 | the container's image is named by tag and Debian release, not digest; commitlint's own dependencies are not locked | the first is a check run by hand, not a gate, and a digest would be moved at every Go release for nothing anyone notices; the second runs only on a message, locally, and locking npm's tree would mean a lockfile in a Go repository for one hook | `scripts/linux.sh`, `.pre-commit-config.yaml` |
 | a form's commands are waited for in the terminal board's tests, all but the cursor's blink, passed over at once | the blink is a timer of 530 ms nobody can wait out, and its function names it before it runs; racing every command against five milliseconds, as before, dropped one a machine busy with the rest of the suite was slow to schedule (cairn#298), and raising that deadline made the suite three times slower | `internal/tui/fake_test.go`, `quickly` |
+| the window embeds `board.Board`, its state; the terminal board will too | one state for both boards is what makes them show the same; embedding kept every call site of the window as it was | `internal/board/board.go` |
+| gui splits into `geom`, `design` and `motion` only; components, input, screens and platform stay in `gui` | the components draw with the card's parts and the window's methods, and moving them dragged most of the window along; the three packages split cleanly, each denied `gui` by `depguard` | `.golangci.yml` |
 
 ## Known and not yet answered
 

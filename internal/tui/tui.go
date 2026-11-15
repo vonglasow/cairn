@@ -399,7 +399,7 @@ func (b Board) references() []board.Reference {
 	if b.inside == 0 && b.viewing == "" && !b.filters.NarrowsBy("objective") {
 		return nil
 	}
-	return board.Touching(b.cards(), board.OnTheBoard(b.snap.Cards, b.archived))
+	return board.Touching(b.cards(), board.Laid(b.snap.Cards, b.archived))
 }
 
 func (b Board) here() []board.Card {

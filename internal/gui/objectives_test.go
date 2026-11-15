@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"testing"
@@ -16,21 +17,21 @@ func homeWindow(width, height int) Window {
 		board.Card{Number: 2, Title: "OTA updates", State: "done", Objectives: []int{3}, Serves: []string{"Firmware"}},
 		board.Card{Number: 3, Title: "Buy the relay", State: "current", Objectives: []int{1}, Serves: []string{"Home automation"}},
 	).Resized(width, height)
-	w.snap.Goals = []board.Goal{
+	w.Snap.Goals = []board.Goal{
 		{Number: 1, Title: "Home automation", State: "active", Children: []int{2, 3}, Done: 1, Total: 3},
 		{Number: 2, Title: "Enclosure", State: "active", Parent: 1, Done: 0, Total: 1},
 		{Number: 3, Title: "Firmware", State: "active", Parent: 1, Done: 1, Total: 2, WaitedOnBy: []int{4}},
 		{Number: 4, Title: "Tidy the workshop", State: "active", WaitsOn: []int{3}},
 	}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 	return w
 }
 
 func TestTheSplitPutsTheListBesideTheDetailAndBothInsideTheBoard(t *testing.T) {
 	for _, size := range pinnedSizes {
-		l := LayoutFor(size.X, size.Y)
+		l := geom.LayoutFor(size.X, size.Y)
 		list, detail := SplitOf(l)
-		if list.X != l.Column[0].X || list.W > splitTo || detail.X != list.X+list.W+gap {
+		if list.X != l.Column[0].X || list.W > splitTo || detail.X != list.X+list.W+geom.Gap {
 			t.Errorf("at %v the list %+v and the detail %+v do not stand side by side", size, list, detail)
 		}
 		last := l.Column[len(l.Column)-1]
@@ -44,7 +45,7 @@ func TestTheSplitPutsTheListBesideTheDetailAndBothInsideTheBoard(t *testing.T) {
 }
 
 func TestEachObjectiveHasItsSlotDownTheList(t *testing.T) {
-	l := LayoutFor(1200, 800)
+	l := geom.LayoutFor(1200, 800)
 	first, second := GoalAt(l, 0, 0), GoalAt(l, 1, 0)
 	if second.Y != first.Y+ItemHigh || second.X != first.X || first.H != ItemHigh {
 		t.Errorf("the slots %+v and %+v are not one under the other", first, second)
@@ -69,7 +70,7 @@ func TestTheDetailShowsTheObjectiveChosenAndTheFirstWhileNoneIs(t *testing.T) {
 	if g, ok := w.Detailed(); !ok || g.Number != 1 {
 		t.Errorf("with none chosen the detail shows %d, want the first", g.Number)
 	}
-	w.chosen, w.chosenGoal = 4, true
+	w.Chosen, w.ChosenGoal = 4, true
 	if g, _ := w.Detailed(); g.Number != 4 {
 		t.Errorf("the detail shows %d, want the one chosen", g.Number)
 	}
@@ -99,7 +100,7 @@ func TestTheDetailOfAParentSplitsItsTasksAndTilesItsSubObjectives(t *testing.T) 
 			t.Errorf("at %v %d tasks have no room and the detail says %q", size, more, d.More)
 		}
 		_, detail := SplitOf(homeWindow(size.X, size.Y).Layout())
-		for _, b := range append([]Box{d.Heading, d.Line, d.Progress, d.Figures, d.SubsHead, d.OwnHead, d.InSubsHead}, d.Buttons...) {
+		for _, b := range append([]geom.Box{d.Heading, d.Line, d.Progress, d.Figures, d.SubsHead, d.OwnHead, d.InSubsHead}, d.Buttons...) {
 			if b.X < detail.X || b.X+b.W > detail.X+detail.W || b.Y < detail.Y || b.Y+b.H > detail.Y+detail.H {
 				t.Errorf("at %v a part %+v stands outside the detail %+v", size, b, detail)
 			}
@@ -112,11 +113,11 @@ func TestTheDetailOfAParentSplitsItsTasksAndTilesItsSubObjectives(t *testing.T) 
 
 func TestTheDetailNamesWhatTheObjectiveWaitsOnAndWhatWaitsOnIt(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.chosen, w.chosenGoal = 3, true
+	w.Chosen, w.ChosenGoal = 3, true
 	if got := w.Detail().Waits.Lines; len(got) != 1 || got[0].Value != "#4 Tidy the workshop" {
 		t.Errorf("Firmware's detail says %+v", got)
 	}
-	w.chosen = 4
+	w.Chosen = 4
 	if got := w.Detail().Waits.Lines; len(got) != 1 || got[0].Value != "#3 Firmware" {
 		t.Errorf("Tidy's detail says %+v", got)
 	}
@@ -124,7 +125,7 @@ func TestTheDetailNamesWhatTheObjectiveWaitsOnAndWhatWaitsOnIt(t *testing.T) {
 
 func TestATileSaysWhatElseItsTasksServeAndWarnsOfWhatItWaitsOn(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.snap.Goals[2].WaitsOn = []int{2}
+	w.Snap.Goals[2].WaitsOn = []int{2}
 	tiles := w.Detail().Tiles
 	if got := tiles[0].Tile.Notes; !slices.Equal(got, []string{"#1 also in Firmware"}) {
 		t.Errorf("Enclosure's tile notes %v", got)
@@ -136,8 +137,8 @@ func TestATileSaysWhatElseItsTasksServeAndWarnsOfWhatItWaitsOn(t *testing.T) {
 
 func TestTShowsTheTasksOfTheObjectiveDetailed(t *testing.T) {
 	w := homeWindow(1200, 800).At(time.Now()).Key("t")
-	if w.Tab() != Tasks {
-		t.Fatalf("t left the window on %v", w.Tab())
+	if w.Tab != board.Tasks {
+		t.Fatalf("t left the window on %v", w.Tab)
 	}
 	if said := w.FilteredBy(); said != "objective #1 Home automation, with its sub-objectives" {
 		t.Errorf("the board is filtered by %q", said)
@@ -148,21 +149,21 @@ func TestWorkStartedEarlyIsToldAboveTheBar(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "OTA updates", State: "todo"})
 	f.warn = []string{"#2 Features waits on #1 Firmware, not reached"}
-	w.chosen = 1
+	w.Chosen = 1
 	if got := w.working().Note(); got != "#2 Features waits on #1 Firmware, not reached" {
 		t.Errorf("focusing says %q", got)
 	}
-	w.form = Form{Number: 1}
-	w.screen = OnForm
+	w.Form = board.Form{Number: 1}
+	w.Screen = board.OnForm
 	if got, _, _ := w.stored(); got.Note() != "#2 Features waits on #1 Firmware, not reached" {
 		t.Errorf("saving says %q", got.Note())
 	}
 }
 
 func onField(w Window, arg string) Window {
-	for i, f := range w.form.Fields() {
+	for i, f := range w.Form.Fields {
 		if f.Arg == arg {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	return w.choosingList()
@@ -178,7 +179,7 @@ func choiceTitles(w Window) []string {
 
 func TestTheParentOfAnObjectiveIsChosenAmongThoseOfLevelOneOrNone(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.chosen, w.chosenGoal = 4, true
+	w.Chosen, w.ChosenGoal = 4, true
 	w = onField(w.Edit(), "parent")
 	if got := choiceTitles(w); !slices.Equal(got, []string{"none", "Home automation"}) {
 		t.Fatalf("the parent list reads %v", got)
@@ -186,28 +187,28 @@ func TestTheParentOfAnObjectiveIsChosenAmongThoseOfLevelOneOrNone(t *testing.T) 
 	if !w.OneOnly() {
 		t.Error("the parent list takes more than one")
 	}
-	w.choosing = 1
+	w.ChoosingOn = 1
 	w = w.taking()
-	if got := w.form.Fields()[w.form.On()].Value; got != "1" {
+	if got := w.Form.Fields[w.Form.On()].Value; got != "1" {
 		t.Errorf("choosing Home automation writes %q", got)
 	}
 	w = onField(w, "parent")
-	w.choosing = 0
-	if got := w.taking().form.Fields()[w.form.On()].Value; got != "none" {
+	w.ChoosingOn = 0
+	if got := w.taking().Form.Fields[w.Form.On()].Value; got != "none" {
 		t.Errorf("choosing none writes %q", got)
 	}
 }
 
 func TestTheLabelsOfAFormAreThoseMeantForWhatItIsAbout(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.snap.Goals[3].Labels = []string{"area"}
-	w.snap.Cards[0].Labels = []string{"backend"}
-	w.snap.Scopes = map[string]string{"area": "objectives", "backend": "tasks"}
-	w.chosen, w.chosenGoal = 1, true
+	w.Snap.Goals[3].Labels = []string{"area"}
+	w.Snap.Cards[0].Labels = []string{"backend"}
+	w.Snap.Scopes = map[string]string{"area": "objectives", "backend": "tasks"}
+	w.Chosen, w.ChosenGoal = 1, true
 	if got := choiceTitles(onField(w.Edit(), "label")); !slices.Equal(got, []string{"area"}) {
 		t.Errorf("an objective's labels offer %v", got)
 	}
-	w.tab, w.chosen, w.chosenGoal = Tasks, 1, false
+	w.Tab, w.Chosen, w.ChosenGoal = board.Tasks, 1, false
 	if got := choiceTitles(onField(w.Edit(), "label")); !slices.Equal(got, []string{"backend"}) {
 		t.Errorf("a task's labels offer %v", got)
 	}
@@ -215,7 +216,7 @@ func TestTheLabelsOfAFormAreThoseMeantForWhatItIsAbout(t *testing.T) {
 
 func TestTheObjectivesOfATaskAreATreeAndCountingOneTwiceIsRefused(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.tab, w.chosen = Tasks, 1
+	w.Tab, w.Chosen = board.Tasks, 1
 	w = onField(w.Edit(), "objective")
 	var depths []int
 	for _, c := range w.Choosing() {
@@ -227,7 +228,7 @@ func TestTheObjectivesOfATaskAreATreeAndCountingOneTwiceIsRefused(t *testing.T) 
 	if got := w.RowAside(w.Choosing()[0]); got != "counted through 2 below" {
 		t.Errorf("the parent's row says %q", got)
 	}
-	w.choosing = 0
+	w.ChoosingOn = 0
 	w = w.taking()
 	if w.Ticked(1) {
 		t.Error("the parent was ticked beside its sub-objectives")
@@ -235,7 +236,7 @@ func TestTheObjectivesOfATaskAreATreeAndCountingOneTwiceIsRefused(t *testing.T) 
 	if got := w.ChoosingRefused(); got != "#1 is already counted in #1 Home automation through #2 Enclosure and #3 Firmware" {
 		t.Errorf("the list says %q", got)
 	}
-	w.choosing = 3
+	w.ChoosingOn = 3
 	if got := w.taking().ChoosingRefused(); got != "" {
 		t.Errorf("ticking another tree still says %q", got)
 	}
@@ -243,8 +244,8 @@ func TestTheObjectivesOfATaskAreATreeAndCountingOneTwiceIsRefused(t *testing.T) 
 
 func TestTheProgressOfASubObjectiveSaysWhereItIsCounted(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.snap.Goals[2].Estimate = "12h"
-	got := w.GoalProgress(w.snap.Goals[2]).Lines
+	w.Snap.Goals[2].Estimate = "12h"
+	got := w.GoalProgress(w.Snap.Goals[2]).Lines
 	want := []Fact{
 		{Name: "done", Value: "1 of 2 tasks"},
 		{Name: "time spent", Value: "—", Aside: "of 12h estimated"},
@@ -258,7 +259,7 @@ func TestTheProgressOfASubObjectiveSaysWhereItIsCounted(t *testing.T) {
 
 func TestTheFixturesHoldEveryObjectiveScreen(t *testing.T) {
 	parent, sub, refused := objectiveScreens(aFixturesBoard(t))
-	if len(parent.Detail().Tiles) == 0 || sub.chosen == 0 {
+	if len(parent.Detail().Tiles) == 0 || sub.Chosen == 0 {
 		t.Errorf("the fixtures hold no objective with sub-objectives to draw")
 	}
 	if refused.ChoosingRefused() == "" {
@@ -267,28 +268,28 @@ func TestTheFixturesHoldEveryObjectiveScreen(t *testing.T) {
 	if len(parent.Key("t").Narrowing().At) == 0 {
 		t.Errorf("showing the parent's tasks draws no narrowing bar")
 	}
-	if parent.Delete().Screen() != OnFates {
+	if parent.Delete().Screen != board.OnFates {
 		t.Errorf("deleting the parent asks nothing")
 	}
 }
 
 func TestDeletingAnObjectiveAsksRowByRowAndNamesWhatGoes(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.chosen, w.chosenGoal = 1, true
+	w.Chosen, w.ChosenGoal = 1, true
 	w = w.Delete()
-	if w.Screen() != OnFates {
-		t.Fatalf("deleting a parent left the window on %v", w.Screen())
+	if w.Screen != board.OnFates {
+		t.Fatalf("deleting a parent left the window on %v", w.Screen)
 	}
 	f := w.FatesAsked()
 	if len(f.Rows) != 3 || f.Rows[2].Sub != 0 || f.Rows[0].On != -1 {
 		t.Fatalf("the question asks %+v", f.Rows)
 	}
 	for _, row := range f.Rows {
-		if !f.Box.In(Point{X: row.Choice.X, Y: row.Choice.Y}) || row.Choice.X < row.At.X {
+		if !f.Box.In(geom.Point{X: row.Choice.X, Y: row.Choice.Y}) || row.Choice.X < row.At.X {
 			t.Errorf("the row %q chooses at %+v, outside %+v", row.Said, row.Choice, f.Box)
 		}
 	}
-	if w.Key("enter").Screen() != OnFates {
+	if w.Key("enter").Screen != board.OnFates {
 		t.Error("enter deleted before everything was chosen")
 	}
 	w = w.Key("right").Key("down").Key("left").Key("down").Key("left")
@@ -302,18 +303,18 @@ func TestDeletingAnObjectiveAsksRowByRowAndNamesWhatGoes(t *testing.T) {
 	f2 := newFake()
 	gone := homeWindow(1200, 800)
 	gone.work = f2
-	gone.chosen, gone.chosenGoal = 1, true
+	gone.Chosen, gone.ChosenGoal = 1, true
 	gone = gone.Delete().Key("l").Key("j").Key("l").Key("j").Key("l").Key("enter")
 	in, asked := f2.gave("objective", "delete")
-	if !asked || in.Given["tasks"] != "detach" || gone.Screen() != OnTheBoard {
-		t.Errorf("confirming asked %+v %v, on %v", in, asked, gone.Screen())
+	if !asked || in.Given["tasks"] != "detach" || gone.Screen != board.OnTheBoard {
+		t.Errorf("confirming asked %+v %v, on %v", in, asked, gone.Screen)
 	}
-	if cancelled := w.Choose("Cancel"); cancelled.Screen() != OnTheBoard {
-		t.Errorf("cancel left the window on %v", cancelled.Screen())
+	if cancelled := w.Choose("Cancel"); cancelled.Screen != board.OnTheBoard {
+		t.Errorf("cancel left the window on %v", cancelled.Screen)
 	}
 	alone := homeWindow(1200, 800)
-	alone.chosen, alone.chosenGoal = 4, true
-	if alone.Delete().Screen() != OnAsking {
+	alone.Chosen, alone.ChosenGoal = 4, true
+	if alone.Delete().Screen != board.OnAsking {
 		t.Error("an objective holding nothing is not asked about plainly")
 	}
 }
@@ -327,21 +328,21 @@ func TestThePillOfAnObjectiveShownWithItsSubObjectivesSaysSo(t *testing.T) {
 }
 
 func TestANarrowWindowShowsThePartInForceBetweenTwoChevrons(t *testing.T) {
-	w := homeWindow(Narrowest, Shortest).At(time.Now()).Key("t")
+	w := homeWindow(geom.Narrowest, geom.Shortest).At(time.Now()).Key("t")
 	n := w.Narrowing()
 	if !n.Compact || n.Back.W == 0 || n.Next.W == 0 || n.At[n.On].W == 0 {
-		t.Fatalf("at %d the bar is %+v", Narrowest, n)
+		t.Fatalf("at %d the bar is %+v", geom.Narrowest, n)
 	}
-	if n.Back.X+n.Back.W > n.At[n.On].X || n.Next.X < n.At[n.On].X+n.At[n.On].W || n.Box.X+n.Box.W > w.width-margin {
+	if n.Back.X+n.Back.W > n.At[n.On].X || n.Next.X < n.At[n.On].X+n.At[n.On].W || n.Box.X+n.Box.W > w.width-geom.Margin {
 		t.Errorf("the chevrons %+v %+v do not stand either side of %+v inside %+v", n.Back, n.Next, n.At[n.On], n.Box)
 	}
-	next := w.clicked(Point{X: n.Next.X + n.Next.W/2, Y: n.Next.Y + n.Next.H/2})
-	if taken, _ := next.objectiveTaken(); taken != "2" {
+	next := w.clicked(geom.Point{X: n.Next.X + n.Next.W/2, Y: n.Next.Y + n.Next.H/2})
+	if taken, _ := next.ObjectiveTaken(); taken != "2" {
 		t.Errorf("the next chevron narrowed to %q", taken)
 	}
 	n = next.Narrowing()
-	back := next.clicked(Point{X: n.Back.X + n.Back.W/2, Y: n.Back.Y + n.Back.H/2})
-	if taken, _ := back.objectiveTaken(); taken != "1" {
+	back := next.clicked(geom.Point{X: n.Back.X + n.Back.W/2, Y: n.Back.Y + n.Back.H/2})
+	if taken, _ := back.ObjectiveTaken(); taken != "1" {
 		t.Errorf("the chevron back narrowed to %q", taken)
 	}
 	for _, p := range next.Pills() {
@@ -356,30 +357,30 @@ func TestANarrowWindowShowsThePartInForceBetweenTwoChevrons(t *testing.T) {
 
 func TestTheDetailOfALevelOneOffersASubObjectiveUnderIt(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.chosen, w.chosenGoal = 1, true
+	w.Chosen, w.ChosenGoal = 1, true
 	d := w.Detail()
 	at := slices.Index(d.Offers, AddSubSays)
 	if at < 0 || len(d.Buttons) != len(d.Offers) {
 		t.Fatalf("the detail offers %v at %v", d.Offers, d.Buttons)
 	}
 	b := d.Buttons[at]
-	opened := w.clicked(Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
-	if opened.Screen() != OnForm || !opened.form.Adding || !opened.form.ForObjective || opened.form.ValueOf("parent") != "1" {
-		t.Errorf("the offer opened %v adding %v with the parent %q", opened.Screen(), opened.form.Adding, opened.form.ValueOf("parent"))
+	opened := w.clicked(geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2})
+	if opened.Screen != board.OnForm || !opened.Form.Adding || !opened.Form.ForObjective || valueOf(opened.Form, "parent") != "1" {
+		t.Errorf("the offer opened %v adding %v with the parent %q", opened.Screen, opened.Form.Adding, valueOf(opened.Form, "parent"))
 	}
-	if keyed := w.Key("shift+n"); keyed.form.ValueOf("parent") != "1" || keyed.Screen() != OnForm {
-		t.Errorf("⇧N opened %v with the parent %q", keyed.Screen(), keyed.form.ValueOf("parent"))
+	if keyed := w.Key("shift+n"); valueOf(keyed.Form, "parent") != "1" || keyed.Screen != board.OnForm {
+		t.Errorf("⇧N opened %v with the parent %q", keyed.Screen, valueOf(keyed.Form, "parent"))
 	}
-	w.chosen = 2
+	w.Chosen = 2
 	if slices.Contains(w.Detail().Offers, AddSubSays) {
 		t.Error("a sub-objective offers a sub-objective under it")
 	}
-	if keyed := w.Key("shift+n"); keyed.Screen() == OnForm {
+	if keyed := w.Key("shift+n"); keyed.Screen == board.OnForm {
 		t.Error("⇧N on a sub-objective opened a form")
 	}
 	for _, size := range pinnedSizes {
 		w := homeWindow(size.X, size.Y)
-		w.chosen, w.chosenGoal = 1, true
+		w.Chosen, w.ChosenGoal = 1, true
 		d := w.Detail()
 		if len(d.Buttons) == 0 || d.Heading.W == 0 || d.Buttons[0].X < d.Heading.X+d.Heading.W {
 			t.Errorf("at %v the offers %+v leave the heading %+v", size, d.Buttons, d.Heading)
@@ -389,37 +390,37 @@ func TestTheDetailOfALevelOneOffersASubObjectiveUnderIt(t *testing.T) {
 
 func TestTheTreeTheTilesAndTheOffersAreLitUnderThePointer(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.chosen, w.chosenGoal = 1, true
+	w.Chosen, w.ChosenGoal = 1, true
 	l := w.Layout()
 	item := GoalAt(l, 1, 0)
-	if got := w.Hovering(Point{X: item.X + 4, Y: item.Y + 4}).pointed; got != item {
+	if got := w.Hovering(geom.Point{X: item.X + 4, Y: item.Y + 4}).pointed; got != item {
 		t.Errorf("over the second objective the pointer lights %+v", got)
 	}
 	d := w.Detail()
 	tile := d.Tiles[0].At
-	if got := w.Hovering(Point{X: tile.X + 4, Y: tile.Y + 4}).pointed; got != tile {
+	if got := w.Hovering(geom.Point{X: tile.X + 4, Y: tile.Y + 4}).pointed; got != tile {
 		t.Errorf("over a tile the pointer lights %+v", got)
 	}
 	button := d.Buttons[0]
-	if got := w.Hovering(Point{X: button.X + 4, Y: button.Y + 4}).pointed; got != button {
+	if got := w.Hovering(geom.Point{X: button.X + 4, Y: button.Y + 4}).pointed; got != button {
 		t.Errorf("over an offer the pointer lights %+v", got)
 	}
-	if got := w.Hovering(Point{X: 1, Y: 1}).pointed; got != (Box{}) {
+	if got := w.Hovering(geom.Point{X: 1, Y: 1}).pointed; got != (geom.Box{}) {
 		t.Errorf("over nothing the pointer lights %+v", got)
 	}
 }
 
 func TestTheRefusalOfADoubleCountSaysWhatToUntick(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.tab, w.chosen = Tasks, 1
+	w.Tab, w.Chosen = board.Tasks, 1
 	w = onField(w.Edit(), "objective")
-	w.choosing = 0
+	w.ChoosingOn = 0
 	if got := w.taking().ChoosingThen(); got != "Untick Enclosure and Firmware to put it on Home automation itself. Nothing was changed." {
 		t.Errorf("ticking the parent says %q", got)
 	}
-	w.chosen = 3
+	w.Chosen = 3
 	w = onField(w.Edit(), "objective")
-	w.choosing = 1
+	w.ChoosingOn = 1
 	if got := w.taking().ChoosingThen(); got != "Untick Home automation to put it on Enclosure. Nothing was changed." {
 		t.Errorf("ticking a sub-objective says %q", got)
 	}
@@ -427,8 +428,8 @@ func TestTheRefusalOfADoubleCountSaysWhatToUntick(t *testing.T) {
 
 func TestAnObjectiveSaysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 	w := homeWindow(1200, 800)
-	w.pages = engine.PagesOff(engine.PageTime)
-	for _, f := range w.GoalProgress(w.snap.Goals[2]).Lines {
+	w.Pages = engine.PagesOff(engine.PageTime)
+	for _, f := range w.GoalProgress(w.Snap.Goals[2]).Lines {
 		if f.Name == "time spent" {
 			t.Errorf("the time not shown, the progress says %+v", f)
 		}
@@ -436,14 +437,14 @@ func TestAnObjectiveSaysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 	if d := w.Detail(); d.Spent != "" {
 		t.Errorf("the time not shown, the detail says %q spent", d.Spent)
 	}
-	if said := w.spentSaid(""); said != "" {
+	if said := w.SpentSaid(""); said != "" {
 		t.Errorf("the time not shown, a tile says %q spent", said)
 	}
 }
 
 func TestTheProgressSaysTheDaysToTheDeadline(t *testing.T) {
 	w := homeWindow(1200, 800).At(time.Date(2026, 11, 9, 10, 0, 0, 0, time.Local))
-	g := w.snap.Goals[0]
+	g := w.Snap.Goals[0]
 	for day, want := range map[int]string{19: "2026-11-19, in 10 days", 10: "2026-11-10, in 1 day", 9: "2026-11-09, today", 6: "2026-11-06, 3 days past"} {
 		g.Deadline = time.Date(2026, 11, day, 0, 0, 0, 0, time.Local)
 		lines := w.GoalProgress(g).Lines
@@ -461,13 +462,13 @@ func TestTheProgressSaysTheDaysToTheDeadline(t *testing.T) {
 
 func TestAPillWithNoRoomForItsTailSaysItUnderThePointer(t *testing.T) {
 	w := homeWindow(1200, 800).At(time.Now())
-	w.snap.Goals[0].Title = "Home automation of the house"
+	w.Snap.Goals[0].Title = "Home automation of the house"
 	w = w.Key("t")
 	pill := w.Pills()[0]
 	if pill.Tail != "" || !pill.Serves {
 		t.Fatalf("the pill %+v kept its tail", pill)
 	}
-	if got := w.Hovering(Point{X: pill.Box.X + 4, Y: pill.Box.Y + 4}).Bubble(); got != pill.Said+", "+WithItsSubsSays {
+	if got := w.Hovering(geom.Point{X: pill.Box.X + 4, Y: pill.Box.Y + 4}).Bubble(); got != pill.Said+", "+WithItsSubsSays {
 		t.Errorf("under the pointer the pill says %q", got)
 	}
 }

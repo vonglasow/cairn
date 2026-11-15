@@ -1,5 +1,5 @@
-// Package gui draws cairn in a window a mouse can reach.
-package gui
+// Package geom says where the window lays things out, in pixels: the boxes, the points, the columns and the band.
+package geom
 
 import (
 	"cairn/internal/board"
@@ -17,13 +17,14 @@ const CardHeight = 96
 // SubHeight is what a step takes in its box among a task's fields, and a serving task in the box beside an objective's: one line and the padding round it.
 const SubHeight = 28
 
+// The spaces the window lays out with.
 const (
-	margin    = 12
-	gap       = 8
+	Margin    = 12
+	Gap       = 8
 	tabsHigh  = 40
-	headHigh  = 28
-	laneHigh  = headHigh
-	barHigh   = 32
+	HeadHigh  = 28
+	LaneHigh  = HeadHigh
+	BarHigh   = 32
 	bandCards = 2
 	daysAWeek = 7
 )
@@ -76,41 +77,41 @@ func LayoutFor(width, height int) Layout { return LaidOut(width, height, Sizes{}
 
 // LaidOut works out every size at a given window, each column and lane given its share of the widths a person dragged.
 func LaidOut(width, height int, by Sizes) Layout {
-	room := width - margin - margin - (board.Columns-1)*gap
+	room := width - Margin - Margin - (board.Columns-1)*Gap
 	columns := sharesOf(room, by.Column[:])
 
-	usable := max(0, height-margin-margin-tabsHigh-headHigh-barHigh-gap-gap)
-	top, band := split(usable-gap, by.Band)
+	usable := max(0, height-Margin-Margin-tabsHigh-HeadHigh-BarHigh-Gap-Gap)
+	top, band := split(usable-Gap, by.Band)
 
 	l := Layout{Days: daysAWeek}
-	l.Tabs = Box{X: margin, Y: margin, W: width - margin - margin, H: tabsHigh}
-	x := margin
+	l.Tabs = Box{X: Margin, Y: Margin, W: width - Margin - Margin, H: tabsHigh}
+	x := Margin
 	for i := range board.Columns {
-		l.Head[i] = Box{X: x, Y: margin + tabsHigh + gap, W: columns[i], H: headHigh}
-		l.Column[i] = Box{X: x, Y: l.Head[i].Y + headHigh, W: columns[i], H: top}
-		x += columns[i] + gap
+		l.Head[i] = Box{X: x, Y: Margin + tabsHigh + Gap, W: columns[i], H: HeadHigh}
+		l.Column[i] = Box{X: x, Y: l.Head[i].Y + HeadHigh, W: columns[i], H: top}
+		x += columns[i] + Gap
 	}
 	last := l.Column[board.Columns-1]
 	l.Band = Box{
 		X: l.Column[1].X,
-		Y: l.Column[1].Y + top + gap,
+		Y: l.Column[1].Y + top + Gap,
 		W: last.X + last.W - l.Column[1].X,
 		H: band,
 	}
-	l.Column[0].H = top + gap + band
+	l.Column[0].H = top + Gap + band
 
-	lanes := sharesOf(l.Band.W-(len(board.Stalled)-1)*gap, by.Lane[:])
+	lanes := sharesOf(l.Band.W-(len(board.Stalled)-1)*Gap, by.Lane[:])
 	x = l.Band.X
 	for i := range l.Lane {
-		l.Lane[i] = Box{X: x, Y: l.Band.Y + laneHigh, W: lanes[i], H: max(0, band-laneHigh)}
-		x += lanes[i] + gap
+		l.Lane[i] = Box{X: x, Y: l.Band.Y + LaneHigh, W: lanes[i], H: max(0, band-LaneHigh)}
+		x += lanes[i] + Gap
 	}
-	l.Bar = Box{X: margin, Y: height - margin - barHigh, W: width - margin - margin, H: barHigh}
+	l.Bar = Box{X: Margin, Y: height - Margin - BarHigh, W: width - Margin - Margin, H: BarHigh}
 	return l
 }
 
 // LowestBand is the shortest the edge above the band, dragged, leaves it: its lanes' names and a card's room under them. The columns above it keep a card's room too.
-const LowestBand = laneHigh + CardHeight
+const LowestBand = LaneHigh + CardHeight
 
 func split(room int, given [2]int) (top, band int) {
 	band = bandHigh

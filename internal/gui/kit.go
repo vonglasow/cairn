@@ -1,6 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
+	"cairn/internal/gui/motion"
 	"image"
 	"math"
 	"strings"
@@ -17,16 +20,16 @@ import (
 type Kit struct {
 	gtx   layout.Context
 	th    *material.Theme
-	skin  Skin
+	skin  design.Skin
 	layer Layer
 	drawn *Drawn
 	in    string
 	ruler Measure
-	shown *Box
+	shown *geom.Box
 }
 
 // NewKit is a kit drawing on the board in that skin, recording into drawn.
-func NewKit(gtx layout.Context, th *material.Theme, skin Skin, drawn *Drawn) Kit {
+func NewKit(gtx layout.Context, th *material.Theme, skin design.Skin, drawn *Drawn) Kit {
 	return Kit{gtx: gtx, th: th, skin: skin, layer: LayerBoard, drawn: drawn}
 }
 
@@ -52,7 +55,7 @@ func (k Kit) measured() Measure {
 	return k.ruler
 }
 
-func (k Kit) within(at Box) (Kit, clip.Stack) {
+func (k Kit) within(at geom.Box) (Kit, clip.Stack) {
 	if k.shown != nil {
 		at = common(*k.shown, at)
 	}
@@ -66,7 +69,7 @@ func (k Kit) shifted(down int) op.TransformStack {
 	return op.Offset(image.Pt(0, down)).Push(k.gtx.Ops)
 }
 
-func (k Kit) posed(p Pose, about Box) func() {
+func (k Kit) posed(p motion.Pose, about geom.Box) func() {
 	var undo []func()
 	if p.Seen < 1 {
 		undo = append(undo, paint.PushOpacity(k.gtx.Ops, float32(max(0, p.Seen))).Pop)
@@ -86,7 +89,7 @@ func (k Kit) posed(p Pose, about Box) func() {
 	}
 }
 
-func (k Kit) put(part string, at Box) Box {
+func (k Kit) put(part string, at geom.Box) geom.Box {
 	seen := at
 	if k.shown != nil {
 		seen = common(*k.shown, at)
@@ -111,7 +114,7 @@ const (
 // Drawing is one part drawn: what it is, its box, and the layer it is on.
 type Drawing struct {
 	Part  string
-	At    Box
+	At    geom.Box
 	Layer Layer
 }
 
@@ -119,7 +122,7 @@ type Drawing struct {
 type Drawn struct{ all []Drawing }
 
 // Put records a part drawn in that box on that layer.
-func (d *Drawn) Put(part string, at Box, on Layer) {
+func (d *Drawn) Put(part string, at geom.Box, on Layer) {
 	d.all = append(d.all, Drawing{Part: part, At: at, Layer: on})
 }
 
@@ -180,12 +183,12 @@ func parentOf(part string) string {
 	return part[:at]
 }
 
-func cross(a, b Box) bool {
+func cross(a, b geom.Box) bool {
 	seen := common(a, b)
 	return seen.W > 0 && seen.H > 0
 }
 
-func common(a, b Box) Box {
+func common(a, b geom.Box) geom.Box {
 	x, y := max(a.X, b.X), max(a.Y, b.Y)
-	return Box{X: x, Y: y, W: max(0, min(a.X+a.W, b.X+b.W)-x), H: max(0, min(a.Y+a.H, b.Y+b.H)-y)}
+	return geom.Box{X: x, Y: y, W: max(0, min(a.X+a.W, b.X+b.W)-x), H: max(0, min(a.Y+a.H, b.Y+b.H)-y)}
 }

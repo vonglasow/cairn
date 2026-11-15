@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
+	"cairn/internal/gui/geom"
 	"unicode"
 	"unicode/utf8"
 
@@ -97,28 +98,28 @@ const (
 // CardRow is how a card's row is laid out: the number it starts with, each label's pill, the pill counting the labels left out, and its facts at the right end.
 type CardRow struct {
 	Number   string
-	NumberAt Box
+	NumberAt geom.Box
 	Shown    []string
-	Pills    []Box
-	More     Box
+	Pills    []geom.Box
+	More     geom.Box
 	Count    string
 	Facts    string
-	FactsAt  Box
-	ServesAt Box
-	MarkAt   Box
+	FactsAt  geom.Box
+	ServesAt geom.Box
+	MarkAt   geom.Box
 	Late     bool
 	Series   int
-	SeriesAt Box
+	SeriesAt geom.Box
 	Start    int
 }
 
 // CardRowOf lays a card's row out in row, measuring its words with m and its figures in Go Mono.
-func CardRowOf(c board.Card, row Box, m Measure, now time.Time, pages engine.Pages) CardRow {
+func CardRowOf(c board.Card, row geom.Box, m Measure, now time.Time, pages engine.Pages) CardRow {
 	return cardRow(c, row, m, factsOf(c, now, pages))
 }
 
 // ReferenceRowOf lays out the row of a reference: why it is there in place of its facts, cut to the room its number leaves, and its labels in what is left.
-func ReferenceRowOf(c board.Card, why string, row Box, m Measure, now time.Time, pages engine.Pages) CardRow {
+func ReferenceRowOf(c board.Card, why string, row geom.Box, m Measure, now time.Time, pages engine.Pages) CardRow {
 	why = cutTo(m, why, row.X+row.W-cardRow(c, row, m, nil).Start)
 	if why == "" {
 		return CardRowOf(c, row, m, now, pages)
@@ -137,16 +138,16 @@ func cutTo(m Measure, said string, room int) string {
 	return ""
 }
 
-func cardRow(c board.Card, row Box, m Measure, pieces []fact) CardRow {
+func cardRow(c board.Card, row geom.Box, m Measure, pieces []fact) CardRow {
 	out := CardRow{Number: "#" + Numbered(c)}
 	if c.Described() {
 		out.Number += " " + Marks().Described
 	}
-	out.NumberAt = Box{X: row.X, Y: row.Y, W: monoWide(out.Number, small), H: row.H}
+	out.NumberAt = geom.Box{X: row.X, Y: row.Y, W: monoWide(out.Number, small), H: row.H}
 	x := row.X + out.NumberAt.W + 2*pillGap
 	if c.Series != nil {
 		out.Series = c.Series.Series
-		out.SeriesAt = Box{X: x, Y: row.Y, W: SeriesNumberWide(out.Series, small), H: row.H}
+		out.SeriesAt = geom.Box{X: x, Y: row.Y, W: SeriesNumberWide(out.Series, small), H: row.H}
 		x += out.SeriesAt.W + 2*pillGap
 	}
 	out.Start = x
@@ -167,8 +168,8 @@ func cardRow(c board.Card, row Box, m Measure, pieces []fact) CardRow {
 		out.FactsAt = FactsAt(row, wideOf(pieces))
 		if pieces[len(pieces)-1].serves {
 			wide := mixedWide(m, serves, small) + servesSide + servesGap
-			out.ServesAt = Box{X: out.FactsAt.X + out.FactsAt.W - wide, Y: row.Y, W: wide, H: row.H}
-			out.MarkAt = Box{X: out.ServesAt.X, Y: row.Y + (row.H-servesSide)/2, W: servesSide, H: servesSide}
+			out.ServesAt = geom.Box{X: out.FactsAt.X + out.FactsAt.W - wide, Y: row.Y, W: wide, H: row.H}
+			out.MarkAt = geom.Box{X: out.ServesAt.X, Y: row.Y + (row.H-servesSide)/2, W: servesSide, H: servesSide}
 		}
 		end = out.FactsAt.X - 2*pillGap
 	}
@@ -176,13 +177,13 @@ func cardRow(c board.Card, row Box, m Measure, pieces []fact) CardRow {
 	shown, more := Pills(c.Labels, end-x, wide)
 	top := row.Y + (row.H-pillHigh)/2
 	for _, label := range shown {
-		pill := Box{X: x, Y: top, W: wide(label) + 2*pillPad, H: pillHigh}
+		pill := geom.Box{X: x, Y: top, W: wide(label) + 2*pillPad, H: pillHigh}
 		out.Shown, out.Pills = append(out.Shown, label), append(out.Pills, pill)
 		x += pill.W + pillGap
 	}
 	if more > 0 {
 		out.Count = "+" + strconv.Itoa(more)
-		out.More = Box{X: x, Y: top, W: wide(out.Count) + 2*pillPad, H: pillHigh}
+		out.More = geom.Box{X: x, Y: top, W: wide(out.Count) + 2*pillPad, H: pillHigh}
 	}
 	return out
 }
@@ -211,18 +212,18 @@ const (
 )
 
 // FocusMark is where the glowing dot of a card in focus stands: at the right end of its title's first line.
-func FocusMark(c board.Card, title Box) (Box, bool) {
+func FocusMark(c board.Card, title geom.Box) (geom.Box, bool) {
 	if !c.InFocus {
-		return Box{}, false
+		return geom.Box{}, false
 	}
-	return Box{X: title.X + title.W - markSide, Y: title.Y + (lineHigh-markSide)/2, W: markSide, H: markSide}, true
+	return geom.Box{X: title.X + title.W - markSide, Y: title.Y + (lineHigh-markSide)/2, W: markSide, H: markSide}, true
 }
 
 // Glow is the mark of a card in focus: a dot, centred, in a faint halo of the same ink.
 type Glow struct{ X, Y, Dot, Halo float32 }
 
 // GlowOf is the glow drawn in a mark's box: drawn in fourteen, a dot of 3.4 in a halo of 6, scaled to the box.
-func GlowOf(mark Box) Glow {
+func GlowOf(mark geom.Box) Glow {
 	scale := float32(mark.W) / 14
 	return Glow{X: float32(mark.X) + 7*scale, Y: float32(mark.Y) + 7*scale, Dot: 3.4 * scale, Halo: 6 * scale}
 }
@@ -236,7 +237,7 @@ func RuleOf(c board.Card) string {
 }
 
 // TitleRoom is how wide a card's title may run on its first line and on its second: the first less the glowing dot's room when the card is in focus.
-func TitleRoom(c board.Card, title Box) (int, int) {
+func TitleRoom(c board.Card, title geom.Box) (int, int) {
 	if c.InFocus {
 		return title.W - markSide - markSpace, title.W
 	}
@@ -371,11 +372,11 @@ func joined(pieces []fact) (said string, warn bool) {
 }
 
 // StandingPill is where an objective's card draws its standing: the first pill of its row, where a task's first label stands.
-func StandingPill(face board.Card, box Box, m Measure) Box {
+func StandingPill(face board.Card, box geom.Box, m Measure) geom.Box {
 	if pills := CardRowOf(face, PartsOf(box).Number, m, time.Time{}, engine.Pages{}).Pills; len(pills) > 0 {
 		return pills[0]
 	}
-	return Box{}
+	return geom.Box{}
 }
 
 // Standings is where an objective stands, put where a card writes its labels.

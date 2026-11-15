@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"image/color"
 	"slices"
 
@@ -12,16 +14,16 @@ import (
 )
 
 func drawConfiguration(k Kit, w Window) {
-	if !w.introsOpen {
-		Veil{}.Draw(k, Box{W: w.width, H: w.height})
+	if !w.IntrosOpen {
+		Veil{}.Draw(k, geom.Box{W: w.width, H: w.height})
 		k = k.inside("veil")
 	}
 	box := w.SettingsBox()
 	Panel{Head: Heads(w), Moves: true}.Draw(k, box)
 	in := k.inside("panel")
-	if w.introsOpen {
+	if w.IntrosOpen {
 		drawIntros(in, w, box)
-	} else if w.chooserOpen {
+	} else if w.ChooserOpen {
 		drawChooser(in, w, box)
 	} else {
 		drawSettings(in, w, box)
@@ -38,14 +40,14 @@ func drawConfiguration(k Kit, w Window) {
 		if len(row) > 0 {
 			y = row[0].Y
 		}
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: box.X + padding, Y: y + (barHigh-lineHigh)/2, W: max(0, end-box.X-padding), H: lineHigh}, says, small, font.Font{}, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: box.X + padding, Y: y + (geom.BarHigh-lineHigh)/2, W: max(0, end-box.X-padding), H: lineHigh}, says, small, font.Font{}, text.Start)
 	}
 }
 
 func drawScope(k Kit, w Window) {
 	segments := w.ScopeSegments()
 	on := 0
-	if w.global && len(segments) > 1 {
+	if w.Global && len(segments) > 1 {
 		on = 1
 	}
 	dot := ""
@@ -53,23 +55,23 @@ func drawScope(k Kit, w Window) {
 		dot = w.switcher.place.Colour
 	}
 	first, last := segments[0], segments[len(segments)-1]
-	track := Box{X: first.X - 2, Y: first.Y - 2, W: last.X + last.W + 2 - first.X + 2, H: first.H + 4}
+	track := geom.Box{X: first.X - 2, Y: first.Y - 2, W: last.X + last.W + 2 - first.X + 2, H: first.H + 4}
 	Segmented{Said: w.scopeWords(), At: segments, On: on, Small: true, Dot: dot}.Draw(k, track)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, w.ScopePathAt(), w.SettingsPath(), small, k.skin.Type.Mono, text.Start)
 }
 
-func drawSettings(k Kit, w Window, box Box) {
+func drawSettings(k Kit, w Window, box geom.Box) {
 	drawScope(k, w)
 	body := SettingsBody(box)
-	Rule{}.Draw(k, Box{X: box.X, Y: body.Y - 1, W: box.W})
+	Rule{}.Draw(k, geom.Box{X: box.X, Y: body.Y - 1, W: box.W})
 	if nav := SettingsNav(box); nav.W > 0 {
-		Rule{Upright: true}.Draw(k, Box{X: nav.X + nav.W, Y: nav.Y, H: nav.H})
+		Rule{Upright: true}.Draw(k, geom.Box{X: nav.X + nav.W, Y: nav.Y, H: nav.H})
 		shown := w.sectionShown()
 		for _, section := range w.SettingSections() {
 			Row{Picked: section.Name == shown}.Draw(k, section.At)
 			line := Inside(section.At)
-			say(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: line.X + between, Y: line.Y, W: line.W, H: line.H}, section.Name, reads)
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: line.X, Y: line.Y, W: line.W - between, H: line.H}, section.Count, small, k.skin.Type.Mono, text.End)
+			say(k.gtx, k.th, k.skin.Colour.Ink.Text, geom.Box{X: line.X + between, Y: line.Y, W: line.W, H: line.H}, section.Name, reads)
+			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: line.X, Y: line.Y, W: line.W - between, H: line.H}, section.Count, small, k.skin.Type.Mono, text.End)
 		}
 	}
 	region := SettingsRows(box)
@@ -78,10 +80,10 @@ func drawSettings(k Kit, w Window, box Box) {
 		Head{Said: head.Name, Count: head.Count}.Draw(rows, head.At)
 	}
 	for i, row := range w.SettingRows() {
-		drawSettingRow(rows, w, row, i == w.rowOn)
+		drawSettingRow(rows, w, row, i == w.RowOn)
 	}
 	cut.Pop()
-	Scrollbar{Lines: w.settingsLength(), Rows: region.H, At: w.settingsAt}.Draw(k, Box{X: region.X + region.W + rowsPad - 2*sbarWide, Y: region.Y, W: sbarWide, H: region.H})
+	Scrollbar{Lines: w.settingsLength(), Rows: region.H, At: w.SettingsAt}.Draw(k, geom.Box{X: region.X + region.W + rowsPad - 2*sbarWide, Y: region.Y, W: sbarWide, H: region.H})
 }
 
 func (w Window) sectionShown() string {
@@ -101,11 +103,11 @@ func drawSettingRow(k Kit, w Window, row SettingRow, keyed bool) {
 		faded := r.faded(0.45)
 		defer faded.Pop()
 	}
-	name := Box{X: row.Name.X, Y: row.Name.Y + (row.Name.H-2*lineHigh)/2, W: row.Name.W, H: lineHigh}
+	name := geom.Box{X: row.Name.X, Y: row.Name.Y + (row.Name.H-2*lineHigh)/2, W: row.Name.W, H: lineHigh}
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, name, w.rowSays(row), reads, font.Medium, 1, text.Start)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, row.Key.Name, small, k.skin.Type.Mono, text.Start)
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, row.Key.Name, small, k.skin.Type.Mono, text.Start)
 	if row.Said != "" {
-		sayIn(k.gtx, k.th, k.skin.Colour.State.Wrong, Box{X: name.X, Y: row.From.Y + row.From.H - 2, W: row.At.W - 2*padding, H: lineHigh}, row.Said, small, font.Font{}, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.State.Wrong, geom.Box{X: name.X, Y: row.From.Y + row.From.H - 2, W: row.At.W - 2*padding, H: lineHigh}, row.Said, small, font.Font{}, text.Start)
 	}
 	drawControl(r, w, row)
 	drawOrigin(r, w, row)
@@ -134,19 +136,19 @@ func drawControl(k Kit, w Window, row SettingRow) {
 	case row.Key.Kind == files.KindColour:
 		Picker{Said: row.Value, Dot: row.Value}.Draw(k, row.Control)
 	case row.Fixed:
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, Box{X: row.Control.X + copyRoom, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: row.Control.W - copyRoom, H: lineHigh}, row.Value, small, k.skin.Type.Mono, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, geom.Box{X: row.Control.X + copyRoom, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: row.Control.W - copyRoom, H: lineHigh}, row.Value, small, k.skin.Type.Mono, text.Start)
 	default:
-		editing := w.keyWriting == row.Key.Name
+		editing := w.KeyWriting == row.Key.Name
 		field := Field{Lit: editing}.Draw(k, row.Control)
-		line := Box{X: field.X + pickerPad, Y: field.Y + (field.H-lineHigh)/2, W: field.W - 2*pickerPad, H: lineHigh}
+		line := geom.Box{X: field.X + pickerPad, Y: field.Y + (field.H-lineHigh)/2, W: field.W - 2*pickerPad, H: lineHigh}
 		if row.Key.Unit != "" {
 			unit := ends(w.measured(), row.Key.Unit, small)
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: line.X + line.W - unit, Y: line.Y, W: unit, H: line.H}, row.Key.Unit, small, font.Font{}, text.End)
+			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: line.X + line.W - unit, Y: line.Y, W: unit, H: line.H}, row.Key.Unit, small, font.Font{}, text.End)
 			line.W -= unit + between
 		}
 		switch {
 		case editing:
-			writing(k.inside("field"), w.measured(), line, w.keyWritten, true, small, 1, Follow)
+			writing(k.inside("field"), w.measured(), line, w.KeyWritten, true, small, 1, Follow)
 		case row.Value == "" && row.Key.Kind == files.KindText:
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, line, "no label here", small, font.Font{}, text.Start)
 		default:
@@ -159,7 +161,7 @@ func (w Window) stripOf(slug string) []color.NRGBA {
 	if slug == w.WornScheme() {
 		return StripOf(w.Skin().Colour)
 	}
-	for _, seen := range w.configured.Themes {
+	for _, seen := range w.Configured.Themes {
 		if seen.Slug == slug {
 			if offered := offeredFrom(seen); offered.bad == "" {
 				return StripOf(offered.colours)
@@ -190,7 +192,7 @@ func drawOrigin(k Kit, w Window, row SettingRow) {
 		if one == SetHere {
 			wides[i] += 2 * pillPad
 		}
-		total += wides[i] + gap
+		total += wides[i] + geom.Gap
 	}
 	x := row.From.X
 	if !w.narrow() {
@@ -200,16 +202,16 @@ func drawOrigin(k Kit, w Window, row SettingRow) {
 		}
 	}
 	for i, one := range said {
-		at := Box{X: x, Y: row.From.Y + (row.From.H-lineHigh)/2, W: wides[i], H: lineHigh}
+		at := geom.Box{X: x, Y: row.From.Y + (row.From.H-lineHigh)/2, W: wides[i], H: lineHigh}
 		switch one {
 		case SetHere:
-			Pill{Said: one, Tone: ToneHere}.Draw(k, Box{X: x, Y: row.From.Y + (row.From.H-pillHigh)/2, W: wides[i], H: pillHigh})
+			Pill{Said: one, Tone: ToneHere}.Draw(k, geom.Box{X: x, Y: row.From.Y + (row.From.H-pillHigh)/2, W: wides[i], H: pillHigh})
 		case ByDefault, WhenOpened:
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, at, one, small, font.Font{}, text.Start)
 		default:
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, at, one, small, font.Font{}, text.Start)
 		}
-		x += wides[i] + gap
+		x += wides[i] + geom.Gap
 	}
 	for i, offer := range row.Offers {
 		look := buttonPlain
@@ -220,12 +222,12 @@ func drawOrigin(k Kit, w Window, row SettingRow) {
 	}
 }
 
-func drawChooser(k Kit, w Window, box Box) {
+func drawChooser(k Kit, w Window, box geom.Box) {
 	scope := ScopeAt(box)
-	said := "Previewing " + w.previewing + " · ⏎ wears it · esc goes back to " + w.inForce()
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, said, small, font.Font{}, text.Start)
+	said := "Previewing " + w.Previewing + " · ⏎ wears it · esc goes back to " + w.InForce()
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, said, small, font.Font{}, text.Start)
 	body := SettingsBody(box)
-	Rule{}.Draw(k, Box{X: box.X, Y: body.Y - 1, W: box.W})
+	Rule{}.Draw(k, geom.Box{X: box.X, Y: body.Y - 1, W: box.W})
 	region := w.chooserRegion()
 	tiles, cut := k.within(region)
 	for _, head := range w.ChooserHeads() {
@@ -239,67 +241,58 @@ func drawChooser(k Kit, w Window, box Box) {
 	length := 0
 	if len(tilesAll) > 0 {
 		last := tilesAll[len(tilesAll)-1].At
-		length = last.Y + last.H + w.settingsAt - region.Y + padding
+		length = last.Y + last.H + w.SettingsAt - region.Y + padding
 	}
-	Scrollbar{Lines: length, Rows: region.H, At: w.settingsAt}.Draw(k, Box{X: region.X + region.W + rowsPad - 2*sbarWide, Y: region.Y, W: sbarWide, H: region.H})
+	Scrollbar{Lines: length, Rows: region.H, At: w.SettingsAt}.Draw(k, geom.Box{X: region.X + region.W + rowsPad - 2*sbarWide, Y: region.Y, W: sbarWide, H: region.H})
 }
 
-func drawIntros(k Kit, w Window, box Box) {
+func drawIntros(k Kit, w Window, box geom.Box) {
 	scope := ScopeAt(box)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, IntrosSays, small, font.Font{}, text.Start)
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, IntrosSays, small, font.Font{}, text.Start)
 	body := SettingsBody(box)
-	Rule{}.Draw(k, Box{X: box.X, Y: body.Y - 1, W: box.W})
+	Rule{}.Draw(k, geom.Box{X: box.X, Y: body.Y - 1, W: box.W})
 	region := w.introsRegion()
 	rows, cut := k.within(region)
 	all := w.IntroRows()
 	for i, row := range all {
-		Row{Picked: i == w.introOn}.Draw(rows, row.At)
+		Row{Picked: i == w.IntroOn}.Draw(rows, row.At)
 		line := Inside(row.At)
-		name := Box{X: line.X + between, Y: row.At.Y + (row.At.H-2*lineHigh)/2, W: line.W - 2*between, H: lineHigh}
+		name := geom.Box{X: line.X + between, Y: row.At.Y + (row.At.H-2*lineHigh)/2, W: line.W - 2*between, H: lineHigh}
 		sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, name, row.Says, reads, font.Medium, 1, text.Start)
 		said := row.Name + " · " + row.Lasts
 		if row.InForce {
 			said += " · in use"
 		}
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, said, small, k.skin.Type.Mono, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, said, small, k.skin.Type.Mono, text.Start)
 	}
 	cut.Pop()
 	length := 0
 	if len(all) > 0 {
 		last := all[len(all)-1].At
-		length = last.Y + last.H + w.settingsAt - region.Y + padding
+		length = last.Y + last.H + w.SettingsAt - region.Y + padding
 	}
-	Scrollbar{Lines: length, Rows: region.H, At: w.settingsAt}.Draw(k, Box{X: region.X + region.W + padding/2, Y: region.Y, W: sbarWide, H: region.H})
+	Scrollbar{Lines: length, Rows: region.H, At: w.SettingsAt}.Draw(k, geom.Box{X: region.X + region.W + padding/2, Y: region.Y, W: sbarWide, H: region.H})
 }
 
 // IntrosSays is what the intro chooser says over its list.
 const IntrosSays = "Played on the board · r again · ⏎ keeps it"
 
-func (w Window) inForce() string {
-	for _, seen := range w.configured.Themes {
-		if seen.InForce {
-			return seen.Slug
-		}
-	}
-	return theme.DefaultSlug
-}
-
 // BoardBanner is what the board says over itself of its configuration: a file read again and what changed, or a file that cannot be read; what it offers, and where it is drawn.
 type BoardBanner struct {
 	Said, Then, Offer string
 	Told              bool
-	At, OfferAt       Box
+	At, OfferAt       geom.Box
 }
 
 // BoardBanners is every banner the board shows of its configuration, the one about a file that cannot be read first, stacked above the bar.
 func (w Window) BoardBanners() []BoardBanner {
-	if w.screen == OnConfiguration {
+	if w.Screen == board.OnConfiguration {
 		return nil
 	}
 	var banners []BoardBanner
 	if t, ok := w.Trouble(); ok {
 		banners = append(banners, BoardBanner{
-			Said: tilde(t.File) + " cannot be read", Then: t.String() + " · the window keeps what it read at " + w.readAt.Format("15:04") + " until the file reads again.",
+			Said: tilde(t.File) + " cannot be read", Then: t.String() + " · the window keeps what it read at " + w.ReadAt.Format("15:04") + " until the file reads again.",
 			Offer: "Open " + baseName(t.File),
 		})
 	}
@@ -314,7 +307,7 @@ func (w Window) BoardBanners() []BoardBanner {
 		banners = append(banners, BoardBanner{Said: in + " read again", Then: said, Offer: "Settings", Told: true})
 	}
 	l := w.Layout()
-	bottom := l.Bar.Y - gap
+	bottom := l.Bar.Y - geom.Gap
 	m := w.measured()
 	for i := len(banners) - 1; i >= 0; i-- {
 		b := &banners[i]
@@ -322,9 +315,9 @@ func (w Window) BoardBanners() []BoardBanner {
 		wide := min(bannerWidest, w.width-2*settingsMargin*2, max(ends(m, b.Said, reads), ends(m, b.Then, small))+offer+3*bannerPad)
 		inner := wide - offer - 3*bannerPad
 		high := BannerHigh(m, b.Said, b.Then, inner+2*bannerPad)
-		b.At = Box{X: (w.width - wide) / 2, Y: bottom - high, W: wide, H: high}
-		b.OfferAt = Box{X: b.At.X + b.At.W - bannerPad - offer, Y: b.At.Y + bannerPad, W: offer, H: smallButton}
-		bottom = b.At.Y - gap
+		b.At = geom.Box{X: (w.width - wide) / 2, Y: bottom - high, W: wide, H: high}
+		b.OfferAt = geom.Box{X: b.At.X + b.At.W - bannerPad - offer, Y: b.At.Y + bannerPad, W: offer, H: smallButton}
+		bottom = b.At.Y - geom.Gap
 	}
 	return banners
 }
@@ -347,16 +340,16 @@ func drawBoardBanners(k Kit, w Window) {
 	}
 }
 
-func (w Window) clickingBanners(p Point) (Window, bool) {
+func (w Window) clickingBanners(p geom.Point) (Window, bool) {
 	for _, b := range w.BoardBanners() {
 		if !b.OfferAt.In(p) {
 			continue
 		}
 		if b.Told {
-			w.changed = nil
+			w.Changed = nil
 			return w.openingConfiguration(), true
 		}
-		w.opens = w.trouble.File
+		w.Opens = w.Troubled.File
 		return w, true
 	}
 	return w, false

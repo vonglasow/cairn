@@ -548,6 +548,34 @@ linters:
             - pkg: github.com/spf13/cobra
               desc: the window is opened by a command, it does not parse one
 
+        # Beneath the window: where things lie, how they look and how they
+        # move. None reads the window or the store; the window reads them.
+        geom:
+          files: ["**/internal/gui/geom/**"]
+          deny:
+            - pkg: cairn/internal/gui$
+              desc: the window reads where things lie, never the other way
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
+            - pkg: gioui.org
+              desc: where things lie is said in numbers, never drawn
+        design:
+          files: ["**/internal/gui/design/**"]
+          deny:
+            - pkg: cairn/internal/gui$
+              desc: the window wears its design, the design never reads it
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
+        motion:
+          files: ["**/internal/gui/motion/**"]
+          deny:
+            - pkg: cairn/internal/gui$
+              desc: the window reads how things move, never the other way
+            - pkg: cairn/internal/store/sqlite
+              desc: a surface changes state through the engine, never behind it
+            - pkg: gioui.org
+              desc: how things move is said in numbers, never drawn
+
         # The third surface. Same rule as the other two — it asks the engine and
         # never the store — plus the one mcp has: the command line builds the
         # board, so the board never reads the command line back.

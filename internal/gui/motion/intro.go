@@ -1,7 +1,10 @@
-package gui
+// Package motion says how the window moves: the intros, the springs and curves they are made of, what reduced motion asks.
+package motion
 
 import (
+	"cairn/internal/gui/geom"
 	"math"
+	"strings"
 	"time"
 
 	"cairn/internal/store/files"
@@ -34,15 +37,15 @@ func (p Pose) Resting() bool {
 // Stage is what an intro is played on: the window's size, the grounds the cards stand on, the cards seen, in the order the board draws them, the card the intro starts from, and where its focus mark is.
 type Stage struct {
 	Wide, High int
-	Grounds    []Box
+	Grounds    []geom.Box
 	Cards      []Staged
 	Lead       int
-	Mark       Box
+	Mark       geom.Box
 }
 
 // Staged is a card on the stage: its slot, the ground it stands on and its row there, its priority, whether it is in focus, and how many letters its title has.
 type Staged struct {
-	Slot        Box
+	Slot        geom.Box
 	Ground, Row int
 	Priority    string
 	Focus       bool
@@ -56,7 +59,7 @@ type Scene struct {
 	Order            []int
 	Wave             *Wave
 	Sweep            *Sweep
-	Grains           Grains
+	Grains           []Grain
 	Beat             *Pulse
 	Stones           bool
 	Progress         float64
@@ -85,7 +88,7 @@ const (
 
 // Pulse is the focus mark speaking: the mark, how big its dot is and how much of it is seen, and the ring it sends out.
 type Pulse struct {
-	Mark                         Box
+	Mark                         geom.Box
 	Dot, DotSeen, Ring, RingSeen float64
 }
 
@@ -126,12 +129,13 @@ func IntroLasts(name string, s Stage) time.Duration {
 }
 
 func naturalEnd(name string, s Stage) float64 {
-	sc := blank(s)
+	sc := Blank(s)
 	introNamed(name).stages(&sc, s, 0)
 	return max(1, sc.ends)
 }
 
-func blank(s Stage) Scene {
+// Blank is the scene before anything has arrived: every part at rest.
+func Blank(s Stage) Scene {
 	sc := Scene{Camera: AtRest(), Top: AtRest(), Bar: AtRest(), Grounds: make([]Pose, len(s.Grounds)), Cards: make([]Pose, len(s.Cards))}
 	for i := range sc.Grounds {
 		sc.Grounds[i] = AtRest()
@@ -146,7 +150,7 @@ func blank(s Stage) Scene {
 func Staging(name string, at time.Duration, s Stage) Scene {
 	natural, lasts := naturalEnd(name, s), float64(IntroLasts(name, s))/float64(time.Millisecond)
 	ms := float64(at) / float64(time.Millisecond)
-	sc := blank(s)
+	sc := Blank(s)
 	if ms >= lasts {
 		return sc
 	}
@@ -159,10 +163,11 @@ func (sc *Scene) reach(at float64) { sc.ends = max(sc.ends, at) }
 
 func phase(sc *Scene, at, delay, lasts float64) float64 {
 	sc.reach(delay + lasts)
-	return clamp01((at - delay) / lasts)
+	return Clamp01((at - delay) / lasts)
 }
 
-func clamp01(x float64) float64 { return min(1, max(0, x)) }
+// Clamp01 is x held between 0 and 1.
+func Clamp01(x float64) float64 { return min(1, max(0, x)) }
 
 func mix(a, b, t float64) float64 { return a + (b-a)*t }
 
@@ -182,7 +187,7 @@ func bezier(x1, y1, x2, y2 float64) func(float64) float64 {
 	curve := func(a, b, t float64) float64 { return 3*a*t*(1-t)*(1-t) + 3*b*t*t*(1-t) + t*t*t }
 	return func(x float64) float64 {
 		if x <= 0 || x >= 1 {
-			return clamp01(x)
+			return Clamp01(x)
 		}
 		lo, hi := 0.0, 1.0
 		for range 40 {
@@ -254,7 +259,7 @@ func (sc *Scene) beat(s Stage, at, from float64) {
 	sc.Beat = b
 }
 
-func centre(b Box) (float64, float64) {
+func centre(b geom.Box) (float64, float64) {
 	return float64(b.X) + float64(b.W)/2, float64(b.Y) + float64(b.H)/2
 }
 
@@ -289,7 +294,7 @@ func springing(sc *Scene, s Stage, at float64) {
 			continue
 		}
 		e := springMid(p)
-		sc.Cards[i].Seen = clamp01(p / 0.3)
+		sc.Cards[i].Seen = Clamp01(p / 0.3)
 		sc.Cards[i].DY = 26 * (1 - e)
 		sc.Cards[i].Grow = 0.965 + 0.035*e
 	}
@@ -363,7 +368,7 @@ func unfolding(sc *Scene, s Stage, at float64) {
 		e := expoOut(p)
 		g := &sc.Grounds[i]
 		g.PivotX, g.Wide = 0, 0.04+0.96*e
-		g.Seen = clamp01(e / 0.2)
+		g.Seen = Clamp01(e / 0.2)
 		g.Shade = 0.55 * (1 - e)
 	}
 	for i, c := range s.Cards {
@@ -435,7 +440,7 @@ func flapping(sc *Scene, s Stage, at float64) {
 			angle, light = mix(-4, 0, e), mix(0.96, 1, e)
 		}
 		pose := &sc.Cards[i]
-		pose.Seen = clamp01(p / 0.08)
+		pose.Seen = Clamp01(p / 0.08)
 		pose.PivotY, pose.High = 0, math.Abs(math.Cos(angle*math.Pi/180))
 		pose.Shade, pose.Glare = max(0, 1-light), max(0, light-1)*0.35
 	}
@@ -478,7 +483,7 @@ func rippling(sc *Scene, s Stage, at float64) {
 		if i == s.Lead {
 			if p := phase(sc, at, 0, 520); p < 1 {
 				e := springSnap(p)
-				pose.Seen, pose.Grow = clamp01(e), 0.9+0.1*e
+				pose.Seen, pose.Grow = Clamp01(e), 0.9+0.1*e
 			}
 			continue
 		}
@@ -489,7 +494,7 @@ func rippling(sc *Scene, s Stage, at float64) {
 		x, y := centre(s.Cards[i].Slot)
 		angle := math.Atan2(y-cy, x-cx)
 		e := springMid(p)
-		pose.Seen = clamp01(e / 0.35)
+		pose.Seen = Clamp01(e / 0.35)
 		pose.DX, pose.DY = -math.Cos(angle)*14*(1-e), -math.Sin(angle)*14*(1-e)
 		pose.Grow = 0.88 + 0.12*e
 	}
@@ -533,7 +538,7 @@ func assembling(sc *Scene, s Stage, at float64) {
 		if i == s.Lead {
 			lead = start
 		}
-		x, y, w, h := float64(c.Slot.X), float64(c.Slot.Y), float64(c.Slot.W), float64(c.Slot.H-gap)
+		x, y, w, h := float64(c.Slot.X), float64(c.Slot.Y), float64(c.Slot.W), float64(c.Slot.H-geom.Gap)
 		for j := range per {
 			part := GrainEdge
 			switch {
@@ -553,12 +558,12 @@ func assembling(sc *Scene, s Stage, at float64) {
 			sx, sy := ox+math.Cos(angle)*reach, oy+math.Sin(angle)*reach*0.7
 			delay, side, swirl := start+r.next()*120, 1.2+r.next()*1.6, (r.next()-0.5)*160
 			sc.reach(delay + 860)
-			u := clamp01((at - delay) / 680)
+			u := Clamp01((at - delay) / 680)
 			if u <= 0 {
 				continue
 			}
 			e := 1 - (1-u)*(1-u)*(1-u)
-			fade := clamp01((at - delay - 600) / 260)
+			fade := Clamp01((at - delay - 600) / 260)
 			seen := min(1, u*3) * (1 - fade) * 0.9
 			if seen <= 0 {
 				continue
@@ -615,7 +620,7 @@ func drafting(sc *Scene, s Stage, at float64) {
 		if p >= 1 {
 			continue
 		}
-		sc.Grounds[i].Seen = clamp01(p / 0.2)
+		sc.Grounds[i].Seen = Clamp01(p / 0.2)
 		sc.Grounds[i].Draft = &Draft{Fill: keyed(p, []float64{0, 0.55, 1}, []float64{0, 0, 1}), Stripe: 1, Facts: 1, Typed: -1}
 	}
 	lead := 0.0
@@ -644,7 +649,7 @@ func drafting(sc *Scene, s Stage, at float64) {
 
 func stoning(sc *Scene, s Stage, at float64) {
 	sc.reach(1800)
-	progress := clamp01(at / 1800)
+	progress := Clamp01(at / 1800)
 	if progress >= 1 {
 		return
 	}
@@ -654,3 +659,37 @@ func stoning(sc *Scene, s Stage, at float64) {
 	}
 	sc.Stones = true
 }
+
+const (
+	arriveOver = 0.45
+	falling    = 0.35
+	settling   = 0.2
+)
+
+// Arriving is how far the k-th of n cards has come at a share of the breath: how far its stones have fallen, slowing as they land, and how far they have given way to the card since.
+func Arriving(progress float64, k, n int) (fall, fade float64) {
+	start := arriveOver * float64(k) / float64(max(1, n))
+	share := min(1, max(0, (progress-start)/falling))
+	fall = 1 - (1-share)*(1-share)
+	fade = min(1, max(0, (progress-start-falling)/settling))
+	return fall, fade
+}
+
+// Ground is how the i-th column's ground stands, at rest when the scene says nothing of it.
+func (sc Scene) Ground(i int) Pose {
+	if i < len(sc.Grounds) {
+		return sc.Grounds[i]
+	}
+	return AtRest()
+}
+
+// Card is how the n-th card stands, at rest when the scene says nothing of it.
+func (sc Scene) Card(n int) Pose {
+	if n < len(sc.Cards) {
+		return sc.Cards[n]
+	}
+	return AtRest()
+}
+
+// AnimationsOff says whether what a GNOME desktop answers of its animations turns them off, which is how it asks for less motion.
+func AnimationsOff(said string) bool { return strings.TrimSpace(said) == "false" }

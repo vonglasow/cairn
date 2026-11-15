@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"image/color"
 
 	"gioui.org/font"
@@ -17,14 +19,14 @@ type LabelChip struct {
 }
 
 // Draw draws the chip in at.
-func (c LabelChip) Draw(k Kit, at Box) Box {
+func (c LabelChip) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("label", at)
 	ground, ink := k.skin.LabelPill(c.Colour)
 	rounded(k.gtx, at, k.skin.Radius.Full(at), ground)
 	said := at
 	if c.Removable {
 		said.W -= crossWide
-		Cross{Ink: ink}.Draw(k.inside("label"), Box{X: at.X + at.W - pillPad/2 - crossWide, Y: at.Y + (at.H-crossWide)/2, W: crossWide, H: crossWide})
+		Cross{Ink: ink}.Draw(k.inside("label"), geom.Box{X: at.X + at.W - pillPad/2 - crossWide, Y: at.Y + (at.H-crossWide)/2, W: crossWide, H: crossWide})
 	}
 	sayCentred(k.gtx, k.th, ink, pillLine(k.th, said), c.Label, small)
 	return at
@@ -51,7 +53,7 @@ type Pill struct {
 }
 
 // Draw draws the pill in at, its word centred by the ink of a line of letters.
-func (p Pill) Draw(k Kit, at Box) Box {
+func (p Pill) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("pill", at)
 	ground, ink, grounded := p.inks(k.skin)
 	if grounded {
@@ -67,7 +69,7 @@ func (p Pill) Draw(k Kit, at Box) Box {
 	return at
 }
 
-func (p Pill) inks(s Skin) (ground, ink color.NRGBA, grounded bool) {
+func (p Pill) inks(s design.Skin) (ground, ink color.NRGBA, grounded bool) {
 	c := s.Colour
 	switch p.Tone {
 	case ToneStanding:
@@ -87,9 +89,9 @@ func (p Pill) inks(s Skin) (ground, ink color.NRGBA, grounded bool) {
 	return c.Surface.Control, c.Ink.Faint, true
 }
 
-func pillLine(th *material.Theme, pill Box) Box {
+func pillLine(th *material.Theme, pill geom.Box) geom.Box {
 	top, bottom := inkOf(th, font.Font{Typeface: th.Face}, pillReference)
-	return Box{X: pill.X, Y: pill.Y + (pill.H-top-bottom)/2, W: pill.W, H: lineHigh}
+	return geom.Box{X: pill.X, Y: pill.Y + (pill.H-top-bottom)/2, W: pill.W, H: lineHigh}
 }
 
 // KeyChip is a key on a chip of its own, loud where it is offered and quiet where it only reminds, always grounded.
@@ -99,16 +101,16 @@ type KeyChip struct {
 }
 
 // Draw draws the chip at the left of row, in its middle, and gives back where it stands.
-func (c KeyChip) Draw(k Kit, row Box) Box {
-	chip := Box{X: row.X, Y: row.Y + (row.H-chipHigh)/2, W: KeyChipWide(c.Key), H: chipHigh}
+func (c KeyChip) Draw(k Kit, row geom.Box) geom.Box {
+	chip := geom.Box{X: row.X, Y: row.Y + (row.H-chipHigh)/2, W: KeyChipWide(c.Key), H: chipHigh}
 	if c.Key == "" {
-		return Box{X: row.X, Y: chip.Y, H: chipHigh}
+		return geom.Box{X: row.X, Y: chip.Y, H: chipHigh}
 	}
 	ground, ink := c.inks(k.skin)
 	return c.grounded(k, chip, ground, ink)
 }
 
-func (c KeyChip) inks(s Skin) (ground, ink color.NRGBA) {
+func (c KeyChip) inks(s design.Skin) (ground, ink color.NRGBA) {
 	ground, ink = s.Colour.Surface.Control, s.Colour.Ink.Text
 	if c.OnControl {
 		ground = s.Colour.Surface.ChipOnControl
@@ -119,7 +121,7 @@ func (c KeyChip) inks(s Skin) (ground, ink color.NRGBA) {
 	return ground, ink
 }
 
-func (c KeyChip) grounded(k Kit, chip Box, ground, ink color.NRGBA) Box {
+func (c KeyChip) grounded(k Kit, chip geom.Box, ground, ink color.NRGBA) geom.Box {
 	k.put("key", chip)
 	rounded(k.gtx, chip, k.skin.Radius.Chip, ground)
 	sayOnChip(k, ink, chip, c.Key)
@@ -128,10 +130,10 @@ func (c KeyChip) grounded(k Kit, chip Box, ground, ink color.NRGBA) Box {
 
 const chipHigh = 18
 
-func sayOnChip(k Kit, ink color.NRGBA, chip Box, key string) {
+func sayOnChip(k Kit, ink color.NRGBA, chip geom.Box, key string) {
 	top, bottom := inkOf(k.th, k.skin.Type.MonoBold, key)
 	at := chip.Y + chip.H/2 - (top+bottom)/2
-	sayIn(k.gtx, k.th, ink, Box{X: chip.X, Y: at, W: chip.W, H: lineHigh}, key, small, k.skin.Type.MonoBold, text.Middle)
+	sayIn(k.gtx, k.th, ink, geom.Box{X: chip.X, Y: at, W: chip.W, H: lineHigh}, key, small, k.skin.Type.MonoBold, text.Middle)
 }
 
 // Dot is a colour standing beside its name, or a ring where there is no colour to show.
@@ -141,7 +143,7 @@ type Dot struct {
 }
 
 // Draw draws the dot in at.
-func (d Dot) Draw(k Kit, at Box) Box {
+func (d Dot) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("dot", at)
 	if d.Ring {
 		paint.FillShape(k.gtx.Ops, k.skin.Colour.Ink.Faint, clip.Stroke{Path: clip.UniformRRect(rect(at), k.skin.Radius.Full(at)).Path(k.gtx.Ops), Width: k.skin.Size.Stroke}.Op())

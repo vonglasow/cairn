@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,26 +10,26 @@ import (
 	"github.com/cucumber/godog"
 )
 
-func (w *world) branchOf(title string) (board.Branch, Box, error) {
+func (w *world) branchOf(title string) (board.Branch, geom.Box, error) {
 	for i, b := range w.w.Tree() {
 		if b.Goal.Title == title {
 			return b, GoalAt(w.w.Layout(), i, w.w.goals), nil
 		}
 	}
-	return board.Branch{}, Box{}, fmt.Errorf("no objective titled %q is listed", title)
+	return board.Branch{}, geom.Box{}, fmt.Errorf("no objective titled %q is listed", title)
 }
 
-func (w *world) saidWithin(box Box) []string {
+func (w *world) saidWithin(box geom.Box) []string {
 	var said []string
 	for _, one := range textDrawnWith(w.theme, w.w) {
-		if box.In(Point{X: one.box.X + one.box.W/2, Y: one.box.Y + one.box.H/2}) {
+		if box.In(geom.Point{X: one.box.X + one.box.W/2, Y: one.box.Y + one.box.H/2}) {
 			said = append(said, one.said)
 		}
 	}
 	return said
 }
 
-func (w *world) chevronDrawnAt(slot Box) bool {
+func (w *world) chevronDrawnAt(slot geom.Box) bool {
 	gutter := FoldAt(slot)
 	for _, d := range partsDrawnWith(w.theme, w.w) {
 		if strings.HasSuffix(d.Part, "chevron") && d.At.X >= gutter.X && d.At.X+d.At.W <= gutter.X+gutter.W && d.At.Y >= gutter.Y && d.At.Y+d.At.H <= gutter.Y+gutter.H {
@@ -140,7 +141,7 @@ func (w *world) foldsSteps(sc *godog.ScenarioContext) {
 		said, dot := w.w.SignalOf(b)
 		_, _, second := ItemLine(ItemOf(slot, 0))
 		_, words := SignalAt(second, said, dot, w.w.measured())
-		w.w = w.w.Hovering(Point{X: words.X + words.W/2, Y: words.Y + words.H/2})
+		w.w = w.w.Hovering(geom.Point{X: words.X + words.W/2, Y: words.Y + words.H/2})
 		return nil
 	})
 	sc.Then(`^the bubble holds the line "([^"]*)"$`, func(line string) error {

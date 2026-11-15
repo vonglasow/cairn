@@ -3,49 +3,32 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-// Showing is the work narrowed to what the filters keep and a search reaches, which is what everything draws from.
-func (w Window) Showing() board.Snapshot {
-	if w.looking.Empty() && !w.filters.Narrows() && w.viewing == "" {
-		return w.snap
-	}
-	cards := w.snap.Viewed(w.viewing, w.snap.Cards)
-	if kept, err := w.filters.Kept(cards); err == nil {
-		cards = kept
-	}
-	found := board.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
-	found.Cards = board.Found(cards, w.looking.Reads(), w.archived)
-	found.Goals = board.FoundGoals(w.filters.KeptGoals(w.snap.Goals), w.looking.Reads())
-	return found
-}
-
-// Searched is the search as a written text, caret and all.
-func (w Window) Searched() Written { return w.looking }
-
-var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Time: engine.PageTime, Series: engine.PageTasks}
+var pageOfTab = map[board.Tab]string{board.Tasks: engine.PageTasks, board.Objectives: engine.PageObjectives, board.Time: engine.PageTime, board.Series: engine.PageTasks}
 
 // Paged answers the window showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
 func (w Window) Paged(p engine.Pages) Window {
-	w.pages = p
-	if shown := w.Shown(); len(shown) > 0 && !slices.Contains(shown, w.tab) {
+	w.Pages = p
+	if shown := w.Shown(); len(shown) > 0 && !slices.Contains(shown, w.Tab) {
 		return w.onPage(shown[0])
 	}
 	return w
 }
 
 // Shown is the pages drawn, in order: every one the configuration did not turn off.
-func (w Window) Shown() []Tab {
-	var shown []Tab
+func (w Window) Shown() []board.Tab {
+	var shown []board.Tab
 	for tab := range Pages {
-		if Tab(tab) == Series && !w.pages.Recurs() {
+		if board.Tab(tab) == board.Series && !w.Pages.Recurs() {
 			continue
 		}
-		if w.pages.Shows(pageOfTab[Tab(tab)]) {
-			shown = append(shown, Tab(tab))
+		if w.Pages.Shows(pageOfTab[board.Tab(tab)]) {
+			shown = append(shown, board.Tab(tab))
 		}
 	}
 	return shown
@@ -62,7 +45,7 @@ func Titled(name string) string {
 
 // ColumnHeads is what each column's head says: its name, then how many cards it holds.
 func (w Window) ColumnHeads() []string {
-	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.Archived)
 	heads := make([]string, 0, len(dealt))
 	for _, column := range dealt {
 		heads = append(heads, Titled(column.Name)+" "+strconv.Itoa(len(column.Cards)))
@@ -72,7 +55,7 @@ func (w Window) ColumnHeads() []string {
 
 // EmptySays is what a column holding nothing says in place of its cards: how to make the first task on a board holding none, nothing at all on a column holding some.
 func (w Window) EmptySays(column int) string {
-	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.Archived)
 	if column < 0 || column >= len(dealt) || len(dealt[column].Cards) > 0 {
 		return ""
 	}
@@ -87,44 +70,39 @@ const nothingHere = "Nothing here"
 // Dimmed says a card is drawn at half strength: its work is behind it, done or archived.
 func Dimmed(c board.Card) bool { return c.Archived || c.State == "done" }
 
-// Blank says every page is turned off: the window is drawn, and nothing in it.
-func (w Window) Blank() bool { return w.pages.None() }
-
 // BlankSays is what a window with every page turned off says, over the offer to open the settings.
 const BlankSays = "Every tab is turned off"
 
 // BlankSays is what the window says when it has no page to show, empty otherwise.
 func (w Window) BlankSays() string {
-	if w.Blank() && w.screen != OnConfiguration {
+	if w.Blank() && w.Screen != board.OnConfiguration {
 		return BlankSays
 	}
 	return ""
 }
 
 // BlankOffer is where a window with no page offers to open the settings: under what it says, in its middle.
-func BlankOffer(width, height int) Box {
-	return Box{X: width/2 - 90, Y: height/2 + lineHigh, W: 180, H: 30}
+func BlankOffer(width, height int) geom.Box {
+	return geom.Box{X: width/2 - 90, Y: height/2 + lineHigh, W: 180, H: 30}
 }
-
-func (w Window) stranded() bool { return w.Blank() && w.screen != OnConfiguration }
 
 func (w Window) other(by int) Window {
 	shown := w.Shown()
 	if len(shown) == 0 {
 		return w
 	}
-	at := max(0, slices.Index(shown, w.tab))
+	at := max(0, slices.Index(shown, w.Tab))
 	return w.onPage(shown[(at+by+len(shown))%len(shown)])
 }
 
-func (w Window) onPage(tab Tab) Window {
+func (w Window) onPage(tab board.Tab) Window {
 	if !slices.Contains(w.Shown(), tab) {
 		return w
 	}
-	w.tab = tab
-	w.chosen, w.chosenGoal, w.taken = 0, false, nil
-	w.err, w.wrongFor = nil, 0
-	if w.tab == Time {
+	w.Tab = tab
+	w.Chosen, w.ChosenGoal, w.Gathered = 0, false, nil
+	w.Err, w.wrongFor = nil, 0
+	if w.Tab == board.Time {
 		return w.readingWeek()
 	}
 	return w
@@ -135,32 +113,9 @@ func (w Window) working() Window { return w.toggling(board.FocusOp) }
 func (w Window) puttingAway() Window { return w.toggling(board.AwayOp) }
 
 func (w Window) toggling(op func(board.Card) engine.Operation) Window {
-	card, found := w.snap.Card(w.chosen)
+	card, found := w.Snap.Card(w.Chosen)
 	if !found {
 		return w
 	}
-	return w.asking(op(card), board.Numbered(w.chosen))
-}
-
-// LaneSays is what a lane of the band writes above itself: what it is, and how many it holds.
-func (w Window) LaneSays(kind string) string {
-	lane := slices.Index(board.Stalled, kind)
-	if lane < 0 {
-		return kind + "  0"
-	}
-	return kind + "  " + strconv.Itoa(len(w.inLane(lane)))
-}
-
-// Holds is how much a page holds, which is what its tab says beside its name.
-func (w Window) Holds(tab Tab) int {
-	if tab == Objectives {
-		return len(w.Showing().Goals)
-	}
-	if tab == Series {
-		return len(w.SeriesListed())
-	}
-	if tab == Time {
-		return w.sheet.Worked()
-	}
-	return len(board.OnTheBoard(w.Showing().Cards, w.archived))
+	return w.asking(op(card), board.Numbered(w.Chosen))
 }

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"strconv"
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 
 type menuState struct {
 	menu     []string
-	menuAt   Point
+	menuAt   geom.Point
 	menuOn   int
 	menuSets string
 }
@@ -21,40 +22,40 @@ const (
 )
 
 // ContextAt is a right click at a point of the board: it chooses what is under the pointer, or nothing, and opens what can be done to it.
-func (w Window) ContextAt(p Point) Window {
+func (w Window) ContextAt(p geom.Point) Window {
 	if w.Blank() {
 		return w
 	}
-	if w.screen != OnTheBoard {
+	if w.Screen != board.OnTheBoard {
 		return w
 	}
 	w = w.aiming(p).choosingAt(w.at(p))
 	w.menu, w.menuAt, w.menuOn, w.menuSets = w.menuFor(), p, 0, ""
-	w.screen = OnMenu
+	w.Screen = board.OnMenu
 	return w
 }
 
 func (w Window) menuFor() []string {
-	if w.chosen == 0 {
+	if w.Chosen == 0 {
 		return []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Labels", "Export", "Import"}
 	}
 	thing := "task"
-	if w.chosenGoal {
+	if w.ChosenGoal {
 		thing = "objective"
 	}
 	var lines []string
-	for _, op := range board.MenuOf(thing, w.pages) {
+	for _, op := range board.MenuOf(thing, w.Pages) {
 		lines = append(lines, w.linesOf(op)...)
 	}
 	return lines
 }
 
 func (w Window) linesOf(op engine.Operation) []string {
-	card := w.chosenCard()
+	card := w.ChosenCard()
 	switch {
-	case w.chosenGoal && (op.Verb == "edit" || op.Verb == "delete"):
+	case w.ChosenGoal && (op.Verb == "edit" || op.Verb == "delete"):
 		return []string{board.Offered(op)}
-	case w.chosenGoal:
+	case w.ChosenGoal:
 		return nil
 	case op.Verb == "show":
 		return []string{"Open"}
@@ -70,7 +71,7 @@ func (w Window) linesOf(op engine.Operation) []string {
 
 func (w Window) labellingChosen() Window {
 	w = w.formOnto("label").choosingList()
-	w.pickingLabels = w.screen == OnChoosing
+	w.PickingLabels = w.Screen == board.OnChoosing
 	return w
 }
 
@@ -79,11 +80,11 @@ func (w Window) datingChosen() Window {
 }
 
 func (w Window) formOnto(arg string) Window {
-	w.screen = OnTheBoard
+	w.Screen = board.OnTheBoard
 	w = w.Edit()
-	for at, field := range w.form.Fields() {
+	for at, field := range w.Form.Fields {
 		if field.Arg == arg {
-			w.form = w.form.onto(at)
+			w.Form = w.Form.Onto(at)
 		}
 	}
 	return w
@@ -92,11 +93,11 @@ func (w Window) formOnto(arg string) Window {
 // settingUnderTheCard opens the values a field of the chosen task takes in a menu under its card, the keyboard's way to what the right-click menu offers.
 func (w Window) settingUnderTheCard(field string, values []string, held string) Window {
 	for _, placed := range w.Placed() {
-		if placed.Card.Number == w.chosen {
-			w.menuAt = Point{X: placed.Slot.X, Y: placed.Slot.Y + placed.Slot.H}
+		if placed.Card.Number == w.Chosen {
+			w.menuAt = geom.Point{X: placed.Slot.X, Y: placed.Slot.Y + placed.Slot.H}
 		}
 	}
-	w.screen = OnMenu
+	w.Screen = board.OnMenu
 	return w.settingFrom(field, values, held)
 }
 
@@ -140,9 +141,9 @@ func (w Window) Menu() []string { return w.menu }
 func (w Window) MenuOn() int { return w.menuOn }
 
 // MenuBox is where the menu is drawn: from the point clicked, down and to the right, kept inside the window when the point is near an edge.
-func (w Window) MenuBox() Box {
+func (w Window) MenuBox() geom.Box {
 	high := between + len(w.menu)*menuRow + between
-	return Box{
+	return geom.Box{
 		X: max(0, min(w.menuAt.X, w.width-menuWide)),
 		Y: max(0, min(w.menuAt.Y, w.height-high)),
 		W: menuWide,
@@ -151,8 +152,8 @@ func (w Window) MenuBox() Box {
 }
 
 // MenuRowAt is where the i-th line of the menu is.
-func MenuRowAt(box Box, i int) Box {
-	return Box{X: box.X + between, Y: box.Y + between + i*menuRow, W: box.W - between - between, H: menuRow}
+func MenuRowAt(box geom.Box, i int) geom.Box {
+	return geom.Box{X: box.X + between, Y: box.Y + between + i*menuRow, W: box.W - between - between, H: menuRow}
 }
 
 func (w Window) onMenu(name string) Window {
@@ -171,34 +172,34 @@ func (w Window) onMenu(name string) Window {
 	case "enter":
 		return w.fromMenu(w.menuOn)
 	case "esc":
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 	}
 	return w
 }
 
-func (w Window) clickingMenu(p Point) Window {
+func (w Window) clickingMenu(p geom.Point) Window {
 	box := w.MenuBox()
 	for i := range w.menu {
 		if MenuRowAt(box, i).In(p) {
 			return w.fromMenu(i)
 		}
 	}
-	w.screen = OnTheBoard
+	w.Screen = board.OnTheBoard
 	return w
 }
 
 func (w Window) fromMenu(i int) Window {
 	said := w.menu[i]
 	if w.menuSets != "" {
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 		return w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(w.chosen), w.menuSets: said}})
+			"number": strconv.Itoa(w.Chosen), w.menuSets: said}})
 	}
 	return w.doingLine(said)
 }
 
 func (w Window) doingLine(said string) Window {
-	card := w.chosenCard()
+	card := w.ChosenCard()
 	switch said {
 	case "Move to…":
 		return w.settingFrom("state", engine.States(), card.State)
@@ -207,20 +208,15 @@ func (w Window) doingLine(said string) Window {
 	case "Labels…":
 		return w.labellingChosen()
 	case "Open":
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 		return w.opening()
 	case SkipThisOneSays:
-		w.screen = OnTheBoard
-		return w.asking(engine.TaskSkip, board.Numbered(w.chosen))
+		w.Screen = board.OnTheBoard
+		return w.asking(engine.TaskSkip, board.Numbered(w.Chosen))
 	}
-	w.screen = OnTheBoard
+	w.Screen = board.OnTheBoard
 	if said == "Focus" || said == "Unfocus" {
 		return w.working()
 	}
 	return w.Choose(said)
-}
-
-func (w Window) chosenCard() board.Card {
-	card, _ := w.snap.Card(w.chosen)
-	return card
 }

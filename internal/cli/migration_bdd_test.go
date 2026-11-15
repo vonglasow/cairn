@@ -4,6 +4,7 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/migration"
 	"cairn/internal/gui"
+	"cairn/internal/gui/design"
 	"context"
 	"errors"
 	"fmt"
@@ -35,7 +36,7 @@ func (w *world) registerWindow(sc *godog.ScenarioContext, t *testing.T) {
 	opened := false
 	sc.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		shown, opened = "", false
-		w.window = func(_ board.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, _, _ int, here gui.Here) error {
+		w.window = func(_ board.Work, _ engine.Pages, _ design.Skin, _ *debug.Log, _, _ int, here gui.Here) error {
 			shown, opened = here.Store, true
 			return nil
 		}

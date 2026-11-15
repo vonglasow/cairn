@@ -1,9 +1,11 @@
-package gui
+// Package design is what the window wears: the colours of the scheme in force, the sizes, the spaces, the faces it writes in.
+package design
 
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/item"
 	"cairn/internal/engine/label"
+	"cairn/internal/gui/geom"
 	"image/color"
 
 	"gioui.org/font"
@@ -34,7 +36,7 @@ type Spaces struct{ Hair, Halo, DashGap int }
 type Radii struct{ Mark, Check, Stripe, Chip, Today, Row, Control, Card, Ground, Panel int }
 
 // Full is the radius that rounds a box's ends into half circles.
-func (Radii) Full(b Box) int { return b.H / 2 }
+func (Radii) Full(b geom.Box) int { return b.H / 2 }
 
 // Extents is every size the drawing reads that no layout lays out.
 type Extents struct {
@@ -159,4 +161,11 @@ func (s Skin) Writing(c board.Card) color.NRGBA {
 	return s.Colour.Ink.Text
 }
 
-func (s Skin) stoneOf(i int) theme.Shade { return s.Colour.Stones[i%len(s.Colour.Stones)] }
+// StoneOf is the shade of the i-th stone, the stones coming round again past the last.
+func (s Skin) StoneOf(i int) theme.Shade { return s.Colour.Stones[i%len(s.Colour.Stones)] }
+
+// HeadingSize is the size every panel's heading is drawn at.
+const HeadingSize = 18
+
+// HeadingWeight is the weight every panel's heading is drawn in.
+const HeadingWeight = font.Bold

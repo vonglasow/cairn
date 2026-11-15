@@ -35,7 +35,7 @@ func Deal(cards []Card, withArchived bool) ([]Column, []Card) {
 		out[i] = Column{State: c.state, Name: c.name}
 	}
 	var band []Card
-	for _, card := range OnTheBoard(cards, withArchived) {
+	for _, card := range Laid(cards, withArchived) {
 		if Stopped(card.State) {
 			band = append(band, card)
 			continue
@@ -94,8 +94,8 @@ func StateAt(i int) string {
 	return columns[i].state
 }
 
-// OnTheBoard is what a board lays out: every task, the archived ones only when asked for.
-func OnTheBoard(cards []Card, withArchived bool) []Card {
+// Laid is what a board lays out: every task, the archived ones only when asked for.
+func Laid(cards []Card, withArchived bool) []Card {
 	var laid []Card
 	for _, c := range cards {
 		if c.Archived && !withArchived {
@@ -109,7 +109,7 @@ func OnTheBoard(cards []Card, withArchived bool) []Card {
 // Found is what a board shows of a search: the tasks a query reaches, a word found only in a step reaching the task it belongs to.
 func Found(cards []Card, query string, withArchived bool) []Card {
 	if query == "" {
-		return OnTheBoard(cards, withArchived)
+		return Laid(cards, withArchived)
 	}
 	reached := map[int]bool{}
 	for _, c := range cards {
@@ -119,7 +119,7 @@ func Found(cards []Card, query string, withArchived bool) []Card {
 		reached[c.Number] = true
 	}
 	var found []Card
-	for _, c := range OnTheBoard(cards, withArchived) {
+	for _, c := range Laid(cards, withArchived) {
 		if reached[c.Number] {
 			found = append(found, c)
 		}

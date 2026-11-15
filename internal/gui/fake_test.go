@@ -4,6 +4,7 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/app"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
 	"errors"
 	"time"
 
@@ -110,7 +111,7 @@ func (f *fake) gave(thing, verb string) (engine.Input, bool) {
 
 func holding(f *fake, cards ...board.Card) Window {
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{Cards: cards, Focus: f.focus, Version: f.version})
+	w.Snap = test.Searchable(board.Snapshot{Cards: cards, Focus: f.focus, Version: f.version})
 	return w
 }
 
@@ -118,24 +119,24 @@ func card(number int, title, state string) board.Card {
 	return board.Card{Number: number, Title: title, State: state}
 }
 
-func middleOf(w Window, column, at int) Point {
+func middleOf(w Window, column, at int) geom.Point {
 	box := w.Layout().CardAt(column, at, w.scroll[column])
-	return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
+	return geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
 }
 
-func (w Window) clicked(at Point) Window {
+func (w Window) clicked(at geom.Point) Window {
 	w, _ = tapped(w, Gesture{}, at)
 	return w
 }
 
 var moment = time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
 
-func tapped(w Window, g Gesture, at Point) (Window, Gesture) {
+func tapped(w Window, g Gesture, at geom.Point) (Window, Gesture) {
 	w, g = Pointing(w, g, pointer.Press, at, 0, moment)
 	return Pointing(w, g, pointer.Release, at, 0, moment)
 }
 
-func (w Window) doubleDragged(from, to Point) Window {
+func (w Window) doubleDragged(from, to geom.Point) Window {
 	w, g := tapped(w, Gesture{}, from)
 	w, g = Pointing(w, g, pointer.Press, from, 0, moment.Add(time.Millisecond))
 	w, g = Pointing(w, g, pointer.Drag, to, 0, moment.Add(2*time.Millisecond))
@@ -143,7 +144,7 @@ func (w Window) doubleDragged(from, to Point) Window {
 	return w
 }
 
-func (w Window) tripleClicked(at Point) Window {
+func (w Window) tripleClicked(at geom.Point) Window {
 	w, g := tapped(w, Gesture{}, at)
 	for i := 1; i <= 2; i++ {
 		w, g = Pointing(w, g, pointer.Press, at, 0, moment.Add(time.Duration(i)*time.Millisecond))
@@ -152,24 +153,24 @@ func (w Window) tripleClicked(at Point) Window {
 	return w
 }
 
-func (w Window) doubleClicked(at Point) Window {
+func (w Window) doubleClicked(at geom.Point) Window {
 	w, g := tapped(w, Gesture{}, at)
 	w, g = Pointing(w, g, pointer.Press, at, 0, moment.Add(time.Millisecond))
 	w, _ = Pointing(w, g, pointer.Release, at, 0, moment.Add(time.Millisecond))
 	return w
 }
 
-func formName(box Box, fields []board.Field, at int) Box {
+func formName(box geom.Box, fields []board.Field, at int) geom.Box {
 	name, _, _ := FormPlace(box, fields, at)
 	return name
 }
 
-func formValue(box Box, fields []board.Field, at int) Box {
+func formValue(box geom.Box, fields []board.Field, at int) geom.Box {
 	_, value, _ := FormPlace(box, fields, at)
 	return value
 }
 
-func formRows(box Box, fields []board.Field, at int) int {
+func formRows(box geom.Box, fields []board.Field, at int) int {
 	_, _, rows := FormPlace(box, fields, at)
 	return rows
 }

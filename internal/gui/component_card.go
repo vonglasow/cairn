@@ -2,6 +2,9 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
+	"cairn/internal/gui/motion"
 	"image/color"
 	"strconv"
 	"strings"
@@ -19,7 +22,7 @@ type Card struct {
 	Face                                        board.Card
 	Chosen, Hovered, Dimmed, Dragged, Reference bool
 	Undotted                                    bool
-	Draft                                       *Draft
+	Draft                                       *motion.Draft
 	Standing, Why                               string
 	Pages                                       engine.Pages
 	Colour                                      func(label string) string
@@ -35,7 +38,7 @@ type GoalTile struct {
 }
 
 // Draw draws the card in the slot at, which holds the gap under it.
-func (c Card) Draw(k Kit, at Box) Box {
+func (c Card) Draw(k Kit, at geom.Box) geom.Box {
 	if c.Dragged {
 		return c.dragged(k, at)
 	}
@@ -76,14 +79,14 @@ func (c Card) Draw(k Kit, at Box) Box {
 	wideAt := func(size int) func(string) int { return func(said string) int { return ends(m, said, size) } }
 	first, rest := TitleRoom(c.Face, parts.Title)
 	if rule := RuleOf(c.Face); rule != "" {
-		LoopMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in, Box{X: parts.Title.X, Y: parts.Title.Y + (lineHigh-loopSide)/2, W: loopSide, H: loopSide})
-		title := Box{X: parts.Title.X + loopSide + markSpace, Y: parts.Title.Y, W: max(0, first-loopSide-markSpace), H: lineHigh}
+		LoopMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in, geom.Box{X: parts.Title.X, Y: parts.Title.Y + (lineHigh-loopSide)/2, W: loopSide, H: loopSide})
+		title := geom.Box{X: parts.Title.X + loopSide + markSpace, Y: parts.Title.Y, W: max(0, first-loopSide-markSpace), H: lineHigh}
 		sayStyled(k.gtx, k.th, c.writing(k.skin), title, fits(k.gtx, k.th, c.Face.Title, title.W, reads), reads, font.Medium, 1, text.Start)
-		said := Box{X: parts.Title.X, Y: parts.Title.Y + lineHigh, W: parts.Title.W, H: lineHigh}
+		said := geom.Box{X: parts.Title.X, Y: parts.Title.Y + lineHigh, W: parts.Title.W, H: lineHigh}
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, said, fits(k.gtx, k.th, rule, said.W, small), small)
 	} else {
 		for i, line := range TitleLines(c.Face.Title, first, rest, wideAt(reads)) {
-			sayStyled(k.gtx, k.th, c.writing(k.skin), Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
+			sayStyled(k.gtx, k.th, c.writing(k.skin), geom.Box{X: parts.Title.X, Y: parts.Title.Y + i*lineHigh, W: parts.Title.W, H: lineHigh}, line, reads, font.Medium, 1, text.Start)
 		}
 	}
 	if mark, ok := FocusMark(c.Face, parts.Title); ok && !c.Undotted {
@@ -115,7 +118,7 @@ func (c Card) Draw(k Kit, at Box) Box {
 			name := Serves(c.Face)
 			ServesMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in.inside("facts"), laid.MarkAt)
 			at := laid.MarkAt.X + servesSide + servesGap
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: at, Y: laid.FactsAt.Y, W: laid.ServesAt.X + laid.ServesAt.W - at, H: laid.FactsAt.H}, name, small, mono, text.End)
+			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: at, Y: laid.FactsAt.Y, W: laid.ServesAt.X + laid.ServesAt.W - at, H: laid.FactsAt.H}, name, small, mono, text.End)
 			front.W = laid.ServesAt.X - front.X
 			laid.Facts = strings.TrimSuffix(laid.Facts, name)
 		}
@@ -137,7 +140,7 @@ func (c Card) Draw(k Kit, at Box) Box {
 	return parts.Panel
 }
 
-func (c Card) tile(k Kit, at Box) Box {
+func (c Card) tile(k Kit, at geom.Box) geom.Box {
 	g := c.Goal
 	panel := k.put("card", PartsOf(at).Panel)
 	in := k.inside("card")
@@ -148,17 +151,17 @@ func (c Card) tile(k Kit, at Box) Box {
 	Stripe{Priority: g.Priority}.Draw(in, PartsOf(at).Edge)
 	first, track, counts, notes := TileParts(panel)
 	m := k.measured()
-	mark := StandingMark{State: g.State}.Draw(in, Box{X: first.X, Y: first.Y + (lineHigh-markSide)/2, W: markSide, H: markSide})
+	mark := StandingMark{State: g.State}.Draw(in, geom.Box{X: first.X, Y: first.Y + (lineHigh-markSide)/2, W: markSide, H: markSide})
 	end := first.X + first.W
 	if g.Chip != "" {
 		wide := ends(m, g.Chip, small) + 2*pillPad
-		chip := LabelChip{Label: g.Chip, Colour: g.ChipColour}.Draw(in, Box{X: end - wide, Y: first.Y + (lineHigh-pillHigh)/2, W: wide, H: pillHigh})
+		chip := LabelChip{Label: g.Chip, Colour: g.ChipColour}.Draw(in, geom.Box{X: end - wide, Y: first.Y + (lineHigh-pillHigh)/2, W: wide, H: pillHigh})
 		end = chip.X - pillGap
 	}
 	x := mark.X + mark.W + markSpace
 	numbered := monoWide(g.Number, small)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: x, Y: first.Y, W: numbered, H: lineHigh}, g.Number, small, k.skin.Type.Mono, text.Start)
-	title := Box{X: x + numbered + markSpace, Y: first.Y, W: max(0, end-x-numbered-markSpace), H: lineHigh}
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: x, Y: first.Y, W: numbered, H: lineHigh}, g.Number, small, k.skin.Type.Mono, text.Start)
+	title := geom.Box{X: x + numbered + markSpace, Y: first.Y, W: max(0, end-x-numbered-markSpace), H: lineHigh}
 	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, title, fits(k.gtx, k.th, g.Title, title.W, reads), reads, font.Medium, 1, text.Start)
 	Progress{Done: g.Done, Total: g.Total}.Draw(in, track)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, counts, g.Counts, small, k.skin.Type.Mono, text.Start)
@@ -171,12 +174,12 @@ func (c Card) tile(k Kit, at Box) Box {
 		if line == g.Warn && g.Warn != "" {
 			ink = k.skin.Colour.State.Late
 		}
-		say(k.gtx, k.th, ink, Box{X: notes.X, Y: notes.Y + i*lineHigh, W: notes.W, H: lineHigh}, fits(k.gtx, k.th, line, notes.W, small), small)
+		say(k.gtx, k.th, ink, geom.Box{X: notes.X, Y: notes.Y + i*lineHigh, W: notes.W, H: lineHigh}, fits(k.gtx, k.th, line, notes.W, small), small)
 	}
 	return panel
 }
 
-func (c Card) dragged(k Kit, at Box) Box {
+func (c Card) dragged(k Kit, at geom.Box) geom.Box {
 	k.put("card", at)
 	raised(k, at, k.skin.Radius.Card, k.skin.Colour.Surface.Ghost)
 	line := PartsOf(at).Title
@@ -184,7 +187,7 @@ func (c Card) dragged(k Kit, at Box) Box {
 	return at
 }
 
-func (c Card) ground(s Skin) color.NRGBA {
+func (c Card) ground(s design.Skin) color.NRGBA {
 	switch {
 	case c.Face.InFocus:
 		return s.Colour.Surface.Tint
@@ -194,7 +197,7 @@ func (c Card) ground(s Skin) color.NRGBA {
 	return s.Colour.Surface.Card
 }
 
-func (c Card) writing(s Skin) color.NRGBA {
+func (c Card) writing(s design.Skin) color.NRGBA {
 	if c.Reference {
 		return s.Colour.Ink.Faint
 	}
@@ -215,7 +218,7 @@ type Stripe struct {
 }
 
 // Draw draws the stripe in at.
-func (s Stripe) Draw(k Kit, at Box) Box {
+func (s Stripe) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("stripe", at)
 	ink, known := k.skin.Colour.Priority[s.Priority]
 	if !known {

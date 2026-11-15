@@ -1,7 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"slices"
 	"strings"
@@ -12,8 +15,8 @@ import (
 )
 
 func TestAToggleIsATrackOnTheControlOffAndOnTheAccentOn(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: toggleWide, H: toggleHigh}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: toggleWide, H: toggleHigh}
 	off, drawn := drawnAlone(t, 60, 40, func(k Kit) { Toggle{}.Draw(k, box) })
 	if got := pixel(off, box.X+box.W-6, box.Y+box.H/2); got != s.Colour.Surface.ControlLit {
 		t.Errorf("a toggle off is %v at its right", got)
@@ -39,9 +42,9 @@ func TestAToggleIsATrackOnTheControlOffAndOnTheAccentOn(t *testing.T) {
 func TestTheSettingsPanelIsPinnedAtBothSizes(t *testing.T) {
 	for _, c := range []struct {
 		wide, high int
-		want       Box
+		want       geom.Box
 		nav        bool
-	}{{1200, 800, Box{X: 170, Y: 50, W: 860, H: 700}, true}, {720, 560, Box{X: 16, Y: 16, W: 688, H: 528}, false}} {
+	}{{1200, 800, geom.Box{X: 170, Y: 50, W: 860, H: 700}, true}, {720, 560, geom.Box{X: 16, Y: 16, W: 688, H: 528}, false}} {
 		got := SettingsBox(c.wide, c.high)
 		if got != c.want {
 			t.Errorf("at %d by %d the settings are %+v, want %+v", c.wide, c.high, got, c.want)
@@ -84,20 +87,20 @@ func settingsScreens(size [2]int) []struct {
 	w := holding(f, card(1, "Fix the garden gate", "backlog")).Resized(size[0], size[1]).At(time.Now()).Look().ReadingConfiguration()
 	open := w.openingConfiguration()
 	refused := open
-	refused.refusedKey, refused.refusedSay = "pages.time", `"hiden" is not a word pages.time takes (on, hidden, off)`
+	refused.RefusedKey, refused.RefusedSay = "pages.time", `"hiden" is not a word pages.time takes (on, hidden, off)`
 	writing := open
-	writing.keyWriting, writing.keyWritten = "focus.session", Written{}.Types("1 hour")
+	writing.KeyWriting, writing.KeyWritten = "focus.session", board.Written{}.Types("1 hour")
 	told := w
-	told.changed, told.changedIn = []workspace.ConfigChange{{Key: "pages.time", Was: "hidden", Now: "off"}, {Key: "window.theme", Was: "default", Now: "nord"}}, "settings.toml"
+	told.Changed, told.ChangedIn = []workspace.ConfigChange{{Key: "pages.time", Was: "hidden", Now: "off"}, {Key: "window.theme", Was: "default", Now: "nord"}}, "settings.toml"
 	troubled := w
-	troubled.trouble = &workspace.Trouble{File: "/h/.cairn/settings.toml", Line: 4, Said: `pages.time "hiden": the time is "on", "hidden" or "off"`}
+	troubled.Troubled = &workspace.Trouble{File: "/h/.cairn/settings.toml", Line: 4, Said: `pages.time "hiden": the time is "on", "hidden" or "off"`}
 	troubledPanel := troubled.openingConfiguration()
-	troubledPanel.trouble = troubled.trouble
+	troubledPanel.Troubled = troubled.Troubled
 	return []struct {
 		name string
 		w    Window
 	}{
-		{"the settings of a workspace", open.Hovering(Point{X: 600, Y: 260})},
+		{"the settings of a workspace", open.Hovering(geom.Point{X: 600, Y: 260})},
 		{"the settings scrolled", open.scrollingSettings(400)},
 		{"the global settings", open.scoped(true)},
 		{"the global places", open.scoped(true).scrollingSettings(2000)},

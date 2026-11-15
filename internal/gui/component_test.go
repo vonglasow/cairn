@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"image"
 	"image/color"
 	"slices"
@@ -26,8 +28,8 @@ func drawnAlone(t *testing.T, wide, high int, draw func(k Kit)) (*image.RGBA, []
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(wide, high)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	var drawn Drawn
-	k := NewKit(gtx, drawingTheme(), Dark(), &drawn)
-	fill(gtx, Box{W: wide, H: high}, k.skin.Colour.Surface.Back)
+	k := NewKit(gtx, drawingTheme(), design.Dark(), &drawn)
+	fill(gtx, geom.Box{W: wide, H: high}, k.skin.Colour.Surface.Back)
 	draw(k)
 	if err := window.Frame(gtx.Ops); err != nil {
 		t.Fatal(err)
@@ -53,8 +55,8 @@ func parts(drawn []Drawing) []string {
 }
 
 func TestAGroundIsRoundedInTheToneOfWhatItCarries(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 100, H: 60}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 100, H: 60}
 	for _, c := range []struct {
 		ground Ground
 		want   color.NRGBA
@@ -73,8 +75,8 @@ func TestAGroundIsRoundedInTheToneOfWhatItCarries(t *testing.T) {
 }
 
 func TestAPanelIsRaisedAtAPanelsCornersAndHeadedInside(t *testing.T) {
-	s := Dark()
-	box := Box{X: 20, Y: 20, W: 220, H: 120}
+	s := design.Dark()
+	box := geom.Box{X: 20, Y: 20, W: 220, H: 120}
 	shot, drawn := drawnAlone(t, 260, 180, func(k Kit) { Panel{Head: "Backups"}.Draw(k.on(LayerPanel), box) })
 	if got := pixel(shot, box.X+box.W/2, box.Y+box.H-10); got != s.Colour.Surface.Raised {
 		t.Errorf("the panel stands on %v, not on a raised ground", got)
@@ -95,8 +97,8 @@ func TestAPanelIsRaisedAtAPanelsCornersAndHeadedInside(t *testing.T) {
 }
 
 func TestAPopoverIsRaisedAtAGroundsCornersRounderThanACardLessThanAPanel(t *testing.T) {
-	s := Dark()
-	box := Box{X: 20, Y: 20, W: 120, H: 80}
+	s := design.Dark()
+	box := geom.Box{X: 20, Y: 20, W: 120, H: 80}
 	shot, drawn := drawnAlone(t, 180, 140, func(k Kit) { Popover{}.Draw(k.on(LayerPopover), box) })
 	if got := pixel(shot, box.X+3, box.Y+3); got != s.Colour.Surface.Raised {
 		t.Errorf("the popover is rounded more than a ground's corners: %v three points in", got)
@@ -110,11 +112,11 @@ func TestAPopoverIsRaisedAtAGroundsCornersRounderThanACardLessThanAPanel(t *test
 }
 
 func TestAVeilDimsWhatIsUnderItTheLightOneLess(t *testing.T) {
-	s := Dark()
+	s := design.Dark()
 	if (Veil{}).ink(s) != s.Colour.Surface.Veil || (Veil{Light: true}).ink(s) != s.Colour.Surface.VeilLight {
 		t.Error("a veil does not take its tokens")
 	}
-	box := Box{W: 40, H: 40}
+	box := geom.Box{W: 40, H: 40}
 	under := func(k Kit) { fill(k.gtx, box, s.Colour.Ink.Text) }
 	dark, drawn := drawnAlone(t, 40, 40, func(k Kit) { under(k); Veil{}.Draw(k.on(LayerPanel), box) })
 	light, _ := drawnAlone(t, 40, 40, func(k Kit) { under(k); Veil{Light: true}.Draw(k, box) })
@@ -127,8 +129,8 @@ func TestAVeilDimsWhatIsUnderItTheLightOneLess(t *testing.T) {
 }
 
 func TestARuleTakesTheLineOfWhatItIsDrawnOn(t *testing.T) {
-	s := Dark()
-	along := Box{X: 10, Y: 20, W: 80}
+	s := design.Dark()
+	along := geom.Box{X: 10, Y: 20, W: 80}
 	for _, c := range []struct {
 		layer Layer
 		want  color.NRGBA
@@ -140,16 +142,16 @@ func TestARuleTakesTheLineOfWhatItIsDrawnOn(t *testing.T) {
 		if got := pixel(shot, 50, 21); got == c.want {
 			t.Errorf("a rule on layer %v is thicker than a rule", c.layer)
 		}
-		if want := []Drawing{{Part: "rule", At: Box{X: 10, Y: 20, W: 80, H: s.Size.Rule}, Layer: c.layer}}; !slices.Equal(drawn, want) {
+		if want := []Drawing{{Part: "rule", At: geom.Box{X: 10, Y: 20, W: 80, H: s.Size.Rule}, Layer: c.layer}}; !slices.Equal(drawn, want) {
 			t.Errorf("the rule recorded %+v, want %+v", drawn, want)
 		}
 	}
 }
 
 func TestAHeadingIsWrittenInTheReadingInk(t *testing.T) {
-	box := Box{X: 10, Y: 10, W: 200, H: titleHi}
+	box := geom.Box{X: 10, Y: 10, W: 200, H: titleHi}
 	shot, drawn := drawnAlone(t, 240, 50, func(k Kit) { Heading{Said: "Backups"}.Draw(k, box) })
-	if lettered(shot, box, Dark().Colour.Ink.Text) == 0 {
+	if lettered(shot, box, design.Dark().Colour.Ink.Text) == 0 {
 		t.Error("the heading is not written")
 	}
 	if want := []Drawing{{Part: "heading", At: box, Layer: LayerBoard}}; !slices.Equal(drawn, want) {
@@ -158,8 +160,8 @@ func TestAHeadingIsWrittenInTheReadingInk(t *testing.T) {
 }
 
 func TestAStripeIsSquareAlongAnEdgeAndRoundedStandingFree(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 5, H: 40}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 5, H: 40}
 	high := s.Colour.Priority[string("high")]
 	attached, drawn := drawnAlone(t, 40, 60, func(k Kit) { Stripe{Priority: "high"}.Draw(k, box) })
 	if pixel(attached, box.X, box.Y) != high || pixel(attached, box.X+box.W-1, box.Y) == high {
@@ -183,13 +185,13 @@ func cardDrawn(t *testing.T, c Card) (*image.RGBA, []Drawing, Parts) {
 	if c.Colour == nil {
 		c.Colour = func(string) string { return "mauve" }
 	}
-	slot := Box{X: 10, Y: 10, W: 280, H: CardHeight}
+	slot := geom.Box{X: 10, Y: 10, W: 280, H: geom.CardHeight}
 	shot, drawn := drawnAlone(t, 300, 120, func(k Kit) { c.Draw(k, slot) })
 	return shot, drawn, PartsOf(slot)
 }
 
 func TestACardStandsOnTheGroundOfItsState(t *testing.T) {
-	s := Dark()
+	s := design.Dark()
 	face := board.Card{Number: 7, Title: "Write the scenario", State: "todo", Priority: "high"}
 	focused := face
 	focused.InFocus = true
@@ -218,7 +220,7 @@ func TestACardStandsOnTheGroundOfItsState(t *testing.T) {
 		t.Error("a chosen card is not ringed in the line of what is chosen")
 	}
 	shot, _, p = cardDrawn(t, Card{Face: face, Reference: true})
-	if painted(shot, Box{X: p.Panel.X + s.Radius.Card, Y: p.Panel.Y, W: p.Panel.W - 2*s.Radius.Card, H: 1}, s.Colour.Line.Edge) == 0 {
+	if painted(shot, geom.Box{X: p.Panel.X + s.Radius.Card, Y: p.Panel.Y, W: p.Panel.W - 2*s.Radius.Card, H: 1}, s.Colour.Line.Edge) == 0 {
 		t.Error("a reference is not edged by a dashed line")
 	}
 	if lettered(shot, p.Title, s.Colour.Ink.Faint) == 0 || lettered(shot, p.Title, s.Colour.Ink.Text) != 0 {
@@ -231,7 +233,7 @@ func TestACardStandsOnTheGroundOfItsState(t *testing.T) {
 }
 
 func TestACardIsStripedInItsPriorityAndAnArchivedOneInAnEdge(t *testing.T) {
-	s := Dark()
+	s := design.Dark()
 	face := board.Card{Number: 7, Title: "Write the scenario", State: "todo", Priority: "critical"}
 	shot, drawn, p := cardDrawn(t, Card{Face: face})
 	if got := pixel(shot, p.Edge.X+1, p.Edge.Y+p.Edge.H/2); got != s.Colour.Priority["critical"] {
@@ -248,7 +250,7 @@ func TestACardIsStripedInItsPriorityAndAnArchivedOneInAnEdge(t *testing.T) {
 }
 
 func TestACardCountsTheLabelsItLeavesOutInAPillWithNoRing(t *testing.T) {
-	s := Dark()
+	s := design.Dark()
 	face := board.Card{Number: 7, Title: "Write the scenario", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
 	shot, drawn, p := cardDrawn(t, Card{Face: face})
 	laid := CardRowOf(face, p.Number, Measured(drawingTheme()), time.Time{}, engine.Pages{})
@@ -265,10 +267,10 @@ func TestACardCountsTheLabelsItLeavesOutInAPillWithNoRing(t *testing.T) {
 }
 
 func TestAnObjectivesCardDrawsItsStandingAsAPillOfThatStanding(t *testing.T) {
-	s := Dark()
+	s := design.Dark()
 	face := goalFace(board.Goal{Number: 3, Title: "Ship v0.11", State: "on-hold"})
 	shot, drawn, _ := cardDrawn(t, Card{Face: face, Standing: "on-hold"})
-	pill := StandingPill(face, Box{X: 10, Y: 10, W: 280, H: CardHeight}, Measured(drawingTheme()))
+	pill := StandingPill(face, geom.Box{X: 10, Y: 10, W: 280, H: geom.CardHeight}, Measured(drawingTheme()))
 	if got := pixel(shot, pill.X+pill.W/2, pill.Y+1); got != s.Colour.Standing["on-hold"].Back {
 		t.Errorf("the standing stands on %v", got)
 	}
@@ -278,8 +280,8 @@ func TestAnObjectivesCardDrawsItsStandingAsAPillOfThatStanding(t *testing.T) {
 }
 
 func TestALabelChipIsALabelsColourOverACard(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 80, H: pillHigh}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 80, H: pillHigh}
 	ground, ink := s.LabelPill("mauve")
 	shot, drawn := drawnAlone(t, 120, 40, func(k Kit) { LabelChip{Label: "feature", Colour: "mauve"}.Draw(k, box) })
 	if got := pixel(shot, box.X+box.W/2, box.Y+1); got != ground {
@@ -298,8 +300,8 @@ func TestALabelChipIsALabelsColourOverACard(t *testing.T) {
 }
 
 func TestARemovableLabelChipCarriesAStrokedCrossInsideIt(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 90, H: pillHigh}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 90, H: pillHigh}
 	ground, ink := s.LabelPill("mauve")
 	shot, drawn := drawnAlone(t, 120, 40, func(k Kit) { LabelChip{Label: "feature", Colour: "mauve", Removable: true}.Draw(k, box) })
 	if len(drawn) != 2 || drawn[1].Part != "label/cross" {
@@ -318,7 +320,7 @@ func TestARemovableLabelChipCarriesAStrokedCrossInsideIt(t *testing.T) {
 }
 
 func TestAPillTakesTheGroundAndInkOfItsTone(t *testing.T) {
-	s := Dark()
+	s := design.Dark()
 	for _, c := range []struct {
 		pill        Pill
 		ground, ink color.NRGBA
@@ -337,7 +339,7 @@ func TestAPillTakesTheGroundAndInkOfItsTone(t *testing.T) {
 			t.Errorf("%+v takes %v / %v (grounded %v)", c.pill, ground, ink, grounded)
 		}
 	}
-	box := Box{X: 10, Y: 10, W: 60, H: pillHigh}
+	box := geom.Box{X: 10, Y: 10, W: 60, H: pillHigh}
 	shot, drawn := drawnAlone(t, 100, 40, func(k Kit) { Pill{Said: "+2"}.Draw(k, box) })
 	if got := pixel(shot, box.X+box.W/2, box.Y); got != s.Colour.Surface.Control {
 		t.Errorf("a pill's edge is %v, not its ground", got)
@@ -346,7 +348,7 @@ func TestAPillTakesTheGroundAndInkOfItsTone(t *testing.T) {
 		t.Errorf("the pill recorded %+v, want %+v", drawn, want)
 	}
 	dashed, drawn := drawnAlone(t, 100, 40, func(k Kit) { Pill{Said: "global", Tone: ToneInherited}.Draw(k, box) })
-	if pixel(dashed, box.X+box.W/2, box.Y+box.H/2+3) != s.Colour.Surface.Back || painted(dashed, Box{X: box.X + 9, Y: box.Y, W: box.W - 18, H: 1}, s.Colour.Line.Edge) == 0 {
+	if pixel(dashed, box.X+box.W/2, box.Y+box.H/2+3) != s.Colour.Surface.Back || painted(dashed, geom.Box{X: box.X + 9, Y: box.Y, W: box.W - 18, H: 1}, s.Colour.Line.Edge) == 0 {
 		t.Error("an inherited pill is not a dashed line around nothing")
 	}
 	if !slices.Equal(parts(drawn), []string{"pill", "pill/dashed"}) {
@@ -355,9 +357,9 @@ func TestAPillTakesTheGroundAndInkOfItsTone(t *testing.T) {
 }
 
 func TestEveryPillIsCentredByTheInkOfALineOfLetters(t *testing.T) {
-	box := Box{X: 10, Y: 10, W: 80, H: pillHigh}
-	var at []Box
-	defer noting(drawingTheme(), func(_ layout.Context, _ *material.Theme, b Box, _ string, _ int, _ font.Font, _ int, _ text.Alignment) {
+	box := geom.Box{X: 10, Y: 10, W: 80, H: pillHigh}
+	var at []geom.Box
+	defer noting(drawingTheme(), func(_ layout.Context, _ *material.Theme, b geom.Box, _ string, _ int, _ font.Font, _ int, _ text.Alignment) {
 		at = append(at, b)
 	})()
 	drawnAlone(t, 120, 40, func(k Kit) {
@@ -377,9 +379,9 @@ func TestEveryPillIsCentredByTheInkOfALineOfLetters(t *testing.T) {
 }
 
 func TestAKeyChipIsAlwaysGroundedLoudOrQuiet(t *testing.T) {
-	s := Dark()
-	row := Box{X: 10, Y: 10, H: 28}
-	want := Box{X: 10, Y: 15, W: KeyChipWide("esc"), H: chipHigh}
+	s := design.Dark()
+	row := geom.Box{X: 10, Y: 10, H: 28}
+	want := geom.Box{X: 10, Y: 15, W: KeyChipWide("esc"), H: chipHigh}
 	for _, c := range []struct {
 		chip        KeyChip
 		ground, ink color.NRGBA
@@ -389,7 +391,7 @@ func TestAKeyChipIsAlwaysGroundedLoudOrQuiet(t *testing.T) {
 		{KeyChip{Key: "esc", OnControl: true}, s.Colour.Surface.ChipOnControl, s.Colour.Ink.Text},
 		{KeyChip{Key: "esc", Quiet: true, OnControl: true}, s.Colour.Surface.ChipOnControl, s.Colour.Ink.Faint},
 	} {
-		var got Box
+		var got geom.Box
 		shot, drawn := drawnAlone(t, 80, 50, func(k Kit) { got = c.chip.Draw(k, row) })
 		if got != want {
 			t.Errorf("%+v is drawn at %+v, not %+v", c.chip, got, want)
@@ -404,15 +406,15 @@ func TestAKeyChipIsAlwaysGroundedLoudOrQuiet(t *testing.T) {
 			t.Errorf("%+v recorded %+v", c.chip, drawn)
 		}
 	}
-	var none Box
+	var none geom.Box
 	_, drawn := drawnAlone(t, 80, 50, func(k Kit) { none = KeyChip{}.Draw(k, row) })
-	if none != (Box{X: 10, Y: 15, H: chipHigh}) || len(drawn) != 0 {
+	if none != (geom.Box{X: 10, Y: 15, H: chipHigh}) || len(drawn) != 0 {
 		t.Errorf("no key gives %+v and records %+v", none, drawn)
 	}
 }
 
 func TestAButtonsLooksAreTokens(t *testing.T) {
-	c := Dark().Colour
+	c := design.Dark().Colour
 	for look, want := range map[buttonLook][3]color.NRGBA{
 		buttonPlain:     {c.Surface.Control, c.Ink.Text, c.Surface.ChipOnControl},
 		buttonLit:       {c.Surface.ControlLit, c.Ink.Text, c.Surface.ChipOnControlLit},
@@ -422,15 +424,15 @@ func TestAButtonsLooksAreTokens(t *testing.T) {
 		buttonDanger:    {c.State.Danger, c.State.Wrong, c.State.DangerChip},
 		buttonDangerLit: {c.State.DangerLit, c.State.Wrong, c.State.DangerLitChip},
 	} {
-		if back, ink, chip := Dark().button(look); [3]color.NRGBA{back, ink, chip} != want {
+		if back, ink, chip := buttonColours(design.Dark(), look); [3]color.NRGBA{back, ink, chip} != want {
 			t.Errorf("look %d takes %v %v %v", look, back, ink, chip)
 		}
 	}
 }
 
 func TestAButtonIsDrawnInItsLookWithItsKeyOnAChipInside(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 120, H: 30}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 120, H: 30}
 	shot, drawn := drawnAlone(t, 150, 50, func(k Kit) {
 		Button{Said: "Save", Key: "⌘⏎", Look: buttonOn, Keyed: true}.Draw(k.on(LayerPanel), box)
 	})
@@ -454,8 +456,8 @@ func TestAButtonIsDrawnInItsLookWithItsKeyOnAChipInside(t *testing.T) {
 }
 
 func TestADotIsAColourOrARingBesideAName(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: dotSide, H: dotSide}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: dotSide, H: dotSide}
 	if dotSide != 8 {
 		t.Errorf("a dot is %d wide", dotSide)
 	}
@@ -473,13 +475,13 @@ func TestADotIsAColourOrARingBesideAName(t *testing.T) {
 }
 
 func TestAnEmptySlotIsDashedAtACardsCornersAndSaysSo(t *testing.T) {
-	s := Dark()
-	box := Box{X: 10, Y: 10, W: 200, H: emptyHigh}
+	s := design.Dark()
+	box := geom.Box{X: 10, Y: 10, W: 200, H: emptyHigh}
 	shot, drawn := drawnAlone(t, 230, 70, func(k Kit) { Empty{Said: "Nothing here"}.Draw(k, box) })
 	if pixel(shot, box.X, box.Y) == s.Colour.Line.Edge {
 		t.Error("the empty slot is square")
 	}
-	along := Box{X: box.X + s.Radius.Card + s.Space.DashGap, Y: box.Y, W: s.Size.Dash, H: 1}
+	along := geom.Box{X: box.X + s.Radius.Card + s.Space.DashGap, Y: box.Y, W: s.Size.Dash, H: 1}
 	if painted(shot, along, s.Colour.Line.Edge) != s.Size.Dash {
 		t.Error("the empty slot's line does not start with a dash past its corner")
 	}
@@ -496,7 +498,7 @@ func TestAnEmptySlotIsDashedAtACardsCornersAndSaysSo(t *testing.T) {
 }
 
 func TestAKeyOnAPickedRowStandsOutFromTheRow(t *testing.T) {
-	w := Window{screen: OnMenu, width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Delete"}, menuAt: Point{X: 300, Y: 200}}}
+	w := Window{Board: board.Board{Screen: board.OnMenu}, width: 1200, height: 800, menuState: menuState{menu: []string{"Edit", "Delete"}, menuAt: geom.Point{X: 300, Y: 200}}}
 	shot := drawn(t, w)
 	row := MenuRowAt(w.MenuBox(), w.MenuOn())
 	for _, d := range partsDrawn(w) {
@@ -504,7 +506,7 @@ func TestAKeyOnAPickedRowStandsOutFromTheRow(t *testing.T) {
 			continue
 		}
 		chip := pixel(shot, d.At.X+d.At.W/2, d.At.Y+1)
-		if got := Contrast(chip, Dark().Colour.Surface.Control); got < 1.2 {
+		if got := Contrast(chip, design.Dark().Colour.Surface.Control); got < 1.2 {
 			t.Errorf("the key on the picked row stands at %.2f from the row, and needs 1.2", got)
 		}
 		return
@@ -516,7 +518,7 @@ func TestACardRecordsWhereItWritesItsNumberAndItsFacts(t *testing.T) {
 	face := board.Card{Number: 10, Title: "Write the scenario", State: "todo", Estimate: "2d"}
 	_, drawn, p := cardDrawn(t, Card{Face: face})
 	laid := CardRowOf(face, p.Number, Measured(drawingTheme()), time.Time{}, engine.Pages{})
-	number := Box{X: p.Number.X, Y: p.Number.Y, W: monoWide(laid.Number, small), H: p.Number.H}
+	number := geom.Box{X: p.Number.X, Y: p.Number.Y, W: monoWide(laid.Number, small), H: p.Number.H}
 	for _, want := range []Drawing{{Part: "card/number", At: number}, {Part: "card/facts", At: laid.FactsAt}} {
 		if !slices.Contains(drawn, want) {
 			t.Errorf("the card recorded no %s at %+v: %v", want.Part, want.At, drawn)

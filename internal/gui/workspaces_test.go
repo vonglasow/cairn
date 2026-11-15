@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
 	"errors"
 	"os"
 	"path/filepath"
@@ -168,21 +169,21 @@ func TestTheWindowIsTitledAfterItsWorkspace(t *testing.T) {
 func TestThePillOpensTheTopBarAndTheTabsComeAfterIt(t *testing.T) {
 	w := atPlace(newFake(), workspace.Shown{Workspace: "work", Store: "/w/cairn.db", Colour: "teal"})
 	l := w.Layout()
-	if l.Place.W == 0 || l.Place.X != margin {
+	if l.Place.W == 0 || l.Place.X != geom.Margin {
 		t.Fatalf("the pill is at %+v", l.Place)
 	}
 	if first := TabAt(l, 0); first.X < l.Place.X+l.Place.W {
 		t.Errorf("the first tab at %d stands on the pill ending at %d", first.X, l.Place.X+l.Place.W)
 	}
-	if end := l.Tabs.X + l.Tabs.W; end != LayoutFor(1200, 800).Tabs.X+LayoutFor(1200, 800).Tabs.W {
+	if end := l.Tabs.X + l.Tabs.W; end != geom.LayoutFor(1200, 800).Tabs.X+geom.LayoutFor(1200, 800).Tabs.W {
 		t.Errorf("the top bar ends at %d, not where it ended", end)
 	}
-	if bare := holding(newFake()).Layout(); bare.Place.W != 0 || bare.Tabs != LayoutFor(1200, 800).Tabs {
+	if bare := holding(newFake()).Layout(); bare.Place.W != 0 || bare.Tabs != geom.LayoutFor(1200, 800).Tabs {
 		t.Errorf("a window that knows no place moved its tabs: %+v", bare.Tabs)
 	}
-	clicked := w.clicked(Point{X: l.Place.X + l.Place.W/2, Y: l.Place.Y + l.Place.H/2})
-	if clicked.Screen() != OnWorkspaces {
-		t.Errorf("a click on the pill leaves the window on %v", clicked.Screen())
+	clicked := w.clicked(geom.Point{X: l.Place.X + l.Place.W/2, Y: l.Place.Y + l.Place.H/2})
+	if clicked.Screen != board.OnWorkspaces {
+		t.Errorf("a click on the pill leaves the window on %v", clicked.Screen)
 	}
 }
 
@@ -200,8 +201,8 @@ func switching(f *fake, seeing func(string) bool) Window {
 
 func TestTheSwitcherSaysWhatChoosingEachDoes(t *testing.T) {
 	w := switching(newFake(), func(store string) bool { return store == "/d/cairn.db" })
-	if w.Screen() != OnWorkspaces {
-		t.Fatalf("⌘⇧O leaves the window on %v", w.Screen())
+	if w.Screen != board.OnWorkspaces {
+		t.Fatalf("⌘⇧O leaves the window on %v", w.Screen)
 	}
 	want := map[string][]string{
 		"work": {"this window · default", "⌘⇧1"},
@@ -230,24 +231,24 @@ func TestChoosingAnotherAsksForAWindowOfItsOwn(t *testing.T) {
 	if !asked || to.Workspace != "home" {
 		t.Fatalf("ApartAsked = %+v, %v; want home", to, asked)
 	}
-	if w = w.ApartTaken(); w.Went(Went{}).Screen() != OnTheBoard {
-		t.Errorf("the switcher stays open on %v once the window is open", w.Went(Went{}).Screen())
+	if w = w.ApartTaken(); w.Went(Went{}).Screen != board.OnTheBoard {
+		t.Errorf("the switcher stays open on %v once the window is open", w.Went(Went{}).Screen)
 	}
 	if _, asked := w.ApartAsked(); asked {
 		t.Error("the window asks twice")
 	}
-	if said := w.Went(Went{}).told; said != "home opens in a window of its own" {
+	if said := w.Went(Went{}).Telling; said != "home opens in a window of its own" {
 		t.Errorf("the window says %q", said)
 	}
-	if said := w.Went(Went{Raised: true}).told; said != "home is brought forward" {
+	if said := w.Went(Went{Raised: true}).Telling; said != "home is brought forward" {
 		t.Errorf("the window says %q", said)
 	}
 	if got := w.Went(Went{Err: workspace.ErrWorkspaceNotThere}).Wrong(); !errors.Is(got, workspace.ErrWorkspaceNotThere) {
 		t.Errorf("a refusal is said as %v", got)
 	}
 	here := switching(newFake(), nil).Key("enter")
-	if _, asked := here.ApartAsked(); asked || here.Screen() != OnTheBoard {
-		t.Errorf("choosing this window asks for one and leaves the window on %v", here.Screen())
+	if _, asked := here.ApartAsked(); asked || here.Screen != board.OnTheBoard {
+		t.Errorf("choosing this window asks for one and leaves the window on %v", here.Screen)
 	}
 	if to, asked := switching(newFake(), nil).Key("esc").Key("cmd+shift+3").ApartAsked(); !asked || to.Workspace != "dev" {
 		t.Errorf("⌘⇧3 asks for %+v, %v", to, asked)
@@ -256,8 +257,8 @@ func TestChoosingAnotherAsksForAWindowOfItsOwn(t *testing.T) {
 
 func TestTheMenuBarOffersTheSwitcher(t *testing.T) {
 	w := atPlace(newFake(), workspace.Shown{Workspace: "work", Store: "/w/cairn.db"}).Picked("Open a workspace…")
-	if w.Screen() != OnWorkspaces {
-		t.Errorf("Open a workspace… leaves the window on %v", w.Screen())
+	if w.Screen != board.OnWorkspaces {
+		t.Errorf("Open a workspace… leaves the window on %v", w.Screen)
 	}
 }
 
@@ -326,7 +327,7 @@ func TestARecentFolderIsKeptAsAWorkspaceThroughWorkspaceAdd(t *testing.T) {
 		w = w.Key("down").Key("down").Key("down")
 		for _, act := range SwitcherActs(w) {
 			if act.Said == KeepAsWorkspaceSays {
-				return w.clicked(Point{X: act.At.X + act.At.W/2, Y: act.At.Y + act.At.H/2})
+				return w.clicked(geom.Point{X: act.At.X + act.At.W/2, Y: act.At.Y + act.At.H/2})
 			}
 		}
 		t.Fatalf("on a recent folder, the switcher offers %+v", SwitcherActs(w))
@@ -341,8 +342,8 @@ func TestARecentFolderIsKeptAsAWorkspaceThroughWorkspaceAdd(t *testing.T) {
 	if !asked || in.Given["name"] != "scratch" || in.Given["folder"] != "/s" {
 		t.Fatalf("workspace add given %+v, %v", in, asked)
 	}
-	if w.Screen() != OnWorkspaces || w.SwitcherAsks() != "" {
-		t.Errorf("once kept, the window is on %v asking %q", w.Screen(), w.SwitcherAsks())
+	if w.Screen != board.OnWorkspaces || w.SwitcherAsks() != "" {
+		t.Errorf("once kept, the window is on %v asking %q", w.Screen, w.SwitcherAsks())
 	}
 	if _, apart := w.ApartAsked(); apart {
 		t.Error("keeping a folder asks for a window")
@@ -397,7 +398,7 @@ func TestAStoreIsShownByAShortNameItsPathUnderThePointer(t *testing.T) {
 	}
 	for at, path := range map[int]string{recent: "/s", home: "/h"} {
 		box := lines[at].At
-		if said := w.Hovering(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}).Bubble(); said != path {
+		if said := w.Hovering(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}).Bubble(); said != path {
 			t.Errorf("the pointer on %q says %q, want %q", lines[at].Name, said, path)
 		}
 	}

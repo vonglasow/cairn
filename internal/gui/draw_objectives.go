@@ -2,13 +2,14 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"strconv"
 
 	"gioui.org/font"
 	"gioui.org/text"
 )
 
-func drawGoals(k Kit, l Layout, w Window) {
+func drawGoals(k Kit, l geom.Layout, w Window) {
 	list, detail := SplitOf(l)
 	Ground{}.Draw(k, list)
 	on := k.inside("ground")
@@ -36,13 +37,13 @@ func drawGoals(k Kit, l Layout, w Window) {
 	drawDetail(k.inside("ground"), w, w.Detail())
 }
 
-func (w Window) goalItem(b board.Branch, slot Box) ListItem {
+func (w Window) goalItem(b board.Branch, slot geom.Box) ListItem {
 	g := b.Goal
 	shown, _ := w.Detailed()
-	searching := !w.looking.Empty()
+	searching := !w.Looking.Empty()
 	item := ListItem{Number: "#" + strconv.Itoa(g.Number), Title: g.Title, Standing: g.State, Priority: g.Priority,
 		Counts: Counted(g), Done: g.Done, Total: g.Total, Depth: depthOf(b), Last: b.Last, Gutter: true,
-		Chosen:  w.chosenGoal && g.Number == w.Chosen() && !searching || searching && g.Number == shown.Number || w.isTaken(g.Number),
+		Chosen:  w.ChosenGoal && g.Number == w.Chosen && !searching || searching && g.Number == shown.Number || w.IsTaken(g.Number),
 		Hovered: slot == w.pointed}
 	if len(g.Labels) > 0 {
 		item.Chip, item.ChipColour = g.Labels[0], w.LabelColour(g.Labels[0])
@@ -54,7 +55,7 @@ func (w Window) goalItem(b board.Branch, slot Box) ListItem {
 		}
 	}
 	if searching && !b.Holds {
-		item.Found = w.looking.Reads()
+		item.Found = w.Looking.Reads()
 	}
 	if b.Holds {
 		item.Total, item.Aside = 0, HoldsSays
@@ -99,8 +100,8 @@ func drawDetail(k Kit, w Window, d Detail) {
 	}
 	m := w.measured()
 	x := d.Line.X
-	pill := func(said string) Box {
-		return Box{X: x, Y: d.Line.Y + (d.Line.H-pillHigh)/2, W: ends(m, said, small) + 2*pillPad, H: pillHigh}
+	pill := func(said string) geom.Box {
+		return geom.Box{X: x, Y: d.Line.Y + (d.Line.H-pillHigh)/2, W: ends(m, said, small) + 2*pillPad, H: pillHigh}
 	}
 	standing := Pill{Said: g.State, Tone: ToneStanding, Standing: g.State}.Draw(k, pill(g.State))
 	x = standing.X + standing.W + pillGap
@@ -108,7 +109,7 @@ func drawDetail(k Kit, w Window, d Detail) {
 		chip := LabelChip{Label: label, Colour: w.LabelColour(label)}.Draw(k, pill(label))
 		x = chip.X + chip.W + pillGap
 	}
-	facts := Box{X: x + pillGap, Y: d.Line.Y, W: max(0, d.Line.X+d.Line.W-x-pillGap), H: d.Line.H}
+	facts := geom.Box{X: x + pillGap, Y: d.Line.Y, W: max(0, d.Line.X+d.Line.W-x-pillGap), H: d.Line.H}
 	say(k.gtx, k.th, k.skin.Colour.Ink.Faint, facts, fits(k.gtx, k.th, d.Facts, facts.W, small), small)
 	if d.Progress.W > 0 {
 		Progress{Done: g.Done, Total: g.Total, Said: d.Counted}.Draw(k, d.Progress)
@@ -159,19 +160,19 @@ func drawTaskLines(k Kit, w Window, lines []TaskLine) {
 		row := SubWriting(line.At)
 		row.X, row.W = tile.X+padding, tile.W-2*padding
 		numbered := monoWide("#"+strconv.Itoa(line.Card.Number), small)
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: row.X, Y: row.Y, W: numbered, H: row.H}, "#"+strconv.Itoa(line.Card.Number), small, k.skin.Type.Mono, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: row.X, Y: row.Y, W: numbered, H: row.H}, "#"+strconv.Itoa(line.Card.Number), small, k.skin.Type.Mono, text.Start)
 		right := line.Right
 		if line.Serves != "" {
 			right = line.Serves + " · " + right
 		}
 		said := ends(w.measured(), right, small) + 2
 		end := row.X + row.W - said
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: end, Y: row.Y, W: said, H: row.H}, right, small, font.Font{}, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: end, Y: row.Y, W: said, H: row.H}, right, small, font.Font{}, text.Start)
 		if line.Serves != "" {
-			mark := ServesMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in, Box{X: end - servesSide - servesGap, Y: row.Y + (row.H-servesSide)/2, W: servesSide, H: servesSide})
+			mark := ServesMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in, geom.Box{X: end - servesSide - servesGap, Y: row.Y + (row.H-servesSide)/2, W: servesSide, H: servesSide})
 			end = mark.X
 		}
-		title := Box{X: row.X + numbered + 2*pillGap + 4, Y: row.Y, W: max(0, end-padding-row.X-numbered-2*pillGap-4), H: row.H}
+		title := geom.Box{X: row.X + numbered + 2*pillGap + 4, Y: row.Y, W: max(0, end-padding-row.X-numbered-2*pillGap-4), H: row.H}
 		say(k.gtx, k.th, k.skin.Colour.Ink.Text, title, fits(k.gtx, k.th, line.Card.Title, title.W, reads), reads)
 		faded.Pop()
 	}

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"encoding/json"
 
 	"cairn/internal/engine"
@@ -63,21 +64,11 @@ func (w Window) Drafting(d Drafts) Window {
 	return w
 }
 
-func (f Form) drafted() map[string]string {
-	values := map[string]string{}
-	for _, field := range f.fields {
-		if field.Value != field.Was {
-			values[field.Name] = field.Value
-		}
-	}
-	return values
-}
-
 func (w Window) keepingDraft() Window {
-	if !w.form.Changed() {
+	if !w.Form.Changed() {
 		return w.droppingDraft()
 	}
-	if err := w.drafts.Keep(w.form.drafted()); err != nil {
+	if err := w.drafts.Keep(w.Form.Drafted()); err != nil {
 		return w.failing(err)
 	}
 	return w
@@ -91,10 +82,10 @@ func (w Window) droppingDraft() Window {
 }
 
 func (w Window) startingNew() Window {
-	w.form, w.formMoved = w.adding(w.tab, w.addingOn()), Point{}
+	w.Form, w.formMoved = w.adding(w.Tab, w.addingOn()), geom.Point{}
 	w = w.beside()
-	if w.form.ForObjective {
-		w.screen = OnForm
+	if w.Form.ForObjective {
+		w.Screen = board.OnForm
 		return w
 	}
 	held, err := w.drafts.Held()
@@ -102,10 +93,10 @@ func (w Window) startingNew() Window {
 		return w.failing(err)
 	}
 	if len(held) == 0 {
-		w.screen = OnForm
+		w.Screen = board.OnForm
 		return w
 	}
-	w.screen, w.question = OnAsking, aboutDraft
+	w.Screen, w.Question = board.OnAsking, board.AboutDraft
 	return w
 }
 
@@ -115,29 +106,29 @@ func (w Window) pickingUp() Window {
 		return w.failing(err)
 	}
 	for name, value := range held {
-		w.form = w.form.Set(name, value)
+		w.Form = w.Form.Set(name, value)
 	}
-	w.screen, w.question = OnForm, aboutDeleting
+	w.Screen, w.Question = board.OnForm, board.AboutDeleting
 	return w
 }
 
 func (w Window) startingAfresh() Window {
-	w.screen, w.question = OnForm, aboutDeleting
+	w.Screen, w.Question = board.OnForm, board.AboutDeleting
 	return w.droppingDraft()
 }
 
 func (w Window) leavingUnsaved() Window {
 	w = w.keepingDraft()
-	if w.err != nil {
+	if w.Err != nil {
 		return w
 	}
-	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+	w.Screen, w.Form, w.Question = board.OnTheBoard, board.Form{}, board.AboutDeleting
 	return w
 }
 
 // Closing is the window as it closes: a task being added and not saved is kept as a draft with everything typed into it, the last keys too.
 func (w Window) Closing() Window {
-	if !formShown(w.screen) || !w.form.Adding || w.form.ForObjective {
+	if !formShown(w.Screen) || !w.Form.Adding || w.Form.ForObjective {
 		return w
 	}
 	return w.keepingDraft()
@@ -145,8 +136,8 @@ func (w Window) Closing() Window {
 
 // startingLinked is a new task begun from the chosen one: in todo, linked to it, asking first about a draft left unsaved.
 func (w Window) startingLinked() Window {
-	number := w.chosen
+	number := w.Chosen
 	w = w.startingNew()
-	w.form, w.formMoved = asOpened(Form{Adding: true, fields: board.LinkedTaskFields(number)}), Point{}
+	w.Form, w.formMoved = board.AsOpened(board.Form{Adding: true, Fields: board.LinkedTaskFields(number)}), geom.Point{}
 	return w
 }

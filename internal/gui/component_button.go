@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"image/color"
 
 	"gioui.org/font"
@@ -16,16 +18,16 @@ type Button struct {
 }
 
 // Draw draws the button in at.
-func (b Button) Draw(k Kit, at Box) Box {
+func (b Button) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("button", at)
-	back, ink, chip := k.skin.button(b.Look)
+	back, ink, chip := buttonColours(k.skin, b.Look)
 	if b.Look == buttonGhost {
 		ringed(k, at, k.skin.Radius.Control, k.skin.Colour.Line.Edge)
 	} else {
 		rounded(k.gtx, at, k.skin.Radius.Control, back)
 	}
 	if b.Small {
-		sayStyled(k.gtx, k.th, ink, Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}, b.Said, small, font.Medium, 1, text.Middle)
+		sayStyled(k.gtx, k.th, ink, geom.Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}, b.Said, small, font.Medium, 1, text.Middle)
 		return at
 	}
 	if !b.Keyed {
@@ -70,7 +72,7 @@ const (
 	buttonGhost
 )
 
-func (s Skin) button(look buttonLook) (back, ink, chip color.NRGBA) {
+func buttonColours(s design.Skin, look buttonLook) (back, ink, chip color.NRGBA) {
 	c := s.Colour
 	switch look {
 	case buttonOn:

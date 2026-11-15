@@ -3,6 +3,8 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/item"
+	"cairn/internal/gui/geom"
+	"cairn/internal/gui/motion"
 	"cairn/internal/store/files"
 	"image"
 	"sync"
@@ -10,9 +12,6 @@ import (
 )
 
 const (
-	arriveOver  = 0.45
-	falling     = 0.35
-	settling    = 0.2
 	stoneGap    = 0
 	stoneWobble = 2
 	stoneLeast  = 40
@@ -21,7 +20,7 @@ const (
 // Born is the window told the moment of its first frame, which is when the board starts arriving.
 func (w Window) Born(at time.Time) Window {
 	if w.born.IsZero() {
-		w.born, w.now = at, at
+		w.born, w.Now = at, at
 	}
 	return w
 }
@@ -41,12 +40,12 @@ func (w Window) Introducing(name string) Window {
 // IntroShown is the intro the board arrives by: the one the intro chooser is on, the one played, the one the configuration names, or the default.
 func (w Window) IntroShown() string {
 	switch {
-	case w.screen == OnConfiguration && w.introsOpen:
-		return files.Intros()[w.introOn]
+	case w.Screen == board.OnConfiguration && w.IntrosOpen:
+		return files.Intros()[w.IntroOn]
 	case w.introPlayed != "":
 		return w.introPlayed
-	case w.configured.Window != nil && w.configured.Window.Intro != "":
-		return w.configured.Window.Intro
+	case w.Configured.Window != nil && w.Configured.Window.Intro != "":
+		return w.Configured.Window.Intro
 	}
 	return files.DefaultIntro
 }
@@ -56,7 +55,7 @@ func (w Window) Intro() (float64, bool) {
 	if w.born.IsZero() || w.introOver || w.lessMotion || len(w.Showing().Cards) == 0 {
 		return 0, false
 	}
-	progress := float64(w.now.Sub(w.born)) / float64(IntroLasts(w.IntroShown(), w.Stage()))
+	progress := float64(w.Now.Sub(w.born)) / float64(motion.IntroLasts(w.IntroShown(), w.Stage()))
 	if progress >= 1 {
 		return 1, false
 	}
@@ -64,11 +63,11 @@ func (w Window) Intro() (float64, bool) {
 }
 
 // Scene is the board at this instant of its intro, and whether one is playing; the still board when none is.
-func (w Window) Scene() (Scene, bool) {
-	if _, on := w.Intro(); !on || w.Tab() != Tasks {
-		return blank(Stage{}), false
+func (w Window) Scene() (motion.Scene, bool) {
+	if _, on := w.Intro(); !on || w.Tab != board.Tasks {
+		return motion.Blank(motion.Stage{}), false
 	}
-	return Staging(w.IntroShown(), w.now.Sub(w.born), w.Stage()), true
+	return motion.Staging(w.IntroShown(), w.Now.Sub(w.born), w.Stage()), true
 }
 
 func (w Window) interrupted() Window {
@@ -77,18 +76,18 @@ func (w Window) interrupted() Window {
 }
 
 func (w Window) replaying() Window {
-	w.born, w.introOver = w.now, false
+	w.born, w.introOver = w.Now, false
 	return w
 }
 
 // Stage is the board an intro is played on: its columns' and lanes' grounds, every card seen on them in the order the board draws them, the card in focus — or the first in progress, or the first — to start from, and its focus mark.
-func (w Window) Stage() Stage {
+func (w Window) Stage() motion.Stage {
 	l := w.Layout()
-	s := Stage{Wide: w.width, High: w.height, Lead: -1}
-	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
+	s := motion.Stage{Wide: w.width, High: w.height, Lead: -1}
+	dealt, _ := board.Deal(w.Showing().Cards, w.Archived)
 	current := -1
 	for i, column := range dealt {
-		s.Grounds = append(s.Grounds, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
+		s.Grounds = append(s.Grounds, geom.Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
 		if column.Name == string(item.Current) {
 			current = len(s.Grounds) - 1
 		}
@@ -99,7 +98,7 @@ func (w Window) Stage() Stage {
 	rows := map[int]int{}
 	for _, p := range w.seenPlaced() {
 		ground := w.groundOf(l, p.Within)
-		staged := Staged{Slot: p.Slot, Ground: ground, Row: rows[ground], Priority: priorityOf(p.Card), Focus: p.Card.InFocus, Letters: len([]rune(p.Card.Title))}
+		staged := motion.Staged{Slot: p.Slot, Ground: ground, Row: rows[ground], Priority: priorityOf(p.Card), Focus: p.Card.InFocus, Letters: len([]rune(p.Card.Title))}
 		rows[ground]++
 		if staged.Focus && s.Lead < 0 {
 			s.Lead = len(s.Cards)
@@ -118,7 +117,7 @@ func (w Window) Stage() Stage {
 	return s
 }
 
-func (w Window) groundOf(l Layout, within Box) int {
+func (w Window) groundOf(l geom.Layout, within geom.Box) int {
 	for i, column := range l.Column {
 		if column == within {
 			return i
@@ -132,20 +131,11 @@ func (w Window) groundOf(l Layout, within Box) int {
 	return 0
 }
 
-// Arriving is how far the k-th of n cards has come at a share of the breath: how far its stones have fallen, slowing as they land, and how far they have given way to the card since.
-func Arriving(progress float64, k, n int) (fall, fade float64) {
-	start := arriveOver * float64(k) / float64(max(1, n))
-	share := min(1, max(0, (progress-start)/falling))
-	fall = 1 - (1-share)*(1-share)
-	fade = min(1, max(0, (progress-start-falling)/settling))
-	return fall, fade
-}
-
 // Placed is a card where the board draws it: its slot, and the column or lane it is seen through.
 type Placed struct {
 	Card      board.Card
-	Slot      Box
-	Within    Box
+	Slot      geom.Box
+	Within    geom.Box
 	Reference bool
 	Says      string
 }
@@ -154,14 +144,14 @@ type Placed struct {
 func (w Window) Placed() []Placed {
 	l := w.Layout()
 	var out []Placed
-	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.Archived)
 	for i, column := range dealt {
 		for at, c := range column.Cards {
 			out = append(out, Placed{Card: c, Slot: l.CardAt(i, at, w.scroll[i]), Within: l.Column[i]})
 		}
 	}
 	for lane := range board.Stalled {
-		for at, c := range w.inLane(lane) {
+		for at, c := range w.InLane(lane) {
 			out = append(out, Placed{Card: c, Slot: l.LaneCardAt(lane, at, w.lanes[lane]), Within: l.Lane[lane]})
 		}
 	}
@@ -173,10 +163,10 @@ func (p Placed) seen() bool {
 }
 
 // StonesOf is a card built of stones: courses across it, each cut into stones of their own widths, every corner drawn in a little from its course and every edge given a middle that is not quite on the line — the same stones every time for the same card, and other stones for another.
-func StonesOf(panel Box, seed int) [][]Point {
+func StonesOf(panel geom.Box, seed int) [][]geom.Point {
 	r := stoneRand(uint32(seed)*2654435761 + 1)
 	courses := 2 + r.below(2)
-	var stones [][]Point
+	var stones [][]geom.Point
 	top := panel.Y
 	for c := range courses {
 		bottom := panel.Y + panel.H*(c+1)/courses
@@ -186,7 +176,7 @@ func StonesOf(panel Box, seed int) [][]Point {
 		left := panel.X
 		for left < panel.X+panel.W {
 			right := cut(left, panel.X+panel.W, stoneLeast+r.below(max(1, panel.W/2)))
-			stones = append(stones, r.stone(Box{X: left, Y: top, W: right - left, H: bottom - top}))
+			stones = append(stones, r.stone(geom.Box{X: left, Y: top, W: right - left, H: bottom - top}))
 			left = right
 		}
 		top = bottom
@@ -203,13 +193,13 @@ func cut(left, end, wanted int) int {
 }
 
 // Dropped is how far above its place a card's stones are, having fallen so far: from above the window, at nought, to their place, at one.
-func Dropped(panel Box, fall float64) int { return -int(float64(panel.Y+panel.H) * (1 - fall)) }
+func Dropped(panel geom.Box, fall float64) int { return -int(float64(panel.Y+panel.H) * (1 - fall)) }
 
 // Fallen is a stone moved down by drop.
-func Fallen(stone []Point, drop int) []Point {
-	moved := make([]Point, len(stone))
+func Fallen(stone []geom.Point, drop int) []geom.Point {
+	moved := make([]geom.Point, len(stone))
 	for i, p := range stone {
-		moved[i] = Point{X: p.X, Y: p.Y + drop}
+		moved[i] = geom.Point{X: p.X, Y: p.Y + drop}
 	}
 	return moved
 }
@@ -225,12 +215,12 @@ func (r *stoneRand) below(n int) int { return int(r.next() % uint32(max(1, n))) 
 
 func (r *stoneRand) between(lo, hi int) int { return lo + r.below(hi-lo+1) }
 
-func (r *stoneRand) stone(cell Box) []Point {
+func (r *stoneRand) stone(cell geom.Box) []geom.Point {
 	in := func() int { return stoneGap + r.below(stoneWobble) }
 	x0, x1 := cell.X+in(), cell.X+cell.W-1-in()
 	y0, y1 := cell.Y+in(), cell.Y+cell.H-1-in()
 	mid := cell.X + cell.W/2 + r.between(-cell.W/6, cell.W/6)
-	return []Point{
+	return []geom.Point{
 		{X: x0, Y: y0},
 		{X: mid, Y: cell.Y + stoneGap + r.below(stoneWobble)},
 		{X: x1, Y: cell.Y + in()},

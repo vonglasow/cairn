@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"errors"
 
 	"cairn/internal/debug"
@@ -41,8 +43,8 @@ func Still() time.Duration { return 150 * time.Millisecond }
 func Twin() time.Duration { return 400 * time.Millisecond }
 
 // Dp turns where a pointer says it is into where the board thinks it is.
-func Dp(at f32.Point, perDp float32) Point {
-	return Point{X: int(at.X / perDp), Y: int(at.Y / perDp)}
+func Dp(at f32.Point, perDp float32) geom.Point {
+	return geom.Point{X: int(at.X / perDp), Y: int(at.Y / perDp)}
 }
 
 // Sized turns the size a window reports, in pixels, into the size this board works in.
@@ -67,12 +69,12 @@ func Acts(b pointer.Buttons) bool { return b == 0 || b == pointer.ButtonPrimary 
 // Gesture is what a pointer has said so far: when the last press landed and where, which is the whole of what tells the press after it from the second half of a double-click.
 type Gesture struct {
 	At     time.Time
-	Where  Point
+	Where  geom.Point
 	Clicks int
 }
 
 // Pointing is everything a pointer event does, the double-click included, and the gesture it leaves behind.
-func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time.Time) (Window, Gesture) {
+func Pointing(w Window, g Gesture, kind pointer.Kind, at geom.Point, by int, now time.Time) (Window, Gesture) {
 	if kind == pointer.Press {
 		w = w.interrupted()
 	}
@@ -85,7 +87,7 @@ func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time
 				return w.TripleClick(at), Gesture{}
 			}
 			after := w.DoubleClick(at)
-			if after.screen != w.screen {
+			if after.Screen != w.Screen {
 				return after, Gesture{}
 			}
 			return after, Gesture{At: now, Where: at, Clicks: 2}
@@ -96,7 +98,7 @@ func Pointing(w Window, g Gesture, kind pointer.Kind, at Point, by int, now time
 }
 
 // Pointed says what a pointer event does to a window.
-func Pointed(w Window, kind pointer.Kind, at Point, by int) Window {
+func Pointed(w Window, kind pointer.Kind, at geom.Point, by int) Window {
 	switch kind {
 	case pointer.Press:
 		return w.PressAt(at)
@@ -115,7 +117,7 @@ func Pointed(w Window, kind pointer.Kind, at Point, by int) Window {
 }
 
 // Twice says whether a press is the second half of a double-click: soon enough after the last one, and close enough to it that the hand did not move.
-func Twice(before, now time.Time, was, at Point) bool {
+func Twice(before, now time.Time, was, at geom.Point) bool {
 	if before.IsZero() || now.Sub(before) > Twin() {
 		return false
 	}
@@ -224,7 +226,7 @@ type Here struct {
 }
 
 // Run opens a window wearing the skin given and keeps it until it is closed; a window already showing the store is brought forward instead, and none opened.
-func Run(work board.Work, pages engine.Pages, look Skin, noted *debug.Log, width, height int, here Here) {
+func Run(work board.Work, pages engine.Pages, look design.Skin, noted *debug.Log, width, height int, here Here) {
 	window := new(app.Window)
 	windows := WindowsHere(os.LookupEnv)
 	claim, err := windows.Claim(here.Store, func() { window.Perform(system.ActionRaise) })
@@ -287,13 +289,13 @@ func (a elsewhereOf) opening(to engine.Elsewhere) Went {
 
 var errNoElsewhere = errors.New("this window cannot open another")
 
-func loop(window *app.Window, work board.Work, pages engine.Pages, skin Skin, noted *debug.Log, width, height int, elsewhere elsewhereOf) error {
+func loop(window *app.Window, work board.Work, pages engine.Pages, skin design.Skin, noted *debug.Log, width, height int, elsewhere elsewhereOf) error {
 	seen := ""
 
 	theme := Theme()
 	board := New(work, width, height).Paged(pages).Drafting(DraftsOf(work)).KeepingSizes(SizesOf(work)).Measuring(Measured(theme)).MeasuringHeadings(MeasuredHeadings(theme)).Seeing(elsewhere.windows.Shows)
 	board = board.At(time.Now()).Look().ReadingConfiguration().Wearing(skin).LessMotion(lessMotion())
-	window.Option(app.Title(board.Title()), app.Size(unit.Dp(width), unit.Dp(height)), app.MinSize(unit.Dp(Narrowest), unit.Dp(Shortest)))
+	window.Option(app.Title(board.Title()), app.Size(unit.Dp(width), unit.Dp(height)), app.MinSize(unit.Dp(geom.Narrowest), unit.Dp(geom.Shortest)))
 	if data, starts, ok := desktopHome(); ok {
 		board = board.Settling(data, starts)
 	}
@@ -305,7 +307,7 @@ func loop(window *app.Window, work board.Work, pages engine.Pages, skin Skin, no
 
 	var ops op.Ops
 	var pressed time.Time
-	var pressedAt Point
+	var pressedAt geom.Point
 	var looked time.Time
 
 	beating := time.NewTicker(Beat())
@@ -418,14 +420,14 @@ func listening() []event.Filter {
 	}
 }
 
-func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, noted *debug.Log) (Window, time.Time, Point) {
+func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt geom.Point, noted *debug.Log) (Window, time.Time, geom.Point) {
 	area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
 	event.Op(gtx.Ops, tag)
 	area.Pop()
 
 	cursors(gtx, w)
 
-	was := w.screen
+	was := w.Screen
 	named := ""
 
 	gtx.Execute(key.FocusCmd{Tag: tag})
@@ -487,7 +489,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt Point, not
 func cursors(gtx layout.Context, w Window) {
 	if w.widening.On {
 		area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
-		cursorOf(w.PointerAt(Point{})).Add(gtx.Ops)
+		cursorOf(w.PointerAt(geom.Point{})).Add(gtx.Ops)
 		area.Pop()
 		return
 	}
@@ -523,6 +525,6 @@ func symbolTyped(text, named string) (string, bool) {
 	return text, true
 }
 
-func takesTyping(s Screen) bool {
-	return s == OnForm || s == OnSearch || s == OnChoosing || s == OnPalette || s == OnLabels || s == OnWorkspaces || s == OnKeeping || s == OnViews
+func takesTyping(s board.Screen) bool {
+	return s == board.OnForm || s == board.OnSearch || s == board.OnChoosing || s == board.OnPalette || s == board.OnLabels || s == board.OnWorkspaces || s == board.OnKeeping || s == board.OnViews
 }

@@ -1,18 +1,20 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"image"
 	"image/color"
 
 	"gioui.org/layout"
 )
 
-func sayHolding(k Kit, ink color.NRGBA, box Box, said Written, size int) {
+func sayHolding(k Kit, ink color.NRGBA, box geom.Box, said board.Written, size int) {
 	paintHeld(k, box, said, size)
 	say(k.gtx, k.th, ink, box, said.Value, size)
 }
 
-func paintHeld(k Kit, box Box, said Written, size int) {
+func paintHeld(k Kit, box geom.Box, said board.Written, size int) {
 	if !said.Holding() {
 		return
 	}
@@ -25,7 +27,7 @@ func paintHeld(k Kit, box Box, said Written, size int) {
 		wide(loose, k.th, string(kept[from:to]), size).Size.X), k.skin.Colour.Surface.Ghost)
 }
 
-func writing(k Kit, m Measure, b Box, said Written, carets bool, size, rows, scrolled int) {
+func writing(k Kit, m Measure, b geom.Box, said board.Written, carets bool, size, rows, scrolled int) {
 	_, clipped := k.within(b)
 	defer clipped.Pop()
 
@@ -42,7 +44,7 @@ func writing(k Kit, m Measure, b Box, said Written, carets bool, size, rows, scr
 			kept := []rune(lines.Said[i])
 			at := LineAt(b, i, from)
 			left := wide(loose, k.th, string(kept[:a]), size).Size.X
-			fill(k.gtx, Box{X: at.X + left, Y: at.Y, H: at.H,
+			fill(k.gtx, geom.Box{X: at.X + left, Y: at.Y, H: at.H,
 				W: wide(loose, k.th, string(kept[a:z]), size).Size.X}, k.skin.Colour.Surface.Ghost)
 		}
 		say(k.gtx, k.th, k.skin.Colour.Ink.Text, LineAt(b, i, from), lines.Said[i], size)

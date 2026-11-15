@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"image"
 	"slices"
@@ -21,7 +23,7 @@ func partsDrawnWith(th *material.Theme, w Window) []Drawing {
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Constraints: layout.Exact(image.Pt(w.width, w.height)), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	var drawn Drawn
-	Draw(NewKit(gtx, th, Dark(), &drawn), w)
+	Draw(NewKit(gtx, th, design.Dark(), &drawn), w)
 	return drawn.All()
 }
 
@@ -75,7 +77,7 @@ func (w *world) todayRinged(date string) error {
 	if err != nil {
 		return err
 	}
-	s := Dark()
+	s := design.Dark()
 	for i, one := range w.w.WeekDays() {
 		if !one.Equal(day) {
 			continue
@@ -93,7 +95,7 @@ func (w *world) todayRinged(date string) error {
 }
 
 func (w *world) labelSearchHaloed() error {
-	if !w.w.Seeking() {
+	if !w.w.Seeking {
 		return fmt.Errorf("the labels are not being searched")
 	}
 	shot, err := drawnInAStep(w.theme, w.w)
@@ -101,8 +103,8 @@ func (w *world) labelSearchHaloed() error {
 		return err
 	}
 	row := w.w.LabelSearchAt()
-	got := pixel(shot, row.X+row.W/2, row.Y+1-Dark().Space.Halo+1)
-	if got == Dark().Colour.Surface.Raised || got.B <= got.R {
+	got := pixel(shot, row.X+row.W/2, row.Y+1-design.Dark().Space.Halo+1)
+	if got == design.Dark().Colour.Surface.Raised || got.B <= got.R {
 		return fmt.Errorf("the search of the labels has no halo above it: %v", got)
 	}
 	return nil
@@ -113,7 +115,7 @@ func (w *world) valueBoxed(value string, taken bool) error {
 	if !open {
 		return fmt.Errorf("no filter lists its values")
 	}
-	f := w.w.Filters()[w.w.FilterOn()]
+	f := w.w.Filters[w.w.FilterOn]
 	at := slices.Index(f.Shown, value)
 	if at < 0 || at >= len(values) {
 		return fmt.Errorf("the filter %q lists no %q: %v", f.Name, value, f.Shown)
@@ -122,7 +124,7 @@ func (w *world) valueBoxed(value string, taken bool) error {
 	if err != nil {
 		return err
 	}
-	s := Dark()
+	s := design.Dark()
 	box := CheckAt(Inside(values[at]))
 	accent := painted(shot, box, s.Colour.Accent.Base)
 	switch {
@@ -136,7 +138,7 @@ func (w *world) valueBoxed(value string, taken bool) error {
 
 func (w *world) paletteLinesRead() error {
 	shown := w.w
-	shown.palette.opened = shown.now.Add(-time.Hour)
+	shown.palette.opened = shown.Now.Add(-time.Hour)
 	shot, err := drawnInAStep(w.theme, shown)
 	if err != nil {
 		return err
@@ -146,8 +148,8 @@ func (w *world) paletteLinesRead() error {
 		if line.Row < 0 || line.Box.Y+line.Box.H > shown.height {
 			continue
 		}
-		words := Box{X: line.Box.X, Y: line.Box.Y, W: line.Box.W / 3, H: line.Box.H}
-		if lettered(shot, words, Dark().Colour.Ink.Text) == 0 {
+		words := geom.Box{X: line.Box.X, Y: line.Box.Y, W: line.Box.W / 3, H: line.Box.H}
+		if lettered(shot, words, design.Dark().Colour.Ink.Text) == 0 {
 			return fmt.Errorf("the line %q is not written in the reading ink", shown.PaletteRows()[line.Row].Says)
 		}
 		read++
@@ -160,7 +162,7 @@ func (w *world) paletteLinesRead() error {
 
 func (w *world) paletteGroupsInSentenceCase() error {
 	shown := w.w
-	shown.palette.opened = shown.now.Add(-time.Hour)
+	shown.palette.opened = shown.Now.Add(-time.Hour)
 	var said []string
 	for _, one := range textDrawnWith(w.theme, shown) {
 		said = append(said, one.said)
@@ -182,7 +184,7 @@ func (w *world) paletteGroupsInSentenceCase() error {
 }
 
 func (w *world) placeRinged() error {
-	if w.w.Screen() != OnWorkspaces {
+	if w.w.Screen != board.OnWorkspaces {
 		return fmt.Errorf("the switcher is not open")
 	}
 	shot, err := drawnInAStep(w.theme, w.w)
@@ -190,14 +192,14 @@ func (w *world) placeRinged() error {
 		return err
 	}
 	place := w.w.Layout().Place
-	if got := pixel(shot, place.X+place.W/2, place.Y); got != Dark().Colour.Accent.Base {
+	if got := pixel(shot, place.X+place.W/2, place.Y); got != design.Dark().Colour.Accent.Base {
 		return fmt.Errorf("the pill of the workspace is edged in %v", got)
 	}
 	return nil
 }
 
 func (w *world) stepsInAField() error {
-	fields := w.w.Form().Fields()
+	fields := w.w.Form.Fields
 	for i, field := range fields {
 		if field.Name != "steps" {
 			continue
@@ -208,7 +210,7 @@ func (w *world) stepsInAField() error {
 		if err != nil {
 			return err
 		}
-		s := Dark()
+		s := design.Dark()
 		if got := pixel(shot, frame.X, frame.Y); got == s.Colour.Line.Rule || got == s.Colour.Line.Edge {
 			return fmt.Errorf("the steps stand in a square box")
 		}
@@ -228,7 +230,7 @@ func (w *world) countWithNoRing(title string) error {
 		if p.Card.Title != title {
 			continue
 		}
-		laid := CardRowOf(p.Card, PartsOf(p.Slot).Number, Measured(w.theme), time.Time{}, w.w.pages)
+		laid := CardRowOf(p.Card, PartsOf(p.Slot).Number, Measured(w.theme), time.Time{}, w.w.Pages)
 		if laid.Count == "" {
 			return fmt.Errorf("the card %q leaves no label out", title)
 		}
@@ -236,7 +238,7 @@ func (w *world) countWithNoRing(title string) error {
 		if err != nil {
 			return err
 		}
-		if got := pixel(shot, laid.More.X+laid.More.W/2, laid.More.Y); got != Dark().Colour.Surface.Control {
+		if got := pixel(shot, laid.More.X+laid.More.W/2, laid.More.Y); got != design.Dark().Colour.Surface.Control {
 			return fmt.Errorf("the count %q is edged in %v rather than drawn as a plain pill", laid.Count, got)
 		}
 		return nil
@@ -246,12 +248,12 @@ func (w *world) countWithNoRing(title string) error {
 
 func (w *world) paletteKeysOnChips() error {
 	shown := w.w
-	shown.palette.opened = shown.now.Add(-time.Hour)
+	shown.palette.opened = shown.Now.Add(-time.Hour)
 	shot, err := drawnInAStep(w.theme, shown)
 	if err != nil {
 		return err
 	}
-	c := Dark().Colour.Surface
+	c := design.Dark().Colour.Surface
 	rows, keyed := shown.PaletteRows(), 0
 	for _, line := range shown.PaletteLines() {
 		if line.Row < 0 || rows[line.Row].Key == "" || line.Box.Y+line.Box.H > shown.height {
@@ -261,7 +263,7 @@ func (w *world) paletteKeysOnChips() error {
 		if line.Row == shown.palette.row {
 			ground = c.ChipOnControl
 		}
-		right := Box{X: line.Box.X + line.Box.W/2, Y: line.Box.Y, W: line.Box.W / 2, H: line.Box.H}
+		right := geom.Box{X: line.Box.X + line.Box.W/2, Y: line.Box.Y, W: line.Box.W / 2, H: line.Box.H}
 		if painted(shot, right, ground) == 0 {
 			return fmt.Errorf("the key of %q stands on no chip", rows[line.Row].Says)
 		}
@@ -279,11 +281,11 @@ func (w *world) emptyRounded(column string) error {
 	if err != nil {
 		return err
 	}
-	s := Dark()
+	s := design.Dark()
 	if got := pixel(shot, slot.X, slot.Y); got == s.Colour.Line.Edge {
 		return fmt.Errorf("the slot of %q is square at its corner", column)
 	}
-	if painted(shot, Box{X: slot.X + s.Radius.Card, Y: slot.Y, W: slot.W - 2*s.Radius.Card, H: 1}, s.Colour.Line.Edge) == 0 {
+	if painted(shot, geom.Box{X: slot.X + s.Radius.Card, Y: slot.Y, W: slot.W - 2*s.Radius.Card, H: 1}, s.Colour.Line.Edge) == 0 {
 		return fmt.Errorf("the slot of %q is drawn with no line", column)
 	}
 	return nil
@@ -294,9 +296,9 @@ func (w *world) labelDotAsWide(label string) error {
 	if err != nil {
 		return err
 	}
-	labels := Dark().Colour.Labels
-	across := func(dot Box, ink string) int {
-		return painted(shot, Box{X: dot.X - dot.W, Y: dot.Y + dot.H/2, W: 3 * dot.W, H: 1}, labels[ink])
+	labels := design.Dark().Colour.Labels
+	across := func(dot geom.Box, ink string) int {
+		return painted(shot, geom.Box{X: dot.X - dot.W, Y: dot.Y + dot.H/2, W: 3 * dot.W, H: 1}, labels[ink])
 	}
 	place, _, _ := PlaceParts(w.w.Layout().Place)
 	for _, row := range w.w.LabelRows() {
@@ -312,7 +314,7 @@ func (w *world) labelDotAsWide(label string) error {
 	return fmt.Errorf("no label %q is listed", label)
 }
 
-func (w *world) drawnAsAPopover(what string, box Box) error {
+func (w *world) drawnAsAPopover(what string, box geom.Box) error {
 	for _, d := range partsDrawnWith(w.theme, w.w) {
 		if d.At == box {
 			if d.Part != "popover" || d.Layer != LayerPopover {
@@ -336,7 +338,7 @@ func (w *world) numberClearOfFacts(title string) error {
 	return fmt.Errorf("no card titled %q is on the time page", title)
 }
 
-func numberApart(drawn []Drawing, card Box) error {
+func numberApart(drawn []Drawing, card geom.Box) error {
 	var number, facts []Drawing
 	in := false
 	for _, d := range drawn {
@@ -360,7 +362,7 @@ func numberApart(drawn []Drawing, card Box) error {
 	return nil
 }
 
-func (w *world) weekCard(title string) (board.Card, Box, Box, error) {
+func (w *world) weekCard(title string) (board.Card, geom.Box, geom.Box, error) {
 	l := w.w.Layout()
 	for i := range 7 {
 		for j, one := range w.w.DayShown(i) {
@@ -370,7 +372,7 @@ func (w *world) weekCard(title string) (board.Card, Box, Box, error) {
 			}
 		}
 	}
-	return board.Card{}, Box{}, Box{}, fmt.Errorf("no card titled %q is on the time page", title)
+	return board.Card{}, geom.Box{}, geom.Box{}, fmt.Errorf("no card titled %q is on the time page", title)
 }
 
 func (w *world) titleInWholeWords(title string) error {

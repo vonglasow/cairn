@@ -2,7 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
-	"cairn/internal/engine/series"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"strings"
@@ -10,45 +10,18 @@ import (
 	"cairn/internal/engine"
 )
 
-// Tree is the objectives drawn, in the order the tab lists them: each of level one followed by its sub-objectives when it is unfolded; a search draws what it reaches, under the parent holding it.
-func (w Window) Tree() []board.Branch {
-	if !w.looking.Empty() {
-		return board.FoundBranches(w.filters.KeptGoals(w.snap.Goals), w.looking.Reads())
-	}
-	var out []board.Branch
-	for _, b := range board.Branches(w.Showing().Goals) {
-		if b.Under && w.Folded(b.Goal.Parent) {
-			continue
-		}
-		out = append(out, b)
-	}
-	return out
-}
-
-// Folded says whether a parent's sub-objectives are put away: every parent starts so, until it is unfolded in this window or holds what is chosen; nothing is folded while a search is typed.
-func (w Window) Folded(n int) bool {
-	g, ok := w.snap.Goal(n)
-	if !ok || len(g.Children) == 0 || !w.looking.Empty() || slices.Contains(w.opened, n) {
-		return false
-	}
-	if c, chosen := w.snap.Goal(w.chosen); w.chosenGoal && chosen && c.Parent == n {
-		return false
-	}
-	return true
-}
-
 func (w Window) unfolding(n int) Window {
-	if !slices.Contains(w.opened, n) {
-		w.opened = append(slices.Clone(w.opened), n)
+	if !slices.Contains(w.Unfolded, n) {
+		w.Unfolded = append(slices.Clone(w.Unfolded), n)
 	}
 	return w
 }
 
 func (w Window) foldingAway(n int) Window {
-	if c, ok := w.snap.Goal(w.chosen); w.chosenGoal && ok && c.Parent == n {
-		w.chosen = n
+	if c, ok := w.Snap.Goal(w.Chosen); w.ChosenGoal && ok && c.Parent == n {
+		w.Chosen = n
 	}
-	w.opened = slices.DeleteFunc(slices.Clone(w.opened), func(o int) bool { return o == n })
+	w.Unfolded = slices.DeleteFunc(slices.Clone(w.Unfolded), func(o int) bool { return o == n })
 	return w
 }
 
@@ -65,14 +38,14 @@ func (w Window) settlingGoals() Window {
 }
 
 func (w Window) openingParentOf(n int) Window {
-	if g, ok := w.snap.Goal(n); ok && g.Parent != 0 {
+	if g, ok := w.Snap.Goal(n); ok && g.Parent != 0 {
 		return w.unfolding(g.Parent)
 	}
 	return w
 }
 
 func (w Window) choosingGoal(n int) Window {
-	w.chosen, w.chosenGoal, w.detailGoal = n, true, n
+	w.Chosen, w.ChosenGoal, w.DetailGoal = n, true, n
 	w = w.openingParentOf(n)
 	for at, b := range w.Tree() {
 		if b.Goal.Number == n {
@@ -133,31 +106,17 @@ func (w Window) foldingKey(name string) (Window, bool) {
 		}
 		return w.settlingGoals(), true
 	case "alt+left":
-		if c, chosen := w.snap.Goal(w.chosen); w.chosenGoal && chosen && c.Parent != 0 {
-			w.chosen = c.Parent
+		if c, chosen := w.Snap.Goal(w.Chosen); w.ChosenGoal && chosen && c.Parent != 0 {
+			w.Chosen = c.Parent
 		}
-		w.opened = nil
+		w.Unfolded = nil
 		w = w.settlingGoals()
-		if w.chosenGoal {
-			return w.choosingGoal(w.chosen), true
+		if w.ChosenGoal {
+			return w.choosingGoal(w.Chosen), true
 		}
 		return w, true
 	}
 	return w, false
-}
-
-// GoalsCount is what the head of the list counts: the objectives shown, or, while a search is typed, those it reaches of all there are.
-func (w Window) GoalsCount() string {
-	if w.looking.Empty() {
-		return strconv.Itoa(len(w.Showing().Goals))
-	}
-	reached := 0
-	for _, b := range w.Tree() {
-		if !b.Holds {
-			reached++
-		}
-	}
-	return strconv.Itoa(reached) + " of " + strconv.Itoa(len(w.snap.Goals))
 }
 
 func (w Window) narrowList() bool { return GoalAt(w.Layout(), 0, 0).W < narrowItem }
@@ -171,19 +130,19 @@ func (w Window) SignalOf(b board.Branch) (string, bool) {
 		return "", false
 	}
 	narrow := w.narrowList()
-	if g.LateOn(w.today()) {
+	if g.LateOn(w.Today()) {
 		return g.Deadline.Format("2 Jan") + ", late", false
 	}
-	if on, waits := w.snap.Unreached(g); waits {
+	if on, waits := w.Snap.Unreached(g); waits {
 		if narrow {
 			return "waits #" + strconv.Itoa(on.Number), false
 		}
-		return "waits on " + strings.Join(w.unreachedTitles(g), ", "), false
+		return "waits on " + strings.Join(w.UnreachedTitles(g), ", "), false
 	}
 	if b.Under || !w.Folded(g.Number) {
 		return "", false
 	}
-	hid := w.snap.Hidden(g.Number, w.today())
+	hid := w.Snap.Hidden(g.Number, w.Today())
 	if len(hid) == 0 {
 		return "", false
 	}
@@ -205,34 +164,9 @@ func (w Window) SignalOf(b board.Branch) (string, bool) {
 	return said, true
 }
 
-func (w Window) unreachedTitles(g board.Goal) []string {
-	var titles []string
-	for _, n := range g.WaitsOn {
-		if on, ok := w.snap.Goal(n); ok && on.State != "reached" {
-			titles = append(titles, on.Title)
-		}
-	}
-	return titles
-}
-
-// HiddenSays is what the bubble over a folded parent's signal says: what it hides, each whole, and how to see it.
-func (w Window) HiddenSays(n int) []string {
-	g, _ := w.snap.Goal(n)
-	lines := []string{"Hidden under " + g.Title + ":"}
-	for _, h := range w.snap.Hidden(n, w.today()) {
-		named := "#" + strconv.Itoa(h.Goal.Number) + " " + h.Goal.Title
-		if h.Late {
-			lines = append(lines, named+", its deadline "+series.ShortDay(h.Goal.Deadline)+" past, not reached.")
-			continue
-		}
-		lines = append(lines, named+" waits on #"+strconv.Itoa(h.On.Number)+" "+h.On.Title+", not reached.")
-	}
-	return append(lines, "→ or a click on its chevron shows it.")
-}
-
-func (w Window) hiddenAt(p Point) ([]string, Box, int) {
-	if w.screen != OnTheBoard || w.tab != Objectives || !GoalsRun(w.Layout()).In(p) {
-		return nil, Box{}, 0
+func (w Window) hiddenAt(p geom.Point) ([]string, geom.Box, int) {
+	if w.Screen != board.OnTheBoard || w.Tab != board.Objectives || !GoalsRun(w.Layout()).In(p) {
+		return nil, geom.Box{}, 0
 	}
 	for at, b := range w.Tree() {
 		said, dot := w.SignalOf(b)
@@ -242,10 +176,10 @@ func (w Window) hiddenAt(p Point) ([]string, Box, int) {
 		slot := GoalAt(w.Layout(), at, w.goals)
 		_, _, second := ItemLine(ItemOf(slot, 0))
 		mark, words := SignalAt(second, said, dot, w.measured())
-		reach := Box{X: mark.X, Y: second.Y, W: words.X + words.W - mark.X, H: second.H}
+		reach := geom.Box{X: mark.X, Y: second.Y, W: words.X + words.W - mark.X, H: second.H}
 		if reach.In(p) {
 			return w.HiddenSays(b.Goal.Number), reach, slot.W
 		}
 	}
-	return nil, Box{}, 0
+	return nil, geom.Box{}, 0
 }

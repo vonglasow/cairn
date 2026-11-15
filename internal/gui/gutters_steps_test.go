@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"strings"
 
@@ -11,28 +12,28 @@ import (
 
 func (w *world) gutters(sc *godog.ScenarioContext) {
 	var (
-		opened Layout
+		opened geom.Layout
 		taken  bool
 	)
-	drag := func(gutter Box, right int) {
+	drag := func(gutter geom.Box, right int) {
 		if !taken {
 			opened, taken = w.w.Layout(), true
 		}
-		from := Point{X: gutter.X + gutter.W/2, Y: gutter.Y + gutter.H/2}
-		to := Point{X: from.X + right, Y: from.Y}
+		from := geom.Point{X: gutter.X + gutter.W/2, Y: gutter.Y + gutter.H/2}
+		to := geom.Point{X: from.X + right, Y: from.Y}
 		w.w = w.w.PressAt(from).MoveTo(to).LetGo(to)
 	}
 	lift := func(by int) {
 		if !taken {
 			opened, taken = w.w.Layout(), true
 		}
-		edge := BandEdge(w.w.Layout())
-		from := Point{X: edge.X + edge.W/2, Y: edge.Y + edge.H/2}
-		to := Point{X: from.X, Y: from.Y - by}
+		edge := geom.BandEdge(w.w.Layout())
+		from := geom.Point{X: edge.X + edge.W/2, Y: edge.Y + edge.H/2}
+		to := geom.Point{X: from.X, Y: from.Y - by}
 		w.w = w.w.PressAt(from).MoveTo(to).LetGo(to)
 	}
-	twice := func(on Box) {
-		at := Point{X: on.X + on.W/2, Y: on.Y + on.H/2}
+	twice := func(on geom.Box) {
+		at := geom.Point{X: on.X + on.W/2, Y: on.Y + on.H/2}
 		var g Gesture
 		for range 2 {
 			w.w, g = Pointing(w.w, g, pointer.Press, at, 0, w.today)
@@ -55,7 +56,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if next, err := column(right); err != nil || next != at+1 {
 			return fmt.Errorf("%q does not stand right of %q", right, left)
 		}
-		drag(Gutter(w.w.Layout(), at), by)
+		drag(geom.Gutter(w.w.Layout(), at), by)
 		return nil
 	})
 	sc.Step(`^I drag the gutter between "([^"]*)" and "([^"]*)" (\d+) to the left$`, func(left, right string, by int) error {
@@ -66,14 +67,14 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if next, err := column(right); err != nil || next != at+1 {
 			return fmt.Errorf("%q does not stand right of %q", right, left)
 		}
-		drag(Gutter(w.w.Layout(), at), -by)
+		drag(geom.Gutter(w.w.Layout(), at), -by)
 		return nil
 	})
 	sc.Step(`^I drag the gutter between "backlog" and "todo" from beside the band (\d+) to the right$`, func(by int) error {
 		l := w.w.Layout()
-		gutter := Gutter(l, 0)
-		beside := Box{X: gutter.X, Y: l.Band.Y, W: gutter.W, H: l.Band.H}
-		if !gutter.In(Point{X: beside.X + beside.W/2, Y: beside.Y + beside.H/2}) {
+		gutter := geom.Gutter(l, 0)
+		beside := geom.Box{X: gutter.X, Y: l.Band.Y, W: gutter.W, H: l.Band.H}
+		if !gutter.In(geom.Point{X: beside.X + beside.W/2, Y: beside.Y + beside.H/2}) {
 			return fmt.Errorf("the gutter %+v does not run beside the band %+v", gutter, l.Band)
 		}
 		drag(beside, by)
@@ -84,14 +85,14 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		return pointerIs(w.w, Gutter(w.w.Layout(), at), ColResize)
+		return pointerIs(w.w, geom.Gutter(w.w.Layout(), at), ColResize)
 	})
 	sc.Step(`^the pointer over the gutter after the "([^"]*)" lane is the one for widening sideways$`, func(name string) error {
 		at, err := laneNamed(name)
 		if err != nil {
 			return err
 		}
-		return pointerIs(w.w, LaneGutter(w.w.Layout(), at), ColResize)
+		return pointerIs(w.w, geom.LaneGutter(w.w.Layout(), at), ColResize)
 	})
 	sc.Step(`^every gutter is (\d+) points wide$`, func(wide int) error {
 		for _, grab := range grabsOf(w.w.Layout()) {
@@ -106,7 +107,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^the pointer over the band's edge is the one for resizing up and down$`, func() error {
-		return pointerIs(w.w, BandEdge(w.w.Layout()), RowResize)
+		return pointerIs(w.w, geom.BandEdge(w.w.Layout()), RowResize)
 	})
 	sc.Step(`^the band starts where "todo" does$`, func() error {
 		l := w.w.Layout()
@@ -123,7 +124,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if next, err := laneNamed(right); err != nil || next != at+1 {
 			return fmt.Errorf("%q does not stand right of %q", right, left)
 		}
-		drag(LaneGutter(w.w.Layout(), at), by)
+		drag(geom.LaneGutter(w.w.Layout(), at), by)
 		return nil
 	})
 	wider := func(was, is, by int, name string) error {
@@ -172,8 +173,8 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if got := w.w.Layout().Column[at].W; got != NarrowestColumn {
-			return fmt.Errorf("%q is %d wide, not the %d a column goes down to", name, got, NarrowestColumn)
+		if got := w.w.Layout().Column[at].W; got != geom.NarrowestColumn {
+			return fmt.Errorf("%q is %d wide, not the %d a column goes down to", name, got, geom.NarrowestColumn)
 		}
 		return nil
 	})
@@ -219,7 +220,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I double-click the edge above the band$`, func() error {
-		twice(BandEdge(w.w.Layout()))
+		twice(geom.BandEdge(w.w.Layout()))
 		return nil
 	})
 	sc.Step(`^I double-click the gutter between "([^"]*)" and "([^"]*)"$`, func(left, _ string) error {
@@ -227,7 +228,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		twice(Gutter(w.w.Layout(), at))
+		twice(geom.Gutter(w.w.Layout(), at))
 		return nil
 	})
 	sc.Step(`^I double-click the gutter between the "([^"]*)" and "([^"]*)" lanes$`, func(left, _ string) error {
@@ -235,7 +236,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		twice(LaneGutter(w.w.Layout(), at))
+		twice(geom.LaneGutter(w.w.Layout(), at))
 		return nil
 	})
 	taller := func(was, is, by int, name string) error {
@@ -248,7 +249,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		return taller(opened.Band.H, w.w.Layout().Band.H, by, "the band")
 	})
 	sc.Step(`^the band is as tall as it opened$`, func() error {
-		return taller(LayoutFor(w.w.width, w.w.height).Band.H, w.w.Layout().Band.H, 0, "the band")
+		return taller(geom.LayoutFor(w.w.width, w.w.height).Band.H, w.w.Layout().Band.H, 0, "the band")
 	})
 	sc.Step(`^"([^"]*)" is (\d+) shorter than it opened$`, func(name string, by int) error {
 		at, err := column(name)
@@ -266,8 +267,8 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^the band's lanes hold one card's room$`, func() error {
 		for at, lane := range w.w.Layout().Lane {
-			if lane.H != CardHeight {
-				return fmt.Errorf("lane %d is %d tall, not a card's %d", at, lane.H, CardHeight)
+			if lane.H != geom.CardHeight {
+				return fmt.Errorf("lane %d is %d tall, not a card's %d", at, lane.H, geom.CardHeight)
 			}
 		}
 		return nil
@@ -277,13 +278,13 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if got := w.w.Layout().Column[at].H; got != CardHeight {
-			return fmt.Errorf("%q is %d tall, not a card's %d", name, got, CardHeight)
+		if got := w.w.Layout().Column[at].H; got != geom.CardHeight {
+			return fmt.Errorf("%q is %d tall, not a card's %d", name, got, geom.CardHeight)
 		}
 		return nil
 	})
 	sc.Step(`^the band is taller than it opens at (\d+) by (\d+)$`, func(width, high int) error {
-		if got, opens := w.w.Layout().Band.H, LayoutFor(width, high).Band.H; got <= opens {
+		if got, opens := w.w.Layout().Band.H, geom.LayoutFor(width, high).Band.H; got <= opens {
 			return fmt.Errorf("the band is %d tall, and opens %d tall at %d by %d", got, opens, width, high)
 		}
 		return nil
@@ -308,8 +309,8 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 	})
 }
 
-func pointerIs(w Window, over Box, want Pointer) error {
-	if got := w.PointerAt(Point{X: over.X + over.W/2, Y: over.Y + over.H/2}); got != want {
+func pointerIs(w Window, over geom.Box, want Pointer) error {
+	if got := w.PointerAt(geom.Point{X: over.X + over.W/2, Y: over.Y + over.H/2}); got != want {
 		return fmt.Errorf("the pointer over %+v is %v, not %v", over, got, want)
 	}
 	return nil

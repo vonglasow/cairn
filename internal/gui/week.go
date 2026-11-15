@@ -2,7 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
-	"cairn/internal/engine/calendar"
+	"cairn/internal/gui/geom"
 	"strconv"
 	"time"
 
@@ -10,102 +10,50 @@ import (
 )
 
 const (
-	weekRow   = CardHeight + lineHigh
+	weekRow   = geom.CardHeight + lineHigh
 	barHighOf = 6
 	spentWide = 48
 	arrowWide = 32
 	rangeWide = 72
 )
 
-type timeState struct {
-	week    time.Time
-	sheet   engine.Timesheet
-	monthly bool
-	daily   bool
-	dayFrom [7]int
-	grid    calendarView
-}
-
-// Monthly says the time page shows a month rather than a week.
-func (w Window) Monthly() bool { return w.monthly }
-
-// Daily says the time page shows one day rather than a week.
-func (w Window) Daily() bool { return w.daily }
-
-// TimeShown is the time spent as the page shows it: every task of the period, or only those the search reaches, each day's total counting only those.
-func (w Window) TimeShown() engine.Timesheet {
-	if w.looking.Empty() && !w.filters.Narrows() {
-		return w.sheet
-	}
-	reached := map[int]bool{}
-	for _, c := range w.Showing().Cards {
-		reached[c.Number] = true
-	}
-	shown := engine.Timesheet{}
-	for _, d := range w.sheet.Days {
-		kept := engine.TimesheetDay{Day: d.Day}
-		for _, one := range d.Tasks {
-			if reached[one.Number] {
-				kept.Tasks = append(kept.Tasks, one)
-				kept.Minutes += one.Minutes
-			}
-		}
-		shown.Days = append(shown.Days, kept)
-	}
-	return shown
-}
-
-// WeekDays is the days of the week in sight that the page lays out.
-func (w Window) WeekDays() []time.Time {
-	days := make([]time.Time, w.pages.WeekDays())
-	for i := range days {
-		days[i] = w.week.AddDate(0, 0, i)
-	}
-	return days
-}
-
-// DayHeld is the i-th day of the week in sight, as the page shows it.
-func (w Window) DayHeld(i int) engine.TimesheetDay {
-	return w.TimeShown().On(w.week.AddDate(0, 0, i))
-}
-
 func (w Window) readingWeek() Window {
-	if w.now.IsZero() {
+	if w.Now.IsZero() {
 		return w
 	}
-	if w.week.IsZero() {
-		w.week = board.Monday(w.today())
+	if w.Week.IsZero() {
+		w.Week = board.Monday(w.Today())
 	}
-	since, until := w.week, w.week.AddDate(0, 0, 6)
-	if w.daily {
-		until = w.week
+	since, until := w.Week, w.Week.AddDate(0, 0, 6)
+	if w.Daily {
+		until = w.Week
 	}
-	if w.monthly {
-		grid := board.MonthGrid(w.week)
+	if w.Monthly {
+		grid := board.MonthGrid(w.Week)
 		since, until = grid[0], grid[len(grid)-1]
 	}
-	sheet, err := board.ReadPeriod(w.work, since, until, w.today())
+	sheet, err := board.ReadPeriod(w.work, since, until, w.Today())
 	if err != nil {
 		return w.failing(err)
 	}
-	w.sheet = sheet
+	w.Sheet = sheet
 	return w
 }
 
 func (w Window) onWeek(name string) Window {
 	switch name {
 	case "left":
-		w.week = w.stepped(-1)
+		w.Week = w.Stepped(-1)
 	case "right":
-		w.week = w.stepped(1)
+		w.Week = w.Stepped(1)
 	case "t":
-		w.grid = viewDays
-		w.week = board.Monday(w.today())
-		if w.monthly {
-			w.week = board.FirstOfMonth(w.today())
+		w.Grid = board.ViewDays
+		w.Week = board.Monday(w.Today())
+		if w.Monthly {
+			w.Week = board.FirstOfMonth(w.Today())
 		}
-		if w.daily {
-			w.week = w.today()
+		if w.Daily {
+			w.Week = w.Today()
 		}
 	case "1":
 		w = w.ranged("Day")
@@ -114,58 +62,34 @@ func (w Window) onWeek(name string) Window {
 	case "3":
 		w = w.ranged("Month")
 	}
-	w.dayFrom = [7]int{}
+	w.DaysFrom = [7]int{}
 	return w.readingWeek()
 }
 
-func (w Window) stepped(by int) time.Time {
-	switch {
-	case w.monthly && w.grid == viewYears:
-		return board.MonthOn(w.week, 144*by)
-	case w.monthly && w.grid == viewMonths:
-		return board.MonthOn(w.week, 12*by)
-	case w.monthly:
-		return board.MonthOn(w.week, by)
-	case w.daily:
-		return w.week.AddDate(0, 0, by)
-	}
-	return w.week.AddDate(0, 0, 7*by)
-}
-
 func (w Window) ranged(to string) Window {
-	today, on := w.today(), w.week
+	today, on := w.Today(), w.Week
 	switch {
-	case w.monthly:
-		if sameMonth(today, w.week) {
+	case w.Monthly:
+		if sameMonth(today, w.Week) {
 			on = today
 		}
-	case !w.daily:
-		if !today.Before(w.week) && today.Before(w.week.AddDate(0, 0, 7)) {
+	case !w.Daily:
+		if !today.Before(w.Week) && today.Before(w.Week.AddDate(0, 0, 7)) {
 			on = today
 		} else if to == "Month" {
-			on = w.week.AddDate(0, 0, 3)
+			on = w.Week.AddDate(0, 0, 3)
 		}
 	}
-	w.daily, w.monthly, w.grid = to == "Day", to == "Month", viewDays
+	w.Daily, w.Monthly, w.Grid = to == "Day", to == "Month", board.ViewDays
 	switch to {
 	case "Day":
-		w.week = on
+		w.Week = on
 	case "Month":
-		w.week = board.FirstOfMonth(on)
+		w.Week = board.FirstOfMonth(on)
 	default:
-		w.week = board.Monday(on)
+		w.Week = board.Monday(on)
 	}
 	return w
-}
-
-func (w Window) ranging() string {
-	switch {
-	case w.monthly:
-		return "Month"
-	case w.daily:
-		return "Day"
-	}
-	return "Week"
 }
 
 func weekKeys(name string) (mine, shared bool) {
@@ -179,15 +103,15 @@ func weekKeys(name string) (mine, shared bool) {
 }
 
 // TimeStrip is the strip along the top of the time page: the board's whole width, where the columns' headers are on the other pages.
-func TimeStrip(l Layout) Box {
+func TimeStrip(l geom.Layout) geom.Box {
 	left, right := l.Column[0].X, l.Column[board.Columns-1].X+l.Column[board.Columns-1].W
-	return Box{X: left, Y: l.Head[0].Y, W: right - left, H: barHigh}
+	return geom.Box{X: left, Y: l.Head[0].Y, W: right - left, H: geom.BarHigh}
 }
 
 // TimeChip is where a chip of the strip is: the arrows at its left, the ranges at its right, Today before them.
-func TimeChip(l Layout, name string) Box {
+func TimeChip(l geom.Layout, name string) geom.Box {
 	strip := TimeStrip(l)
-	at := func(x, wide int) Box { return Box{X: x, Y: strip.Y, W: wide, H: strip.H} }
+	at := func(x, wide int) geom.Box { return geom.Box{X: x, Y: strip.Y, W: wide, H: strip.H} }
 	end := strip.X + strip.W
 	switch name {
 	case "‹":
@@ -207,29 +131,29 @@ func TimeChip(l Layout, name string) Box {
 	case "the year":
 		return at(TimeSaid(l).X+nameWide+inset, yearWide)
 	}
-	return Box{}
+	return geom.Box{}
 }
 
 // TimeCells is what the month of the time page offers to choose from instead of its days, as the date picker does: nothing while it shows days.
 func (w Window) TimeCells() []string {
-	if !w.monthly {
+	if !w.Monthly {
 		return nil
 	}
-	return gridCells(w.grid, w.week)
+	return gridCells(w.Grid, w.Week)
 }
 
 // TimeCellAt is the i-th of those twelve cells, three across and four down, in the room the month's days take.
-func TimeCellAt(l Layout, i int) Box {
+func TimeCellAt(l geom.Layout, i int) geom.Box {
 	strip := TimeStrip(l)
 	top := strip.Y + strip.H + between
-	wide, high := (strip.W-2*gap)/3, (l.Band.Y+l.Band.H-top-3*gap)/4
-	return Box{X: strip.X + (i%3)*(wide+gap), Y: top + (i/3)*(high+gap), W: wide, H: high}
+	wide, high := (strip.W-2*geom.Gap)/3, (l.Band.Y+l.Band.H-top-3*geom.Gap)/4
+	return geom.Box{X: strip.X + (i%3)*(wide+geom.Gap), Y: top + (i/3)*(high+geom.Gap), W: wide, H: high}
 }
 
 // RangesControl is the ground Day, Week and Month stand on together, one control of three segments rather than three buttons.
-func RangesControl(l Layout) Box {
+func RangesControl(l geom.Layout) geom.Box {
 	day, month := TimeChip(l, "Day"), TimeChip(l, "Month")
-	return Box{X: day.X - segmentInset, Y: day.Y, W: month.X + month.W + segmentInset - day.X + segmentInset, H: day.H}
+	return geom.Box{X: day.X - segmentInset, Y: day.Y, W: month.X + month.W + segmentInset - day.X + segmentInset, H: day.H}
 }
 
 const segmentInset = 2
@@ -238,43 +162,45 @@ const segmentInset = 2
 var TimeChips = []string{"‹", "›", "Today", "Day", "Week", "Month"}
 
 // ButtonIn is what an offer is drawn as in the room it is given: as tall, and a gap short of the next one.
-func ButtonIn(slot Box) Box { return Box{X: slot.X, Y: slot.Y, W: slot.W - inset, H: slot.H} }
+func ButtonIn(slot geom.Box) geom.Box {
+	return geom.Box{X: slot.X, Y: slot.Y, W: slot.W - inset, H: slot.H}
+}
 
 // ButtonParts is where a button writes its word and draws its key's chip: the two side by side in its middle, the word first.
-func ButtonParts(button Box, m Measure, word, key string) (Box, Box) {
+func ButtonParts(button geom.Box, m Measure, word, key string) (geom.Box, geom.Box) {
 	wide := buttonWordWide(m, word)
 	chip := KeyChipWide(key)
 	if chip > 0 {
 		chip += hintSpace
 	}
 	x := button.X + max(0, (button.W-wide-chip)/2)
-	said := Box{X: x, Y: button.Y + (button.H-lineHigh)/2, W: wide, H: lineHigh}
+	said := geom.Box{X: x, Y: button.Y + (button.H-lineHigh)/2, W: wide, H: lineHigh}
 	if key == "" {
-		return said, Box{}
+		return said, geom.Box{}
 	}
-	return said, Box{X: x + wide + hintSpace, Y: button.Y + (button.H-chipHigh)/2, W: KeyChipWide(key), H: chipHigh}
+	return said, geom.Box{X: x + wide + hintSpace, Y: button.Y + (button.H-chipHigh)/2, W: KeyChipWide(key), H: chipHigh}
 }
 
 // buttonWordWide is how wide a button's word is written: measured in the face's plain weight, and a twentieth more for the medium weight a button writes in.
 func buttonWordWide(m Measure, word string) int { return ends(m, word, reads)*21/20 + textSlack }
 
 // ButtonSaid is where a button writes its words: a line high, across it, in its middle.
-func ButtonSaid(button Box) Box { return ChipSaid(button, button.W) }
+func ButtonSaid(button geom.Box) geom.Box { return ChipSaid(button, button.W) }
 
 // ChipSaid is where a chip writes its name: in its middle, a line high and as wide as the name.
-func ChipSaid(chip Box, wide int) Box {
-	line := Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}
+func ChipSaid(chip geom.Box, wide int) geom.Box {
+	line := geom.Box{X: chip.X, Y: chip.Y + (chip.H-lineHigh)/2, W: chip.W, H: lineHigh}
 	if wide >= chip.W {
 		return line
 	}
-	return Box{X: chip.X + (chip.W-wide)/2, Y: line.Y, W: wide, H: line.H}
+	return geom.Box{X: chip.X + (chip.W-wide)/2, Y: line.Y, W: wide, H: line.H}
 }
 
 // TimeSaid is where the strip says what is shown, between the arrows and the ranges.
-func TimeSaid(l Layout) Box {
+func TimeSaid(l geom.Layout) geom.Box {
 	after, today := TimeChip(l, "›"), TimeChip(l, "Today")
 	x := after.X + arrowWide + padding
-	return Box{X: x, Y: after.Y, W: today.X - padding - x, H: after.H}
+	return geom.Box{X: x, Y: after.Y, W: today.X - padding - x, H: after.H}
 }
 
 // TimeSays is what is shown, as the strip says it: a week's first and last days, or a month, then the time spent over it when there is any.
@@ -286,83 +212,80 @@ func TimeSays(w Window) string {
 }
 
 func periodNamed(w Window) string {
-	if w.daily {
-		return w.week.Format("Monday 2 January 2006")
+	if w.Daily {
+		return w.Week.Format("Monday 2 January 2006")
 	}
-	if w.monthly {
-		return w.week.Format("January 2006")
+	if w.Monthly {
+		return w.Week.Format("January 2006")
 	}
-	last := w.week.AddDate(0, 0, w.pages.WeekDays()-1)
-	if w.week.Year() != last.Year() {
-		return w.week.Format("2 Jan 2006") + " – " + last.Format("2 Jan 2006")
+	last := w.Week.AddDate(0, 0, w.Pages.WeekDays()-1)
+	if w.Week.Year() != last.Year() {
+		return w.Week.Format("2 Jan 2006") + " – " + last.Format("2 Jan 2006")
 	}
-	if w.week.Month() != last.Month() {
-		return w.week.Format("2 Jan") + " – " + last.Format("2 Jan 2006")
+	if w.Week.Month() != last.Month() {
+		return w.Week.Format("2 Jan") + " – " + last.Format("2 Jan 2006")
 	}
-	return w.week.Format("2") + " – " + last.Format("2 Jan 2006")
+	return w.Week.Format("2") + " – " + last.Format("2 Jan 2006")
 }
 
 // WeekDayAt is where the i-th day of the week is laid out: the board's whole width, from under the strip to the foot of the band, cut in as many days as a week shows.
-func WeekDayAt(l Layout, i int) Box {
+func WeekDayAt(l geom.Layout, i int) geom.Box {
 	strip := TimeStrip(l)
-	wide, top := (strip.W-(l.Days-1)*gap)/l.Days, strip.Y+strip.H+between
-	return Box{X: strip.X + i*(wide+gap), Y: top, W: wide, H: l.Band.Y + l.Band.H - top}
+	wide, top := (strip.W-(l.Days-1)*geom.Gap)/l.Days, strip.Y+strip.H+between
+	return geom.Box{X: strip.X + i*(wide+geom.Gap), Y: top, W: wide, H: l.Band.Y + l.Band.H - top}
 }
 
 // DayRoom is how many tasks a day of a week shows at once.
-func DayRoom(day Box) int { return max(1, (day.H-2*lineHigh-padding)/weekRow) }
-
-// DayFrom is the first task of the i-th day of the week in sight.
-func (w Window) DayFrom(i int) int { return w.dayFrom[i] }
+func DayRoom(day geom.Box) int { return max(1, (day.H-2*lineHigh-padding)/weekRow) }
 
 // DayShown is the tasks of the i-th day of the week in sight.
 func (w Window) DayShown(i int) []engine.TimesheetTask {
-	tasks, from := w.DayHeld(i).Tasks, w.dayFrom[i]
+	tasks, from := w.DayHeld(i).Tasks, w.DaysFrom[i]
 	return tasks[min(from, len(tasks)):min(len(tasks), from+DayRoom(WeekDayAt(w.Layout(), i)))]
 }
 
 // AloneShown is the tasks of the day shown alone that are in sight.
 func (w Window) AloneShown() []engine.TimesheetTask {
-	tasks, from := w.DayHeld(0).Tasks, w.dayFrom[0]
+	tasks, from := w.DayHeld(0).Tasks, w.DaysFrom[0]
 	return tasks[min(from, len(tasks)):min(len(tasks), from+DayRoom(DayAloneAt(w.Layout())))]
 }
 
 // DayAloneAt is where one day is laid out when it is shown alone: the whole of what a week takes.
-func DayAloneAt(l Layout) Box {
+func DayAloneAt(l geom.Layout) geom.Box {
 	strip, first := TimeStrip(l), WeekDayAt(l, 0)
-	return Box{X: strip.X, Y: first.Y, W: strip.W, H: first.H}
+	return geom.Box{X: strip.X, Y: first.Y, W: strip.W, H: first.H}
 }
 
 // AloneCardAt is where the j-th task of a day shown alone is drawn: the card a week draws, down the day's left and a third of it wide, so its title reads.
-func AloneCardAt(alone Box, j int) Box {
+func AloneCardAt(alone geom.Box, j int) geom.Box {
 	row := WeekRowAt(alone, j)
-	return Box{X: row.X, Y: row.Y, W: alone.W/3 - padding, H: CardHeight}
+	return geom.Box{X: row.X, Y: row.Y, W: alone.W/3 - padding, H: geom.CardHeight}
 }
 
 // AloneSpentAt is where a task of a day shown alone says how long it took: beside its card.
-func AloneSpentAt(alone Box, j int) Box {
+func AloneSpentAt(alone geom.Box, j int) geom.Box {
 	card := AloneCardAt(alone, j)
-	return Box{X: card.X + card.W + padding, Y: card.Y + (CardHeight-gap-lineHigh)/2, W: spentWide, H: lineHigh}
+	return geom.Box{X: card.X + card.W + padding, Y: card.Y + (geom.CardHeight-geom.Gap-lineHigh)/2, W: spentWide, H: lineHigh}
 }
 
 // AloneBar is a task's bar on a day shown alone: after its time, across what is left of the day, as long as its share of the day's longest.
-func AloneBar(alone Box, j, minutes, longest int) Box {
+func AloneBar(alone geom.Box, j, minutes, longest int) geom.Box {
 	spent := AloneSpentAt(alone, j)
 	x := spent.X + spent.W
 	room := alone.X + alone.W - padding - barWide - x
-	return Box{X: x, Y: spent.Y + (lineHigh-barHighOf)/2, W: room * minutes / max(1, longest), H: barHighOf}
+	return geom.Box{X: x, Y: spent.Y + (lineHigh-barHighOf)/2, W: room * minutes / max(1, longest), H: barHighOf}
 }
 
-func (w Window) scrollingDay(p Point, by int) Window {
+func (w Window) scrollingDay(p geom.Point, by int) Window {
 	l := w.Layout()
-	if w.daily {
+	if w.Daily {
 		alone := DayAloneAt(l)
 		if !alone.In(p) {
 			return w
 		}
 		total := w.spareChoosing + by
 		w.spareChoosing = total % weekRow
-		w.dayFrom[0] = max(0, min(w.dayFrom[0]+total/weekRow, len(w.DayHeld(0).Tasks)-DayRoom(alone)))
+		w.DaysFrom[0] = max(0, min(w.DaysFrom[0]+total/weekRow, len(w.DayHeld(0).Tasks)-DayRoom(alone)))
 		return w
 	}
 	for i := range w.WeekDays() {
@@ -373,31 +296,31 @@ func (w Window) scrollingDay(p Point, by int) Window {
 		total := w.spareChoosing + by
 		rows := total / weekRow
 		w.spareChoosing = total % weekRow
-		w.dayFrom[i] = max(0, min(w.dayFrom[i]+rows, len(w.DayHeld(i).Tasks)-DayRoom(day)))
+		w.DaysFrom[i] = max(0, min(w.DaysFrom[i]+rows, len(w.DayHeld(i).Tasks)-DayRoom(day)))
 		return w
 	}
 	return w
 }
 
 // MonthWeekdayAt is where a weekday's name is written over a month.
-func MonthWeekdayAt(l Layout, i int) Box {
+func MonthWeekdayAt(l geom.Layout, i int) geom.Box {
 	cell := MonthCellAt(l, i)
-	return Box{X: cell.X, Y: cell.Y - lineHigh, W: cell.W, H: lineHigh}
+	return geom.Box{X: cell.X, Y: cell.Y - lineHigh, W: cell.W, H: lineHigh}
 }
 
 // MonthCellAt is where the i-th day of a month's six weeks is laid out; a day the week does not show is laid out nowhere.
-func MonthCellAt(l Layout, i int) Box {
+func MonthCellAt(l geom.Layout, i int) geom.Box {
 	if i%7 >= l.Days {
-		return Box{}
+		return geom.Box{}
 	}
 	strip := TimeStrip(l)
 	top := strip.Y + strip.H + between + lineHigh
-	wide, high := (strip.W-(l.Days-1)*gap)/l.Days, (l.Band.Y+l.Band.H-top-5*gap)/6
-	return Box{X: strip.X + (i%7)*(wide+gap), Y: top + (i/7)*(high+gap), W: wide, H: high}
+	wide, high := (strip.W-(l.Days-1)*geom.Gap)/l.Days, (l.Band.Y+l.Band.H-top-5*geom.Gap)/6
+	return geom.Box{X: strip.X + (i%7)*(wide+geom.Gap), Y: top + (i/7)*(high+geom.Gap), W: wide, H: high}
 }
 
 // CellRoom is how many lines a day of a month has under its own.
-func CellRoom(cell Box) int { return max(1, (cell.H-lineHigh-padding)/lineHigh) }
+func CellRoom(cell geom.Box) int { return max(1, (cell.H-lineHigh-padding)/lineHigh) }
 
 // CellLines is what a day of a month says of its tasks in the room it has: as many as fit, and how many more there are on the last line when they do not all fit.
 func CellLines(tasks []engine.TimesheetTask, room int) []string {
@@ -412,18 +335,7 @@ func CellLines(tasks []engine.TimesheetTask, room int) []string {
 	return lines
 }
 
-// MonthDay is the sheet's day for the i-th day of the month's six weeks.
-func (w Window) MonthDay(i int) engine.TimesheetDay {
-	day := calendar.FormatDay(board.MonthGrid(w.week)[i])
-	for _, d := range w.TimeShown().Days {
-		if d.Day == day {
-			return d
-		}
-	}
-	return engine.TimesheetDay{Day: day}
-}
-
-func (w Window) clickingTime(p Point) Window {
+func (w Window) clickingTime(p geom.Point) Window {
 	l := w.Layout()
 	keyOf := map[string]string{"‹": "left", "›": "right", "Today": "t"}
 	for _, chip := range TimeChips {
@@ -433,38 +345,38 @@ func (w Window) clickingTime(p Point) Window {
 		if key, ok := keyOf[chip]; ok {
 			return w.onWeek(key)
 		}
-		if chip != w.ranging() {
+		if chip != w.Ranging() {
 			w = w.ranged(chip)
-			w.dayFrom = [7]int{}
+			w.DaysFrom = [7]int{}
 			return w.readingWeek()
 		}
 		return w
 	}
-	if w.monthly {
+	if w.Monthly {
 		if picked, on := w.timeGridClicked(l, p); on {
 			return picked
 		}
 	}
 	if number := w.timeCardAt(p); number != 0 {
-		if w.goneOnTime(number) {
+		if w.GoneOnTime(number) {
 			return w.telling("task " + strconv.Itoa(number) + " was deleted")
 		}
 		return w.choosingAt(number)
 	}
-	if !w.monthly && !w.daily {
+	if !w.Monthly && !w.Daily {
 		for i := range w.WeekDays() {
 			if WeekHeadAt(WeekDayAt(l, i)).In(p) {
-				w.daily, w.week, w.dayFrom = true, w.week.AddDate(0, 0, i), [7]int{}
+				w.Daily, w.Week, w.DaysFrom = true, w.Week.AddDate(0, 0, i), [7]int{}
 				return w.readingWeek()
 			}
 		}
 	}
-	if !w.monthly {
+	if !w.Monthly {
 		return w
 	}
-	for i, day := range board.MonthGrid(w.week) {
+	for i, day := range board.MonthGrid(w.Week) {
 		if MonthCellAt(l, i).In(p) {
-			w.monthly, w.week, w.dayFrom = false, board.Monday(day), [7]int{}
+			w.Monthly, w.Week, w.DaysFrom = false, board.Monday(day), [7]int{}
 			return w.readingWeek()
 		}
 	}
@@ -472,65 +384,46 @@ func (w Window) clickingTime(p Point) Window {
 }
 
 // WeekHeadAt is where a day says which it is and its total, at its top.
-func WeekHeadAt(day Box) Box { return RowIn(day, day.Y+padding, lineHigh) }
+func WeekHeadAt(day geom.Box) geom.Box { return RowIn(day, day.Y+padding, lineHigh) }
 
 // WeekTotalAt is where a day of the week says how long its work took: on its date's line, from past the date to its right end, written against that end — or on the line under the date when the longest total has no room beside it.
-func WeekTotalAt(day Box, m Measure) Box {
+func WeekTotalAt(day geom.Box, m Measure) geom.Box {
 	head := WeekHeadAt(day)
 	pill := TodayPill(head, m)
 	from := pill.X + pill.W + pillGap
 	if head.X+head.W-from < monoWide(widestTime, small) {
-		return Box{X: head.X, Y: head.Y + lineHigh, W: head.W, H: lineHigh}
+		return geom.Box{X: head.X, Y: head.Y + lineHigh, W: head.W, H: lineHigh}
 	}
-	return Box{X: from, Y: head.Y, W: head.X + head.W - from, H: head.H}
+	return geom.Box{X: from, Y: head.Y, W: head.X + head.W - from, H: head.H}
 }
 
 const widestTime = "00h00m"
 
 // WeekRowAt is where the j-th task of a day is laid out, under its heading and its total: its card, then the line saying how long it took that day.
-func WeekRowAt(day Box, j int) Box {
-	return Box{X: day.X + padding, Y: day.Y + 2*lineHigh + padding + j*weekRow, W: day.W - 2*padding, H: weekRow}
+func WeekRowAt(day geom.Box, j int) geom.Box {
+	return geom.Box{X: day.X + padding, Y: day.Y + 2*lineHigh + padding + j*weekRow, W: day.W - 2*padding, H: weekRow}
 }
 
 // DayCardAt is where the j-th of all the tasks of a day is drawn as the card the board draws it as: across the day as a card is across its column, short of the bar when the day scrolls.
-func DayCardAt(day Box, j, all int) Box {
+func DayCardAt(day geom.Box, j, all int) geom.Box {
 	row := WeekRowAt(day, j)
 	wide := day.W
 	if track, more := DayTrack(day, all); more {
 		wide = track.X - day.X
 	}
-	return Box{X: day.X, Y: row.Y, W: wide, H: CardHeight}
+	return geom.Box{X: day.X, Y: row.Y, W: wide, H: geom.CardHeight}
 }
 
 // DaySpentAt is where a task of a day says how long it took that day: under its card, before its bar.
-func DaySpentAt(row Box) Box {
-	return Box{X: row.X, Y: row.Y + CardHeight - gap, W: spentWide, H: lineHigh}
+func DaySpentAt(row geom.Box) geom.Box {
+	return geom.Box{X: row.X, Y: row.Y + geom.CardHeight - geom.Gap, W: spentWide, H: lineHigh}
 }
 
 // WeekBar is a task's bar: under its card, after its time, as long as its share of the longest stretch of the week.
-func WeekBar(row Box, minutes, longest int) Box {
+func WeekBar(row geom.Box, minutes, longest int) geom.Box {
 	spent := DaySpentAt(row)
 	room := row.W - spent.W
-	return Box{X: spent.X + spent.W, Y: spent.Y + (lineHigh-barHighOf)/2, W: room * minutes / max(1, longest), H: barHighOf}
-}
-
-// DayCard is a task of the time page as the board holds it, so it is drawn the way the board draws it; a task the board no longer holds is drawn from what the sheet says of it.
-func (w Window) DayCard(one engine.TimesheetTask) board.Card {
-	if c, found := w.snap.Card(one.Number); found {
-		return c
-	}
-	return board.Card{Number: one.Number, Title: one.Shown()}
-}
-
-func (w Window) goneOnTime(number int) bool {
-	for _, day := range w.sheet.Days {
-		for _, one := range day.Tasks {
-			if one.Number == number {
-				return one.Deleted
-			}
-		}
-	}
-	return false
+	return geom.Box{X: spent.X + spent.W, Y: spent.Y + (lineHigh-barHighOf)/2, W: room * minutes / max(1, longest), H: barHighOf}
 }
 
 func cellShown(tasks []engine.TimesheetTask, room int) int {
@@ -540,9 +433,9 @@ func cellShown(tasks []engine.TimesheetTask, room int) int {
 	return len(tasks)
 }
 
-func (w Window) timeCardAt(p Point) int {
+func (w Window) timeCardAt(p geom.Point) int {
 	l := w.Layout()
-	if w.daily {
+	if w.Daily {
 		for j, one := range w.AloneShown() {
 			if AloneCardAt(DayAloneAt(l), j).In(p) {
 				return one.Number
@@ -550,8 +443,8 @@ func (w Window) timeCardAt(p Point) int {
 		}
 		return 0
 	}
-	if w.monthly {
-		for i := range board.MonthGrid(w.week) {
+	if w.Monthly {
+		for i := range board.MonthGrid(w.Week) {
 			cell := MonthCellAt(l, i)
 			if !cell.In(p) {
 				continue
@@ -577,12 +470,12 @@ func (w Window) timeCardAt(p Point) int {
 }
 
 // DayTrack is the bar beside a day of a week holding more tasks than it shows, along the tasks it shows; nothing when they all fit.
-func DayTrack(day Box, all int) (Box, bool) {
+func DayTrack(day geom.Box, all int) (geom.Box, bool) {
 	room := DayRoom(day)
 	if all <= room {
-		return Box{}, false
+		return geom.Box{}, false
 	}
-	return Box{X: day.X + day.W - barWide, Y: WeekRowAt(day, 0).Y, W: barWide, H: room * weekRow}, true
+	return geom.Box{X: day.X + day.W - barWide, Y: WeekRowAt(day, 0).Y, W: barWide, H: room * weekRow}, true
 }
 
 // CellHead is what a day of a month says at its top: its number, and its total once anything was spent on it.
@@ -594,56 +487,46 @@ func CellHead(day time.Time, held engine.TimesheetDay) string {
 }
 
 // CellHeadAt is where a day of a month says its number and its total.
-func CellHeadAt(cell Box) Box { return RowIn(cell, cell.Y+inset, lineHigh) }
+func CellHeadAt(cell geom.Box) geom.Box { return RowIn(cell, cell.Y+inset, lineHigh) }
 
 // CellLineAt is where the j-th line under a day of a month's head goes.
-func CellLineAt(cell Box, j int) Box { return RowIn(cell, cell.Y+inset+(j+1)*lineHigh, lineHigh) }
+func CellLineAt(cell geom.Box, j int) geom.Box {
+	return RowIn(cell, cell.Y+inset+(j+1)*lineHigh, lineHigh)
+}
 
 func sameMonth(a, b time.Time) bool { return a.Year() == b.Year() && a.Month() == b.Month() }
 
-func (w Window) timeGridClicked(l Layout, p Point) (Window, bool) {
-	for name, view := range map[string]calendarView{"the month": viewMonths, "the year": viewYears} {
+func (w Window) timeGridClicked(l geom.Layout, p geom.Point) (Window, bool) {
+	for name, view := range map[string]board.CalendarView{"the month": board.ViewMonths, "the year": board.ViewYears} {
 		if !TimeChip(l, name).In(p) {
 			continue
 		}
-		if w.grid == view {
-			view = viewDays
+		if w.Grid == view {
+			view = board.ViewDays
 		}
-		w.grid = view
+		w.Grid = view
 		return w, true
 	}
 	for i := range w.TimeCells() {
 		if TimeCellAt(l, i).In(p) {
-			w.week, w.grid = gridPicked(w.grid, w.week, i)
-			w.dayFrom = [7]int{}
+			w.Week, w.Grid = gridPicked(w.Grid, w.Week, i)
+			w.DaysFrom = [7]int{}
 			return w.readingWeek(), true
 		}
 	}
-	return w, w.grid != viewDays
-}
-
-// PeriodSays is the time spent over the whole period shown, and nothing when none was.
-func (w Window) PeriodSays() string {
-	minutes := 0
-	for _, day := range w.TimeShown().Days {
-		minutes += day.Minutes
-	}
-	if minutes == 0 {
-		return ""
-	}
-	return calendar.FormatDuration(time.Duration(minutes) * time.Minute)
+	return w, w.Grid != board.ViewDays
 }
 
 // PeriodAt is where a month shown says its total: after its year, short of Today.
-func PeriodAt(w Window, l Layout) Box {
+func PeriodAt(w Window, l geom.Layout) geom.Box {
 	year, today := TimeChip(l, "the year"), TimeChip(l, "Today")
 	x := year.X + year.W + padding
-	return Box{X: x, Y: year.Y, W: max(0, today.X-padding-x), H: year.H}
+	return geom.Box{X: x, Y: year.Y, W: max(0, today.X-padding-x), H: year.H}
 }
 
 // TodayPill is where today's date stands on the accent in its day's head: around the date, as wide as it reads.
-func TodayPill(head Box, m Measure) Box {
-	return Box{X: head.X - pillPad/2, Y: head.Y, W: ends(m, todayFormat, reads) + pillPad, H: head.H}
+func TodayPill(head geom.Box, m Measure) geom.Box {
+	return geom.Box{X: head.X - pillPad/2, Y: head.Y, W: ends(m, todayFormat, reads) + pillPad, H: head.H}
 }
 
 const todayFormat = "Mon 02/01"

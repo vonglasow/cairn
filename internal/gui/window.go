@@ -1,8 +1,10 @@
+// Package gui draws cairn in a window a mouse can reach.
 package gui
 
 import (
 	"cairn/internal/board"
-	"slices"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"time"
 
 	"cairn/internal/engine"
@@ -11,71 +13,11 @@ import (
 	"cairn/internal/linuxapp"
 )
 
-// Screen is what has the window.
-type Screen int
-
-const (
-	// OnTheBoard is the board itself, which is where a window opens.
-	OnTheBoard Screen = iota
-	// OnForm is the modal over the board, adding or editing.
-	OnForm
-	// OnSearch is the board narrowed to what a search reaches, while it is still being typed.
-	OnSearch
-	// OnAsking is the one question this window asks: deleting loses work, and losing work without being asked is how work is lost.
-	OnAsking
-	// OnHelp is what everything does, which is the one thing here that has to be read rather than pointed at.
-	OnHelp
-	// OnChoosing is the list of objectives a task may serve, open over the form.
-	OnChoosing
-	// OnCalendar is the calendar a deadline is chosen on, over the form.
-	OnCalendar
-	// OnMenu is what a right click offers, beside the pointer.
-	OnMenu
-	// OnBackups is the list of backups, one of which may be put back.
-	OnBackups
-	// OnLabels is the list of every label, one of which may be renamed or taken off everything.
-	OnLabels
-	// OnFiltering is the board's filters, each walked through its values, the board narrowing as they move.
-	OnFiltering
-	// OnConfiguration is the configuration in use, key by key, read from the window, with the file to be opened or written.
-	OnConfiguration
-	// OnPalette is the command bar opened: a command, a number or a title typed, and what answers it.
-	OnPalette
-	// OnWorkspaces is the switcher dropped under the pill: the workspaces and the recent folders, one of them opened in a window of its own.
-	OnWorkspaces
-	// OnFates is what deleting an objective asks, row by row, before anything goes.
-	OnFates
-	// OnKeeping is the popover a view is kept from, its name typed, or the one saying what the view in force holds and shows.
-	OnKeeping
-	// OnViews is the panel of the views: renamed, moved, deleted, or opened on the board.
-	OnViews
-	// OnSeriesFates is what deleting a series asks before anything goes: what becomes of the tasks it made.
-	OnSeriesFates
-	// OnRule is the picker a rule is built in by its parts, over the form, under its repeats field.
-	OnRule
-	// TooSmallToDraw is a window too small to say anything useful in.
-	TooSmallToDraw
-)
-
-// Tab is which of the two is being looked at.
-type Tab int
-
-const (
-	// Tasks is the work itself, and is where a window opens.
-	Tasks Tab = iota
-	// Objectives is what the work is for.
-	Objectives
-	// Time is how long the work took, a week at a time: see week.go.
-	Time
-	// Series is the tasks that come back, each series beside the one chosen: see series.go.
-	Series
-)
-
 // Held is a card being dragged: which task, where it was picked up, and where the pointer is now.
 type Held struct {
 	Number int
-	From   Point
-	At     Point
+	From   geom.Point
+	At     geom.Point
 	Moved  bool
 }
 
@@ -84,16 +26,10 @@ const Wobble = 4
 
 // Window is everything the desktop board is, at one moment.
 type Window struct {
+	board.Board
 	work board.Work
 
 	width, height int
-	snap          board.Snapshot
-	version       int64
-
-	screen     Screen
-	tab        Tab
-	chosen     int
-	chosenGoal bool
 
 	scroll                                   [board.Columns]int
 	lanes                                    [3]int
@@ -103,20 +39,15 @@ type Window struct {
 	spareHistory, spareSaying, spareChoosing int
 	measure, measureHeads                    Measure
 	keyboard                                 Keyboard
-	now                                      time.Time
-	told                                     string
-	toldFor                                  int
 	native                                   bool
-	calendarState
+
 	ruling ruleState
 	menuState
-	backupsState
-	labelsState
 	filesState
-	configurationState
-	timeState
-	viewsState
-	seriesState
+	hoverKey string
+	tiles    []schemeOffered
+	skin     *design.Skin
+
 	palette  paletteState
 	switcher switcherState
 	going    bool
@@ -131,12 +62,6 @@ type Window struct {
 	refused                         []string
 	growing                         Unit
 	anchor                          Picked
-	choosingFor                     string
-	filtering                       Written
-	choosingFrom                    int
-	labelsOffered                   []string
-	labelsCarried                   map[string]int
-	pickingLabels                   bool
 	copying                         string
 	pasting                         bool
 	holdingText                     bool
@@ -147,37 +72,24 @@ type Window struct {
 
 	held                  Held
 	grabbedGoal           int
-	detailGoal            int
 	hoverGoal             int
 	hoverSince            time.Time
 	dragOpened            []int
 	pressed               bool
-	pressedOn             Screen
-	acts                  []string
-	form                  Form
-	formMoved, formGrip   Point
+	pressedOn             board.Screen
+	formMoved, formGrip   geom.Point
 	draggingForm, dragged bool
 	resizingForm          bool
 	movingPanel           bool
 	colourKey             string
 	calendarKey           string
 	resizingPanel         bool
-	panels                map[Screen]panelPlace
-	resizedFrom           Box
-	sizes                 Sizes
+	panels                map[board.Screen]panelPlace
+	resizedFrom           geom.Box
+	sizes                 geom.Sizes
 	kept                  SizesKept
 	widening              Widening
-	filters               board.Filters
-	filterOn              int
-	filterOpen            bool
-	filterTrail           []int
-	filterPick            int
-	filterFromPill        bool
-	looking               Written
-	searchFrom            Screen
-	archived              bool
 	aimed                 string
-	pages                 engine.Pages
 	agreeing              engine.Agreeing
 	quitting              bool
 	waiting               []string
@@ -188,32 +100,20 @@ type Window struct {
 	explaining            int
 	lookedAt              time.Time
 	resting               []string
-	restingAt             Box
+	restingAt             geom.Box
 	restingWide           int
-	pointed               Box
+	pointed               geom.Box
 	bubbled               []string
-	bubbledFrom           Box
+	bubbledFrom           geom.Box
 	picked                Picked
 	pickingText           bool
-	wheelOn               Screen
+	wheelOn               board.Screen
 	wheelAt               time.Time
-	question              Question
-	draft                 Form
 	drafts                Drafts
 	drafting              []string
-	taken                 []int
 	gathering, stretching bool
-	wasScreen             Screen
-	ticked                map[int]bool
-	choosing              int
-	fates                 board.Deleting
-	refusedChoice         string
-	refusedThen           string
-	viewWalked            int
-	fateRow               int
-	opened                []int
+	wasScreen             board.Screen
 
-	err      error
 	wrongFor int
 }
 
@@ -222,7 +122,7 @@ func Lingers() int { return 4 }
 
 // New builds a window over whatever holds the work, recurrence off until its pages say otherwise, as the configuration has it by default.
 func New(work board.Work, width, height int) Window {
-	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}, kept: noSizes{}, pages: engine.Pages{}.WithoutRecurrence()}
+	w := Window{Board: board.Board{Pages: engine.Pages{}.WithoutRecurrence()}, work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}, kept: noSizes{}}
 	return w.sized()
 }
 
@@ -233,53 +133,32 @@ func (w Window) Resized(width, height int) Window {
 }
 
 func (w Window) sized() Window {
-	if TooSmall(w.width, w.height) {
-		if w.screen != TooSmallToDraw {
-			w.wasScreen = w.screen
+	if geom.TooSmall(w.width, w.height) {
+		if w.Screen != board.TooSmallToDraw {
+			w.wasScreen = w.Screen
 		}
-		w.screen = TooSmallToDraw
+		w.Screen = board.TooSmallToDraw
 		return w
 	}
-	if w.screen == TooSmallToDraw {
-		w.screen = w.wasScreen
+	if w.Screen == board.TooSmallToDraw {
+		w.Screen = w.wasScreen
 	}
 	return w
 }
 
 // Layout is every size this window draws from.
-func (w Window) Layout() Layout {
-	l := LaidOut(w.width, w.height, w.sizes)
-	l.Days = w.pages.WeekDays()
+func (w Window) Layout() geom.Layout {
+	l := geom.LaidOut(w.width, w.height, w.sizes)
+	l.Days = w.Pages.WeekDays()
 	if w.PlaceSays() != "" {
 		l.Place = w.placeAt(l)
-		l.Tabs.X, l.Tabs.W = l.Tabs.X+l.Place.W+gap, l.Tabs.W-l.Place.W-gap
+		l.Tabs.X, l.Tabs.W = l.Tabs.X+l.Place.W+geom.Gap, l.Tabs.W-l.Place.W-geom.Gap
 	}
 	return l
 }
 
-// Screen says what has the window.
-func (w Window) Screen() Screen { return w.screen }
-
-// Chosen is the task picked out, and zero when none is.
-func (w Window) Chosen() int { return w.chosen }
-
-// Wrong is what went wrong, if anything did.
-func (w Window) Wrong() error { return w.err }
-
 // Dragging says whether a card is in hand and has travelled far enough to be a drag rather than a click that wobbled.
 func (w Window) Dragging() bool { return w.held.Number != 0 && w.held.Moved }
-
-// Tab is which of the two is being looked at.
-func (w Window) Tab() Tab { return w.tab }
-
-// Context is where what was written about the task a form is open on lives elsewhere, or nothing: no form, a new task, an objective, or a window not told where the notes are.
-func (w Window) Context() string {
-	if w.screen != OnForm || w.form.Adding || w.form.ForObjective || w.form.ForSeries {
-		return ""
-	}
-	c, _ := w.snap.Card(w.form.Number)
-	return c.Context
-}
 
 // ContextSays is what the foot of an open task writes about where its context lives: its name and the place, or nothing when there is no place to say.
 func (w Window) ContextSays() []Readable {
@@ -291,33 +170,14 @@ func (w Window) ContextSays() []Readable {
 		one("field:context", w.contextPath(), at, small)}
 }
 
-func (w Window) contextPath() Box {
+func (w Window) contextPath() geom.Box {
 	box := w.formPanel()
 	end := box.X + box.W
 	if offers := w.offersAlong(box); len(offers) > 0 {
 		end = offers[len(offers)-1].X
 	}
 	path := ContextPath(box, end)
-	return Box{X: path.X + copyRoom, Y: path.Y, W: max(0, path.W-copyRoom), H: path.H}
-}
-
-// ChosenGoal says whether what is chosen is an objective rather than a task.
-func (w Window) ChosenGoal() bool { return w.chosenGoal }
-
-// Under is what the box beside the fields of an open objective holds: the work that serves it.
-func (w Window) Under() []board.Card {
-	serving := slices.Clone(board.Serving(w.snap.Cards, w.chosen))
-	rank := func(c board.Card) int {
-		switch {
-		case c.State == "current":
-			return 0
-		case board.Finished(c):
-			return 2
-		}
-		return 1
-	}
-	slices.SortStableFunc(serving, func(a, b board.Card) int { return rank(a) - rank(b) })
-	return serving
+	return geom.Box{X: path.X + copyRoom, Y: path.Y, W: max(0, path.W-copyRoom), H: path.H}
 }
 
 // Wonder asks the store whether anybody else has written to it, and reads the whole thing again only when the answer has moved.
@@ -328,7 +188,7 @@ func (w Window) Wonder() Window {
 		return w.failing(err)
 	}
 	w = w.rereading()
-	if version == w.version && !w.focusAged() {
+	if version == w.Version && !w.focusAged() {
 		return w
 	}
 	return w.Look()
@@ -338,11 +198,11 @@ func (w Window) Wonder() Window {
 const FocusShown = time.Minute
 
 func (w Window) focusAged() bool {
-	return len(w.snap.Focus) > 0 && w.now.Sub(w.lookedAt) >= FocusShown
+	return len(w.Snap.Focus) > 0 && w.Now.Sub(w.lookedAt) >= FocusShown
 }
 
 func (w Window) failing(err error) Window {
-	w.err, w.wrongFor = err, 0
+	w.Err, w.wrongFor = err, 0
 	return w
 }
 
@@ -352,16 +212,16 @@ func lingered(beats int) (int, bool) {
 }
 
 func (w Window) aged() Window {
-	if w.told != "" {
+	if w.Telling != "" {
 		var gone bool
-		if w.toldFor, gone = lingered(w.toldFor); gone {
-			w.told, w.toldFor = "", 0
+		if w.ToldFor, gone = lingered(w.ToldFor); gone {
+			w.Telling, w.ToldFor = "", 0
 		}
 	}
-	if w.err != nil {
+	if w.Err != nil {
 		var gone bool
 		if w.wrongFor, gone = lingered(w.wrongFor); gone {
-			w.err, w.wrongFor = nil, 0
+			w.Err, w.wrongFor = nil, 0
 		}
 	}
 	return w
@@ -374,23 +234,23 @@ func (w Window) Leaving() bool { return w.quitting }
 func (w Window) Look() Window {
 	found, err := board.Look(w.work)
 	if err != nil {
-		if agreeing, ok := engine.AgreeingTo(engine.Operation{}, engine.Input{}, err); ok && w.screen != OnAsking {
+		if agreeing, ok := engine.AgreeingTo(engine.Operation{}, engine.Input{}, err); ok && w.Screen != board.OnAsking {
 			return w.agreeingTo(agreeing)
 		}
 		return w.failing(err)
 	}
 	w = w.readingPlace()
-	w.snap, w.version, w.err, w.lookedAt = board.Recurring(w.pages, found), found.Version, nil, w.now
+	w.Snap, w.Version, w.Err, w.lookedAt = board.Recurring(w.Pages, found), found.Version, nil, w.Now
 	for i := range board.Columns {
 		w.scroll[i] = w.settled(i, w.scroll[i])
 	}
 	for i := range w.lanes {
 		w.lanes[i] = w.settledLane(i, w.lanes[i])
 	}
-	if w = w.freshened(); w.screen == OnForm && w.err == nil {
+	if w = w.freshened(); w.Screen == board.OnForm && w.Err == nil {
 		w = w.readingActs()
 	}
-	if w.pages.Shows(engine.PageTime) {
+	if w.Pages.Shows(engine.PageTime) {
 		return w.readingWeek()
 	}
 	return w
@@ -402,15 +262,15 @@ func (w Window) agreeingTo(agreeing engine.Agreeing) Window {
 		return w.applying(agreeing)
 	}
 	if agreeing.Reason == engine.RefusalOf(migration.ErrNewerStore).Reason {
-		w.screen, w.question, w.agreeing, w.err = OnAsking, aboutNewer, agreeing, nil
+		w.Screen, w.Question, w.agreeing, w.Err = board.OnAsking, board.AboutNewer, agreeing, nil
 		return w
 	}
-	w.screen, w.question, w.agreeing = OnAsking, aboutFinishingParts, agreeing
+	w.Screen, w.Question, w.agreeing = board.OnAsking, board.AboutFinishingParts, agreeing
 	return w
 }
 
 func (w Window) applying(agreeing engine.Agreeing) Window {
-	w.screen, w.question, w.agreeing, w.err = OnAsking, aboutApplying, agreeing, nil
+	w.Screen, w.Question, w.agreeing, w.Err = board.OnAsking, board.AboutApplying, agreeing, nil
 	w.waiting = nil
 	if listed, err := w.work.Ask(engine.MigrationList, engine.Input{}); err == nil {
 		for _, m := range listed.Changes {
@@ -422,29 +282,14 @@ func (w Window) applying(agreeing engine.Agreeing) Window {
 	return w
 }
 
-func (w Window) inColumn(column int) []board.Card {
-	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
-	return dealt[column].Cards
-}
-
-func (w Window) inLane(lane int) []board.Card {
-	_, stalled := board.Deal(w.Showing().Cards, w.archived)
-	return board.InLanes(stalled)[lane]
-}
-
-func (w Window) stateOf(number int) string {
-	c, _ := w.snap.Card(number)
-	return c.State
-}
-
 func (w Window) settled(column, want int) int {
 	l := w.Layout()
-	most := max(0, len(w.inColumn(column))*CardHeight-l.Column[column].H)
+	most := max(0, len(w.InColumn(column))*geom.CardHeight-l.Column[column].H)
 	return min(most, max(0, want))
 }
 
 func (w Window) settledLane(lane, want int) int {
-	most := max(0, len(w.inLane(lane))*CardHeight-w.Layout().Lane[lane].H)
+	most := max(0, len(w.InLane(lane))*geom.CardHeight-w.Layout().Lane[lane].H)
 	return min(most, max(0, want))
 }
 

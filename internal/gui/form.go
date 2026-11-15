@@ -5,6 +5,7 @@ import (
 	"cairn/internal/engine/item"
 	"cairn/internal/engine/task"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
 	"errors"
 	"slices"
 	"strconv"
@@ -14,111 +15,24 @@ import (
 	"cairn/internal/engine"
 )
 
-// Form is the modal over the board while it is open.
-type Form struct {
-	Adding       bool
-	ForObjective bool
-	ForSeries    bool
-	Number       int
-	whole        bool
-	answered     bool
-
-	fields      []board.Field
-	at          int
-	caret       int
-	held        int
-	partAt      int
-	partsTaken  []int
-	partsTop    int
-	spareParts  int
-	writingPart bool
-	named       Written
-	carried     int
-	opened      []string
-	behind      int
-	tracing     bool
-	onWork      bool
-	workAt      int
-}
-
-// Changed says whether anything in the form differs from what it opened with.
-func (f Form) Changed() bool {
-	if len(f.opened) != len(f.fields) {
-		return false
-	}
-	for i := range f.fields {
-		if f.fields[i].Value != f.opened[i] {
-			return true
-		}
-	}
-	return false
-}
-
-func asOpened(f Form) Form {
-	f.opened = make([]string, len(f.fields))
-	for i := range f.fields {
-		f.opened[i] = f.fields[i].Value
-	}
-	return f
-}
-
-// Writing is the field the keyboard is on, as a text with its caret.
-func (f Form) Writing() Written {
-	if len(f.fields) == 0 {
-		return Written{}
-	}
-	return Written{Value: f.fields[f.at].Value, At: f.caret, Held: f.held}
-}
-
-// Writes puts a written text back into the field the keyboard is on.
-func (f Form) Writes(written Written) Form {
-	if len(f.fields) == 0 {
-		return f
-	}
-	f = f.Set(f.fields[f.at].Name, written.Reads())
-	f.caret, f.held = written.At, written.Held
-	return f
-}
-
-func (f Form) onto(at int) Form {
-	if f.writingPart {
-		f = f.committing()
-		f.writingPart = false
-	}
-	arriving := at != f.at
-	if arriving {
-		f.partAt = 0
-	}
-	f.at = min(len(f.fields)-1, max(0, at))
-	f.onWork = false
-	if _, sectional := sectionOf(f.fields[f.at]); sectional {
-		f.tracing = false
-	}
-	if arriving && f.onParts() {
-		f = f.takingTheOneOn()
-	}
-	f.caret, f.held = len([]rune(f.fields[f.at].Value)), 0
-	return f
-}
-
-func (w Window) adding(tab Tab, state string) Form {
-	if tab == Objectives {
-		return asOpened(Form{Adding: true, ForObjective: true, fields: board.NewGoalFields()})
+func (w Window) adding(tab board.Tab, state string) board.Form {
+	if tab == board.Objectives {
+		return board.AsOpened(board.Form{Adding: true, ForObjective: true, Fields: board.NewGoalFields()})
 	}
 	fields := board.AddingFields(state)
-	if w.pages.Recurs() {
+	if w.Pages.Recurs() {
 		fields = withRepeats(fields)
 	}
-	return asOpened(Form{Adding: true, fields: fields})
+	return board.AsOpened(board.Form{Adding: true, Fields: fields})
 }
 
-func (w Window) editing(c board.Card) Form {
-	return asOpened(Form{Number: c.Number, fields: w.taskFields(c)})
+func (w Window) editing(c board.Card) board.Form {
+	return board.AsOpened(board.Form{Number: c.Number, Fields: w.taskFields(c)})
 }
 
 func (w Window) taskFields(c board.Card) []board.Field {
 	fields := board.EditFields(c)
-	if c.Series == nil && w.pages.Recurs() {
+	if c.Series == nil && w.Pages.Recurs() {
 		fields = withRepeats(fields)
 	}
 	return fields
@@ -133,60 +47,43 @@ func withRepeats(fields []board.Field) []board.Field {
 }
 
 func (w Window) freshened() Window {
-	if w.form.Adding || w.form.ForSeries || w.form.Number == 0 || len(w.form.opened) != len(w.form.fields) {
+	if w.Form.Adding || w.Form.ForSeries || w.Form.Number == 0 || len(w.Form.Opened) != len(w.Form.Fields) {
 		return w
 	}
 	var fresh []board.Field
-	if w.form.ForObjective {
-		g, found := w.snap.Goal(w.form.Number)
+	if w.Form.ForObjective {
+		g, found := w.Snap.Goal(w.Form.Number)
 		if !found {
 			return w
 		}
 		fresh = board.GoalFields(g)
 	} else {
-		c, found := w.snap.Card(w.form.Number)
+		c, found := w.Snap.Card(w.Form.Number)
 		if !found {
 			return w
 		}
 		fresh = w.taskFields(c)
 	}
-	if len(fresh) != len(w.form.fields) {
+	if len(fresh) != len(w.Form.Fields) {
 		return w
 	}
-	f := w.form
-	f.fields, f.opened = slices.Clone(f.fields), slices.Clone(f.opened)
+	f := w.Form
+	f.Fields, f.Opened = slices.Clone(f.Fields), slices.Clone(f.Opened)
 	for i := range fresh {
-		if f.fields[i].Value == f.opened[i] && f.fields[i].Value != fresh[i].Value {
-			f.fields[i].Value = fresh[i].Value
-			if i == f.at {
-				f.caret, f.held = min(f.caret, len([]rune(fresh[i].Value))), 0
+		if f.Fields[i].Value == f.Opened[i] && f.Fields[i].Value != fresh[i].Value {
+			f.Fields[i].Value = fresh[i].Value
+			if i == f.At {
+				f.Caret, f.Held = min(f.Caret, len([]rune(fresh[i].Value))), 0
 			}
 		}
-		f.opened[i] = fresh[i].Value
+		f.Opened[i] = fresh[i].Value
 	}
-	w.form = f
+	w.Form = f
 	return w
 }
 
-func editingGoal(g board.Goal) Form {
-	return asOpened(Form{Number: g.Number, ForObjective: true, fields: board.GoalFields(g)})
-}
-
-// Fields is what the form asks about, in the order it lays them out.
-func (f Form) Fields() []board.Field { return f.fields }
-
-// Set writes a field.
-func (f Form) Set(name, value string) Form {
-	fields := make([]board.Field, len(f.fields))
-	copy(fields, f.fields)
-	for i := range fields {
-		if fields[i].Name == name {
-			fields[i].Value = value
-			f.at = i
-		}
-	}
-	f.fields = fields
-	return f
+func editingGoal(g board.Goal) board.Form {
+	return board.AsOpened(board.Form{Number: g.Number, ForObjective: true, Fields: board.GoalFields(g)})
 }
 
 // Types puts what was typed into the field the keyboard is on.
@@ -194,124 +91,119 @@ func (w Window) Types(text string) Window {
 	if text == "" {
 		return w
 	}
-	return w.writing(func(said Written) Written { return said.Types(text) })
+	return w.writing(func(said board.Written) board.Written { return said.Types(text) })
 }
 
 // Edits puts what the system sent in place of the run it named, in the field the keyboard is on.
 func (w Window) Edits(from, to int, text string) Window {
-	return w.writing(func(said Written) Written { return said.Replaces(from, to, text) })
+	return w.writing(func(said board.Written) board.Written { return said.Replaces(from, to, text) })
 }
 
 // Typed is the text the keys are writing in, which the system is told so that what it composes lands where it thinks: nothing when no text takes them.
-func (w Window) Typed() (Written, bool) {
-	var said Written
+func (w Window) Typed() (board.Written, bool) {
+	var said board.Written
 	took := false
-	w.writing(func(on Written) Written {
+	w.writing(func(on board.Written) board.Written {
 		said, took = on, true
 		return on
 	})
 	return said, took
 }
 
-func (w Window) writing(change func(Written) Written) Window {
-	if w.screen == OnPalette {
+func (w Window) writing(change func(board.Written) board.Written) Window {
+	if w.Screen == board.OnPalette {
 		return w.typedIntoPalette(change(w.palette.typed))
 	}
-	if w.screen == OnSearch {
-		w.looking = change(w.looking)
+	if w.Screen == board.OnSearch {
+		w.Looking = change(w.Looking)
 		return w
 	}
-	if w.screen == OnWorkspaces {
+	if w.Screen == board.OnWorkspaces {
 		w.switcher.typed = change(w.switcher.typed)
 		if w.switcher.asking == narrowing {
 			w.switcher.on = 0
 		}
 		return w
 	}
-	if w.screen == OnLabels && w.renaming {
-		w.renamed = change(w.renamed)
+	if w.Screen == board.OnLabels && w.Renaming {
+		w.Renamed = change(w.Renamed)
 		return w
 	}
-	if w.screen == OnConfiguration && w.keyWriting != "" {
-		w.keyWritten = change(w.keyWritten)
+	if w.Screen == board.OnConfiguration && w.KeyWriting != "" {
+		w.KeyWritten = change(w.KeyWritten)
 		return w
 	}
-	if w.screen == OnKeeping && !w.ofView {
-		w.keepName = change(w.keepName)
+	if w.Screen == board.OnKeeping && !w.OfView {
+		w.KeepName = change(w.KeepName)
 		return w
 	}
-	if w.screen == OnViews && w.renamingView {
-		w.viewRenamed = change(w.viewRenamed)
+	if w.Screen == board.OnViews && w.RenamingView {
+		w.ViewRenamed = change(w.ViewRenamed)
 		return w
 	}
-	if w.screen == OnLabels {
+	if w.Screen == board.OnLabels {
 		return w.seekingLabels(change)
 	}
-	if w.screen == OnChoosing {
+	if w.Screen == board.OnChoosing {
 		if !w.ChoosingSearched() {
 			return w
 		}
-		w.filtering, w.choosing, w.choosingFrom = change(w.filtering), 0, 0
+		w.Filtering, w.ChoosingOn, w.ChoosingFrom = change(w.Filtering), 0, 0
 		return w
 	}
-	if w.screen != OnForm {
+	if w.Screen != board.OnForm {
 		return w
 	}
-	if w.form.onParts() {
-		if w.form.writingPart {
-			w.form.named = change(w.form.named)
+	if w.Form.OnParts() {
+		if w.Form.WritingPart {
+			w.Form.Named = change(w.Form.Named)
 		}
 		return w
 	}
-	if w.onAClosedSet() {
+	if w.OnAClosedSet() {
 		return w.choosingList().writing(change)
 	}
-	w.form = w.form.Writes(change(w.form.Writing()))
+	w.Form = w.Form.Writes(change(w.Form.Writing()))
 	return w.inSightOfTheCaret()
 }
 
-func (w Window) onAClosedSet() bool { return len(w.form.Fields()[w.form.On()].Choices) > 0 }
-
-// On is the field the keyboard is on.
-func (f Form) On() int { return f.at }
-
 func (w Window) back() Window {
-	if w.screen != OnForm || w.onAClosedSet() {
+	if w.Screen != board.OnForm || w.OnAClosedSet() {
 		return w
 	}
-	w.form = w.form.Writes(w.form.Writing().Back())
+	w.Form = w.Form.Writes(w.Form.Writing().Back())
 	return w
 }
 
 func (w Window) walks(by int) Window {
-	if w.screen == OnSearch {
-		w.looking = w.looking.CaretAt(w.looking.At + by)
+	if w.Screen == board.OnSearch {
+		w.Looking = w.Looking.CaretAt(w.Looking.At + by)
 		return w
 	}
-	if w.screen != OnForm {
+	if w.Screen != board.OnForm {
 		return w
 	}
-	if w.onAClosedSet() {
+	if w.OnAClosedSet() {
 		return w.cycle(by)
 	}
-	w.form = w.form.Writes(w.form.Writing().CaretAt(w.form.caret + by))
+	w.Form = w.Form.Writes(w.Form.Writing().CaretAt(w.Form.Caret + by))
 	return w
 }
 
 // CaretInto puts the caret a given number of characters into the field the keyboard is on, which is what a click in the text means.
 func (w Window) CaretInto(characters int) Window {
-	if w.screen != OnForm {
+	if w.Screen != board.OnForm {
 		return w
 	}
-	w.form = w.form.Writes(w.form.Writing().CaretAt(characters))
+	w.Form = w.Form.Writes(w.Form.Writing().CaretAt(characters))
 	return w
 }
 
 func (w Window) cycle(by int) Window {
-	if w.screen != OnForm {
+	if w.Screen != board.OnForm {
 		return w
 	}
-	on := w.form.Fields()[w.form.On()]
+	on := w.Form.Fields[w.Form.On()]
 	if len(on.Choices) == 0 {
 		return w
 	}
@@ -322,18 +214,18 @@ func (w Window) cycle(by int) Window {
 		}
 	}
 	at = min(len(on.Choices)-1, max(0, at+by))
-	w.form = w.form.Writes(Ending(on.Choices[at]))
+	w.Form = w.Form.Writes(board.Ending(on.Choices[at]))
 	return w
 }
 
-func (w Window) fieldAt(p Point) (int, bool) {
-	if w.screen != OnForm {
+func (w Window) fieldAt(p geom.Point) (int, bool) {
+	if w.Screen != board.OnForm {
 		return 0, false
 	}
 	box := w.formBox()
-	fields := w.form.Fields()
+	fields := w.Form.Fields
 	for i := range fields {
-		if w.hidden(fields[i]) {
+		if w.Hidden(fields[i]) {
 			continue
 		}
 		name, value, rows := FormPlace(box, fields, i)
@@ -345,18 +237,18 @@ func (w Window) fieldAt(p Point) (int, bool) {
 	return 0, false
 }
 
-func into(value Box, p Point, said string, m Measure) int {
+func into(value geom.Box, p geom.Point, said string, m Measure) int {
 	return m.Nearest(said, reads, p.X-value.X)
 }
 
-func (w Window) reaching(at int, p Point) int {
-	fields := w.form.Fields()
+func (w Window) reaching(at int, p geom.Point) int {
+	fields := w.Form.Fields
 	_, value, rows := FormPlace(w.formBox(), fields, at)
 	inside := Inside(Framed(value, rows))
-	on := at == w.form.On()
-	said := Written{Value: fields[at].Value}
+	on := at == w.Form.On()
+	said := board.Written{Value: fields[at].Value}
 	if on {
-		said = w.form.Writing()
+		said = w.Form.Writing()
 	}
 	lines := w.wrapping(said.Reads(), inside, FormSize(fields[at]))
 	line, _ := lines.At(said.At)
@@ -364,10 +256,10 @@ func (w Window) reaching(at int, p Point) int {
 }
 
 func (w Window) scrolledOf(at int) int {
-	if !w.form.Fields()[at].Long {
+	if !w.Form.Fields[at].Long {
 		return Follow
 	}
-	if moved, _ := w.sayingAt(); moved == at {
+	if moved, _ := w.SayingAt(); moved == at {
 		return w.Saying()
 	}
 	return 0
@@ -375,17 +267,17 @@ func (w Window) scrolledOf(at int) int {
 
 // Edit opens the form on whatever is chosen.
 func (w Window) Edit() Window {
-	if w.chosen == 0 {
+	if w.Chosen == 0 {
 		return w
 	}
-	if w.chosenGoal {
-		if g, found := w.snap.Goal(w.chosen); found {
-			w.form, w.screen, w.formMoved = editingGoal(g), OnForm, Point{}
+	if w.ChosenGoal {
+		if g, found := w.Snap.Goal(w.Chosen); found {
+			w.Form, w.Screen, w.formMoved = editingGoal(g), board.OnForm, geom.Point{}
 		}
 		return w.beside()
 	}
-	if c, found := w.snap.Card(w.chosen); found {
-		w.form, w.screen, w.formMoved = w.editing(c), OnForm, Point{}
+	if c, found := w.Snap.Card(w.Chosen); found {
+		w.Form, w.Screen, w.formMoved = w.editing(c), board.OnForm, geom.Point{}
 	}
 	return w.beside()
 }
@@ -398,32 +290,29 @@ func (w Window) beside() Window {
 }
 
 func (w Window) readingActs() Window {
-	w.acts = nil
-	if w.chosenGoal || w.screen != OnForm || w.form.Adding || w.form.ForSeries {
+	w.Acts = nil
+	if w.ChosenGoal || w.Screen != board.OnForm || w.Form.Adding || w.Form.ForSeries {
 		return w
 	}
-	shown, err := w.work.Ask(engine.TraceShow, board.Numbered(w.chosen))
+	shown, err := w.work.Ask(engine.TraceShow, board.Numbered(w.Chosen))
 	if err != nil {
 		return w.failing(err)
 	}
 	for _, act := range shown.Acts {
-		w.acts = append(w.acts, line(act))
+		w.Acts = append(w.Acts, line(act))
 	}
 	return w
 }
 
-// Form is what the modal holds, for whoever draws it.
-func (w Window) Form() Form { return w.form }
-
-func formShown(s Screen) bool {
-	return s == OnForm || s == OnChoosing || s == OnCalendar || s == OnRule
+func formShown(s board.Screen) bool {
+	return s == board.OnForm || s == board.OnChoosing || s == board.OnCalendar || s == board.OnRule
 }
 
 func (w Window) formUnder() bool {
-	if w.pickingLabels && w.screen == OnChoosing {
+	if w.PickingLabels && w.Screen == board.OnChoosing {
 		return false
 	}
-	return formShown(w.screen) || w.screen == OnAsking && (w.question == aboutDeletingPart || w.question == aboutDeletingParts || w.question == aboutLeaving)
+	return formShown(w.Screen) || w.Screen == board.OnAsking && (w.Question == board.AboutDeletingPart || w.Question == board.AboutDeletingParts || w.Question == board.AboutLeaving)
 }
 
 // PartsTicked is what the steps field of an open form is drawn as: a tile for each step it says now, done or not, unsaved lines included.
@@ -431,7 +320,7 @@ func (w Window) PartsTicked() []board.Card {
 	if !w.formUnder() {
 		return nil
 	}
-	for _, field := range w.form.Fields() {
+	for _, field := range w.Form.Fields {
 		if field.Name != "steps" {
 			continue
 		}
@@ -450,37 +339,37 @@ func (w Window) PartsTicked() []board.Card {
 
 // Save writes what the form holds and closes it.
 func (w Window) Save() Window {
-	if w.screen != OnForm {
+	if w.Screen != board.OnForm {
 		return w
 	}
-	if w.form.writingPart {
-		w.form = w.form.committing()
-		w.form.writingPart = false
+	if w.Form.WritingPart {
+		w.Form = w.Form.Committing()
+		w.Form.WritingPart = false
 	}
-	if w.asksWhole() {
-		w.screen, w.question = OnAsking, aboutSeriesSave
+	if w.AsksWhole() {
+		w.Screen, w.Question = board.OnAsking, board.AboutSeriesSave
 		return w
 	}
 	w, _, err := w.stored()
 	if err != nil {
 		return w
 	}
-	w.screen, w.form = OnTheBoard, Form{}
+	w.Screen, w.Form = board.OnTheBoard, board.Form{}
 	return w.Look()
 }
 
 func (w Window) stored() (Window, int, error) {
-	op, asked := w.saving()
+	op, asked := w.Saving()
 	answer, err := w.work.Ask(op, asked)
 	if err != nil {
 		return w.failing(err), 0, err
 	}
 	w = w.warned(answer)
-	number := w.form.Number
-	if w.form.Adding {
+	number := w.Form.Number
+	if w.Form.Adding {
 		number = board.Added(answer)
-		w.form.Adding, w.form.Number = false, number
-		if !w.form.ForObjective {
+		w.Form.Adding, w.Form.Number = false, number
+		if !w.Form.ForObjective {
 			if err := w.drafts.Drop(); err != nil {
 				return w.failing(err), 0, err
 			}
@@ -492,21 +381,12 @@ func (w Window) stored() (Window, int, error) {
 	return w, number, nil
 }
 
-func (f Form) argued(arg string) string {
-	for _, field := range f.fields {
-		if field.Arg == arg {
-			return field.Value
-		}
-	}
-	return ""
-}
-
 func (w Window) puttingBehind(number int) error {
-	if w.form.behind == 0 {
+	if w.Form.Behind == 0 {
 		return nil
 	}
 	_, err := w.work.Ask(engine.TaskMove, engine.Input{Given: map[string]string{
-		"number": strconv.Itoa(number), "after": strconv.Itoa(w.form.behind), "state": w.form.argued("state")}})
+		"number": strconv.Itoa(number), "after": strconv.Itoa(w.Form.Behind), "state": w.Form.Argued("state")}})
 	if errors.Is(err, task.ErrOtherColumn) {
 		return nil
 	}
@@ -515,62 +395,56 @@ func (w Window) puttingBehind(number int) error {
 
 // Cancel closes whatever is open and writes nothing.
 func (w Window) Cancel() Window {
-	if w.screen == OnTheBoard {
-		w.looking = Written{}
+	if w.Screen == board.OnTheBoard {
+		w.Looking = board.Written{}
 		return w
 	}
-	if w.screen == OnSearch {
+	if w.Screen == board.OnSearch {
 		return w.leavingSearch()
 	}
-	if w.screen == OnForm && w.form.writingPart {
-		w.form.writingPart, w.form.named = false, Written{}
+	if w.Screen == board.OnForm && w.Form.WritingPart {
+		w.Form.WritingPart, w.Form.Named = false, board.Written{}
 		return w
 	}
-	if w.screen == OnForm && w.form.Adding && !w.form.ForObjective {
+	if w.Screen == board.OnForm && w.Form.Adding && !w.Form.ForObjective {
 		return w.throwingAway()
 	}
-	if w.screen == OnForm && w.form.Changed() {
-		w.screen, w.question = OnAsking, aboutLeaving
+	if w.Screen == board.OnForm && w.Form.Changed() {
+		w.Screen, w.Question = board.OnAsking, board.AboutLeaving
 		return w
 	}
-	if w.screen == OnAsking && w.question == aboutLeaving {
+	if w.Screen == board.OnAsking && w.Question == board.AboutLeaving {
 		return w.throwingAway()
 	}
-	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+	w.Screen, w.Form, w.Question = board.OnTheBoard, board.Form{}, board.AboutDeleting
 	return w
 }
 
 func (w Window) throwingAway() Window {
-	if w.screen == OnAsking && w.form.Adding && !w.form.ForObjective {
+	if w.Screen == board.OnAsking && w.Form.Adding && !w.Form.ForObjective {
 		return w.leavingUnsaved()
 	}
-	if w.form.Adding && !w.form.ForObjective {
-		w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+	if w.Form.Adding && !w.Form.ForObjective {
+		w.Screen, w.Form, w.Question = board.OnTheBoard, board.Form{}, board.AboutDeleting
 		return w.droppingDraft()
 	}
-	w.draft = w.form
-	w.screen, w.form, w.question = OnTheBoard, Form{}, aboutDeleting
+	w.Draft = w.Form
+	w.Screen, w.Form, w.Question = board.OnTheBoard, board.Form{}, board.AboutDeleting
 	return w
-}
-
-func (w Window) recoverable() bool {
-	d := w.draft
-	return d.fields != nil && !w.form.Changed() &&
-		d.Adding == w.form.Adding && d.ForObjective == w.form.ForObjective && d.Number == w.form.Number
 }
 
 // Choose is a button pressed by name, which is how a scenario says it and how a pointer says it.
 func (w Window) Choose(name string) Window {
-	if w.screen == OnKeeping || w.screen == OnViews {
+	if w.Screen == board.OnKeeping || w.Screen == board.OnViews {
 		if done, took := w.choosingOnViews(name); took {
 			return done
 		}
 	}
-	if w.screen == OnFates {
+	if w.Screen == board.OnFates {
 		if strings.HasPrefix(name, "Delete") {
 			return w.confirmingFates()
 		}
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 		return w
 	}
 	if answered, took := w.choosingOnSettings(name); took {
@@ -592,79 +466,79 @@ func (w Window) Choose(name string) Window {
 	case "new linked task":
 		return w.startingLinked()
 	case "save":
-		if w.screen == OnLabels {
+		if w.Screen == board.OnLabels {
 			return w.renamingLabel()
 		}
 		return w.Save()
 	case "cmd+enter":
 		return w.Save()
 	case "choose":
-		if w.screen == OnRule {
+		if w.Screen == board.OnRule {
 			return w.closingRule(true)
 		}
-		if w.screen == OnChoosing {
+		if w.Screen == board.OnChoosing {
 			return w.taking()
 		}
-		if w.screen == OnFiltering {
+		if w.Screen == board.OnFiltering {
 			return w.choosingValue()
 		}
-		if w.screen == OnLabels && w.colouring {
-			return w.colouringLabel(w.colourPick)
+		if w.Screen == board.OnLabels && w.Colouring {
+			return w.colouringLabel(w.ColourPick)
 		}
-		if chosenOnACalendar(w.form.Fields()[w.form.On()]) {
+		if chosenOnACalendar(w.Form.Fields[w.Form.On()]) {
 			return w.openingCalendar()
 		}
-		if chosenFromRules(w.form.Fields()[w.form.On()]) {
+		if chosenFromRules(w.Form.Fields[w.Form.On()]) {
 			return w.openingRule()
 		}
 		return w.choosingList()
 	case "no day":
 		return w.dated(time.Time{})
 	case "cancel":
-		if w.screen == OnFiltering && w.filterOpen {
+		if w.Screen == board.OnFiltering && w.FilterOpen {
 			return w.closingMenu()
 		}
-		if w.screen == OnLabels && w.colouring {
-			w.colouring = false
+		if w.Screen == board.OnLabels && w.Colouring {
+			w.Colouring = false
 			return w
 		}
-		if w.screen == OnCalendar && w.view != viewDays {
-			w.view = viewDays
+		if w.Screen == board.OnCalendar && w.CalendarView != board.ViewDays {
+			w.CalendarView = board.ViewDays
 			return w
 		}
-		if w.screen == OnCalendar {
+		if w.Screen == board.OnCalendar {
 			return w.leavingCalendar()
 		}
-		if w.screen == OnRule {
+		if w.Screen == board.OnRule {
 			return w.closingRule(false)
 		}
-		if w.screen == OnChoosing {
+		if w.Screen == board.OnChoosing {
 			return w.leaving()
 		}
-		if w.question == aboutSweeping || w.question == aboutPuttingBack || w.screen == OnBackups {
-			w.screen, w.question = OnTheBoard, aboutDeleting
+		if w.Question == board.AboutSweeping || w.Question == board.AboutPuttingBack || w.Screen == board.OnBackups {
+			w.Screen, w.Question = board.OnTheBoard, board.AboutDeleting
 			return w
 		}
-		if w.question == aboutDeletingLabel {
-			w.screen, w.question = OnLabels, aboutDeleting
+		if w.Question == board.AboutDeletingLabel {
+			w.Screen, w.Question = board.OnLabels, board.AboutDeleting
 			return w
 		}
-		if w.question == aboutDeletingPart || w.question == aboutDeletingParts {
-			w.screen, w.question = OnForm, aboutDeleting
+		if w.Question == board.AboutDeletingPart || w.Question == board.AboutDeletingParts {
+			w.Screen, w.Question = board.OnForm, board.AboutDeleting
 			return w
 		}
-		if w.question == aboutHiding {
+		if w.Question == board.AboutHiding {
 			return w.answeringHiding(false)
 		}
-		if w.screen == OnLabels && w.renaming {
-			w.renaming, w.making = false, false
+		if w.Screen == board.OnLabels && w.Renaming {
+			w.Renaming, w.Making = false, false
 			return w
 		}
-		if w.screen == OnLabels && w.seeking {
+		if w.Screen == board.OnLabels && w.Seeking {
 			return w.leavingTheSearch()
 		}
-		if w.screen == OnLabels {
-			w.screen = OnTheBoard
+		if w.Screen == board.OnLabels {
+			w.Screen = board.OnTheBoard
 			return w
 		}
 		return w.Cancel()
@@ -675,22 +549,22 @@ func (w Window) Choose(name string) Window {
 	case "start afresh":
 		return w.startingAfresh()
 	case "take":
-		if w.screen == OnCalendar && w.view != viewDays {
+		if w.Screen == board.OnCalendar && w.CalendarView != board.ViewDays {
 			return w.backFromGrid()
 		}
-		if w.screen == OnCalendar {
-			return w.dated(w.day)
+		if w.Screen == board.OnCalendar {
+			return w.dated(w.Day)
 		}
 		return w.taking()
 	case "keep", "done":
 		return w.keeping()
 	case "close":
-		if w.screen == OnChoosing {
+		if w.Screen == board.OnChoosing {
 			return w.keeping()
 		}
 		return w.Cancel()
 	case "search":
-		w.screen, w.searchFrom = OnSearch, OnTheBoard
+		w.Screen, w.SearchFrom = board.OnSearch, board.OnTheBoard
 		return w
 	case "filter":
 		return w.filteringBoard()
@@ -699,39 +573,39 @@ func (w Window) Choose(name string) Window {
 	case strings.ToLower(ViewsSays) + "…":
 		return w.listingViews()
 	case "reset sizes":
-		return w.resized(Sizes{})
+		return w.resized(geom.Sizes{})
 	case "no filter":
-		w.filters = w.filters.Cleared()
+		w.Filters = w.Filters.Cleared()
 		return w
 	case "take off":
-		return w.takingOff(w.filterOn)
+		return w.takingOff(w.FilterOn)
 	case "help":
-		w.screen = OnHelp
+		w.Screen = board.OnHelp
 		return w
 	case "about cairn":
-		w.screen, w.question = OnAsking, aboutCairn
+		w.Screen, w.Question = board.OnAsking, board.AboutCairn
 		return w
 	case "save search":
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 		return w
 	case "clear":
-		if len(w.taken) > 0 {
-			w.taken = nil
+		if len(w.Gathered) > 0 {
+			w.Gathered = nil
 			return w
 		}
-		w.looking = Written{}
+		w.Looking = board.Written{}
 		return w
 	case "archived":
-		w.archived = !w.archived
+		w.Archived = !w.Archived
 		return w
 	case "tasks":
-		return w.onPage(Tasks)
+		return w.onPage(board.Tasks)
 	case "objectives":
-		return w.onPage(Objectives)
+		return w.onPage(board.Objectives)
 	case "time":
-		return w.onPage(Time)
+		return w.onPage(board.Time)
 	case "series":
-		return w.onPage(Series)
+		return w.onPage(board.Series)
 	case "export":
 		return w.exportingTasks()
 	case "import":
@@ -757,93 +631,78 @@ func (w Window) Choose(name string) Window {
 	case "skip flagged":
 		return w.actingOnSeveral(false)
 	case "delete", "agree", "apply", "restore", "finish", "replace":
-		if w.screen == OnBackups {
-			w.screen, w.question = OnAsking, aboutPuttingBack
+		if w.Screen == board.OnBackups {
+			w.Screen, w.Question = board.OnAsking, board.AboutPuttingBack
 			return w
 		}
-		if w.screen == OnAsking && w.asksAboutSeveral() {
+		if w.Screen == board.OnAsking && w.AsksAboutSeveral() {
 			return w.actingOnSeveral(true)
 		}
-		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
-			return w.askingSeveral(aboutDeletingSeveral)
+		if w.Screen == board.OnTheBoard && len(w.Taken()) > 0 {
+			return w.askingSeveral(board.AboutDeletingSeveral)
 		}
-		if w.question == aboutSweeping {
+		if w.Question == board.AboutSweeping {
 			return w.sweeping()
 		}
-		if w.question == aboutPuttingBack {
+		if w.Question == board.AboutPuttingBack {
 			return w.puttingBack()
 		}
-		if w.question == aboutDeletingLabel {
+		if w.Question == board.AboutDeletingLabel {
 			return w.deletingLabel()
 		}
-		if w.question == aboutFinishingParts || w.question == aboutApplying {
+		if w.Question == board.AboutFinishingParts || w.Question == board.AboutApplying {
 			return w.agreed()
 		}
-		if w.question == aboutDeletingPart {
+		if w.Question == board.AboutDeletingPart {
 			return w.deletingPart()
 		}
-		if w.question == aboutDeletingParts {
+		if w.Question == board.AboutDeletingParts {
 			return w.deletingParts()
 		}
-		if w.question == aboutHiding {
+		if w.Question == board.AboutHiding {
 			return w.answeringHiding(true)
 		}
-		if w.screen == OnLabels {
-			w.screen, w.question = OnAsking, aboutDeletingLabel
+		if w.Screen == board.OnLabels {
+			w.Screen, w.Question = board.OnAsking, board.AboutDeletingLabel
 			return w
 		}
-		if w.question == aboutLeaving {
+		if w.Question == board.AboutLeaving {
 			return w.throwingAway()
 		}
 		return w.Delete()
 	case "throw away":
-		if w.question == aboutLeavingSettings {
-			w.screen, w.question, w.keyWriting = OnConfiguration, aboutDeleting, ""
+		if w.Question == board.AboutLeavingSettings {
+			w.Screen, w.Question, w.KeyWriting = board.OnConfiguration, board.AboutDeleting, ""
 			return w.Choose("Close")
 		}
 		return w.throwingAway()
 	case "back", "keep editing":
-		if w.question == aboutLeavingSettings {
-			w.screen, w.question = OnConfiguration, aboutDeleting
+		if w.Question == board.AboutLeavingSettings {
+			w.Screen, w.Question = board.OnConfiguration, board.AboutDeleting
 			return w
 		}
-		w.screen, w.question = OnForm, aboutDeleting
+		w.Screen, w.Question = board.OnForm, board.AboutDeleting
 		return w
 	case "recover":
-		w.form, w.draft = w.draft, Form{}
+		w.Form, w.Draft = w.Draft, board.Form{}
 		return w
 	case "archive", "unarchive":
-		if w.screen == OnAsking && w.question == aboutSweeping {
+		if w.Screen == board.OnAsking && w.Question == board.AboutSweeping {
 			return w.sweeping()
 		}
-		if w.screen == OnAsking && w.asksAboutSeveral() {
+		if w.Screen == board.OnAsking && w.AsksAboutSeveral() {
 			return w.actingOnSeveral(true)
 		}
-		if w.screen == OnTheBoard && len(w.Taken()) > 0 {
-			return w.askingSeveral(aboutArchivingSeveral)
+		if w.Screen == board.OnTheBoard && len(w.Taken()) > 0 {
+			return w.askingSeveral(board.AboutArchivingSeveral)
 		}
 		return w.puttingAway()
 	}
 	return w
 }
 
-func (w Window) saving() (engine.Operation, engine.Input) {
-	adding, editing := engine.TaskNew, engine.TaskEdit
-	if w.form.ForObjective {
-		adding, editing = engine.ObjectiveNew, engine.ObjectiveEdit
-	}
-	if w.form.ForSeries {
-		editing = engine.SeriesEdit
-	}
-	op, asked := board.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
-	if w.form.whole {
-		asked.Given["series"] = "true"
-	}
-	return op, asked
-}
-
 func (w Window) addingOn() string {
-	column, inBand, _, found := board.Where(w.Showing().Cards, w.archived, w.chosen)
+	column, inBand, _, found := board.Where(w.Showing().Cards, w.Archived, w.Chosen)
 	if !found && w.aimed != "" {
 		return w.aimed
 	}
@@ -858,35 +717,35 @@ func (w Window) addingOn() string {
 
 // Delete asks first, and deletes the second time.
 func (w Window) Delete() Window {
-	if w.screen == OnAsking && w.question == aboutDeleting {
+	if w.Screen == board.OnAsking && w.Question == board.AboutDeleting {
 		return w.deleting()
 	}
-	if w.chosen == 0 {
+	if w.Chosen == 0 {
 		return w
 	}
-	if w.chosenGoal && len(w.taken) == 0 {
-		return w.deletingGoal(w.chosen)
+	if w.ChosenGoal && len(w.Gathered) == 0 {
+		return w.deletingGoal(w.Chosen)
 	}
-	w.screen = OnAsking
+	w.Screen = board.OnAsking
 	return w
 }
 
 func (w Window) deleting() Window {
 	op := engine.TaskDelete
-	if w.chosenGoal {
+	if w.ChosenGoal {
 		op = engine.ObjectiveDelete
 	}
-	w.screen = OnTheBoard
-	if _, err := w.work.Ask(op, engine.Agreed(board.Numbered(w.chosen))); err != nil {
+	w.Screen = board.OnTheBoard
+	if _, err := w.work.Ask(op, engine.Agreed(board.Numbered(w.Chosen))); err != nil {
 		return w.failing(err)
 	}
-	w.chosen, w.chosenGoal = 0, false
+	w.Chosen, w.ChosenGoal = 0, false
 	return w.Look()
 }
 
 // Choosing is what the open list offers: every objective there is, in the order the objectives tab shows them, so that a list and the tab behind it cannot disagree about what comes first.
 func (w Window) Choosing() []Choice {
-	if w.screen != OnChoosing {
+	if w.Screen != board.OnChoosing {
 		return nil
 	}
 	return w.choices()
@@ -895,48 +754,39 @@ func (w Window) Choosing() []Choice {
 // ChoosingSays is what the list reads when there is nothing to serve.
 const ChoosingSays = "nothing to serve yet"
 
-// ChoosingAt is where in that list the keyboard sits.
-func (w Window) ChoosingAt() int { return w.choosing }
-
-// Ticked says whether an objective is in, as the open list has it.
-func (w Window) Ticked(number int) bool { return w.ticked[number] }
-
-// FieldSays is what a field reads on screen, which is not always what it carries: the engine names the numbers a field holds.
-func (w Window) FieldSays(field board.Field) string { return w.snap.Named(field) }
-
 func (w Window) choosingList() Window {
-	on := w.form.Fields()[w.form.On()]
+	on := w.Form.Fields[w.Form.On()]
 	if !chosenFromAList(on) {
 		return w
 	}
-	w.ticked, w.choosing, w.choosingFrom, w.refusedChoice = map[int]bool{}, 0, 0, ""
-	w.choosingFor, w.filtering, w.pickingLabels = on.Arg, Written{}, false
+	w.TickedSet, w.ChoosingOn, w.ChoosingFrom, w.RefusedChoice = map[int]bool{}, 0, 0, ""
+	w.ChoosingFor, w.Filtering, w.PickingLabels = on.Arg, board.Written{}, false
 	if on.Arg == "label" {
 		w = w.openingLabels(on.Value)
 	} else {
 		for _, number := range board.NumbersIn(on.Value) {
-			w.ticked[number] = true
+			w.TickedSet[number] = true
 		}
-		if on.Arg == "parent" && len(w.ticked) == 0 {
-			w.ticked[0] = true
+		if on.Arg == "parent" && len(w.TickedSet) == 0 {
+			w.TickedSet[0] = true
 		}
 	}
-	if set := w.setOf(on); len(set) > 0 {
-		w.ticked = map[int]bool{}
+	if set := w.SetOf(on); len(set) > 0 {
+		w.TickedSet = map[int]bool{}
 		for i, choice := range set {
 			if choice == on.Value {
-				w.ticked[i+1] = true
+				w.TickedSet[i+1] = true
 			}
 		}
 	}
-	w.screen = OnChoosing
+	w.Screen = board.OnChoosing
 	for at, one := range w.Choosing() {
-		if w.ticked[one.Number] {
-			w.choosing = at
+		if w.TickedSet[one.Number] {
+			w.ChoosingOn = at
 			break
 		}
 	}
-	w.choosingFrom = w.bringingIntoSight()
+	w.ChoosingFrom = w.bringingIntoSight()
 	return w
 }
 
@@ -954,25 +804,25 @@ type Choice struct {
 // RowSays is what a row of the open list reads after its box: what it is known by.
 func (w Window) RowSays(one Choice) string {
 	said := ""
-	if w.choosingFor == "parent" && one.Number == 0 {
+	if w.ChoosingFor == "parent" && one.Number == 0 {
 		return one.Title
 	}
-	if len(w.closedSet()) == 0 && w.choosingFor != "label" {
+	if len(w.ClosedSet()) == 0 && w.ChoosingFor != "label" {
 		said += "#" + Numbered(board.Card{Number: one.Number}) + "  "
 	}
-	if w.choosingFor == "priority" {
+	if w.ChoosingFor == "priority" {
 		said += priorityRoom
 	}
 	return said + one.Title
 }
 
 func (w Window) choices() []Choice {
-	if w.choosingFor == "label" {
+	if w.ChoosingFor == "label" {
 		return w.labelChoices()
 	}
-	looking := w.filtering.Reads()
+	looking := w.Filtering.Reads()
 	var out []Choice
-	if set := w.closedSet(); len(set) > 0 {
+	if set := w.ClosedSet(); len(set) > 0 {
 		for i, choice := range set {
 			if strings.Contains(choice, strings.ToLower(looking)) {
 				out = append(out, Choice{Number: i + 1, Title: choice})
@@ -980,26 +830,26 @@ func (w Window) choices() []Choice {
 		}
 		return out
 	}
-	if w.choosingFor == "parent" {
+	if w.ChoosingFor == "parent" {
 		out = append(out, Choice{Title: "none"})
-		for _, g := range w.snap.Parents(w.form.Number) {
+		for _, g := range w.Snap.Parents(w.Form.Number) {
 			out = append(out, Choice{Number: g.Number, Title: g.Title})
 		}
 		return out
 	}
 	if looking == "" {
 		var ticked []int
-		for n, on := range w.ticked {
+		for n, on := range w.TickedSet {
 			if on {
 				ticked = append(ticked, n)
 			}
 		}
-		for _, p := range w.snap.Picks(ticked) {
+		for _, p := range w.Snap.Picks(ticked) {
 			out = append(out, Choice{Number: p.Goal.Number, Title: p.Goal.Title, Depth: depthOf(p.Branch), Last: p.Last, Through: p.Through})
 		}
 		return out
 	}
-	for _, g := range board.FoundGoals(w.snap.Goals, looking) {
+	for _, g := range board.FoundGoals(w.Snap.Goals, looking) {
 		out = append(out, Choice{Number: g.Number, Title: g.Title})
 	}
 	return out
@@ -1007,59 +857,41 @@ func (w Window) choices() []Choice {
 
 // RowAside is what a row of the open list says at its right: of an objective counted already through what is ticked below it, so.
 func (w Window) RowAside(one Choice) string {
-	if w.choosingFor == "objective" && one.Through > 0 && !w.ticked[one.Number] {
+	if w.ChoosingFor == "objective" && one.Through > 0 && !w.TickedSet[one.Number] {
 		return "counted through " + strconv.Itoa(one.Through) + " below"
 	}
 	return ""
 }
 
-// ChoosingRefused is what the open list refused last, said at its foot: nothing when the last tick was taken.
-func (w Window) ChoosingRefused() string { return w.refusedChoice }
-
-// Filtering is what has been typed into the open list.
-func (w Window) Filtering() Written { return w.filtering }
-
 // priorityRoom is the room a priority's row leaves before its name for the stripe of its colour.
 const priorityRoom = "    "
 
 // RowStripe is where a priority's row draws the stripe of its colour, in the room left before its name.
-func (w Window) RowStripe(one Choice, line Box) (Box, bool) {
-	if w.choosingFor != "priority" {
-		return Box{}, false
+func (w Window) RowStripe(one Choice, line geom.Box) (geom.Box, bool) {
+	if w.ChoosingFor != "priority" {
+		return geom.Box{}, false
 	}
 	said := w.RowSays(one)
 	before := strings.TrimSuffix(said, priorityRoom+one.Title)
-	return Box{X: line.X + tickRoom + ends(w.measured(), before, reads) + inset, Y: line.Y + (line.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, true
+	return geom.Box{X: line.X + tickRoom + ends(w.measured(), before, reads) + inset, Y: line.Y + (line.H-stripeHigh)/2, W: edgeWide, H: stripeHigh}, true
 }
 
 const stripeHigh = 12
-
-// OneOnly says whether the open list takes one answer rather than several.
-func (w Window) OneOnly() bool { return len(w.closedSet()) > 0 || w.choosingFor == "parent" }
-
-func (w Window) closedSet() []string {
-	if w.screen != OnChoosing {
-		return nil
-	}
-	return w.setOf(w.form.Fields()[w.form.On()])
-}
-
-func (w Window) setOf(field board.Field) []string { return field.Choices }
 
 func (w Window) inChoosing(name string) Window {
 	offered := w.Choosing()
 	switch name {
 	case "down", "j":
-		w.choosing = min(max(0, len(offered)-1), w.choosing+1)
-		w.choosingFrom = w.bringingIntoSight()
+		w.ChoosingOn = min(max(0, len(offered)-1), w.ChoosingOn+1)
+		w.ChoosingFrom = w.bringingIntoSight()
 	case "up", "k":
-		w.choosing = max(0, w.choosing-1)
-		w.choosingFrom = w.bringingIntoSight()
+		w.ChoosingOn = max(0, w.ChoosingOn-1)
+		w.ChoosingFrom = w.bringingIntoSight()
 	case "backspace":
-		if w.choosingFor == "label" && w.filtering.Empty() {
+		if w.ChoosingFor == "label" && w.Filtering.Empty() {
 			return w.untakingLast()
 		}
-		w.filtering, w.choosing, w.choosingFrom = w.filtering.Back(), 0, 0
+		w.Filtering, w.ChoosingOn, w.ChoosingFrom = w.Filtering.Back(), 0, 0
 	case "esc":
 		return w.leaving()
 	case "enter":
@@ -1071,110 +903,99 @@ func (w Window) inChoosing(name string) Window {
 }
 
 func (w Window) taking() Window {
-	if w.choosingFor == "label" {
+	if w.ChoosingFor == "label" {
 		return w.takingLabel()
 	}
 	offered := w.Choosing()
-	if w.choosing >= len(offered) {
+	if w.ChoosingOn >= len(offered) {
 		return w
 	}
-	number := offered[w.choosing].Number
+	number := offered[w.ChoosingOn].Number
 	if w.OneOnly() {
-		if w.ticked[number] && len(w.closedSet()) == 0 {
-			w.ticked = map[int]bool{}
+		if w.TickedSet[number] && len(w.ClosedSet()) == 0 {
+			w.TickedSet = map[int]bool{}
 		} else {
-			w.ticked = map[int]bool{number: true}
+			w.TickedSet = map[int]bool{number: true}
 		}
 		return w.keeping()
 	}
-	if !w.ticked[number] && w.choosingFor == "objective" {
+	if !w.TickedSet[number] && w.ChoosingFor == "objective" {
 		numbers := []int{number}
-		for n, on := range w.ticked {
+		for n, on := range w.TickedSet {
 			if on {
 				numbers = append(numbers, n)
 			}
 		}
-		if err := w.snap.CountedOnce(w.form.Number, numbers); err != nil {
-			w.refusedChoice, _, _ = strings.Cut(err.Error(), "; ")
-			w.refusedThen = w.untickSays(number)
+		if err := w.Snap.CountedOnce(w.Form.Number, numbers); err != nil {
+			w.RefusedChoice, _, _ = strings.Cut(err.Error(), "; ")
+			w.RefusedThen = w.untickSays(number)
 			return w
 		}
 	}
-	w.ticked[number], w.refusedChoice = !w.ticked[number], ""
+	w.TickedSet[number], w.RefusedChoice = !w.TickedSet[number], ""
 	return w
 }
 
 func (w Window) bringingIntoSight() int {
 	room := w.ChoosingRoom()
-	return min(w.choosing, max(w.choosingFrom, w.choosing-room+1))
+	return min(w.ChoosingOn, max(w.ChoosingFrom, w.ChoosingOn-room+1))
 }
 
 func (w Window) leaving() Window {
-	if w.pickingLabels {
+	if w.PickingLabels {
 		return w.leavingThePicker()
 	}
-	w.screen = OnForm
+	w.Screen = board.OnForm
 	return w
 }
 
 func (w Window) keeping() Window {
-	if w.pickingLabels {
+	if w.PickingLabels {
 		return w.leavingThePicker()
 	}
-	if w.choosingFor == "label" {
+	if w.ChoosingFor == "label" {
 		return w.keepingLabels()
 	}
-	if set := w.closedSet(); len(set) > 0 {
-		kept := w.form.Fields()[w.form.On()].Value
+	if set := w.ClosedSet(); len(set) > 0 {
+		kept := w.Form.Fields[w.Form.On()].Value
 		for i, choice := range set {
-			if w.ticked[i+1] {
+			if w.TickedSet[i+1] {
 				kept = choice
 			}
 		}
-		w.form = w.form.Writes(Ending(kept))
-		w.screen = OnForm
+		w.Form = w.Form.Writes(board.Ending(kept))
+		w.Screen = board.OnForm
 		return w
 	}
 	var numbers []int
 	for _, g := range w.Choosing() {
-		if w.ticked[g.Number] && g.Number != 0 {
+		if w.TickedSet[g.Number] && g.Number != 0 {
 			numbers = append(numbers, g.Number)
 		}
 	}
-	if w.choosingFor == "parent" && len(numbers) == 0 {
-		w.form = w.form.Writes(Ending("none"))
-		w.screen = OnForm
+	if w.ChoosingFor == "parent" && len(numbers) == 0 {
+		w.Form = w.Form.Writes(board.Ending("none"))
+		w.Screen = board.OnForm
 		return w
 	}
-	w.form = w.form.Writes(Ending(board.Numbers(numbers)))
-	w.screen = OnForm
+	w.Form = w.Form.Writes(board.Ending(board.Numbers(numbers)))
+	w.Screen = board.OnForm
 	return w
 }
-
-// ChoosingSearched says whether the open list has a line to type into: only the labels', a label being written as often as picked.
-func (w Window) ChoosingSearched() bool { return w.choosingFor == "label" }
 
 // NothingChanged is how a refusal at the foot of a list ends.
 const NothingChanged = "Nothing was changed."
 
-// ChoosingThen is what a refusal at the foot of the open list says under it: what to untick to put the task where it was ticked, and that nothing was changed.
-func (w Window) ChoosingThen() string {
-	if w.refusedChoice == "" {
-		return ""
-	}
-	return w.refusedThen
-}
-
 func (w Window) untickSays(number int) string {
-	g, _ := w.snap.Goal(number)
+	g, _ := w.Snap.Goal(number)
 	if g.Parent != 0 {
-		parent, _ := w.snap.Goal(g.Parent)
+		parent, _ := w.Snap.Goal(g.Parent)
 		return "Untick " + parent.Title + " to put it on " + g.Title + ". " + NothingChanged
 	}
 	var below []string
 	for _, c := range g.Children {
-		if w.ticked[c] {
-			sub, _ := w.snap.Goal(c)
+		if w.TickedSet[c] {
+			sub, _ := w.Snap.Goal(c)
 			below = append(below, sub.Title)
 		}
 	}
@@ -1182,15 +1003,15 @@ func (w Window) untickSays(number int) string {
 }
 
 // RefusalBox is where the open list says what it refused: under it, or above it when there is no room below.
-func (w Window) RefusalBox() (string, Box, bool) {
+func (w Window) RefusalBox() (string, geom.Box, bool) {
 	refused := w.ChoosingRefused()
-	if refused == "" || w.screen != OnChoosing {
-		return "", Box{}, false
+	if refused == "" || w.Screen != board.OnChoosing {
+		return "", geom.Box{}, false
 	}
 	box := w.ChoosingBox()
 	high := BannerHigh(w.measured(), refused, w.ChoosingThen(), box.W)
-	at := Box{X: box.X, Y: box.Y + box.H + between, W: box.W, H: high}
-	if at.Y+at.H > w.height-margin {
+	at := geom.Box{X: box.X, Y: box.Y + box.H + between, W: box.W, H: high}
+	if at.Y+at.H > w.height-geom.Margin {
 		at.Y = box.Y - between - high
 	}
 	return refused, at, true

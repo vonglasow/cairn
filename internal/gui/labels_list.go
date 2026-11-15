@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/label"
+	"cairn/internal/gui/geom"
 	"errors"
 	"maps"
 	"slices"
@@ -17,22 +18,22 @@ const LabelsNoneSays = "no label yet: type one"
 
 func (w Window) openingLabels(held string) Window {
 	known := map[string]bool{}
-	for _, c := range w.snap.Cards {
+	for _, c := range w.Snap.Cards {
 		for _, name := range c.Labels {
 			known[name] = true
 		}
 	}
-	for _, g := range w.snap.Goals {
+	for _, g := range w.Snap.Goals {
 		for _, name := range g.Labels {
 			known[name] = true
 		}
 	}
-	w.labelsCarried = map[string]int{}
-	scopes := maps.Clone(w.snap.Scopes)
+	w.LabelsCounted = map[string]int{}
+	scopes := maps.Clone(w.Snap.Scopes)
 	if listed, err := w.work.Ask(engine.LabelList, engine.Input{}); err == nil && listed.Labels != nil {
 		for _, one := range *listed.Labels {
 			known[one.Label] = true
-			w.labelsCarried[one.Label] = one.Tasks
+			w.LabelsCounted[one.Label] = one.Tasks
 			if scopes == nil {
 				scopes = map[string]string{}
 			}
@@ -40,7 +41,7 @@ func (w Window) openingLabels(held string) Window {
 		}
 	}
 	bearer := label.OnTasks
-	if w.form.ForObjective {
+	if w.Form.ForObjective {
 		bearer = label.OnObjectives
 	}
 	for name := range known {
@@ -52,30 +53,30 @@ func (w Window) openingLabels(held string) Window {
 	for _, name := range holding {
 		known[name] = true
 	}
-	w.labelsOffered = w.labelsOffered[:0:0]
+	w.LabelsOffered = w.LabelsOffered[:0:0]
 	for name := range known {
-		w.labelsOffered = append(w.labelsOffered, name)
+		w.LabelsOffered = append(w.LabelsOffered, name)
 	}
-	slices.Sort(w.labelsOffered)
-	for i, name := range w.labelsOffered {
+	slices.Sort(w.LabelsOffered)
+	for i, name := range w.LabelsOffered {
 		if slices.Contains(holding, name) {
-			w.ticked[i+1] = true
+			w.TickedSet[i+1] = true
 		}
 	}
 	return w
 }
 
 func (w Window) labelChoices() []Choice {
-	looking := strings.TrimSpace(w.filtering.Reads())
+	looking := strings.TrimSpace(w.Filtering.Reads())
 	written, refused := label.ParseLabels([]string{looking})
 	reach := strings.ToLower(looking)
 	if refused == nil && len(written) == 1 {
 		reach = written[0]
 	}
 	var found []Choice
-	for i, name := range w.labelsOffered {
+	for i, name := range w.LabelsOffered {
 		if strings.Contains(name, reach) {
-			found = append(found, Choice{Number: i + 1, Title: name, Carried: w.labelsCarried[name]})
+			found = append(found, Choice{Number: i + 1, Title: name, Carried: w.LabelsCounted[name]})
 		}
 	}
 	slices.SortFunc(found, func(a, b Choice) int { return strings.Compare(a.Title, b.Title) })
@@ -85,7 +86,7 @@ func (w Window) labelChoices() []Choice {
 	if refused != nil {
 		return append([]Choice{{Title: refusal(refused)}}, found...)
 	}
-	if slices.Contains(w.labelsOffered, written[0]) {
+	if slices.Contains(w.LabelsOffered, written[0]) {
 		return found
 	}
 	return append(found, Choice{Title: "create " + written[0], Creates: written[0]})
@@ -102,19 +103,19 @@ func refusal(err error) string {
 
 func (w Window) takingLabel() Window {
 	offered := w.Choosing()
-	if w.choosing >= len(offered) {
+	if w.ChoosingOn >= len(offered) {
 		return w
 	}
-	row := offered[w.choosing]
+	row := offered[w.ChoosingOn]
 	if row.Creates != "" {
-		w.labelsOffered = append(slices.Clone(w.labelsOffered), row.Creates)
-		w.ticked[len(w.labelsOffered)] = true
-		w.filtering, w.choosing, w.choosingFrom = Written{}, 0, 0
+		w.LabelsOffered = append(slices.Clone(w.LabelsOffered), row.Creates)
+		w.TickedSet[len(w.LabelsOffered)] = true
+		w.Filtering, w.ChoosingOn, w.ChoosingFrom = board.Written{}, 0, 0
 		return w.writingPicked("+" + row.Creates)
 	}
 	if row.Number > 0 {
-		w.ticked[row.Number] = !w.ticked[row.Number]
-		if w.ticked[row.Number] {
+		w.TickedSet[row.Number] = !w.TickedSet[row.Number]
+		if w.TickedSet[row.Number] {
 			return w.writingPicked("+" + row.Title)
 		}
 		return w.writingPicked("-" + row.Title)
@@ -125,25 +126,25 @@ func (w Window) takingLabel() Window {
 // LabelTaken is one label the open list has taken, as a pill at the head of the list, and the cross that takes it off.
 type LabelTaken struct {
 	Label string
-	Pill  Box
-	Cross Box
+	Pill  geom.Box
+	Cross geom.Box
 }
 
 // LabelsTaken is the labels the open list has taken, in their order, laid as pills at the start of the line the list is searched from.
 func (w Window) LabelsTaken() []LabelTaken {
-	if w.screen != OnChoosing || w.choosingFor != "label" {
+	if w.Screen != board.OnChoosing || w.ChoosingFor != "label" {
 		return nil
 	}
 	m := w.measured()
 	line := Inside(ChoosingLooking(w.ChoosingBox()))
 	x := line.X
 	var taken []LabelTaken
-	for i, name := range w.labelsOffered {
-		if !w.ticked[i+1] {
+	for i, name := range w.LabelsOffered {
+		if !w.TickedSet[i+1] {
 			continue
 		}
-		pill := Box{X: x, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, name, small) + 2*pillPad + crossWide, H: pillHigh}
-		taken = append(taken, LabelTaken{Label: name, Pill: pill, Cross: Box{X: pill.X + pill.W - crossWide - pillPad/2, Y: pill.Y, W: crossWide + pillPad/2, H: pill.H}})
+		pill := geom.Box{X: x, Y: line.Y + (line.H-pillHigh)/2, W: ends(m, name, small) + 2*pillPad + crossWide, H: pillHigh}
+		taken = append(taken, LabelTaken{Label: name, Pill: pill, Cross: geom.Box{X: pill.X + pill.W - crossWide - pillPad/2, Y: pill.Y, W: crossWide + pillPad/2, H: pill.H}})
 		x += pill.W + pillGap
 	}
 	return taken
@@ -152,11 +153,11 @@ func (w Window) LabelsTaken() []LabelTaken {
 const crossWide = 10
 
 func (w Window) untaking(name string) Window {
-	at := slices.Index(w.labelsOffered, name)
-	if at < 0 || !w.ticked[at+1] {
+	at := slices.Index(w.LabelsOffered, name)
+	if at < 0 || !w.TickedSet[at+1] {
 		return w
 	}
-	w.ticked[at+1] = false
+	w.TickedSet[at+1] = false
 	return w.writingPicked("-" + name)
 }
 
@@ -169,52 +170,49 @@ func (w Window) untakingLast() Window {
 }
 
 func (w Window) writingPicked(change string) Window {
-	if !w.pickingLabels {
+	if !w.PickingLabels {
 		return w
 	}
-	in := engine.Input{Given: map[string]string{"number": strconv.Itoa(w.chosen)}, Listed: map[string][]string{"label": {change}}}
+	in := engine.Input{Given: map[string]string{"number": strconv.Itoa(w.Chosen)}, Listed: map[string][]string{"label": {change}}}
 	if _, err := w.work.Ask(engine.TaskEdit, in); err != nil {
 		return w.failing(err)
 	}
-	screen := w.screen
+	screen := w.Screen
 	w = w.Look()
-	w.screen = screen
+	w.Screen = screen
 	return w
 }
-
-// Picking says the labels are picked from the board: the list hangs under the chosen card, no form behind it, and each label taken is written at once.
-func (w Window) Picking() bool { return w.pickingLabels }
 
 func (w Window) leavingThePicker() Window {
-	w.screen, w.pickingLabels = OnTheBoard, false
+	w.Screen, w.PickingLabels = board.OnTheBoard, false
 	return w
 }
 
-func (w Window) chosenSlot() (Box, bool) {
+func (w Window) chosenSlot() (geom.Box, bool) {
 	for _, placed := range w.Placed() {
-		if placed.Card.Number == w.chosen {
+		if placed.Card.Number == w.Chosen {
 			return placed.Slot, true
 		}
 	}
-	return Box{}, false
+	return geom.Box{}, false
 }
 
 func (w Window) keepingLabels() Window {
 	var kept []string
-	for i, name := range w.labelsOffered {
-		if w.ticked[i+1] {
+	for i, name := range w.LabelsOffered {
+		if w.TickedSet[i+1] {
 			kept = append(kept, name)
 		}
 	}
 	slices.Sort(kept)
-	w.form = w.form.Writes(Ending(strings.Join(kept, " ")))
-	w.screen = OnForm
+	w.Form = w.Form.Writes(board.Ending(strings.Join(kept, " ")))
+	w.Screen = board.OnForm
 	return w
 }
 
 // EmptyListSays is what the open list reads when it offers nothing.
 func (w Window) EmptyListSays() string {
-	if w.choosingFor == "label" {
+	if w.ChoosingFor == "label" {
 		return LabelsNoneSays
 	}
 	return ChoosingSays

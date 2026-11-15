@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ import (
 func TestAReferenceWritesWhyItIsThereInTheRoomLeftAfterItsNumber(t *testing.T) {
 	c := board.Card{Number: 54, Labels: []string{"store"}}
 	m := holding(newFake()).measured()
-	row := ReferenceRowOf(c, "outside this view · blocks #6", Box{X: 10, W: 151, H: lineHigh}, m, time.Time{}, engine.Pages{})
+	row := ReferenceRowOf(c, "outside this view · blocks #6", geom.Box{X: 10, W: 151, H: lineHigh}, m, time.Time{}, engine.Pages{})
 	if row.Facts == "" || row.FactsAt.X < row.NumberAt.X+row.NumberAt.W+2*pillGap {
 		t.Errorf("the why %q is written at %+v, over the number at %+v", row.Facts, row.FactsAt, row.NumberAt)
 	}
@@ -27,10 +28,10 @@ func TestAReferenceWritesWhyItIsThereInTheRoomLeftAfterItsNumber(t *testing.T) {
 }
 
 func TestAReferenceInAColumnSayingNothingIsHereStandsBelowWhatItSays(t *testing.T) {
-	board := aFixturesBoard(t)
-	for _, g := range board.snap.Goals {
-		w := board.onPage(Objectives)
-		w.chosen, w.chosenGoal = g.Number, true
+	shown := aFixturesBoard(t)
+	for _, g := range shown.Snap.Goals {
+		w := shown.onPage(board.Objectives)
+		w.Chosen, w.ChosenGoal = g.Number, true
 		w = w.Key("t")
 		for range max(1, len(w.Narrowing().Segments)) {
 			l := w.Layout()
@@ -52,10 +53,10 @@ func TestAReferenceInAColumnSayingNothingIsHereStandsBelowWhatItSays(t *testing.
 func TestTheProgressBesideAnObjectiveStopsAboveTheFormsFoot(t *testing.T) {
 	work := onTheFixtures(t)
 	for _, size := range pinnedSizes {
-		board := New(work, size.X, size.Y).At(time.Now()).Look()
-		for _, g := range board.snap.Goals {
-			w := board.onPage(Objectives)
-			w.chosen, w.chosenGoal = g.Number, true
+		shown := New(work, size.X, size.Y).At(time.Now()).Look()
+		for _, g := range shown.Snap.Goals {
+			w := shown.onPage(board.Objectives)
+			w.Chosen, w.ChosenGoal = g.Number, true
 			w = w.Edit()
 			along := w.offersAlong(w.formPanel())
 			if len(along) == 0 {

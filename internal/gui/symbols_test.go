@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/gui/design"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -17,7 +18,7 @@ func TestEveryCharacterTheWindowWritesHasAFace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	faces := Faces()
+	faces := design.Faces()
 	written := map[rune]string{}
 	for _, name := range files {
 		if strings.HasSuffix(name, "_test.go") {
@@ -65,8 +66,8 @@ func covered(faces []font.FontFace, r rune) bool {
 
 func TestTheWindowWritesInFigtree(t *testing.T) {
 	weights := map[font.Weight]bool{}
-	for _, face := range Faces() {
-		if face.Font.Typeface == TextFace {
+	for _, face := range design.Faces() {
+		if face.Font.Typeface == design.TextFace {
 			weights[face.Font.Weight] = true
 		}
 	}
@@ -75,7 +76,7 @@ func TestTheWindowWritesInFigtree(t *testing.T) {
 			t.Errorf("Figtree is not carried at weight %v", weight)
 		}
 	}
-	if Theme().Face != TextFace {
+	if Theme().Face != design.TextFace {
 		t.Errorf("the window writes in %q", Theme().Face)
 	}
 }

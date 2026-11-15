@@ -77,8 +77,8 @@ func (b Board) viewSays() string {
 	if b.viewChanged() {
 		said += " *"
 	}
-	said += " · " + strconv.Itoa(len(board.OnTheBoard(b.cards(), b.archived))) + " of " +
-		strconv.Itoa(len(board.OnTheBoard(b.snap.Cards, b.archived))) + " tasks"
+	said += " · " + strconv.Itoa(len(board.Laid(b.cards(), b.archived))) + " of " +
+		strconv.Itoa(len(board.Laid(b.snap.Cards, b.archived))) + " tasks"
 	if gone := board.GoneSays(v.View); gone != "" {
 		said += " · " + gone
 	}

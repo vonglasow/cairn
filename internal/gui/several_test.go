@@ -2,13 +2,14 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"slices"
 	"testing"
 
 	"gioui.org/io/key"
 )
 
-func gathered(cards []board.Card, at ...Point) Window {
+func gathered(cards []board.Card, at ...geom.Point) Window {
 	w := holding(newFake(), cards...)
 	w = w.clicked(at[0])
 	for _, p := range at[1:] {
@@ -28,17 +29,17 @@ func TestWhatIsTakenIsLetGoOf(t *testing.T) {
 	if got := w.Taken(); !slices.Equal(got, []int{2, 3}) {
 		t.Errorf("the first ⌘-clicked again left %v", got)
 	}
-	w.looking = Written{Value: "spec"}
+	w.Looking = board.Written{Value: "spec"}
 	w = w.Key("esc")
-	if len(w.taken) != 0 || w.looking.Value != "spec" {
-		t.Errorf("esc left %v taken and the search at %q", w.taken, w.looking.Value)
+	if len(w.Gathered) != 0 || w.Looking.Value != "spec" {
+		t.Errorf("esc left %v taken and the search at %q", w.Gathered, w.Looking.Value)
 	}
-	if w = w.Key("esc"); w.looking.Value != "" {
-		t.Errorf("esc with nothing taken left the search at %q", w.looking.Value)
+	if w = w.Key("esc"); w.Looking.Value != "" {
+		t.Errorf("esc with nothing taken left the search at %q", w.Looking.Value)
 	}
 	w = gathered(cards, middleOf(w, 1, 0), middleOf(w, 1, 1))
-	if w = w.Key("esc"); len(w.taken) != 0 {
-		t.Errorf("esc with no search left %v taken", w.taken)
+	if w = w.Key("esc"); len(w.Gathered) != 0 {
+		t.Errorf("esc with no search left %v taken", w.Gathered)
 	}
 	w = w.clicked(middleOf(w, 1, 2)).KeysDown(key.ModShift).clicked(middleOf(w, 1, 0)).KeysDown(0)
 	if got := w.Taken(); !slices.Equal(got, []int{1, 2, 3}) {
@@ -50,15 +51,15 @@ func TestAStretchStaysInItsColumn(t *testing.T) {
 	cards := []board.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Elsewhere", "backlog")}
 	w := holding(newFake(), cards...)
 	w = w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShift).clicked(middleOf(w, 0, 0)).KeysDown(0)
-	if got := w.Taken(); !slices.Equal(got, []int{1, 3}) || w.ChosenGoal() {
-		t.Errorf("a stretch across two columns took %v, chosen an objective: %v", got, w.ChosenGoal())
+	if got := w.Taken(); !slices.Equal(got, []int{1, 3}) || w.ChosenGoal {
+		t.Errorf("a stretch across two columns took %v, chosen an objective: %v", got, w.ChosenGoal)
 	}
 	goals := New(newFake(), 1200, 800)
-	goals.snap = board.Snapshot{Goals: []board.Goal{{Number: 1, Title: "One", State: "active"}, {Number: 2, Title: "Two", State: "active"}}}
-	goals.tab = Objectives
+	goals.Snap = board.Snapshot{Goals: []board.Goal{{Number: 1, Title: "One", State: "active"}, {Number: 2, Title: "Two", State: "active"}}}
+	goals.Tab = board.Objectives
 	goals = goals.clicked(goalMiddle(goals, 1)).KeysDown(key.ModShift).clicked(goalMiddle(goals, 2)).KeysDown(0)
-	if got := goals.Taken(); !slices.Equal(got, []int{1, 2}) || !goals.ChosenGoal() {
-		t.Errorf("a stretch over the objectives took %v, chosen an objective: %v", got, goals.ChosenGoal())
+	if got := goals.Taken(); !slices.Equal(got, []int{1, 2}) || !goals.ChosenGoal {
+		t.Errorf("a stretch over the objectives took %v, chosen an objective: %v", got, goals.ChosenGoal)
 	}
 }
 
@@ -66,7 +67,7 @@ func TestArchivingSeveralLeavesOutWhatIsAlreadyOff(t *testing.T) {
 	f := newFake()
 	cards := []board.Card{card(1, "First", "todo"), card(2, "Second", "todo"), {Number: 3, Title: "Gone", State: "todo", Archived: true}}
 	w := holding(f, cards...)
-	w.archived = true
+	w.Archived = true
 	w = w.clicked(middleOf(w, 1, 0))
 	for _, at := range []int{1, 2} {
 		w = w.KeysDown(key.ModShortcut).clicked(middleOf(w, 1, at)).KeysDown(0)

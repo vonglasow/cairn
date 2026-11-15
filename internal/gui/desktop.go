@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/board"
 	"fmt"
 	"image/color"
 	"image/png"
@@ -39,15 +40,15 @@ func X11Icon() []uint32 {
 // Settling settles the window in on a Linux desktop under data, started with starts, and asks about an entry somebody else wrote that hides the logo, unless something else is being asked already.
 func (w Window) Settling(data, starts string) Window {
 	_ = linuxapp.SettleIn(data, starts)
-	if hiding := linuxapp.Hiding(data); hiding.Asks() && w.screen != OnAsking {
+	if hiding := linuxapp.Hiding(data); hiding.Asks() && w.Screen != board.OnAsking {
 		w.hiding, w.starts = hiding, starts
-		w.screen, w.question = OnAsking, aboutHiding
+		w.Screen, w.Question = board.OnAsking, board.AboutHiding
 	}
 	return w
 }
 
 func (w Window) answeringHiding(replace bool) Window {
-	w.screen, w.question = OnTheBoard, aboutDeleting
+	w.Screen, w.Question = board.OnTheBoard, board.AboutDeleting
 	err := w.hiding.Kept()
 	if replace {
 		err = w.hiding.Replaced(w.starts)

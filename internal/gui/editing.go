@@ -1,44 +1,46 @@
 package gui
 
-func textKey(name string) (func(Written) Written, bool) {
+import "cairn/internal/board"
+
+func textKey(name string) (func(board.Written) board.Written, bool) {
 	switch name {
 	case "home", "cmd+left":
-		return Written.LineStart, true
+		return board.Written.LineStart, true
 	case "end", "cmd+right":
-		return Written.LineEnd, true
+		return board.Written.LineEnd, true
 	case "alt+left":
-		return Written.WordBack, true
+		return board.Written.WordBack, true
 	case "alt+right":
-		return Written.WordOn, true
+		return board.Written.WordOn, true
 	case "shift+home", "cmd+shift+left":
-		return holdingTo(Written.LineStart), true
+		return holdingTo(board.Written.LineStart), true
 	case "shift+end", "cmd+shift+right":
-		return holdingTo(Written.LineEnd), true
+		return holdingTo(board.Written.LineEnd), true
 	case "alt+shift+left":
-		return holdingTo(Written.WordBack), true
+		return holdingTo(board.Written.WordBack), true
 	case "alt+shift+right":
-		return holdingTo(Written.WordOn), true
+		return holdingTo(board.Written.WordOn), true
 	case "delete-forward":
-		return Written.Forward, true
+		return board.Written.Forward, true
 	case "cmd+backspace":
-		return backTo(Written.LineStart), true
+		return backTo(board.Written.LineStart), true
 	case "alt+backspace":
-		return backTo(Written.WordBack), true
+		return backTo(board.Written.WordBack), true
 	}
 	return nil, false
 }
 
-func holdingTo(walk func(Written) Written) func(Written) Written {
-	return func(t Written) Written { return t.Selects(walk(t).At) }
+func holdingTo(walk func(board.Written) board.Written) func(board.Written) board.Written {
+	return func(t board.Written) board.Written { return t.Selects(walk(t).At) }
 }
 
-func backTo(walk func(Written) Written) func(Written) Written {
-	return func(t Written) Written { return t.BackTo(walk(t).At) }
+func backTo(walk func(board.Written) board.Written) func(board.Written) board.Written {
+	return func(t board.Written) board.Written { return t.BackTo(walk(t).At) }
 }
 
 func (w Window) holdingLines(by int) Window {
-	writing := w.form.Writing()
-	to := w.walksLines(by).form.Writing().At
-	w.form = w.form.Writes(writing.Selects(to))
+	writing := w.Form.Writing()
+	to := w.walksLines(by).Form.Writing().At
+	w.Form = w.Form.Writes(writing.Selects(to))
 	return w.inSightOfTheCaret()
 }

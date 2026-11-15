@@ -1,6 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
+	"cairn/internal/gui/motion"
 	"slices"
 	"strconv"
 	"strings"
@@ -18,7 +21,7 @@ const (
 type IntroRow struct {
 	Name, Says, Lasts string
 	InForce           bool
-	At                Box
+	At                geom.Box
 }
 
 const (
@@ -27,15 +30,15 @@ const (
 )
 
 // IntrosBox is the panel the intro chooser is drawn in: narrow, against the right of the window, so the board behind can be watched.
-func IntrosBox(width, height int) Box {
+func IntrosBox(width, height int) geom.Box {
 	wide, high := min(introsWide, width-2*settingsMargin), height-2*settingsMargin
-	return Box{X: width - settingsMargin - wide, Y: settingsMargin, W: wide, H: high}
+	return geom.Box{X: width - settingsMargin - wide, Y: settingsMargin, W: wide, H: high}
 }
 
 func (w Window) openingIntros() Window {
-	w.introsOpen, w.settingsAt = true, 0
-	w.introFrom, w.tab = w.tab, Tasks
-	w.introOn = max(0, slices.Index(files.Intros(), w.IntroShown()))
+	w.IntrosOpen, w.SettingsAt = true, 0
+	w.IntroFrom, w.Tab = w.Tab, board.Tasks
+	w.IntroOn = max(0, slices.Index(files.Intros(), w.IntroShown()))
 	return w.replaying()
 }
 
@@ -44,28 +47,28 @@ func (w Window) inIntros(name string) Window {
 	if step == 0 {
 		return w
 	}
-	return w.onIntro(min(len(files.Intros())-1, max(0, w.introOn+step)))
+	return w.onIntro(min(len(files.Intros())-1, max(0, w.IntroOn+step)))
 }
 
 func (w Window) onIntro(at int) Window {
-	w.introOn = at
+	w.IntroOn = at
 	rows, region := w.IntroRows(), w.introsRegion()
 	if row := rows[at].At; row.Y < region.Y {
-		w.settingsAt -= region.Y - row.Y
+		w.SettingsAt -= region.Y - row.Y
 	} else if row.Y+row.H > region.Y+region.H {
-		w.settingsAt += row.Y + row.H - region.Y - region.H
+		w.SettingsAt += row.Y + row.H - region.Y - region.H
 	}
-	w.settingsAt = max(0, w.settingsAt)
+	w.SettingsAt = max(0, w.SettingsAt)
 	return w.replaying()
 }
 
-func (w Window) clickingIntros(p Point) Window {
+func (w Window) clickingIntros(p geom.Point) Window {
 	if !w.introsRegion().In(p) {
 		return w
 	}
 	for i, row := range w.IntroRows() {
 		if row.At.In(p) {
-			if i == w.introOn {
+			if i == w.IntroOn {
 				return w.keepingIntro()
 			}
 			return w.onIntro(i)
@@ -81,31 +84,31 @@ func (w Window) keepingIntro() Window {
 }
 
 func (w Window) leavingIntros() Window {
-	w.introsOpen, w.settingsAt = false, 0
-	w.tab = w.introFrom
+	w.IntrosOpen, w.SettingsAt = false, 0
+	w.Tab = w.IntroFrom
 	return w.interrupted()
 }
 
-func (w Window) introsRegion() Box {
+func (w Window) introsRegion() geom.Box {
 	box := w.SettingsBox()
 	body := SettingsBody(box)
-	return Box{X: body.X + padding, Y: body.Y + inset, W: body.W - 2*padding, H: body.H - inset}
+	return geom.Box{X: body.X + padding, Y: body.Y + inset, W: body.W - 2*padding, H: body.H - inset}
 }
 
 // IntroRows is every intro the chooser offers, in the order the configuration names them, laid down its panel and scrolled.
 func (w Window) IntroRows() []IntroRow {
 	region, stage := w.introsRegion(), w.Stage()
 	inForce := files.DefaultIntro
-	if c := w.configured.Window; c != nil && c.Intro != "" {
+	if c := w.Configured.Window; c != nil && c.Intro != "" {
 		inForce = c.Intro
 	}
 	var rows []IntroRow
 	for i, name := range files.Intros() {
-		lasts := IntroLasts(name, stage)
+		lasts := motion.IntroLasts(name, stage)
 		rows = append(rows, IntroRow{
-			Name: name, Says: IntroSays(name), InForce: name == inForce,
+			Name: name, Says: motion.IntroSays(name), InForce: name == inForce,
 			Lasts: strconv.FormatFloat(lasts.Seconds(), 'f', 1, 64) + " s",
-			At:    Box{X: region.X, Y: region.Y - w.settingsAt + i*introHigh, W: region.W, H: introHigh},
+			At:    geom.Box{X: region.X, Y: region.Y - w.SettingsAt + i*introHigh, W: region.W, H: introHigh},
 		})
 	}
 	return rows

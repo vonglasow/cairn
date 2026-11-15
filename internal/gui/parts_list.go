@@ -2,70 +2,22 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 
 	"cairn/internal/engine"
 )
 
-func (f Form) partsField() (int, bool) {
-	at := slices.IndexFunc(f.fields, func(field board.Field) bool { return field.Name == "steps" })
-	return at, at != -1
-}
-
-func (f Form) parts() []engine.Part {
-	at, ok := f.partsField()
-	if !ok {
-		return nil
-	}
-	return engine.PartsIn(f.fields[at].Value)
-}
-
-func (f Form) withParts(parts []engine.Part) Form {
-	if at, ok := f.partsField(); ok {
-		f.fields = slices.Clone(f.fields)
-		f.fields[at].Value = board.PartsWritten(parts)
-	}
-	return f
-}
-
-func (f Form) onParts() bool {
-	at, ok := f.partsField()
-	return ok && f.at == at
-}
-
-func (f Form) lines() int { return len(f.parts()) + 1 }
-
-func (f Form) walkingParts(by int) Form {
-	if f.partAt+by < 0 {
-		return f.onto(f.at - 1)
-	}
-	f.partAt = min(f.lines()-1, f.partAt+by)
-	return f.takingTheOneOn()
-}
-
-func (f Form) tickedTogether() []int {
-	if taken := f.takenParts(); slices.Contains(taken, f.partAt) {
-		return taken
-	}
-	return []int{f.partAt}
-}
-
-func (f Form) ticking(at int, done bool) Form {
-	parts := f.parts()
-	parts[at].Done = done
-	return f.withParts(parts)
-}
-
 func (w Window) tickingPart() Window {
-	parts := w.form.parts()
-	if w.form.partAt >= len(parts) {
+	parts := w.Form.Parts()
+	if w.Form.PartAt >= len(parts) {
 		return w
 	}
-	together := w.form.tickedTogether()
+	together := w.Form.TickedTogether()
 	done := slices.ContainsFunc(together, func(at int) bool { return !parts[at].Done })
 	for _, at := range together {
-		if w = w.tickingOne(at, done); w.err != nil {
+		if w = w.tickingOne(at, done); w.Err != nil {
 			return w
 		}
 	}
@@ -73,9 +25,9 @@ func (w Window) tickingPart() Window {
 }
 
 func (w Window) tickingOne(at int, done bool) Window {
-	before := w.form
-	w.form = w.form.ticking(at, done)
-	part := w.form.parts()[at]
+	before := w.Form
+	w.Form = w.Form.Ticking(at, done)
+	part := w.Form.Parts()[at]
 	if part.Number == 0 {
 		return w
 	}
@@ -84,208 +36,134 @@ func (w Window) tickingOne(at int, done bool) Window {
 		ticked = "done"
 	}
 	w = w.asking(engine.StepEdit, engine.Input{Given: map[string]string{
-		"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(part.Number), ticked: "true"}})
-	if w.err != nil {
-		w.form = before
+		"number": strconv.Itoa(w.Form.Number), "step": strconv.Itoa(part.Number), ticked: "true"}})
+	if w.Err != nil {
+		w.Form = before
 		return w
 	}
-	w.form = before.ticking(at, done).openedWith(part)
+	w.Form = before.Ticking(at, done).OpenedWith(part)
 	return w
-}
-
-func (f Form) openedWith(part engine.Part) Form {
-	at, _ := f.partsField()
-	opened := engine.PartsIn(f.opened[at])
-	for i := range opened {
-		if opened[i].Number == part.Number {
-			opened[i].Done = part.Done
-		}
-	}
-	f.opened = slices.Clone(f.opened)
-	f.opened[at] = board.PartsWritten(opened)
-	return f
 }
 
 func (w Window) askingToDelete() Window {
-	switch taken := w.form.selectedParts(); len(taken) {
+	switch taken := w.Form.SelectedParts(); len(taken) {
 	case 0:
 	case 1:
-		w.form.partAt = taken[0]
-		w.screen, w.question = OnAsking, aboutDeletingPart
+		w.Form.PartAt = taken[0]
+		w.Screen, w.Question = board.OnAsking, board.AboutDeletingPart
 	default:
-		w.screen, w.question = OnAsking, aboutDeletingParts
+		w.Screen, w.Question = board.OnAsking, board.AboutDeletingParts
 	}
 	return w
 }
 
-func (w Window) partTitle() string {
-	parts := w.form.parts()
-	if w.form.partAt >= len(parts) {
-		return ""
-	}
-	return parts[w.form.partAt].Title
-}
-
 func (w Window) deletingPart() Window {
-	w.screen, w.question = OnForm, aboutDeleting
-	parts := w.form.parts()
-	at := w.form.partAt
+	w.Screen, w.Question = board.OnForm, board.AboutDeleting
+	parts := w.Form.Parts()
+	at := w.Form.PartAt
 	if at >= len(parts) {
 		return w
 	}
 	gone := parts[at].Number
 	rest := slices.Delete(parts, at, at+1)
 	if gone == 0 {
-		w.form = w.form.withParts(rest).takingTheOneOn()
+		w.Form = w.Form.WithParts(rest).TakingTheOneOn()
 		return w
 	}
-	before := w.form
-	field, _ := w.form.partsField()
-	w.form = w.form.withParts(without(rest, gone)).takingTheOneOn()
-	w.form.opened = slices.Clone(w.form.opened)
-	w.form.opened[field] = board.PartsWritten(without(engine.PartsIn(w.form.opened[field]), gone))
-	w.err = nil
+	before := w.Form
+	field, _ := w.Form.PartsField()
+	w.Form = w.Form.WithParts(board.Without(rest, gone)).TakingTheOneOn()
+	w.Form.Opened = slices.Clone(w.Form.Opened)
+	w.Form.Opened[field] = board.PartsWritten(board.Without(engine.PartsIn(w.Form.Opened[field]), gone))
+	w.Err = nil
 	w = w.asking(engine.StepDelete, engine.Input{Given: map[string]string{
-		"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(gone)}})
-	if w.err != nil {
-		w.form = before
+		"number": strconv.Itoa(w.Form.Number), "step": strconv.Itoa(gone)}})
+	if w.Err != nil {
+		w.Form = before
 	}
 	return w
 }
 
-func without(parts []engine.Part, gone int) []engine.Part {
-	kept := make([]engine.Part, 0, len(parts))
-	for _, part := range parts {
-		if part.Number == gone {
-			continue
-		}
-		if part.Number > gone {
-			part.Number--
-		}
-		kept = append(kept, part)
-	}
-	return kept
-}
-
-func (f Form) naming() Form {
-	parts := f.parts()
-	f.writingPart, f.named = true, Written{}
-	if f.partAt < len(parts) {
-		title := parts[f.partAt].Title
-		f.named = Written{Value: title, At: len([]rune(title))}
-	}
-	return f
-}
-
-func (f Form) committing() Form {
-	if !f.writingPart {
-		return f
-	}
-	f.writingPart = false
-	if f.named.Empty() {
-		return f
-	}
-	parts := f.parts()
-	if f.partAt < len(parts) {
-		parts[f.partAt].Title = f.named.Reads()
-		return f.withParts(parts)
-	}
-	f = f.withParts(append(parts, engine.Part{Title: f.named.Reads()}))
-	f.partAt, f.writingPart, f.named = f.lines()-1, true, Written{}
-	return f
-}
-
-func (f Form) carrying(from, to int) Form {
-	parts := f.parts()
-	if from >= len(parts) {
-		return f
-	}
-	to = min(len(parts)-1, to)
-	moved := parts[from]
-	f.partAt = to
-	return f.withParts(slices.Insert(slices.Delete(parts, from, from+1), to, moved))
-}
-
-func (w Window) lettingGoOfAPart(p Point) Window {
-	from, moved := w.form.carried-1, w.held.Moved
-	w.form.carried, w.held = 0, Held{}
+func (w Window) lettingGoOfAPart(p geom.Point) Window {
+	from, moved := w.Form.Carried-1, w.held.Moved
+	w.Form.Carried, w.held = 0, Held{}
 	if moved {
-		if to, on := w.partUnder(p); on && slices.Contains(w.form.takenParts(), from) {
-			w.form = w.form.carryingSeveral(to)
+		if to, on := w.partUnder(p); on && slices.Contains(w.Form.TakenParts(), from) {
+			w.Form = w.Form.CarryingSeveral(to)
 		} else if on {
-			w.form = w.form.carrying(from, to).takingTheOneOn()
+			w.Form = w.Form.Carrying(from, to).TakingTheOneOn()
 		}
 		return w
 	}
 	if !w.gathering && !w.stretching {
-		w.form = w.form.takingTheOneOn()
+		w.Form = w.Form.TakingTheOneOn()
 	}
-	if from == w.form.lines()-1 {
-		w.form = w.form.naming()
+	if from == w.Form.Lines()-1 {
+		w.Form = w.Form.Naming()
 		return w
 	}
 	tiles := w.partTiles()
-	if slices.ContainsFunc(tiles[:len(tiles)-1], func(tile Box) bool { return SubCheck(tile).In(p) }) {
+	if slices.ContainsFunc(tiles[:len(tiles)-1], func(tile geom.Box) bool { return SubCheck(tile).In(p) }) {
 		return w.tickingPart()
 	}
 	return w
 }
 
 func (w Window) inHand() (int, bool) {
-	from := w.form.carried - 1
-	return from, from >= 0 && from < len(w.form.parts()) && w.held.Moved
+	from := w.Form.Carried - 1
+	return from, from >= 0 && from < len(w.Form.Parts()) && w.held.Moved
 }
 
 // PartGhost is the step in hand: its own tile's size, moving only up and down, held where it was taken.
-func (w Window) PartGhost() (Box, bool) {
+func (w Window) PartGhost() (geom.Box, bool) {
 	from, ok := w.inHand()
 	if !ok {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	tiles := w.partTiles()
 	tile := tiles[0]
 	if at := from - w.partsFrom(); at >= 0 && at < len(tiles)-1 {
 		tile = tiles[at]
-		return Box{X: tile.X, Y: tile.Y + w.held.At.Y - w.held.From.Y, W: tile.W, H: tile.H}, true
+		return geom.Box{X: tile.X, Y: tile.Y + w.held.At.Y - w.held.From.Y, W: tile.W, H: tile.H}, true
 	}
-	return Box{X: tile.X, Y: w.held.At.Y - SubHeight/2, W: tile.W, H: SubHeight}, true
+	return geom.Box{X: tile.X, Y: w.held.At.Y - geom.SubHeight/2, W: tile.W, H: geom.SubHeight}, true
 }
 
 // PartLanding is the line saying where the step in hand would land: over the tile it would take the place of when carried up or held over its own, under it when carried down — which is where it ends up, the others moving to make room — and over the line that adds when it would go last.
-func (w Window) PartLanding() (Box, bool) {
+func (w Window) PartLanding() (geom.Box, bool) {
 	from, ok := w.inHand()
 	to, on := w.partUnder(w.held.At)
 	if !ok || !on {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	tiles := w.partTiles()
-	if to >= len(w.form.parts()) {
+	if to >= len(w.Form.Parts()) {
 		adding := tiles[len(tiles)-1]
-		return Box{X: tiles[0].X, Y: adding.Y, W: tiles[0].W, H: landingHigh}, true
+		return geom.Box{X: tiles[0].X, Y: adding.Y, W: tiles[0].W, H: landingHigh}, true
 	}
 	if to == from {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	tile := tiles[to-w.partsFrom()]
 	if to > from {
-		return Box{X: tile.X, Y: tile.Y + tile.H + 1 - landingHigh/2, W: tile.W, H: landingHigh}, true
+		return geom.Box{X: tile.X, Y: tile.Y + tile.H + 1 - landingHigh/2, W: tile.W, H: landingHigh}, true
 	}
-	return Box{X: tile.X, Y: tile.Y - 1 - landingHigh/2, W: tile.W, H: landingHigh}, true
+	return geom.Box{X: tile.X, Y: tile.Y - 1 - landingHigh/2, W: tile.W, H: landingHigh}, true
 }
 
 func (w Window) onParts(name string) (Window, bool) {
-	if w.form.writingPart {
+	if w.Form.WritingPart {
 		switch name {
 		case "enter":
-			w.form = w.form.committing()
+			w.Form = w.Form.Committing()
 		case "backspace":
-			w.form.named = w.form.named.Back()
+			w.Form.Named = w.Form.Named.Back()
 		case "left":
-			w.form.named = w.form.named.Left()
+			w.Form.Named = w.Form.Named.Left()
 		case "right":
-			w.form.named = w.form.named.Right()
+			w.Form.Named = w.Form.Named.Right()
 		case "cmd+a":
-			w.form.named = w.form.named.All()
+			w.Form.Named = w.Form.Named.All()
 		default:
 			return w, false
 		}
@@ -293,39 +171,39 @@ func (w Window) onParts(name string) (Window, bool) {
 	}
 	switch name {
 	case "down":
-		w.form = w.form.walkingParts(1)
+		w.Form = w.Form.WalkingParts(1)
 	case "up":
-		w.form = w.form.walkingParts(-1)
+		w.Form = w.Form.WalkingParts(-1)
 	case "space":
 		w = w.tickingPart()
 	case "enter":
-		w.form = w.form.naming()
+		w.Form = w.Form.Naming()
 	case "backspace", "delete-forward":
 		w = w.askingToDelete()
 	case "cmd+a":
-		w.form = w.form.takingAll()
+		w.Form = w.Form.TakingAll()
 	default:
 		return w, false
 	}
 	return w, true
 }
 
-func (w Window) partTiles() []Box {
-	at, ok := w.form.partsField()
+func (w Window) partTiles() []geom.Box {
+	at, ok := w.Form.PartsField()
 	if !ok {
 		return nil
 	}
-	_, value, rows := FormPlace(w.formBox(), w.form.Fields(), at)
-	tiles, adding := TickedPlaces(Framed(value, rows), w.form.lines()-1, w.partsFrom())
+	_, value, rows := FormPlace(w.formBox(), w.Form.Fields, at)
+	tiles, adding := TickedPlaces(Framed(value, rows), w.Form.Lines()-1, w.partsFrom())
 	return append(tiles, adding)
 }
 
-func (w Window) partsFrame() (Box, bool) {
-	at, ok := w.form.partsField()
+func (w Window) partsFrame() (geom.Box, bool) {
+	at, ok := w.Form.PartsField()
 	if !ok {
-		return Box{}, false
+		return geom.Box{}, false
 	}
-	_, value, rows := FormPlace(w.formBox(), w.form.Fields(), at)
+	_, value, rows := FormPlace(w.formBox(), w.Form.Fields, at)
 	return Framed(value, rows), true
 }
 
@@ -334,122 +212,42 @@ func (w Window) partsShown() int {
 	return max(1, ticksFit(frame))
 }
 
-func (w Window) partsFrom() int { return w.partsWithin(w.form.partsTop) }
+func (w Window) partsFrom() int { return w.partsWithin(w.Form.PartsTop) }
 
 func (w Window) partsWithin(top int) int {
-	return max(0, min(top, len(w.form.parts())-w.partsShown()))
+	return max(0, min(top, len(w.Form.Parts())-w.partsShown()))
 }
 
 func (w Window) keepingPartInSight() Window {
-	line := w.form.partAt
-	w.form.partsTop = w.partsWithin(min(line, max(w.partsFrom(), line-w.partsShown()+1)))
+	line := w.Form.PartAt
+	w.Form.PartsTop = w.partsWithin(min(line, max(w.partsFrom(), line-w.partsShown()+1)))
 	return w
 }
 
 func (w Window) scrollingParts(by int) Window {
-	total := w.form.spareParts + by
-	w.form.partsTop = w.partsWithin(w.partsFrom() + total/SubHeight)
-	w.form.spareParts = total % SubHeight
+	total := w.Form.SpareParts + by
+	w.Form.PartsTop = w.partsWithin(w.partsFrom() + total/geom.SubHeight)
+	w.Form.SpareParts = total % geom.SubHeight
 	return w
 }
 
-func (w Window) partUnder(p Point) (int, bool) {
+func (w Window) partUnder(p geom.Point) (int, bool) {
 	tiles := w.partTiles()
 	for i, tile := range tiles {
 		if !tile.In(p) {
 			continue
 		}
 		if i == len(tiles)-1 {
-			return w.form.lines() - 1, true
+			return w.Form.Lines() - 1, true
 		}
 		return i + w.partsFrom(), true
 	}
 	return 0, false
 }
 
-func (f Form) takingPart(at int, gathering, stretching bool) Form {
-	parts := f.parts()
-	switch {
-	case at >= len(parts):
-		f.partsTaken = nil
-	case gathering:
-		taken := slices.Clone(f.selectedParts())
-		if i := slices.Index(taken, at); i >= 0 {
-			taken = slices.Delete(taken, i, i+1)
-		} else {
-			taken = append(taken, at)
-		}
-		slices.Sort(taken)
-		f.partsTaken = taken
-	case stretching:
-		from := min(f.partAt, len(parts)-1)
-		f.partsTaken = nil
-		for i := min(from, at); i <= max(from, at); i++ {
-			f.partsTaken = append(f.partsTaken, i)
-		}
-	default:
-		f.partsTaken = []int{at}
-	}
-	f.partAt = at
-	return f
-}
-
-func (f Form) selectedParts() []int {
-	n := len(f.parts())
-	return slices.DeleteFunc(slices.Clone(f.partsTaken), func(i int) bool { return i >= n })
-}
-
-func (f Form) takenParts() []int {
-	if taken := f.selectedParts(); len(taken) >= 2 {
-		return taken
-	}
-	return nil
-}
-
-func (f Form) takingTheOneOn() Form {
-	f.partsTaken = nil
-	if f.partAt < len(f.parts()) {
-		f.partsTaken = []int{f.partAt}
-	}
-	return f
-}
-
-func (f Form) carryingSeveral(to int) Form {
-	parts, taken := f.parts(), f.takenParts()
-	if taken == nil || slices.Contains(taken, to) {
-		return f
-	}
-	var block, rest []engine.Part
-	for i, p := range parts {
-		if slices.Contains(taken, i) {
-			block = append(block, p)
-			continue
-		}
-		rest = append(rest, p)
-	}
-	at := len(rest)
-	if to < len(parts) {
-		at = 0
-		for i := range to {
-			if !slices.Contains(taken, i) {
-				at++
-			}
-		}
-		if to > taken[0] {
-			at++
-		}
-	}
-	f.partsTaken = nil
-	for i := range block {
-		f.partsTaken = append(f.partsTaken, at+i)
-	}
-	f.partAt = at + len(block) - 1
-	return f.withParts(slices.Insert(rest, at, block...))
-}
-
 func (w Window) deletingParts() Window {
-	w.screen, w.question = OnForm, aboutDeleting
-	taken, parts := w.form.takenParts(), w.form.parts()
+	w.Screen, w.Question = board.OnForm, board.AboutDeleting
+	taken, parts := w.Form.TakenParts(), w.Form.Parts()
 	var gone []int
 	var rest []engine.Part
 	for i, p := range parts {
@@ -461,38 +259,25 @@ func (w Window) deletingParts() Window {
 	}
 	renumbered := func(ps []engine.Part) []engine.Part {
 		for k := len(gone) - 1; k >= 0; k-- {
-			ps = without(ps, gone[k])
+			ps = board.Without(ps, gone[k])
 		}
 		return ps
 	}
-	before := w.form
-	w.form = w.form.withParts(renumbered(rest))
-	w.form.partAt = min(taken[0], len(rest))
-	w.form = w.form.takingTheOneOn()
+	before := w.Form
+	w.Form = w.Form.WithParts(renumbered(rest))
+	w.Form.PartAt = min(taken[0], len(rest))
+	w.Form = w.Form.TakingTheOneOn()
 	if len(gone) == 0 {
 		return w
 	}
-	field, _ := w.form.partsField()
-	kept := board.PartsWritten(renumbered(engine.PartsIn(before.opened[field])))
-	w.form.opened = slices.Clone(w.form.opened)
-	w.form.opened[field] = kept
-	w.err = nil
-	w = w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{"number": strconv.Itoa(w.form.Number), "steps": kept}})
-	if w.err != nil {
-		w.form = before
+	field, _ := w.Form.PartsField()
+	kept := board.PartsWritten(renumbered(engine.PartsIn(before.Opened[field])))
+	w.Form.Opened = slices.Clone(w.Form.Opened)
+	w.Form.Opened[field] = kept
+	w.Err = nil
+	w = w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{"number": strconv.Itoa(w.Form.Number), "steps": kept}})
+	if w.Err != nil {
+		w.Form = before
 	}
 	return w
-}
-
-func (f Form) takingAll() Form {
-	n := len(f.parts())
-	if n < 2 {
-		return f
-	}
-	f.partsTaken = nil
-	for i := range n {
-		f.partsTaken = append(f.partsTaken, i)
-	}
-	f.partAt = n - 1
-	return f
 }

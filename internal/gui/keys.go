@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"strconv"
 	"strings"
 	"time"
@@ -9,7 +10,7 @@ import (
 	"cairn/internal/engine"
 )
 
-var goingTo = map[string]Tab{"t": Tasks, "o": Objectives, "i": Time}
+var goingTo = map[string]board.Tab{"t": board.Tasks, "o": board.Objectives, "i": board.Time}
 
 var spellings = map[string]string{
 	"ctrl+n":       "cmd+n",
@@ -25,22 +26,22 @@ func (w Window) Key(name string) Window {
 	if said, ok := spellings[name]; ok {
 		name = said
 	}
-	if w.stranded() {
+	if w.Stranded() {
 		if name == "cmd+," {
 			return w.openingConfiguration()
 		}
 		return w
 	}
-	if w.screen == OnPalette {
+	if w.Screen == board.OnPalette {
 		return w.onPalette(name)
 	}
-	if w.seriesChord {
-		w.seriesChord = false
+	if w.SeriesChord {
+		w.SeriesChord = false
 		return w.chording(name)
 	}
-	if w.screen == OnTheBoard && w.going {
+	if w.Screen == board.OnTheBoard && w.going {
 		w.going = false
-		if page, ok := goingTo[name]; ok && w.now.Sub(w.goneAt) <= time.Second {
+		if page, ok := goingTo[name]; ok && w.Now.Sub(w.goneAt) <= time.Second {
 			return w.onPage(page)
 		}
 	}
@@ -49,33 +50,33 @@ func (w Window) Key(name string) Window {
 			return w.Choose(offer)
 		}
 	}
-	if on, ok := screens[w.screen]; ok {
+	if on, ok := screens[w.Screen]; ok {
 		return on(w, name)
 	}
 	return w
 }
 
-var screens = map[Screen]func(Window, string) Window{
-	OnTheBoard:      Window.onBoard,
-	OnForm:          func(w Window, name string) Window { return w.inForm(name).inSightOfTheCaret() },
-	OnSearch:        Window.onSearch,
-	OnChoosing:      Window.inChoosing,
-	OnCalendar:      Window.onCalendar,
-	OnMenu:          Window.onMenu,
-	OnBackups:       Window.onBackups,
-	OnLabels:        Window.onLabels,
-	OnFiltering:     Window.onFilters,
-	OnConfiguration: Window.onConfiguration,
-	OnWorkspaces:    Window.onWorkspaces,
-	OnFates:         Window.onFates,
-	OnSeriesFates:   Window.onSeriesFates,
-	OnRule:          Window.onRule,
-	OnKeeping:       Window.onKeeping,
-	OnViews:         Window.onViews,
+var screens = map[board.Screen]func(Window, string) Window{
+	board.OnTheBoard:      Window.onBoard,
+	board.OnForm:          func(w Window, name string) Window { return w.inForm(name).inSightOfTheCaret() },
+	board.OnSearch:        Window.onSearch,
+	board.OnChoosing:      Window.inChoosing,
+	board.OnCalendar:      Window.onCalendar,
+	board.OnMenu:          Window.onMenu,
+	board.OnBackups:       Window.onBackups,
+	board.OnLabels:        Window.onLabels,
+	board.OnFiltering:     Window.onFilters,
+	board.OnConfiguration: Window.onConfiguration,
+	board.OnWorkspaces:    Window.onWorkspaces,
+	board.OnFates:         Window.onFates,
+	board.OnSeriesFates:   Window.onSeriesFates,
+	board.OnRule:          Window.onRule,
+	board.OnKeeping:       Window.onKeeping,
+	board.OnViews:         Window.onViews,
 }
 
 func (w Window) onBoard(name string) Window {
-	if w.tab == Time {
+	if w.Tab == board.Time {
 		mine, shared := weekKeys(name)
 		if mine {
 			return w.onWeek(name)
@@ -84,34 +85,34 @@ func (w Window) onBoard(name string) Window {
 			return w
 		}
 	}
-	if w.tab == Series {
+	if w.Tab == board.Series {
 		if done, took := w.seriesKey(name); took {
 			return done
 		}
 	}
-	if name == "esc" && w.chosen != 0 {
-		w.chosen, w.chosenGoal = 0, false
+	if name == "esc" && w.Chosen != 0 {
+		w.Chosen, w.ChosenGoal = 0, false
 		return w
 	}
-	if w.tab == Objectives && name == "t" {
+	if w.Tab == board.Objectives && name == "t" {
 		return w.detailing(ShowItsTasks)
 	}
-	if g, ok := w.Detailed(); w.tab == Objectives && name == "shift+n" && ok && g.Parent == 0 {
+	if g, ok := w.Detailed(); w.Tab == board.Objectives && name == "shift+n" && ok && g.Parent == 0 {
 		return w.detailing(AddSubSays)
 	}
-	if w.tab == Objectives {
+	if w.Tab == board.Objectives {
 		if folded, took := w.foldingKey(name); took {
 			return folded
 		}
 	}
-	if w.tab == Tasks && (name == "[" || name == "]") {
+	if w.Tab == board.Tasks && (name == "[" || name == "]") {
 		by := 1
 		if name == "[" {
 			by = -1
 		}
 		return w.walkingNarrowing(by)
 	}
-	if card, ok := w.snap.Card(w.chosen); ok && w.chosen != 0 && !w.chosenGoal && w.tab == Tasks {
+	if card, ok := w.Snap.Card(w.Chosen); ok && w.Chosen != 0 && !w.ChosenGoal && w.Tab == board.Tasks {
 		switch name {
 		case "m":
 			return w.settingUnderTheCard("state", engine.States(), card.State)
@@ -122,7 +123,7 @@ func (w Window) onBoard(name string) Window {
 		case "t":
 			return w.datingChosen()
 		case "r":
-			_, w.seriesChord = w.occurrenceChosen()
+			_, w.SeriesChord = w.OccurrenceChosen()
 			return w
 		}
 	}
@@ -134,14 +135,14 @@ func (w Window) onBoard(name string) Window {
 	}
 	switch name {
 	case "g":
-		w.going, w.goneAt = true, w.now
+		w.going, w.goneAt = true, w.Now
 		return w
 	case "f":
-		if w.chosen != 0 && !w.chosenGoal {
+		if w.Chosen != 0 && !w.ChosenGoal {
 			return w.working()
 		}
 	case "o":
-		if w.chosen != 0 && !w.chosenGoal {
+		if w.Chosen != 0 && !w.ChosenGoal {
 			return w.startingLinked()
 		}
 	case "cmd+b":
@@ -161,15 +162,15 @@ func (w Window) onBoard(name string) Window {
 	case "backspace":
 		return w.takingOffLast()
 	case "alt+backspace":
-		w.filters, w.looking = w.filters.Cleared(), Written{}
+		w.Filters, w.Looking = w.Filters.Cleared(), board.Written{}
 		return w
 	case "cmd+e":
 		return w.exportingTasks()
 	case "cmd+o":
 		return w.importingTasks()
 	case "shift+x":
-		if w.tab == Tasks && w.sweeps() != "" {
-			w.screen, w.question = OnAsking, aboutSweeping
+		if w.Tab == board.Tasks && w.Sweeps() != "" {
+			w.Screen, w.Question = board.OnAsking, board.AboutSweeping
 		}
 	case "tab":
 		return w.other(1)
@@ -199,42 +200,42 @@ func (w Window) onBoard(name string) Window {
 
 func (w Window) onSearch(name string) Window {
 	if edit, ok := textKey(name); ok {
-		w.looking = edit(w.looking)
+		w.Looking = edit(w.Looking)
 		return w
 	}
 	switch name {
 	case "backspace":
-		if w.looking.Empty() {
+		if w.Looking.Empty() {
 			return w.leavingSearch()
 		}
-		w.looking = w.looking.Back()
+		w.Looking = w.Looking.Back()
 	case "left":
 		return w.walks(-1)
 	case "right":
 		return w.walks(1)
 	case "enter":
-		w.screen = OnTheBoard
+		w.Screen = board.OnTheBoard
 	}
 	return w
 }
 
 func (w Window) inForm(name string) Window {
-	if w.form.onWork {
+	if w.Form.OnWork {
 		walked, _ := w.onWork(name)
 		return walked
 	}
-	if name == "tab" && w.reachingWork() {
-		w.form.onWork, w.form.workAt = true, 0
+	if name == "tab" && w.ReachingWork() {
+		w.Form.OnWork, w.Form.WorkAt = true, 0
 		return w
 	}
-	if w.form.onParts() {
+	if w.Form.OnParts() {
 		if done, took := w.onParts(name); took {
 			return done.keepingPartInSight()
 		}
 	}
-	long := w.form.Fields()[w.form.On()].Long
-	if edit, ok := textKey(name); ok && !w.onAClosedSet() {
-		w.form = w.form.Writes(edit(w.form.Writing()))
+	long := w.Form.Fields[w.Form.On()].Long
+	if edit, ok := textKey(name); ok && !w.OnAClosedSet() {
+		w.Form = w.Form.Writes(edit(w.Form.Writing()))
 		return w.inSightOfTheCaret()
 	}
 	if long && (name == "shift+up" || name == "shift+down") {
@@ -246,9 +247,9 @@ func (w Window) inForm(name string) Window {
 	}
 	switch name {
 	case "tab":
-		w.form = w.form.onto(w.form.On() + 1)
+		w.Form = w.Form.Onto(w.Form.On() + 1)
 	case "shift+tab":
-		w.form = w.form.onto(w.form.On() - 1)
+		w.Form = w.Form.Onto(w.Form.On() - 1)
 	case "down", "up":
 		by := 1
 		if name == "up" {
@@ -257,23 +258,23 @@ func (w Window) inForm(name string) Window {
 		if long {
 			return w.walksLines(by)
 		}
-		w.form = w.form.onto(w.form.On() + by)
+		w.Form = w.Form.Onto(w.Form.On() + by)
 	case "backspace":
 		return w.back()
 	case "cmd+a":
 		if w.picked.Key != "" {
 			return w.all()
 		}
-		w.form = w.form.Writes(w.form.Writing().All())
+		w.Form = w.Form.Writes(w.Form.Writing().All())
 	case "cmd+c":
 		if w.picked.Key != "" {
 			return w.copyingPicked()
 		}
-		w.copying = w.form.Writing().Holds()
+		w.copying = w.Form.Writing().Holds()
 	case "cmd+x":
-		w.copying = w.form.Writing().Holds()
-		if !w.onAClosedSet() {
-			w.form = w.form.Writes(w.form.Writing().Back())
+		w.copying = w.Form.Writing().Holds()
+		if !w.OnAClosedSet() {
+			w.Form = w.Form.Writes(w.Form.Writing().Back())
 		}
 	case "cmd+v":
 		w.pasting = true
@@ -290,14 +291,14 @@ func (w Window) inForm(name string) Window {
 	case "right":
 		return w.walks(1)
 	case "enter", "shift+enter":
-		if on := w.form.Fields()[w.form.On()]; chosenFromAList(on) || chosenOnACalendar(on) {
+		if on := w.Form.Fields[w.Form.On()]; chosenFromAList(on) || chosenOnACalendar(on) {
 			return w.Choose("Choose")
 		}
 		if long {
-			w.form = w.form.Writes(w.form.Writing().Types("\n"))
+			w.Form = w.Form.Writes(w.Form.Writing().Types("\n"))
 			return w.inSightOfTheCaret()
 		}
-		w.form = w.form.onto(w.form.On() + 1)
+		w.Form = w.Form.Onto(w.Form.On() + 1)
 	}
 	return w
 }
@@ -307,14 +308,14 @@ func (w Window) inSightOfTheCaret() Window {
 	if !ok {
 		return w
 	}
-	line, _ := lines.At(w.form.Writing().At)
+	line, _ := lines.At(w.Form.Writing().At)
 	w.saying = w.settledSaying(board.InSight(line, 1, rows, w.saying))
 	return w
 }
 
 func (w Window) holding(by int) Window {
-	writing := w.form.Writing()
-	w.form = w.form.Writes(writing.Selects(writing.At + by))
+	writing := w.Form.Writing()
+	w.Form = w.Form.Writes(writing.Selects(writing.At + by))
 	return w
 }
 
@@ -336,32 +337,32 @@ func (w Window) Pasted(text string) Window {
 	if text == "" {
 		return w
 	}
-	if w.screen == OnChoosing {
+	if w.Screen == board.OnChoosing {
 		if !w.ChoosingSearched() {
 			return w
 		}
-		w.filtering, w.choosing, w.choosingFrom = w.filtering.Types(text), 0, 0
+		w.Filtering, w.ChoosingOn, w.ChoosingFrom = w.Filtering.Types(text), 0, 0
 		return w
 	}
-	if w.screen != OnForm {
+	if w.Screen != board.OnForm {
 		return w
 	}
-	if w.form.onParts() || w.onAClosedSet() {
+	if w.Form.OnParts() || w.OnAClosedSet() {
 		return w.Types(text)
 	}
-	w.form = w.form.Writes(w.form.Writing().Types(text))
+	w.Form = w.Form.Writes(w.Form.Writing().Types(text))
 	return w
 }
 
 func (w Window) walking(across, down int) Window {
-	if w.tab == Objectives {
+	if w.Tab == board.Objectives {
 		return w.walkingGoals(across, down)
 	}
-	c, spot, moved := board.Walk(w.Showing().Cards, w.archived, w.chosen, across, down)
+	c, spot, moved := board.Walk(w.Showing().Cards, w.Archived, w.Chosen, across, down)
 	if !moved {
 		return w
 	}
-	w.chosen, w.chosenGoal = c.Number, false
+	w.Chosen, w.ChosenGoal = c.Number, false
 	if spot.InBand {
 		return w.followingLane(spot.Column, spot.At)
 	}
@@ -369,11 +370,11 @@ func (w Window) walking(across, down int) Window {
 }
 
 func (w Window) shifting(across, down int) Window {
-	if w.tab == Objectives || w.chosen == 0 {
+	if w.Tab == board.Objectives || w.Chosen == 0 {
 		return w
 	}
 	showing := w.Showing().Cards
-	column, inBand, _, found := board.Where(showing, w.archived, w.chosen)
+	column, inBand, _, found := board.Where(showing, w.Archived, w.Chosen)
 	if !found {
 		return w
 	}
@@ -383,28 +384,28 @@ func (w Window) shifting(across, down int) Window {
 			return w
 		}
 		return w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(w.chosen), "state": state}})
+			"number": strconv.Itoa(w.Chosen), "state": state}})
 	}
 	if inBand {
 		return w
 	}
-	given, ok := board.Step(w.inColumn(column), w.chosen, down)
+	given, ok := board.Step(w.InColumn(column), w.Chosen, down)
 	if !ok {
 		return w
 	}
-	given["number"] = strconv.Itoa(w.chosen)
+	given["number"] = strconv.Itoa(w.Chosen)
 	return w.asking(engine.TaskMove, engine.Input{Given: given})
 }
 
 func (w Window) followingLane(lane, at int) Window {
 	run := w.Layout().Lane[lane]
-	w.lanes[lane] = w.settledLane(lane, board.InSight(at, CardHeight, run.H, w.lanes[lane]))
+	w.lanes[lane] = w.settledLane(lane, board.InSight(at, geom.CardHeight, run.H, w.lanes[lane]))
 	return w
 }
 
 func (w Window) following(column, at int) Window {
 	run := w.Layout().Column[column]
-	w.scroll[column] = w.settled(column, board.InSight(at, CardHeight, run.H, w.scroll[column]))
+	w.scroll[column] = w.settled(column, board.InSight(at, geom.CardHeight, run.H, w.scroll[column]))
 	return w
 }
 
@@ -426,7 +427,7 @@ func (w Window) walkingGoals(across, down int) Window {
 	}
 	at := -1
 	for i, b := range here {
-		if w.chosenGoal && b.Goal.Number == w.chosen {
+		if w.ChosenGoal && b.Goal.Number == w.Chosen {
 			at = i
 		}
 	}
@@ -458,12 +459,12 @@ func (w Window) warned(answer engine.Answer) Window {
 
 func (w Window) agreed() Window {
 	agreeing := w.agreeing
-	w.screen, w.question = OnTheBoard, aboutDeleting
+	w.Screen, w.Question = board.OnTheBoard, board.AboutDeleting
 	w.agreeing = engine.Agreeing{}
 	w = w.asking(agreeing.Op, agreeing.In)
-	if failed := w.err; failed != nil {
+	if failed := w.Err; failed != nil {
 		w = w.Look()
-		w.err = failed
+		w.Err = failed
 	}
 	return w
 }

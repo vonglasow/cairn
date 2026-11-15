@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,8 +11,8 @@ import (
 
 func (w *world) viewsSteps(sc *godog.ScenarioContext) {
 	sc.Then(`^the name proposed for the view is "([^"]*)"$`, func(want string) error {
-		if w.w.Screen() != OnKeeping {
-			return fmt.Errorf("nothing is being kept as a view: the screen is %v", w.w.Screen())
+		if w.w.Screen != board.OnKeeping {
+			return fmt.Errorf("nothing is being kept as a view: the screen is %v", w.w.Screen)
 		}
 		if got := w.w.Naming().Reads(); got != want {
 			return fmt.Errorf("the name proposed is %q", got)
@@ -60,8 +61,8 @@ func (w *world) viewsSteps(sc *godog.ScenarioContext) {
 		return fmt.Errorf("no pill stands for a view: %+v", w.w.Pills())
 	})
 	sc.Then(`^the views panel lists (".*")$`, func(list string) error {
-		if w.w.Screen() != OnViews {
-			return fmt.Errorf("the views panel is not open: the screen is %v", w.w.Screen())
+		if w.w.Screen != board.OnViews {
+			return fmt.Errorf("the views panel is not open: the screen is %v", w.w.Screen)
 		}
 		var said []string
 		for _, row := range w.w.ViewsPanelRows() {

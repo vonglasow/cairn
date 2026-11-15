@@ -3,26 +3,24 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/act"
+	"cairn/internal/gui/geom"
 	"cairn/internal/theme"
-	"fmt"
-	"strings"
 	"time"
 )
 
 // PanelOffers is where the offers of the panel that has the window are drawn, and so where they are clicked.
-func (w Window) PanelOffers() []Box { return w.offersAlong(w.panel()) }
+func (w Window) PanelOffers() []geom.Box { return w.offersAlong(w.panel()) }
 
 // ServingRows is how many tiles that box shows at once.
 func (w Window) ServingRows() int {
-	return max(1, w.workFrame().H/SubHeight)
+	return max(1, w.workFrame().H/geom.SubHeight)
 }
 
 // Contrast is how far two colours stand apart, as a scheme is held to.
 var Contrast = theme.Contrast
 
-// ValueOf answers what a field holds, and nothing for a field that is not there.
-func (f Form) ValueOf(name string) string {
-	for _, field := range f.fields {
+func valueOf(f board.Form, name string) string {
+	for _, field := range f.Fields {
 		if field.Name == name {
 			return field.Value
 		}
@@ -30,9 +28,8 @@ func (f Form) ValueOf(name string) string {
 	return ""
 }
 
-// Walk moves the keyboard from one field to the next, and stops at both ends rather than wrapping: a form that wraps is a form somebody falls off.
-func (f Form) Walk(by int) Form {
-	f.at = min(len(f.fields)-1, max(0, f.at+by))
+func walked(f board.Form, by int) board.Form {
+	f.At = min(len(f.Fields)-1, max(0, f.At+by))
 	return f
 }
 
@@ -43,63 +40,41 @@ func (w Window) OnSystem(system string) Window {
 }
 
 // WhereChosen is where what is chosen is drawn and the run of the window it is drawn in, so that a test can ask whether one is inside the other.
-func (w Window) WhereChosen() (box, run Box, ok bool) {
+func (w Window) WhereChosen() (box, run geom.Box, ok bool) {
 	l := w.Layout()
-	if w.tab == Objectives {
+	if w.Tab == board.Objectives {
 		for i, b := range w.Tree() {
-			if b.Goal.Number == w.chosen {
+			if b.Goal.Number == w.Chosen {
 				return GoalAt(l, i, w.goals), GoalsRun(l), true
 			}
 		}
-		return Box{}, Box{}, false
+		return geom.Box{}, geom.Box{}, false
 	}
-	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.Archived)
 	for i, held := range dealt {
 		for j, c := range held.Cards {
-			if c.Number == w.chosen {
+			if c.Number == w.Chosen {
 				return l.CardAt(i, j, w.scroll[i]), l.Column[i], true
 			}
 		}
 	}
 	for lane := range board.Stalled {
-		for j, c := range w.inLane(lane) {
-			if c.Number == w.chosen {
+		for j, c := range w.InLane(lane) {
+			if c.Number == w.Chosen {
 				return l.LaneCardAt(lane, j, w.lanes[lane]), l.Lane[lane], true
 			}
 		}
 	}
-	return Box{}, Box{}, false
-}
-
-// Showing is how many whole cards a column has room for.
-func (l Layout) Showing(column int) int { return l.Column[column].H / CardHeight }
-
-// Written is the whole shape as a person can read it, so a test can pin it and a sum changed by accident shows up as a number that moved.
-func (l Layout) Written() string {
-	var out strings.Builder
-	say := func(name string, b Box) {
-		fmt.Fprintf(&out, "%-12s x=%-5d y=%-5d w=%-5d h=%d\n", name, b.X, b.Y, b.W, b.H)
-	}
-	say("tabs", l.Tabs)
-	for i := range board.Columns {
-		say(fmt.Sprintf("head %d", i), l.Head[i])
-		say(fmt.Sprintf("column %d", i), l.Column[i])
-	}
-	say("band", l.Band)
-	for i, name := range board.Stalled {
-		say("lane "+name, l.Lane[i])
-	}
-	say("bar", l.Bar)
-	return out.String()
+	return geom.Box{}, geom.Box{}, false
 }
 
 // PartOn is the title of the part the keyboard is on, and whether it is on one.
 func (w Window) PartOn() (string, bool) {
-	parts := w.form.parts()
-	if w.screen != OnForm || !w.form.onParts() || w.form.partAt >= len(parts) {
+	parts := w.Form.Parts()
+	if w.Screen != board.OnForm || !w.Form.OnParts() || w.Form.PartAt >= len(parts) {
 		return "", false
 	}
-	return parts[w.form.partAt].Title, true
+	return parts[w.Form.PartAt].Title, true
 }
 
 // Hovered is the offer the pointer is resting on.
@@ -107,17 +82,17 @@ func (w Window) Hovered() (string, bool) { return w.over, w.hovered }
 
 // Serving is the work under the objective that is open, by title and by where each task stands.
 func (w Window) Serving() []board.Card {
-	if !w.chosenGoal {
+	if !w.ChosenGoal {
 		return nil
 	}
-	return board.Serving(w.snap.Cards, w.chosen)
+	return board.Serving(w.Snap.Cards, w.Chosen)
 }
 
 // On puts the keyboard on a field by name, which is what a click does and what a test says.
 func (w Window) On(name string) Window {
-	for i, field := range w.form.Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == name {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	return w
@@ -148,13 +123,4 @@ func narrow(line string, _ int) []int {
 		edges = append(edges, edges[len(edges)-1]+wide)
 	}
 	return edges
-}
-
-func (f Form) valueOf(name string) string {
-	for _, field := range f.fields {
-		if field.Name == name {
-			return field.Value
-		}
-	}
-	return ""
 }

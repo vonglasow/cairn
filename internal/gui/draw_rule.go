@@ -1,6 +1,9 @@
 package gui
 
-import "cairn/internal/board"
+import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
+)
 
 func drawRule(k Kit, w Window) {
 	picker := w.RulePicked()
@@ -36,17 +39,17 @@ func drawRule(k Kit, w Window) {
 }
 
 func drawReadBack(k Kit, w Window) {
-	read, ok := RepeatsReadAt(w.formBox(), w.form.Fields())
+	read, ok := RepeatsReadAt(w.formBox(), w.Form.Fields)
 	if !ok {
 		return
 	}
-	for _, field := range w.form.Fields() {
+	for _, field := range w.Form.Fields {
 		if field.Arg != board.RepeatsField().Arg {
 			continue
 		}
-		said := board.RuleReadBack(field.Value, w.now)
-		top := Box{X: read.X, Y: read.Y, W: read.W, H: lineHigh}
-		under := Box{X: read.X, Y: read.Y + lineHigh, W: read.W, H: lineHigh}
+		said := board.RuleReadBack(field.Value, w.Now)
+		top := geom.Box{X: read.X, Y: read.Y, W: read.W, H: lineHigh}
+		under := geom.Box{X: read.X, Y: read.Y + lineHigh, W: read.W, H: lineHigh}
 		if said.Wrong != "" {
 			say(k.gtx, k.th, k.skin.Colour.State.Wrong, top, fits(k.gtx, k.th, said.Wrong, top.W, small), small)
 			continue
@@ -54,7 +57,7 @@ func drawReadBack(k Kit, w Window) {
 		if said.Says == "" {
 			continue
 		}
-		LoopMark{Ink: k.skin.Colour.Accent.Base}.Draw(k, Box{X: top.X, Y: top.Y + (top.H-loopSide)/2, W: loopSide, H: loopSide})
+		LoopMark{Ink: k.skin.Colour.Accent.Base}.Draw(k, geom.Box{X: top.X, Y: top.Y + (top.H-loopSide)/2, W: loopSide, H: loopSide})
 		top.X, top.W = top.X+loopSide+inset, top.W-loopSide-inset
 		say(k.gtx, k.th, k.skin.Colour.Ink.OnTint, top, fits(k.gtx, k.th, said.Says, top.W, small), small)
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, under, fits(k.gtx, k.th, said.Next, under.W, small), small)

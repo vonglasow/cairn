@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/debug"
+	"cairn/internal/gui/geom"
 	"image"
 	"os"
 	"strings"
@@ -19,31 +20,31 @@ import (
 	"gioui.org/unit"
 )
 
-func frames(t *testing.T, w Window, events ...event.Event) (Window, time.Time, Point) {
+func frames(t *testing.T, w Window, events ...event.Event) (Window, time.Time, geom.Point) {
 	t.Helper()
-	return framesAt(t, w, time.Time{}, Point{}, time.Now(), events...)
+	return framesAt(t, w, time.Time{}, geom.Point{}, time.Now(), events...)
 }
 
 func framesTraced(t *testing.T, w Window, traced *debug.Log, events ...event.Event) Window {
 	t.Helper()
-	w, _, _ = framesInto(t, w, time.Time{}, Point{}, time.Now(), traced, events...)
+	w, _, _ = framesInto(t, w, time.Time{}, geom.Point{}, time.Now(), traced, events...)
 	return w
 }
 
 func framesAt(
 	t *testing.T, w Window,
-	pressed time.Time, pressedAt Point, now time.Time,
+	pressed time.Time, pressedAt geom.Point, now time.Time,
 	events ...event.Event,
-) (Window, time.Time, Point) {
+) (Window, time.Time, geom.Point) {
 	t.Helper()
 	return framesInto(t, w, pressed, pressedAt, now, nil, events...)
 }
 
 func framesInto(
 	t *testing.T, w Window,
-	pressed time.Time, pressedAt Point, now time.Time, traced *debug.Log,
+	pressed time.Time, pressedAt geom.Point, now time.Time, traced *debug.Log,
 	events ...event.Event,
-) (Window, time.Time, Point) {
+) (Window, time.Time, geom.Point) {
 	t.Helper()
 	var router input.Router
 	var ops op.Ops
@@ -77,7 +78,7 @@ func composing(w Window, made, dead, letter string) Window {
 	var ops op.Ops
 	frame := func() {
 		gtx := frameOf(&ops, &router, w, time.Now())
-		w, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+		w, _, _ = heard(gtx, w, time.Time{}, geom.Point{}, nil)
 		router.Frame(gtx.Ops)
 	}
 	frame()
@@ -116,8 +117,8 @@ func TestAFrameOfEventsChoosesACard(t *testing.T) {
 		pointer.Event{Kind: pointer.Press, Position: where, Buttons: pointer.ButtonPrimary},
 		pointer.Event{Kind: pointer.Release, Position: where, Buttons: pointer.ButtonPrimary},
 	)
-	if got.Chosen() != 1 {
-		t.Fatalf("a press and a release chose %d", got.Chosen())
+	if got.Chosen != 1 {
+		t.Fatalf("a press and a release chose %d", got.Chosen)
 	}
 }
 
@@ -142,11 +143,11 @@ func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 	where := at(w, 1, 0)
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 
-	got, _, _ := framesAt(t, w, now, Point{X: int(where.X), Y: int(where.Y)}, now.Add(time.Millisecond),
+	got, _, _ := framesAt(t, w, now, geom.Point{X: int(where.X), Y: int(where.Y)}, now.Add(time.Millisecond),
 		pointer.Event{Kind: pointer.Press, Position: where, Buttons: pointer.ButtonPrimary},
 	)
-	if got.Screen() != OnForm {
-		t.Fatalf("a second press left the window on %v", got.Screen())
+	if got.Screen != board.OnForm {
+		t.Fatalf("a second press left the window on %v", got.Screen)
 	}
 }
 
@@ -156,7 +157,7 @@ func TestAFrameOfEventsRemembersAPressForNextTime(t *testing.T) {
 	where := at(w, 1, 0)
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 
-	_, pressed, pressedAt := framesAt(t, w, time.Time{}, Point{}, now,
+	_, pressed, pressedAt := framesAt(t, w, time.Time{}, geom.Point{}, now,
 		pointer.Event{Kind: pointer.Press, Position: where, Buttons: pointer.ButtonPrimary},
 	)
 	if pressed != now {
@@ -179,7 +180,7 @@ func TestAFrameOfEventsScrollsAColumn(t *testing.T) {
 	got, _, _ := frames(t, w, pointer.Event{
 		Kind:     pointer.Scroll,
 		Position: where,
-		Scroll:   f32.Pt(0, float32(CardHeight)),
+		Scroll:   f32.Pt(0, float32(geom.CardHeight)),
 	})
 	if got.scroll[1] == 0 {
 		t.Fatal("a scroll over a column moved nothing")
@@ -193,8 +194,8 @@ func TestAFrameOfEventsTakesAKey(t *testing.T) {
 	got, _, _ := frames(t, w,
 		key.Event{Name: "N", Modifiers: key.ModCommand, State: key.Press},
 	)
-	if got.Screen() != OnForm {
-		t.Fatalf("⌘N through the loop left the window on %v", got.Screen())
+	if got.Screen != board.OnForm {
+		t.Fatalf("⌘N through the loop left the window on %v", got.Screen)
 	}
 }
 
@@ -205,8 +206,8 @@ func TestAFrameOfEventsIgnoresAKeyGoingBackUp(t *testing.T) {
 	got, _, _ := frames(t, w,
 		key.Event{Name: "N", Modifiers: key.ModCommand, State: key.Release},
 	)
-	if got.Screen() != OnTheBoard {
-		t.Fatalf("a key going back up left the window on %v", got.Screen())
+	if got.Screen != board.OnTheBoard {
+		t.Fatalf("a key going back up left the window on %v", got.Screen)
 	}
 }
 
@@ -215,7 +216,7 @@ func TestAFrameOfNothingChangesNothing(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	got, pressed, _ := frames(t, w)
-	if got.Chosen() != 0 || !pressed.IsZero() || len(f.asked) != 0 {
+	if got.Chosen != 0 || !pressed.IsZero() || len(f.asked) != 0 {
 		t.Error("a frame with no events did something")
 	}
 }
@@ -229,8 +230,8 @@ func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 		pointer.Event{Kind: pointer.Press, Position: card, Buttons: pointer.ButtonPrimary},
 		pointer.Event{Kind: pointer.Release, Position: card, Buttons: pointer.ButtonPrimary},
 	)
-	if w.Chosen() != 1 {
-		t.Fatalf("clicking the card chose %d", w.Chosen())
+	if w.Chosen != 1 {
+		t.Fatalf("clicking the card chose %d", w.Chosen)
 	}
 
 	offer := -1
@@ -249,8 +250,8 @@ func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 		pointer.Event{Kind: pointer.Press, Position: on, Buttons: pointer.ButtonPrimary},
 		pointer.Event{Kind: pointer.Release, Position: on, Buttons: pointer.ButtonPrimary},
 	)
-	if w.Screen() != OnForm {
-		t.Fatalf("pressing Edit in the bar left the window on %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("pressing Edit in the bar left the window on %v", w.Screen)
 	}
 }
 
@@ -260,29 +261,29 @@ func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w, _, _ = frames(t, w, key.EditEvent{Range: key.Range{Start: 14, End: 14}, Text: " properly"})
-	if got := w.Form().ValueOf("title"); got != "Write the spec properly" {
+	if got := valueOf(w.Form, "title"); got != "Write the spec properly" {
 		t.Fatalf("the title reads %q", got)
 	}
 
 	w, _, _ = frames(t, w, key.Event{Name: key.NameTab, State: key.Press})
-	if got := w.Form().Fields()[w.Form().On()].Name; got != "description" {
+	if got := w.Form.Fields[w.Form.On()].Name; got != "description" {
 		t.Fatalf("tab through the loop landed on %q", got)
 	}
 
 	w, _, _ = frames(t, w, key.Event{Name: key.NameTab, Modifiers: key.ModShift, State: key.Press})
-	if got := w.Form().Fields()[w.Form().On()].Name; got != "title" {
+	if got := w.Form.Fields[w.Form.On()].Name; got != "title" {
 		t.Fatalf("shift+tab through the loop landed on %q", got)
 	}
 
 	w, _, _ = frames(t, w, key.Event{Name: key.NameDeleteBackward, State: key.Press})
-	if got := w.Form().ValueOf("title"); got != "Write the spec properl" {
+	if got := valueOf(w.Form, "title"); got != "Write the spec properl" {
 		t.Fatalf("backspace through the loop left %q", got)
 	}
 
 	w, _, _ = frames(t, w, key.Event{
 		Name: key.NameReturn, Modifiers: key.ModCommand, State: key.Press})
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("⌘⏎ through the loop left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("⌘⏎ through the loop left the window on %v", w.Screen)
 	}
 	if f.what("task", "edit") != 1 {
 		t.Errorf("it asked for %d edits", f.what("task", "edit"))
@@ -301,8 +302,8 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 		pointer.Event{Kind: pointer.Press, Position: on, Buttons: pointer.ButtonPrimary},
 		pointer.Event{Kind: pointer.Release, Position: on, Buttons: pointer.ButtonPrimary},
 	)
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("pressing Save on the form left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("pressing Save on the form left the window on %v", w.Screen)
 	}
 	in, asked := f.gave("task", "edit")
 	if !asked {
@@ -347,7 +348,7 @@ func TestTheWindowTellsTheSystemTheTextBeingTyped(t *testing.T) {
 	var router input.Router
 	var ops op.Ops
 	gtx := frameOf(&ops, &router, w, time.Now())
-	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	_, _, _ = heard(gtx, w, time.Time{}, geom.Point{}, nil)
 	router.Frame(gtx.Ops)
 	told := router.EditorState()
 	if told.Snippet.Text != "Fenê" || told.Snippet.Start != 0 {
@@ -358,7 +359,7 @@ func TestTheWindowTellsTheSystemTheTextBeingTyped(t *testing.T) {
 	}
 	w = w.Key("shift+left").Key("shift+left")
 	gtx = frameOf(&ops, &router, w, time.Now())
-	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	_, _, _ = heard(gtx, w, time.Time{}, geom.Point{}, nil)
 	router.Frame(gtx.Ops)
 	if held := router.EditorState().Selection.Range; held != (key.Range{Start: 2, End: 4}) {
 		t.Errorf("the system was told the run held is %+v", held)
@@ -368,7 +369,7 @@ func TestTheWindowTellsTheSystemTheTextBeingTyped(t *testing.T) {
 func TestAnEditReplacesTheRunTheSystemNamed(t *testing.T) {
 	w, _, _ := frames(t, holding(newFake()).Key("cmd+n"), key.EditEvent{Text: "Fen^"})
 	w, _, _ = frames(t, w, key.EditEvent{Range: key.Range{Start: 3, End: 4}, Text: "ê"})
-	if got := w.Form().Writing().Reads(); got != "Fenê" {
+	if got := w.Form.Writing().Reads(); got != "Fenê" {
 		t.Errorf("the title reads %q", got)
 	}
 }
@@ -380,15 +381,15 @@ func TestThePointerOverAGutterOnADenseScreenIsTheOneForWidening(t *testing.T) {
 	gtx := frameOf(&ops, &router, w, time.Now())
 	gtx.Metric = unit.Metric{PxPerDp: 2, PxPerSp: 2}
 	gtx.Constraints = layout.Exact(image.Pt(2*w.width, 2*w.height))
-	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	_, _, _ = heard(gtx, w, time.Time{}, geom.Point{}, nil)
 	router.Frame(gtx.Ops)
-	over := Gutter(w.Layout(), 0)
+	over := geom.Gutter(w.Layout(), 0)
 	router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse,
 		Position: f32.Pt(float32(2*(over.X+over.W/2)), float32(2*(over.Y+over.H/2)))})
 	gtx = frameOf(&ops, &router, w, time.Now())
 	gtx.Metric = unit.Metric{PxPerDp: 2, PxPerSp: 2}
 	gtx.Constraints = layout.Exact(image.Pt(2*w.width, 2*w.height))
-	_, _, _ = heard(gtx, w, time.Time{}, Point{}, nil)
+	_, _, _ = heard(gtx, w, time.Time{}, geom.Point{}, nil)
 	router.Frame(gtx.Ops)
 	if got := router.Cursor(); got != pointer.CursorColResize {
 		t.Errorf("the pointer over the gutter at two pixels a point is %v", got)

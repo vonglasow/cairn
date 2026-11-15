@@ -2,52 +2,38 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-// Filters are the board's filters, as the menus walk them.
-func (w Window) Filters() board.Filters { return w.filters }
-
-// FilterOn is the line of the menu of filters the keyboard is on.
-func (w Window) FilterOn() int { return w.filterOn }
-
-// FilterPick is the value of the open filter the keyboard is on.
-func (w Window) FilterPick() int { return w.filterPick }
-
-// FilteredBy is what the board is filtered by, written the way the bar says it: nothing when no filter narrows it.
-func (w Window) FilteredBy() string { return w.filters.Said() }
-
 func (w Window) filteringBoard() Window {
-	w.filters = board.FiltersOf(w.snap, w.today()).Keeping(w.filters)
-	w.screen, w.filterOpen, w.filterFromPill, w.viewWalked = OnFiltering, false, false, 0
+	w.Filters = board.FiltersOf(w.Snap, w.Today()).Keeping(w.Filters)
+	w.Screen, w.FilterOpen, w.FilterFromPill, w.ViewWalked = board.OnFiltering, false, false, 0
 	return w
 }
 
-// ViewWalked is the view of the filter menu the keyboard is on, from 1; 0 while it is on the filters.
-func (w Window) ViewWalked() int { return w.viewWalked }
-
 func (w Window) walkingTheMenu(by int) Window {
-	views := len(w.snap.Views)
-	if w.viewsAbove() == 0 {
+	views := len(w.Snap.Views)
+	if w.ViewsAbove() == 0 {
 		views = 0
 	}
 	switch {
-	case w.viewWalked > 0 && by > 0 && w.viewWalked == views:
-		w.viewWalked, w.filterOn = 0, 0
-	case w.viewWalked > 0:
-		w.viewWalked = max(1, w.viewWalked+by)
-	case by < 0 && w.filterOn == 0 && views > 0:
-		w.viewWalked = views
+	case w.ViewWalked > 0 && by > 0 && w.ViewWalked == views:
+		w.ViewWalked, w.FilterOn = 0, 0
+	case w.ViewWalked > 0:
+		w.ViewWalked = max(1, w.ViewWalked+by)
+	case by < 0 && w.FilterOn == 0 && views > 0:
+		w.ViewWalked = views
 	default:
-		w.filterOn = min(len(w.filters)-1, max(0, w.filterOn+by))
+		w.FilterOn = min(len(w.Filters)-1, max(0, w.FilterOn+by))
 	}
 	return w
 }
 
 func (w Window) onFilters(name string) Window {
-	if w.filterOpen {
+	if w.FilterOpen {
 		switch name {
 		case "down", "j":
 			return w.walkingValues(1)
@@ -58,7 +44,7 @@ func (w Window) onFilters(name string) Window {
 		case "left":
 			return w.goingBack()
 		case "space":
-			return w.takingValue(w.filterPick, false)
+			return w.takingValue(w.FilterPick, false)
 		}
 		return w
 	}
@@ -73,12 +59,12 @@ func (w Window) onFilters(name string) Window {
 	case "up", "k":
 		return w.walkingTheMenu(-1)
 	case "enter", "space", "right":
-		if w.viewWalked > 0 {
-			return w.openingView(w.snap.Views[w.viewWalked-1].Place)
+		if w.ViewWalked > 0 {
+			return w.openingView(w.Snap.Views[w.ViewWalked-1].Place)
 		}
-		return w.openingFilter(w.filterOn)
+		return w.openingFilter(w.FilterOn)
 	}
-	for i, f := range w.filters {
+	for i, f := range w.Filters {
 		if FilterKey(f) == name {
 			return w.openingFilter(i)
 		}
@@ -90,123 +76,60 @@ func (w Window) onFilters(name string) Window {
 func FilterKey(f board.Filter) string { return f.Name[:1] }
 
 func (w Window) openingFilter(at int) Window {
-	w.filterOn, w.filterOpen, w.filterPick, w.viewWalked, w.filterTrail = at, true, max(1, w.filters[at].At), 0, nil
-	if first := w.valueColumns()[0]; len(first) > 0 && !slices.Contains(first, w.filterPick) {
-		w.filterPick = first[0]
+	w.FilterOn, w.FilterOpen, w.FilterPick, w.ViewWalked, w.FilterTrail = at, true, max(1, w.Filters[at].At), 0, nil
+	if first := w.ValueColumns()[0]; len(first) > 0 && !slices.Contains(first, w.FilterPick) {
+		w.FilterPick = first[0]
 	}
 	return w
 }
 
-func (w Window) valueColumns() [][]int {
-	f := w.filters[w.filterOn]
-	if f.Arg != "objective" {
-		all := make([]int, 0, len(f.Values))
-		for i := 1; i < len(f.Values); i++ {
-			all = append(all, i)
-		}
-		return [][]int{all}
-	}
-	under := func(parent int) []int {
-		var out []int
-		for i, value := range f.Values {
-			if g, found := w.goalOfValue(value); found && (g.Parent == parent || parent == 0 && !slices.Contains(f.Values, strconv.Itoa(g.Parent))) {
-				out = append(out, i)
-			}
-		}
-		return out
-	}
-	columns := [][]int{under(0)}
-	for _, n := range w.filterTrail {
-		own := []int{slices.Index(f.Values, strconv.Itoa(n))}
-		if itself := slices.Index(f.Values, strconv.Itoa(n)+" itself"); itself >= 0 {
-			own = append(own, itself)
-		}
-		columns = append(columns, append(own, under(n)...))
-	}
-	return columns
-}
-
-func (w Window) goalOfValue(value string) (board.Goal, bool) {
-	n, err := strconv.Atoi(value)
-	if err != nil {
-		return board.Goal{}, false
-	}
-	return w.snap.Goal(n)
-}
-
-func (w Window) holdsValue(value, want int) bool {
-	f := w.filters[w.filterOn]
-	g, found := w.goalOfValue(f.Values[value])
-	if !found || len(g.Children) == 0 {
-		return false
-	}
-	reached := w.snap.Reach(g.Number)
-	n, _ := strings.CutSuffix(f.Values[want], " itself")
-	number, err := strconv.Atoi(n)
-	return err == nil && number != g.Number && slices.Contains(reached, number)
-}
-
-func (w Window) opensAColumn(value, column int) bool {
-	f := w.filters[w.filterOn]
-	g, found := w.goalOfValue(f.Values[value])
-	if !found || len(g.Children) == 0 {
-		return false
-	}
-	return column == 0 || w.filterTrail[column-1] != g.Number
-}
-
-func (w Window) goalOpened(value, column int) bool {
-	g, found := w.goalOfValue(w.filters[w.filterOn].Values[value])
-	return found && w.filterTrail[column] == g.Number
-}
-
 func (w Window) walkingValues(by int) Window {
-	columns := w.valueColumns()
+	columns := w.ValueColumns()
 	last := columns[len(columns)-1]
 	if len(last) == 0 {
 		return w
 	}
-	at := max(0, slices.Index(last, w.filterPick))
-	w.filterPick = last[min(len(last)-1, max(0, at+by))]
+	at := max(0, slices.Index(last, w.FilterPick))
+	w.FilterPick = last[min(len(last)-1, max(0, at+by))]
 	return w
 }
 
 func (w Window) openingDeeper() Window {
-	columns := w.valueColumns()
-	if !w.opensAColumn(w.filterPick, len(columns)-1) {
+	columns := w.ValueColumns()
+	if !w.OpensAColumn(w.FilterPick, len(columns)-1) {
 		return w
 	}
-	g, _ := w.goalOfValue(w.filters[w.filterOn].Values[w.filterPick])
-	w.filterTrail = append(slices.Clone(w.filterTrail), g.Number)
+	g, _ := w.GoalOfValue(w.Filters[w.FilterOn].Values[w.FilterPick])
+	w.FilterTrail = append(slices.Clone(w.FilterTrail), g.Number)
 	return w
 }
 
 func (w Window) goingBack() Window {
-	if len(w.filterTrail) == 0 {
+	if len(w.FilterTrail) == 0 {
 		return w.closingFilter()
 	}
-	n := w.filterTrail[len(w.filterTrail)-1]
-	w.filterTrail = w.filterTrail[:len(w.filterTrail)-1]
-	w.filterPick = max(1, slices.Index(w.filters[w.filterOn].Values, strconv.Itoa(n)))
+	n := w.FilterTrail[len(w.FilterTrail)-1]
+	w.FilterTrail = w.FilterTrail[:len(w.FilterTrail)-1]
+	w.FilterPick = max(1, slices.Index(w.Filters[w.FilterOn].Values, strconv.Itoa(n)))
 	return w
 }
 
 func (w Window) choosingValue() Window {
-	if w.opensAColumn(w.filterPick, len(w.valueColumns())-1) {
+	if w.OpensAColumn(w.FilterPick, len(w.ValueColumns())-1) {
 		return w.openingDeeper()
 	}
-	return w.takingValue(w.filterPick, true)
+	return w.takingValue(w.FilterPick, true)
 }
 
 func (w Window) takingValue(value int, closing bool) Window {
-	f := w.filters[w.filterOn]
+	f := w.Filters[w.FilterOn]
 	if f.Many {
-		w.filters = w.filters.Toggled(w.filterOn, f.Values[value])
+		w.Filters = w.Filters.Toggled(w.FilterOn, f.Values[value])
 	} else {
 		if value == f.At {
 			value = 0
 		}
-		w.filters = w.filters.Walked(w.filterOn, value-f.At)
+		w.Filters = w.Filters.Walked(w.FilterOn, value-f.At)
 	}
 	if closing {
 		return w.closingMenu()
@@ -215,41 +138,23 @@ func (w Window) takingValue(value int, closing bool) Window {
 }
 
 func (w Window) closingMenu() Window {
-	w.screen, w.filterOpen, w.filterFromPill, w.filterTrail = OnTheBoard, false, false, nil
+	w.Screen, w.FilterOpen, w.FilterFromPill, w.FilterTrail = board.OnTheBoard, false, false, nil
 	return w
 }
 
 func (w Window) openingFilterFromPill(at int) Window {
 	w = w.filteringBoard().openingFilter(at)
-	w.filterFromPill = true
+	w.FilterFromPill = true
 	return w
 }
 
 // closingFilter shuts the open filter's values: back to the menu of filters when they were opened from it, back to the board when from a pill.
 func (w Window) closingFilter() Window {
-	w.filterOpen, w.filterTrail = false, nil
-	if w.filterFromPill {
-		w.screen, w.filterFromPill = OnTheBoard, false
+	w.FilterOpen, w.FilterTrail = false, nil
+	if w.FilterFromPill {
+		w.Screen, w.FilterFromPill = board.OnTheBoard, false
 	}
 	return w
-}
-
-// FilterCounts is how many tasks each value of the open filter would keep under the other filters, in the order its values are listed.
-func (w Window) FilterCounts() []int {
-	if !w.filterOpen || w.screen != OnFiltering {
-		return nil
-	}
-	counts, err := w.filters.Counts(w.Reading().Cards, w.filterOn)
-	if err != nil {
-		return nil
-	}
-	return counts
-}
-
-// FilterTaken says whether a value of the open filter is one it is on.
-func (w Window) FilterTaken(value int) bool {
-	f := w.filters[w.filterOn]
-	return slices.Contains(f.Taken(), f.Values[value])
 }
 
 const (
@@ -261,19 +166,19 @@ const (
 )
 
 // FilterValueParts is where a value of a filter writes its name and how many tasks it keeps, the name stopping short of the count.
-func FilterValueParts(row Box) (Box, Box) {
+func FilterValueParts(row geom.Box) (geom.Box, geom.Box) {
 	line := Inside(row)
 	named := PastCheck(line)
-	count := Box{X: line.X + line.W - filterCountWide, Y: line.Y, W: filterCountWide, H: line.H}
+	count := geom.Box{X: line.X + line.W - filterCountWide, Y: line.Y, W: filterCountWide, H: line.H}
 	named.W = count.X - between - named.X
 	return named, count
 }
 
-func (w Window) cutFilterAt(p Point) ([]string, Box, int) {
-	if !w.filterOpen || w.screen != OnFiltering {
-		return nil, Box{}, 0
+func (w Window) cutFilterAt(p geom.Point) ([]string, geom.Box, int) {
+	if !w.FilterOpen || w.Screen != board.OnFiltering {
+		return nil, geom.Box{}, 0
 	}
-	f := w.filters[w.filterOn]
+	f := w.Filters[w.FilterOn]
 	columns, _ := w.FilterColumns()
 	for _, column := range columns[1:] {
 		values, at := w.ValueRows(column)
@@ -284,33 +189,25 @@ func (w Window) cutFilterAt(p Point) ([]string, Box, int) {
 			}
 		}
 	}
-	return nil, Box{}, 0
+	return nil, geom.Box{}, 0
 }
 
 // FilterMenuSays is what heads the menu of filters.
 const FilterMenuSays = "Filter by"
 
-// FilterHint says how the open filter's values are taken: several ticked together, or one at a time.
-func (w Window) FilterHint() string {
-	if w.filters[w.filterOn].Many {
-		return "ticked ones together"
-	}
-	return "one at a time"
-}
-
 // FilterFoot is the keys the foot of the open menu says, each with what it does.
 func (w Window) FilterFoot() [][2]string {
-	if !w.filterOpen {
+	if !w.FilterOpen {
 		foot := [][2]string{{"↑↓", "walk"}, {"→", "open"}, {"⌫", "take off"}, {"⌥⌫", "all"}}
-		if len(w.snap.Views) > 0 {
+		if len(w.Snap.Views) > 0 {
 			foot = append(foot, [2]string{w.keyboard.Spelled("⌘") + "1–9", "view"})
 		}
-		if w.keepable() {
+		if w.Keepable() {
 			foot = append(foot, [2]string{"v", "keep"})
 		}
 		return append(foot, [2]string{"esc", "close"})
 	}
-	if w.filters[w.filterOn].Many {
+	if w.Filters[w.FilterOn].Many {
 		return [][2]string{{"↑↓", "walk"}, {"←", "back"}, {"space", "tick"}, {"⏎", "take"}, {"esc", "close"}}
 	}
 	return [][2]string{{"↑↓", "walk"}, {"←→", "back, open"}, {"⏎", "take"}, {"esc", "close"}}
@@ -327,76 +224,76 @@ func (w Window) footWide() int {
 // FilterColumn is one column of the menu of filters: which it is, from 0 for the filters themselves, where it is drawn, and the places among the open filter's values of those it lists.
 type FilterColumn struct {
 	At     int
-	Box    Box
+	Box    geom.Box
 	Values []int
 }
 
 const filterStubWide = 28
 
 // FilterColumns is the columns of the menu of filters in sight, left to right, the filters first and each value opened at the right of the one it opened from; and the stub standing at their left for the columns slid out of sight when the window has no room for them all.
-func (w Window) FilterColumns() ([]FilterColumn, Box) {
+func (w Window) FilterColumns() ([]FilterColumn, geom.Box) {
 	anchor := w.filterAnchor()
 	var values [][]int
-	if w.filterOpen {
-		values = w.valueColumns()
+	if w.FilterOpen {
+		values = w.ValueColumns()
 	}
-	rows := w.viewsAbove() + len(w.filters)
+	rows := w.ViewsAbove() + len(w.Filters)
 	for _, column := range values {
 		rows = max(rows, len(column))
 	}
 	fixed := dropHead + dropFoot + inset
-	most := max(1, (w.height-margin-anchor.Y-anchor.H-between-fixed)/menuRow)
+	most := max(1, (w.height-geom.Margin-anchor.Y-anchor.H-between-fixed)/menuRow)
 	high := fixed + min(rows, most)*menuRow
 	all, shown, stub := 1+len(values), 1+len(values), 0
-	if room := min(w.width-2*margin, anchor.X+anchor.W-margin); all*filterColumnWide > room {
+	if room := min(w.width-2*geom.Margin, anchor.X+anchor.W-geom.Margin); all*filterColumnWide > room {
 		stub = filterStubWide
 		shown = max(1, (room-stub)/filterColumnWide)
 	}
 	wide := stub + shown*filterColumnWide
-	x := max(margin, min(anchor.X+anchor.W-wide, w.width-margin-wide))
+	x := max(geom.Margin, min(anchor.X+anchor.W-wide, w.width-geom.Margin-wide))
 	y := anchor.Y + anchor.H + between
 	var out []FilterColumn
 	for c := all - shown; c < all; c++ {
-		column := FilterColumn{At: c, Box: Box{X: x + stub + (c-all+shown)*filterColumnWide, Y: y, W: filterColumnWide, H: high}}
+		column := FilterColumn{At: c, Box: geom.Box{X: x + stub + (c-all+shown)*filterColumnWide, Y: y, W: filterColumnWide, H: high}}
 		if c > 0 {
 			column.Values = values[c-1]
 		}
 		out = append(out, column)
 	}
 	if stub == 0 {
-		return out, Box{}
+		return out, geom.Box{}
 	}
-	return out, Box{X: x, Y: y, W: stub, H: high}
+	return out, geom.Box{X: x, Y: y, W: stub, H: high}
 }
 
 // FiltersBox is the menu dropped under the pill it opened from, every column of it in sight: the filters, a line each with the key that opens it, then the values of the one open, each with how many tasks it would keep; its keys at its foot.
-func (w Window) FiltersBox() Box {
+func (w Window) FiltersBox() geom.Box {
 	columns, stub := w.FilterColumns()
 	last := columns[len(columns)-1].Box
 	left := columns[0].Box.X
 	if stub.W > 0 {
 		left = stub.X
 	}
-	return Box{X: left, Y: last.Y, W: last.X + last.W - left, H: last.H}
+	return geom.Box{X: left, Y: last.Y, W: last.X + last.W - left, H: last.H}
 }
 
-func (w Window) filtersColumn() Box {
+func (w Window) filtersColumn() geom.Box {
 	columns, _ := w.FilterColumns()
 	if columns[0].At != 0 {
-		return Box{}
+		return geom.Box{}
 	}
 	return columns[0].Box
 }
 
 // ValueRows is the values a column of the menu lists in sight, and where each is drawn: scrolled to the one the keyboard is on when it is in that column.
-func (w Window) ValueRows(column FilterColumn) ([]int, []Box) {
+func (w Window) ValueRows(column FilterColumn) ([]int, []geom.Box) {
 	room := dropRoom(column.Box)
 	from := 0
-	if at := slices.Index(column.Values, w.filterPick); at >= 0 {
+	if at := slices.Index(column.Values, w.FilterPick); at >= 0 {
 		from = max(0, min(at-room+1, len(column.Values)-room))
 	}
 	var values []int
-	var boxes []Box
+	var boxes []geom.Box
 	for i := from; i < len(column.Values) && i < from+room; i++ {
 		values = append(values, column.Values[i])
 		boxes = append(boxes, DropRowAt(column.Box, i-from))
@@ -404,30 +301,30 @@ func (w Window) ValueRows(column FilterColumn) ([]int, []Box) {
 	return values, boxes
 }
 
-func (w Window) droppedUnder(anchor Box, wide, rows int) Box {
+func (w Window) droppedUnder(anchor geom.Box, wide, rows int) geom.Box {
 	fixed := dropHead + dropFoot + inset
-	most := max(1, (w.height-margin-anchor.Y-anchor.H-between-fixed)/menuRow)
+	most := max(1, (w.height-geom.Margin-anchor.Y-anchor.H-between-fixed)/menuRow)
 	high := fixed + min(rows, most)*menuRow
-	wide = min(w.width-2*margin, wide)
-	x := max(margin, min(anchor.X+anchor.W-wide, w.width-margin-wide))
-	return Box{X: x, Y: anchor.Y + anchor.H + between, W: wide, H: high}
+	wide = min(w.width-2*geom.Margin, wide)
+	x := max(geom.Margin, min(anchor.X+anchor.W-wide, w.width-geom.Margin-wide))
+	return geom.Box{X: x, Y: anchor.Y + anchor.H + between, W: wide, H: high}
 }
 
 // DropRowAt is where the i-th line of a dropped menu is, under its head.
-func DropRowAt(box Box, i int) Box {
-	return Box{X: box.X + inset, Y: box.Y + dropHead + i*menuRow, W: box.W - 2*inset, H: menuRow}
+func DropRowAt(box geom.Box, i int) geom.Box {
+	return geom.Box{X: box.X + inset, Y: box.Y + dropHead + i*menuRow, W: box.W - 2*inset, H: menuRow}
 }
 
-func dropRoom(box Box) int { return max(1, (box.H-dropHead-dropFoot-inset)/menuRow) }
+func dropRoom(box geom.Box) int { return max(1, (box.H-dropHead-dropFoot-inset)/menuRow) }
 
-func (w Window) filterAnchor() Box {
+func (w Window) filterAnchor() geom.Box {
 	for _, pill := range w.Pills() {
-		if w.screen == OnKeeping && w.ofView && pill.Kind == PillView {
+		if w.Screen == board.OnKeeping && w.OfView && pill.Kind == PillView {
 			return pill.Box
 		}
 	}
 	for _, pill := range w.Pills() {
-		if w.filterFromPill && pill.Kind == PillFilter && pill.At == w.filterOn {
+		if w.FilterFromPill && pill.Kind == PillFilter && pill.At == w.FilterOn {
 			return pill.Box
 		}
 	}
@@ -437,24 +334,24 @@ func (w Window) filterAnchor() Box {
 		}
 	}
 	l := w.Layout()
-	return Box{X: l.Tabs.X, Y: l.Tabs.Y, W: 0, H: l.Tabs.H}
+	return geom.Box{X: l.Tabs.X, Y: l.Tabs.Y, W: 0, H: l.Tabs.H}
 }
 
 // FilterRowAt is where the i-th filter's line is in the menu of filters, nowhere when the column of the filters has slid out of sight.
-func (w Window) FilterRowAt(i int) Box {
+func (w Window) FilterRowAt(i int) geom.Box {
 	column := w.filtersColumn()
 	if column.W == 0 {
-		return Box{}
+		return geom.Box{}
 	}
-	return DropRowAt(column, w.viewsAbove()+i)
+	return DropRowAt(column, w.ViewsAbove()+i)
 }
 
 // FilterList is the values of the filter whose list is open, where each is drawn in the furthest column listing it, and whether one is open.
-func (w Window) FilterList() ([]Box, bool) {
-	if !w.filterOpen || w.screen != OnFiltering {
+func (w Window) FilterList() ([]geom.Box, bool) {
+	if !w.FilterOpen || w.Screen != board.OnFiltering {
 		return nil, false
 	}
-	boxes := make([]Box, len(w.filters[w.filterOn].Shown))
+	boxes := make([]geom.Box, len(w.Filters[w.FilterOn].Shown))
 	columns, _ := w.FilterColumns()
 	for _, column := range columns[1:] {
 		values, at := w.ValueRows(column)
@@ -465,7 +362,7 @@ func (w Window) FilterList() ([]Box, bool) {
 	return boxes, true
 }
 
-func (w Window) clickingFilters(p Point) Window {
+func (w Window) clickingFilters(p geom.Point) Window {
 	for _, pill := range w.Pills() {
 		if pill.Box.In(p) {
 			return w.clickingPill(pill, p)
@@ -485,7 +382,7 @@ func (w Window) clickingFilters(p Point) Window {
 		if viewed, on := w.clickingViews(p); on {
 			return viewed
 		}
-		for i := range w.filters {
+		for i := range w.Filters {
 			if w.FilterRowAt(i).In(p) {
 				return w.openingFilter(i)
 			}
@@ -498,17 +395,17 @@ func (w Window) clickingFilters(p Point) Window {
 	return w.closingMenu()
 }
 
-func (w Window) clickingValue(column FilterColumn, p Point) Window {
+func (w Window) clickingValue(column FilterColumn, p geom.Point) Window {
 	values, at := w.ValueRows(column)
 	for i, value := range values {
 		if !at[i].In(p) {
 			continue
 		}
-		w.filterTrail, w.filterPick = slices.Clone(w.filterTrail[:column.At-1]), value
-		if w.opensAColumn(value, column.At-1) {
+		w.FilterTrail, w.FilterPick = slices.Clone(w.FilterTrail[:column.At-1]), value
+		if w.OpensAColumn(value, column.At-1) {
 			return w.openingDeeper()
 		}
-		return w.takingValue(value, !w.filters[w.filterOn].Many)
+		return w.takingValue(value, !w.Filters[w.FilterOn].Many)
 	}
 	return w
 }
@@ -535,7 +432,7 @@ const (
 
 // FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, whether it is faint for meaning nothing on the page in sight, for a view whether a filter or a search stands on top of it, and what it says faint after its value.
 type FilterPill struct {
-	Box     Box
+	Box     geom.Box
 	Said    string
 	Name    string
 	Kind    PillKind
@@ -547,16 +444,16 @@ type FilterPill struct {
 }
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
-func (p FilterPill) Cross() (Box, bool) {
+func (p FilterPill) Cross() (geom.Box, bool) {
 	if p.Kind != PillSearch && p.Kind != PillFilter && p.Kind != PillView && p.Kind != PillState {
-		return Box{}, false
+		return geom.Box{}, false
 	}
-	return Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
+	return geom.Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
 }
 
 // Pills is the row at the right of the tabs: the search kept, then every filter in force, the pill clearing them, and against the menu the pill adding one, which stands where it stood whatever is added; folded into one pill, in that pill's place, when they no longer fit between the tabs and the menu.
 func (w Window) Pills() []FilterPill {
-	if w.screen != OnTheBoard && w.screen != OnFiltering && w.screen != OnSearch && w.screen != OnKeeping {
+	if w.Screen != board.OnTheBoard && w.Screen != board.OnFiltering && w.Screen != board.OnSearch && w.Screen != board.OnKeeping {
 		return nil
 	}
 	l := w.Layout()
@@ -570,18 +467,18 @@ func (w Window) Pills() []FilterPill {
 	var row []FilterPill
 	crossed := func(name, value string, kind PillKind, at int) {
 		wide := ends(m, name, small) + nameGap + ends(m, value, small) + 2*pillPad + pillCross
-		row = append(row, FilterPill{Box: Box{W: wide}, Said: name + " " + value, Name: name, Kind: kind, At: at})
+		row = append(row, FilterPill{Box: geom.Box{W: wide}, Said: name + " " + value, Name: name, Kind: kind, At: at})
 	}
 	plain := func(said string, kind PillKind) {
-		row = append(row, FilterPill{Box: Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
+		row = append(row, FilterPill{Box: geom.Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
 	}
 	taken, viewed := 0, 0
-	if w.tab == Series {
+	if w.Tab == board.Series {
 		plain(AddFilterSays, PillAdd)
 		crossed(StateSays, w.SeriesState(), PillState, -1)
 		return placedPills(row, start, end, y, high)
 	}
-	if v, in := w.inView(); in {
+	if v, in := w.InView(); in {
 		crossed("view", v.Name, PillView, -1)
 		row[0].Changed = w.ViewChanged()
 		if row[0].Changed {
@@ -589,15 +486,15 @@ func (w Window) Pills() []FilterPill {
 		}
 		viewed = 1
 	}
-	if !w.looking.Empty() && w.screen != OnSearch {
-		crossed("/", w.looking.Reads(), PillSearch, -1)
+	if !w.Looking.Empty() && w.Screen != board.OnSearch {
+		crossed("/", w.Looking.Reads(), PillSearch, -1)
 		taken++
 	}
 	bar := w.Narrowing()
 	narrowed := bar.Box.W > 0
-	for i, f := range w.filters {
+	for i, f := range w.Filters {
 		if len(f.Taken()) > 0 && narrowed && f.Arg == "objective" {
-			root, _ := w.snap.Goal(bar.Root)
+			root, _ := w.Snap.Goal(bar.Root)
 			crossed("", "#"+strconv.Itoa(root.Number)+" "+root.Title, PillFilter, i)
 			pill := &row[len(row)-1]
 			pill.Said, pill.Serves, pill.Box.W = strings.TrimSpace(pill.Said), true, pill.Box.W+servesSide+servesGap
@@ -609,7 +506,7 @@ func (w Window) Pills() []FilterPill {
 		}
 		if len(f.Taken()) > 0 {
 			crossed(f.Name+":", f.TakenSays(), PillFilter, i)
-			row[len(row)-1].Faint = w.tab == Objectives && !f.ReachesGoals()
+			row[len(row)-1].Faint = w.Tab == board.Objectives && !f.ReachesGoals()
 			taken++
 		}
 	}
@@ -646,13 +543,13 @@ func placedPills(row []FilterPill, start, end, y, high int) []FilterPill {
 	return pills
 }
 
-func (w Window) untailedAt(p Point) ([]string, Box, int) {
+func (w Window) untailedAt(p geom.Point) ([]string, geom.Box, int) {
 	for _, pill := range w.Pills() {
 		if pill.Serves && pill.Tail == "" && pill.Box.In(p) {
 			return []string{pill.Said + ", " + WithItsSubsSays}, pill.Box, pill.Box.W
 		}
 	}
-	return nil, Box{}, 0
+	return nil, geom.Box{}, 0
 }
 
 func widthOf(row []FilterPill) int {
@@ -675,58 +572,39 @@ const ClearSays = "Clear"
 // FoldedSays is what the pill standing for every filter and the search says once they no longer fit: how many there are.
 func FoldedSays(n int) string { return "Filters · " + strconv.Itoa(n) }
 
-// TabCount is what a page's tab counts: what it shows, and of how many when the search or the filters narrow it.
-func (w Window) TabCount(page Tab) string {
-	shown := strconv.Itoa(w.Holds(page))
-	if page == Series && (w.seriesIn != 0 || !w.looking.Empty()) {
-		return shown + "/" + strconv.Itoa(len(w.snap.Series))
-	}
-	if page == Series ||
-		page == Time || (w.looking.Empty() && !w.filters.Narrows() && w.viewing == "") {
-		return shown
-	}
-	if page == Objectives {
-		if all := len(w.Reading().Goals); w.Holds(page) != all {
-			return shown + "/" + strconv.Itoa(all)
-		}
-		return shown
-	}
-	return shown + "/" + strconv.Itoa(len(board.OnTheBoard(w.Reading().Cards, w.archived)))
-}
-
 func (w Window) takingOffLast() Window {
-	for i := len(w.filters) - 1; i >= 0; i-- {
-		if len(w.filters[i].Taken()) > 0 {
+	for i := len(w.Filters) - 1; i >= 0; i-- {
+		if len(w.Filters[i].Taken()) > 0 {
 			return w.takingOff(i)
 		}
 	}
-	w.looking = Written{}
+	w.Looking = board.Written{}
 	return w
 }
 
 func (w Window) takingOff(at int) Window {
-	cleared := slices.Clone(w.filters)
+	cleared := slices.Clone(w.Filters)
 	cleared[at].At, cleared[at].Ticked = 0, nil
-	w.filters = cleared
+	w.Filters = cleared
 	return w
 }
 
-func (w Window) clickingPill(pill FilterPill, p Point) Window {
+func (w Window) clickingPill(pill FilterPill, p geom.Point) Window {
 	if cross, ok := pill.Cross(); ok && cross.In(p) {
 		switch pill.Kind {
 		case PillSearch:
-			w.looking = Written{}
+			w.Looking = board.Written{}
 			return w
 		case PillView:
 			return w.leavingView()
 		case PillState:
-			w.seriesIn = 0
+			w.SeriesIn = 0
 			return w
 		}
 		return w.takingOff(pill.At)
 	}
 	switch {
-	case pill.Kind == PillState, pill.Kind == PillAdd && w.tab == Series:
+	case pill.Kind == PillState, pill.Kind == PillAdd && w.Tab == board.Series:
 		return w.walkingSeriesState()
 	}
 	switch pill.Kind {
@@ -737,18 +615,18 @@ func (w Window) clickingPill(pill FilterPill, p Point) Window {
 	case PillAdd, PillFolded:
 		return w.filteringBoard()
 	case PillClear:
-		w.filters, w.looking = w.filters.Cleared(), Written{}
-		w.screen = OnTheBoard
+		w.Filters, w.Looking = w.Filters.Cleared(), board.Written{}
+		w.Screen = board.OnTheBoard
 		return w
 	case PillSearch:
-		w.screen, w.searchFrom = OnSearch, OnTheBoard
+		w.Screen, w.SearchFrom = board.OnSearch, board.OnTheBoard
 		return w
 	}
 	return w
 }
 
-func (w Window) clickingPills(p Point) (Window, bool) {
-	if w.screen != OnTheBoard {
+func (w Window) clickingPills(p geom.Point) (Window, bool) {
+	if w.Screen != board.OnTheBoard {
 		return w, false
 	}
 	if narrowed, ok := w.clickingNarrowing(p); ok {

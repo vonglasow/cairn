@@ -103,7 +103,7 @@ func (b Board) counted(tab Tab) string {
 	case Series:
 		return countOf(len(b.allSeries()), len(b.snap.Series))
 	}
-	return countOf(len(board.OnTheBoard(b.cards(), b.archived)), len(board.OnTheBoard(b.snap.Cards, b.archived)))
+	return countOf(len(board.Laid(b.cards(), b.archived)), len(board.Laid(b.snap.Cards, b.archived)))
 }
 
 func countOf(shown, all int) string {

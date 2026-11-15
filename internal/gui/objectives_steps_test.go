@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"slices"
 	"strings"
@@ -43,7 +45,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 		for i, s := range n.Segments {
 			if s.Name == name {
 				at := n.At[i]
-				w.w = w.w.clicked(Point{X: at.X + at.W/2, Y: at.Y + at.H/2})
+				w.w = w.w.clicked(geom.Point{X: at.X + at.W/2, Y: at.Y + at.H/2})
 				return nil
 			}
 		}
@@ -81,7 +83,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 	})
 	sc.When(`^I rest the pointer on the detail's offer "([^"]*)"$`, func(offer string) error {
 		at, err := w.detailOffer(offer)
-		w.w = w.w.Hovering(Point{X: at.X + 2, Y: at.Y + 2})
+		w.w = w.w.Hovering(geom.Point{X: at.X + 2, Y: at.Y + 2})
 		return err
 	})
 	sc.Then(`^the detail's offer "([^"]*)" is lit under the pointer$`, func(offer string) error {
@@ -107,7 +109,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 	})
 	sc.When(`^I rest the pointer on the tile of "([^"]*)"$`, func(title string) error {
 		at, err := w.tileOf(title)
-		w.w = w.w.Hovering(Point{X: at.X + 2, Y: at.Y + 2})
+		w.w = w.w.Hovering(geom.Point{X: at.X + 2, Y: at.Y + 2})
 		return err
 	})
 	sc.Then(`^the tile of "([^"]*)" is lit under the pointer$`, func(title string) error {
@@ -125,7 +127,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the card "([^"]*)" says it serves "([^"]*)"$`, w.cardServes)
 	sc.Then(`^the progress says "([^"]*)" "([^"]*)"$`, func(name, value string) error {
-		g, _ := w.w.snap.Goal(w.w.form.Number)
+		g, _ := w.w.Snap.Goal(w.w.Form.Number)
 		for _, f := range w.w.GoalProgress(g).Lines {
 			if f.Name == name && f.Value == value {
 				return w.drawnSomewhere(value)
@@ -191,10 +193,10 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the deletion cannot be confirmed yet$`, func() error {
 		offers := w.w.Offers()
-		if w.w.Screen() != OnFates || w.w.OfferLook(0, offers[0]) != buttonFaint {
-			return fmt.Errorf("the deletion offers %v on %v, not faint", offers, w.w.Screen())
+		if w.w.Screen != board.OnFates || w.w.OfferLook(0, offers[0]) != buttonFaint {
+			return fmt.Errorf("the deletion offers %v on %v, not faint", offers, w.w.Screen)
 		}
-		if w.w.Key("enter").Screen() != OnFates {
+		if w.w.Key("enter").Screen != board.OnFates {
 			return fmt.Errorf("enter deleted what was not chosen yet")
 		}
 		return nil
@@ -207,7 +209,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 			for i, said := range r.Choices {
 				if said == choice {
 					at := r.Picks[i]
-					w.w = w.w.clicked(Point{X: at.X + at.W/2, Y: at.Y + at.H/2})
+					w.w = w.w.clicked(geom.Point{X: at.X + at.W/2, Y: at.Y + at.H/2})
 					return nil
 				}
 			}
@@ -223,7 +225,7 @@ func (w *world) objectivesSteps(sc *godog.ScenarioContext) {
 	})
 	sc.When(`^I confirm the deletion$`, func() error {
 		at := w.w.offersAlong(w.w.panel())[0]
-		w.w = w.w.clicked(Point{X: at.X + at.W/2, Y: at.Y + at.H/2})
+		w.w = w.w.clicked(geom.Point{X: at.X + at.W/2, Y: at.Y + at.H/2})
 		return nil
 	})
 	sc.Then(`^"([^"]*)" is drawn as a reference saying "([^"]*)"$`, w.drawnAsAReference)
@@ -254,13 +256,13 @@ func lineTitles(lines []TaskLine) []string {
 	return out
 }
 
-func (w *world) slotOf(title string) (Box, int, error) {
+func (w *world) slotOf(title string) (geom.Box, int, error) {
 	for i, b := range w.w.Tree() {
 		if b.Goal.Title == title {
 			return GoalAt(w.w.Layout(), i, w.w.goals), i, nil
 		}
 	}
-	return Box{}, 0, fmt.Errorf("no objective titled %q is listed", title)
+	return geom.Box{}, 0, fmt.Errorf("no objective titled %q is listed", title)
 }
 
 func (w *world) drawnUnder(child, parent string) error {
@@ -287,7 +289,7 @@ func (w *world) detailTexts() []string {
 	d := w.w.Detail()
 	var said []string
 	for _, one := range textDrawnWith(w.theme, w.w) {
-		if d.Box.In(Point{X: one.box.X, Y: one.box.Y}) {
+		if d.Box.In(geom.Point{X: one.box.X, Y: one.box.Y}) {
 			said = append(said, one.said)
 		}
 	}
@@ -324,7 +326,7 @@ func (w *world) tileWarns(title, warn string) error {
 			return fmt.Errorf("the tile of %q warns %q", title, t.Tile.Warn)
 		}
 		for _, one := range textDrawnWith(w.theme, w.w) {
-			if one.said == warn && t.At.In(Point{X: one.box.X, Y: one.box.Y}) {
+			if one.said == warn && t.At.In(geom.Point{X: one.box.X, Y: one.box.Y}) {
 				return nil
 			}
 		}
@@ -338,7 +340,7 @@ func (w *world) cardServes(title, served string) error {
 		if p.Card.Title != title {
 			continue
 		}
-		row := CardRowOf(p.Card, PartsOf(p.Slot).Number, w.w.measured(), w.w.now, w.w.pages)
+		row := CardRowOf(p.Card, PartsOf(p.Slot).Number, w.w.measured(), w.w.Now, w.w.Pages)
 		if got := Serves(p.Card); got != served || row.ServesAt.W == 0 {
 			return fmt.Errorf("the card %q says it serves %q at %+v", title, got, row.ServesAt)
 		}
@@ -379,26 +381,26 @@ func (w *world) drawnSomewhere(said string) error {
 	return fmt.Errorf("nothing on screen says %q", said)
 }
 
-func (w *world) detailOffer(offer string) (Box, error) {
+func (w *world) detailOffer(offer string) (geom.Box, error) {
 	d := w.w.Detail()
 	for i, one := range d.Offers {
 		if one == offer && i < len(d.Buttons) {
 			return d.Buttons[i], nil
 		}
 	}
-	return Box{}, fmt.Errorf("the detail offers %v, not %q", d.Offers, offer)
+	return geom.Box{}, fmt.Errorf("the detail offers %v, not %q", d.Offers, offer)
 }
 
-func (w *world) tileOf(title string) (Box, error) {
+func (w *world) tileOf(title string) (geom.Box, error) {
 	for _, t := range w.w.Detail().Tiles {
 		if t.Tile.Title == title {
 			return t.At, nil
 		}
 	}
-	return Box{}, fmt.Errorf("the detail has no tile %q", title)
+	return geom.Box{}, fmt.Errorf("the detail has no tile %q", title)
 }
 
-func (w *world) litUnderThePointer(slot, drawn Box) error {
+func (w *world) litUnderThePointer(slot, drawn geom.Box) error {
 	if w.w.pointed != slot {
 		return fmt.Errorf("the pointer lights %+v, not %+v", w.w.pointed, slot)
 	}

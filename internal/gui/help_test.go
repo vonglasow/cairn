@@ -1,22 +1,25 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"testing"
 )
 
 func TestTheHelpIsClosedWhereItsCloseIsDrawn(t *testing.T) {
-	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
+	middle := func(b geom.Box) geom.Point { return geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	open := New(newFake(), 1600, 2100).Key("?")
-	if open.Screen() != OnHelp {
-		t.Fatalf("the help did not open: %v", open.Screen())
+	if open.Screen != board.OnHelp {
+		t.Fatalf("the help did not open: %v", open.Screen)
 	}
 	box := open.HelpBox()
-	if got := open.clicked(middle(open.offersAlong(box)[0])); got.Screen() != OnTheBoard {
-		t.Errorf("clicking Close where it is drawn left the window on %v", got.Screen())
+	if got := open.clicked(middle(open.offersAlong(box)[0])); got.Screen != board.OnTheBoard {
+		t.Errorf("clicking Close where it is drawn left the window on %v", got.Screen)
 	}
-	under := Point{X: box.X + box.W/2, Y: box.Y + box.H + apart}
-	if got := open.clicked(under); got.Screen() != OnTheBoard {
-		t.Errorf("clicking under the help left the window on %v", got.Screen())
+	under := geom.Point{X: box.X + box.W/2, Y: box.Y + box.H + apart}
+	if got := open.clicked(under); got.Screen != board.OnTheBoard {
+		t.Errorf("clicking under the help left the window on %v", got.Screen)
 	}
 }
 
@@ -32,7 +35,7 @@ func TestTheHelpPutsEachKeyOnAChipBeforeWhatItDoes(t *testing.T) {
 		if line.KeyAt.W != KeyChipWide(line.Key) || line.MeansAt.X <= line.KeyAt.X+line.KeyAt.W {
 			t.Errorf("%q: its chip %+v and what it does %+v", line.Key, line.KeyAt, line.MeansAt)
 		}
-		if painted(shot, Box{X: line.KeyAt.X + line.KeyAt.W/2, Y: line.KeyAt.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.Control) != 1 {
+		if painted(shot, geom.Box{X: line.KeyAt.X + line.KeyAt.W/2, Y: line.KeyAt.Y + 1, W: 1, H: 1}, design.Dark().Colour.Surface.Control) != 1 {
 			t.Errorf("%q is not on a chip", line.Key)
 		}
 	}

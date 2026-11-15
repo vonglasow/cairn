@@ -1,7 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/series"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"os"
 	"slices"
@@ -25,7 +27,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 			return err
 		}
 		for _, one := range textDrawnWith(w.theme, w.w) {
-			if one.said == rule && slot.In(Point{X: one.box.X, Y: one.box.Y}) {
+			if one.said == rule && slot.In(geom.Point{X: one.box.X, Y: one.box.Y}) {
 				return nil
 			}
 		}
@@ -69,7 +71,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		w.w = w.w.clicked(Point{X: row.SeriesAt.X + row.SeriesAt.W/2, Y: row.SeriesAt.Y + row.SeriesAt.H/2})
+		w.w = w.w.clicked(geom.Point{X: row.SeriesAt.X + row.SeriesAt.W/2, Y: row.SeriesAt.Y + row.SeriesAt.H/2})
 		return w.w.Wrong()
 	})
 	sc.Then(`^the series shown is series (\d+)$`, func(n int) error {
@@ -96,7 +98,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		box := w.w.SeriesDetail().Box
 		var all []string
 		for _, one := range textDrawnWith(w.theme, w.w) {
-			if box.In(Point{X: one.box.X, Y: one.box.Y}) {
+			if box.In(geom.Point{X: one.box.X, Y: one.box.Y}) {
 				all = append(all, one.said)
 			}
 		}
@@ -114,7 +116,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the series "([^"]*)"$`, func(title string) error {
 		for _, row := range w.w.SeriesRows() {
 			if row.Head == "" && row.Series.Title == title {
-				w.w = w.w.clicked(Point{X: row.At.X + row.At.W/2, Y: row.At.Y + row.At.H/2})
+				w.w = w.w.clicked(geom.Point{X: row.At.X + row.At.W/2, Y: row.At.Y + row.At.H/2})
 				return w.w.Wrong()
 			}
 		}
@@ -123,15 +125,15 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the occurrence of task (\d+)$`, func(n int) error {
 		for _, line := range w.w.SeriesDetail().Occurrences {
 			if line.Occurrence.Task == n {
-				w.w = w.w.clicked(Point{X: line.At.X + line.At.W/2, Y: line.At.Y + line.At.H/2})
+				w.w = w.w.clicked(geom.Point{X: line.At.X + line.At.W/2, Y: line.At.Y + line.At.H/2})
 				return w.w.Wrong()
 			}
 		}
 		return fmt.Errorf("the series shown lists no occurrence of task %d", n)
 	})
 	sc.Then(`^the window asks what becomes of the tasks of series (\d+)$`, func(n int) error {
-		if w.w.Screen() != OnSeriesFates || w.w.SeriesFatesAsked().Number != n {
-			return fmt.Errorf("the window is on %v, asking about series %d", w.w.Screen(), w.w.SeriesFatesAsked().Number)
+		if w.w.Screen != board.OnSeriesFates || w.w.SeriesFatesAsked().Number != n {
+			return fmt.Errorf("the window is on %v, asking about series %d", w.w.Screen, w.w.SeriesFatesAsked().Number)
 		}
 		return nil
 	})
@@ -145,7 +147,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the choice "([^"]*)"$`, func(said string) error {
 		for _, row := range w.w.SeriesFatesAsked().Rows {
 			if row.Said == said {
-				w.w = w.w.clicked(Point{X: row.At.X + row.At.W/2, Y: row.At.Y + row.At.H/2})
+				w.w = w.w.clicked(geom.Point{X: row.At.X + row.At.W/2, Y: row.At.Y + row.At.H/2})
 				return nil
 			}
 		}
@@ -168,8 +170,8 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 				return err
 			}
 		}
-		if w.w.Form().Fields()[w.w.Form().On()].Value != rule {
-			return fmt.Errorf("the picker wrote %q, not %q", w.w.Form().Fields()[w.w.Form().On()].Value, rule)
+		if w.w.Form.Fields[w.w.Form.On()].Value != rule {
+			return fmt.Errorf("the picker wrote %q, not %q", w.w.Form.Fields[w.w.Form.On()].Value, rule)
 		}
 		w.w = w.w.Choose("Choose")
 		return w.w.Wrong()
@@ -190,14 +192,14 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	sc.Step(`^I click the next of "([^"]*)" in the rule's picker$`, func(said string) error {
 		for _, line := range w.w.RulePicked().Lines {
 			if line.Said == said && line.Next.W > 0 {
-				w.w = w.w.clicked(Point{X: line.Next.X + line.Next.W/2, Y: line.Next.Y + line.Next.H/2})
+				w.w = w.w.clicked(geom.Point{X: line.Next.X + line.Next.W/2, Y: line.Next.Y + line.Next.H/2})
 				return nil
 			}
 		}
 		return fmt.Errorf("the rule's picker walks no %q on", said)
 	})
 	sc.Then(`^the rule's picker is closed$`, func() error {
-		if w.w.Screen() == OnRule {
+		if w.w.Screen == board.OnRule {
 			return fmt.Errorf("the rule's picker is still open")
 		}
 		return nil
@@ -227,7 +229,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		}
 		var all []string
 		for _, one := range textDrawnWith(w.theme, w.w) {
-			if box.In(Point{X: one.box.X, Y: one.box.Y}) {
+			if box.In(geom.Point{X: one.box.X, Y: one.box.Y}) {
 				all = append(all, one.said)
 			}
 		}
@@ -238,7 +240,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the form's heading carries the loop$`, func() error {
 		if _, ok := w.w.OccurrenceHeading(); !ok {
-			return fmt.Errorf("the form's heading is %q, with no loop", HeadsOn(w.w, OnForm))
+			return fmt.Errorf("the form's heading is %q, with no loop", HeadsOn(w.w, board.OnForm))
 		}
 		return nil
 	})
@@ -256,7 +258,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 			}
 			for _, pill := range w.w.Pills() {
 				if pill.Kind == PillState {
-					w.w = w.w.clicked(Point{X: pill.Box.X + inset, Y: pill.Box.Y + pill.Box.H/2})
+					w.w = w.w.clicked(geom.Point{X: pill.Box.X + inset, Y: pill.Box.Y + pill.Box.H/2})
 				}
 			}
 		}
@@ -299,8 +301,8 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the form offers "([^"]*)"$`, func(offer string) error {
-		if w.w.Screen() != OnForm || !slices.Contains(w.w.Offers(), offer) {
-			return fmt.Errorf("the window is on %v and offers %q", w.w.Screen(), w.w.Offers())
+		if w.w.Screen != board.OnForm || !slices.Contains(w.w.Offers(), offer) {
+			return fmt.Errorf("the window is on %v and offers %q", w.w.Screen, w.w.Offers())
 		}
 		return nil
 	})
@@ -319,13 +321,13 @@ func (w *world) shownPages() engine.Pages {
 	return w.pages.WithoutRecurrence()
 }
 
-func (w *world) cardSlotOf(title string) (Box, error) {
+func (w *world) cardSlotOf(title string) (geom.Box, error) {
 	for _, placed := range w.w.Placed() {
 		if placed.Card.Title == title {
 			return placed.Slot, nil
 		}
 	}
-	return Box{}, fmt.Errorf("no card titled %q is on the board", title)
+	return geom.Box{}, fmt.Errorf("no card titled %q is on the board", title)
 }
 
 func (w *world) rowOf(title string) (CardRow, error) {
@@ -337,7 +339,7 @@ func (w *world) rowOf(title string) (CardRow, error) {
 	if err != nil {
 		return CardRow{}, err
 	}
-	return CardRowOf(c, PartsOf(slot).Number, w.w.measured(), moment, w.w.pages), nil
+	return CardRowOf(c, PartsOf(slot).Number, w.w.measured(), moment, w.w.Pages), nil
 }
 
 func (w *world) clickInRulePicker(said string) error {
@@ -345,7 +347,7 @@ func (w *world) clickInRulePicker(said string) error {
 		for i, choice := range line.Choices {
 			if choice == said && i < len(line.Picks) {
 				pick := line.Picks[i]
-				w.w = w.w.clicked(Point{X: pick.X + pick.W/2, Y: pick.Y + pick.H/2})
+				w.w = w.w.clicked(geom.Point{X: pick.X + pick.W/2, Y: pick.Y + pick.H/2})
 				return nil
 			}
 		}
@@ -362,20 +364,20 @@ func (w *world) walkRuleTo(said, choice string) error {
 			if line.On >= 0 && line.Choices[line.On] == choice {
 				return nil
 			}
-			w.w = w.w.clicked(Point{X: line.Next.X + line.Next.W/2, Y: line.Next.Y + line.Next.H/2})
+			w.w = w.w.clicked(geom.Point{X: line.Next.X + line.Next.W/2, Y: line.Next.Y + line.Next.H/2})
 		}
 	}
 	return fmt.Errorf("the rule's picker never walks %q to %q", said, choice)
 }
 
 func (w *world) readBack() string {
-	box, ok := RepeatsReadAt(w.w.formBox(), w.w.Form().Fields())
+	box, ok := RepeatsReadAt(w.w.formBox(), w.w.Form.Fields)
 	if !ok {
 		return ""
 	}
 	var said []string
 	for _, one := range textDrawnWith(w.theme, w.w) {
-		if box.In(Point{X: one.box.X, Y: one.box.Y}) {
+		if box.In(geom.Point{X: one.box.X, Y: one.box.Y}) {
 			said = append(said, one.said)
 		}
 	}

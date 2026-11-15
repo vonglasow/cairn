@@ -4,11 +4,10 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/series"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strconv"
 	"strings"
-
-	"cairn/internal/engine"
 )
 
 func depthOf(b board.Branch) int {
@@ -18,48 +17,28 @@ func depthOf(b board.Branch) int {
 	return 0
 }
 
-// Detailed is the objective the right of the tab shows: the one chosen, or the first of the tree while none is, a parent drawn only as what holds a match passed over.
-func (w Window) Detailed() (board.Goal, bool) {
-	tree := w.Tree()
-	shown := w.detailGoal
-	if w.chosenGoal {
-		shown = w.chosen
-	}
-	for _, b := range tree {
-		if shown != 0 && b.Goal.Number == shown && !b.Holds {
-			return b.Goal, true
-		}
-	}
-	for _, b := range tree {
-		if !b.Holds {
-			return b.Goal, true
-		}
-	}
-	return board.Goal{}, false
-}
-
 // TaskLine is one task the detail lists: the task, what among the sub-objectives it serves, and where it stands.
 type TaskLine struct {
 	Card          board.Card
 	Serves, Right string
-	At            Box
+	At            geom.Box
 }
 
 // TilePlaced is one sub-objective the detail shows as a tile, and where.
 type TilePlaced struct {
 	Number int
 	Tile   GoalTile
-	At     Box
+	At     geom.Box
 }
 
 // Detail is the right of the objectives tab: the objective shown and where each of its parts stands.
 type Detail struct {
 	Goal                                  board.Goal
-	Box, Heading, Line, Progress, Figures Box
-	Buttons                               []Box
-	Note, Proposed, WaitsAt               Box
+	Box, Heading, Line, Progress, Figures geom.Box
+	Buttons                               []geom.Box
+	Note, Proposed, WaitsAt               geom.Box
 	Waits                                 Facts
-	SubsHead, OwnHead, InSubsHead, MoreAt Box
+	SubsHead, OwnHead, InSubsHead, MoreAt geom.Box
 	Tiles                                 []TilePlaced
 	Own, InSubs                           []TaskLine
 	OwnSaid, OwnCount, InSubsCount, More  string
@@ -87,7 +66,7 @@ const AddSubSays = "+ Sub-objective"
 
 const (
 	detailPad = 20
-	lineRoom  = SubHeight
+	lineRoom  = geom.SubHeight
 )
 
 // Detail lays out the right of the objectives tab for the objective it shows.
@@ -98,34 +77,34 @@ func (w Window) Detail() Detail {
 	if !ok {
 		return d
 	}
-	inside := Box{X: box.X + detailPad, Y: box.Y + detailPad, W: box.W - 2*detailPad, H: box.H - 2*detailPad}
+	inside := geom.Box{X: box.X + detailPad, Y: box.Y + detailPad, W: box.W - 2*detailPad, H: box.H - 2*detailPad}
 	m := w.measured()
-	if w.widthsWide(d.Offers)+len(d.Offers)*gap > inside.W-headingLeast {
+	if w.widthsWide(d.Offers)+len(d.Offers)*geom.Gap > inside.W-headingLeast {
 		d.Offers = slices.DeleteFunc(d.Offers, func(o string) bool { return o == AddSubSays })
 	}
 	end := inside.X + inside.W
 	widths := w.widthsOf(d.Offers)
 	for i := len(widths) - 1; i >= 0; i-- {
 		end -= widths[i]
-		d.Buttons = append([]Box{{X: end, Y: inside.Y, W: widths[i], H: buttonHigh}}, d.Buttons...)
-		end -= gap
+		d.Buttons = append([]geom.Box{{X: end, Y: inside.Y, W: widths[i], H: buttonHigh}}, d.Buttons...)
+		end -= geom.Gap
 	}
 	y := inside.Y
-	d.Heading = Box{X: inside.X, Y: y, W: max(0, end-inside.X), H: buttonHigh}
+	d.Heading = geom.Box{X: inside.X, Y: y, W: max(0, end-inside.X), H: buttonHigh}
 	y += buttonHigh + between
-	d.Line = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+	d.Line = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 	d.Facts = w.goalFacts(g)
 	y += lineHigh + padding
 	d.Subs = len(g.Children) > 0
 	if g.Total > 0 {
-		d.Progress = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+		d.Progress = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 		d.Counted = strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " tasks · " + strconv.Itoa(g.Percent()) + "%"
 		y += lineHigh + inset
-		d.Figures = Box{X: inside.X, Y: y, W: inside.W, H: FiguresHigh}
+		d.Figures = geom.Box{X: inside.X, Y: y, W: inside.W, H: FiguresHigh}
 		y += FiguresHigh + inset
 	}
-	d.Spent, d.Left, d.LeftSays = w.spentSaid(calendar.FormatDuration(g.Spent)), "0", "left"
-	if left := w.snap.Left(g.Number); left.Tasks > 0 {
+	d.Spent, d.Left, d.LeftSays = w.SpentSaid(calendar.FormatDuration(g.Spent)), "0", "left"
+	if left := w.Snap.Left(g.Number); left.Tasks > 0 {
 		d.Left = strconv.Itoa(left.Tasks)
 		if !left.Due.IsZero() {
 			d.LeftSays += ", the next deadline " + calendar.FormatDay(left.Due) + " (#" + strconv.Itoa(left.On) + ")"
@@ -133,34 +112,34 @@ func (w Window) Detail() Detail {
 	}
 	if d.Subs {
 		d.NoteSays = "Over its whole subtree, each task once."
-		d.Note = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+		d.Note = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 		y += lineHigh + between
 	}
 	if g.Proposed {
 		d.Proposes, d.ProposedSays = true, "every sub-objective is reached: it may be put reached too"
-		d.Proposed = Box{X: inside.X, Y: y, W: inside.W, H: BannerHigh(m, d.ProposedSays, "", inside.W)}
+		d.Proposed = geom.Box{X: inside.X, Y: y, W: inside.W, H: BannerHigh(m, d.ProposedSays, "", inside.W)}
 		y += d.Proposed.H + between
 	}
 	d.Waits = w.waitsFacts(g)
 	if high := d.Waits.High(); high > 0 {
-		d.WaitsAt = Box{X: inside.X, Y: y, W: inside.W, H: high}
+		d.WaitsAt = geom.Box{X: inside.X, Y: y, W: inside.W, H: high}
 		y += high + between
 	}
 	foot := inside.Y + inside.H - lineHigh
-	cards := board.OnTheBoard(w.snap.Cards, w.archived)
+	cards := board.Laid(w.Snap.Cards, w.Archived)
 	own := ranked(board.Serving(cards, g.Number))
 	var under []board.Card
 	if d.Subs {
-		d.SubsHead = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+		d.SubsHead = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 		y += lineHigh + inset
-		across := max(1, min(len(g.Children), (inside.W+gap)/(tileWide+gap)))
-		wide := (inside.W - (across-1)*gap) / across
+		across := max(1, min(len(g.Children), (inside.W+geom.Gap)/(tileWide+geom.Gap)))
+		wide := (inside.W - (across-1)*geom.Gap) / across
 		for i, c := range g.Children {
-			at := Box{X: inside.X + i*(wide+gap), Y: y, W: wide, H: TileHigh}
+			at := geom.Box{X: inside.X + i*(wide+geom.Gap), Y: y, W: wide, H: TileHigh}
 			if i >= across || at.Y+at.H > foot {
 				break
 			}
-			sub, _ := w.snap.Goal(c)
+			sub, _ := w.Snap.Goal(c)
 			d.Tiles = append(d.Tiles, TilePlaced{Number: c, Tile: w.tileOf(sub), At: at})
 		}
 		y += TileHigh + inset
@@ -171,19 +150,19 @@ func (w Window) Detail() Detail {
 	}
 	d.OwnCount = strconv.Itoa(len(own))
 	shown := 0
-	place := func(head *Box, lines []board.Card, into *[]TaskLine, serves bool) {
+	place := func(head *geom.Box, lines []board.Card, into *[]TaskLine, serves bool) {
 		if y+lineHigh+lineRoom > foot {
 			return
 		}
-		*head = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
+		*head = geom.Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 		y += lineHigh + inset
 		for _, c := range lines {
 			if y+lineRoom > foot {
 				break
 			}
-			line := TaskLine{Card: c, At: Box{X: inside.X, Y: y, W: inside.W, H: lineRoom}, Right: c.State}
+			line := TaskLine{Card: c, At: geom.Box{X: inside.X, Y: y, W: inside.W, H: lineRoom}, Right: c.State}
 			if serves {
-				line.Serves = w.servedAmong(c, g.Children)
+				line.Serves = w.ServedAmong(c, g.Children)
 			} else if c.Spent != "" {
 				line.Right += " · " + c.Spent
 			}
@@ -200,7 +179,7 @@ func (w Window) Detail() Detail {
 	}
 	if more := len(own) + len(under) - shown; more > 0 {
 		d.More = strconv.Itoa(more) + " more · t shows them all on the board"
-		d.MoreAt = Box{X: inside.X, Y: min(y, foot), W: inside.W, H: lineHigh}
+		d.MoreAt = geom.Box{X: inside.X, Y: min(y, foot), W: inside.W, H: lineHigh}
 	}
 	return d
 }
@@ -232,20 +211,10 @@ func ranked(cards []board.Card) []board.Card {
 	return out
 }
 
-func (w Window) spentSaid(spent string) string {
-	switch {
-	case !w.pages.Shows(engine.PageTime):
-		return ""
-	case spent == "":
-		return "—"
-	}
-	return spent
-}
-
 func (w Window) goalFacts(g board.Goal) string {
 	var facts []string
 	if g.Parent != 0 {
-		parent, _ := w.snap.Goal(g.Parent)
+		parent, _ := w.Snap.Goal(g.Parent)
 		facts = append(facts, "a sub-objective of #"+strconv.Itoa(parent.Number)+" "+parent.Title, "counted there too")
 	} else {
 		facts = append(facts, "level one")
@@ -266,22 +235,13 @@ func plural(n int) string {
 	return "s"
 }
 
-func (w Window) named(numbers []int) string {
-	var said []string
-	for _, n := range numbers {
-		g, _ := w.snap.Goal(n)
-		said = append(said, "#"+strconv.Itoa(n)+" "+g.Title)
-	}
-	return strings.Join(said, ", ")
-}
-
 func (w Window) waitsFacts(g board.Goal) Facts {
 	var f Facts
 	if len(g.WaitsOn) > 0 {
-		f.Lines = append(f.Lines, Fact{Name: "waits on", Value: w.named(g.WaitsOn)})
+		f.Lines = append(f.Lines, Fact{Name: "waits on", Value: w.Named(g.WaitsOn)})
 	}
 	if len(g.WaitedOnBy) > 0 {
-		f.Lines = append(f.Lines, Fact{Name: "waited on by", Value: w.named(g.WaitedOnBy)})
+		f.Lines = append(f.Lines, Fact{Name: "waited on by", Value: w.Named(g.WaitedOnBy)})
 	}
 	return f
 }
@@ -295,9 +255,9 @@ func (w Window) tileOf(g board.Goal) GoalTile {
 	if g.Spent > 0 {
 		t.Counts += " · " + calendar.FormatDuration(g.Spent)
 	}
-	for _, c := range board.Serving(board.OnTheBoard(w.snap.Cards, w.archived), g.Number) {
+	for _, c := range board.Serving(board.Laid(w.Snap.Cards, w.Archived), g.Number) {
 		var also []string
-		for _, other := range w.snap.Served(c) {
+		for _, other := range w.Snap.Served(c) {
 			if other.Number != g.Number && other.Number != g.Parent {
 				also = append(also, other.Title)
 			}
@@ -308,27 +268,17 @@ func (w Window) tileOf(g board.Goal) GoalTile {
 	}
 	var waits []string
 	for _, n := range g.WaitsOn {
-		if on, ok := w.snap.Goal(n); ok && on.State != "reached" {
+		if on, ok := w.Snap.Goal(n); ok && on.State != "reached" {
 			waits = append(waits, on.Title)
 		}
 	}
 	if len(waits) > 0 {
 		t.Warn = "waits on " + strings.Join(waits, ", ")
 	}
-	if g.LateOn(w.today()) {
+	if g.LateOn(w.Today()) {
 		t.Warn = "late · its deadline was " + series.ShortDay(g.Deadline)
 	}
 	return t
-}
-
-func (w Window) servedAmong(c board.Card, among []int) string {
-	var said []string
-	for _, g := range w.snap.Served(c) {
-		if slices.Contains(among, g.Number) {
-			said = append(said, g.Title)
-		}
-	}
-	return strings.Join(said, ", ")
 }
 
 func (w Window) showingItsTasks() Window {
@@ -336,9 +286,9 @@ func (w Window) showingItsTasks() Window {
 	if !ok {
 		return w
 	}
-	filters := board.FiltersOf(w.snap, w.today()).Keeping(w.filters)
-	w = w.onPage(Tasks)
-	w.filters = filters.On("objective", strconv.Itoa(g.Number))
+	filters := board.FiltersOf(w.Snap, w.Today()).Keeping(w.Filters)
+	w = w.onPage(board.Tasks)
+	w.Filters = filters.On("objective", strconv.Itoa(g.Number))
 	return w
 }
 
@@ -347,7 +297,7 @@ func (w Window) detailing(offer string) Window {
 	if !ok {
 		return w
 	}
-	w.chosen, w.chosenGoal = g.Number, true
+	w.Chosen, w.ChosenGoal = g.Number, true
 	switch offer {
 	case ShowItsTasks:
 		return w.showingItsTasks()
@@ -361,20 +311,20 @@ func (w Window) addingUnder(g board.Goal) Window {
 	if g.Parent != 0 {
 		return w
 	}
-	w.form, w.formMoved = asOpened(Form{Adding: true, ForObjective: true, fields: board.NewSubGoalFields(g.Number)}), Point{}
+	w.Form, w.formMoved = board.AsOpened(board.Form{Adding: true, ForObjective: true, Fields: board.NewSubGoalFields(g.Number)}), geom.Point{}
 	w = w.beside()
-	w.screen = OnForm
+	w.Screen = board.OnForm
 	return w
 }
 
-func (w Window) buttonLook(offer string, at Box) buttonLook {
+func (w Window) buttonLook(offer string, at geom.Box) buttonLook {
 	if w.pointed == at {
 		return litLook(buttonPlain)
 	}
 	return buttonPlain
 }
 
-func (w Window) goalSlotAt(p Point) Box {
+func (w Window) goalSlotAt(p geom.Point) geom.Box {
 	l := w.Layout()
 	if GoalsRun(l).In(p) {
 		for at := range w.Tree() {
@@ -389,19 +339,19 @@ func (w Window) goalSlotAt(p Point) Box {
 			return at
 		}
 	}
-	return Box{}
+	return geom.Box{}
 }
 
-func tilesOf(d Detail) []Box {
-	var out []Box
+func tilesOf(d Detail) []geom.Box {
+	var out []geom.Box
 	for _, t := range d.Tiles {
 		out = append(out, t.At)
 	}
 	return out
 }
 
-func (w Window) clickingDetail(p Point) (Window, bool) {
-	if w.screen != OnTheBoard || w.tab != Objectives {
+func (w Window) clickingDetail(p geom.Point) (Window, bool) {
+	if w.Screen != board.OnTheBoard || w.Tab != board.Objectives {
 		return w, false
 	}
 	d := w.Detail()
@@ -417,7 +367,7 @@ func (w Window) clickingDetail(p Point) (Window, bool) {
 	}
 	for _, line := range append(append([]TaskLine{}, d.Own...), d.InSubs...) {
 		if line.At.In(p) {
-			w.detailGoal = d.Goal.Number
+			w.DetailGoal = d.Goal.Number
 			return w.openingTask(line.Card.Number), true
 		}
 	}

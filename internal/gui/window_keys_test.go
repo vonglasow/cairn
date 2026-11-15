@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"errors"
 	"fmt"
 	"strconv"
@@ -46,8 +47,8 @@ func TestAQuestionThatComesWhileAddingKeepsTheDraft(t *testing.T) {
 	w := holding(f).Drafting(drafts).Key("cmd+n").Types("Plan the week")
 	w.work = behind{f, []string{"add-the-estimate"}, &current}
 	w = w.Look()
-	if w.Screen() != OnAsking || w.question != aboutApplying {
-		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutApplying {
+		t.Fatalf("the window is on %v asking %v", w.Screen, w.Question)
 	}
 	held, err := drafts.Held()
 	if err != nil || held["title"] != "Plan the week" {
@@ -57,8 +58,8 @@ func TestAQuestionThatComesWhileAddingKeepsTheDraft(t *testing.T) {
 
 func TestTheWindowAsksToApplyWhatIsWaitingWhenItsLookIsRefused(t *testing.T) {
 	w := Window{work: behind{fake: newFake(), waiting: []string{"add-the-estimate"}}}.Look()
-	if w.Screen() != OnAsking || w.question != aboutApplying {
-		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutApplying {
+		t.Fatalf("the window is on %v asking %v", w.Screen, w.Question)
 	}
 	if w.agreeing.Op.Verb != engine.MigrationApply.Verb || w.agreeing.Op.Thing != engine.MigrationApply.Thing {
 		t.Errorf("the window holds %+v", w.agreeing)
@@ -72,8 +73,8 @@ func TestTheWindowAsksToApplyWhatIsWaitingWhenItsLookIsRefused(t *testing.T) {
 	for range 2 * Lingers() {
 		w = w.aged()
 	}
-	if w.Screen() != OnAsking || w.question != aboutApplying {
-		t.Errorf("after the beats the window is on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutApplying {
+		t.Errorf("after the beats the window is on %v asking %v", w.Screen, w.Question)
 	}
 }
 
@@ -89,12 +90,12 @@ func (u unappliable) Ask(op engine.Operation, in engine.Input) (engine.Answer, e
 func TestTheWindowAsksAgainWhenApplyingFails(t *testing.T) {
 	var current bool
 	w := Window{work: unappliable{behind{newFake(), []string{"add-the-estimate"}, &current}}}.Look()
-	if w.question != aboutApplying {
-		t.Fatalf("the window asks %v", w.question)
+	if w.Question != board.AboutApplying {
+		t.Fatalf("the window asks %v", w.Question)
 	}
 	w = w.Choose("Apply")
-	if w.Screen() != OnAsking || w.question != aboutApplying {
-		t.Fatalf("after a failed apply the window is on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutApplying {
+		t.Fatalf("after a failed apply the window is on %v asking %v", w.Screen, w.Question)
 	}
 	if w.agreeing.Op.Verb != engine.MigrationApply.Verb || w.agreeing.Op.Thing != engine.MigrationApply.Thing {
 		t.Errorf("the window holds %+v", w.agreeing)
@@ -113,8 +114,8 @@ func (n newer) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 func TestTheWindowSaysAStoreFromANewerCairnAndOffersOnlyToQuit(t *testing.T) {
 	f := newFake()
 	w := Window{work: newer{f}}.Look()
-	if w.Screen() != OnAsking || w.question != aboutNewer {
-		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutNewer {
+		t.Fatalf("the window is on %v asking %v", w.Screen, w.Question)
 	}
 	if offers := w.Offers(); len(offers) != 1 || offers[0] != "Quit" {
 		t.Errorf("the window offers %q, want only Quit", offers)
@@ -125,12 +126,12 @@ func TestTheWindowSaysAStoreFromANewerCairnAndOffersOnlyToQuit(t *testing.T) {
 	for range 2 * Lingers() {
 		w = w.aged()
 	}
-	if w.Screen() != OnAsking || w.question != aboutNewer {
-		t.Errorf("after the beats the window is on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutNewer {
+		t.Errorf("after the beats the window is on %v asking %v", w.Screen, w.Question)
 	}
 	w = w.Choose("agree")
-	if w.Screen() != OnAsking || w.question != aboutNewer || len(f.wrote()) != 0 {
-		t.Errorf("agreeing left the window on %v asking %v after %d writes", w.Screen(), w.question, len(f.wrote()))
+	if w.Screen != board.OnAsking || w.Question != board.AboutNewer || len(f.wrote()) != 0 {
+		t.Errorf("agreeing left the window on %v asking %v after %d writes", w.Screen, w.Question, len(f.wrote()))
 	}
 }
 
@@ -173,12 +174,12 @@ func TestEEditsWhateverIsChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	if got := w.Key("e"); got.Screen() != OnTheBoard {
+	if got := w.Key("e"); got.Screen != board.OnTheBoard {
 		t.Error("e with nothing chosen opened something")
 	}
 	w = w.clicked(middleOf(w, 1, 0))
-	if got := w.Key("e"); got.Screen() != OnForm {
-		t.Fatalf("e left the window on %v", got.Screen())
+	if got := w.Key("e"); got.Screen != board.OnForm {
+		t.Fatalf("e left the window on %v", got.Screen)
 	}
 }
 
@@ -190,17 +191,17 @@ func TestTheArrowsWalkTheBoard(t *testing.T) {
 		board.Card{Number: 3, Title: "Second", State: "todo"})
 
 	w = w.clicked(middleOf(w, 0, 0))
-	if got := w.Key("right").Chosen(); got != 2 {
+	if got := w.Key("right").Chosen; got != 2 {
 		t.Errorf("right of the backlog chose %d", got)
 	}
 	across := w.Key("right")
-	if got := across.Key("down").Chosen(); got != 3 {
+	if got := across.Key("down").Chosen; got != 3 {
 		t.Errorf("down from the first of todo chose %d", got)
 	}
-	if got := across.Key("down").Key("up").Chosen(); got != 2 {
+	if got := across.Key("down").Key("up").Chosen; got != 2 {
 		t.Errorf("up again chose %d", got)
 	}
-	if got := across.Key("left").Chosen(); got != 1 {
+	if got := across.Key("left").Chosen; got != 1 {
 		t.Errorf("left of todo chose %d", got)
 	}
 }
@@ -212,16 +213,16 @@ func TestTheArrowsStopAtTheEdges(t *testing.T) {
 		board.Card{Number: 2, Title: "Last", State: "done"})
 
 	w = w.clicked(middleOf(w, 0, 0))
-	if got := w.Key("left").Chosen(); got != 1 {
+	if got := w.Key("left").Chosen; got != 1 {
 		t.Errorf("left of the first column chose %d", got)
 	}
-	if got := w.Key("up").Chosen(); got != 1 {
+	if got := w.Key("up").Chosen; got != 1 {
 		t.Errorf("up from the first card chose %d", got)
 	}
-	if got := w.Key("down").Chosen(); got != 1 {
+	if got := w.Key("down").Chosen; got != 1 {
 		t.Errorf("down from the only card of a column chose %d", got)
 	}
-	if got := w.Key("right").Key("right").Key("right").Chosen(); got != 2 {
+	if got := w.Key("right").Key("right").Key("right").Chosen; got != 2 {
 		t.Errorf("walking right across two empty columns chose %d", got)
 	}
 }
@@ -229,7 +230,7 @@ func TestTheArrowsStopAtTheEdges(t *testing.T) {
 func TestAnArrowWithNothingChosenChoosesSomewhereToBegin(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Only", State: "backlog"})
-	if got := w.Key("down").Chosen(); got != 1 {
+	if got := w.Key("down").Chosen; got != 1 {
 		t.Errorf("an arrow on an untouched board chose %d", got)
 	}
 }
@@ -237,21 +238,21 @@ func TestAnArrowWithNothingChosenChoosesSomewhereToBegin(t *testing.T) {
 func TestTheArrowsWalkTheObjectives(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{
+	w.Snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
-	w.tab = Objectives
+	w.Tab = board.Objectives
 
 	first := GoalAt(w.Layout(), 0, 0)
-	w = w.clicked(Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
-	if got := w.Key("down").Chosen(); got != 4 {
+	w = w.clicked(geom.Point{X: first.X + first.W/2, Y: first.Y + first.H/2})
+	if got := w.Key("down").Chosen; got != 4 {
 		t.Errorf("down the list chose %d", got)
 	}
-	if got := w.Key("down").Key("up").Chosen(); got != 3 {
+	if got := w.Key("down").Key("up").Chosen; got != 3 {
 		t.Errorf("up the list chose %d", got)
 	}
-	if got := w.Key("down").Key("down").Chosen(); got != 4 {
+	if got := w.Key("down").Key("down").Chosen; got != 4 {
 		t.Errorf("past the end of the list chose %d", got)
 	}
 }
@@ -260,15 +261,15 @@ func TestEnterOpensWhatIsChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
-	if got := w.Key("enter"); got.Screen() != OnTheBoard {
+	if got := w.Key("enter"); got.Screen != board.OnTheBoard {
 		t.Error("enter with nothing chosen opened something")
 	}
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
-	if w.Screen() != OnForm {
-		t.Fatalf("enter left the window on %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("enter left the window on %v", w.Screen)
 	}
-	if w.Chosen() != 1 {
-		t.Errorf("it opened %d", w.Chosen())
+	if w.Chosen != 1 {
+		t.Errorf("it opened %d", w.Chosen)
 	}
 }
 
@@ -281,10 +282,10 @@ func TestWalkingAcrossIntoAShorterColumnLandsOnItsLast(t *testing.T) {
 		board.Card{Number: 4, Title: "Only", State: "todo"})
 
 	w = w.clicked(middleOf(w, 0, 2))
-	if got := w.Chosen(); got != 3 {
+	if got := w.Chosen; got != 3 {
 		t.Fatalf("the third card of the backlog is %d", got)
 	}
-	if got := w.Key("right").Chosen(); got != 4 {
+	if got := w.Key("right").Chosen; got != 4 {
 		t.Errorf("right into a column of one chose %d", got)
 	}
 }
@@ -292,17 +293,17 @@ func TestWalkingAcrossIntoAShorterColumnLandsOnItsLast(t *testing.T) {
 func TestWalkingTheObjectivesFromTheMiddle(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = board.Snapshot{Goals: []board.Goal{
+	w.Snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "First", State: "active"},
 		{Number: 4, Title: "Second", State: "active"},
 		{Number: 5, Title: "Third", State: "active"},
 	}}
-	w.tab, w.chosen, w.chosenGoal = Objectives, 4, true
+	w.Tab, w.Chosen, w.ChosenGoal = board.Objectives, 4, true
 
-	if got := w.Key("down").Chosen(); got != 5 {
+	if got := w.Key("down").Chosen; got != 5 {
 		t.Errorf("down from the second chose %d", got)
 	}
-	if got := w.Key("up").Chosen(); got != 3 {
+	if got := w.Key("up").Chosen; got != 3 {
 		t.Errorf("up from the second chose %d", got)
 	}
 }
@@ -310,7 +311,7 @@ func TestWalkingTheObjectivesFromTheMiddle(t *testing.T) {
 func TestAnArrowBeginsInTheFirstColumnThatHasAnything(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 7, Title: "Only", State: "current"})
-	if got := w.Key("down").Chosen(); got != 7 {
+	if got := w.Key("down").Chosen; got != 7 {
 		t.Errorf("an arrow chose %d, and the only card is 7", got)
 	}
 }
@@ -321,17 +322,17 @@ func TestTheArrowsReachTheBand(t *testing.T) {
 		card(1, "Write the spec", "todo"),
 		board.Card{Number: 2, Title: "Waiting on them", State: "blocked"})
 	w = w.clicked(middleOf(w, 1, 0))
-	if w.Chosen() != 1 {
-		t.Fatalf("the board chose %d", w.Chosen())
+	if w.Chosen != 1 {
+		t.Fatalf("the board chose %d", w.Chosen)
 	}
 	down := w
 	for range 6 {
 		down = down.Key("down")
-		if down.Chosen() == 2 {
+		if down.Chosen == 2 {
 			return
 		}
 	}
-	t.Errorf("walking down never reached the blocked task; it stopped on %d", down.Chosen())
+	t.Errorf("walking down never reached the blocked task; it stopped on %d", down.Chosen)
 }
 
 func TestACardIsMovedWithTheKeyboard(t *testing.T) {
@@ -358,14 +359,14 @@ func TestADeletionIsAgreedToWithEnter(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+backspace")
-	if w.Screen() != OnAsking {
-		t.Fatalf("d left the window on %v", w.Screen())
+	if w.Screen != board.OnAsking {
+		t.Fatalf("d left the window on %v", w.Screen)
 	}
 	if again := w.Key("cmd+backspace"); len(f.asked) != 0 {
-		t.Errorf("a second d deleted without being agreed to: %v, screen %v", f.asked, again.Screen())
+		t.Errorf("a second d deleted without being agreed to: %v, screen %v", f.asked, again.Screen)
 	}
-	if agreed := w.Key("enter"); agreed.Screen() != OnTheBoard {
-		t.Errorf("enter left the question on %v", agreed.Screen())
+	if agreed := w.Key("enter"); agreed.Screen != board.OnTheBoard {
+		t.Errorf("enter left the question on %v", agreed.Screen)
 	}
 }
 
@@ -375,8 +376,8 @@ func TestAWholeColumnGoesOffTheBoardAtOnce(t *testing.T) {
 		board.Card{Number: 2, Title: "Two", State: "done"})
 	w = w.clicked(middleOf(w, 3, 0))
 	w = Typed(w, "X", key.ModShift)
-	if w.Screen() != OnAsking {
-		t.Fatalf("a whole column went without a question: %v", w.Screen())
+	if w.Screen != board.OnAsking {
+		t.Fatalf("a whole column went without a question: %v", w.Screen)
 	}
 	w.Choose("Agree")
 	for _, asked := range f.asked {
@@ -455,8 +456,8 @@ func TestShiftSidewaysOutOfTheBand(t *testing.T) {
 		board.Card{Number: 1, Title: "In todo", State: "todo"},
 		board.Card{Number: 2, Title: "Blocked", State: "blocked"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("down")
-	if w.Chosen() != 2 {
-		t.Fatalf("down out of TODO chose %d, want the blocked task", w.Chosen())
+	if w.Chosen != 2 {
+		t.Fatalf("down out of TODO chose %d, want the blocked task", w.Chosen)
 	}
 	f.asked = nil
 	w.Key("shift+right")
@@ -485,31 +486,31 @@ func TestTheArrowsWalkTheBandAndClimbOutOfIt(t *testing.T) {
 		board.Card{Number: 4, Title: "Watched", State: "watching"})
 
 	w = w.clicked(middleOf(w, 1, 0)).Key("down")
-	if w.Chosen() != 2 {
-		t.Fatalf("down out of TODO chose %d, want the first blocked task", w.Chosen())
+	if w.Chosen != 2 {
+		t.Fatalf("down out of TODO chose %d, want the first blocked task", w.Chosen)
 	}
-	if got := w.Key("down").Chosen(); got != 3 {
+	if got := w.Key("down").Chosen; got != 3 {
 		t.Fatalf("down in a lane chose %d, want 3", got)
 	}
-	if got := w.Key("down").Key("down").Chosen(); got != 3 {
+	if got := w.Key("down").Key("down").Chosen; got != 3 {
 		t.Fatalf("down past the end of a lane chose %d, want 3", got)
 	}
-	if got := w.Key("right").Chosen(); got != 4 {
+	if got := w.Key("right").Chosen; got != 4 {
 		t.Fatalf("right out of the blocked lane chose %d, want 4", got)
 	}
-	if got := w.Key("left").Chosen(); got != 2 {
+	if got := w.Key("left").Chosen; got != 2 {
 		t.Fatalf("left out of the first lane chose %d, want to stay", got)
 	}
-	if got := w.Key("right").Key("right").Chosen(); got != 4 {
+	if got := w.Key("right").Key("right").Chosen; got != 4 {
 		t.Fatalf("right off the last lane chose %d, want to stay on 4", got)
 	}
-	if got := w.Key("down").Key("right").Chosen(); got != 4 {
+	if got := w.Key("down").Key("right").Chosen; got != 4 {
 		t.Fatalf("right from the second blocked card chose %d, want 4", got)
 	}
-	if got := w.clicked(middleOf(w, 1, 0)).Key("right").Chosen(); got != 1 {
+	if got := w.clicked(middleOf(w, 1, 0)).Key("right").Chosen; got != 1 {
 		t.Fatalf("right out of TODO chose %d, and should not have fallen into the band", got)
 	}
-	if got := w.Key("up").Chosen(); got != 1 {
+	if got := w.Key("up").Chosen; got != 1 {
 		t.Fatalf("up out of a lane chose %d, want the task above it", got)
 	}
 }
@@ -527,12 +528,12 @@ func TestClimbingOutOfTheBandBringsTheCardIntoSight(t *testing.T) {
 	for range 20 {
 		w = w.Key("down")
 	}
-	if w.Chosen() != 99 {
-		t.Fatalf("down out of TODO chose %d, want the blocked task", w.Chosen())
+	if w.Chosen != 99 {
+		t.Fatalf("down out of TODO chose %d, want the blocked task", w.Chosen)
 	}
 	w = w.Key("up")
-	if w.Chosen() != 20 {
-		t.Fatalf("up out of the band chose %d, want the last card of TODO", w.Chosen())
+	if w.Chosen != 20 {
+		t.Fatalf("up out of the band chose %d, want the last card of TODO", w.Chosen)
 	}
 	run := w.Layout().Column[1]
 	last := w.Layout().CardAt(1, 19, w.scroll[1])
@@ -568,7 +569,7 @@ func TestWalkingOffTheBottomOfTheBacklogGoesNowhere(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "One", State: "backlog"},
 		board.Card{Number: 2, Title: "Stuck", State: "blocked"})
 	w = w.clicked(middleOf(w, 0, 0))
-	if got := w.Key("down").Chosen(); got != 1 {
+	if got := w.Key("down").Chosen; got != 1 {
 		t.Fatalf("down out of the backlog chose %d, want to stay on 1", got)
 	}
 }
@@ -577,10 +578,10 @@ func TestClimbingOutOfALaneWithNothingAboveItStays(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Stuck", State: "blocked"})
 	w = w.clicked(onLaneCard(w, 0, 0))
-	if w.Chosen() != 1 {
-		t.Fatalf("the blocked card was not chosen: %d", w.Chosen())
+	if w.Chosen != 1 {
+		t.Fatalf("the blocked card was not chosen: %d", w.Chosen)
 	}
-	if got := w.Key("up").Chosen(); got != 1 {
+	if got := w.Key("up").Chosen; got != 1 {
 		t.Fatalf("up out of a lane with nothing above it chose %d", got)
 	}
 }
@@ -590,10 +591,10 @@ func TestWalkingLeftReachesTheFirstLane(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Stuck", State: "blocked"},
 		board.Card{Number: 2, Title: "Watched", State: "watching"})
 	w = w.clicked(onLaneCard(w, 1, 0))
-	if w.Chosen() != 2 {
-		t.Fatalf("the watched card was not chosen: %d", w.Chosen())
+	if w.Chosen != 2 {
+		t.Fatalf("the watched card was not chosen: %d", w.Chosen)
 	}
-	if got := w.Key("left").Chosen(); got != 1 {
+	if got := w.Key("left").Chosen; got != 1 {
 		t.Fatalf("left out of the watching lane chose %d, want the blocked one", got)
 	}
 }
@@ -603,8 +604,8 @@ func TestTheWindowKeepsTheEnginesAgreeingAfterARefusal(t *testing.T) {
 	f.failOp = engine.ErrStepStillOpen
 	w := Window{work: f}
 	w = w.asking(engine.TaskMove, engine.Input{Given: map[string]string{"number": "4"}})
-	if w.Screen() != OnAsking || w.question != aboutFinishingParts {
-		t.Fatalf("the window is on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutFinishingParts {
+		t.Fatalf("the window is on %v asking %v", w.Screen, w.Question)
 	}
 	if w.agreeing.Reason != "step-still-open" || !w.agreeing.In.Confirmed || w.agreeing.In.Given["number"] != "4" {
 		t.Errorf("the window holds %+v", w.agreeing)
@@ -620,23 +621,23 @@ func TestTheWindowAppliesWhatIsWaitingOnceAgreed(t *testing.T) {
 	var current bool
 	f := newFake()
 	w := Window{work: behind{f, []string{"add-the-estimate"}, &current}}.Look()
-	if w.question != aboutApplying {
-		t.Fatalf("the window asks %v", w.question)
+	if w.Question != board.AboutApplying {
+		t.Fatalf("the window asks %v", w.Question)
 	}
 	w = w.Choose("agree")
 	if _, ok := f.gave(engine.MigrationApply.Thing, engine.MigrationApply.Verb); !ok {
 		t.Fatalf("agreeing did not apply the change")
 	}
-	if w.Screen() != OnTheBoard || w.agreeing.Op.Verb != "" || w.Wrong() != nil {
-		t.Errorf("the window is on %v holding %+v, wrong: %v", w.Screen(), w.agreeing, w.Wrong())
+	if w.Screen != board.OnTheBoard || w.agreeing.Op.Verb != "" || w.Wrong() != nil {
+		t.Errorf("the window is on %v holding %+v, wrong: %v", w.Screen, w.agreeing, w.Wrong())
 	}
 	if w.Showing().Version != f.version {
 		t.Errorf("the board was not drawn again")
 	}
 	var late bool
 	w = Window{work: behind{newFake(), []string{"add-the-estimate"}, &late}}.asking(engine.TaskMove, engine.Input{})
-	if w.Screen() != OnAsking || w.question != aboutApplying {
-		t.Errorf("an act refused for a store behind lands on %v asking %v", w.Screen(), w.question)
+	if w.Screen != board.OnAsking || w.Question != board.AboutApplying {
+		t.Errorf("an act refused for a store behind lands on %v asking %v", w.Screen, w.Question)
 	}
 }
 

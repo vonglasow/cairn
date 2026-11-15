@@ -1,5 +1,10 @@
 package gui
 
+import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
+)
+
 type helpGroup struct {
 	name  string
 	lines []Said
@@ -53,7 +58,7 @@ func (w Window) helpGroups() []helpGroup {
 			{Key: "→ ← z ⌥", Means: "fold objectives"},
 		}},
 	}
-	if w.pages.Recurs() {
+	if w.Pages.Recurs() {
 		board := &groups[0]
 		board.lines = append(board.lines[:len(board.lines)-1], Said{Key: "r s · r e", Means: "skip · its series; r x stops"}, board.lines[len(board.lines)-1])
 	}
@@ -74,7 +79,7 @@ func (w Window) Helping() []Said {
 // HelpLine is one line of the help where it is laid out: the name of a group of keys, or a key on its chip and what it does beside it.
 type HelpLine struct {
 	Head, Key, Means   string
-	At, KeyAt, MeansAt Box
+	At, KeyAt, MeansAt geom.Box
 }
 
 // HelpLines is the help laid out in the panel: its groups one under another, the first half of them in the first column and the rest in the second when the panel is wide enough for two, what each key does starting where it does for every key of its column.
@@ -92,19 +97,19 @@ func (w Window) HelpLines() []HelpLine {
 			}
 		}
 		row := 0
-		place := func() Box {
+		place := func() geom.Box {
 			row++
-			return Box{X: x, Y: FirstRow(box) + (row-1)*helpRow, W: wide, H: lineHigh}
+			return geom.Box{X: x, Y: FirstRow(box) + (row-1)*helpRow, W: wide, H: lineHigh}
 		}
 		for _, group := range groups {
 			lines = append(lines, HelpLine{Head: group.name, At: place()})
 			for _, line := range group.lines {
 				slot := place()
 				key := w.keyboard.Spelled(line.Key)
-				chip := Box{X: slot.X, Y: slot.Y + (slot.H-chipHigh)/2, W: KeyChipWide(key), H: chipHigh}
+				chip := geom.Box{X: slot.X, Y: slot.Y + (slot.H-chipHigh)/2, W: KeyChipWide(key), H: chipHigh}
 				from := slot.X + chips + helpGap
 				lines = append(lines, HelpLine{Key: key, Means: w.keyboard.Spelled(line.Means), At: slot, KeyAt: chip,
-					MeansAt: Box{X: from, Y: slot.Y, W: slot.X + slot.W - from, H: slot.H}})
+					MeansAt: geom.Box{X: from, Y: slot.Y, W: slot.X + slot.W - from, H: slot.H}})
 			}
 		}
 	}
@@ -147,12 +152,12 @@ func (w Window) helpColumns() int {
 	return 1
 }
 
-func (w Window) helpOpens() Box {
+func (w Window) helpOpens() geom.Box {
 	over := Over(w.width, w.height)
 	rows := w.helpRows()
-	fixed := FirstRow(over) - over.Y + padding + barHigh + padding
+	fixed := FirstRow(over) - over.Y + padding + geom.BarHigh + padding
 	high := min(over.H, fixed+rows*helpRow)
-	return Box{X: over.X, Y: over.Y + (over.H-high)/2, W: over.W, H: high}
+	return geom.Box{X: over.X, Y: over.Y + (over.H-high)/2, W: over.W, H: high}
 }
 
 const (
@@ -163,4 +168,4 @@ const (
 )
 
 // HelpBox is the panel the help is drawn in: across the middle of the window, as tall as its longest column.
-func (w Window) HelpBox() Box { return w.placedPanel(OnHelp, w.helpOpens()) }
+func (w Window) HelpBox() geom.Box { return w.placedPanel(board.OnHelp, w.helpOpens()) }

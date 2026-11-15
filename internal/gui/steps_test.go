@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"image/color"
 	"image/png"
@@ -38,7 +40,7 @@ func quoted(list string) []string {
 func (w *world) columnsRead(list string) error {
 	want := quoted(list)
 	var got []string
-	dealt, _ := board.Deal(w.w.Reading().Cards, w.w.archived)
+	dealt, _ := board.Deal(w.w.Reading().Cards, w.w.Archived)
 	for _, column := range dealt {
 		got = append(got, column.Name)
 	}
@@ -53,7 +55,7 @@ func (w *world) cardsOf(column string) ([]board.Card, error) {
 	if at < 0 {
 		return nil, fmt.Errorf("no column called %q", column)
 	}
-	dealt, _ := board.Deal(w.w.Showing().Cards, w.w.archived)
+	dealt, _ := board.Deal(w.w.Showing().Cards, w.w.Archived)
 	return dealt[at].Cards, nil
 }
 
@@ -106,7 +108,7 @@ func (w *world) laneReads(kind, list string) error {
 	if err != nil {
 		return err
 	}
-	_, stalled := board.Deal(w.w.Showing().Cards, w.w.archived)
+	_, stalled := board.Deal(w.w.Showing().Cards, w.w.Archived)
 	var got []string
 	for _, c := range board.InLanes(stalled)[lane] {
 		got = append(got, c.Title)
@@ -119,7 +121,7 @@ func (w *world) laneReads(kind, list string) error {
 }
 
 func (w *world) laneCarries(kind, title string) error {
-	_, stalled := board.Deal(w.w.Reading().Cards, w.w.archived)
+	_, stalled := board.Deal(w.w.Reading().Cards, w.w.Archived)
 	for _, c := range stalled {
 		if c.State == kind && c.Title == title {
 			return nil
@@ -141,7 +143,7 @@ func (w *world) tabsRead(list string) error {
 }
 
 func (w *world) tabIs(name string) error {
-	got := Pages[w.w.Tab()]
+	got := Pages[w.w.Tab]
 	if got != name {
 		return fmt.Errorf("the tab is %q, want %q", got, name)
 	}
@@ -156,8 +158,8 @@ func (w *world) sameHeight(column string) error {
 	at := board.IndexOf(strings.ToLower(column))
 	l := w.w.Layout()
 	for i := range here {
-		if got := l.CardAt(at, i, 0).H; got != CardHeight {
-			return fmt.Errorf("card %d is %d tall, the rest are %d", i, got, CardHeight)
+		if got := l.CardAt(at, i, 0).H; got != geom.CardHeight {
+			return fmt.Errorf("card %d is %d tall, the rest are %d", i, got, geom.CardHeight)
 		}
 	}
 	return nil
@@ -182,15 +184,15 @@ func (w *world) titleEndsIn(column, ending string) error {
 }
 
 func (w *world) tooSmall() error {
-	if w.w.Screen() != TooSmallToDraw {
-		return fmt.Errorf("the window is on %v", w.w.Screen())
+	if w.w.Screen != board.TooSmallToDraw {
+		return fmt.Errorf("the window is on %v", w.w.Screen)
 	}
 	return nil
 }
 
 func (w *world) saysWhatItNeeds() error {
 	said := w.w.Says()
-	if !strings.Contains(said, fmt.Sprint(Narrowest)) || !strings.Contains(said, fmt.Sprint(Shortest)) {
+	if !strings.Contains(said, fmt.Sprint(geom.Narrowest)) || !strings.Contains(said, fmt.Sprint(geom.Shortest)) {
 		return fmt.Errorf("it says %q, which names neither size it needs", said)
 	}
 	return nil
@@ -206,11 +208,11 @@ func (w *world) numberOf(title string) (int, error) {
 }
 
 func (w *world) isChosen(title string) error {
-	if w.w.ChosenGoal() {
+	if w.w.ChosenGoal {
 		for _, g := range w.w.Reading().Goals {
 			if g.Title == title {
-				if w.w.Chosen() != g.Number {
-					return fmt.Errorf("objective %d is chosen, not %q", w.w.Chosen(), title)
+				if w.w.Chosen != g.Number {
+					return fmt.Errorf("objective %d is chosen, not %q", w.w.Chosen, title)
 				}
 				return nil
 			}
@@ -221,8 +223,8 @@ func (w *world) isChosen(title string) error {
 	if err != nil {
 		return err
 	}
-	if w.w.Chosen() != number {
-		return fmt.Errorf("task %d is chosen, not %q", w.w.Chosen(), title)
+	if w.w.Chosen != number {
+		return fmt.Errorf("task %d is chosen, not %q", w.w.Chosen, title)
 	}
 	return nil
 }
@@ -232,15 +234,15 @@ func (w *world) isNotChosen(title string) error {
 	if err != nil {
 		return err
 	}
-	if w.w.Chosen() == number {
+	if w.w.Chosen == number {
 		return fmt.Errorf("%q is chosen and should not be", title)
 	}
 	return nil
 }
 
 func (w *world) detailOpenOn(title string) error {
-	if w.w.Screen() != OnForm {
-		return fmt.Errorf("the window is on %v", w.w.Screen())
+	if w.w.Screen != board.OnForm {
+		return fmt.Errorf("the window is on %v", w.w.Screen)
 	}
 	return w.isChosen(title)
 }
@@ -265,12 +267,12 @@ func (w *world) detailDoesNotList(title string) error {
 
 func (w *world) servingCardsAreCards() error {
 	for at := range w.w.Under() {
-		if got := w.w.ServingCardAt(at).H; got != SubHeight {
-			return fmt.Errorf("the tile at %d is %d high, and a tile is %d", at, got, SubHeight)
+		if got := w.w.ServingCardAt(at).H; got != geom.SubHeight {
+			return fmt.Errorf("the tile at %d is %d high, and a tile is %d", at, got, geom.SubHeight)
 		}
 	}
-	if SubHeight > lineHigh+padding {
-		return fmt.Errorf("a tile is %d high, which is more than one line and its padding", SubHeight)
+	if geom.SubHeight > lineHigh+padding {
+		return fmt.Errorf("a tile is %d high, which is more than one line and its padding", geom.SubHeight)
 	}
 	return nil
 }
@@ -299,7 +301,7 @@ func (w *world) rightColumnTabs(first, second string) error {
 
 func (w *world) detailShows(text string) error {
 	for _, c := range w.w.Reading().Cards {
-		if c.Number == w.w.Chosen() && strings.Contains(c.Description, text) {
+		if c.Number == w.w.Chosen && strings.Contains(c.Description, text) {
 			return nil
 		}
 	}
@@ -314,15 +316,15 @@ func (w *world) isScrolled(column string) error {
 	return nil
 }
 
-func (w *world) formFrames() ([]Box, []Box) {
+func (w *world) formFrames() ([]geom.Box, []geom.Box) {
 	over := w.w.formBox()
-	fields := w.w.Form().Fields()
-	var names, frames []Box
+	fields := w.w.Form.Fields
+	var names, frames []geom.Box
 	for i := range fields {
 		name, value, rows := FormPlace(over, fields, i)
 		frame := Framed(value, rows)
 		if fields[i].Long {
-			var bar Box
+			var bar geom.Box
 			frame, bar = Saying(value, rows)
 			frame.W = bar.X + bar.W - frame.X
 		}
@@ -336,20 +338,20 @@ func (w *world) formFitsAboveItsOffers() error {
 	names, frames := w.formFrames()
 	for i, frame := range frames {
 		if bottom := max(frame.Y+frame.H, names[i].Y+names[i].H); bottom >= foot {
-			return fmt.Errorf("field %q ends at %d and the offers start at %d", w.w.Form().Fields()[i].Name, bottom, foot)
+			return fmt.Errorf("field %q ends at %d and the offers start at %d", w.w.Form.Fields[i].Name, bottom, foot)
 		}
 	}
 	return nil
 }
 
-func overlap(a, b Box) bool {
+func overlap(a, b geom.Box) bool {
 	return a.X < b.X+b.W && b.X < a.X+a.W && a.Y < b.Y+b.H && b.Y < a.Y+a.H
 }
 
 func (w *world) formFieldsApart() error {
 	names, frames := w.formFrames()
-	fields := w.w.Form().Fields()
-	all := append(append([]Box{}, names...), frames...)
+	fields := w.w.Form.Fields
+	all := append(append([]geom.Box{}, names...), frames...)
 	for i := range all {
 		for j := i + 1; j < len(all); j++ {
 			if overlap(all[i], all[j]) {
@@ -363,8 +365,8 @@ func (w *world) formFieldsApart() error {
 
 func (w *world) acrossTheForm(name string, above []string) error {
 	over := w.w.formBox()
-	fields := w.w.Form().Fields()
-	frames := make([]Box, len(fields))
+	fields := w.w.Form.Fields
+	frames := make([]geom.Box, len(fields))
 	for i := range fields {
 		_, value, rows := FormPlace(over, fields, i)
 		frames[i] = Framed(value, rows)
@@ -498,11 +500,11 @@ func (w *world) tell(number int) (task.Shape, error) {
 }
 
 func (w *world) formAsksAbout(list string) error {
-	if w.w.Screen() != OnForm {
+	if w.w.Screen != board.OnForm {
 		return fmt.Errorf("no form is open")
 	}
 	var got []string
-	for _, f := range w.w.Form().Fields() {
+	for _, f := range w.w.Form.Fields {
 		got = append(got, f.Name)
 	}
 	for _, want := range quoted(list) {
@@ -518,25 +520,25 @@ func (w *world) formAsksAbout(list string) error {
 }
 
 func (w *world) formHeadedBold(want string) error {
-	if w.w.Screen() != OnForm {
+	if w.w.Screen != board.OnForm {
 		return fmt.Errorf("no form is open")
 	}
-	if got := HeadsOn(w.w, OnForm); !strings.HasPrefix(got, want) {
+	if got := HeadsOn(w.w, board.OnForm); !strings.HasPrefix(got, want) {
 		return fmt.Errorf("the form is headed %q, want it to begin %q", got, want)
 	}
-	if HeadingWeight < font.Bold {
-		return fmt.Errorf("the heading is drawn at weight %d, want bold", HeadingWeight)
+	if design.HeadingWeight < font.Bold {
+		return fmt.Errorf("the heading is drawn at weight %d, want bold", design.HeadingWeight)
 	}
-	for _, f := range w.w.Form().Fields() {
-		if HeadingSize <= FormSize(f) {
-			return fmt.Errorf("the heading is %d, no larger than the field %q at %d", HeadingSize, f.Name, FormSize(f))
+	for _, f := range w.w.Form.Fields {
+		if design.HeadingSize <= FormSize(f) {
+			return fmt.Errorf("the heading is %d, no larger than the field %q at %d", design.HeadingSize, f.Name, FormSize(f))
 		}
 	}
 	return nil
 }
 
 func (w *world) fieldReads(name, value string) error {
-	if got := w.w.Form().ValueOf(name); got != value {
+	if got := valueOf(w.w.Form, name); got != value {
 		return fmt.Errorf("the field %q reads %q, want %q", name, got, value)
 	}
 	return nil
@@ -595,7 +597,7 @@ func (w *world) cardDimmed(title string) error {
 		if c.Title != title {
 			continue
 		}
-		if ink := Dark().Writing(c); ink != Dark().Colour.Ink.Faint {
+		if ink := design.Dark().Writing(c); ink != design.Dark().Colour.Ink.Faint {
 			return fmt.Errorf("%q is written in %v, not the faint ink", title, ink)
 		}
 		return nil
@@ -608,7 +610,7 @@ func (w *world) cardNotDimmed(title string) error {
 		if c.Title != title {
 			continue
 		}
-		if ink := Dark().Writing(c); ink != Dark().Colour.Ink.Text {
+		if ink := design.Dark().Writing(c); ink != design.Dark().Colour.Ink.Text {
 			return fmt.Errorf("%q is written in %v, not the ordinary ink", title, ink)
 		}
 		return nil
@@ -673,7 +675,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the form groups its fields under (.+)$`, func(list string) error {
 		var got []string
-		for _, head := range FormHeads(w.w.formBox(), w.w.Form().Fields()) {
+		for _, head := range FormHeads(w.w.formBox(), w.w.Form.Fields) {
 			got = append(got, head.Said)
 		}
 		if want := quoted(list); strings.Join(got, "|") != strings.Join(want, "|") {
@@ -719,7 +721,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		_, frames := w.formFrames()
 		for i, frame := range frames {
 			if frame.X+frame.W > history.X {
-				return fmt.Errorf("%q runs to %d and the history starts at %d", w.w.Form().Fields()[i].Name, frame.X+frame.W, history.X)
+				return fmt.Errorf("%q runs to %d and the history starts at %d", w.w.Form.Fields[i].Name, frame.X+frame.W, history.X)
 			}
 		}
 		return nil
@@ -815,8 +817,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !ok || len(r.Lines.Said) < 2 {
 			return fmt.Errorf("the trace is not one text of two lines or more: %+v", r)
 		}
-		from := Point{X: r.Box.X, Y: r.Box.Y + (0-r.From)*lineHigh + lineHigh/2}
-		to := Point{X: r.Box.X + r.Box.W - 1, Y: r.Box.Y + (1-r.From)*lineHigh + lineHigh/2}
+		from := geom.Point{X: r.Box.X, Y: r.Box.Y + (0-r.From)*lineHigh + lineHigh/2}
+		to := geom.Point{X: r.Box.X + r.Box.W - 1, Y: r.Box.Y + (1-r.From)*lineHigh + lineHigh/2}
 		w.w = w.w.PressAt(from).MoveTo(to).LetGo(to)
 		return nil
 	})
@@ -858,7 +860,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for _, m := range regexp.MustCompile(`"([^"]*)"`).FindAllStringSubmatch(list, -1) {
 			want = append(want, m[1])
 		}
-		for _, part := range w.w.form.parts() {
+		for _, part := range w.w.Form.Parts() {
 			got = append(got, part.Title)
 		}
 		if !slices.Equal(got, want) {
@@ -908,7 +910,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the question shows cairn's logo beside what it says$`, func() error {
 		logo, box := w.w.AboutLogo(), w.w.QuestionBox()
-		if logo.W == 0 || logo.W != logo.H || !box.In(Point{X: logo.X, Y: logo.Y}) || !box.In(Point{X: logo.X + logo.W - 1, Y: logo.Y + logo.H - 1}) {
+		if logo.W == 0 || logo.W != logo.H || !box.In(geom.Point{X: logo.X, Y: logo.Y}) || !box.In(geom.Point{X: logo.X + logo.W - 1, Y: logo.Y + logo.H - 1}) {
 			return fmt.Errorf("the logo is at %+v, not a square inside the question at %+v", logo, box)
 		}
 		for i := range w.w.Asks() {
@@ -944,7 +946,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the bar under the board answers nothing$`, func() error {
 		for i := range w.w.BoardOffers() {
 			box := OfferAt(w.w.Layout(), i)
-			if offer, on := w.w.offerAt(Point{X: box.X + box.W/2, Y: box.Y + box.H/2}); on {
+			if offer, on := w.w.offerAt(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}); on {
 				return fmt.Errorf("the bar under the board answers %q under a panel", offer)
 			}
 		}
@@ -986,8 +988,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the engine was asked "([^"]*)" once$`, w.wasAskedOnce)
 	sc.Then(`^task (\d+) is in the column "([^"]*)"$`, w.taskInColumn)
 	sc.Then(`^the window asks to put task (\d+) in done, ticking its steps$`, func(n int) error {
-		if w.w.Screen() != OnAsking || w.w.question != aboutFinishingParts {
-			return fmt.Errorf("the window is on %v asking %v", w.w.Screen(), w.w.question)
+		if w.w.Screen != board.OnAsking || w.w.Question != board.AboutFinishingParts {
+			return fmt.Errorf("the window is on %v asking %v", w.w.Screen, w.w.Question)
 		}
 		if head := Heads(w.w); !strings.Contains(head, strconv.Itoa(n)) {
 			return fmt.Errorf("the question reads %q, naming no task %d", head, n)
@@ -995,8 +997,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the window says the store comes from a newer cairn$`, func() error {
-		if w.w.Screen() != OnAsking || w.w.question != aboutNewer {
-			return fmt.Errorf("the window is on %v asking %v", w.w.Screen(), w.w.question)
+		if w.w.Screen != board.OnAsking || w.w.Question != board.AboutNewer {
+			return fmt.Errorf("the window is on %v asking %v", w.w.Screen, w.w.Question)
 		}
 		return nil
 	})
@@ -1007,8 +1009,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the window asks to apply the change that is waiting, naming it$`, func() error {
-		if w.w.Screen() != OnAsking || w.w.question != aboutApplying {
-			return fmt.Errorf("the window is on %v asking %v", w.w.Screen(), w.w.question)
+		if w.w.Screen != board.OnAsking || w.w.Question != board.AboutApplying {
+			return fmt.Errorf("the window is on %v asking %v", w.w.Screen, w.w.Question)
 		}
 		listed, err := w.work.Ask(engine.MigrationList, engine.Input{})
 		if err != nil {
@@ -1046,13 +1048,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the store was read once$`, w.readOnce)
 	sc.Then(`^it says what went wrong$`, w.saysWhatWentWrong)
 	sc.Then(`^the week shown starts on "([^"]*)"$`, func(day string) error {
-		if got := calendar.FormatDay(w.w.week); got != day {
+		if got := calendar.FormatDay(w.w.Week); got != day {
 			return fmt.Errorf("the week shown starts on %s, want %s", got, day)
 		}
 		return nil
 	})
 	dayOfWeek := func(day string) (engine.TimesheetDay, bool) {
-		for _, d := range w.w.sheet.Days {
+		for _, d := range w.w.Sheet.Days {
 			if d.Day == day {
 				return d, true
 			}
@@ -1080,7 +1082,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	weekday := func(day string) (int, error) {
 		for i := range 7 {
-			if calendar.FormatDay(w.w.week.AddDate(0, 0, i)) == day {
+			if calendar.FormatDay(w.w.Week.AddDate(0, 0, i)) == day {
 				return i, nil
 			}
 		}
@@ -1112,7 +1114,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if all, room := len(w.w.sheet.On(w.w.week.AddDate(0, 0, i)).Tasks), DayRoom(WeekDayAt(w.w.Layout(), i)); all <= room {
+		if all, room := len(w.w.Sheet.On(w.w.Week.AddDate(0, 0, i)).Tasks), DayRoom(WeekDayAt(w.w.Layout(), i)); all <= room {
 			return fmt.Errorf("%s holds %d tasks in room for %d", day, all, room)
 		}
 		return nil
@@ -1124,7 +1126,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		box := WeekDayAt(w.w.Layout(), i)
 		for range n {
-			w.w = w.w.Scroll(Point{X: box.X + 4, Y: box.Y + box.H/2}, weekRow)
+			w.w = w.w.Scroll(geom.Point{X: box.X + 4, Y: box.Y + box.H/2}, weekRow)
 		}
 		return nil
 	})
@@ -1162,7 +1164,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^I click "([^"]*)" on the time page$`, func(chip string) error {
 		box := TimeChip(w.w.Layout(), chip)
-		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		w.w = w.w.clicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return w.w.Wrong()
 	})
 	sc.Then(`^the time page offers the twelve months$`, func() error {
@@ -1175,18 +1177,18 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for i, cell := range w.w.TimeCells() {
 			if cell == name {
 				box := TimeCellAt(w.w.Layout(), i)
-				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+				w.w = w.w.clicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 				return w.w.Wrong()
 			}
 		}
 		return fmt.Errorf("the time page offers %v, not %q", w.w.TimeCells(), name)
 	})
 	sc.Then(`^every cell of the time page is drawn as a button$`, func() error {
-		var cells []Box
+		var cells []geom.Box
 		for i := range w.w.TimeCells() {
 			cells = append(cells, TimeCellAt(w.w.Layout(), i))
 		}
-		return buttonsDrawn(w.theme, w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
+		return buttonsDrawn(w.theme, w.w, cells, design.Dark().Colour.Surface.Control, design.Dark().Colour.Accent.Base)
 	})
 	sc.Step(`^I rest the pointer on the (count of labels|title) of "([^"]*)"$`, func(what, title string) error {
 		for _, placed := range w.w.Placed() {
@@ -1194,13 +1196,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 				continue
 			}
 			parts := PartsOf(placed.Slot)
-			at := Point{X: parts.Title.X + 4, Y: parts.Title.Y + 4}
+			at := geom.Point{X: parts.Title.X + 4, Y: parts.Title.Y + 4}
 			if what == "count of labels" {
 				more := CardRowOf(placed.Card, parts.Number, w.w.measured(), moment, engine.Pages{}).More
-				if more == (Box{}) {
+				if more == (geom.Box{}) {
 					return fmt.Errorf("the card for %q counts no labels", title)
 				}
-				at = Point{X: more.X + more.W/2, Y: more.Y + more.H/2}
+				at = geom.Point{X: more.X + more.W/2, Y: more.Y + more.H/2}
 			}
 			w.w = w.w.Hovering(at)
 			return nil
@@ -1220,8 +1222,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the day shown is "([^"]*)"$`, func(day string) error {
-		if !w.w.Daily() || calendar.FormatDay(w.w.week) != day {
-			return fmt.Errorf("the time page shows %q, daily %v", TimeSays(w.w), w.w.Daily())
+		if !w.w.Daily || calendar.FormatDay(w.w.Week) != day {
+			return fmt.Errorf("the time page shows %q, daily %v", TimeSays(w.w), w.w.Daily)
 		}
 		return nil
 	})
@@ -1251,7 +1253,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return err
 		}
 		head := WeekHeadAt(WeekDayAt(w.w.Layout(), i))
-		w.w = w.w.clicked(Point{X: head.X + 4, Y: head.Y + head.H/2})
+		w.w = w.w.clicked(geom.Point{X: head.X + 4, Y: head.Y + head.H/2})
 		return w.w.Wrong()
 	})
 	sc.Then(`^the day "([^"]*)" shows a total of "([^"]*)"$`, func(day, total string) error {
@@ -1265,13 +1267,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the month shown is "([^"]*)"$`, func(month string) error {
-		if !w.w.Monthly() || w.w.week.Format("January 2006") != month {
-			return fmt.Errorf("the time page shows %q, monthly %v", TimeSays(w.w), w.w.Monthly())
+		if !w.w.Monthly || w.w.Week.Format("January 2006") != month {
+			return fmt.Errorf("the time page shows %q, monthly %v", TimeSays(w.w), w.w.Monthly)
 		}
 		return nil
 	})
 	dayOfMonth := func(day string) (int, error) {
-		for i, shown := range board.MonthGrid(w.w.week) {
+		for i, shown := range board.MonthGrid(w.w.Week) {
 			if calendar.FormatDay(shown) == day {
 				return i, nil
 			}
@@ -1297,20 +1299,20 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return err
 		}
 		box := MonthCellAt(w.w.Layout(), i)
-		w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+		w.w = w.w.clicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 		return nil
 	})
-	cardOfWeek := func(title string) (Point, error) {
+	cardOfWeek := func(title string) (geom.Point, error) {
 		l := w.w.Layout()
 		for i := range 7 {
 			for j, one := range w.w.DayShown(i) {
 				if w.w.DayCard(one).Title == title {
 					box := DayCardAt(WeekDayAt(l, i), j, len(w.w.DayHeld(i).Tasks))
-					return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
+					return geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
 				}
 			}
 		}
-		return Point{}, fmt.Errorf("no card titled %q is on the time page", title)
+		return geom.Point{}, fmt.Errorf("no card titled %q is on the time page", title)
 	}
 	sc.Then(`^the day "([^"]*)" shows the card "([^"]*)" for "([^"]*)"$`, func(day, title, length string) error {
 		i, err := weekday(day)
@@ -1356,17 +1358,17 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		for j, one := range w.w.MonthDay(i).Tasks {
 			if one.Title == title {
 				box := CellLineAt(MonthCellAt(w.w.Layout(), i), j)
-				w.w = w.w.doubleClicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
+				w.w = w.w.doubleClicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 				return nil
 			}
 		}
 		return fmt.Errorf("%s holds no task titled %q", day, title)
 	})
 	sc.Step(`^I rest the pointer on the name of the field "([^"]*)"$`, func(name string) error {
-		for i, field := range w.w.form.Fields() {
+		for i, field := range w.w.Form.Fields {
 			if field.Name == name {
-				box, _, _ := FormPlace(w.w.formBox(), w.w.form.Fields(), i)
-				w.w = w.w.Hovering(Point{X: box.X + 2, Y: box.Y + box.H/2})
+				box, _, _ := FormPlace(w.w.formBox(), w.w.Form.Fields, i)
+				w.w = w.w.Hovering(geom.Point{X: box.X + 2, Y: box.Y + box.H/2})
 				return nil
 			}
 		}
@@ -1378,12 +1380,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 				continue
 			}
 			parts := PartsOf(placed.Slot)
-			on := map[string]Box{
+			on := map[string]geom.Box{
 				"title":          parts.Title,
 				"foot":           parts.Steps,
-				"objective mark": CardRowOf(placed.Card, parts.Number, w.w.measured(), w.w.now, engine.Pages{}).ServesAt,
+				"objective mark": CardRowOf(placed.Card, parts.Number, w.w.measured(), w.w.Now, engine.Pages{}).ServesAt,
 			}[part]
-			w.w = w.w.Hovering(Point{X: on.X + on.W/2, Y: on.Y + on.H/2})
+			w.w = w.w.Hovering(geom.Point{X: on.X + on.W/2, Y: on.Y + on.H/2})
 			return nil
 		}
 		return fmt.Errorf("the board holds no card titled %q", title)
@@ -1394,17 +1396,17 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	titleOfCard := func(title string) (Box, Box, error) {
+	titleOfCard := func(title string) (geom.Box, geom.Box, error) {
 		bubble, _, shown := w.w.BubbleBox()
 		if !shown {
-			return Box{}, Box{}, fmt.Errorf("no bubble shows")
+			return geom.Box{}, geom.Box{}, fmt.Errorf("no bubble shows")
 		}
 		for _, placed := range w.w.Placed() {
 			if placed.Card.Title == title {
 				return bubble, PartsOf(placed.Slot).Title, nil
 			}
 		}
-		return Box{}, Box{}, fmt.Errorf("no card titled %q is on the board", title)
+		return geom.Box{}, geom.Box{}, fmt.Errorf("no card titled %q is on the board", title)
 	}
 	sc.Then(`^the bubble stands just above the title of the card "([^"]*)"$`, func(title string) error {
 		bubble, under, err := titleOfCard(title)
@@ -1482,21 +1484,21 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	offerBox := func(offer string) (Box, error) {
+	offerBox := func(offer string) (geom.Box, error) {
 		bar := w.w.BarOffers()
 		for i, one := range w.w.Offers() {
 			if one == offer {
 				return bar[i], nil
 			}
 		}
-		return Box{}, fmt.Errorf("the bar does not offer %q", offer)
+		return geom.Box{}, fmt.Errorf("the bar does not offer %q", offer)
 	}
 	sc.Step(`^I rest the pointer on the offer "([^"]*)"$`, func(offer string) error {
 		box, err := offerBox(offer)
 		if err != nil {
 			return err
 		}
-		w.w = w.w.Hovering(Point{X: box.X + 2, Y: box.Y + 2})
+		w.w = w.w.Hovering(geom.Point{X: box.X + 2, Y: box.Y + 2})
 		return nil
 	})
 	sc.Then(`^the offer "([^"]*)" is a lit hint, its key on a chip$`, func(offer string) error {
@@ -1511,21 +1513,21 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if painted(shot, Box{X: box.X + 1, Y: box.Y + box.H/2, W: 1, H: 1}, Dark().Colour.Surface.Hover) != 1 {
+		if painted(shot, geom.Box{X: box.X + 1, Y: box.Y + box.H/2, W: 1, H: 1}, design.Dark().Colour.Surface.Hover) != 1 {
 			return fmt.Errorf("the hint %q at %+v is not lit", offer, box)
 		}
-		chip := Box{X: box.X + hintSpace/2 + chipInset - 2, Y: box.Y + box.H/2 - chipHigh/2 + 2, W: 1, H: 1}
-		if painted(shot, chip, Dark().Colour.Surface.Control) != 1 {
+		chip := geom.Box{X: box.X + hintSpace/2 + chipInset - 2, Y: box.Y + box.H/2 - chipHigh/2 + 2, W: 1, H: 1}
+		if painted(shot, chip, design.Dark().Colour.Surface.Control) != 1 {
 			return fmt.Errorf("the key of %q is not on a chip at %+v", offer, chip)
 		}
 		return nil
 	})
 	sc.Then(`^every offer of the panel is drawn as a button$`, func() error {
 		slots := w.w.offersAlong(w.w.panel())
-		grounds := map[buttonLook]color.NRGBA{buttonPlain: Dark().Colour.Surface.Control, buttonOn: Dark().Colour.Accent.Base, buttonDanger: Dark().Colour.State.Danger}
+		grounds := map[buttonLook]color.NRGBA{buttonPlain: design.Dark().Colour.Surface.Control, buttonOn: design.Dark().Colour.Accent.Base, buttonDanger: design.Dark().Colour.State.Danger}
 		for i, slot := range slots {
 			look := w.w.OfferLook(i, w.w.Offers()[i])
-			if err := buttonsDrawn(w.theme, w.w, []Box{ButtonIn(slot)}, grounds[look]); err != nil {
+			if err := buttonsDrawn(w.theme, w.w, []geom.Box{ButtonIn(slot)}, grounds[look]); err != nil {
 				return err
 			}
 		}
@@ -1536,23 +1538,23 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.day))
-		middle := Box{X: at.X + Dark().Radius.Control, Y: at.Y + 1, W: at.W - 2*Dark().Radius.Control, H: 2}
-		if got := painted(shot, middle, Dark().Colour.Accent.Base); got != middle.W*middle.H {
+		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.Day))
+		middle := geom.Box{X: at.X + design.Dark().Radius.Control, Y: at.Y + 1, W: at.W - 2*design.Dark().Radius.Control, H: 2}
+		if got := painted(shot, middle, design.Dark().Colour.Accent.Base); got != middle.W*middle.H {
 			return fmt.Errorf("the day held, at %+v, is filled on %d of %d pixels", at, got, middle.W*middle.H)
 		}
 		return nil
 	})
 	sc.Then(`^today is drawn as an edged button$`, func() error {
-		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.today()))
+		at := DayAt(w.w.CalendarBox(), dayIndex(w.w, w.w.Today()))
 		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
-		if inside := (Box{X: at.X + Dark().Radius.Control, Y: at.Y + 3, W: at.W - 2*Dark().Radius.Control, H: 2}); painted(shot, inside, Dark().Colour.Surface.Raised) != inside.W*inside.H {
+		if inside := (geom.Box{X: at.X + design.Dark().Radius.Control, Y: at.Y + 3, W: at.W - 2*design.Dark().Radius.Control, H: 2}); painted(shot, inside, design.Dark().Colour.Surface.Raised) != inside.W*inside.H {
 			return fmt.Errorf("today, at %+v, is filled", at)
 		}
-		if edge := (Box{X: at.X + Dark().Radius.Control, Y: at.Y, W: at.W - 2*Dark().Radius.Control, H: 1}); painted(shot, edge, Dark().Colour.Accent.Base) != edge.W {
+		if edge := (geom.Box{X: at.X + design.Dark().Radius.Control, Y: at.Y, W: at.W - 2*design.Dark().Radius.Control, H: 1}); painted(shot, edge, design.Dark().Colour.Accent.Base) != edge.W {
 			return fmt.Errorf("today, at %+v, is not ringed", at)
 		}
 		return nil
@@ -1562,30 +1564,30 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		for i, day := range board.MonthGrid(w.w.day) {
-			if day.Equal(w.w.day) || day.Equal(w.w.today()) {
+		for i, day := range board.MonthGrid(w.w.Day) {
+			if day.Equal(w.w.Day) || day.Equal(w.w.Today()) {
 				continue
 			}
-			if edge := Edges(DayAt(w.w.CalendarBox(), i))[0]; painted(shot, edge, Dark().Colour.Surface.Raised) != edge.W {
+			if edge := Edges(DayAt(w.w.CalendarBox(), i))[0]; painted(shot, edge, design.Dark().Colour.Surface.Raised) != edge.W {
 				return fmt.Errorf("%s is drawn in a box", day.Format(time.DateOnly))
 			}
 		}
 		return nil
 	})
 	sc.Then(`^every month is drawn as a button$`, func() error {
-		var cells []Box
+		var cells []geom.Box
 		for i := range w.w.CalendarCells() {
 			cells = append(cells, CalendarCell(w.w.CalendarBox(), i))
 		}
-		return buttonsDrawn(w.theme, w.w, cells, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
+		return buttonsDrawn(w.theme, w.w, cells, design.Dark().Colour.Surface.Control, design.Dark().Colour.Accent.Base)
 	})
 	sc.Then(`^the calendar's month, year and arrows are drawn as buttons$`, func() error {
 		box := w.w.CalendarBox()
-		return buttonsDrawn(w.theme, w.w, []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, Dark().Colour.Surface.Control, Dark().Colour.Accent.Base)
+		return buttonsDrawn(w.theme, w.w, []geom.Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}, design.Dark().Colour.Surface.Control, design.Dark().Colour.Accent.Base)
 	})
 	sc.Then(`^the labels list "([^"]*)" carried by (\d+) tasks? and (\d+) objectives?$`, func(label string, tasks, objectives int) error {
-		if w.w.Screen() != OnLabels {
-			return fmt.Errorf("the labels are not listed: the window is on %v", w.w.Screen())
+		if w.w.Screen != board.OnLabels {
+			return fmt.Errorf("the labels are not listed: the window is on %v", w.w.Screen)
 		}
 		for _, one := range w.w.LabelsCarried() {
 			if one.Label == label {
@@ -1606,8 +1608,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the labels are listed$`, func() error {
-		if w.w.Screen() != OnLabels {
-			return fmt.Errorf("the window is on %v", w.w.Screen())
+		if w.w.Screen != board.OnLabels {
+			return fmt.Errorf("the window is on %v", w.w.Screen)
 		}
 		return nil
 	})
@@ -1619,7 +1621,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		}
 		return LabelRow{}, fmt.Errorf("no label %q is in sight", label)
 	}
-	clicking := func(b Box) { w.w = w.w.clicked(Point{X: b.X + b.W/2, Y: b.Y + b.H/2}) }
+	clicking := func(b geom.Box) { w.w = w.w.clicked(geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2}) }
 	sc.Step(`^I click the label "([^"]*)"$`, func(label string) error {
 		row, err := labelRow(label)
 		if err != nil {
@@ -1699,8 +1701,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the labels are picked under the card "([^"]*)"$`, func(title string) error {
-		if w.w.Screen() != OnChoosing || !w.w.Picking() {
-			return fmt.Errorf("the window is on %v, picking %v", w.w.Screen(), w.w.Picking())
+		if w.w.Screen != board.OnChoosing || !w.w.Picking() {
+			return fmt.Errorf("the window is on %v, picking %v", w.w.Screen, w.w.Picking())
 		}
 		for _, placed := range w.w.Placed() {
 			if placed.Card.Title != title {
@@ -1752,8 +1754,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the window asks "([^"]*)"$`, func(question string) error {
-		if w.w.Screen() != OnAsking || Heads(w.w) != question {
-			return fmt.Errorf("the window is on %v and asks %q", w.w.Screen(), Heads(w.w))
+		if w.w.Screen != board.OnAsking || Heads(w.w) != question {
+			return fmt.Errorf("the window is on %v and asks %q", w.w.Screen, Heads(w.w))
 		}
 		return nil
 	})
@@ -1943,17 +1945,17 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the backups listed are (\d+)$`, func(n int) error {
-		if w.w.Screen() != OnBackups {
-			return fmt.Errorf("the window is on %v, not on the backups", w.w.Screen())
+		if w.w.Screen != board.OnBackups {
+			return fmt.Errorf("the window is on %v, not on the backups", w.w.Screen)
 		}
-		if got := len(w.w.Backups()); got != n {
+		if got := len(w.w.Backups); got != n {
 			return fmt.Errorf("%d backups are listed, want %d", got, n)
 		}
 		return nil
 	})
 	sc.Then(`^the window is asking$`, func() error {
-		if w.w.Screen() != OnAsking {
-			return fmt.Errorf("the window is on %v, not asking", w.w.Screen())
+		if w.w.Screen != board.OnAsking {
+			return fmt.Errorf("the window is on %v, not asking", w.w.Screen)
 		}
 		return nil
 	})
@@ -1994,7 +1996,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return fmt.Errorf("the open task says nothing of where its context lives")
 	})
 	sc.Then(`^the form asks nothing about "([^"]*)"$`, func(name string) error {
-		for _, field := range w.w.Form().Fields() {
+		for _, field := range w.w.Form.Fields {
 			if field.Name == name {
 				return fmt.Errorf("the form asks about %q", name)
 			}
@@ -2009,12 +2011,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !dragging {
 			return fmt.Errorf("nothing is in hand")
 		}
-		inside := Box{X: ghost.X + 2, Y: ghost.Y + 2, W: ghost.W - 4, H: ghost.H - 4}
+		inside := geom.Box{X: ghost.X + 2, Y: ghost.Y + 2, W: ghost.W - 4, H: ghost.H - 4}
 		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
-		if inked(shot, inside, Dark().Colour.Surface.Ghost) == 0 {
+		if inked(shot, inside, design.Dark().Colour.Surface.Ghost) == 0 {
 			return fmt.Errorf("nothing is written on what is in hand, at %+v", ghost)
 		}
 		return nil
@@ -2047,10 +2049,10 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^it shows nowhere for the card to land$`, w.landsNowhere)
 	sc.Then(`^"([^"]*)" does not carry "([^"]*)"$`, w.columnDoesNotCarry)
 	sc.When(`^I click the filter "([^"]*)"$`, func(name string) error {
-		for i, f := range w.w.Filters() {
+		for i, f := range w.w.Filters {
 			if f.Name == name {
 				row := w.w.FilterRowAt(i)
-				w.w = w.w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
+				w.w = w.w.clicked(geom.Point{X: row.X + row.W/2, Y: row.Y + row.H/2})
 				return nil
 			}
 		}
@@ -2064,7 +2066,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			}
 			return nil
 		}
-		if !open || w.w.Filters()[w.w.FilterOn()].Name != name || len(values) != len(w.w.Filters()[w.w.FilterOn()].Shown) {
+		if !open || w.w.Filters[w.w.FilterOn].Name != name || len(values) != len(w.w.Filters[w.w.FilterOn].Shown) {
 			return fmt.Errorf("the filter %q lists %v, open %v", name, values, open)
 		}
 		return nil
@@ -2078,7 +2080,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.When(`^I click the colour "([^"]*)"$`, func(colour string) error {
 		for _, swatch := range w.w.ColourSwatches() {
 			if swatch.Colour == colour {
-				w.w = w.w.clicked(Point{X: swatch.At.X + swatch.At.W/2, Y: swatch.At.Y + swatch.At.H/2})
+				w.w = w.w.clicked(geom.Point{X: swatch.At.X + swatch.At.W/2, Y: swatch.At.Y + swatch.At.H/2})
 				return w.w.Wrong()
 			}
 		}
@@ -2096,7 +2098,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return fmt.Errorf("no label %q is listed", label)
 	})
 	sc.Then(`^the field "([^"]*)" stands beside the description$`, func(name string) error {
-		fields := w.w.Form().Fields()
+		fields := w.w.Form.Fields
 		at, description := -1, -1
 		for i, f := range fields {
 			switch f.Name {
@@ -2117,7 +2119,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the description takes (\d+) parts of the height and the steps (\d+)$`, func(description, steps int) error {
-		fields := w.w.Form().Fields()
+		fields := w.w.Form.Fields
 		rows := map[string]int{}
 		for i, f := range fields {
 			_, _, given := FormPlace(w.w.formBox(), fields, i)
@@ -2136,7 +2138,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the work stands under the description$`, func() error {
-		fields := w.w.Form().Fields()
+		fields := w.w.Form.Fields
 		for i, f := range fields {
 			if f.Name == "description" {
 				_, value, rows := FormPlace(w.w.formBox(), fields, i)
@@ -2158,7 +2160,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.When(`^I click the work "([^"]*)"$`, func(title string) error {
 		for _, tile := range w.w.WorkTiles() {
 			if tile.Said == title {
-				w.w = w.w.clicked(Point{X: tile.At.X + tile.At.W/2, Y: tile.At.Y + tile.At.H/2})
+				w.w = w.w.clicked(geom.Point{X: tile.At.X + tile.At.W/2, Y: tile.At.Y + tile.At.H/2})
 				return w.w.Wrong()
 			}
 		}
@@ -2233,26 +2235,26 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the calendar is open$`, func() error {
-		if w.w.Screen() != OnCalendar {
-			return fmt.Errorf("the window is on %v", w.w.Screen())
+		if w.w.Screen != board.OnCalendar {
+			return fmt.Errorf("the window is on %v", w.w.Screen)
 		}
 		return nil
 	})
 	sc.Then(`^the time page shows a (week|month)$`, func(what string) error {
-		if w.w.Tab() != Time || w.w.Monthly() != (what == "month") || w.w.Daily() {
-			return fmt.Errorf("the time page on %v shows monthly %v daily %v", w.w.Tab(), w.w.Monthly(), w.w.Daily())
+		if w.w.Tab != board.Time || w.w.Monthly != (what == "month") || w.w.Daily {
+			return fmt.Errorf("the time page on %v shows monthly %v daily %v", w.w.Tab, w.w.Monthly, w.w.Daily)
 		}
 		return nil
 	})
 	sc.Then(`^the window is searching "([^"]*)"$`, func(said string) error {
-		if w.w.Screen() != OnSearch || w.w.Searched().Reads() != said {
-			return fmt.Errorf("the window is on %v searching %q", w.w.Screen(), w.w.Searched().Reads())
+		if w.w.Screen != board.OnSearch || w.w.Searched().Reads() != said {
+			return fmt.Errorf("the window is on %v searching %q", w.w.Screen, w.w.Searched().Reads())
 		}
 		return nil
 	})
 	sc.Then(`^the search "([^"]*)" is kept as a pill$`, func(said string) error {
-		if _, ok := w.w.SearchPill(); !ok || w.w.Screen() != OnTheBoard || w.w.Searched().Reads() != said {
-			return fmt.Errorf("the window on %v keeps the search %q, pill %v", w.w.Screen(), w.w.Searched().Reads(), ok)
+		if _, ok := w.w.SearchPill(); !ok || w.w.Screen != board.OnTheBoard || w.w.Searched().Reads() != said {
+			return fmt.Errorf("the window on %v keeps the search %q, pill %v", w.w.Screen, w.w.Searched().Reads(), ok)
 		}
 		return nil
 	})
@@ -2261,7 +2263,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !ok {
 			return fmt.Errorf("no search is kept as a pill")
 		}
-		w.w = w.w.clicked(Point{X: pill.X + pill.W - pillCross/2, Y: pill.Y + pill.H/2})
+		w.w = w.w.clicked(geom.Point{X: pill.X + pill.W - pillCross/2, Y: pill.Y + pill.H/2})
 		return nil
 	})
 	sc.Then(`^no search is kept$`, func() error {
@@ -2271,8 +2273,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the command bar is (open|shut)$`, func(how string) error {
-		if open := w.w.Screen() == OnPalette; open != (how == "open") {
-			return fmt.Errorf("the command bar open is %v, the window on %v", open, w.w.Screen())
+		if open := w.w.Screen == board.OnPalette; open != (how == "open") {
+			return fmt.Errorf("the command bar open is %v, the window on %v", open, w.w.Screen)
 		}
 		return nil
 	})
@@ -2357,15 +2359,15 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 	sc.Then(`^the second tile says what it holds$`, func() error {
 		tile := w.w.ServingCardAt(1)
-		line := RowIn(Box{X: tile.X, Y: tile.Y, W: tile.W, H: tile.H - between}, tile.Y+inset, lineHigh)
-		band := Box{X: line.X, Y: line.Y, W: line.W, H: line.H - inset}
+		line := RowIn(geom.Box{X: tile.X, Y: tile.Y, W: tile.W, H: tile.H - between}, tile.Y+inset, lineHigh)
+		band := geom.Box{X: line.X, Y: line.Y, W: line.W, H: line.H - inset}
 		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
 		var reached int
 		for x := band.X; x < band.X+band.W; x++ {
-			if inked(shot, Box{X: x, Y: band.Y, W: 1, H: band.H}, Dark().Colour.Surface.Raised) > 0 {
+			if inked(shot, geom.Box{X: x, Y: band.Y, W: 1, H: band.H}, design.Dark().Colour.Surface.Raised) > 0 {
 				reached = x - band.X
 			}
 		}
@@ -2377,12 +2379,12 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 	sc.Then(`^the second tile leaves room before its frame$`, func() error {
 		tile := w.w.ServingCardAt(1)
-		edge := Box{X: tile.X + tile.W - padding, Y: tile.Y, W: padding, H: tile.H}
+		edge := geom.Box{X: tile.X + tile.W - padding, Y: tile.Y, W: padding, H: tile.H}
 		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
-		for what, ink := range map[string]color.NRGBA{"faint": Dark().Colour.Ink.Faint, "ink": Dark().Colour.Ink.Text} {
+		for what, ink := range map[string]color.NRGBA{"faint": design.Dark().Colour.Ink.Faint, "ink": design.Dark().Colour.Ink.Text} {
 			if got := painted(shot, edge, ink); got != 0 {
 				return fmt.Errorf("%d pixels of %s writing reach the tile's last %d", got, what, padding)
 			}
@@ -2392,7 +2394,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 
 	sc.Then(`^the search is not in force$`, func() error {
 		if !w.w.Searched().Empty() {
-			return fmt.Errorf("the board is still narrowed to %q", w.w.looking.Reads())
+			return fmt.Errorf("the board is still narrowed to %q", w.w.Looking.Reads())
 		}
 		return nil
 	})
@@ -2401,7 +2403,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the form is still drawn behind it$`, w.formBehindTheList)
 	sc.Then(`^the form is drawn behind the question$`, func() error {
 		asked, over := w.w.QuestionBox(), Over(w.w.width, w.w.height)
-		fields := w.w.Form().Fields()
+		fields := w.w.Form.Fields
 		frame := Framed(formValue(over, fields, 0), formRows(over, fields, 0))
 		if frame.Y+frame.H > asked.Y {
 			return fmt.Errorf("the first field reaches %d and the question starts at %d: they overlap, so this proves nothing", frame.Y+frame.H, asked.Y)
@@ -2410,7 +2412,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if paintedNear(shot, frame, dimmed(Dark().Colour.Line.Edge), 6) == 0 {
+		if paintedNear(shot, frame, dimmed(design.Dark().Colour.Line.Edge), 6) == 0 {
 			return fmt.Errorf("the form's first field is gone behind the question")
 		}
 		return nil
@@ -2421,13 +2423,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return err
 		}
 		asked := w.w.QuestionBox()
-		if painted(shot, Box{X: asked.X, Y: asked.Y, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 0 {
+		if painted(shot, geom.Box{X: asked.X, Y: asked.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 0 {
 			return fmt.Errorf("the question's corner at %+v is not rounded", asked)
 		}
-		if painted(shot, Box{X: asked.X + asked.W/2, Y: asked.Y + 2, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
+		if painted(shot, geom.Box{X: asked.X + asked.W/2, Y: asked.Y + 2, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 1 {
 			return fmt.Errorf("the question at %+v does not stand on a panel's ground", asked)
 		}
-		if painted(shot, Edges(asked)[0], Dark().Colour.Accent.Base) != 0 {
+		if painted(shot, Edges(asked)[0], design.Dark().Colour.Accent.Base) != 0 {
 			return fmt.Errorf("the question is still edged in the accent")
 		}
 		return nil
@@ -2438,9 +2440,9 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 			return err
 		}
 		over := Over(w.w.width, w.w.height)
-		fields := w.w.Form().Fields()
+		fields := w.w.Form.Fields
 		frame := Framed(formValue(over, fields, 0), formRows(over, fields, 0))
-		if painted(shot, frame, Dark().Colour.Line.Edge) != 0 || paintedNear(shot, frame, dimmed(Dark().Colour.Line.Edge), 6) == 0 {
+		if painted(shot, frame, design.Dark().Colour.Line.Edge) != 0 || paintedNear(shot, frame, dimmed(design.Dark().Colour.Line.Edge), 6) == 0 {
 			return fmt.Errorf("the form behind the question is drawn as bright as without it")
 		}
 		return nil
@@ -2462,7 +2464,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the calendar's month, year and arrows stand whole in a row at its top$`, func() error {
 		box := w.w.CalendarBox()
-		row := []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}
+		row := []geom.Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)}
 		for i, one := range row {
 			if one.Y != box.Y+padding || Inside(one).H < heading*5/4 {
 				return fmt.Errorf("%+v is not a whole line at the top of %+v", one, box)
@@ -2627,7 +2629,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the list hangs under the field "([^"]*)"$`, func(name string) error {
 		box := w.w.ChoosingBox()
-		fields := w.w.Form().Fields()
+		fields := w.w.Form.Fields
 		for i, field := range fields {
 			if field.Name != name {
 				continue
@@ -2648,13 +2650,13 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the window is choosing$`, func() error {
-		if w.w.Screen() != OnChoosing {
-			return fmt.Errorf("the window is on %v, not the list", w.w.Screen())
+		if w.w.Screen != board.OnChoosing {
+			return fmt.Errorf("the window is on %v, not the list", w.w.Screen)
 		}
 		return nil
 	})
 	sc.Then(`^the form is still on the field "([^"]*)"$`, func(name string) error {
-		if got := w.w.Form().Fields()[w.w.Form().On()].Name; got != name {
+		if got := w.w.Form.Fields[w.w.Form.On()].Name; got != name {
 			return fmt.Errorf("the keyboard is on the field %q, not %q", got, name)
 		}
 		return nil
@@ -2666,11 +2668,11 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the field "([^"]*)" holds "([^"]*)"$`, func(name, said string) error {
-		for _, f := range w.w.Form().Fields() {
+		for _, f := range w.w.Form.Fields {
 			if f.Name != name {
 				continue
 			}
-			if got := w.w.Form().Writing().Holds(); got != said {
+			if got := w.w.Form.Writing().Holds(); got != said {
 				return fmt.Errorf("the field %q holds %q, not %q", name, got, said)
 			}
 			return nil
@@ -2678,14 +2680,14 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return fmt.Errorf("the form has no field %q", name)
 	})
 	sc.Then(`^the window is on the board$`, func() error {
-		if w.w.Screen() != OnTheBoard {
-			return fmt.Errorf("the window is on %v, not the board", w.w.Screen())
+		if w.w.Screen != board.OnTheBoard {
+			return fmt.Errorf("the window is on %v, not the board", w.w.Screen)
 		}
 		return nil
 	})
 	sc.Then(`^the window is on the form$`, func() error {
-		if w.w.Screen() != OnForm {
-			return fmt.Errorf("the window is on %v, not the form", w.w.Screen())
+		if w.w.Screen != board.OnForm {
+			return fmt.Errorf("the window is on %v, not the form", w.w.Screen)
 		}
 		return nil
 	})
@@ -2695,7 +2697,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the field "([^"]*)" names "([^"]*)"$`, w.fieldNames)
 	sc.Then(`^the list says there is nothing to serve yet$`, w.listSaysNothing)
 	sc.Then(`^nothing has been looked for yet$`, func() error {
-		if said := w.w.looking.Reads(); said != "" {
+		if said := w.w.Looking.Reads(); said != "" {
 			return fmt.Errorf("the search box already reads %q", said)
 		}
 		return nil
@@ -2726,7 +2728,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the description is at its end$`, func() error {
 		if _, _, _, _, long := w.w.sayingOn(); !long {
-			return fmt.Errorf("no description is open: the window is on %v", w.w.Screen())
+			return fmt.Errorf("no description is open: the window is on %v", w.w.Screen)
 		}
 		want := max(0, len(w.w.SaidLines())-w.w.SaidRows())
 		if w.w.saying != want {
@@ -2768,7 +2770,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the bar offers "([^"]*)" under "([^"]*)"$`, w.barOffersUnder)
 	sc.Then(`^the window is asking what to look for$`, w.askingWhatToLookFor)
 	sc.Then(`^the board says nothing of "([^"]*)"$`, func(title string) error {
-		dealt, stalled := board.Deal(w.w.Showing().Cards, w.w.archived)
+		dealt, stalled := board.Deal(w.w.Showing().Cards, w.w.Archived)
 		for _, held := range dealt {
 			for _, c := range held.Cards {
 				if c.Title == title {
@@ -2785,8 +2787,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 
 	sc.Then(`^no card is chosen$`, func() error {
-		if w.w.Chosen() != 0 {
-			return fmt.Errorf("task %d is chosen", w.w.Chosen())
+		if w.w.Chosen != 0 {
+			return fmt.Errorf("task %d is chosen", w.w.Chosen)
 		}
 		return nil
 	})
@@ -2799,15 +2801,15 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the caret is at (\d+)$`, w.caretIsAt)
 	sc.Then(`^the caret is on line (\d+) of the field "([^"]*)"$`,
 		func(want int, name string) error {
-			if w.w.Screen() != OnForm {
+			if w.w.Screen != board.OnForm {
 				return fmt.Errorf("nothing is being typed into")
 			}
-			fields := w.w.Form().Fields()
-			at := w.w.Form().On()
+			fields := w.w.Form.Fields
+			at := w.w.Form.On()
 			if fields[at].Name != name {
 				return fmt.Errorf("the keyboard is on %q, not on %q", fields[at].Name, name)
 			}
-			said := w.w.Form().Writing()
+			said := w.w.Form.Writing()
 			_, _, lines, _, _ := w.w.sayingOn()
 			line, _ := lines.At(said.At)
 			if line+1 != want {
@@ -2863,8 +2865,8 @@ func (w *world) goalCardSaysNoCount(number int) error {
 func (w *world) objectiveChosen(title string) error {
 	for _, g := range w.w.Reading().Goals {
 		if g.Title == title {
-			if w.w.Chosen() != g.Number {
-				return fmt.Errorf("objective %d is chosen, not %q", w.w.Chosen(), title)
+			if w.w.Chosen != g.Number {
+				return fmt.Errorf("objective %d is chosen, not %q", w.w.Chosen, title)
 			}
 			return nil
 		}
@@ -2884,7 +2886,7 @@ func (w *world) objectiveCalled(number int, title string) error {
 }
 
 func (w *world) detailShowsField(name string) error {
-	for _, field := range w.w.Form().Fields() {
+	for _, field := range w.w.Form.Fields {
 		if field.Name == name {
 			return nil
 		}
@@ -2893,7 +2895,7 @@ func (w *world) detailShowsField(name string) error {
 }
 
 func (w *world) detailFieldReads(name, value string) error {
-	for _, field := range w.w.Form().Fields() {
+	for _, field := range w.w.Form.Fields {
 		if field.Name != name {
 			continue
 		}
@@ -2939,10 +2941,10 @@ func (w *world) landsIn(column string) error {
 }
 
 func (w *world) keyboardIsOn(name string) error {
-	if w.w.Screen() != OnForm {
+	if w.w.Screen != board.OnForm {
 		return fmt.Errorf("no form is open")
 	}
-	got := w.w.Form().Fields()[w.w.Form().On()].Name
+	got := w.w.Form.Fields[w.w.Form.On()].Name
 	if got != name {
 		return fmt.Errorf("the keyboard is on %q, want %q", got, name)
 	}
@@ -2957,14 +2959,14 @@ func (w *world) columnDoesNotCarry(column, title string) error {
 }
 
 func (w *world) helpOpen() error {
-	if w.w.Screen() != OnHelp {
-		return fmt.Errorf("the window is on %v", w.w.Screen())
+	if w.w.Screen != board.OnHelp {
+		return fmt.Errorf("the window is on %v", w.w.Screen)
 	}
 	return nil
 }
 
 func (w *world) helpClosed() error {
-	if w.w.Screen() == OnHelp {
+	if w.w.Screen == board.OnHelp {
 		return fmt.Errorf("the help is still open")
 	}
 	return nil
@@ -2980,7 +2982,7 @@ func (w *world) helpSaysAbout(about string) error {
 }
 
 func (w *world) fieldShowsACaret(name string) error {
-	on := w.w.Form().Fields()[w.w.Form().On()].Name
+	on := w.w.Form.Fields[w.w.Form.On()].Name
 	if on != name {
 		return fmt.Errorf("the caret is on %q, not %q", on, name)
 	}
@@ -2988,11 +2990,11 @@ func (w *world) fieldShowsACaret(name string) error {
 }
 
 func (w *world) noOtherFieldShowsACaret() error {
-	if w.w.Screen() != OnForm {
+	if w.w.Screen != board.OnForm {
 		return fmt.Errorf("no form is open")
 	}
-	if on := w.w.Form().On(); on < 0 || on >= len(w.w.Form().Fields()) {
-		return fmt.Errorf("the keyboard is on field %d, and there are %d", on, len(w.w.Form().Fields()))
+	if on := w.w.Form.On(); on < 0 || on >= len(w.w.Form.Fields) {
+		return fmt.Errorf("the keyboard is on field %d, and there are %d", on, len(w.w.Form.Fields))
 	}
 	return nil
 }
@@ -3020,7 +3022,7 @@ func (w *world) fieldHasRoomForOne(name string) error {
 }
 
 func (w *world) rowsOfField(name string) (int, error) {
-	fields := w.w.Form().Fields()
+	fields := w.w.Form.Fields
 	for i := range fields {
 		if fields[i].Name == name {
 			return formRows(w.w.formBox(), fields, i), nil
@@ -3030,8 +3032,8 @@ func (w *world) rowsOfField(name string) (int, error) {
 }
 
 func (w *world) fieldShowsTheEnd(name string) error {
-	box := Over(w.w.Layout().Bar.W+2*margin, w.w.Layout().Bar.Y+barHigh+margin)
-	fields := w.w.Form().Fields()
+	box := Over(w.w.Layout().Bar.W+2*geom.Margin, w.w.Layout().Bar.Y+geom.BarHigh+geom.Margin)
+	fields := w.w.Form.Fields
 	for i, field := range fields {
 		if field.Name != name {
 			continue
@@ -3042,7 +3044,7 @@ func (w *world) fieldShowsTheEnd(name string) error {
 		if len(lines.Said) < 2 {
 			return fmt.Errorf("%q is not longer than its room, so this proves nothing", name)
 		}
-		line, _ := lines.At(w.w.Form().Writing().At)
+		line, _ := lines.At(w.w.Form.Writing().At)
 		shown := lines.Said[lines.Window(rows, line)]
 		if !strings.HasSuffix(field.Value, shown) {
 			return fmt.Errorf("%q shows %q, which is not the end of %q", name, shown, field.Value)
@@ -3053,44 +3055,44 @@ func (w *world) fieldShowsTheEnd(name string) error {
 }
 
 func (w *world) caretIsAt(at int) error {
-	if w.w.Screen() == OnSearch {
+	if w.w.Screen == board.OnSearch {
 		if got := w.w.Searched().At; got != at {
 			return fmt.Errorf("the caret is at %d in the search, want %d", got, at)
 		}
 		return nil
 	}
-	if w.w.Screen() != OnForm {
+	if w.w.Screen != board.OnForm {
 		return fmt.Errorf("nothing is being typed into")
 	}
-	if got := w.w.Form().Writing().At; got != at {
+	if got := w.w.Form.Writing().At; got != at {
 		return fmt.Errorf("the caret is at %d, want %d", got, at)
 	}
 	return nil
 }
 
 func (w *world) searchReads(value string) error {
-	if got := w.w.looking.Reads(); got != value {
+	if got := w.w.Looking.Reads(); got != value {
 		return fmt.Errorf("the search reads %q, want %q", got, value)
 	}
 	return nil
 }
 
 func (w *world) searchBoxOpen() error {
-	if w.w.Screen() != OnSearch {
-		return fmt.Errorf("the window is on %v", w.w.Screen())
+	if w.w.Screen != board.OnSearch {
+		return fmt.Errorf("the window is on %v", w.w.Screen)
 	}
 	return nil
 }
 
 func (w *world) searchBoxClosed() error {
-	if w.w.Screen() == OnSearch {
+	if w.w.Screen == board.OnSearch {
 		return fmt.Errorf("the search box is still open")
 	}
 	return nil
 }
 
 func (w *world) searchStillInForce() error {
-	if w.w.looking.Reads() == "" {
+	if w.w.Looking.Reads() == "" {
 		return fmt.Errorf("nothing is being searched for any more")
 	}
 	return nil
@@ -3110,8 +3112,8 @@ func (w *world) barOffersUnder(offer, key string) error {
 }
 
 func (w *world) askingWhatToLookFor() error {
-	if w.w.Screen() != OnSearch {
-		return fmt.Errorf("the window is on %v", w.w.Screen())
+	if w.w.Screen != board.OnSearch {
+		return fmt.Errorf("the window is on %v", w.w.Screen)
 	}
 	return nil
 }
@@ -3135,14 +3137,14 @@ func (w *world) panelRuleSeen() error {
 	box := w.w.panel()
 	at := shot.RGBAAt(box.X+box.W/2, along[0].Y-between)
 	rule := color.NRGBA{R: at.R, G: at.G, B: at.B, A: 255}
-	if got := Contrast(rule, Dark().Colour.Surface.Raised); got < 1.2 {
+	if got := Contrast(rule, design.Dark().Colour.Surface.Raised); got < 1.2 {
 		return fmt.Errorf("the rule %+v stands at %.2f from the panel, and a rule needs 1.2", rule, got)
 	}
 	return nil
 }
 
 func (w *world) wrapping(name string) (Lines, int, error) {
-	fields := w.w.Form().Fields()
+	fields := w.w.Form.Fields
 	for i, field := range fields {
 		if field.Name != name {
 			continue
@@ -3191,7 +3193,7 @@ func (w *world) historyBesideTheFields() error {
 
 func (w *world) historyInsideThePanel() error {
 	box := Over(w.w.width, w.w.height)
-	for what, part := range map[string]Box{"the history": BesideBox(box), "its bar": BesideBar(box)} {
+	for what, part := range map[string]geom.Box{"the history": BesideBox(box), "its bar": BesideBar(box)} {
 		if part.X < box.X || part.X+part.W > box.X+box.W {
 			return fmt.Errorf("%s runs from %d to %d in a panel from %d to %d",
 				what, part.X, part.X+part.W, box.X, box.X+box.W)
@@ -3239,7 +3241,7 @@ func (w *world) servingAtTheBeginning() error {
 
 func (w *world) servingAtTheEnd() error {
 	box := w.w.workFrame()
-	last := (len(w.w.Under())+1)*SubHeight - box.H
+	last := (len(w.w.Under())+1)*geom.SubHeight - box.H
 	if w.w.serving != last {
 		return fmt.Errorf("the work under it is at %d and its end is %d", w.w.serving, last)
 	}
@@ -3273,7 +3275,7 @@ func (w *world) formBehindTheList() error {
 		return fmt.Errorf("the list is %dx%d over a form of %dx%d: it covers it rather than sitting on it",
 			list.W, list.H, over.W, over.H)
 	}
-	fields := w.w.Form().Fields()
+	fields := w.w.Form.Fields
 	value := formValue(over, fields, 0)
 	frame := Framed(value, formRows(over, fields, 0))
 	if frame.Y+frame.H > list.Y {
@@ -3284,14 +3286,14 @@ func (w *world) formBehindTheList() error {
 	if err != nil {
 		return err
 	}
-	if painted(shot, frame, Dark().Colour.Surface.Field) == 0 {
+	if painted(shot, frame, design.Dark().Colour.Surface.Field) == 0 {
 		return fmt.Errorf("the form's first field is gone: the list covered it rather than sitting on it")
 	}
 	return nil
 }
 
 func (w *world) fieldDrawnByName(field string) error {
-	for _, f := range w.w.Form().Fields() {
+	for _, f := range w.w.Form.Fields {
 		if f.Name != field {
 			continue
 		}
@@ -3299,19 +3301,19 @@ func (w *world) fieldDrawnByName(field string) error {
 		if said == f.Value {
 			return fmt.Errorf("the field %q is drawn as %q, which is what it carries", field, said)
 		}
-		fields := w.w.Form().Fields()
+		fields := w.w.Form.Fields
 		at := slices.IndexFunc(fields, func(x board.Field) bool { return x.Name == field })
 		box := w.w.formBox()
 		value := formValue(box, fields, at)
 		frame := Framed(value, formRows(box, fields, at))
 		inside := Inside(frame)
 		from := inside.X + (len(f.Value)+2)*perGlyph
-		far := Box{X: from, Y: inside.Y, W: inside.X + inside.W - from, H: inside.H}
+		far := geom.Box{X: from, Y: inside.Y, W: inside.X + inside.W - from, H: inside.H}
 		shot, err := drawnInAStep(w.theme, w.w)
 		if err != nil {
 			return err
 		}
-		if inked(shot, far, Dark().Colour.Surface.Back) == 0 {
+		if inked(shot, far, design.Dark().Colour.Surface.Back) == 0 {
 			return fmt.Errorf("the field %q draws nothing past where %q would have ended", field, f.Value)
 		}
 		return nil
@@ -3320,8 +3322,8 @@ func (w *world) fieldDrawnByName(field string) error {
 }
 
 func (w *world) listOpen() error {
-	if w.w.Screen() != OnChoosing {
-		return fmt.Errorf("the window is on %v", w.w.Screen())
+	if w.w.Screen != board.OnChoosing {
+		return fmt.Errorf("the window is on %v", w.w.Screen)
 	}
 	return nil
 }
@@ -3355,7 +3357,7 @@ func (w *world) ticked(number int, want bool) error {
 }
 
 func (w *world) fieldNames(field, title string) error {
-	for _, f := range w.w.Form().Fields() {
+	for _, f := range w.w.Form.Fields {
 		if f.Name != field {
 			continue
 		}
@@ -3383,10 +3385,10 @@ func goalTitles(offered []Choice) []string {
 }
 
 func (w *world) formOpenOnTask(number int) error {
-	if w.w.Screen() != OnForm {
-		return fmt.Errorf("the window is on %v, not a form", w.w.Screen())
+	if w.w.Screen != board.OnForm {
+		return fmt.Errorf("the window is on %v, not a form", w.w.Screen)
 	}
-	if got := w.w.Form().Number; got != number {
+	if got := w.w.Form.Number; got != number {
 		return fmt.Errorf("the form is open on %d, not %d", got, number)
 	}
 	return nil
@@ -3394,7 +3396,7 @@ func (w *world) formOpenOnTask(number int) error {
 
 func (w *world) everyKeyTheBarOffers() error {
 	from := w.w
-	for _, screen := range []Screen{OnTheBoard, OnForm, OnHelp, OnAsking} {
+	for _, screen := range []board.Screen{board.OnTheBoard, board.OnForm, board.OnHelp, board.OnAsking} {
 		at, err := onScreen(from, screen)
 		if err != nil {
 			return err
@@ -3405,35 +3407,35 @@ func (w *world) everyKeyTheBarOffers() error {
 				return fmt.Errorf("on %v the bar offers %q under no key at all", screen, offer)
 			}
 			pressed, chosen := at.Key(key), at.Choose(offer)
-			if pressed.Screen() != chosen.Screen() {
+			if pressed.Screen != chosen.Screen {
 				return fmt.Errorf("on %v, %q left the window on %v and pressing %q left it on %v",
-					screen, offer, chosen.Screen(), key, pressed.Screen())
+					screen, offer, chosen.Screen, key, pressed.Screen)
 			}
-			if pressed.Screen() == at.Screen() && chosen.Screen() == at.Screen() && pressed.Chosen() != chosen.Chosen() {
+			if pressed.Screen == at.Screen && chosen.Screen == at.Screen && pressed.Chosen != chosen.Chosen {
 				return fmt.Errorf("on %v, %q chose %d and pressing %q chose %d",
-					screen, offer, chosen.Chosen(), key, pressed.Chosen())
+					screen, offer, chosen.Chosen, key, pressed.Chosen)
 			}
 		}
 	}
 	return nil
 }
 
-func onScreen(w Window, screen Screen) (Window, error) {
+func onScreen(w Window, screen board.Screen) (Window, error) {
 	switch screen {
-	case OnTheBoard:
+	case board.OnTheBoard:
 		return w, nil
-	case OnForm:
+	case board.OnForm:
 		return w.Key("enter"), nil
-	case OnHelp:
+	case board.OnHelp:
 		return w.Choose("Help"), nil
-	case OnAsking:
+	case board.OnAsking:
 		return w.Choose("Delete"), nil
 	}
 	return w, fmt.Errorf("no way to reach %v", screen)
 }
 
 func (w *world) caretOnTheSecondField() error {
-	if got := w.w.Form().On(); got != 1 {
+	if got := w.w.Form.On(); got != 1 {
 		return fmt.Errorf("the keyboard is on field %d, not the second", got)
 	}
 	return nil
@@ -3444,7 +3446,7 @@ func (w *world) tabHolds(name string, count int) error {
 		if page != name {
 			continue
 		}
-		if got := w.w.Holds(Tab(i)); got != count {
+		if got := w.w.Holds(board.Tab(i)); got != count {
 			return fmt.Errorf("the tab %q says it holds %d, not %d", name, got, count)
 		}
 		return nil
@@ -3453,12 +3455,12 @@ func (w *world) tabHolds(name string, count int) error {
 }
 
 func (w *world) chosenInSight() error {
-	if w.w.Chosen() == 0 {
+	if w.w.Chosen == 0 {
 		return fmt.Errorf("nothing is chosen, so this proves nothing")
 	}
 	box, run, ok := w.w.WhereChosen()
 	if !ok {
-		return fmt.Errorf("task %d is chosen and drawn nowhere", w.w.Chosen())
+		return fmt.Errorf("task %d is chosen and drawn nowhere", w.w.Chosen)
 	}
 	if box.Y < run.Y || box.Y+box.H > run.Y+run.H {
 		return fmt.Errorf("what is chosen is drawn from %d to %d, in a run from %d to %d",
@@ -3488,7 +3490,7 @@ func (w *world) cardSays(title, said string) error {
 	if err != nil {
 		return err
 	}
-	facts, _ := CardFacts(c, moment, w.w.pages)
+	facts, _ := CardFacts(c, moment, w.w.Pages)
 	m := w.w.measured()
 	shown, more := Pills(c.Labels, PartsOf(w.w.Layout().CardAt(0, 0, 0)).Labels.W, func(said string) int { return ends(m, said, small) })
 	line := strings.Join(shown, "  ") + "  +" + strconv.Itoa(more) + "  " + facts
@@ -3506,7 +3508,7 @@ func (w *world) cardSaysInFocus(title string) error {
 	if !c.InFocus {
 		return fmt.Errorf("%q does not say it is being worked on", title)
 	}
-	if _, mark := FocusMark(c, Box{W: 200, H: 2 * lineHigh}); !mark {
+	if _, mark := FocusMark(c, geom.Box{W: 200, H: 2 * lineHigh}); !mark {
 		return fmt.Errorf("the card for %q draws no glowing dot, and says nothing about being worked on", title)
 	}
 	return nil
@@ -3517,7 +3519,7 @@ func (w *world) cardCarriesAGlow(title string) error {
 	if err != nil {
 		return err
 	}
-	line := Box{X: 0, Y: 0, W: 200, H: 2 * lineHigh}
+	line := geom.Box{X: 0, Y: 0, W: 200, H: 2 * lineHigh}
 	mark, ok := FocusMark(c, line)
 	if !ok {
 		return fmt.Errorf("the card for %q carries no mark at all", title)
@@ -3532,10 +3534,10 @@ func (w *world) cardCarriesAGlow(title string) error {
 	return nil
 }
 
-func (w *world) firstWordOf(key string) (Point, error) {
+func (w *world) firstWordOf(key string) (geom.Point, error) {
 	for _, r := range w.w.Readables() {
 		if r.Key == key {
-			return Point{X: r.Box.X + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2}, nil
+			return geom.Point{X: r.Box.X + glyphOf(r.Size)/2, Y: r.Box.Y + lineHigh/2}, nil
 		}
 	}
 	if name, ok := strings.CutPrefix(key, "field:"); ok {
@@ -3543,7 +3545,7 @@ func (w *world) firstWordOf(key string) (Point, error) {
 			return at(0), nil
 		}
 	}
-	return Point{}, fmt.Errorf("the open task writes nothing called %q", key)
+	return geom.Point{}, fmt.Errorf("the open task writes nothing called %q", key)
 }
 
 func entrySays(path string, lines ...string) error {
@@ -3559,8 +3561,8 @@ func entrySays(path string, lines ...string) error {
 	return nil
 }
 
-func (w *world) stepTile(title string) (Point, error) {
-	parts := w.w.form.parts()
+func (w *world) stepTile(title string) (geom.Point, error) {
+	parts := w.w.Form.Parts()
 	tiles := w.w.partTiles()
 	for i, part := range parts {
 		shown := i - w.w.partsFrom()
@@ -3568,9 +3570,9 @@ func (w *world) stepTile(title string) (Point, error) {
 			continue
 		}
 		writ := SubWriting(tiles[shown])
-		return Point{X: writ.X + writ.W/2, Y: writ.Y + writ.H/2}, nil
+		return geom.Point{X: writ.X + writ.W/2, Y: writ.Y + writ.H/2}, nil
 	}
-	return Point{}, fmt.Errorf("no step titled %q is in sight", title)
+	return geom.Point{}, fmt.Errorf("no step titled %q is in sight", title)
 }
 
 func (w *world) stripedWide(title string, wide int) error {
@@ -3583,25 +3585,25 @@ func (w *world) stripedWide(title string, wide int) error {
 		return err
 	}
 	at := PartsOf(w.w.Layout().CardAt(board.IndexOf(card.State), 0, 0)).Edge
-	want := Dark().Colour.Priority[card.Priority]
-	stripe := Box{X: at.X, Y: at.Y + Dark().Radius.Stripe, W: wide, H: at.H - 2*Dark().Radius.Stripe}
+	want := design.Dark().Colour.Priority[card.Priority]
+	stripe := geom.Box{X: at.X, Y: at.Y + design.Dark().Radius.Stripe, W: wide, H: at.H - 2*design.Dark().Radius.Stripe}
 	if got := painted(shot, stripe, want); got != stripe.W*stripe.H {
 		return fmt.Errorf("the stripe fills %d of %d pixels of its %d points", got, stripe.W*stripe.H, wide)
 	}
-	past := Box{X: at.X + wide, Y: at.Y + 1, W: 1, H: at.H - 2}
+	past := geom.Box{X: at.X + wide, Y: at.Y + 1, W: 1, H: at.H - 2}
 	if got := painted(shot, past, want); got != 0 {
 		return fmt.Errorf("the stripe goes on past %d points, for %d pixels", wide, got)
 	}
 	return nil
 }
 
-func buttonsDrawn(th *material.Theme, w Window, buttons []Box, grounds ...color.NRGBA) error {
+func buttonsDrawn(th *material.Theme, w Window, buttons []geom.Box, grounds ...color.NRGBA) error {
 	shot, err := drawnInAStep(th, w)
 	if err != nil {
 		return err
 	}
 	for _, button := range buttons {
-		row := Box{X: button.X + Dark().Radius.Control, Y: button.Y + 2, W: button.W - 2*Dark().Radius.Control, H: 1}
+		row := geom.Box{X: button.X + design.Dark().Radius.Control, Y: button.Y + 2, W: button.W - 2*design.Dark().Radius.Control, H: 1}
 		got := 0
 		for _, ground := range grounds {
 			got += painted(shot, row, ground)
@@ -3614,7 +3616,7 @@ func buttonsDrawn(th *material.Theme, w Window, buttons []Box, grounds ...color.
 }
 
 func dayIndex(w Window, day time.Time) int {
-	for i, one := range board.MonthGrid(w.day) {
+	for i, one := range board.MonthGrid(w.Day) {
 		if one.Equal(day) {
 			return i
 		}

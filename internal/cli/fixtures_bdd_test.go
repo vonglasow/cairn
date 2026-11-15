@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"cairn/internal/board"
 	"cairn/internal/gui"
+	"cairn/internal/gui/design"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -62,7 +63,7 @@ func (w *world) registerFixtures(sc *godog.ScenarioContext) {
 	sc.Step(`^I make the fixtures in that folder again with --new$`, func() { made(" --new") })
 	sc.Step(`^I make the fixtures in a folder of my own from that file$`, func() { made(" --from " + from) })
 	sc.Step(`^I make the fixtures in a folder of my own with --gui$`, func() {
-		w.window = func(work board.Work, _ engine.Pages, _ gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(work board.Work, _ engine.Pages, _ design.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
 			openedOn = "opened"
 			_, err := work.Version()
 			return err

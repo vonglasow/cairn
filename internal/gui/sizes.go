@@ -1,11 +1,14 @@
 package gui
 
-import "cairn/internal/board"
+import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
+)
 
 // SizesKept keeps how wide and how tall the window was left, past it closing, for the next one to open with.
 type SizesKept interface {
-	Keep(Sizes) error
-	Kept() (Sizes, error)
+	Keep(geom.Sizes) error
+	Kept() (geom.Sizes, error)
 }
 
 // SizesOf keeps the sizes through the engine holding the work, when the configuration says to.
@@ -13,17 +16,17 @@ func SizesOf(work board.Work) SizesKept { return askedSizes{windowKept{work, "si
 
 type askedSizes struct{ windowKept }
 
-func (a askedSizes) Keep(s Sizes) error { return a.keep(s) }
+func (a askedSizes) Keep(s geom.Sizes) error { return a.keep(s) }
 
-func (a askedSizes) Kept() (Sizes, error) {
-	var s Sizes
+func (a askedSizes) Kept() (geom.Sizes, error) {
+	var s geom.Sizes
 	return s, a.read(&s)
 }
 
 type noSizes struct{}
 
-func (noSizes) Keep(Sizes) error     { return nil }
-func (noSizes) Kept() (Sizes, error) { return Sizes{}, nil }
+func (noSizes) Keep(geom.Sizes) error     { return nil }
+func (noSizes) Kept() (geom.Sizes, error) { return geom.Sizes{}, nil }
 
 // KeepingSizes is the window opening with the sizes kept where it is told, and keeping there every size it is given.
 func (w Window) KeepingSizes(k SizesKept) Window {
@@ -36,7 +39,7 @@ func (w Window) KeepingSizes(k SizesKept) Window {
 	return w
 }
 
-func (w Window) resized(s Sizes) Window {
+func (w Window) resized(s geom.Sizes) Window {
 	w.sizes = s
 	if err := w.kept.Keep(s); err != nil {
 		return w.failing(err)
@@ -45,4 +48,4 @@ func (w Window) resized(s Sizes) Window {
 }
 
 // Sizes is every size a person gave the window by hand.
-func (w Window) Sizes() Sizes { return w.sizes }
+func (w Window) Sizes() geom.Sizes { return w.sizes }

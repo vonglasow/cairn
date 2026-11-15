@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"strings"
 	"sync"
 
@@ -49,7 +51,7 @@ func (w Window) Picked(item string) Window {
 	if !w.Doable(item) {
 		return w
 	}
-	w.screen = OnTheBoard
+	w.Screen = board.OnTheBoard
 	if item == "Upgrade" {
 		return w.upgrading()
 	}
@@ -59,9 +61,9 @@ func (w Window) Picked(item string) Window {
 // Doable says whether a line of the menu bar does something now: offered by the pages shown, and on the board. The native bars grey what is not, the button's menu leaves it out, and picking it does nothing.
 func (w Window) Doable(line string) bool {
 	if w.Blank() {
-		return line == "Settings…" && w.screen == OnTheBoard
+		return line == "Settings…" && w.Screen == board.OnTheBoard
 	}
-	return (w.screen == OnTheBoard || w.screen == OnSearch) && offered(w.pages, line)
+	return (w.Screen == board.OnTheBoard || w.Screen == board.OnSearch) && offered(w.Pages, line)
 }
 
 func (w Window) upgrading() Window {
@@ -103,28 +105,28 @@ func (w Window) Native(given bool) Window {
 }
 
 // MenuButton is the button standing in for a menu bar, at the end of the tabs.
-func MenuButton(l Layout) Box {
-	return Box{X: l.Tabs.X + l.Tabs.W - menuButtonWide, Y: l.Tabs.Y + between, W: menuButtonWide, H: l.Tabs.H - between}
+func MenuButton(l geom.Layout) geom.Box {
+	return geom.Box{X: l.Tabs.X + l.Tabs.W - menuButtonWide, Y: l.Tabs.Y + between, W: menuButtonWide, H: l.Tabs.H - between}
 }
 
 // MenuStrokes are the three strokes the button is drawn as, across its middle.
-func MenuStrokes(button Box) [3]Box {
+func MenuStrokes(button geom.Box) [3]geom.Box {
 	wide, mid := button.W/2, button.Y+button.H/2
-	at := func(y int) Box { return Box{X: button.X + button.W/4, Y: y, W: wide, H: 2} }
-	return [3]Box{at(mid - 6), at(mid - 1), at(mid + 4)}
+	at := func(y int) geom.Box { return geom.Box{X: button.X + button.W/4, Y: y, W: wide, H: 2} }
+	return [3]geom.Box{at(mid - 6), at(mid - 1), at(mid + 4)}
 }
 
 func (w Window) openingMenuBar() Window {
 	button := MenuButton(w.Layout())
 	w.menu = nil
-	for _, group := range MenuBar(w.pages) {
+	for _, group := range MenuBar(w.Pages) {
 		for _, line := range group.Items {
 			if w.Doable(line) {
 				w.menu = append(w.menu, line)
 			}
 		}
 	}
-	w.menuAt, w.menuOn, w.screen = Point{X: button.X + button.W - menuWide, Y: button.Y + button.H}, 0, OnMenu
+	w.menuAt, w.menuOn, w.Screen = geom.Point{X: button.X + button.W - menuWide, Y: button.Y + button.H}, 0, board.OnMenu
 	return w
 }
 

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
 	"math"
 	"strings"
 	"testing"
@@ -51,14 +52,14 @@ func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	chosen := w.clicked(middleOf(w, 1, 0))
-	if got := Typed(chosen, "X", key.ModCtrl|key.ModAlt); f.what("task", "archive") != 0 || got.Screen() != OnTheBoard {
-		t.Errorf("AltGr+X archived, or left the window on %v", got.Screen())
+	if got := Typed(chosen, "X", key.ModCtrl|key.ModAlt); f.what("task", "archive") != 0 || got.Screen != board.OnTheBoard {
+		t.Errorf("AltGr+X archived, or left the window on %v", got.Screen)
 	}
-	if got := Typed(chosen, "X", key.ModAlt); f.what("task", "archive") != 0 || got.Screen() != OnTheBoard {
-		t.Errorf("⌥X archived, or left the window on %v", got.Screen())
+	if got := Typed(chosen, "X", key.ModAlt); f.what("task", "archive") != 0 || got.Screen != board.OnTheBoard {
+		t.Errorf("⌥X archived, or left the window on %v", got.Screen)
 	}
-	if got := Typed(chosen, string(key.NameDeleteBackward), key.ModAlt); got.Screen() != OnTheBoard {
-		t.Errorf("⌥⌫ on the board left the window on %v", got.Screen())
+	if got := Typed(chosen, string(key.NameDeleteBackward), key.ModAlt); got.Screen != board.OnTheBoard {
+		t.Errorf("⌥⌫ on the board left the window on %v", got.Screen)
 	}
 }
 
@@ -74,8 +75,8 @@ func TestARightPressEndsTheCairn(t *testing.T) {
 func TestTheBarUnderAQuestionKeepsTheBoardsKeys(t *testing.T) {
 	w := holding(newFake(), card(1, "Write the spec", "todo")).OnSystem("darwin")
 	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+backspace")
-	if w.Screen() != OnAsking {
-		t.Fatalf("delete left the window on %v", w.Screen())
+	if w.Screen != board.OnAsking {
+		t.Fatalf("delete left the window on %v", w.Screen)
 	}
 	if got := w.BarKey("Delete"); got != "⌘⌫" {
 		t.Errorf("under the question the bar says Delete is %q", got)
@@ -92,7 +93,7 @@ func TestAKeyChipHasRoomForTheMarksGoMonoLacks(t *testing.T) {
 	th := drawingTheme()
 	monoWritten := func(said string) int {
 		th.Shaper.LayoutString(text.Parameters{
-			Font: font.Font{Typeface: MonoFace, Weight: font.SemiBold}, PxPerEm: fixed.I(small),
+			Font: font.Font{Typeface: design.MonoFace, Weight: font.SemiBold}, PxPerEm: fixed.I(small),
 			MaxLines: 1, MaxWidth: math.MaxInt32,
 		}, said)
 		end := 0

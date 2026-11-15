@@ -52,11 +52,14 @@ all of them.
 | `internal/engine/label`, `series`, `view`, `backup`, `workspace`, `exchange`, `app` | one notion each: labels, series, views, backups, workspaces, export and import, cairn as an application and its upgrade | the notions below it, `store/files` |
 | `internal/store/sqlite` | keeping the notions, and handing them back; the only package that knows a database exists | the notions, never the catalogue |
 | `internal/engine` | the catalogue of every operation, `Ask` the one door, and what reads several notions at once: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, which scheme a window wears | `theme`, the notions, `store/sqlite`, `store/files` |
-| `internal/board` | what every board reads, computed once: cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes; it changes anything only through `Ask` | `engine`, the notions |
+| `internal/board` | what every board reads, computed once: cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes, and `Board`, the state of a board on screen — what is chosen, the form open, the filters, the screen and tab, the week, the labels, the backups, the settings; it changes anything only through `Ask` | `engine`, the notions |
 | `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
 | `internal/tui` | the board on a terminal | `board` and everything below, but `cli`, `mcp` and `gui` |
 | `internal/gui` | the same board in a window | everything below but `cli`, `mcp` and `tui` |
+| `internal/gui/geom` | where the window lays things out, in dp: boxes, points, the layout of a window of a size | `board` |
+| `internal/gui/design` | the skin: the colours a theme gives, the faces and sizes, the symbols | `theme`, `board`, `geom`, the label and item notions, gioui |
+| `internal/gui/motion` | the animations: the intro, waves, sweeps and beats, timed against a clock given | `geom`, `store/files` |
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
 | `internal/site` | the documentation site: the pages of `docs/` for a person using cairn, and a reference read off every surface, its boards drawn over the fixtures | everything below but the store |
 | `cmd/site` | hands the process to `site.Main`; built by `make site`, never part of the binary | `site` |

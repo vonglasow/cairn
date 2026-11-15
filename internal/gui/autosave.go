@@ -1,93 +1,76 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 )
 
 func (w Window) autosaved() Window {
-	if w.screen != OnForm || w.form.writingPart || w.form.Adding && w.form.ForObjective {
+	if w.Screen != board.OnForm || w.Form.WritingPart || w.Form.Adding && w.Form.ForObjective {
 		w.paused = nil
 		return w
 	}
-	now := w.form.values()
+	now := w.Form.Values()
 	paused := slices.Equal(now, w.paused)
 	w.paused = now
-	if w.form.Adding {
+	if w.Form.Adding {
 		if !paused || slices.Equal(now, w.drafting) {
 			return w
 		}
 		w.drafting = now
 		return w.keepingDraft()
 	}
-	if !paused || !w.form.Changed() || !w.form.titled() || slices.Equal(now, w.refused) {
+	if !paused || !w.Form.Changed() || !w.Form.Titled() || slices.Equal(now, w.refused) {
 		return w
 	}
 	saved := w.savedInPlace()
-	if saved.err != nil {
+	if saved.Err != nil {
 		saved.refused = now
 		return saved
 	}
-	saved.savedAt = w.now
+	saved.savedAt = w.Now
 	return saved
 }
 
-func (f Form) values() []string {
-	var held []string
-	for _, field := range f.fields {
-		held = append(held, field.Value)
-	}
-	return held
-}
-
-func (f Form) titled() bool {
-	for _, field := range f.fields {
-		if field.Name == "title" {
-			return strings.TrimSpace(field.Value) != ""
-		}
-	}
-	return true
-}
-
 func (w Window) savedInPlace() Window {
-	kept := w.form
+	kept := w.Form
 	w, number, err := w.stored()
 	if err != nil {
 		return w
 	}
 	w = w.Look()
 	if kept.ForObjective {
-		g, found := w.snap.Goal(number)
+		g, found := w.Snap.Goal(number)
 		if !found {
 			return w
 		}
-		w.form = editingGoal(g)
+		w.Form = editingGoal(g)
 	} else {
-		c, found := w.snap.Card(number)
+		c, found := w.Snap.Card(number)
 		if !found {
 			return w
 		}
-		w.form = w.editing(c)
+		w.Form = w.editing(c)
 	}
-	w.chosen, w.chosenGoal = number, kept.ForObjective
-	w.form = w.form.onto(kept.at)
-	typed := kept.fields[kept.at].Value
-	w.form = w.form.Writes(Written{Value: typed, At: kept.caret})
-	w.form.opened[kept.at] = typed
-	w.form.partAt, w.form.partsTop, w.form.partsTaken = kept.partAt, kept.partsTop, kept.partsTaken
-	w.paused = w.form.values()
+	w.Chosen, w.ChosenGoal = number, kept.ForObjective
+	w.Form = w.Form.Onto(kept.At)
+	typed := kept.Fields[kept.At].Value
+	w.Form = w.Form.Writes(board.Written{Value: typed, At: kept.Caret})
+	w.Form.Opened[kept.At] = typed
+	w.Form.PartAt, w.Form.PartsTop, w.Form.PartsTaken = kept.PartAt, kept.PartsTop, kept.PartsTaken
+	w.paused = w.Form.Values()
 	return w.readingActs()
 }
 
 // FormNote is what the foot of an open form says of its saving itself: how long ago it last did, and nothing before it has.
 func (w Window) FormNote() string {
-	if w.screen != OnForm || w.savedAt.IsZero() {
+	if w.Screen != board.OnForm || w.savedAt.IsZero() {
 		return ""
 	}
-	ago := w.now.Sub(w.savedAt)
+	ago := w.Now.Sub(w.savedAt)
 	if ago < time.Minute {
 		return "saved " + strconv.Itoa(int(ago.Seconds())) + "s ago"
 	}

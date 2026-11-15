@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"image"
 	"strings"
 	"testing"
@@ -24,8 +26,8 @@ func openTask(t *testing.T) (Window, *fake) {
 			Description: "Deux colonnes et une bande", Context: "/vault/1",
 			Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).Key("cmd+t")
-	if w.Screen() != OnForm {
-		t.Fatalf("the task did not open: %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the task did not open: %v", w.Screen)
 	}
 	return w, f
 }
@@ -41,14 +43,14 @@ func readable(t *testing.T, w Window, key string) Readable {
 	return Readable{}
 }
 
-func on(r Readable, at int) Point {
+func on(r Readable, at int) geom.Point {
 	line := 0
 	for i, from := range r.Lines.From {
 		if from <= at {
 			line = i
 		}
 	}
-	return Point{X: r.Box.X + (at-r.Lines.From[line])*glyphOf(r.Size), Y: r.Box.Y + (line-r.From)*lineHigh + lineHigh/2}
+	return geom.Point{X: r.Box.X + (at-r.Lines.From[line])*glyphOf(r.Size), Y: r.Box.Y + (line-r.From)*lineHigh + lineHigh/2}
 }
 
 func TestEveryTextAnOpenTaskWritesCanBeCopied(t *testing.T) {
@@ -114,12 +116,12 @@ func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	box := w.formBox()
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, formRows(box, fields, 0)))
-	at := Point{X: inside.X + 11*perGlyph + perGlyph/2, Y: inside.Y + lineHigh/2}
+	at := geom.Point{X: inside.X + 11*perGlyph + perGlyph/2, Y: inside.Y + lineHigh/2}
 	w, _ = Pointing(w, Gesture{}, pointer.Press, at, 0, moment)
-	if got := w.DoubleClick(at).Form().Writing().Holds(); got != "spec" {
+	if got := w.DoubleClick(at).Form.Writing().Holds(); got != "spec" {
 		t.Fatalf("a double click on the third word of the title held %q", got)
 	}
 }
@@ -139,7 +141,7 @@ func TestWhatIsHeldOnAnOpenTaskIsPainted(t *testing.T) {
 }
 
 func held(shot *image.RGBA, r Readable) int {
-	ghost, count := Dark().Colour.Surface.Ghost, 0
+	ghost, count := design.Dark().Colour.Surface.Ghost, 0
 	for y := r.Box.Y; y < r.Box.Y+lineHigh; y++ {
 		for x := r.Box.X; x < r.Box.X+r.Box.W; x++ {
 			if got := shot.RGBAAt(x, y); got.R == ghost.R && got.G == ghost.G && got.B == ghost.B {
@@ -163,23 +165,23 @@ func TestACharacterIsReckonedAtEverySize(t *testing.T) {
 }
 
 func TestTheCharacterUnderAPoint(t *testing.T) {
-	r := Readable{Box: Box{X: 100, Y: 200, W: 300, H: 3 * lineHigh}, Size: reads,
+	r := Readable{Box: geom.Box{X: 100, Y: 200, W: 300, H: 3 * lineHigh}, Size: reads,
 		Lines: Wrapped("un deux\ntrois\nquatre", 40)}
-	at := func(column, row int) Point {
-		return Point{X: r.Box.X + column*perGlyph + 1, Y: r.Box.Y + row*lineHigh + 1}
+	at := func(column, row int) geom.Point {
+		return geom.Point{X: r.Box.X + column*perGlyph + 1, Y: r.Box.Y + row*lineHigh + 1}
 	}
 	for _, c := range []struct {
 		what string
-		p    Point
+		p    geom.Point
 		from int
 		want int
 	}{
 		{"the first character", at(0, 0), 0, 0},
 		{"two in on the second line", at(2, 1), 0, 10},
 		{"the first line in sight, scrolled one down", at(1, 0), 1, 9},
-		{"above the text", Point{X: r.Box.X + 1, Y: r.Box.Y - 50}, 0, 0},
+		{"above the text", geom.Point{X: r.Box.X + 1, Y: r.Box.Y - 50}, 0, 0},
 		{"below the text", at(1, 9), 0, 15},
-		{"left of the text", Point{X: r.Box.X - 40, Y: r.Box.Y + 1}, 0, 0},
+		{"left of the text", geom.Point{X: r.Box.X - 40, Y: r.Box.Y + 1}, 0, 0},
 		{"past the end of a line", at(30, 1), 0, 13},
 	} {
 		r.From = c.from
@@ -190,7 +192,7 @@ func TestTheCharacterUnderAPoint(t *testing.T) {
 }
 
 func TestTheRoomAPieceOfTextTakes(t *testing.T) {
-	r := Readable{Box: Box{X: 100, Y: 200, W: 300, H: lineHigh}, Size: reads,
+	r := Readable{Box: geom.Box{X: 100, Y: 200, W: 300, H: lineHigh}, Size: reads,
 		Lines: Wrapped("1\n2\n3\n4\n5", 40), From: 2}
 	if got := r.inSight(); got != r.Box {
 		t.Errorf("five lines in a box one line high take %v, want the box %v", got, r.Box)
@@ -202,22 +204,22 @@ func TestTheRoomAPieceOfTextTakes(t *testing.T) {
 }
 
 func TestAPartIsInSightWhenAllOfItIs(t *testing.T) {
-	frame := Box{X: 0, Y: 100, W: 300, H: 100}
+	frame := geom.Box{X: 0, Y: 100, W: 300, H: 100}
 	for _, c := range []struct {
 		y    int
 		want bool
 	}{
 		{100, true}, {99, false}, {200 - lineHigh, true}, {201 - lineHigh, false},
 	} {
-		if got := Within(Box{Y: c.y, H: lineHigh}, frame); got != c.want {
+		if got := Within(geom.Box{Y: c.y, H: lineHigh}, frame); got != c.want {
 			t.Errorf("a line at %d: in sight %v, want %v", c.y, got, c.want)
 		}
 	}
 }
 
 func TestWhereAHeldRunIsPainted(t *testing.T) {
-	box := Box{X: 100, Y: 200, W: 300, H: lineHigh}
-	if got, want := HeldRun(box, 40, 25), (Box{X: 140, Y: 200, W: 25, H: lineHigh}); got != want {
+	box := geom.Box{X: 100, Y: 200, W: 300, H: lineHigh}
+	if got, want := HeldRun(box, 40, 25), (geom.Box{X: 140, Y: 200, W: 25, H: lineHigh}); got != want {
 		t.Fatalf("the run is painted at %+v, want %+v", got, want)
 	}
 }
@@ -254,9 +256,9 @@ func TestAPointLandsOnTheNearestEdge(t *testing.T) {
 
 func TestTextIsReachedWithTheFaceItIsDrawnIn(t *testing.T) {
 	m := Measure(func(string, int) []int { return []int{0, 3, 13, 15} })
-	r := Readable{Box: Box{X: 10, W: 100, H: lineHigh}, Said: "iWi", Size: reads,
+	r := Readable{Box: geom.Box{X: 10, W: 100, H: lineHigh}, Said: "iWi", Size: reads,
 		Lines: Lines{Said: []string{"iWi"}, From: []int{0}}}
-	if got := r.At(Point{X: 19, Y: 2}, m); got != 2 {
+	if got := r.At(geom.Point{X: 19, Y: 2}, m); got != 2 {
 		t.Errorf("an open task reaches %d, want 2", got)
 	}
 
@@ -264,11 +266,11 @@ func TestTextIsReachedWithTheFaceItIsDrawnIn(t *testing.T) {
 	w := holding(f, card(1, "iWi", "todo")).Measuring(m)
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	box := w.formBox()
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, 1))
-	w = w.PressAt(Point{X: inside.X + 9, Y: inside.Y + 2})
-	if got := w.Form().Writing().At; got != 2 {
+	w = w.PressAt(geom.Point{X: inside.X + 9, Y: inside.Y + 2})
+	if got := w.Form.Writing().At; got != 2 {
 		t.Errorf("a field reaches %d, want 2", got)
 	}
 }
@@ -302,17 +304,17 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 	title := strings.Repeat("word ", 40) + "end"
 	w := holding(f, card(1, title, "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	w.form = w.form.onto(0)
+	w.Form = w.Form.Onto(0)
 	box := w.formBox()
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	value := formValue(box, fields, 0)
 	inside := Inside(Framed(value, 1))
 	lines := w.wrapping(title, inside, FormSize(fields[0]))
 	if len(lines.Said) < 2 {
 		t.Fatalf("the title fits on %d line", len(lines.Said))
 	}
-	w = w.PressAt(Point{X: inside.X, Y: inside.Y + 2})
-	if got, want := w.Form().Writing().At, lines.From[len(lines.From)-1]; got != want {
+	w = w.PressAt(geom.Point{X: inside.X, Y: inside.Y + 2})
+	if got, want := w.Form.Writing().At, lines.From[len(lines.From)-1]; got != want {
 		t.Errorf("a press at the start of the line in sight lands on %d, want %d", got, want)
 	}
 }
@@ -320,8 +322,8 @@ func TestAPressLandsOnTheLineAFieldShows(t *testing.T) {
 func TestAnOpenTaskToldNowhereSaysNoPlace(t *testing.T) {
 	w := holding(newFake(), card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
-	if w.Screen() != OnForm {
-		t.Fatalf("the task did not open: %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the task did not open: %v", w.Screen)
 	}
 	if said := w.ContextSays(); said != nil {
 		t.Errorf("an open task told nowhere writes %+v", said)

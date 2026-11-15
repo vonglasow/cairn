@@ -4,69 +4,61 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine"
 	"cairn/internal/engine/calendar"
-	"cairn/internal/store/files"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"strconv"
 	"time"
 )
 
 // Ghost is the card in mid-air: the card itself, its own size, held where it was taken; and whether there is one.
-func (w Window) Ghost() (Box, bool) {
+func (w Window) Ghost() (geom.Box, bool) {
 	slot, ok := w.ghostSlot()
 	if !ok {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	panel := PartsOf(slot).Panel
-	return Box{X: slot.X, Y: slot.Y, W: panel.W, H: panel.H}, true
+	return geom.Box{X: slot.X, Y: slot.Y, W: panel.W, H: panel.H}, true
 }
 
-func (w Window) ghostSlot() (Box, bool) {
+func (w Window) ghostSlot() (geom.Box, bool) {
 	if !w.Dragging() {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	for _, p := range w.Placed() {
 		if p.Card.Number == w.held.Number {
-			by := Point{X: w.held.At.X - w.held.From.X, Y: w.held.At.Y - w.held.From.Y}
-			return Box{X: p.Slot.X + by.X, Y: p.Slot.Y + by.Y, W: p.Slot.W, H: p.Slot.H}, true
+			by := geom.Point{X: w.held.At.X - w.held.From.X, Y: w.held.At.Y - w.held.From.Y}
+			return geom.Box{X: p.Slot.X + by.X, Y: p.Slot.Y + by.Y, W: p.Slot.W, H: p.Slot.H}, true
 		}
 	}
-	return Box{}, false
+	return geom.Box{}, false
 }
 
 // LineAbove is the line a drop lands on just above a slot: in the gap between it and the card before.
-func LineAbove(slot Box) Box {
+func LineAbove(slot geom.Box) geom.Box {
 	panel := PartsOf(slot).Panel
 	gap := slot.H - panel.H
-	return Box{X: panel.X, Y: slot.Y - gap/2 - landingHigh/2 - landingHigh%2, W: panel.W, H: landingHigh}
+	return geom.Box{X: panel.X, Y: slot.Y - gap/2 - landingHigh/2 - landingHigh%2, W: panel.W, H: landingHigh}
 }
 
 // Landing is the line where the card would drop, between two cards, the board not moving; and whether it is over a place it would move to.
-func (w Window) Landing() (Box, bool) {
+func (w Window) Landing() (geom.Box, bool) {
 	if !w.Dragging() {
-		return Box{}, false
+		return geom.Box{}, false
 	}
 	l := w.Layout()
 	if lane, at, open := w.openedInLane(l); open {
-		if w.ownPlace(w.inLane(lane), at) {
-			return Box{}, false
+		if w.ownPlace(w.InLane(lane), at) {
+			return geom.Box{}, false
 		}
 		return LineAbove(l.LaneCardAt(lane, at, w.lanes[lane])), true
 	}
 	if column, at, open := w.openedAt(l); open {
-		if w.ownPlace(w.inColumn(column), at) {
-			return Box{}, false
+		if w.ownPlace(w.InColumn(column), at) {
+			return geom.Box{}, false
 		}
 		return LineAbove(l.CardAt(column, at, w.scroll[column])), true
 	}
-	return Box{}, false
-}
-
-// GhostShows is how much of what is dragged shows: what the configuration says, or config.DefaultGhost.
-func (w Window) GhostShows() float32 {
-	if w.configured.Window != nil && w.configured.Window.Ghost > 0 {
-		return float32(w.configured.Window.Ghost) / 100
-	}
-	return float32(files.DefaultGhost) / 100
+	return geom.Box{}, false
 }
 
 // OriginShows is how much of a carried thing's own place still shows: faint, so it reads as where it came from.
@@ -78,11 +70,11 @@ const landingHigh = 3
 func (w Window) Lines() []string {
 	inside := Inside(BesideBox(w.formPanel()))
 	wrap := func(said string) Lines { return w.wrapping(said, inside, small) }
-	if w.chosenGoal {
+	if w.ChosenGoal {
 		return wrap("an objective has no trace of its own").Said
 	}
-	lines := Told(w.acts, wrap)
-	if before := w.seriesBefore(); len(before) > 0 && len(w.acts) > 0 {
+	lines := Told(w.Acts, wrap)
+	if before := w.SeriesBefore(); len(before) > 0 && len(w.Acts) > 0 {
 		lines = append(lines, wrap(BeforeThisOneSays).Said...)
 		for _, said := range before {
 			lines = append(lines, wrap(said).Said...)
@@ -93,18 +85,6 @@ func (w Window) Lines() []string {
 
 // BeforeThisOneSays is what heads, in the history of an occurrence, what its series did before it.
 const BeforeThisOneSays = "in the series, before this one"
-
-func (w Window) seriesBefore() []string {
-	c, found := w.snap.Card(w.chosen)
-	if !found || c.Series == nil || w.chosenGoal {
-		return nil
-	}
-	s, found := w.snap.SeriesOf(c.Series.Series)
-	if !found {
-		return nil
-	}
-	return board.BeforeIn(s, c.Number)
-}
 
 // ServingSays is what that box reads when there is no card to draw in it.
 const ServingSays = "nothing serves it yet"
@@ -117,9 +97,6 @@ func (w Window) Rows() int { return BesideRows(w.formPanel()) }
 
 // History is the first line of the history that is shown.
 func (w Window) History() int { return w.history }
-
-// ChoosingFromRow is the first row of the open list in sight, and ChoosingRoom how many of them are in sight at once.
-func (w Window) ChoosingFromRow() int { return w.choosingFrom }
 
 // ChoosingRoom is how many rows the open list shows at once.
 func (w Window) ChoosingRoom() int { return ChoosingRows(w.ChoosingBox()) }
@@ -137,40 +114,24 @@ func (w Window) SaidLines() []string {
 	return lines.Said
 }
 
-func (w Window) sayingOn() (frame, bar Box, lines Lines, rows int, ok bool) {
-	switch w.screen {
-	case OnForm:
-		at, long := w.sayingAt()
+func (w Window) sayingOn() (frame, bar geom.Box, lines Lines, rows int, ok bool) {
+	switch w.Screen {
+	case board.OnForm:
+		at, long := w.SayingAt()
 		if !long {
-			return Box{}, Box{}, Lines{}, 0, false
+			return geom.Box{}, geom.Box{}, Lines{}, 0, false
 		}
-		fields := w.form.Fields()
-		var value Box
+		fields := w.Form.Fields
+		var value geom.Box
 		_, value, rows = FormPlace(w.formBox(), fields, at)
 		frame, bar = Saying(value, rows)
 		said := fields[at].Value
-		if at == w.form.On() {
-			said = w.form.Writing().Reads()
+		if at == w.Form.On() {
+			said = w.Form.Writing().Reads()
 		}
 		return frame, bar, w.wrapping(said, Inside(frame), reads), rows, true
 	}
-	return Box{}, Box{}, Lines{}, 0, false
-}
-
-func (w Window) sayingAt() (int, bool) {
-	fields := w.form.Fields()
-	if len(fields) == 0 {
-		return 0, false
-	}
-	if fields[w.form.On()].Long {
-		return w.form.On(), true
-	}
-	for i, field := range fields {
-		if field.Long {
-			return i, true
-		}
-	}
-	return 0, false
+	return geom.Box{}, geom.Box{}, Lines{}, 0, false
 }
 
 // SaidRows is how many lines of the description its box holds.
@@ -188,63 +149,58 @@ func (w Window) settledHistory(want int) int {
 }
 
 func (w Window) settledServing(want int) int {
-	return min(max(0, (len(w.Under())+1)*SubHeight-w.workFrame().H), max(0, want))
+	return min(max(0, (len(w.Under())+1)*geom.SubHeight-w.workFrame().H), max(0, want))
 }
 
 // ServingCardAt is where one of those tiles is drawn, counting the scroll — the same reckoning a column makes of its cards.
-func (w Window) ServingCardAt(at int) Box {
+func (w Window) ServingCardAt(at int) geom.Box {
 	box := w.workFrame()
-	return Box{X: box.X, Y: box.Y + at*SubHeight - w.serving, W: box.W, H: SubHeight}
+	return geom.Box{X: box.X, Y: box.Y + at*geom.SubHeight - w.serving, W: box.W, H: geom.SubHeight}
 }
 
-// TabsBeside says whether the column beside the form is split in two tabs: a task's, whose history is behind one; an objective's holds its details alone.
-func (w Window) TabsBeside() bool {
-	return w.besideShown() && !w.form.ForObjective && !w.form.ForSeries
-}
-
-func (w Window) descriptionFrame() Box {
-	fields := w.form.Fields()
+func (w Window) descriptionFrame() geom.Box {
+	fields := w.Form.Fields
 	for i, f := range fields {
 		if f.Name == "description" {
 			_, value, rows := FormPlace(w.formBox(), fields, i)
 			return Framed(value, rows)
 		}
 	}
-	return Box{}
+	return geom.Box{}
 }
 
 // WorkName is where an objective's form names the work serving it: under its description.
-func (w Window) WorkName() Box {
+func (w Window) WorkName() geom.Box {
 	said := w.descriptionFrame()
-	return Box{X: said.X, Y: said.Y + said.H + between, W: said.W, H: lineHigh}
+	return geom.Box{X: said.X, Y: said.Y + said.H + between, W: said.W, H: lineHigh}
 }
 
-func (w Window) workFrame() Box {
+func (w Window) workFrame() geom.Box {
 	name := w.WorkName()
 	top := name.Y + name.H + between
-	return Box{X: name.X, Y: top, W: name.W, H: max(lineHigh, FormRule(w.formBox()).Y-between-top)}
+	return geom.Box{X: name.X, Y: top, W: name.W, H: max(lineHigh, FormRule(w.formBox()).Y-between-top)}
 }
 
-func (w Window) workBar() Box {
+func (w Window) workBar() geom.Box {
 	frame := w.workFrame()
-	return Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
+	return geom.Box{X: frame.X + frame.W + between, Y: frame.Y, W: barWide, H: frame.H}
 }
 
 // WorkTile is one line of the work an objective's form lists: a task serving it, or the line that adds one.
 type WorkTile struct {
 	Said   string
 	Number int
-	At     Box
+	At     geom.Box
 }
 
-func workTileAt(tile WorkTile) Box {
+func workTileAt(tile WorkTile) geom.Box {
 	panel := SubPanel(tile.At)
-	return Box{X: panel.X + inset, Y: panel.Y + 1, W: panel.W - 2*inset, H: panel.H - 2}
+	return geom.Box{X: panel.X + inset, Y: panel.Y + 1, W: panel.W - 2*inset, H: panel.H - 2}
 }
 
 // WorkTiles is the lines of the work an objective's form lists, where each is drawn: the tasks serving it, then the line that adds one.
 func (w Window) WorkTiles() []WorkTile {
-	if !w.besideShown() || !w.form.ForObjective {
+	if !w.BesideShown() || !w.Form.ForObjective {
 		return nil
 	}
 	var tiles []WorkTile
@@ -257,7 +213,7 @@ func (w Window) WorkTiles() []WorkTile {
 // AddingServingSays is the last line of an objective's work, which adds a task serving it.
 const AddingServingSays = "+ New task serving it"
 
-func (w Window) clickingWork(p Point) (Window, bool) {
+func (w Window) clickingWork(p geom.Point) (Window, bool) {
 	if !w.workFrame().In(p) {
 		return w, false
 	}
@@ -270,119 +226,114 @@ func (w Window) clickingWork(p Point) (Window, bool) {
 }
 
 func (w Window) openingWork(tile WorkTile) Window {
-	if w.form.Changed() {
+	if w.Form.Changed() {
 		return w.telling("save or cancel the objective first")
 	}
-	goal := w.form.Number
+	goal := w.Form.Number
 	if tile.Number == 0 {
 		w = w.startingNew()
-		w.form, w.formMoved = asOpened(Form{Adding: true, fields: board.ServingTaskFields(goal)}), Point{}
+		w.Form, w.formMoved = board.AsOpened(board.Form{Adding: true, Fields: board.ServingTaskFields(goal)}), geom.Point{}
 		return w
 	}
-	w.chosen, w.chosenGoal, w.screen = tile.Number, false, OnTheBoard
+	w.Chosen, w.ChosenGoal, w.Screen = tile.Number, false, board.OnTheBoard
 	return w.Edit()
 }
 
 // WorkOn is the line of an objective's work the keyboard is on, and whether it is on one.
 func (w Window) WorkOn() (WorkTile, bool) {
 	tiles := w.WorkTiles()
-	if !w.form.onWork || w.form.workAt >= len(tiles) {
+	if !w.Form.OnWork || w.Form.WorkAt >= len(tiles) {
 		return WorkTile{}, false
 	}
-	return tiles[w.form.workAt], true
+	return tiles[w.Form.WorkAt], true
 }
 
 func (w Window) onWork(name string) (Window, bool) {
 	tiles := w.WorkTiles()
 	switch name {
 	case "down", "j":
-		w.form.workAt = min(len(tiles)-1, w.form.workAt+1)
+		w.Form.WorkAt = min(len(tiles)-1, w.Form.WorkAt+1)
 	case "up", "k":
-		w.form.workAt = max(0, w.form.workAt-1)
+		w.Form.WorkAt = max(0, w.Form.WorkAt-1)
 	case "enter":
 		if tile, on := w.WorkOn(); on {
 			return w.openingWork(tile), true
 		}
 	case "tab":
-		w.form = w.form.onto(w.form.On() + 1)
+		w.Form = w.Form.Onto(w.Form.On() + 1)
 		return w, true
 	case "shift+tab":
-		w.form.onWork = false
+		w.Form.OnWork = false
 		return w, true
 	default:
 		return w, true
 	}
 	frame := w.workFrame()
-	top := w.form.workAt * SubHeight
-	w.serving = w.settledServing(min(top, max(w.serving, top+SubHeight-frame.H)))
+	top := w.Form.WorkAt * geom.SubHeight
+	w.serving = w.settledServing(min(top, max(w.serving, top+geom.SubHeight-frame.H)))
 	return w, true
 }
 
-func (w Window) reachingWork() bool {
-	fields := w.form.Fields()
-	return w.form.ForObjective && w.besideShown() && w.form.On() < len(fields) && fields[w.form.On()].Name == "description"
-}
-
-func (w Window) panel() Box {
-	switch w.screen {
-	case OnForm:
+func (w Window) panel() geom.Box {
+	switch w.Screen {
+	case board.OnForm:
 		return w.formPanel()
-	case OnChoosing:
+	case board.OnChoosing:
 		return w.ChoosingBox()
-	case OnAsking:
+	case board.OnAsking:
 		return w.QuestionBox()
-	case OnFates:
+	case board.OnFates:
 		return w.FatesAsked().Box
-	case OnSeriesFates:
+	case board.OnSeriesFates:
 		return w.SeriesFatesAsked().Box
-	case OnHelp:
+	case board.OnHelp:
 		return w.HelpBox()
-	case OnCalendar:
+	case board.OnCalendar:
 		return w.CalendarBox()
-	case OnRule:
+	case board.OnRule:
 		return w.RulePicked().Box
-	case OnMenu:
+	case board.OnMenu:
 		return w.MenuBox()
-	case OnBackups:
+	case board.OnBackups:
 		return w.BackupsBox()
-	case OnLabels:
+	case board.OnLabels:
 		return w.LabelsBox()
-	case OnFiltering:
+	case board.OnFiltering:
 		return w.FiltersBox()
-	case OnConfiguration:
+	case board.OnConfiguration:
 		return w.SettingsBox()
-	case OnKeeping:
+	case board.OnKeeping:
 		return w.KeepingBox()
-	case OnViews:
+	case board.OnViews:
 		return w.ViewsBox()
 	}
 	return Over(w.width, w.height)
 }
 
-func (w Window) formPanel() Box {
+func (w Window) formPanel() geom.Box {
 	return Shifted(w.formOpensIn(), w.formMoved, w.width, w.height)
 }
 
-func (w Window) formOpensIn() Box {
+func (w Window) formOpensIn() geom.Box {
 	over := Over(w.width, w.height)
 	if given := w.sizes.Form; given != ([2]int{}) {
-		over.W = max(FormLeast.X, min(given[0], w.width-over.X-margin))
-		over.H = max(FormLeast.Y, min(given[1], w.height-over.Y-margin))
+		over.W = max(FormLeast.X, min(given[0], w.width-over.X-geom.Margin))
+		over.H = max(FormLeast.Y, min(given[1], w.height-over.Y-geom.Margin))
 	}
 	return over
 }
 
 // FormLeast is the smallest a form is resized to: room for its title, a few lines of description and of steps, and its short fields beside them.
-var FormLeast = Point{X: 480, Y: 400}
+var FormLeast = geom.Point{X: 480, Y: 400}
 
 // FormGrip is the corner of a form that resizes it when dragged.
-func FormGrip(panel Box) Box {
-	return Box{X: panel.X + panel.W - gripSide - inset, Y: panel.Y + panel.H - gripSide - inset, W: gripSide, H: gripSide}
+func FormGrip(panel geom.Box) geom.Box {
+	return geom.Box{X: panel.X + panel.W - gripSide - inset, Y: panel.Y + panel.H - gripSide - inset, W: gripSide, H: gripSide}
 }
 
 const gripSide = 14
 
-func (w Window) resizingTheForm(p Point) Window {
+func (w Window) resizingTheForm(p geom.Point) Window {
 	from := w.resizedFrom
 	w.sizes.Form = [2]int{
 		max(FormLeast.X, from.W+p.X-w.held.From.X),
@@ -391,18 +342,18 @@ func (w Window) resizingTheForm(p Point) Window {
 	return w
 }
 
-func (w Window) movingForm(p Point) Window {
+func (w Window) movingForm(p geom.Point) Window {
 	opens := w.formOpensIn()
-	moved := Shifted(opens, Point{X: w.formMoved.X + p.X - w.formGrip.X, Y: w.formMoved.Y + p.Y - w.formGrip.Y}, w.width, w.height)
-	w.formMoved, w.formGrip = Point{X: moved.X - opens.X, Y: moved.Y - opens.Y}, p
+	moved := Shifted(opens, geom.Point{X: w.formMoved.X + p.X - w.formGrip.X, Y: w.formMoved.Y + p.Y - w.formGrip.Y}, w.width, w.height)
+	w.formMoved, w.formGrip = geom.Point{X: moved.X - opens.X, Y: moved.Y - opens.Y}, p
 	if abs(p.X-w.held.From.X) > Wobble || abs(p.Y-w.held.From.Y) > Wobble {
 		w.dragged = true
 	}
 	return w
 }
 
-func (w Window) formBox() Box {
-	if !w.besideShown() {
+func (w Window) formBox() geom.Box {
+	if !w.BesideShown() {
 		return w.formPanel()
 	}
 	left := FormFields(w.formPanel())
@@ -410,35 +361,20 @@ func (w Window) formBox() Box {
 	return left
 }
 
-func (w Window) besideShown() bool { return !w.form.Adding || !w.form.ForObjective }
-
-func (w Window) closesOnAClickOff() bool {
-	switch w.screen {
-	case OnHelp, OnAsking, OnChoosing:
-		return true
-	case OnForm:
-		return true
-	}
-	return false
-}
-
 // ServingAt is how far that box has been scrolled.
 func (w Window) ServingAt() int { return w.serving }
 
-// Reading is the work as it was last read, which is what everything draws from.
-func (w Window) Reading() board.Snapshot { return w.snap }
-
 // Says is what a window too small to draw in says instead.
 func (w Window) Says() string {
-	if w.screen != TooSmallToDraw {
+	if w.Screen != board.TooSmallToDraw {
 		return ""
 	}
 	return fmt.Sprintf(
 		"This window is %d by %d. The board needs %d by %d.",
-		w.width, w.height, Narrowest, Shortest)
+		w.width, w.height, geom.Narrowest, geom.Shortest)
 }
 
-func (w Window) scrollingSaying(p Point, by int) Window {
+func (w Window) scrollingSaying(p geom.Point, by int) Window {
 	frame, bar, _, _, ok := w.sayingOn()
 	if !ok || !frame.In(p) && !bar.In(p) {
 		return w
@@ -453,32 +389,20 @@ func (w Window) walksLines(by int) Window {
 	if !ok {
 		return w
 	}
-	writing := w.form.Writing()
+	writing := w.Form.Writing()
 	line, column := lines.At(writing.At)
 	to := min(len(lines.Said)-1, max(0, line+by))
 	at := lines.From[to] + min(column, len([]rune(lines.Said[to])))
-	w.form = w.form.Writes(writing.CaretAt(at))
+	w.Form = w.Form.Writes(writing.CaretAt(at))
 	return w.inSightOfTheCaret()
 }
 
-// Tracing says whether the column beside an open form shows what was done to it — its history, or the work serving an objective — rather than what it carries: chosen with its tab, and given up for the details when the keyboard goes to one of them.
-func (w Window) Tracing() bool { return w.form.tracing && w.TabsBeside() }
-
-func (w Window) onASectionField() bool {
-	fields := w.form.Fields()
-	if w.form.On() >= len(fields) {
-		return false
-	}
-	_, sectional := sectionOf(fields[w.form.On()])
-	return sectional
-}
-
 func (w Window) togglingTrace() Window {
-	w.form.tracing = !w.form.tracing
-	if w.form.tracing && w.onASectionField() {
-		for i, field := range w.form.Fields() {
+	w.Form.Tracing = !w.Form.Tracing
+	if w.Form.Tracing && w.OnASectionField() {
+		for i, field := range w.Form.Fields {
 			if field.Name == "description" {
-				w.form = w.form.onto(i)
+				w.Form = w.Form.Onto(i)
 			}
 		}
 	}
@@ -486,22 +410,14 @@ func (w Window) togglingTrace() Window {
 }
 
 // BesideTabs is the two tabs at the head of the column beside a form: what it carries, and what was done to it.
-func BesideTabs(panel Box) [2]Box {
+func BesideTabs(panel geom.Box) [2]geom.Box {
 	head := BesideHead(panel)
 	half := head.W / 2
-	return [2]Box{{X: head.X, Y: head.Y - inset, W: half, H: head.H + 2*inset}, {X: head.X + half, Y: head.Y - inset, W: head.W - half, H: head.H + 2*inset}}
+	return [2]geom.Box{{X: head.X, Y: head.Y - inset, W: half, H: head.H + 2*inset}, {X: head.X + half, Y: head.Y - inset, W: head.W - half, H: head.H + 2*inset}}
 }
 
-// BesideTabsSay is what the two tabs are called.
-func (w Window) BesideTabsSay() [2]string {
-	if w.form.ForObjective {
-		return [2]string{"Details", "Work"}
-	}
-	return [2]string{"Details", "Trace"}
-}
-
-func (w Window) clickingBesideTab(p Point) (Window, bool) {
-	if w.screen != OnForm || !w.TabsBeside() {
+func (w Window) clickingBesideTab(p geom.Point) (Window, bool) {
+	if w.Screen != board.OnForm || !w.TabsBeside() {
 		return w, false
 	}
 	for i, tab := range BesideTabs(w.formPanel()) {
@@ -515,11 +431,6 @@ func (w Window) clickingBesideTab(p Point) (Window, bool) {
 	return w, false
 }
 
-func (w Window) hidden(field board.Field) bool {
-	_, sectional := sectionOf(field)
-	return sectional && w.Tracing()
-}
-
 // The heads an objective's form writes over its details, its work and its progress.
 const (
 	DetailsHead  = "Details"
@@ -528,11 +439,11 @@ const (
 )
 
 // ProgressBox is where an objective's form says how far it has got: in the column beside, under its details.
-func (w Window) ProgressBox() Box {
-	fields := w.form.Fields()
+func (w Window) ProgressBox() geom.Box {
+	fields := w.Form.Fields
 	bottom := FirstRow(w.formPanel())
 	for i, f := range fields {
-		if _, sectional := sectionOf(f); !sectional {
+		if _, sectional := board.SectionOf(f); !sectional {
 			continue
 		}
 		_, value, rows := FormPlace(w.formBox(), fields, i)
@@ -540,9 +451,9 @@ func (w Window) ProgressBox() Box {
 		bottom = max(bottom, frame.Y+frame.H)
 	}
 	right := FormBeside(w.formPanel())
-	g, _ := w.snap.Goal(w.form.Number)
+	g, _ := w.Snap.Goal(w.Form.Number)
 	high := progressHead + w.GoalProgress(g).High()
-	box := Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: high}
+	box := geom.Box{X: right.X + padding, Y: bottom + padding, W: right.W - 2*padding, H: high}
 	if along := w.offersAlong(w.formPanel()); len(along) > 0 {
 		box.H = max(0, min(box.H, along[0].Y-between-padding-box.Y))
 	}
@@ -554,20 +465,20 @@ const progressHead = lineHigh + between + 2*padding + lineHigh
 // GoalProgress is what an objective's form says of how far it has got: what is done, the time spent against the estimate, what is left, where else it is counted, and the days to its deadline.
 func (w Window) GoalProgress(g board.Goal) Facts {
 	f := Facts{Lines: []Fact{{Name: "done", Value: strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " tasks"}}}
-	if w.pages.Shows(engine.PageTime) {
-		time := Fact{Name: "time spent", Value: w.spentSaid(calendar.FormatDuration(g.Spent))}
+	if w.Pages.Shows(engine.PageTime) {
+		time := Fact{Name: "time spent", Value: w.SpentSaid(calendar.FormatDuration(g.Spent))}
 		if g.Estimate != "" {
 			time.Aside = "of " + g.Estimate + " estimated"
 		}
 		f.Lines = append(f.Lines, time)
 	}
-	f.Lines = append(f.Lines, Fact{Name: "left", Value: w.snap.Left(g.Number).Line()})
-	if parent, ok := w.snap.Goal(g.Parent); ok && g.Parent != 0 {
+	f.Lines = append(f.Lines, Fact{Name: "left", Value: w.Snap.Left(g.Number).Line()})
+	if parent, ok := w.Snap.Goal(g.Parent); ok && g.Parent != 0 {
 		f.Lines = append(f.Lines, Fact{Name: "counted in", Value: "#" + strconv.Itoa(parent.Number) + " " + parent.Title,
 			Aside: strconv.Itoa(parent.Done) + " of " + strconv.Itoa(parent.Total) + " there, each task once"})
 	}
 	if !g.Deadline.IsZero() {
-		f.Lines = append(f.Lines, Fact{Name: "deadline", Value: calendar.FormatDay(g.Deadline) + ", " + daysTo(board.DayOf(g.Deadline), w.today())})
+		f.Lines = append(f.Lines, Fact{Name: "deadline", Value: calendar.FormatDay(g.Deadline) + ", " + daysTo(board.DayOf(g.Deadline), w.Today())})
 	}
 	return f
 }

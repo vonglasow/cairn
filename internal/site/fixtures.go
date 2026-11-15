@@ -2,6 +2,7 @@ package site
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
 	"image"
 	"time"
 
@@ -64,7 +65,7 @@ func (f Fixtures) Window(slug string) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	skin, th := gui.Skinned(scheme.Colours()), gui.Theme()
+	skin, th := design.Skinned(scheme.Colours()), gui.Theme()
 	w := gui.New(f.held, windowWide, windowHigh).Paged(f.pages).
 		Measuring(gui.Measured(th)).MeasuringHeadings(gui.MeasuredHeadings(th)).
 		At(time.Now()).Look().Wearing(skin).LessMotion(true)

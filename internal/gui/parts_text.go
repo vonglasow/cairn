@@ -1,21 +1,22 @@
 package gui
 
 import (
+	"cairn/internal/gui/geom"
 	"math"
 )
 
 // Thumb is where that bar's grip sits: how tall it is says how much of the history is showing, and where it sits says which part.
-func Thumb(track Box, lines, rows, at int) Box {
+func Thumb(track geom.Box, lines, rows, at int) geom.Box {
 	high := thumbHigh(track, lines, rows)
 	room := track.H - high
 	if room < 1 {
 		return track
 	}
 	down := room * min(at, lines-rows) / (lines - rows)
-	return Box{X: track.X, Y: track.Y + down, W: track.W, H: high}
+	return geom.Box{X: track.X, Y: track.Y + down, W: track.W, H: high}
 }
 
-func thumbHigh(track Box, lines, rows int) int {
+func thumbHigh(track geom.Box, lines, rows int) int {
 	if lines <= rows {
 		return track.H
 	}
@@ -23,7 +24,7 @@ func thumbHigh(track Box, lines, rows int) int {
 }
 
 // Reached is which line of the history a point on the track means, so that taking hold of the grip and pulling it moves the history with it.
-func Reached(track Box, lines, rows int, p Point) int {
+func Reached(track geom.Box, lines, rows int, p geom.Point) int {
 	high := thumbHigh(track, lines, rows)
 	room := track.H - high
 	if room < 1 {
@@ -35,8 +36,8 @@ func Reached(track Box, lines, rows int, p Point) int {
 const caretWide = 2
 
 // LineAt is where one line of a wrapped text is drawn, given which line is the first one showing.
-func LineAt(inside Box, i, from int) Box {
-	return Box{X: inside.X, Y: inside.Y + (i-from)*lineHigh, W: inside.W, H: lineHigh}
+func LineAt(inside geom.Box, i, from int) geom.Box {
+	return geom.Box{X: inside.X, Y: inside.Y + (i-from)*lineHigh, W: inside.W, H: lineHigh}
 }
 
 // Lasting is the line after the last one drawn: the last there is, or the last there is room for.
@@ -53,9 +54,9 @@ func HeldOn(lines Lines, from, to, i int) (a, b int, on bool) {
 }
 
 // CaretAt is where the caret stands: on the line it fell on, after however much room what comes before it takes.
-func CaretAt(inside Box, line, from, wide int) Box {
+func CaretAt(inside geom.Box, line, from, wide int) geom.Box {
 	at := LineAt(inside, line, from)
-	return Box{X: at.X + wide, Y: at.Y, W: caretWide, H: at.H}
+	return geom.Box{X: at.X + wide, Y: at.Y, W: caretWide, H: at.H}
 }
 
 // Lines is a text broken into the lines it is drawn on, and where each of them began in the text — which is what puts the caret on the line it fell on, since the caret is counted in the whole text and not in one line of it.
@@ -153,7 +154,7 @@ func (l Lines) Window(rows, line int) int {
 	return max(0, line-rows+1)
 }
 
-func room(b Box) int { return (b.W - padding - padding) / perGlyph }
+func room(b geom.Box) int { return (b.W - padding - padding) / perGlyph }
 
 // Follow is the scroll a field is given when what is in sight is wherever its caret is, rather than wherever a wheel left it.
 const Follow = math.MinInt

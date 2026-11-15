@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/geom"
+	"cairn/internal/gui/motion"
 	"image"
 	"image/png"
 	"os"
@@ -34,19 +36,19 @@ func introBoard() Window {
 const underABreath = 2 * time.Second
 
 func playing(w Window, name string, at time.Duration) Window {
-	w = w.Born(w.now).Introducing(name)
-	return w.At(w.now.Add(at))
+	w = w.Born(w.Now).Introducing(name)
+	return w.At(w.Now.Add(at))
 }
 
 func TestEveryIntroEndsOnTheStillBoard(t *testing.T) {
 	w := introBoard()
 	stage := w.Stage()
 	for _, name := range files.Intros() {
-		lasts := IntroLasts(name, stage)
+		lasts := motion.IntroLasts(name, stage)
 		if lasts <= 0 || lasts >= underABreath {
 			t.Errorf("%s lasts %v", name, lasts)
 		}
-		end := Staging(name, lasts, stage)
+		end := motion.Staging(name, lasts, stage)
 		if !end.Camera.Resting() || !end.Top.Resting() || !end.Bar.Resting() || end.Wave != nil || end.Sweep != nil || end.Grains != nil || end.Beat != nil || end.Stones || len(end.Order) > 0 {
 			t.Errorf("%s does not end on the still board: %+v", name, end)
 		}
@@ -57,7 +59,7 @@ func TestEveryIntroEndsOnTheStillBoard(t *testing.T) {
 		}
 		moving := false
 		for _, share := range []float64{0.25, 0.5} {
-			mid := Staging(name, time.Duration(float64(lasts)*share), stage)
+			mid := motion.Staging(name, time.Duration(float64(lasts)*share), stage)
 			for _, pose := range append(mid.Cards, mid.Grounds...) {
 				moving = moving || !pose.Resting()
 			}
@@ -72,7 +74,7 @@ func TestAnIntroIsAPureFunctionOfTime(t *testing.T) {
 	stage := introBoard().Stage()
 	for _, name := range files.Intros() {
 		at := 400 * time.Millisecond
-		if a, b := Staging(name, at, stage), Staging(name, at, stage); !reflect.DeepEqual(a, b) {
+		if a, b := motion.Staging(name, at, stage), motion.Staging(name, at, stage); !reflect.DeepEqual(a, b) {
 			t.Errorf("%s drew two boards at the same instant", name)
 		}
 	}
@@ -85,7 +87,7 @@ func TestABusyBoardArrivesNoSlower(t *testing.T) {
 	}
 	stage := holding(newFake(), cards...).Stage()
 	for _, name := range files.Intros() {
-		if lasts := IntroLasts(name, stage); lasts >= underABreath {
+		if lasts := motion.IntroLasts(name, stage); lasts >= underABreath {
 			t.Errorf("%s lasts %v on a busy board", name, lasts)
 		}
 	}
@@ -96,30 +98,22 @@ func TestTheIntroIsTheOneTheConfigurationNamesAndNoneWithLessMotion(t *testing.T
 	if got := w.IntroShown(); got != files.IntroRipple {
 		t.Errorf("with nothing said, the intro is %q", got)
 	}
-	w.configured.Window = &workspace.WindowConfig{Intro: files.IntroFlap}
+	w.Configured.Window = &workspace.WindowConfig{Intro: files.IntroFlap}
 	if got := w.IntroShown(); got != files.IntroFlap {
 		t.Errorf("the configuration names flap, the intro is %q", got)
 	}
-	if _, on := w.Born(w.now).Intro(); !on {
+	if _, on := w.Born(w.Now).Intro(); !on {
 		t.Error("no intro plays")
 	}
-	if _, on := w.LessMotion(true).Born(w.now).Intro(); on {
+	if _, on := w.LessMotion(true).Born(w.Now).Intro(); on {
 		t.Error("an intro plays though the system asks for less motion")
-	}
-}
-
-func TestADesktopTurningItsAnimationsOffAsksForLessMotion(t *testing.T) {
-	for said, off := range map[string]bool{"false\n": true, "true\n": false, "": false} {
-		if AnimationsOff(said) != off {
-			t.Errorf("%q is read as animations off: %v", said, !off)
-		}
 	}
 }
 
 func TestTheIntroChooserWalksPlaysAndKeeps(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"}).At(time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC))
-	w.screen = OnConfiguration
+	w.Screen = board.OnConfiguration
 	w = w.openingIntros()
 	if got := w.IntroShown(); got != files.IntroRipple {
 		t.Errorf("the chooser opens on %q", got)
@@ -128,7 +122,7 @@ func TestTheIntroChooserWalksPlaysAndKeeps(t *testing.T) {
 	if _, on := w.Intro(); !on || w.IntroShown() != files.Intros()[1] {
 		t.Errorf("walking down plays %q: %v", w.IntroShown(), on)
 	}
-	if rows := w.IntroRows(); len(rows) != len(files.Intros()) || !rows[0].InForce || rows[1].Says != IntroSays(files.Intros()[1]) {
+	if rows := w.IntroRows(); len(rows) != len(files.Intros()) || !rows[0].InForce || rows[1].Says != motion.IntroSays(files.Intros()[1]) {
 		t.Errorf("the chooser offers %+v", rows)
 	}
 	if got := Heads(w); got != "Intro of here" {
@@ -143,12 +137,12 @@ func TestTheIntroChooserWalksPlaysAndKeeps(t *testing.T) {
 			}
 		}
 	}
-	w = w.clickingIntros(Point{X: w.IntroRows()[3].At.X + 4, Y: w.IntroRows()[3].At.Y + 4})
+	w = w.clickingIntros(geom.Point{X: w.IntroRows()[3].At.X + 4, Y: w.IntroRows()[3].At.Y + 4})
 	if w.IntroShown() != files.Intros()[3] {
 		t.Errorf("a click plays %q", w.IntroShown())
 	}
 	w = w.Key("esc")
-	if w.introsOpen || w.screen != OnConfiguration {
+	if w.IntrosOpen || w.Screen != board.OnConfiguration {
 		t.Error("esc does not go back to the settings")
 	}
 }
@@ -158,7 +152,7 @@ func TestEachIntroIsDrawnAtAnyInstantAndEndsOnTheStillBoard(t *testing.T) {
 	shots := os.Getenv("INTRO_SHOTS")
 	want := drawn(t, still)
 	for _, name := range files.Intros() {
-		lasts := IntroLasts(name, still.Stage())
+		lasts := motion.IntroLasts(name, still.Stage())
 		for _, share := range []float64{0.1, 0.3, 0.6} {
 			at := time.Duration(float64(lasts) * share)
 			shot := drawn(t, playing(still, name, at))

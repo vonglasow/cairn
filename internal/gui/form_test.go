@@ -2,6 +2,8 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/design"
+	"cairn/internal/gui/geom"
 	"slices"
 	"strings"
 	"testing"
@@ -18,16 +20,16 @@ func TestEditingStartsOnWhatTheTaskCarries(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
 
-	if w.Screen() != OnForm {
-		t.Fatalf("the window is on %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the window is on %v", w.Screen)
 	}
-	if got := w.Form().ValueOf("title"); got != "Write the spec" {
+	if got := valueOf(w.Form, "title"); got != "Write the spec" {
 		t.Errorf("the title reads %q", got)
 	}
-	if got := w.Form().ValueOf("column"); got != "todo" {
+	if got := valueOf(w.Form, "column"); got != "todo" {
 		t.Errorf("the column reads %q", got)
 	}
-	if got := w.Form().ValueOf("nothing at all"); got != "" {
+	if got := valueOf(w.Form, "nothing at all"); got != "" {
 		t.Errorf("a field that is not there answered %q", got)
 	}
 }
@@ -35,24 +37,24 @@ func TestEditingStartsOnWhatTheTaskCarries(t *testing.T) {
 func TestEditingNothingOpensNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if w = w.Choose("Edit"); w.Screen() != OnTheBoard {
-		t.Fatalf("editing nothing left the window on %v", w.Screen())
+	if w = w.Choose("Edit"); w.Screen != board.OnTheBoard {
+		t.Fatalf("editing nothing left the window on %v", w.Screen)
 	}
 }
 
 func TestEditingAnObjectiveAsksTheObjectivesQuestions(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}})
-	w.tab = Objectives
-	w.chosen, w.chosenGoal = 3, true
+	w.Snap = test.Searchable(board.Snapshot{Goals: []board.Goal{{Number: 3, Title: "Ship cairn", State: "active"}}})
+	w.Tab = board.Objectives
+	w.Chosen, w.ChosenGoal = 3, true
 
 	w = w.Edit()
-	if !w.Form().ForObjective {
+	if !w.Form.ForObjective {
 		t.Fatal("editing an objective opened a task's form")
 	}
 	for _, absent := range []string{"blockers", "steps", "objectives"} {
-		if w.Form().ValueOf(absent) != "" {
+		if valueOf(w.Form, absent) != "" {
 			t.Errorf("an objective's form asks about %q", absent)
 		}
 	}
@@ -64,11 +66,11 @@ func TestSavingAFormWritesOnceAndClosesIt(t *testing.T) {
 
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
-	w.form = w.form.Set("title", " Write the whole spec ")
+	w.Form = w.Form.Set("title", " Write the whole spec ")
 	w = w.Choose("Save")
 
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("saving left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("saving left the window on %v", w.Screen)
 	}
 	if f.what("task", "edit") != 1 {
 		t.Fatalf("saving asked for %d edits", f.what("task", "edit"))
@@ -87,10 +89,10 @@ func TestAddingSavesWithoutANumber(t *testing.T) {
 	w := New(f, 1200, 800)
 
 	w = w.Key("cmd+n")
-	if w.Screen() != OnForm || !w.Form().Adding {
-		t.Fatalf("cmd+n left the window on %v", w.Screen())
+	if w.Screen != board.OnForm || !w.Form.Adding {
+		t.Fatalf("cmd+n left the window on %v", w.Screen)
 	}
-	w.form = w.form.Set("title", "Write the spec")
+	w.Form = w.Form.Set("title", "Write the spec")
 	w = w.Choose("Save")
 
 	if f.what("task", "new") != 1 {
@@ -108,11 +110,11 @@ func TestCancellingWritesNothing(t *testing.T) {
 
 	w = w.clicked(middleOf(w, 1, 0))
 	w = w.Choose("Edit")
-	w.form = w.form.Set("title", "Something else")
+	w.Form = w.Form.Set("title", "Something else")
 	w = w.Choose("Cancel").Choose("Agree")
 
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("cancelling left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("cancelling left the window on %v", w.Screen)
 	}
 	if len(f.wrote()) != 0 {
 		t.Errorf("cancelling asked the store %d things", len(f.wrote()))
@@ -123,8 +125,8 @@ func TestTheButtonsDoNothingWithNoFormOpen(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	for _, name := range []string{"Save", "Cancel", "something nobody offers"} {
-		if got := w.Choose(name); got.Screen() != OnTheBoard {
-			t.Errorf("%q left the window on %v", name, got.Screen())
+		if got := w.Choose(name); got.Screen != board.OnTheBoard {
+			t.Errorf("%q left the window on %v", name, got.Screen)
 		}
 	}
 	if len(f.wrote()) != 0 {
@@ -144,34 +146,34 @@ func TestASaveTheStoreRefusesKeepsTheForm(t *testing.T) {
 	if w.Wrong() == nil {
 		t.Fatal("a refused save said nothing")
 	}
-	if w.Screen() != OnForm {
+	if w.Screen != board.OnForm {
 		t.Fatalf("a refused save closed the form and lost what was typed")
 	}
 }
 
 func TestWalkingTheFieldsStopsAtBothEnds(t *testing.T) {
-	form := Window{}.adding(Tasks, "backlog")
-	if got := form.Walk(-1).On(); got != 0 {
+	form := Window{}.adding(board.Tasks, "backlog")
+	if got := walked(form, -1).On(); got != 0 {
 		t.Errorf("walking up from the first field landed on %d", got)
 	}
-	last := len(form.Fields()) - 1
-	if got := form.Walk(last + 5).On(); got != last {
+	last := len(form.Fields) - 1
+	if got := walked(form, last+5).On(); got != last {
 		t.Errorf("walking past the last field landed on %d, want %d", got, last)
 	}
-	if got := form.Walk(2).On(); got != 2 {
+	if got := walked(form, 2).On(); got != 2 {
 		t.Errorf("walking two fields landed on %d", got)
 	}
 }
 
 func TestSettingAFieldMovesTheKeyboardToIt(t *testing.T) {
-	form := Window{}.adding(Tasks, "backlog").Set("priority", "high")
-	if got := form.ValueOf("priority"); got != "high" {
+	form := Window{}.adding(board.Tasks, "backlog").Set("priority", "high")
+	if got := valueOf(form, "priority"); got != "high" {
 		t.Fatalf("the field reads %q", got)
 	}
-	if form.Fields()[form.On()].Name != "priority" {
-		t.Errorf("the keyboard is on %q", form.Fields()[form.On()].Name)
+	if form.Fields[form.On()].Name != "priority" {
+		t.Errorf("the keyboard is on %q", form.Fields[form.On()].Name)
 	}
-	if same := form.Set("nothing at all", "x"); same.ValueOf("title") != "" {
+	if same := form.Set("nothing at all", "x"); valueOf(same, "title") != "" {
 		t.Error("setting a field that is not there wrote somewhere else")
 	}
 }
@@ -183,8 +185,8 @@ func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 	w = w.Choose("Edit")
 	w = w.Key("esc")
 
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("escape left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("escape left the window on %v", w.Screen)
 	}
 	if len(f.wrote()) != 0 {
 		t.Errorf("escape asked the store %d things", len(f.wrote()))
@@ -194,7 +196,7 @@ func TestEscapeLeavesAFormAndWritesNothing(t *testing.T) {
 func TestAKeyNobodyBoundDoesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if got := w.Key("q"); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
+	if got := w.Key("q"); got.Screen != board.OnTheBoard || len(f.wrote()) != 0 {
 		t.Error("an unbound key did something")
 	}
 }
@@ -205,14 +207,14 @@ func TestTypingGoesIntoTheFieldTheKeyboardIsOn(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	w = w.On("title").Types(" properly")
-	if got := w.Form().ValueOf("title"); got != "Write the spec properly" {
+	if got := valueOf(w.Form, "title"); got != "Write the spec properly" {
 		t.Fatalf("the title reads %q", got)
 	}
 	w = w.On("description").Types("two columns")
-	if got := w.Form().ValueOf("description"); got != "two columns" {
+	if got := valueOf(w.Form, "description"); got != "two columns" {
 		t.Errorf("the description reads %q", got)
 	}
-	if got := w.Form().ValueOf("title"); got != "Write the spec properly" {
+	if got := valueOf(w.Form, "title"); got != "Write the spec properly" {
 		t.Errorf("typing elsewhere changed the title to %q", got)
 	}
 }
@@ -220,7 +222,7 @@ func TestTypingGoesIntoTheFieldTheKeyboardIsOn(t *testing.T) {
 func TestTypingWithNoFormOpenChangesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
-	if got := w.Types("hello"); got.Form().ValueOf("title") != "" {
+	if got := w.Types("hello"); valueOf(got.Form, "title") != "" {
 		t.Error("typing on the board wrote into a form nobody opened")
 	}
 }
@@ -231,14 +233,14 @@ func TestBackspaceTakesTheLastCharacterBack(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("backspace")
-	if got := w.Form().ValueOf("title"); got != "Write the spec" {
+	if got := valueOf(w.Form, "title"); got != "Write the spec" {
 		t.Fatalf("the title reads %q", got)
 	}
 	empty := w.On("because")
 	for range 3 {
 		empty = empty.Key("backspace")
 	}
-	if got := empty.Form().ValueOf("because"); got != "" {
+	if got := valueOf(empty.Form, "because"); got != "" {
 		t.Errorf("an empty field reads %q", got)
 	}
 }
@@ -249,13 +251,13 @@ func TestBackspaceTakesBackOneCharacterAndNotOneByte(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("backspace")
-	if got := w.Form().ValueOf("title"); got != "réunio" {
+	if got := valueOf(w.Form, "title"); got != "réunio" {
 		t.Fatalf("the title reads %q", got)
 	}
 	for range 6 {
 		w = w.Key("backspace")
 	}
-	if got := w.Form().ValueOf("title"); got != "" {
+	if got := valueOf(w.Form, "title"); got != "" {
 		t.Errorf("after taking it all back the title reads %q", got)
 	}
 }
@@ -266,17 +268,17 @@ func TestTabWalksTheFieldsAndShiftTabWalksBack(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w = w.Key("tab")
-	if got := w.Form().Fields()[w.Form().On()].Name; got != "description" {
+	if got := w.Form.Fields[w.Form.On()].Name; got != "description" {
 		t.Fatalf("tab landed on %q", got)
 	}
 	w = w.Key("shift+tab")
-	if got := w.Form().Fields()[w.Form().On()].Name; got != "title" {
+	if got := w.Form.Fields[w.Form.On()].Name; got != "title" {
 		t.Fatalf("shift+tab landed on %q", got)
 	}
-	if got := w.Key("down").Form().On(); got != 1 {
+	if got := w.Key("down").Form.On(); got != 1 {
 		t.Errorf("down landed on field %d", got)
 	}
-	if got := w.Key("up").Form().On(); got != 0 {
+	if got := w.Key("up").Form.On(); got != 0 {
 		t.Errorf("up from the first field landed on %d", got)
 	}
 }
@@ -286,21 +288,21 @@ func TestAFieldWithAClosedSetIsCycledRatherThanTyped(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	w = w.clicked(middleOf(w, 0, 0)).Choose("Edit").On("column")
 
-	if got := w.Key("right").Form().ValueOf("column"); got != "todo" {
+	if got := valueOf(w.Key("right").Form, "column"); got != "todo" {
 		t.Errorf("right of backlog is %q", got)
 	}
-	if got := w.Key("left").Form().ValueOf("column"); got != "backlog" {
+	if got := valueOf(w.Key("left").Form, "column"); got != "backlog" {
 		t.Errorf("left of backlog is %q, and there is nothing before it", got)
 	}
 	last := w.On("column")
 	for range 10 {
 		last = last.Key("right")
 	}
-	if got := last.Form().ValueOf("column"); got != "done" {
+	if got := valueOf(last.Form, "column"); got != "done" {
 		t.Errorf("past the last of the set is %q", got)
 	}
 	typed := w.On("title").Key("right")
-	if got := typed.Form().ValueOf("title"); got != "Write the spec" {
+	if got := valueOf(typed.Form, "title"); got != "Write the spec" {
 		t.Errorf("right in a typed field changed it to %q", got)
 	}
 }
@@ -312,9 +314,9 @@ func TestClickingAFieldPutsTheKeyboardOnIt(t *testing.T) {
 
 	box := w.formBox()
 	at := 3
-	name := formName(box, w.Form().Fields(), at)
-	w = w.clicked(Point{X: name.X + 10, Y: name.Y + name.H/2})
-	if got := w.Form().On(); got != at {
+	name := formName(box, w.Form.Fields, at)
+	w = w.clicked(geom.Point{X: name.X + 10, Y: name.Y + name.H/2})
+	if got := w.Form.On(); got != at {
 		t.Fatalf("clicking field %d put the keyboard on %d", at, got)
 	}
 }
@@ -325,8 +327,8 @@ func TestTheKeyTheBarOffersSavesTheForm(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	w = w.Key("cmd+enter")
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("enter left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("enter left the window on %v", w.Screen)
 	}
 	if f.what("task", "edit") != 1 {
 		t.Errorf("enter asked for %d edits", f.what("task", "edit"))
@@ -341,17 +343,17 @@ func TestTheFormsOwnButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 	box := opened.formPanel()
 	press := func(at int) Window {
 		button := opened.offersAlong(box)[at]
-		return opened.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
+		return opened.clicked(geom.Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	}
 
-	if got := press(0); got.Screen() != OnTheBoard || f.what("task", "edit") != 1 {
+	if got := press(0); got.Screen != board.OnTheBoard || f.what("task", "edit") != 1 {
 		t.Errorf("Save on the form left the window on %v having asked for %d edits",
-			got.Screen(), f.what("task", "edit"))
+			got.Screen, f.what("task", "edit"))
 	}
 	f.asked = nil
-	if got := press(1); got.Screen() != OnTheBoard || len(f.wrote()) != 0 {
+	if got := press(1); got.Screen != board.OnTheBoard || len(f.wrote()) != 0 {
 		t.Errorf("Cancel on the form left the window on %v having asked %d things",
-			got.Screen(), len(f.wrote()))
+			got.Screen, len(f.wrote()))
 	}
 }
 
@@ -362,19 +364,19 @@ func TestEveryPanelsButtonsAnswerWhereTheyAreDrawn(t *testing.T) {
 
 	press := func(from Window, at int) Window {
 		button := from.PanelOffers()[at]
-		return from.clicked(Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
+		return from.clicked(geom.Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
 	}
 
 	asked := w.Choose("Delete")
 	if got := press(asked, 0); f.what("task", "delete") != 1 {
 		t.Errorf("Delete on the question asked for %d deletes, leaving the window on %v",
-			f.what("task", "delete"), got.Screen())
+			f.what("task", "delete"), got.Screen)
 	}
-	if got := press(w.Choose("Help"), 0); got.Screen() != OnTheBoard {
-		t.Errorf("Close on the help left the window on %v", got.Screen())
+	if got := press(w.Choose("Help"), 0); got.Screen != board.OnTheBoard {
+		t.Errorf("Close on the help left the window on %v", got.Screen)
 	}
-	if got := press(w.doubleClicked(middleOf(w, 1, 0)), 1); got.Screen() != OnTheBoard {
-		t.Errorf("Close on the detail left the window on %v", got.Screen())
+	if got := press(w.doubleClicked(middleOf(w, 1, 0)), 1); got.Screen != board.OnTheBoard {
+		t.Errorf("Close on the detail left the window on %v", got.Screen)
 	}
 }
 
@@ -384,7 +386,7 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	at := 1
 	if !fields[at].Long {
 		t.Fatalf("field %d is %q, which is not the long one", at, fields[at].Name)
@@ -394,25 +396,25 @@ func TestAFieldOfSeveralRowsIsClickedAnywhereInThem(t *testing.T) {
 	name := formName(box, fields, at)
 	for _, row := range []int{0, formRows(box, fields, at) - 1} {
 		down := row*lineHigh + lineHigh/2
-		if got := w.clicked(Point{X: value.X + 10, Y: value.Y + down}).Form().On(); got != at {
+		if got := w.clicked(geom.Point{X: value.X + 10, Y: value.Y + down}).Form.On(); got != at {
 			t.Errorf("clicking row %d of the description put the keyboard on %d", row, got)
 		}
-		if got := w.clicked(Point{X: name.X + 10, Y: name.Y + down}).Form().On(); got != at {
+		if got := w.clicked(geom.Point{X: name.X + 10, Y: name.Y + down}).Form.On(); got != at {
 			t.Errorf("clicking row %d beside the description put the keyboard on %d", row, got)
 		}
 	}
 }
 
 func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
-	form := Window{}.adding(Tasks, "backlog")
-	last := len(form.Fields()) - 1
-	if got := form.onto(-5).On(); got != 0 {
+	form := Window{}.adding(board.Tasks, "backlog")
+	last := len(form.Fields) - 1
+	if got := form.Onto(-5).On(); got != 0 {
 		t.Errorf("before the first field is %d", got)
 	}
-	if got := form.onto(last + 5).On(); got != last {
+	if got := form.Onto(last + 5).On(); got != last {
 		t.Errorf("past the last field is %d, want %d", got, last)
 	}
-	arrived := form.Set("title", "spec").onto(0)
+	arrived := form.Set("title", "spec").Onto(0)
 	if got := arrived.Writing().At; got != 4 {
 		t.Errorf("arriving at a field of four characters put the caret at %d", got)
 	}
@@ -421,7 +423,7 @@ func TestTheKeyboardLandsOnAFieldThatExists(t *testing.T) {
 func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{
+	w.Snap = test.Searchable(board.Snapshot{
 		Goals: []board.Goal{{Number: 1, Title: "Ship the desktop board"}},
 	})
 	field := board.Field{Name: "objectives", Arg: "objective", Value: "1 7"}
@@ -434,23 +436,23 @@ func TestFieldSays_keepsANumberItCanPutNoNameTo(t *testing.T) {
 func TestChoosingOutOfAnEmptyListDoesNothing(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}})
+	w.Snap = test.Searchable(board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+	for w.Form.Fields[w.Form.On()].Arg != "objective" {
 		w = w.Key("tab")
 	}
 	w = w.Key("enter")
 	if len(w.Choosing()) != 0 {
 		t.Fatalf("the store has no objectives and the list offers %d", len(w.Choosing()))
 	}
-	if got := w.Choose("Take"); got.Screen() != OnChoosing {
-		t.Errorf("choosing out of an empty list left the window on %v", got.Screen())
+	if got := w.Choose("Take"); got.Screen != board.OnChoosing {
+		t.Errorf("choosing out of an empty list left the window on %v", got.Screen)
 	}
 }
 
 func onTheObjectives(w Window) Window {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
+	for w.Form.Fields[w.Form.On()].Arg != "objective" {
 		w = w.Key("tab")
 	}
 	return w.Key("enter")
@@ -467,7 +469,7 @@ func manyGoals(n int) []board.Goal {
 func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{
+	w.Snap = test.Searchable(board.Snapshot{
 		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
 		Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Keep it honest", State: "active"}},
 	})
@@ -480,12 +482,12 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 	box := w.ChoosingBox()
 	for at := range offered {
 		row := ChoosingRow(box, ChoosingFrom(box)+at*apart)
-		if got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2}); got.choosing != at {
-			t.Errorf("clicking row %d put the keyboard on row %d", at, got.choosing)
+		if got := w.clicked(geom.Point{X: row.X + row.W/2, Y: row.Y + row.H/2}); got.ChoosingOn != at {
+			t.Errorf("clicking row %d put the keyboard on row %d", at, got.ChoosingOn)
 		}
 	}
 	below := ChoosingRow(box, ChoosingFrom(box)+len(offered)*apart)
-	if _, on := ChoosingAtPoint(box, len(offered), 0, Point{X: below.X + 10, Y: below.Y + below.H/2}); on {
+	if _, on := ChoosingAtPoint(box, len(offered), 0, geom.Point{X: below.X + 10, Y: below.Y + below.H/2}); on {
 		t.Error("a point past the last row was read as a row")
 	}
 }
@@ -493,7 +495,7 @@ func TestAClickLandsOnTheRowItIsOver(t *testing.T) {
 func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{
+	w.Snap = test.Searchable(board.Snapshot{
 		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
 		Goals: manyGoals(44),
 	})
@@ -520,21 +522,21 @@ func TestWalkingALongListBringsInExactlyTheRowAskedFor(t *testing.T) {
 func TestAClickAfterScrollingLandsOnTheRowItIsOver(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{
+	w.Snap = test.Searchable(board.Snapshot{
 		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
 		Goals: manyGoals(44),
 	})
 	w = onTheObjectives(w)
 	box := w.ChoosingBox()
 	run := ChoosingRun(box)
-	w = w.Scroll(Point{X: run.X + run.W/2, Y: run.Y + run.H/2}, 6*lineHigh)
+	w = w.Scroll(geom.Point{X: run.X + run.W/2, Y: run.Y + run.H/2}, 6*lineHigh)
 	if w.ChoosingFromRow() != 6 {
 		t.Fatalf("the list starts at row %d, want 6", w.ChoosingFromRow())
 	}
 
 	row := ChoosingRow(box, ChoosingFrom(box)+apart)
-	if got := w.clicked(Point{X: row.X + row.W/2, Y: row.Y + row.H/2}); got.choosing != 7 {
-		t.Errorf("clicking the second row drawn put the keyboard on row %d, want 7", got.choosing)
+	if got := w.clicked(geom.Point{X: row.X + row.W/2, Y: row.Y + row.H/2}); got.ChoosingOn != 7 {
+		t.Errorf("clicking the second row drawn put the keyboard on row %d, want 7", got.ChoosingOn)
 	}
 }
 
@@ -544,18 +546,18 @@ func TestShiftEnterWritesALineBreakOnlyWhereThereIsRoom(t *testing.T) {
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	on := w.On("title").Key("shift+enter")
-	if got := on.Form().ValueOf("title"); got != "Write the spec" {
+	if got := valueOf(on.Form, "title"); got != "Write the spec" {
 		t.Errorf("the title reads %q, and a title is one line", got)
 	}
 	long := w.On("description").Types("un").Key("shift+enter").Types("deux")
-	if got := long.Form().ValueOf("description"); got != "un\ndeux" {
+	if got := valueOf(long.Form, "description"); got != "un\ndeux" {
 		t.Errorf("the description reads %q", got)
 	}
 }
 
 func TestChoices_offersEveryObjectiveWhateverIsTyped(t *testing.T) {
 	w := New(newFake(), 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{
+	w.Snap = test.Searchable(board.Snapshot{
 		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
 		Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Rewrite the tests", State: "active"}},
 	})
@@ -568,34 +570,34 @@ func TestChoices_offersEveryObjectiveWhateverIsTyped(t *testing.T) {
 func TestLeavingAFilledFormAsksFirst(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	if w.Screen() != OnForm {
-		t.Fatalf("the form did not open: %v", w.Screen())
+	if w.Screen != board.OnForm {
+		t.Fatalf("the form did not open: %v", w.Screen)
 	}
-	if left := w.Choose("Cancel"); left.Screen() != OnTheBoard {
-		t.Fatalf("an untouched form asked about being closed: %v", left.Screen())
+	if left := w.Choose("Cancel"); left.Screen != board.OnTheBoard {
+		t.Fatalf("an untouched form asked about being closed: %v", left.Screen)
 	}
 	w = w.Types("x")
 	asked := w.Choose("Cancel")
-	if asked.Screen() != OnAsking {
-		t.Fatalf("a filled form was thrown away without a question: %v", asked.Screen())
+	if asked.Screen != board.OnAsking {
+		t.Fatalf("a filled form was thrown away without a question: %v", asked.Screen)
 	}
 	if !strings.Contains(Heads(asked), "typed") {
 		t.Errorf("the question does not say what is being lost: %q", Heads(asked))
 	}
-	if back := asked.Choose("Back"); back.Screen() != OnForm {
-		t.Fatalf("backing out of the question did not go back to the form: %v", back.Screen())
+	if back := asked.Choose("Back"); back.Screen != board.OnForm {
+		t.Fatalf("backing out of the question did not go back to the form: %v", back.Screen)
 	}
-	if gone := asked.Choose("Agree"); gone.Screen() != OnTheBoard {
-		t.Fatalf("agreeing to lose it left %v", gone.Screen())
+	if gone := asked.Choose("Agree"); gone.Screen != board.OnTheBoard {
+		t.Fatalf("agreeing to lose it left %v", gone.Screen)
 	}
 }
 
 func TestClickingIntoAFieldLandsWhereItWasClicked(t *testing.T) {
-	box := Box{X: 100, Y: 0, W: 200, H: lineHigh}
-	if got := into(box, Point{X: box.X}, "abcdef", Reckoned); got != 0 {
+	box := geom.Box{X: 100, Y: 0, W: 200, H: lineHigh}
+	if got := into(box, geom.Point{X: box.X}, "abcdef", Reckoned); got != 0 {
 		t.Errorf("a click on the first character lands at %d", got)
 	}
-	if got := into(box, Point{X: box.X + 3*perGlyph}, "abcdef", Reckoned); got != 3 {
+	if got := into(box, geom.Point{X: box.X + 3*perGlyph}, "abcdef", Reckoned); got != 3 {
 		t.Errorf("a click three glyphs in lands at %d", got)
 	}
 }
@@ -605,13 +607,13 @@ func TestEnterDoesNotSaveTheForm(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types("x")
 
-	if after := w.Key("enter"); after.Screen() != OnForm {
-		t.Fatalf("enter left the form: %v", after.Screen())
+	if after := w.Key("enter"); after.Screen != board.OnForm {
+		t.Fatalf("enter left the form: %v", after.Screen)
 	}
 	if len(f.wrote()) != 0 {
 		t.Fatalf("enter wrote to the store: %v", f.wrote())
 	}
-	if after := w.Key("cmd+enter"); after.Screen() == OnForm {
+	if after := w.Key("cmd+enter"); after.Screen == board.OnForm {
 		t.Fatal("⌘⏎ did not save the form")
 	}
 }
@@ -620,20 +622,20 @@ func TestShiftEnterIsALineBreakWithoutLeavingTheBox(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "description" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	w = w.Types("Deux colonnes").Key("shift+enter").Types("et une bande")
-	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
+	if said := w.Form.Writing().Reads(); said != "Deux colonnes\net une bande" {
 		t.Fatalf("the description reads %q", said)
 	}
-	w.form = w.form.onto(0)
-	before := w.Form().ValueOf("title")
-	if after := w.Key("shift+enter"); after.Form().ValueOf("title") != before || after.Form().On() != 1 {
+	w.Form = w.Form.Onto(0)
+	before := valueOf(w.Form, "title")
+	if after := w.Key("shift+enter"); valueOf(after.Form, "title") != before || after.Form.On() != 1 {
 		t.Fatalf("⇧⏎ on the title left it %q and moved to field %d",
-			after.Form().ValueOf("title"), after.Form().On())
+			valueOf(after.Form, "title"), after.Form.On())
 	}
 }
 
@@ -645,11 +647,11 @@ func TestTheStepsOfATaskAreEditedInItsForm(t *testing.T) {
 	}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	if said := w.Form().ValueOf("steps"); said != "#2 [ ] Relire l'ADR\n#1 [x] Trancher" {
+	if said := valueOf(w.Form, "steps"); said != "#2 [ ] Relire l'ADR\n#1 [x] Trancher" {
 		t.Fatalf("the form opened holding %q", said)
 	}
 
-	w.form = w.form.Set("steps", "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
+	w.Form = w.Form.Set("steps", "#2 [x] Relire l'ADR 0014\n[ ] Rédiger la section Flux")
 	w = w.Save()
 
 	saved, asked := f.gave("task", "edit")
@@ -665,7 +667,7 @@ func TestTheStepsOfATaskAreEditedInItsForm(t *testing.T) {
 func TestATaskWithNoStepsStillHasTheField(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Ship it", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	if said := w.Form().ValueOf("steps"); said != "" {
+	if said := valueOf(w.Form, "steps"); said != "" {
 		t.Fatalf("a task with no steps opened holding %q", said)
 	}
 }
@@ -674,7 +676,7 @@ func TestAStepTheStoreWillNotWriteIsSaid(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	w.form = w.form.Set("steps", "")
+	w.Form = w.Form.Set("steps", "")
 	f.failOp = errRefuse
 	w = w.Save()
 	if w.Wrong() == nil {
@@ -687,24 +689,24 @@ func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
-	w.form = w.form.onto(0)
-	if after := w.Key("enter"); after.Form().On() != 1 || after.Screen() != OnForm {
-		t.Fatalf("enter on the title went to field %d on %v", after.Form().On(), after.Screen())
+	w.Form = w.Form.Onto(0)
+	if after := w.Key("enter"); after.Form.On() != 1 || after.Screen != board.OnForm {
+		t.Fatalf("enter on the title went to field %d on %v", after.Form.On(), after.Screen)
 	}
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "description" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	w = w.Types("Deux colonnes").Key("enter").Types("et une bande")
-	if said := w.Form().Writing().Reads(); said != "Deux colonnes\net une bande" {
+	if said := w.Form.Writing().Reads(); said != "Deux colonnes\net une bande" {
 		t.Fatalf("the description reads %q", said)
 	}
-	if w.Screen() != OnForm || len(f.wrote()) != 0 {
-		t.Fatalf("enter left the form on %v having asked %v", w.Screen(), f.asked)
+	if w.Screen != board.OnForm || len(f.wrote()) != 0 {
+		t.Fatalf("enter left the form on %v having asked %v", w.Screen, f.asked)
 	}
 	for _, chord := range []string{"cmd+enter", "cmd+s"} {
-		if after := w.Key(chord); after.Screen() == OnForm {
+		if after := w.Key(chord); after.Screen == board.OnForm {
 			t.Errorf("%s did not save the form", chord)
 		}
 	}
@@ -715,38 +717,38 @@ func TestTheArrowsWalkTheLinesOfTheDescription(t *testing.T) {
 		Description: "one\ntwo\nthree"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	at := -1
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "description" {
 			at = i
 		}
 	}
-	w.form = w.form.onto(at)
-	w.form = w.form.Writes(w.form.Writing().CaretAt(0))
+	w.Form = w.Form.Onto(at)
+	w.Form = w.Form.Writes(w.Form.Writing().CaretAt(0))
 	w = w.Key("down")
-	if w.Form().On() != at {
-		t.Fatalf("down left the description for field %d", w.Form().On())
+	if w.Form.On() != at {
+		t.Fatalf("down left the description for field %d", w.Form.On())
 	}
-	if got := w.Form().Writing().At; got != 4 {
+	if got := w.Form.Writing().At; got != 4 {
 		t.Fatalf("down from the start of the first line put the caret at %d, want 4", got)
 	}
-	if got := w.Key("down").Form().Writing().At; got != 8 {
+	if got := w.Key("down").Form.Writing().At; got != 8 {
 		t.Fatalf("down again put the caret at %d, want 8", got)
 	}
-	if got := w.Key("down").Key("up").Form().Writing().At; got != 4 {
+	if got := w.Key("down").Key("up").Form.Writing().At; got != 4 {
 		t.Fatalf("up from the last line put the caret at %d, want 4", got)
 	}
-	if got := w.Key("tab").Form().On(); got != at+1 {
+	if got := w.Key("tab").Form.On(); got != at+1 {
 		t.Fatalf("tab out of the description went to field %d", got)
 	}
-	if got := w.Key("down").Key("down").Key("down").Form().Writing().At; got != 8 {
+	if got := w.Key("down").Key("down").Key("down").Form.Writing().At; got != 8 {
 		t.Fatalf("down past the last line put the caret at %d, want it kept at 8", got)
 	}
-	w.form = w.form.Writes(w.form.Writing().CaretAt(12))
-	if got := w.Key("up").Form().Writing().At; got != 7 {
+	w.Form = w.Form.Writes(w.Form.Writing().CaretAt(12))
+	if got := w.Key("up").Form.Writing().At; got != 7 {
 		t.Fatalf("up from four letters into the last line put the caret at %d, want 7", got)
 	}
-	w.form = w.form.Writes(w.form.Writing().CaretAt(6))
-	if got := w.Key("down").Form().Writing().At; got != 10 {
+	w.Form = w.Form.Writes(w.Form.Writing().CaretAt(6))
+	if got := w.Key("down").Form.Writing().At; got != 10 {
 		t.Fatalf("down from two letters into the second line put the caret at %d, want 10", got)
 	}
 }
@@ -756,9 +758,9 @@ func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "description" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	frame, bar, lines, rows, ok := w.sayingOn()
@@ -769,12 +771,12 @@ func TestTheDescriptionInTheFormScrollsToItsEnd(t *testing.T) {
 		t.Fatalf("the bar at %d sits over the text, which ends at %d", bar.X, frame.X+frame.W)
 	}
 	for range len(lines.Said) {
-		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
+		w = w.Scroll(geom.Point{X: frame.X + 4, Y: frame.Y + 4}, lineHigh)
 	}
 	if last := lines.Said[min(len(lines.Said)-1, w.saying+rows-1)]; !strings.HasSuffix(last, "FIN") {
 		t.Fatalf("scrolled to the end, the last line in sight is %q", last)
 	}
-	if w.Form().Fields()[w.Form().On()].Name != "description" {
+	if w.Form.Fields[w.Form.On()].Name != "description" {
 		t.Fatal("scrolling the description put the keyboard somewhere else")
 	}
 }
@@ -784,10 +786,10 @@ func TestTheDescriptionFollowsTheCaretWhenItMoves(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	w.form = w.form.onto(0)
+	w.Form = w.Form.Onto(0)
 	w = w.Key("tab")
-	if w.Form().Fields()[w.Form().On()].Name != "description" {
-		t.Fatalf("tab went to %q", w.Form().Fields()[w.Form().On()].Name)
+	if w.Form.Fields[w.Form.On()].Name != "description" {
+		t.Fatalf("tab went to %q", w.Form.Fields[w.Form.On()].Name)
 	}
 	_, _, lines, rows, _ := w.sayingOn()
 	end := len(lines.Said) - rows
@@ -796,7 +798,7 @@ func TestTheDescriptionFollowsTheCaretWhenItMoves(t *testing.T) {
 	}
 	frame, _, _, _, _ := w.sayingOn()
 	for range len(lines.Said) {
-		w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, -lineHigh)
+		w = w.Scroll(geom.Point{X: frame.X + 4, Y: frame.Y + 4}, -lineHigh)
 	}
 	if w.saying != 0 {
 		t.Fatalf("the wheel left the description at %d, want its beginning", w.saying)
@@ -811,23 +813,23 @@ func TestTheBarBesideTheDescriptionInTheFormCanBePulled(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: text})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "description" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
-	w.form = w.form.Writes(w.form.Writing().CaretAt(0))
+	w.Form = w.Form.Writes(w.Form.Writing().CaretAt(0))
 	w = w.inSightOfTheCaret()
 	_, bar, lines, rows, _ := w.sayingOn()
-	before := w.Form().Writing().At
-	w = w.PressAt(Point{X: bar.X + bar.W/2, Y: bar.Y + 1}).
-		MoveTo(Point{X: bar.X + bar.W/2, Y: bar.Y + bar.H - 1})
+	before := w.Form.Writing().At
+	w = w.PressAt(geom.Point{X: bar.X + bar.W/2, Y: bar.Y + 1}).
+		MoveTo(geom.Point{X: bar.X + bar.W/2, Y: bar.Y + bar.H - 1})
 	if w.saying != len(lines.Said)-rows {
 		t.Fatalf("pulling the bar to the bottom left the description at %d, want %d",
 			w.saying, len(lines.Said)-rows)
 	}
-	if w.Form().Writing().At != before {
-		t.Fatalf("a press on the bar moved the caret from %d to %d", before, w.Form().Writing().At)
+	if w.Form.Writing().At != before {
+		t.Fatalf("a press on the bar moved the caret from %d to %d", before, w.Form.Writing().At)
 	}
 }
 
@@ -835,9 +837,9 @@ func TestARowSaysWhatItIsKnownBy(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "column" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	w = w.choosingList()
@@ -851,21 +853,21 @@ func TestANewTaskStartsOnTheColumnOfWhatIsChosen(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "In todo", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
-	form := Window{}.adding(Tasks, w.addingOn())
-	if got := form.ValueOf("column"); got != "todo" {
+	form := Window{}.adding(board.Tasks, w.addingOn())
+	if got := valueOf(form, "column"); got != "todo" {
 		t.Errorf("a task added on todo starts in %q", got)
 	}
-	if got := form.ValueOf("priority"); got != "normal" {
+	if got := valueOf(form, "priority"); got != "normal" {
 		t.Errorf("a new task starts at %q, want normal", got)
 	}
-	if got := (Window{}).adding(Tasks, holding(newFake()).addingOn()).ValueOf("column"); got != "backlog" {
+	if got := valueOf((Window{}).adding(board.Tasks, holding(newFake()).addingOn()), "column"); got != "backlog" {
 		t.Errorf("a task added with nothing chosen starts in %q, want backlog", got)
 	}
 	band := holding(newFake(),
 		board.Card{Number: 1, Title: "In todo", State: "todo"},
 		board.Card{Number: 2, Title: "Blocked", State: "blocked"})
 	band = band.clicked(middleOf(band, 1, 0)).Key("down")
-	if got := (Window{}).adding(Tasks, band.addingOn()).ValueOf("column"); got != "blocked" {
+	if got := valueOf((Window{}).adding(board.Tasks, band.addingOn()), "column"); got != "blocked" {
 		t.Errorf("a task added on the band starts in %q, want the first stopped state", got)
 	}
 }
@@ -874,11 +876,11 @@ func TestTheStepsAreTicksWhereverTheKeyboardIs(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "Ship it", State: "todo",
 		Steps: []engine.Part{{Number: 2, Title: "Draft the columns", Done: true}}})
-	w.chosen = 1
+	w.Chosen = 1
 	w = w.Edit()
-	fields := w.form.Fields()
+	fields := w.Form.Fields
 	at := len(fields) - 1
-	w.form.fields[at].Value += "\nGet the nod"
+	w.Form.Fields[at].Value += "\nGet the nod"
 	got := w.PartsTicked()
 	if len(got) != 2 || got[0].Number != 2 || !board.Finished(got[0]) || got[1].Title != "Get the nod" || board.Finished(got[1]) {
 		t.Fatalf("the steps are drawn as %+v", got)
@@ -886,7 +888,7 @@ func TestTheStepsAreTicksWhereverTheKeyboardIs(t *testing.T) {
 	if line := SubLine(got[1]); line != "Get the nod" {
 		t.Errorf("a step not yet saved reads %q", line)
 	}
-	w.form = w.form.onto(at)
+	w.Form = w.Form.Onto(at)
 	if again := w.PartsTicked(); len(again) != 2 {
 		t.Errorf("with the keyboard on them the steps are drawn as %+v", again)
 	}
@@ -899,16 +901,16 @@ func TestADescriptionIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	for _, open := range []Window{w.DoubleClick(middleOf(w, 1, 0)), w.Choose("Edit").On("description")} {
 		frame, _, lines, _, ok := open.sayingOn()
 		if !ok {
-			t.Fatalf("on %v the description has no box", open.Screen())
+			t.Fatalf("on %v the description has no box", open.Screen)
 		}
 		wide := Inside(frame).W - padding - padding
 		reckoned := Wrapped(text, room(Inside(frame)))
 		if len(lines.Said) >= len(reckoned.Said) {
-			t.Errorf("on %v the description takes %d lines, as many as the reckoning's %d", open.Screen(), len(lines.Said), len(reckoned.Said))
+			t.Errorf("on %v the description takes %d lines, as many as the reckoning's %d", open.Screen, len(lines.Said), len(reckoned.Said))
 		}
 		for _, line := range lines.Said {
 			if edges := narrow(line, reads); edges[len(edges)-1] > wide {
-				t.Errorf("on %v %q is %d wide in a room of %d", open.Screen(), line, edges[len(edges)-1], wide)
+				t.Errorf("on %v %q is %d wide in a room of %d", open.Screen, line, edges[len(edges)-1], wide)
 			}
 		}
 	}
@@ -917,7 +919,7 @@ func TestADescriptionIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 func TestTheHistoryIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 	act := strings.Repeat("iiii ", 120)
 	w := holding(newFake(), card(1, "Write the spec", "todo")).Measuring(narrow)
-	w.chosen, w.screen, w.acts = 1, OnForm, []string{act}
+	w.Chosen, w.Screen, w.Acts = 1, board.OnForm, []string{act}
 	reckoned := Wrapped(act, room(Inside(BesideBox(Over(w.width, w.height)))))
 	if got := w.Lines(); len(got) >= len(reckoned.Said) {
 		t.Errorf("the history takes %d lines, as many as the reckoning's %d", len(got), len(reckoned.Said))
@@ -927,8 +929,8 @@ func TestTheHistoryIsWrappedWithTheFaceItIsDrawnIn(t *testing.T) {
 func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
 	w := holding(newFake(), card(1, "Write the spec", "todo"), card(2, "Ship it", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").Types(" again").Key("esc").Key("esc")
-	if w.Screen() != OnTheBoard {
-		t.Fatalf("esc twice left the window on %v", w.Screen())
+	if w.Screen != board.OnTheBoard {
+		t.Fatalf("esc twice left the window on %v", w.Screen)
 	}
 	offered := func(v Window) bool { return slices.Contains(v.Offers(), "Recover") }
 	if again := w.Choose("Edit"); !offered(again) {
@@ -942,10 +944,10 @@ func TestWhatWasSetAsideIsOfferedOnlyWhereItCameFrom(t *testing.T) {
 	if fresh := w.Choose("New"); offered(fresh) {
 		t.Errorf("a new task's form offers %v", fresh.Offers())
 	}
-	clickedOff := w.Choose("Edit").Types(" once more").Key("esc").clicked(Point{X: 1, Y: 1})
-	recovered := clickedOff.Choose("Edit").Key("cmd+z").Form().Fields()[0].Value
-	if clickedOff.Screen() != OnTheBoard || !strings.Contains(recovered, "once more") {
-		t.Errorf("a click off the question left %v, and the form brought back %q", clickedOff.Screen(), recovered)
+	clickedOff := w.Choose("Edit").Types(" once more").Key("esc").clicked(geom.Point{X: 1, Y: 1})
+	recovered := clickedOff.Choose("Edit").Key("cmd+z").Form.Fields[0].Value
+	if clickedOff.Screen != board.OnTheBoard || !strings.Contains(recovered, "once more") {
+		t.Errorf("a click off the question left %v, and the form brought back %q", clickedOff.Screen, recovered)
 	}
 	if says := w.Choose("Edit").Types("x").Key("esc").Asks(); len(says) != 1 || !strings.Contains(says[0].Means, "brings it back") {
 		t.Errorf("the question about leaving says %+v", says)
@@ -958,8 +960,8 @@ func TestTheDescriptionIsShownWhereTheWheelLeftIt(t *testing.T) {
 		Steps: []engine.Part{{Number: 1, Title: "Step"}}})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))
 	frame, _, _, _, _ := w.sayingOn()
-	w = w.Scroll(Point{X: frame.X + 4, Y: frame.Y + 4}, 3*lineHigh)
-	fields := w.Form().Fields()
+	w = w.Scroll(geom.Point{X: frame.X + 4, Y: frame.Y + 4}, 3*lineHigh)
+	fields := w.Form.Fields
 	if w.Saying() == 0 || w.scrolledOf(1) != w.Saying() || w.scrolledOf(len(fields)-1) != 0 || w.scrolledOf(0) != Follow {
 		t.Errorf("scrolled to %d, the fields show from %d, %d and %d",
 			w.Saying(), w.scrolledOf(0), w.scrolledOf(1), w.scrolledOf(len(fields)-1))
@@ -980,11 +982,11 @@ func TestTheWorkUnderAnObjectiveHasItsBarPulled(t *testing.T) {
 		cards = append(cards, board.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
 	}
 	w := New(newFake(), 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{Cards: cards, Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
+	w.Snap = test.Searchable(board.Snapshot{Cards: cards, Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
 	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
 	track := w.workBar()
-	middle := Point{X: track.X + track.W/2, Y: track.Y + 4}
-	far := Point{X: middle.X, Y: track.Y + track.H + 999}
+	middle := geom.Point{X: track.X + track.W/2, Y: track.Y + 4}
+	far := geom.Point{X: middle.X, Y: track.Y + track.H + 999}
 	if pulled := w.PressAt(middle).MoveTo(far).LetGo(far); pulled.ServingAt() == 0 {
 		t.Error("pulling the bar beside the work serving an objective moved nothing")
 	}
@@ -996,16 +998,16 @@ func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 		cards = append(cards, board.Card{Number: i + 1, Title: "Task", State: "todo", Objectives: []int{1}})
 	}
 	w := New(newFake(), 1200, 800)
-	w.snap = test.Searchable(board.Snapshot{Cards: cards, Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
+	w.Snap = test.Searchable(board.Snapshot{Cards: cards, Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}})
 	w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 1)).Key("enter")
 	track, frame := w.workBar(), w.workFrame()
-	grip := Point{X: track.X + track.W/2, Y: track.Y + 4}
-	pull := func(to Point) Window { return w.PressAt(grip).MoveTo(to).LetGo(to) }
-	if got, want := pull(Point{X: grip.X, Y: track.Y + track.H + 999}).ServingAt(), 31*SubHeight-frame.H; got != want {
+	grip := geom.Point{X: track.X + track.W/2, Y: track.Y + 4}
+	pull := func(to geom.Point) Window { return w.PressAt(grip).MoveTo(to).LetGo(to) }
+	if got, want := pull(geom.Point{X: grip.X, Y: track.Y + track.H + 999}).ServingAt(), 31*geom.SubHeight-frame.H; got != want {
 		t.Errorf("pulled past its end, the work is at %d, want its end %d", got, want)
 	}
-	middle := Point{X: grip.X, Y: track.Y + track.H/2}
-	if got, want := pull(middle).ServingAt(), Reached(track, 31, w.ServingRows(), middle)*SubHeight; got != want || want == 0 {
+	middle := geom.Point{X: grip.X, Y: track.Y + track.H/2}
+	if got, want := pull(middle).ServingAt(), Reached(track, 31, w.ServingRows(), middle)*geom.SubHeight; got != want || want == 0 {
 		t.Errorf("pulled to the middle, the work is at %d, want %d", got, want)
 	}
 }
@@ -1013,44 +1015,44 @@ func TestTheBarBesideAnObjectiveMovesByWholeTiles(t *testing.T) {
 func TestTypingOnAClosedSetOpensItsList(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Arg != "priority" {
+	for w.Form.Fields[w.Form.On()].Arg != "priority" {
 		w = w.Key("tab")
 	}
 	w = w.Types("h")
-	if w.Screen() != OnChoosing || w.filtering.Value != "" || len(w.Choosing()) != 4 {
-		t.Fatalf("typing h left the window on %v narrowed by %q to %d", w.Screen(), w.filtering.Value, len(w.Choosing()))
+	if w.Screen != board.OnChoosing || w.Filtering.Value != "" || len(w.Choosing()) != 4 {
+		t.Fatalf("typing h left the window on %v narrowed by %q to %d", w.Screen, w.Filtering.Value, len(w.Choosing()))
 	}
-	if got := w.Key("esc").Form().Fields()[w.Form().On()].Value; got != "normal" {
+	if got := w.Key("esc").Form.Fields[w.Form.On()].Value; got != "normal" {
 		t.Errorf("the field reads %q once the list is put away", got)
 	}
 	w = w.Key("esc")
 	for _, name := range []string{"backspace", "cmd+x", "alt+backspace"} {
-		if got := w.Key(name).Form().Fields()[w.Form().On()].Value; got != "normal" {
+		if got := w.Key(name).Form.Fields[w.Form.On()].Value; got != "normal" {
 			t.Errorf("%s left the field reading %q", name, got)
 		}
 	}
-	if got := w.Key("cmd+v").Pasted("crit"); got.Screen() != OnChoosing || got.filtering.Value != "" || len(got.Choosing()) != 4 {
-		t.Errorf("pasting left the window on %v narrowed by %q to %d", got.Screen(), got.filtering.Value, len(got.Choosing()))
+	if got := w.Key("cmd+v").Pasted("crit"); got.Screen != board.OnChoosing || got.Filtering.Value != "" || len(got.Choosing()) != 4 {
+		t.Errorf("pasting left the window on %v narrowed by %q to %d", got.Screen, got.Filtering.Value, len(got.Choosing()))
 	}
-	for w.Form().Fields()[w.Form().On()].Arg != "estimate" {
+	for w.Form.Fields[w.Form.On()].Arg != "estimate" {
 		w = w.Key("tab")
 	}
-	if got := w.Types("2h"); got.Screen() != OnForm || got.Form().Fields()[got.Form().On()].Value != "2h" {
-		t.Errorf("the estimate took %q", got.Form().Fields()[got.Form().On()].Value)
+	if got := w.Types("2h"); got.Screen != board.OnForm || got.Form.Fields[got.Form.On()].Value != "2h" {
+		t.Errorf("the estimate took %q", got.Form.Fields[got.Form.On()].Value)
 	}
 }
 
 func TestAFieldsNameExplainsTheFieldUnderThePointer(t *testing.T) {
-	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: (Window{}).editing(board.Card{Number: 1, Title: "Ship it"})}
-	at := slices.IndexFunc(w.form.Fields(), func(f board.Field) bool { return f.Name == "estimate" })
-	name, value, _ := FormPlace(w.formBox(), w.form.Fields(), at)
-	if got := w.Hovering(Point{X: name.X + 1, Y: name.Y + 1}).Explains(); got != "how long it should take" {
+	w := Window{Board: board.Board{Screen: board.OnForm, Form: (Window{}).editing(board.Card{Number: 1, Title: "Ship it"})}, work: newFake(), width: 1200, height: 800}
+	at := slices.IndexFunc(w.Form.Fields, func(f board.Field) bool { return f.Name == "estimate" })
+	name, value, _ := FormPlace(w.formBox(), w.Form.Fields, at)
+	if got := w.Hovering(geom.Point{X: name.X + 1, Y: name.Y + 1}).Explains(); got != "how long it should take" {
 		t.Errorf("the estimate's name explains %q", got)
 	}
-	if got := w.Hovering(Point{X: value.X + value.W - 1, Y: value.Y + 1}).Explains(); got != "" {
+	if got := w.Hovering(geom.Point{X: value.X + value.W - 1, Y: value.Y + 1}).Explains(); got != "" {
 		t.Errorf("what was typed explains %q, want nothing in the way of the typing", got)
 	}
-	tip, _, _ := w.Hovering(Point{X: name.X + 1, Y: name.Y + 1}).Explanation()
+	tip, _, _ := w.Hovering(geom.Point{X: name.X + 1, Y: name.Y + 1}).Explanation()
 	if tip.Y < name.Y+name.H || tip.X+tip.W > w.width {
 		t.Errorf("the explanation %+v covers the name %+v or leaves the window", tip, name)
 	}
@@ -1071,32 +1073,32 @@ func TestAnOpenFormTakesWhatChangedElsewhereButWhatWasTyped(t *testing.T) {
 	shipped := card(1, "Ship it", "todo")
 	w := holding(f, shipped)
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description").Types("Two")
-	at, caret := w.form.at, w.form.caret
+	at, caret := w.Form.At, w.Form.Caret
 	shipped.Title, shipped.Description = "Ship it today", "Two columns"
 	shipped.Steps = []engine.Part{{Number: 1, Title: "Draft"}}
-	w.snap = test.Searchable(board.Snapshot{Cards: []board.Card{shipped}, Version: 2})
+	w.Snap = test.Searchable(board.Snapshot{Cards: []board.Card{shipped}, Version: 2})
 	w = w.freshened()
 	for name, want := range map[string]string{"title": "Ship it today", "description": "Two"} {
-		if got := w.form.valueOf(name); got != want {
+		if got := valueOf(w.Form, name); got != want {
 			t.Errorf("the field %q reads %q, want %q", name, got, want)
 		}
 	}
-	if parts := w.form.parts(); len(parts) != 1 || parts[0].Title != "Draft" {
+	if parts := w.Form.Parts(); len(parts) != 1 || parts[0].Title != "Draft" {
 		t.Errorf("the steps read %+v", parts)
 	}
-	if w.form.at != at || w.form.caret != caret {
-		t.Errorf("the keyboard moved from field %d at %d to field %d at %d", at, caret, w.form.at, w.form.caret)
+	if w.Form.At != at || w.Form.Caret != caret {
+		t.Errorf("the keyboard moved from field %d at %d to field %d at %d", at, caret, w.Form.At, w.Form.Caret)
 	}
-	if !w.form.Changed() {
+	if !w.Form.Changed() {
 		t.Error("what was typed no longer counts as a change")
 	}
-	w.form = w.form.Set("description", "Two columns")
-	if w.form.Changed() {
+	w.Form = w.Form.Set("description", "Two columns")
+	if w.Form.Changed() {
 		t.Error("a form that now says what the store says counts as changed")
 	}
 	gone := w
-	gone.snap = test.Searchable(board.Snapshot{Version: 3})
-	if got := gone.freshened().form.valueOf("title"); got != "Ship it today" {
+	gone.Snap = test.Searchable(board.Snapshot{Version: 3})
+	if got := valueOf(gone.freshened().Form, "title"); got != "Ship it today" {
 		t.Errorf("a task gone elsewhere emptied the form: %q", got)
 	}
 }
@@ -1104,19 +1106,19 @@ func TestAnOpenFormTakesWhatChangedElsewhereButWhatWasTyped(t *testing.T) {
 func TestAFieldIsARoundedInputAndTheOneTheKeyboardIsOnIsRinged(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	shot := drawn(t, w)
 	_, value, rows := FormPlace(w.formBox(), fields, 1)
 	frame := Framed(value, rows)
-	if painted(shot, Box{X: frame.X, Y: frame.Y, W: 1, H: 1}, Dark().Colour.Surface.Field) != 0 {
+	if painted(shot, geom.Box{X: frame.X, Y: frame.Y, W: 1, H: 1}, design.Dark().Colour.Surface.Field) != 0 {
 		t.Error("a field's corner is not rounded")
 	}
-	if painted(shot, Box{X: frame.X + frame.W - 4, Y: frame.Y + frame.H/2, W: 1, H: 1}, Dark().Colour.Surface.Field) != 1 {
+	if painted(shot, geom.Box{X: frame.X + frame.W - 4, Y: frame.Y + frame.H/2, W: 1, H: 1}, design.Dark().Colour.Surface.Field) != 1 {
 		t.Error("a field does not stand on the field's ground")
 	}
-	_, on, onRows := FormPlace(w.formBox(), fields, w.Form().On())
+	_, on, onRows := FormPlace(w.formBox(), fields, w.Form.On())
 	ringed := Framed(on, onRows)
-	if painted(shot, Box{X: ringed.X + ringed.W/2, Y: ringed.Y, W: 1, H: 1}, Dark().Colour.Accent.Base) != 1 {
+	if painted(shot, geom.Box{X: ringed.X + ringed.W/2, Y: ringed.Y, W: 1, H: 1}, design.Dark().Colour.Accent.Base) != 1 {
 		t.Error("the field the keyboard is on is not ringed in the accent")
 	}
 }
@@ -1124,25 +1126,25 @@ func TestAFieldIsARoundedInputAndTheOneTheKeyboardIsOnIsRinged(t *testing.T) {
 func TestThePrioritiesListShowsEachInItsStripesColour(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Name != "priority" {
+	for w.Form.Fields[w.Form.On()].Name != "priority" {
 		w = w.Key("tab")
 	}
 	w = w.Key("enter")
-	if w.Screen() != OnChoosing {
-		t.Fatalf("enter on the priority left the window on %v", w.Screen())
+	if w.Screen != board.OnChoosing {
+		t.Fatalf("enter on the priority left the window on %v", w.Screen)
 	}
 	box := w.ChoosingBox()
 	shot := drawn(t, w)
 	for i, one := range w.Choosing() {
 		line := ChoosingLine(box, ChoosingFrom(box)+i*apart)
-		if painted(shot, line, Dark().Colour.Priority[one.Title]) == 0 {
+		if painted(shot, line, design.Dark().Colour.Priority[one.Title]) == 0 {
 			t.Errorf("%q is listed without its stripe's colour", one.Title)
 		}
 	}
 }
 
 func TestAnObjectivesNumberIsWrittenWithItsHash(t *testing.T) {
-	w := Window{choosingFor: "objective"}
+	w := Window{Board: board.Board{ChoosingFor: "objective"}}
 	if got := w.RowSays(Choice{Number: 7, Title: "Ship it"}); !strings.Contains(got, "#7  Ship it") {
 		t.Errorf("an objective's row says %q", got)
 	}
@@ -1154,7 +1156,7 @@ func TestAFormSaidWhenItLastSavedItself(t *testing.T) {
 	if got := w.FormNote(); got != "" {
 		t.Errorf("a form not saved yet says %q", got)
 	}
-	w.now = time.Date(2026, 11, 1, 10, 0, 3, 0, time.UTC)
+	w.Now = time.Date(2026, 11, 1, 10, 0, 3, 0, time.UTC)
 	w.savedAt = time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)
 	if got := w.FormNote(); got != "saved 3s ago" {
 		t.Errorf("a form saved three seconds ago says %q", got)
@@ -1165,17 +1167,17 @@ func TestAFormsPriorityAndLabelsAreDrawnAsTheBoardDrawsThem(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high", Labels: []string{"backend", "gui"}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	shot := drawn(t, w)
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	for i, field := range fields {
 		_, value, rows := FormPlace(w.formBox(), fields, i)
 		frame := Framed(value, rows)
 		switch field.Arg {
 		case "priority":
-			if painted(shot, frame, Dark().Colour.Priority["high"]) == 0 {
+			if painted(shot, frame, design.Dark().Colour.Priority["high"]) == 0 {
 				t.Error("the priority's field shows no stripe of its colour")
 			}
 		case "label":
-			if ground, _ := Dark().LabelPill(w.LabelColour("backend")); painted(shot, frame, ground) == 0 {
+			if ground, _ := design.Dark().LabelPill(w.LabelColour("backend")); painted(shot, frame, ground) == 0 {
 				t.Error("the labels' field shows no pills")
 			}
 		}
@@ -1185,7 +1187,7 @@ func TestAFormsPriorityAndLabelsAreDrawnAsTheBoardDrawsThem(t *testing.T) {
 func TestTheRowThatCreatesALabelShowsItAsAPill(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"bug"}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Name != "labels" {
+	for w.Form.Fields[w.Form.On()].Name != "labels" {
 		w = w.Key("tab")
 	}
 	w = w.Key("enter").Types("b")
@@ -1195,10 +1197,10 @@ func TestTheRowThatCreatesALabelShowsItAsAPill(t *testing.T) {
 			continue
 		}
 		line := ChoosingLine(box, ChoosingFrom(box)+(i-w.ChoosingFromRow())*apart)
-		pill := Box{X: line.X + ends(w.measured(), "Create", reads) + pillGap*2 + 2, Y: line.Y + line.H/2, W: 2, H: 1}
-		ground := Dark().Colour.Surface.Control
+		pill := geom.Box{X: line.X + ends(w.measured(), "Create", reads) + pillGap*2 + 2, Y: line.Y + line.H/2, W: 2, H: 1}
+		ground := design.Dark().Colour.Surface.Control
 		if i == w.ChoosingAt() {
-			ground = Dark().Colour.Surface.Raised
+			ground = design.Dark().Colour.Surface.Raised
 		}
 		if painted(drawn(t, w), pill, ground) == 0 {
 			t.Errorf("the row creating %q shows no pill", one.Creates)
@@ -1211,7 +1213,7 @@ func TestTheRowThatCreatesALabelShowsItAsAPill(t *testing.T) {
 func TestALabelToChooseIsAPillAfterItsTick(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"bug"}}, board.Card{Number: 2, Title: "Other", State: "todo", Labels: []string{"gui"}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for w.Form().Fields()[w.Form().On()].Name != "labels" {
+	for w.Form.Fields[w.Form.On()].Name != "labels" {
 		w = w.Key("tab")
 	}
 	w = w.Key("enter").Key("down")
@@ -1220,18 +1222,18 @@ func TestALabelToChooseIsAPillAfterItsTick(t *testing.T) {
 	for i, one := range w.Choosing() {
 		line := ChoosingLine(box, ChoosingFrom(box)+(i-w.ChoosingFromRow())*apart)
 		pill := LabelPillAt(line, ends(w.measured(), one.Title, small))
-		ground, _ := Dark().LabelPill(w.LabelColour(one.Title))
-		if painted(shot, Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, ground) != 1 {
+		ground, _ := design.Dark().LabelPill(w.LabelColour(one.Title))
+		if painted(shot, geom.Box{X: pill.X + pill.W/2, Y: pill.Y + 1, W: 1, H: 1}, ground) != 1 {
 			t.Errorf("the label %q is not a pill at %+v", one.Title, pill)
 		}
 	}
 }
 
 func TestAFieldsExplanationIsABubbleWrappedEvenly(t *testing.T) {
-	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: (Window{}).editing(board.Card{Number: 1, Title: "Ship it"})}
-	at := slices.IndexFunc(w.form.Fields(), func(f board.Field) bool { return f.Name == "time spent" })
-	name, _, _ := FormPlace(w.formBox(), w.form.Fields(), at)
-	w = w.Hovering(Point{X: name.X + 1, Y: name.Y + 1})
+	w := Window{Board: board.Board{Screen: board.OnForm, Form: (Window{}).editing(board.Card{Number: 1, Title: "Ship it"})}, work: newFake(), width: 1200, height: 800}
+	at := slices.IndexFunc(w.Form.Fields, func(f board.Field) bool { return f.Name == "time spent" })
+	name, _, _ := FormPlace(w.formBox(), w.Form.Fields, at)
+	w = w.Hovering(geom.Point{X: name.X + 1, Y: name.Y + 1})
 	tip, lines, ok := w.Explanation()
 	if !ok || len(lines) < 2 {
 		t.Fatalf("time spent explains %q", lines)
@@ -1246,22 +1248,22 @@ func TestAFieldsExplanationIsABubbleWrappedEvenly(t *testing.T) {
 	if last, first := ends(m, means[len(means)-1], small), ends(m, means[0], small); len(means) > 1 && last*3 < first {
 		t.Errorf("the explanation ends on a stub: %q", means)
 	}
-	if painted(drawn(t, w), Box{X: tip.X + tip.W/2, Y: tip.Y + 1, W: 1, H: 1}, Dark().Colour.Surface.Raised) != 1 {
+	if painted(drawn(t, w), geom.Box{X: tip.X + tip.W/2, Y: tip.Y + 1, W: 1, H: 1}, design.Dark().Colour.Surface.Raised) != 1 {
 		t.Error("the explanation is not drawn as the window's bubble")
 	}
 }
 
 func TestAFieldsValueCutShort(t *testing.T) {
 	long := "the time we spent getting the whole board ready before anybody used it"
-	w := Window{work: newFake(), width: 1200, height: 800, screen: OnForm, form: (Window{}).editing(board.Card{Number: 1, Title: "Ship it", Because: long})}
-	at := slices.IndexFunc(w.form.Fields(), func(f board.Field) bool { return f.Name == "because" })
-	_, value, _ := FormPlace(w.formBox(), w.form.Fields(), at)
-	if got := w.Hovering(Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != long {
+	w := Window{Board: board.Board{Screen: board.OnForm, Form: (Window{}).editing(board.Card{Number: 1, Title: "Ship it", Because: long})}, work: newFake(), width: 1200, height: 800}
+	at := slices.IndexFunc(w.Form.Fields, func(f board.Field) bool { return f.Name == "because" })
+	_, value, _ := FormPlace(w.formBox(), w.Form.Fields, at)
+	if got := w.Hovering(geom.Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != long {
 		t.Errorf("a value cut short opens a bubble of %q", got)
 	}
-	at = slices.IndexFunc(w.form.Fields(), func(f board.Field) bool { return f.Name == "title" })
-	_, value, _ = FormPlace(w.formBox(), w.form.Fields(), at)
-	if got := w.Hovering(Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != "" {
+	at = slices.IndexFunc(w.Form.Fields, func(f board.Field) bool { return f.Name == "title" })
+	_, value, _ = FormPlace(w.formBox(), w.Form.Fields, at)
+	if got := w.Hovering(geom.Point{X: value.X + value.W/2, Y: value.Y + value.H/2}).Bubble(); got != "" {
 		t.Errorf("a value that fits opens a bubble of %q", got)
 	}
 }
@@ -1270,13 +1272,13 @@ func TestAFieldChosenFromAListSaysSoWithAMark(t *testing.T) {
 	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	shot := drawn(t, w)
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	for i, field := range fields {
 		_, value, rows := FormPlace(w.formBox(), fields, i)
 		mark := FieldMark(Framed(value, rows))
-		drawnThere := painted(shot, mark, Dark().Colour.Ink.Low) > 0
+		drawnThere := painted(shot, mark, design.Dark().Colour.Ink.Low) > 0
 		chosen := chosenFromAList(field) || chosenOnACalendar(field)
-		if field.Long || i == w.Form().On() {
+		if field.Long || i == w.Form.On() {
 			continue
 		}
 		if chosen && !drawnThere {
@@ -1292,13 +1294,13 @@ func TestLabelsTooManyForTheirFieldSayHowManyAreLeft(t *testing.T) {
 	c := board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"an-altogether-overlong-label", "release"}}
 	w := holding(newFake(), c).Resized(720, 560)
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	fields := w.Form().Fields()
+	fields := w.Form.Fields
 	for i, field := range fields {
 		if field.Arg != "label" {
 			continue
 		}
 		_, value, rows := FormPlace(w.formBox(), fields, i)
-		if painted(drawn(t, w), Inside(Framed(value, rows)), Dark().Colour.Surface.Control) == 0 {
+		if painted(drawn(t, w), Inside(Framed(value, rows)), design.Dark().Colour.Surface.Control) == 0 {
 			t.Error("labels too many for their field show nothing of how many they are")
 		}
 	}
@@ -1307,7 +1309,7 @@ func TestLabelsTooManyForTheirFieldSayHowManyAreLeft(t *testing.T) {
 func TestAPressOnTheDetailsTabComesBackFromTheHistory(t *testing.T) {
 	for _, goal := range []bool{false, true} {
 		w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo", Objectives: []int{1}})
-		w.snap.Goals = []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}
+		w.Snap.Goals = []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}
 		if goal {
 			w = w.Key("tab").clicked(goalMiddle(w.Key("tab"), 0)).Key("enter")
 		} else {
@@ -1315,7 +1317,7 @@ func TestAPressOnTheDetailsTabComesBackFromTheHistory(t *testing.T) {
 		}
 		w = w.Key("cmd+t")
 		tab := BesideTabs(w.formPanel())[0]
-		p := Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2}
+		p := geom.Point{X: tab.X + tab.W/2, Y: tab.Y + tab.H/2}
 		if got := w.PressAt(p).LetGo(p); got.Tracing() {
 			t.Errorf("an objective %v: a press on Details left the history shown", goal)
 		}
@@ -1341,8 +1343,8 @@ func TestTheFormIsResizedByItsCornerAndKeepsTheSize(t *testing.T) {
 	opened := w.clicked(middleOf(w, 1, 0)).Key("enter")
 	before := opened.formPanel()
 	grip := FormGrip(before)
-	from := Point{X: grip.X + grip.W/2, Y: grip.Y + grip.H/2}
-	to := Point{X: from.X - 100, Y: from.Y - 60}
+	from := geom.Point{X: grip.X + grip.W/2, Y: grip.Y + grip.H/2}
+	to := geom.Point{X: from.X - 100, Y: from.Y - 60}
 	resized := opened.PressAt(from).MoveTo(to).LetGo(to)
 	after := resized.formPanel()
 	if after.X != before.X || after.Y != before.Y || after.W != before.W-100 || after.H != before.H-60 {
@@ -1355,7 +1357,7 @@ func TestTheFormIsResizedByItsCornerAndKeepsTheSize(t *testing.T) {
 	if resized.Sizes().Form == ([2]int{}) {
 		t.Error("the size chosen is not kept with the window's other sizes")
 	}
-	tiny := opened.PressAt(from).MoveTo(Point{X: 0, Y: 0}).LetGo(Point{X: 0, Y: 0}).formPanel()
+	tiny := opened.PressAt(from).MoveTo(geom.Point{X: 0, Y: 0}).LetGo(geom.Point{X: 0, Y: 0}).formPanel()
 	if tiny.W < FormLeast.X || tiny.H < FormLeast.Y {
 		t.Errorf("dragged far the form shrank to %+v", tiny)
 	}
@@ -1364,13 +1366,13 @@ func TestTheFormIsResizedByItsCornerAndKeepsTheSize(t *testing.T) {
 func TestTheFormDrawsItsGrip(t *testing.T) {
 	w := aFixturesBoard(t)
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter")
-	if painted(drawn(t, w), FormGrip(w.formPanel()), Dark().Colour.Ink.Faint) == 0 {
+	if painted(drawn(t, w), FormGrip(w.formPanel()), design.Dark().Colour.Ink.Faint) == 0 {
 		t.Error("the corner that resizes the form is not drawn")
 	}
 }
 
 func TestAPanelsButtonsEndBeforeItsGrip(t *testing.T) {
-	rightmost := func(along []Box) int {
+	rightmost := func(along []geom.Box) int {
 		end := 0
 		for _, one := range along {
 			end = max(end, ButtonIn(one).X+ButtonIn(one).W)
@@ -1394,9 +1396,9 @@ func TestEveryChoosingListShowsABoxWhereItWroteAGlyph(t *testing.T) {
 	f := newFake()
 	w := holding(f, card(1, "Write the spec", "todo"))
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
-	for i, field := range w.Form().Fields() {
+	for i, field := range w.Form.Fields {
 		if field.Name == "column" {
-			w.form = w.form.onto(i)
+			w.Form = w.Form.Onto(i)
 		}
 	}
 	w = w.choosingList()
@@ -1420,13 +1422,13 @@ func TestEveryChoosingListShowsABoxWhereItWroteAGlyph(t *testing.T) {
 }
 
 func TestTheProgressBesideAnObjectiveIsAsHighAsItsTrack(t *testing.T) {
-	w := New(onTheFixtures(t), 1200, 800).At(time.Now()).Look().onPage(Objectives).Key("right").Edit()
+	w := New(onTheFixtures(t), 1200, 800).At(time.Now()).Look().onPage(board.Objectives).Key("right").Edit()
 	found := false
 	for _, d := range partsDrawn(w) {
 		if strings.HasSuffix(d.Part, "info/progress") {
 			found = true
-			if d.At.H != Dark().Size.Track {
-				t.Errorf("the progress beside the objective is %d high, its track %d", d.At.H, Dark().Size.Track)
+			if d.At.H != design.Dark().Size.Track {
+				t.Errorf("the progress beside the objective is %d high, its track %d", d.At.H, design.Dark().Size.Track)
 			}
 		}
 	}

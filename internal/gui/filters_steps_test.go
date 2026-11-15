@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"fmt"
 	"slices"
 	"strings"
@@ -10,40 +12,40 @@ import (
 
 func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 	opening := func() {
-		if w.w.Screen() != OnFiltering {
+		if w.w.Screen != board.OnFiltering {
 			w.w = w.w.Key("shift+f")
 		}
 		if _, open := w.w.FilterList(); open {
 			w.w = w.w.Key("esc")
 		}
-		if w.w.Screen() != OnFiltering {
+		if w.w.Screen != board.OnFiltering {
 			w.w = w.w.Key("shift+f")
 		}
 	}
 	sc.Step(`^I set the filter "([^"]*)" to "([^"]*)"$`, func(name, value string) error {
 		opening()
 		at := -1
-		for i, f := range w.w.Filters() {
+		for i, f := range w.w.Filters {
 			if f.Name == name {
 				at = i
 			}
 		}
 		if at < 0 {
-			return fmt.Errorf("no filter called %q among %v", name, w.w.Filters())
+			return fmt.Errorf("no filter called %q among %v", name, w.w.Filters)
 		}
-		for w.w.FilterOn() < at {
+		for w.w.FilterOn < at {
 			w.w = w.w.Key("down")
 		}
-		for w.w.FilterOn() > at {
+		for w.w.FilterOn > at {
 			w.w = w.w.Key("up")
 		}
 		w.w = w.w.Key("enter")
-		want := slices.Index(w.w.Filters()[at].Values, value)
+		want := slices.Index(w.w.Filters[at].Values, value)
 		if want < 0 {
-			want = slices.Index(w.w.Filters()[at].Shown, value)
+			want = slices.Index(w.w.Filters[at].Shown, value)
 		}
 		if want < 0 {
-			return fmt.Errorf("the filter %q offers no %q: %v", name, value, w.w.Filters()[at].Values)
+			return fmt.Errorf("the filter %q offers no %q: %v", name, value, w.w.Filters[at].Values)
 		}
 		if err := w.reachingValue(want); err != nil {
 			return err
@@ -56,8 +58,8 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the menu of filters shows (\d+) columns?( and a stub)?$`, func(want int, stubbed string) error {
 		cols, stub := w.w.FilterColumns()
-		if w.w.Screen() != OnFiltering || len(cols) != want || (stub.W > 0) != (stubbed != "") {
-			return fmt.Errorf("the menu of filters shows %d columns, stub %v, on screen %v", len(cols), stub, w.w.Screen())
+		if w.w.Screen != board.OnFiltering || len(cols) != want || (stub.W > 0) != (stubbed != "") {
+			return fmt.Errorf("the menu of filters shows %d columns, stub %v, on screen %v", len(cols), stub, w.w.Screen)
 		}
 		for i := 1; i < len(cols); i++ {
 			if cols[i].Box.X != cols[i-1].Box.X+cols[i-1].Box.W {
@@ -71,7 +73,7 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		if stub.W == 0 {
 			return fmt.Errorf("the menu of filters has no stub")
 		}
-		at := Point{X: stub.X + stub.W/2, Y: stub.Y + stub.H/2}
+		at := geom.Point{X: stub.X + stub.W/2, Y: stub.Y + stub.H/2}
 		w.w = w.w.PressAt(at).LetGo(at)
 		return nil
 	})
@@ -107,7 +109,7 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the filter "([^"]*)" lists "([^"]*)"$`, func(name, want string) error {
-		f := w.w.Filters()[w.w.FilterOn()]
+		f := w.w.Filters[w.w.FilterOn]
 		values, open := w.w.FilterList()
 		if !open || f.Name != name {
 			return fmt.Errorf("the filter %q lists nothing", name)
@@ -155,14 +157,14 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("no tab is called %q", name)
 	})
-	var noted Box
-	pillAt := func(said string) (Box, error) {
+	var noted geom.Box
+	pillAt := func(said string) (geom.Box, error) {
 		for _, pill := range w.w.Pills() {
 			if pill.Said == said {
 				return pill.Box, nil
 			}
 		}
-		return Box{}, fmt.Errorf("no pill reads %q", said)
+		return geom.Box{}, fmt.Errorf("no pill reads %q", said)
 	}
 	sc.When(`^I note where the pill "([^"]*)" stands$`, func(said string) error {
 		at, err := pillAt(said)
@@ -179,14 +181,14 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 	sc.When(`^I click the pill "([^"]*)"$`, func(said string) error {
 		for _, pill := range w.w.Pills() {
 			if pill.Said == said {
-				w.w = w.w.clicked(Point{X: pill.Box.X + pillPad + 2, Y: pill.Box.Y + pill.Box.H/2})
+				w.w = w.w.clicked(geom.Point{X: pill.Box.X + pillPad + 2, Y: pill.Box.Y + pill.Box.H/2})
 				return nil
 			}
 		}
 		return fmt.Errorf("no pill reads %q", said)
 	})
 	sc.Then(`^the filter "([^"]*)" says "([^"]*)" keeps (\d+)$`, func(name, value string, n int) error {
-		f := w.w.Filters()[w.w.FilterOn()]
+		f := w.w.Filters[w.w.FilterOn]
 		if f.Name != name {
 			return fmt.Errorf("the filter open is %q", f.Name)
 		}
@@ -198,8 +200,8 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^the window shows the filters$`, func() error {
-		if w.w.Screen() != OnFiltering {
-			return fmt.Errorf("the window is on %v", w.w.Screen())
+		if w.w.Screen != board.OnFiltering {
+			return fmt.Errorf("the window is on %v", w.w.Screen)
 		}
 		return nil
 	})
@@ -218,20 +220,20 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 
 func (w *world) reachingValue(want int) error {
 	for range 8 {
-		columns := w.w.valueColumns()
+		columns := w.w.ValueColumns()
 		last := columns[len(columns)-1]
 		target := want
 		if !slices.Contains(last, want) {
-			target = slices.IndexFunc(last, func(v int) bool { return w.w.holdsValue(v, want) })
+			target = slices.IndexFunc(last, func(v int) bool { return w.w.HoldsValue(v, want) })
 			if target < 0 {
 				return fmt.Errorf("no column of the menu leads to value %d: %v", want, columns)
 			}
 			target = last[target]
 		}
-		for slices.Index(last, w.w.FilterPick()) < slices.Index(last, target) {
+		for slices.Index(last, w.w.FilterPick) < slices.Index(last, target) {
 			w.w = w.w.Key("down")
 		}
-		for slices.Index(last, w.w.FilterPick()) > slices.Index(last, target) {
+		for slices.Index(last, w.w.FilterPick) > slices.Index(last, target) {
 			w.w = w.w.Key("up")
 		}
 		if target == want {

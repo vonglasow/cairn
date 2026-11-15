@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"strconv"
 
 	"gioui.org/font"
@@ -10,7 +11,7 @@ import (
 	"cairn/internal/engine"
 )
 
-func drawSeries(k Kit, l Layout, w Window) {
+func drawSeries(k Kit, l geom.Layout, w Window) {
 	list, detail := SplitOf(l)
 	Ground{}.Draw(k, list)
 	on := k.inside("ground")
@@ -28,7 +29,7 @@ func drawSeries(k Kit, l Layout, w Window) {
 	}
 	clipped.Pop()
 	if len(w.SeriesListed()) == 0 {
-		Empty{Said: NoSeriesSays}.Draw(on, EmptyAt(Box{X: list.X + gap, Y: list.Y + gap, W: list.W - 2*gap, H: CardHeight}))
+		Empty{Said: NoSeriesSays}.Draw(on, EmptyAt(geom.Box{X: list.X + geom.Gap, Y: list.Y + geom.Gap, W: list.W - 2*geom.Gap, H: geom.CardHeight}))
 	}
 	Ground{}.Draw(k, detail)
 	drawSeriesDetail(k.inside("ground"), w, w.SeriesDetail())
@@ -47,37 +48,37 @@ func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 	say(k.gtx, k.th, k.skin.Colour.Ink.OnTint, d.Sentence, fits(k.gtx, k.th, s.Says, d.Sentence.W, plain), plain)
 	say(k.gtx, k.th, k.skin.Colour.Ink.Faint, d.Next, fits(k.gtx, k.th, d.NextSays, d.Next.W, small), small)
 	for i, line := range d.Lines {
-		at := Box{X: d.LinesAt.X, Y: d.LinesAt.Y + i*lineHigh, W: d.LinesAt.W, H: lineHigh}
+		at := geom.Box{X: d.LinesAt.X, Y: d.LinesAt.Y + i*lineHigh, W: d.LinesAt.W, H: lineHigh}
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, at, fits(k.gtx, k.th, line, at.W, small), small)
 	}
 	if d.Template.W > 0 {
-		drawSeriesBox(k, d.Template, "Template — what the next one is made from", func(in Kit, room Box) {
+		drawSeriesBox(k, d.Template, "Template — what the next one is made from", func(in Kit, room geom.Box) {
 			d.TemplateFacts.Draw(in, room)
 		})
-		drawSeriesBox(k, d.SoFar, "So far", func(in Kit, room Box) {
-			Figures{Said: d.Figures}.Draw(in, Box{X: room.X, Y: room.Y, W: room.W, H: FiguresHigh})
+		drawSeriesBox(k, d.SoFar, "So far", func(in Kit, room geom.Box) {
+			Figures{Said: d.Figures}.Draw(in, geom.Box{X: room.X, Y: room.Y, W: room.W, H: FiguresHigh})
 			if s.TimeSpent != "" {
 				said := s.TimeSpent + " over its occurrences"
 				if each := board.EachSaid(s); each != "" {
 					said += " · " + each
 				}
-				say(in.gtx, in.th, in.skin.Colour.Ink.Faint, Box{X: room.X, Y: room.Y + FiguresHigh + inset, W: room.W, H: lineHigh}, fits(in.gtx, in.th, said, room.W, small), small)
+				say(in.gtx, in.th, in.skin.Colour.Ink.Faint, geom.Box{X: room.X, Y: room.Y + FiguresHigh + inset, W: room.W, H: lineHigh}, fits(in.gtx, in.th, said, room.W, small), small)
 			}
 		})
-		drawSeriesBox(k, d.Now, "On the board now", func(in Kit, room Box) {
+		drawSeriesBox(k, d.Now, "On the board now", func(in Kit, room geom.Box) {
 			for i, line := range d.NowSays {
 				ink := in.skin.Colour.Ink.Text
 				if i > 0 {
 					ink = in.skin.Colour.Ink.Faint
 				}
-				at := Box{X: room.X, Y: room.Y + i*lineHigh, W: room.W, H: lineHigh}
+				at := geom.Box{X: room.X, Y: room.Y + i*lineHigh, W: room.W, H: lineHigh}
 				say(in.gtx, in.th, ink, at, fits(in.gtx, in.th, line, at.W, small), small)
 			}
 		})
 	}
 	Head{Said: d.OccurrencesSaid}.Draw(k, d.OccurrencesHead)
 	aside := min(d.OccurrencesHead.W/2, ends(w.measured(), d.OccurrencesAside, small)+2)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, Box{X: d.OccurrencesHead.X + d.OccurrencesHead.W - aside, Y: d.OccurrencesHead.Y, W: aside, H: lineHigh},
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: d.OccurrencesHead.X + d.OccurrencesHead.W - aside, Y: d.OccurrencesHead.Y, W: aside, H: lineHigh},
 		fits(k.gtx, k.th, d.OccurrencesAside, aside, small), small, font.Font{}, text.End)
 	for _, line := range d.Occurrences {
 		drawOccurrence(k, w, line)
@@ -86,7 +87,7 @@ func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 	if d.FootSays != "" {
 		said := d.FootSaid
 		if s.State == "active" {
-			LoopMark{Ink: k.skin.Colour.Ink.Faint}.Draw(k, Box{X: said.X, Y: said.Y + (said.H-loopSide)/2, W: loopSide, H: loopSide})
+			LoopMark{Ink: k.skin.Colour.Ink.Faint}.Draw(k, geom.Box{X: said.X, Y: said.Y + (said.H-loopSide)/2, W: loopSide, H: loopSide})
 			said.X, said.W = said.X+loopSide+1, said.W-loopSide-1
 		}
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, said, fits(k.gtx, k.th, d.FootSays, said.W, small), small, k.skin.Type.Mono, text.Start)
@@ -106,11 +107,11 @@ func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 	}
 }
 
-func drawSeriesBox(k Kit, at Box, head string, inside func(Kit, Box)) {
+func drawSeriesBox(k Kit, at geom.Box, head string, inside func(Kit, geom.Box)) {
 	InfoBox{}.Draw(k, at)
 	in := k.inside("info")
-	Head{Said: head}.Draw(in, Box{X: at.X + padding, Y: at.Y + padding/2, W: at.W - 2*padding, H: lineHigh})
-	inside(in, Box{X: at.X + padding, Y: at.Y + padding/2 + lineHigh + inset, W: at.W - 2*padding, H: at.H - padding - lineHigh - inset})
+	Head{Said: head}.Draw(in, geom.Box{X: at.X + padding, Y: at.Y + padding/2, W: at.W - 2*padding, H: lineHigh})
+	inside(in, geom.Box{X: at.X + padding, Y: at.Y + padding/2 + lineHigh + inset, W: at.W - 2*padding, H: at.H - padding - lineHigh - inset})
 }
 
 var occurrenceColumns = []int{56, 44, 0, 110, 48}
@@ -118,7 +119,7 @@ var occurrenceColumns = []int{56, 44, 0, 110, 48}
 func drawOccurrence(k Kit, w Window, line OccurrenceLine) {
 	o := line.Occurrence
 	tile := Tile{Picked: line.At == w.pointed}.Draw(k, SubPanel(line.At))
-	row := Box{X: tile.X + padding, Y: tile.Y + (tile.H-lineHigh)/2, W: tile.W - 2*padding, H: lineHigh}
+	row := geom.Box{X: tile.X + padding, Y: tile.Y + (tile.H-lineHigh)/2, W: tile.W - 2*padding, H: lineHigh}
 	day, number, title, is, spent := w.OccurrenceSays(o)
 	x := row.X
 	fixed := 0
@@ -140,7 +141,7 @@ func drawOccurrence(k Kit, w Window, line OccurrenceLine) {
 		if wide == 0 {
 			wide = flexible
 		}
-		at := Box{X: x, Y: row.Y, W: wide, H: row.H}
+		at := geom.Box{X: x, Y: row.Y, W: wide, H: row.H}
 		switch i {
 		case 1, 4:
 			along := text.Start

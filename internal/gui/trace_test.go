@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/gui/geom"
 	"testing"
 
 	"gioui.org/f32"
@@ -12,7 +14,7 @@ import (
 func masked(string) string { return "‹masked›" }
 
 func TestAPointerEventIsWrittenDownWithWhatTheWindowMadeOfIt(t *testing.T) {
-	w := Window{held: Held{Number: 3, At: Point{X: 40, Y: 50}, Moved: true}}
+	w := Window{held: Held{Number: 3, At: geom.Point{X: 40, Y: 50}, Moved: true}}
 	got := PointerTrace(pointer.Event{Kind: pointer.Drag, Position: f32.Pt(120, 150), Buttons: pointer.ButtonPrimary, PointerID: 2}, 1.5, w)
 	want := "pointer Drag id=2 buttons=ButtonPrimary px=(120,150) perDp=1.5 dp=(80,100) held=3 at=(40,50) moved=true"
 	if got != want {
@@ -32,7 +34,7 @@ func TestAHoverIsNotWrittenDown(t *testing.T) {
 }
 
 func TestWhatTheWindowShowsIsSaidByItsScreenTabAndCard(t *testing.T) {
-	w := Window{screen: OnForm, tab: Objectives, chosen: 4}
+	w := Window{Board: board.Board{Screen: board.OnForm, Tab: board.Objectives, Chosen: 4}}
 	if got := w.Seen(); got != "screen=form tab=objectives chosen=4" {
 		t.Errorf("the window says %q", got)
 	}

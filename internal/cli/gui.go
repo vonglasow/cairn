@@ -3,6 +3,7 @@ package cli
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/design"
 	"context"
 	"fmt"
 
@@ -18,9 +19,9 @@ const (
 	high = 840
 )
 
-type opensWindow = func(work board.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error
+type opensWindow = func(work board.Work, pages engine.Pages, look design.Skin, noted *debug.Log, width, height int, here gui.Here) error
 
-var openGui opensWindow = func(work board.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error {
+var openGui opensWindow = func(work board.Work, pages engine.Pages, look design.Skin, noted *debug.Log, width, height int, here gui.Here) error {
 	gui.Run(work, pages, look, noted, width, height, here)
 	return nil
 }
@@ -64,5 +65,5 @@ func openWindow(cmd *cobra.Command, h engine.Home) error {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "theme: %s\n", unworn)
 	}
 	here := gui.Here{Store: at.Store, Reach: func(to engine.Elsewhere) (workspace.Apart, error) { return engine.OpenApart(held, to) }}
-	return windowFor(cmd)(held, engine.PagesFrom(h), gui.Skinned(worn), notedIn(cmd.Context()), wide, high, here)
+	return windowFor(cmd)(held, engine.PagesFrom(h), design.Skinned(worn), notedIn(cmd.Context()), wide, high, here)
 }
