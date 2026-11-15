@@ -1,18 +1,17 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/label"
 	"slices"
 	"strconv"
 	"strings"
-
-	"cairn/internal/engine"
 )
 
-type describer func(field engine.Field, value *string) func() string
+type describer func(field board.Field, value *string) func() string
 
 func (b Board) about(forObjective bool, number int) describer {
-	return func(field engine.Field, value *string) func() string {
+	return func(field board.Field, value *string) func() string {
 		switch {
 		case forObjective && field.Arg == "parent":
 			said := b.parentsOffered(number)
@@ -27,7 +26,7 @@ func (b Board) about(forObjective bool, number int) describer {
 	}
 }
 
-func treeOf(p engine.Pick) int {
+func treeOf(p board.Pick) int {
 	if p.Under {
 		return p.Goal.Parent
 	}
@@ -51,7 +50,7 @@ func (b Board) parentsOffered(number int) string {
 
 func (b Board) servesTree(typed string) string {
 	var lines []string
-	ticked := engine.NumbersIn(typed)
+	ticked := board.NumbersIn(typed)
 	for _, p := range b.snap.Picks(ticked) {
 		if !slices.ContainsFunc(b.snap.Reach(treeOf(p)), func(n int) bool { return slices.Contains(ticked, n) }) {
 			continue

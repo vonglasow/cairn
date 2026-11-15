@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"errors"
 	"testing"
@@ -23,7 +24,7 @@ func TestTheWeekIsLaidOutToThePixel(t *testing.T) {
 	if strip := TimeStrip(l); first.X != l.Column[0].X || first.Y != strip.Y+strip.H+between || first.Y+first.H != l.Band.Y+l.Band.H {
 		t.Errorf("the first day is %+v, not from under the strip to the foot of the band", first)
 	}
-	right := l.Column[engine.Columns-1].X + l.Column[engine.Columns-1].W
+	right := l.Column[board.Columns-1].X + l.Column[board.Columns-1].W
 	if gapLeft := right - (last.X + last.W); gapLeft < 0 || gapLeft >= 7 {
 		t.Errorf("the last day ends %d short of the board's right edge", gapLeft)
 	}
@@ -94,7 +95,7 @@ func TestAWeekWithoutItsWeekendIsCutInFive(t *testing.T) {
 	}
 	l := w.Layout()
 	first, last := WeekDayAt(l, 0), WeekDayAt(l, 4)
-	right := l.Column[engine.Columns-1].X + l.Column[engine.Columns-1].W
+	right := l.Column[board.Columns-1].X + l.Column[board.Columns-1].W
 	if gapLeft := right - (last.X + last.W); gapLeft < 0 || gapLeft >= 5 {
 		t.Errorf("the fifth day ends %d short of the board's right edge", gapLeft)
 	}

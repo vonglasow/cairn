@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"cairn/internal/engine/act"
 )
 
 func TestAuthor_isTheOneNamedOrTheOneLoggedIn(t *testing.T) {
@@ -71,17 +69,6 @@ func TestHold_writesDownWhatItIsAskedAsDoneThroughItsSurface(t *testing.T) {
 	}
 	if c := shown.Acts[0].Carried(); c.Through != "tui" || c.By != "sam" {
 		t.Errorf("an act from the board says %q through %q", c.By, c.Through)
-	}
-}
-
-func TestSaidOf_aBoardLineSaysWhoDidTheAct(t *testing.T) {
-	var a act.AsTold
-	a.On(1)
-	a.Did(act.FocusTaken)
-	a.Through("gui")
-	a.By("sam")
-	if got := SaidOf(a.Act()).Line(); !strings.HasSuffix(got, "(by sam, through gui)") {
-		t.Errorf("a board reads %q", got)
 	}
 }
 

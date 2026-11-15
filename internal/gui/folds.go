@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
@@ -10,12 +11,12 @@ import (
 )
 
 // Tree is the objectives drawn, in the order the tab lists them: each of level one followed by its sub-objectives when it is unfolded; a search draws what it reaches, under the parent holding it.
-func (w Window) Tree() []engine.Branch {
+func (w Window) Tree() []board.Branch {
 	if !w.looking.Empty() {
-		return engine.FoundBranches(w.filters.KeptGoals(w.snap.Goals), w.looking.Reads())
+		return board.FoundBranches(w.filters.KeptGoals(w.snap.Goals), w.looking.Reads())
 	}
-	var out []engine.Branch
-	for _, b := range engine.Branches(w.Showing().Goals) {
+	var out []board.Branch
+	for _, b := range board.Branches(w.Showing().Goals) {
 		if b.Under && w.Folded(b.Goal.Parent) {
 			continue
 		}
@@ -119,13 +120,13 @@ func (w Window) foldingKey(name string) (Window, bool) {
 		}
 		return w, true
 	case "shift+up", "shift+down":
-		in, moves := engine.Stepped(w.Showing().Goals, g.Number, name == "shift+up")
+		in, moves := board.Stepped(w.Showing().Goals, g.Number, name == "shift+up")
 		if !moves {
 			return w, true
 		}
 		return w.asking(engine.ObjectiveMove, in).choosingGoal(g.Number), true
 	case "alt+right":
-		for _, b := range engine.Branches(w.Showing().Goals) {
+		for _, b := range board.Branches(w.Showing().Goals) {
 			if len(b.Goal.Children) > 0 {
 				w = w.unfolding(b.Goal.Number)
 			}
@@ -164,7 +165,7 @@ func (w Window) narrowList() bool { return GoalAt(w.Layout(), 0, 0).W < narrowIt
 const narrowItem = 300
 
 // SignalOf is what an objective's second line ends with in the late ink: its own deadline past or what it waits on, or, folded, the first of what it hides that wants seeing, the rest counted — and whether a dot stands before it, saying it is hidden.
-func (w Window) SignalOf(b engine.Branch) (string, bool) {
+func (w Window) SignalOf(b board.Branch) (string, bool) {
 	g := b.Goal
 	if b.Holds {
 		return "", false
@@ -204,7 +205,7 @@ func (w Window) SignalOf(b engine.Branch) (string, bool) {
 	return said, true
 }
 
-func (w Window) unreachedTitles(g engine.Goal) []string {
+func (w Window) unreachedTitles(g board.Goal) []string {
 	var titles []string
 	for _, n := range g.WaitsOn {
 		if on, ok := w.snap.Goal(n); ok && on.State != "reached" {

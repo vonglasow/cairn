@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/board"
 	"fmt"
 	"image"
 	"image/color"
@@ -23,7 +24,6 @@ import (
 	"gioui.org/widget/material"
 	"golang.org/x/image/math/fixed"
 
-	"cairn/internal/engine"
 	cairnlogo "cairn/internal/logo"
 )
 
@@ -426,7 +426,7 @@ func drawFilterNames(k Kit, w Window, head Box) {
 		row := w.FilterRowAt(i)
 		Row{Said: Titled(f.Name), Picked: !open && i == w.FilterOn() && w.ViewWalked() == 0, Hover: open && i == w.FilterOn()}.Draw(k, row)
 		line := Inside(row)
-		if len(f.Taken()) == 0 && viewed && v.Holds.Narrows(f.Arg) {
+		if len(f.Taken()) == 0 && viewed && board.Narrows(v.Holds, f.Arg) {
 			at := ends(w.measured(), Titled(f.Name), reads) + between
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, Box{X: line.X + at, Y: line.Y, W: line.W - at - padding - 2*small, H: line.H}, InTheViewSays, small, font.Font{}, text.Start)
 		}
@@ -527,7 +527,7 @@ func drawMonth(k Kit, l Layout, w Window) {
 	for i, name := range Weekdays[:w.pages.WeekDays()] {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, MonthWeekdayAt(l, i), name, reads)
 	}
-	for i, day := range engine.MonthGrid(w.week) {
+	for i, day := range board.MonthGrid(w.week) {
 		cell := MonthCellAt(l, i)
 		if cell == (Box{}) {
 			continue
@@ -601,7 +601,7 @@ func drawCalendar(k Kit, w Window) {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, WeekdayAt(box, i), name, reads)
 	}
 	today := w.today()
-	for i, day := range engine.MonthGrid(w.day) {
+	for i, day := range board.MonthGrid(w.day) {
 		DayCell{Said: strconv.Itoa(day.Day()), Picked: day.Equal(w.day), Today: day.Equal(today), Faded: w.Faded(day)}.Draw(k, DayAt(box, i))
 	}
 	drawPanelOffers(k, box, w)
@@ -742,7 +742,7 @@ func drawTabs(k Kit, l Layout, w Window) {
 }
 
 func drawColumns(k Kit, l Layout, w Window, scene Scene) {
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		ground := Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H}
 		pose := scene.ground(i)
@@ -804,7 +804,7 @@ func drawReferences(k Kit, w Window, within Box) {
 }
 
 func drawBand(k Kit, l Layout, w Window, scene Scene) {
-	for lane, kind := range engine.Stalled {
+	for lane, kind := range board.Stalled {
 		ground := LaneGround(l, lane)
 		pose := scene.ground(len(l.Column) + lane)
 		done := k.posed(pose, ground)
@@ -927,12 +927,12 @@ func disc(gtx layout.Context, x, y, r float32, ink color.NRGBA) {
 	paint.FillShape(gtx.Ops, ink, round.Op(gtx.Ops))
 }
 
-func (w Window) cardOf(c engine.Card, chosen, hovered bool) Card {
+func (w Window) cardOf(c board.Card, chosen, hovered bool) Card {
 	return Card{Face: c, Chosen: chosen, Hovered: hovered, Pages: w.pages, Colour: w.LabelColour}
 }
 
-func goalFace(g engine.Goal) engine.Card {
-	return engine.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g),
+func goalFace(g board.Goal) board.Card {
+	return board.Card{Number: g.Number, Title: g.Title, State: g.State, Priority: g.Priority, Labels: Standings(g),
 		Deadline: g.Deadline}
 }
 
@@ -1055,13 +1055,13 @@ func inkOf(th *material.Theme, face font.Font, key string) (top, bottom int) {
 	return top, bottom
 }
 
-func drawSub(k Kit, box Box, c engine.Card, line string, on, picked bool, held Written) {
+func drawSub(k Kit, box Box, c board.Card, line string, on, picked bool, held Written) {
 	panel := Tile{Picked: picked}.Draw(k, SubPanel(box))
 	k = k.inside("tile")
 	if on {
 		Ring{Radius: k.skin.Radius.Row}.Draw(k, panel)
 	}
-	done := engine.Finished(c)
+	done := board.Finished(c)
 	Check{Done: done}.Draw(k, SubCheck(box))
 	writ := SubWriting(box)
 	said := fits(k.gtx, k.th, line, writ.W, small)
@@ -1075,8 +1075,8 @@ func drawSub(k Kit, box Box, c engine.Card, line string, on, picked bool, held W
 }
 
 // SubInk is the ink a step's name, or a serving task's, is written in: the reading ink for what is left, the faint one for what is done.
-func SubInk(skin Skin, c engine.Card) color.NRGBA {
-	if engine.Finished(c) {
+func SubInk(skin Skin, c board.Card) color.NRGBA {
+	if board.Finished(c) {
 		return skin.Colour.Ink.Faint
 	}
 	return skin.Colour.Ink.Text
@@ -1095,7 +1095,7 @@ func drawUnder(k Kit, w Window) {
 	under := w.Under()
 	done := 0
 	for _, c := range under {
-		if engine.Finished(c) {
+		if board.Finished(c) {
 			done++
 		}
 	}
@@ -1133,13 +1133,13 @@ func drawWorkTile(k Kit, w Window, tile WorkTile) {
 	pill := Box{X: spentAt.X - padding - ends(w.measured(), state, small) - 2*pillPad, Y: line.Y + (line.H-pillHigh)/2, W: ends(w.measured(), state, small) + 2*pillPad, H: pillHigh}
 	Pill{Said: state}.Draw(k, pill)
 	ink := k.skin.Colour.Ink.Text
-	if engine.Finished(c) {
+	if board.Finished(c) {
 		ink = k.skin.Colour.Ink.Faint
 	}
 	title := Box{X: x, Y: line.Y, W: max(0, pill.X-padding-x), H: line.H}
 	said := fits(k.gtx, k.th, c.Title, title.W, small)
 	say(k.gtx, k.th, ink, title, said, small)
-	if engine.Finished(c) {
+	if board.Finished(c) {
 		loose := k.gtx
 		loose.Constraints = layout.Constraints{Max: image.Pt(title.W, lineHigh)}
 		Struck{}.Draw(k, StruckAt(title, wide(loose, k.th, said, small).Size.X))

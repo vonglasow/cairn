@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"strconv"
 	"strings"
 
@@ -12,7 +13,7 @@ type FateRow struct {
 	Said    string
 	Sub     int
 	Choices []string
-	Fates   []engine.Fate
+	Fates   []board.Fate
 	On      int
 	At      Box
 	Choice  Box
@@ -28,9 +29,9 @@ type Fates struct {
 
 var (
 	subChoices  = []string{"Delete", "Keep as level one"}
-	subFates    = []engine.Fate{engine.DeleteIt, engine.KeepIt}
+	subFates    = []board.Fate{board.DeleteIt, board.KeepIt}
 	taskChoices = []string{"Delete", "Detach"}
-	taskFates   = []engine.Fate{engine.DeleteIt, engine.DetachThem}
+	taskFates   = []board.Fate{board.DeleteIt, board.DetachThem}
 )
 
 const (
@@ -60,7 +61,7 @@ func (w Window) FatesAsked() Fates {
 	touched := d.Touched()
 	if d.AsksTasks() {
 		said := numbersSaid(touched)
-		if len(touched) == len(engine.Serving(w.snap.Cards, d.Number)) {
+		if len(touched) == len(board.Serving(w.snap.Cards, d.Number)) {
 			said += " on " + g.Title + " itself"
 		}
 		f.Rows = append(f.Rows, FateRow{Said: said, Choices: taskChoices, Fates: taskFates, On: fateAt(taskFates, d.TasksFate())})
@@ -99,7 +100,7 @@ func (w Window) FatesAsked() Fates {
 	return f
 }
 
-func fateAt(fates []engine.Fate, f engine.Fate) int {
+func fateAt(fates []board.Fate, f board.Fate) int {
 	for i, one := range fates {
 		if one == f {
 			return i
@@ -121,7 +122,7 @@ func (w Window) DeletesSays() string {
 	d := w.fates
 	gone := []int{d.Number}
 	for _, sub := range d.Subs {
-		if d.FateOf(sub) == engine.DeleteIt {
+		if d.FateOf(sub) == board.DeleteIt {
 			gone = append(gone, sub)
 		}
 	}
@@ -129,7 +130,7 @@ func (w Window) DeletesSays() string {
 	if at := strings.LastIndex(said, ", "); at >= 0 {
 		said = said[:at] + " and " + said[at+2:]
 	}
-	if d.TasksFate() == engine.DeleteIt {
+	if d.TasksFate() == board.DeleteIt {
 		n := len(d.Touched())
 		said += " with " + strconv.Itoa(n) + " task" + plural(n)
 	}

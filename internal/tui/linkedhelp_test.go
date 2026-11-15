@@ -1,15 +1,14 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 func TestTheBarAndTheHelpNameO(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 7, Title: "Ship it", State: "todo", Priority: "normal"}}
+	f.cards = []board.Card{{Number: 7, Title: "Ship it", State: "todo", Priority: "normal"}}
 	b := hit(standing(f), "l", "i")
 	if bar := strings.Join(b.offers(), " "); !strings.Contains(bar, "linked") {
 		t.Errorf("the insert bar reads %q, and does not offer o", bar)

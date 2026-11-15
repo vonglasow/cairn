@@ -53,8 +53,8 @@ var appInstall = Operation{
 	},
 }
 
-// upgradeCairn puts the newest release of cairn in the place of the one that was run; a person asks it, never a machine.
-var upgradeCairn = Operation{
+// Upgrade puts the newest release of cairn in the place of the one that was run; a person asks it, never a machine.
+var Upgrade = Operation{
 	Verb:  "upgrade",
 	Short: "Put the newest release of cairn in the place of this one",
 	Does: "Take the newest release of cairn from GitHub, check its archive against the release's SHA256SUMS, and put its binary in the place of the cairn that was run. " +

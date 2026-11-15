@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"cairn/internal/engine/act"
 	"cairn/internal/theme"
 	"fmt"
@@ -53,7 +53,7 @@ func (w Window) WhereChosen() (box, run Box, ok bool) {
 		}
 		return Box{}, Box{}, false
 	}
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
 	for i, held := range dealt {
 		for j, c := range held.Cards {
 			if c.Number == w.chosen {
@@ -61,7 +61,7 @@ func (w Window) WhereChosen() (box, run Box, ok bool) {
 			}
 		}
 	}
-	for lane := range engine.Stalled {
+	for lane := range board.Stalled {
 		for j, c := range w.inLane(lane) {
 			if c.Number == w.chosen {
 				return l.LaneCardAt(lane, j, w.lanes[lane]), l.Lane[lane], true
@@ -81,12 +81,12 @@ func (l Layout) Written() string {
 		fmt.Fprintf(&out, "%-12s x=%-5d y=%-5d w=%-5d h=%d\n", name, b.X, b.Y, b.W, b.H)
 	}
 	say("tabs", l.Tabs)
-	for i := range engine.Columns {
+	for i := range board.Columns {
 		say(fmt.Sprintf("head %d", i), l.Head[i])
 		say(fmt.Sprintf("column %d", i), l.Column[i])
 	}
 	say("band", l.Band)
-	for i, name := range engine.Stalled {
+	for i, name := range board.Stalled {
 		say("lane "+name, l.Lane[i])
 	}
 	say("bar", l.Bar)
@@ -106,11 +106,11 @@ func (w Window) PartOn() (string, bool) {
 func (w Window) Hovered() (string, bool) { return w.over, w.hovered }
 
 // Serving is the work under the objective that is open, by title and by where each task stands.
-func (w Window) Serving() []engine.Card {
+func (w Window) Serving() []board.Card {
 	if !w.chosenGoal {
 		return nil
 	}
-	return engine.Serving(w.snap.Cards, w.chosen)
+	return board.Serving(w.snap.Cards, w.chosen)
 }
 
 // On puts the keyboard on a field by name, which is what a click does and what a test says.

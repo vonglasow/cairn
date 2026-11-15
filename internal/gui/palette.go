@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
@@ -101,7 +102,7 @@ func (w Window) PaletteRows() []PaletteRow {
 	if typed != "" {
 		matched := 0
 		for _, c := range w.Showing().Cards {
-			if matched < paletteTasksAtMost && !found[c.Number] && engine.ReachesCard(c, typed) {
+			if matched < paletteTasksAtMost && !found[c.Number] && board.ReachesCard(c, typed) {
 				rows, matched = append(rows, w.taskRow(c)), matched+1
 			}
 		}
@@ -144,7 +145,7 @@ func (w Window) commandedTask(typed string) (int, bool) {
 	return w.chosen, typed != "" && w.chosen != 0 && !w.chosenGoal
 }
 
-func (w Window) taskRow(c engine.Card) PaletteRow {
+func (w Window) taskRow(c board.Card) PaletteRow {
 	number := c.Number
 	return PaletteRow{Group: paletteTasksGroup, Says: "#" + strconv.Itoa(number) + "  " + c.Title, does: func(w Window) Window {
 		w.chosen, w.chosenGoal = number, false
@@ -156,7 +157,7 @@ func reaching(said, typed string) bool {
 	return strings.TrimSpace(typed) == "" || engine.Reaches([]string{said}, typed)
 }
 
-func openingRow(c engine.Card) PaletteRow {
+func openingRow(c board.Card) PaletteRow {
 	number := c.Number
 	return PaletteRow{Group: paletteTasksGroup, Says: "Open #" + strconv.Itoa(number) + " · " + c.Title, does: func(w Window) Window {
 		w.taken, w.chosen, w.chosenGoal = nil, number, false
@@ -165,17 +166,14 @@ func openingRow(c engine.Card) PaletteRow {
 }
 
 func (w Window) chosenInSight() Window {
-	for column := range engine.Columns {
-		for at, c := range w.inColumn(column) {
-			if c.Number == w.chosen {
-				return w.following(column, at)
-			}
-		}
+	spot, ok := board.SpotOf(w.Showing().Cards, w.archived, w.chosen)
+	switch {
+	case !ok:
+		return w
+	case spot.InBand:
+		return w.followingLane(spot.Column, spot.At)
 	}
-	if lane, at, ok := w.whereInBand(); ok {
-		return w.followingLane(lane, at)
-	}
-	return w
+	return w.following(spot.Column, spot.At)
 }
 
 // typedIntoPalette is the open command bar with what is typed into it changed: a slash typed first turns it into the board's search, with what follows the slash.
@@ -198,20 +196,11 @@ func (w Window) actionRows() []PaletteRow {
 	}
 	if c, ok := w.snap.Card(w.chosen); ok && w.chosen != 0 && !w.chosenGoal {
 		n := "#" + strconv.Itoa(c.Number)
-		action("Move "+n+" to…", "m", waitingFor("state"))
-		action("Priority of "+n+"…", "p", waitingFor("priority"))
-		action("Label "+n+" with…", "l", waitingFor("label"))
-		action("Edit "+n, "e", pressing("e"))
-		focus := "Focus " + n
-		if c.InFocus {
-			focus = "Unfocus " + n
+		for _, line := range w.menuFor() {
+			action(n+" "+line, MenuKey(line), paletteDoing(line))
 		}
-		action(focus, "f", pressing("f"))
-		action("Archive "+n, "x", func(w Window) Window { return w.Choose("Archive") })
-		action("Delete "+n, "cmd+backspace", func(w Window) Window { return w.Choose("Delete") })
 		if c.Series != nil && w.pages.Recurs() {
 			series := c.Series.Series
-			action("Skip "+n, "", func(w Window) Window { return w.asking(engine.TaskSkip, engine.Numbered(c.Number)) })
 			action("Open the series of "+n, "", func(w Window) Window { return w.onSeries(series) })
 		}
 	}
@@ -226,7 +215,20 @@ func (w Window) actionRows() []PaletteRow {
 	} {
 		action(general.says, general.key, pressing(general.key))
 	}
+	action("Reset sizes", "", func(w Window) Window { return w.Choose("Reset sizes") })
 	return rows
+}
+
+func paletteDoing(line string) func(Window) Window {
+	switch line {
+	case "Move to…":
+		return waitingFor("state")
+	case "Priority…":
+		return waitingFor("priority")
+	case "Labels…":
+		return waitingFor("label")
+	}
+	return func(w Window) Window { return w.doingLine(line) }
 }
 
 func waitingFor(field string) func(Window) Window {
@@ -258,7 +260,7 @@ func (w Window) valuesOf(field string) []string {
 	case "state":
 		return engine.States()
 	case "priority":
-		return engine.Priorities()
+		return board.Priorities()
 	case "label":
 		return w.boardLabels()
 	}

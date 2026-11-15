@@ -136,38 +136,6 @@ func TestALabelWithNoNameIsRefusedNotMade(t *testing.T) {
 	}
 }
 
-func TestALabelWearsTheColourChosenOrOneOfItsName(t *testing.T) {
-	path := storeAt(t)
-	if _, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "one"}, Listed: map[string][]string{"label": {"doc", "release"}}}); err != nil {
-		t.Fatal(err)
-	}
-	coloured, err := Do(LabelColour, path, Input{Given: map[string]string{"label": "release", "colour": "Peach"}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, one := range Of(LabelColour, coloured).(label.List).Labels {
-		want := map[string]string{"release": "peach", "doc": label.ColourOf("doc")}[one.Label]
-		if one.Colour != want {
-			t.Errorf("%s wears %q, want %q", one.Label, one.Colour, want)
-		}
-	}
-	if _, err := Do(LabelColour, path, Input{Given: map[string]string{"label": "release", "colour": "brown"}}); !errors.Is(err, label.ErrNoSuchColour) {
-		t.Errorf("brown answers %v", err)
-	}
-	opened, err := Open(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = opened.Close() }()
-	looked, err := Look(opened)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if looked.Colours["release"] != "peach" || looked.Colours["doc"] != label.ColourOf("doc") {
-		t.Errorf("the board reads the colours %v", looked.Colours)
-	}
-}
-
 func made(pairs ...string) func() (Operation, Input) {
 	return func() (Operation, Input) { return LabelNew, given(pairs...) }
 }

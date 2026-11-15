@@ -420,7 +420,7 @@ func TestWorkspaces_areDescribedForEverySurface(t *testing.T) {
 			t.Errorf("%s is among All(), so offered to an agent", op.Name())
 		}
 	}
-	if typed := ForAPersonOnly(); len(typed) != 11 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() || typed[2].Name() != workspaceRemove.Name() || typed[3].Name() != ViewNew.Name() || typed[6].Name() != ViewDelete.Name() || typed[8].Name() != ConfigUnset.Name() || typed[9].Name() != ConfigFill.Name() || typed[10].Name() != upgradeCairn.Name() {
+	if typed := ForAPersonOnly(); len(typed) != 11 || typed[0].Name() != WorkspaceAdd.Name() || typed[1].Name() != WorkspaceUse.Name() || typed[2].Name() != workspaceRemove.Name() || typed[3].Name() != ViewNew.Name() || typed[6].Name() != ViewDelete.Name() || typed[8].Name() != ConfigUnset.Name() || typed[9].Name() != ConfigFill.Name() || typed[10].Name() != Upgrade.Name() {
 		t.Errorf("ForAPersonOnly() = %d operations, want workspace add, use and remove, then the views but their list, then setting a key and taking it out, then upgrading", len(typed))
 	}
 	if WorkspaceList.Level != Read || WorkspaceShow.Level != Read || WorkspaceAdd.Level != write || WorkspaceUse.Level != write {

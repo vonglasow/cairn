@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 
@@ -67,7 +68,7 @@ func (w Window) stretch(number int) Window {
 }
 
 func (w Window) runs() [][]int {
-	numbers := func(cards []engine.Card) []int {
+	numbers := func(cards []board.Card) []int {
 		var out []int
 		for _, c := range cards {
 			out = append(out, c.Number)
@@ -76,16 +77,16 @@ func (w Window) runs() [][]int {
 	}
 	if w.tab == Objectives {
 		var goals []int
-		for _, g := range engine.Sorted(w.Showing().Goals) {
+		for _, g := range board.Sorted(w.Showing().Goals) {
 			goals = append(goals, g.Number)
 		}
 		return [][]int{goals}
 	}
 	var runs [][]int
-	for i := range engine.Columns {
+	for i := range board.Columns {
 		runs = append(runs, numbers(w.inColumn(i)))
 	}
-	for i := range engine.Stalled {
+	for i := range board.Stalled {
 		runs = append(runs, numbers(w.inLane(i)))
 	}
 	return runs
@@ -100,14 +101,14 @@ func (w Window) askingSeveral(about Question) Window {
 	return w
 }
 
-func (w Window) flags() []engine.Flag {
+func (w Window) flags() []board.Flag {
 	if w.question == aboutArchivingSeveral {
-		return engine.ArchivingTasks(w.snap, w.Taken())
+		return board.ArchivingTasks(w.snap, w.Taken())
 	}
 	if w.chosenGoal {
-		return engine.DeletingGoals(w.snap, w.Taken())
+		return board.DeletingGoals(w.snap, w.Taken())
 	}
-	return engine.DeletingTasks(w.snap, w.Taken())
+	return board.DeletingTasks(w.snap, w.Taken())
 }
 
 func (w Window) severalSays() []Said {
@@ -142,14 +143,14 @@ func (w Window) titleOf(n int) string {
 }
 
 func (w Window) severalOffers() []string {
-	if slices.ContainsFunc(w.flags(), func(f engine.Flag) bool { return !f.Refused }) {
+	if slices.ContainsFunc(w.flags(), func(f board.Flag) bool { return !f.Refused }) {
 		return []string{w.agreeingVerb(), "Skip flagged", "Cancel"}
 	}
 	return []string{w.agreeingVerb(), "Cancel"}
 }
 
 func (w Window) actingOnSeveral(onlyRefused bool) Window {
-	kept := engine.LeavingOut(w.Taken(), w.flags(), onlyRefused)
+	kept := board.LeavingOut(w.Taken(), w.flags(), onlyRefused)
 	op := engine.TaskDelete
 	if w.chosenGoal {
 		op = engine.ObjectiveDelete
@@ -162,7 +163,7 @@ func (w Window) actingOnSeveral(onlyRefused bool) Window {
 		return w
 	}
 	w.taken = nil
-	return w.asking(op, engine.Agreed(engine.Several(kept)))
+	return w.asking(op, engine.Agreed(board.Several(kept)))
 }
 
 func (w Window) severalHead() string {

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/label"
 	"cairn/internal/engine/workspace"
 	"slices"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"cairn/internal/build"
-	"cairn/internal/engine"
 	"cairn/internal/store/files"
 )
 
@@ -88,7 +88,7 @@ func TestTheAboutBoxShowsTheLogoBesideWhatItSays(t *testing.T) {
 }
 
 func TestAnOpenTasksContextIsCopiedByItsMark(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Context: "/h/notes/1"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo", Context: "/h/notes/1"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("e")
 	marks := w.CopyMarks()
 	if len(marks) != 1 || marks[0].Said != "/h/notes/1" {

@@ -58,8 +58,8 @@ func seriesNumber(means string) Argument {
 	return Argument{Name: "number", Kind: Text, Positional: true, Required: true, Of: "a series", Means: "the number of the series, as 3 or ↻3, " + means}
 }
 
-// seriesList lists the series, active and stopped, or only some.
-var seriesList = Operation{
+// SeriesList lists the series, active and stopped, or only some.
+var SeriesList = Operation{
 	Thing:   "series",
 	Verb:    "list",
 	Short:   "List the series",
@@ -1057,7 +1057,7 @@ func deletionAsked(n int, there, open []int) string {
 		openSaid = "keeps the done and deletes " + act.NumbersOrNothing(open)
 	}
 	return fmt.Sprintf("↻%d made %s. Say what becomes of them: --keep-tasks keeps all %d as ordinary tasks, --delete-open %s, --delete-tasks deletes all %d as well",
-		n, manyOf(len(there), "task", "tasks"), len(there), openSaid, len(there))
+		n, item.ManyOf(len(there), "task", "tasks"), len(there), openSaid, len(there))
 }
 
 // StandingSaid is where a series stands, in words: active, or stopped since a day.
@@ -1106,7 +1106,7 @@ func TemplateSaid(t series.Template) string {
 		said = append(said, strings.Join(t.Labels, ", "))
 	}
 	if len(t.Steps) > 0 {
-		said = append(said, manyOf(len(t.Steps), "step", "steps"))
+		said = append(said, item.ManyOf(len(t.Steps), "step", "steps"))
 	}
 	if t.Estimate != "" {
 		said = append(said, t.Estimate)
@@ -1193,7 +1193,7 @@ func seriesDeletedText(d series.Deleted) string {
 		said += " · " + act.NumbersOrNothing(d.TasksDeleted) + " deleted"
 	}
 	if len(d.Kept) > 0 {
-		said += fmt.Sprintf(" · %s kept as ordinary tasks", manyOf(len(d.Kept), "task", "tasks"))
+		said += fmt.Sprintf(" · %s kept as ordinary tasks", item.ManyOf(len(d.Kept), "task", "tasks"))
 	}
 	return said + "\n"
 }

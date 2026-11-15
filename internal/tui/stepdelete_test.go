@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 
 func steppedTasks() *fake {
 	f := newFake()
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: "First", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Draft", Done: true}, {Number: 2, Title: "Keep"}}},
 		{Number: 2, Title: "Second", State: "current"},
 	}

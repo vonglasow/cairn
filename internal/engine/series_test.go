@@ -281,7 +281,7 @@ func TestSeries_listedNarrowedAndSearched(t *testing.T) {
 	doneOn(t, path, "2026-11-09", SeriesStop, ask("number", "2"))
 	listed := func(a request) []int {
 		var numbers []int
-		for _, s := range Of(seriesList, doneOn(t, path, "2026-11-09", seriesList, a)).(seriesListed).Series {
+		for _, s := range Of(SeriesList, doneOn(t, path, "2026-11-09", SeriesList, a)).(seriesListed).Series {
 			numbers = append(numbers, s.Number)
 		}
 		return numbers
@@ -295,14 +295,14 @@ func TestSeries_listedNarrowedAndSearched(t *testing.T) {
 	if got := listed(ask("search", "STAND")); !slices.Equal(got, []int{1}) {
 		t.Errorf("searched: %v", got)
 	}
-	text := RenderText(seriesList, doneOn(t, path, "2026-11-09", seriesList, ask()))
+	text := RenderText(SeriesList, doneOn(t, path, "2026-11-09", SeriesList, ask()))
 	if !strings.Contains(text, "↻1  Stand-up  · active  · next Mon 9 Nov") || !strings.Contains(text, "↻2  Expense report  · stopped since Mon 9 Nov") {
 		t.Errorf("the listing reads:\n%s", text)
 	}
-	if text := RenderText(seriesList, doneOn(t, path, "2026-11-09", seriesList, ask("search", "nothing"))); text != "there is no series\n" {
+	if text := RenderText(SeriesList, doneOn(t, path, "2026-11-09", SeriesList, ask("search", "nothing"))); text != "there is no series\n" {
 		t.Errorf("nothing listed reads %q", text)
 	}
-	refusedOn(t, path, "2026-11-09", seriesList, ask("state", "asleep"), "not-one-of")
+	refusedOn(t, path, "2026-11-09", SeriesList, ask("state", "asleep"), "not-one-of")
 }
 
 func TestSeries_deletingAsksWhatBecomesOfItsTasks(t *testing.T) {
@@ -369,7 +369,7 @@ func TestSeries_offMakesNothingAndRefusesARule(t *testing.T) {
 	if _, err := doThere(TaskNew, Places{Store: path, Home: off}, ask("title", "x", "every", "every day").input(), Acting{}); RefusalOf(err).Reason != "series-off" {
 		t.Errorf("a rule given with recurrence off: %v", err)
 	}
-	if _, err := doThere(seriesList, Places{Store: path, Home: off}, ask().input(), Acting{}); RefusalOf(err).Reason != "series-off" {
+	if _, err := doThere(SeriesList, Places{Store: path, Home: off}, ask().input(), Acting{}); RefusalOf(err).Reason != "series-off" {
 		t.Errorf("series asked for with recurrence off: %v", err)
 	}
 	answer, err := doThere(TaskEdit, Places{Store: path, Home: off}, ask("number", "1", "state", "done").input(), Acting{})
@@ -379,7 +379,7 @@ func TestSeries_offMakesNothingAndRefusesARule(t *testing.T) {
 	if strings.Contains(RenderText(TaskEdit, answer), "↻") {
 		t.Errorf("with recurrence off, the card says it repeats:\n%s", RenderText(TaskEdit, answer))
 	}
-	if !PagesFrom(off).Offers(TaskList) || PagesFrom(off).Offers(seriesList) || PagesFrom(off).Offers(TaskSkip) {
+	if !PagesFrom(off).Offers(TaskList) || PagesFrom(off).Offers(SeriesList) || PagesFrom(off).Offers(TaskSkip) {
 		t.Error("with recurrence off, the series are offered")
 	}
 	if slices.ContainsFunc(PagesFrom(off).Shaped(TaskNew).Takes, func(a Argument) bool { return a.Name == "every" }) {
@@ -391,7 +391,7 @@ func TestSeries_offMakesNothingAndRefusesARule(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(home, ".config", "cairn", "config.toml"), []byte("[series]\non = true\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if !PagesFrom(off).Offers(seriesList) || !slices.ContainsFunc(PagesFrom(off).Shaped(TaskNew).Takes, func(a Argument) bool { return a.Name == "every" }) {
+	if !PagesFrom(off).Offers(SeriesList) || !slices.ContainsFunc(PagesFrom(off).Shaped(TaskNew).Takes, func(a Argument) bool { return a.Name == "every" }) {
 		t.Error("turned on, the series are not offered")
 	}
 }
@@ -599,7 +599,7 @@ func TestEvery_givesATaskWithNoDeadlineTheDayOfItsFirstOccurrence(t *testing.T) 
 func seriesNumbersListed(t *testing.T, path string, a request) []int {
 	t.Helper()
 	var numbers []int
-	for _, s := range Of(seriesList, doneOn(t, path, "2026-11-09", seriesList, a)).(seriesListed).Series {
+	for _, s := range Of(SeriesList, doneOn(t, path, "2026-11-09", SeriesList, a)).(seriesListed).Series {
 		numbers = append(numbers, s.Number)
 	}
 	return numbers

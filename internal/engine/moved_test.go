@@ -146,13 +146,6 @@ func TestEngine_takesWhatAnEqualsSignSaysAtCreation(t *testing.T) {
 	}
 }
 
-func TestAsked_replacesWhatAListHeld(t *testing.T) {
-	in := inputOfFields([]Field{{Name: "labels", Arg: "label", Value: "api urgent"}}, TaskEdit)
-	if got := in.Listed["label"]; !slices.Equal(got, []string{"=", "api", "urgent"}) {
-		t.Errorf("label = %v, want the form's labels replacing the ones there", got)
-	}
-}
-
 func builtObjective(t *testing.T, number int, title string) objective.Objective {
 	t.Helper()
 	built, err := objective.NewObjective(title)

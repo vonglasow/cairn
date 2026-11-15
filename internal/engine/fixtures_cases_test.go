@@ -51,7 +51,7 @@ func TestFixtures_holdEveryCaseABoardDraws(t *testing.T) {
 		saw("too many labels", len(f.Labels) >= 6)
 		if day, err := calendar.FromToday(f.Deadline, today); err == nil && day != "" {
 			due, _ := calendar.ParseDeadline(day)
-			days := int(due.Sub(startOfDay(today)).Hours() / 24)
+			days := int(due.Sub(calendar.StartOfDay(today)).Hours() / 24)
 			saw("a deadline past", days < 0)
 			saw("a deadline today", days == 0)
 			saw("a deadline tomorrow", days == 1)

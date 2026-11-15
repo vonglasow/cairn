@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"testing"
 )
 
@@ -9,10 +9,10 @@ func labelsOpen(t *testing.T, carried ...[]string) Window {
 	t.Helper()
 	w := New(newFake(), 1200, 800)
 	for i, labels := range carried {
-		w.snap.Cards = append(w.snap.Cards, engine.Card{Number: i + 1, Title: "Task", State: "todo", Labels: labels})
+		w.snap.Cards = append(w.snap.Cards, board.Card{Number: i + 1, Title: "Task", State: "todo", Labels: labels})
 	}
 	if len(carried) == 0 {
-		w.snap.Cards = []engine.Card{{Number: 1, Title: "Task", State: "todo"}}
+		w.snap.Cards = []board.Card{{Number: 1, Title: "Task", State: "todo"}}
 	}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "label" {

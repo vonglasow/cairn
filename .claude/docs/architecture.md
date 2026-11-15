@@ -51,10 +51,11 @@ all of them.
 | `internal/engine/migration` | a change to the shape of the store, and the list of them | the notions below it |
 | `internal/engine/label`, `series`, `view`, `backup`, `workspace`, `exchange`, `app` | one notion each: labels, series, views, backups, workspaces, export and import, cairn as an application and its upgrade | the notions below it, `store/files` |
 | `internal/store/sqlite` | keeping the notions, and handing them back; the only package that knows a database exists | the notions, never the catalogue |
-| `internal/engine` | the catalogue of every operation, `Ask` the one door, and what reads several notions at once: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, which scheme a window wears, and what every board reads — cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes | `theme`, the notions, `store/sqlite`, `store/files` |
+| `internal/engine` | the catalogue of every operation, `Ask` the one door, and what reads several notions at once: the calculations, where the places are found, the only door to the store, whether a cairn may be upgraded, which scheme a window wears | `theme`, the notions, `store/sqlite`, `store/files` |
+| `internal/board` | what every board reads, computed once: cards and goals, which fields a form asks about, how the cards deal into columns and where a pushed card goes; it changes anything only through `Ask` | `engine`, the notions |
 | `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
-| `internal/tui` | the board on a terminal | everything below but `cli`, `mcp` and `gui` |
+| `internal/tui` | the board on a terminal | `board` and everything below, but `cli`, `mcp` and `gui` |
 | `internal/gui` | the same board in a window | everything below but `cli`, `mcp` and `tui` |
 | `cmd/cairn` | hands the process to `cli.Main` and exits with what it returns | `cli` |
 | `internal/site` | the documentation site: the pages of `docs/` for a person using cairn, and a reference read off every surface, its boards drawn over the fixtures | everything below but the store |

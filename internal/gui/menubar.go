@@ -1,7 +1,6 @@
 package gui
 
 import (
-	"slices"
 	"strings"
 	"sync"
 
@@ -17,44 +16,18 @@ type MenuGroup struct {
 const menuButtonWide = 40
 
 var menuBar = []MenuGroup{
-	{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Settings…"}},
-	{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-	{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Series", "Archived", "Filter", KeepAsViewSays, ViewsSays + "…", "Reset sizes"}},
-	{Name: "Help", Items: []string{"Help", "About cairn"}},
+	{Name: "cairn", Items: []string{"About cairn", "Settings…", "Upgrade", "Quit"}},
+	{Name: "Help", Items: []string{"Help"}},
 }
-
-var actsOf = map[string][]engine.Operation{
-	"New":           {engine.TaskNew, engine.ObjectiveNew},
-	"New backup":    {engine.BackupNew},
-	"Backups":       {engine.BackupList},
-	"Labels":        {engine.LabelList},
-	"Export":        {engine.TaskExport},
-	"Import":        {engine.TaskImport},
-	"Edit":          {engine.TaskEdit, engine.ObjectiveEdit},
-	"Focus":         {engine.TaskFocus},
-	"Archive":       {engine.TaskArchive},
-	"Delete":        {engine.TaskDelete, engine.ObjectiveDelete},
-	"Search":        {engine.TaskSearch, engine.ObjectiveSearch},
-	"Archived":      {engine.TaskList},
-	"Filter":        {engine.TaskList},
-	KeepAsViewSays:  {engine.ViewNew},
-	ViewsSays + "…": {engine.ViewList},
-}
-
-var pageOfLine = map[string]string{"Tasks": engine.PageTasks, "Objectives": engine.PageObjectives, "Time": engine.PageTime}
 
 func offered(pages engine.Pages, line string) bool {
-	if page, isOne := pageOfLine[line]; isOne {
-		return pages.Shows(page)
-	}
-	acts, acting := actsOf[line]
-	return !acting || slices.ContainsFunc(acts, pages.Offers)
+	return line != "Upgrade" || pages.Offers(engine.Upgrade)
 }
 
-// MenuBar is every menu of the bar, in the order a window lays them out, with only the lines the pages shown offer: a line acting on a page turned off is gone, a menu left with no line goes too — the same rule as the command line's and the MCP server's (engine.Pages) — and with every page off there is none, the window holding nothing to act on.
+// MenuBar is every menu of the bar, in the order a window lays them out, with only the lines the pages shown offer; with every page off there is only Settings…, the window holding nothing to act on.
 func MenuBar(pages engine.Pages) []MenuGroup {
 	if pages.None() {
-		return []MenuGroup{{Name: "File", Items: []string{"Settings…"}}}
+		return []MenuGroup{{Name: "cairn", Items: []string{"Settings…"}}}
 	}
 	var bar []MenuGroup
 	for _, group := range menuBar {
@@ -77,51 +50,26 @@ func (w Window) Picked(item string) Window {
 		return w
 	}
 	w.screen = OnTheBoard
-	if item == "Focus" {
-		return w.working()
+	if item == "Upgrade" {
+		return w.upgrading()
 	}
 	return w.Choose(item)
 }
 
-var tabOfLine = map[string]Tab{"Tasks": Tasks, "Objectives": Objectives, "Time": Time}
-
-// Doable says whether a line of the menu bar does something now: offered by the pages shown, on the board, and with what it acts on in sight — a card chosen to edit, a task to focus or archive, another page to go to. The native bars grey what is not, the button's menu leaves it out, and picking it does nothing.
+// Doable says whether a line of the menu bar does something now: offered by the pages shown, and on the board. The native bars grey what is not, the button's menu leaves it out, and picking it does nothing.
 func (w Window) Doable(line string) bool {
 	if w.Blank() {
 		return line == "Settings…" && w.screen == OnTheBoard
 	}
-	if w.screen != OnTheBoard && w.screen != OnSearch || !offered(w.pages, line) {
-		return false
+	return (w.screen == OnTheBoard || w.screen == OnSearch) && offered(w.pages, line)
+}
+
+func (w Window) upgrading() Window {
+	answer, err := w.work.Ask(engine.Upgrade, engine.Input{})
+	if err != nil {
+		return w.failing(err)
 	}
-	onTasks := w.tab == Tasks
-	chosenTask := onTasks && w.chosen != 0 && !w.chosenGoal
-	switch line {
-	case "Tasks", "Objectives", "Time":
-		return w.tab != tabOfLine[line]
-	case "Series":
-		return w.tab != Series && slices.Contains(w.Shown(), Series)
-	case "New":
-		if w.tab == Objectives {
-			return w.pages.Offers(engine.ObjectiveNew)
-		}
-		return w.pages.Offers(engine.TaskNew)
-	case "Edit":
-		return w.chosen != 0
-	case "Delete":
-		return w.chosen != 0 || len(w.Taken()) > 0
-	case "Focus":
-		card, found := w.snap.Card(w.chosen)
-		return chosenTask && found && !engine.Finished(card)
-	case "Archive":
-		return chosenTask || onTasks && len(w.Taken()) > 0
-	case "Archived", "Reset sizes":
-		return onTasks
-	case KeepAsViewSays:
-		return onTasks && w.keepable()
-	case ViewsSays + "…":
-		return len(w.snap.Views) > 0
-	}
-	return true
+	return w.telling(strings.TrimSpace(engine.RenderText(engine.Upgrade, answer)))
 }
 
 var doableNow struct {

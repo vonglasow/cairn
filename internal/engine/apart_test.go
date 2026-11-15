@@ -52,13 +52,3 @@ func TestOpenApart_whatIsNotThereIsRefused(t *testing.T) {
 		t.Errorf("a workspace nobody named = %v; want %v", err, workspace.ErrNoSuchWorkspace)
 	}
 }
-
-func TestPages_aCardCostsNothingShownWhenTheTimeIsNot(t *testing.T) {
-	c := Card{Spent: "2h", Estimate: "1h", Overrun: true}
-	if said, over := (Pages{}).Cost(c); said != "2h/1h" || !over {
-		t.Errorf("with the time shown, Cost = %q, %v", said, over)
-	}
-	if said, over := (Pages{off: []string{PageTime}}).Cost(c); said != "" || over {
-		t.Errorf("with the time not shown, Cost = %q, %v; want nothing", said, over)
-	}
-}

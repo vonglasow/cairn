@@ -233,15 +233,15 @@ func (o Operation) Line() string { return strings.TrimSpace(o.Thing + " " + o.Ve
 func All() []Operation {
 	return []Operation{
 		TaskNew, TaskList, TaskShow, TaskEdit, TaskDelete, TaskSearch,
-		TaskArchive, taskUnarchive, TaskLabel,
-		TaskMove, TaskFocus, taskUnfocus, TaskExport, TaskImport, TaskSkip,
+		TaskArchive, TaskUnarchive, TaskLabel,
+		TaskMove, TaskFocus, TaskUnfocus, TaskExport, TaskImport, TaskSkip,
 		StepNew, stepList, StepEdit, StepDelete,
-		ObjectiveNew, objectiveList, ObjectiveShow, objectiveReport, ObjectiveEdit, ObjectiveMove, ObjectiveDelete, ObjectiveSearch,
+		ObjectiveNew, ObjectiveList, ObjectiveShow, objectiveReport, ObjectiveEdit, ObjectiveMove, ObjectiveDelete, ObjectiveSearch,
 		BackupNew, BackupList, backupShow, backupDelete, BackupRestore,
 		MigrationList, migrationShow, MigrationApply, MigrationRollback,
 		LabelList, LabelNew, LabelColour, labelScope, LabelDelete, LabelRename,
 		ViewList,
-		seriesList, SeriesShow, SeriesEdit, SeriesStop, SeriesResume, SeriesDelete,
+		SeriesList, SeriesShow, SeriesEdit, SeriesStop, SeriesResume, SeriesDelete,
 		TraceShow, traceList,
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, debugReport,
@@ -252,7 +252,7 @@ func All() []Operation {
 
 // ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes; a view is how the person looks at their work, so an agent reads the views and keeps, changes or deletes none.
 func ForAPersonOnly() []Operation {
-	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill, upgradeCairn}
+	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill, Upgrade}
 }
 
 // check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.

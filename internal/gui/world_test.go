@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"context"
 	"fmt"
@@ -44,7 +45,7 @@ type world struct {
 	system       string
 	clipboard    string
 	file         string
-	scrolled     [engine.Columns]int
+	scrolled     [board.Columns]int
 	laneScrolled [3]int
 	was          int
 	pointer      Point
@@ -89,7 +90,7 @@ func (w *world) reset() {
 	w.recurs = false
 	w.system = "darwin"
 	w.today = moment
-	w.scrolled = [engine.Columns]int{}
+	w.scrolled = [board.Columns]int{}
 	w.laneScrolled = [3]int{}
 }
 
@@ -287,7 +288,7 @@ func (w *world) resize(width, high int) error {
 
 func (w *world) find(title string) (Point, error) {
 	l := w.w.Layout()
-	dealt, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
+	dealt, stalled := board.Deal(w.w.Reading().Cards, w.w.archived)
 	for column, held := range dealt {
 		for at, c := range held.Cards {
 			if c.Title != title {
@@ -297,7 +298,7 @@ func (w *world) find(title string) (Point, error) {
 			return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}, nil
 		}
 	}
-	for lane, kind := range engine.Stalled {
+	for lane, kind := range board.Stalled {
 		at := 0
 		for _, c := range stalled {
 			if c.State != kind {
@@ -515,14 +516,14 @@ func (w *world) nudge(title string, by int) error {
 }
 
 func (w *world) slotIn(column string, above string) (Point, error) {
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return Point{}, fmt.Errorf("no column called %q", column)
 	}
 	l := w.w.Layout()
 	slot := 0
 	if above != "" {
-		dealt, _ := engine.Deal(w.w.Reading().Cards, w.w.archived)
+		dealt, _ := board.Deal(w.w.Reading().Cards, w.w.archived)
 		found := false
 		for i, c := range dealt[at].Cards {
 			if c.Title == above {
@@ -538,7 +539,7 @@ func (w *world) slotIn(column string, above string) (Point, error) {
 }
 
 func (w *world) footOf(column string) (Point, error) {
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return Point{}, fmt.Errorf("no column called %q", column)
 	}
@@ -591,8 +592,8 @@ func (w *world) dragToLaneAbove(title, kind, above string) error {
 	if err != nil {
 		return err
 	}
-	_, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
-	for at, c := range engine.InLanes(stalled)[lane] {
+	_, stalled := board.Deal(w.w.Reading().Cards, w.w.archived)
+	for at, c := range board.InLanes(stalled)[lane] {
 		if c.Title != above {
 			continue
 		}
@@ -622,7 +623,7 @@ func (w *world) takeHoldUnder(title, below string) error {
 
 func (w *world) under(title string) (Point, error) {
 	l := w.w.Layout()
-	dealt, _ := engine.Deal(w.w.Reading().Cards, w.w.archived)
+	dealt, _ := board.Deal(w.w.Reading().Cards, w.w.archived)
 	for column, held := range dealt {
 		for at, c := range held.Cards {
 			if c.Title != title {
@@ -650,7 +651,7 @@ func (w *world) takeHold(title, column string) error {
 }
 
 func (w *world) scrollOver(column string) error {
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return fmt.Errorf("no column called %q", column)
 	}
@@ -661,7 +662,7 @@ func (w *world) scrollOver(column string) error {
 }
 
 func laneNamed(kind string) (int, error) {
-	for i, name := range engine.Stalled {
+	for i, name := range board.Stalled {
 		if name == kind {
 			return i, nil
 		}
@@ -860,7 +861,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I click the day "([^"]*)" on the calendar$`, func(day string) error {
-		for i, shown := range engine.MonthGrid(w.w.day) {
+		for i, shown := range board.MonthGrid(w.w.day) {
 			if calendar.FormatDay(shown) == day {
 				box := DayAt(w.w.CalendarBox(), i)
 				w.w = w.w.clicked(Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
@@ -1096,13 +1097,13 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the column "([^"]*)" says "([^"]*)"$`, func(column, said string) error {
-		if got := w.w.EmptySays(engine.IndexOf(column)); got != said {
+		if got := w.w.EmptySays(board.IndexOf(column)); got != said {
 			return fmt.Errorf("the column %q says %q", column, got)
 		}
 		return nil
 	})
 	sc.Then(`^the column "([^"]*)" says nothing$`, func(column string) error {
-		if got := w.w.EmptySays(engine.IndexOf(column)); got != "" {
+		if got := w.w.EmptySays(board.IndexOf(column)); got != "" {
 			return fmt.Errorf("the column %q says %q", column, got)
 		}
 		return nil
@@ -1219,7 +1220,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if err := w.clickGoal(title); err != nil {
 			return err
 		}
-		for i, g := range engine.Sorted(w.w.Showing().Goals) {
+		for i, g := range board.Sorted(w.w.Showing().Goals) {
 			if g.Number == w.w.Chosen() {
 				w.was = i
 			}

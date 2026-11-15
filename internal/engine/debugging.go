@@ -210,7 +210,7 @@ func storeInNumbers(at Places) [][2]string {
 	if err != nil {
 		return unreadable(err)
 	}
-	goals, _ := held.run(objectiveList, Input{})
+	goals, _ := held.run(ObjectiveList, Input{})
 	columns := map[string]int{}
 	labels := map[string]bool{}
 	archived := 0

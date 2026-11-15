@@ -87,3 +87,8 @@ const momentLayout = "2006-01-02 15:04"
 func ParseMoment(s string) (time.Time, error) {
 	return time.ParseInLocation(momentLayout, s, time.Local)
 }
+
+// StartOfDay is the first moment of the day t falls on, where t is.
+func StartOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}

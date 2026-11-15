@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"testing"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestAReferenceWritesWhyItIsThereInTheRoomLeftAfterItsNumber(t *testing.T) {
-	c := engine.Card{Number: 54, Labels: []string{"store"}}
+	c := board.Card{Number: 54, Labels: []string{"store"}}
 	m := holding(newFake()).measured()
 	row := ReferenceRowOf(c, "outside this view · blocks #6", Box{X: 10, W: 151, H: lineHigh}, m, time.Time{}, engine.Pages{})
 	if row.Facts == "" || row.FactsAt.X < row.NumberAt.X+row.NumberAt.W+2*pillGap {

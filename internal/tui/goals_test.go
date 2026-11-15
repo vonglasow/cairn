@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"strings"
 	"testing"
 	"time"
@@ -43,7 +43,7 @@ func TestBar(t *testing.T) {
 }
 
 func TestGoalRows(t *testing.T) {
-	g := engine.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Description: "something written", State: "active", Labels: []string{"product"}}
+	g := board.Goal{Number: 3, Title: "Ship the desktop board", Done: 7, Total: 12, Description: "something written", State: "active", Labels: []string{"product"}}
 	rows := standing(newFake()).with(plainSkin).goalRows(g, 60)
 	if len(rows) != 2 {
 		t.Fatalf("an objective's row is %d lines, want 2", len(rows))
@@ -60,21 +60,21 @@ func TestGoalRows(t *testing.T) {
 }
 
 func TestGoalWithNothingUnderItSaysNoCount(t *testing.T) {
-	rows := standing(newFake()).with(plainSkin).goalRows(engine.Goal{Number: 1, Title: "Nothing yet"}, 60)
+	rows := standing(newFake()).with(plainSkin).goalRows(board.Goal{Number: 1, Title: "Nothing yet"}, 60)
 	if strings.Contains(rows[1], "0/0") {
 		t.Fatalf("an objective nothing serves claimed a count: %q", rows[1])
 	}
 }
 
 func TestGoalIsAlwaysTwoRows(t *testing.T) {
-	drawn := standing(newFake()).goalCard(engine.Branch{Goal: engine.Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}}, 60)
+	drawn := standing(newFake()).goalCard(board.Branch{Goal: board.Goal{Number: 1, Title: "Ship the desktop board", Done: 1, Total: 2}}, 60)
 	if got := len(strings.Split(drawn, "\n")); got != goalHeight {
 		t.Fatalf("an objective drew %d rows, want %d:\n%s", got, goalHeight, drawn)
 	}
 }
 
 func TestTheGoalUnderTheCursorIsDrawnApart(t *testing.T) {
-	g := engine.Branch{Goal: engine.Goal{Number: 1, Title: "One"}}
+	g := board.Branch{Goal: board.Goal{Number: 1, Title: "One"}}
 	b := standing(newFake())
 	b.goal = 1
 	elsewhere := standing(newFake())
@@ -94,17 +94,17 @@ func TestABarOfOneColumn(t *testing.T) {
 }
 
 func TestAGoalWithNothingBesideItsBar(t *testing.T) {
-	if got := strip(standing(newFake()).goalFacts(engine.Goal{Number: 1}, 40)); strings.Contains(got, "  ") {
+	if got := strip(standing(newFake()).goalFacts(board.Goal{Number: 1}, 40)); strings.Contains(got, "  ") {
 		t.Fatalf("a bar with nothing beside it trailed something: %q", got)
 	}
 }
 
 func TestAnObjectivesFactsSayTheTimeSpentWhenThereIsAny(t *testing.T) {
 	b := standing(newFake())
-	if got := strip(b.goalFacts(engine.Goal{Done: 1, Total: 2, Spent: 90 * time.Minute}, 80)); !strings.Contains(got, "1/2  1h30m") {
+	if got := strip(b.goalFacts(board.Goal{Done: 1, Total: 2, Spent: 90 * time.Minute}, 80)); !strings.Contains(got, "1/2  1h30m") {
 		t.Errorf("the facts read %q", got)
 	}
-	if got := strip(b.goalFacts(engine.Goal{Done: 1, Total: 2}, 80)); !strings.HasSuffix(strings.TrimSpace(got), "1/2") {
+	if got := strip(b.goalFacts(board.Goal{Done: 1, Total: 2}, 80)); !strings.HasSuffix(strings.TrimSpace(got), "1/2") {
 		t.Errorf("the facts with no time spent read %q", got)
 	}
 }

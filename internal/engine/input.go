@@ -2,6 +2,8 @@ package engine
 
 import (
 	"bytes"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/task"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -156,4 +158,64 @@ func (a Argument) listOf(value any) ([]string, error) {
 func asSent(value any) string {
 	sent, _ := json.Marshal(value)
 	return string(sent)
+}
+
+// States is the closed set a column is picked from, read off the domain rather than listed again here.
+func States() []string {
+	out := make([]string, 0, len(item.States))
+	for _, s := range item.States {
+		out = append(out, string(s))
+	}
+	return out
+}
+
+// Part is one step of a task, as a board and a form hold it: its place in the task when it already exists, what it is called, and whether it is done.
+type Part struct {
+	Number int
+	Title  string
+	Done   bool
+}
+
+// PartsIn reads those lines back.
+func PartsIn(said string) []Part {
+	var parts []Part
+	for _, line := range strings.Split(said, "\n") {
+		rest := strings.TrimSpace(line)
+		if rest == "" {
+			continue
+		}
+		part := Part{}
+		if number, after, found := strings.Cut(rest, " "); found && strings.HasPrefix(number, "#") {
+			if n, err := strconv.Atoi(strings.TrimPrefix(number, "#")); err == nil {
+				part.Number, rest = n, strings.TrimSpace(after)
+			}
+		}
+		if mark, after, found := strings.Cut(rest, "]"); found && strings.HasPrefix(mark, "[") {
+			part.Done = strings.EqualFold(strings.TrimPrefix(mark, "["), "x")
+			rest = strings.TrimSpace(after)
+		}
+		if rest == "" {
+			continue
+		}
+		part.Title = rest
+		parts = append(parts, part)
+	}
+	return parts
+}
+
+var stepsArgument = Argument{Name: "steps", Kind: Text,
+	Means: `its steps, one a line: "[x] its title" for one done, "[ ] its title" for one not; they replace the steps it had`}
+
+// stepsIn reads steps written one a line, refusing a line with no title.
+func stepsIn(said string) ([]task.Step, error) {
+	parts := PartsIn(said)
+	steps := make([]task.Step, 0, len(parts))
+	for _, part := range parts {
+		step, err := task.NewStep(part.Title, part.Done)
+		if err != nil {
+			return nil, err
+		}
+		steps = append(steps, step)
+	}
+	return steps, nil
 }

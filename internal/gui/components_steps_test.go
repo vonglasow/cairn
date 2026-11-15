@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"image"
 	"slices"
@@ -12,8 +13,6 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget/material"
 	"github.com/cucumber/godog"
-
-	"cairn/internal/engine"
 )
 
 func partsDrawn(w Window) []Drawing { return partsDrawnWith(drawingTheme(), w) }
@@ -275,7 +274,7 @@ func (w *world) paletteKeysOnChips() error {
 }
 
 func (w *world) emptyRounded(column string) error {
-	slot := EmptyAt(w.w.Layout().CardAt(engine.IndexOf(column), 0, 0))
+	slot := EmptyAt(w.w.Layout().CardAt(board.IndexOf(column), 0, 0))
 	shot, err := drawnInAStep(w.theme, w.w)
 	if err != nil {
 		return err
@@ -361,7 +360,7 @@ func numberApart(drawn []Drawing, card Box) error {
 	return nil
 }
 
-func (w *world) weekCard(title string) (engine.Card, Box, Box, error) {
+func (w *world) weekCard(title string) (board.Card, Box, Box, error) {
 	l := w.w.Layout()
 	for i := range 7 {
 		for j, one := range w.w.DayShown(i) {
@@ -371,7 +370,7 @@ func (w *world) weekCard(title string) (engine.Card, Box, Box, error) {
 			}
 		}
 	}
-	return engine.Card{}, Box{}, Box{}, fmt.Errorf("no card titled %q is on the time page", title)
+	return board.Card{}, Box{}, Box{}, fmt.Errorf("no card titled %q is on the time page", title)
 }
 
 func (w *world) titleInWholeWords(title string) error {

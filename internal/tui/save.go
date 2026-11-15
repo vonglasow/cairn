@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"cairn/internal/board"
+
 	tea "charm.land/bubbletea/v2"
 
 	"cairn/internal/engine"
@@ -31,13 +33,13 @@ func (b Board) saveTask(form Form, whole bool) tea.Cmd {
 		if _, err := b.work.Ask(op, asked); err != nil {
 			return Looked{Err: err}
 		}
-		found, err := engine.Look(b.work)
+		found, err := board.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
 
 func (b Board) saving(form Form, adding, editing engine.Operation) (engine.Operation, engine.Input) {
-	return engine.Saved(form.typed(), form.Adding, form.Number, adding, editing)
+	return board.Saved(form.typed(), form.Adding, form.Number, adding, editing)
 }
 
 func (b Board) saveGoal(form Form) tea.Cmd {

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/migration"
 	"strconv"
 	"strings"
@@ -329,7 +330,7 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		}
 	case "J", "shift+j", "K", "shift+k":
 		if b.tab == Objectives && b.goal != 0 {
-			in, moves := engine.Stepped(b.snap.Goals, b.goal, key == "K" || key == "shift+k")
+			in, moves := board.Stepped(b.snap.Goals, b.goal, key == "K" || key == "shift+k")
 			if !moves {
 				return b, nil
 			}
@@ -462,7 +463,7 @@ func (b Board) settingByLetter(key string) (tea.Model, tea.Cmd) {
 	}
 	values := engine.States()
 	if field == "priority" {
-		values = engine.Priorities()
+		values = board.Priorities()
 	}
 	for _, value := range values {
 		if len(key) == 1 && strings.HasPrefix(value, key) {

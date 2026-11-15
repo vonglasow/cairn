@@ -1,17 +1,16 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
-
-	"cairn/internal/engine"
 )
 
 // Narrowing is the bar beside the objective's pill when the board shows an objective holding sub-objectives: all of it, each sub-objective, or the objective itself, each counted, the one in force lit; compact, the one in force alone between two chevrons walking the others, when the whole bar has no room.
 type Narrowing struct {
 	Root       int
-	Segments   []engine.Segment
+	Segments   []board.Segment
 	On         int
 	Box        Box
 	At         []Box
@@ -36,7 +35,7 @@ func (w Window) Narrowing() Narrowing {
 	}
 	root, _ := strconv.Atoi(strings.TrimSuffix(value, " itself"))
 	root = w.snap.TreeOf(root)
-	n := Narrowing{Root: root, Segments: w.snap.Segments(root, w.snap.Viewed(w.viewing, engine.OnTheBoard(w.snap.Cards, w.archived)))}
+	n := Narrowing{Root: root, Segments: w.snap.Segments(root, w.snap.Viewed(w.viewing, board.OnTheBoard(w.snap.Cards, w.archived)))}
 	if len(n.Segments) == 0 {
 		return Narrowing{}
 	}
@@ -70,7 +69,7 @@ func (w Window) Narrowing() Narrowing {
 	wide = seg + 2*chevronRoom
 	on := n.Segments[n.On]
 	n.Compact, n.Said = true, on.Name
-	if room := seg - narrowingWide(m, engine.Segment{Count: on.Count}); ends(m, on.Name, small) > room {
+	if room := seg - narrowingWide(m, board.Segment{Count: on.Count}); ends(m, on.Name, small) > room {
 		n.Said = cutToFit(on.Name, room, func(said string) int { return ends(m, said, small) })
 	}
 	n.Box = Box{X: end - wide, Y: y, W: wide, H: searchPillHigh}
@@ -83,7 +82,7 @@ func (w Window) Narrowing() Narrowing {
 
 const chevronRoom = 22
 
-func narrowingWide(m Measure, s engine.Segment) int {
+func narrowingWide(m Measure, s board.Segment) int {
 	return ends(m, s.Name, small) + countGap + monoWide(strconv.Itoa(s.Count), small) + 2*segmentPad
 }
 
@@ -125,12 +124,12 @@ func (w Window) narrowedTo(at int) Window {
 	}
 	value := n.Segments[at].Value
 	if v, in := w.inView(); in && len(v.Holds.Objective) == 1 && strconv.Itoa(v.Holds.Objective[0]) == value {
-		if i := slices.IndexFunc(w.filters, func(f engine.Filter) bool { return f.Arg == "objective" }); i >= 0 {
+		if i := slices.IndexFunc(w.filters, func(f board.Filter) bool { return f.Arg == "objective" }); i >= 0 {
 			return w.takingOff(i)
 		}
 		return w
 	}
-	w.filters = engine.BoardFilters(w.snap, w.today()).Keeping(w.filters).On("objective", value)
+	w.filters = board.FiltersOf(w.snap, w.today()).Keeping(w.filters).On("objective", value)
 	return w
 }
 
@@ -186,18 +185,18 @@ func (w Window) References() []Placed {
 		return nil
 	}
 	shown := w.Showing().Cards
-	refs := engine.Touching(shown, engine.OnTheBoard(w.snap.Cards, w.archived))
+	refs := board.Touching(shown, board.OnTheBoard(w.snap.Cards, w.archived))
 	if len(refs) == 0 {
 		return nil
 	}
 	l := w.Layout()
-	dealt, _ := engine.Deal(shown, w.archived)
-	var cards []engine.Card
+	dealt, _ := board.Deal(shown, w.archived)
+	var cards []board.Card
 	says := map[int]string{}
 	for _, r := range refs {
 		cards, says[r.Card.Number] = append(cards, r.Card), r.Says()
 	}
-	theirs, _ := engine.Deal(cards, w.archived)
+	theirs, _ := board.Deal(cards, w.archived)
 	var out []Placed
 	for i, column := range theirs {
 		after := len(dealt[i].Cards)

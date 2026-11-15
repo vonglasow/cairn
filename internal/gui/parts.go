@@ -111,11 +111,6 @@ const (
 	leastThumb = 24
 )
 
-func inSight(at, high, run, where int) int {
-	top := at * high
-	return min(top, max(where, top+high-run))
-}
-
 // Inside is the room for the text within that frame.
 func Inside(b Box) Box {
 	return Box{X: b.X + inset, Y: b.Y + inset, W: b.W - inset - inset, H: b.H - inset - inset}

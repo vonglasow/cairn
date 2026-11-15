@@ -67,7 +67,7 @@ func TestObjective_newAndListAnswerTheObjectives(t *testing.T) {
 	if made.Objective == nil {
 		t.Fatal("a new objective answers none")
 	}
-	listed, err := Do(objectiveList, path, given())
+	listed, err := Do(ObjectiveList, path, given())
 	if err != nil {
 		t.Fatal(err)
 	}

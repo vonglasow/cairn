@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"fmt"
 	"os"
@@ -39,7 +40,7 @@ func TestTheFourColumnsShareTheWidthEvenly(t *testing.T) {
 			t.Errorf("column %d starts at %d, not after column %d at %d", i, column.X, i-1, l.Column[i-1].X)
 		}
 	}
-	if got := l.Column[engine.Columns-1].X + first.W; got > 1200 {
+	if got := l.Column[board.Columns-1].X + first.W; got > 1200 {
 		t.Errorf("the last column ends at %d, past a window of 1200", got)
 	}
 }
@@ -59,7 +60,7 @@ func TestTheBandLiesUnderTheLastThreeColumns(t *testing.T) {
 	if l.Band.X != l.Column[1].X {
 		t.Errorf("the band starts at %d, todo at %d", l.Band.X, l.Column[1].X)
 	}
-	if got, want := l.Band.X+l.Band.W, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W; got != want {
+	if got, want := l.Band.X+l.Band.W, l.Column[board.Columns-1].X+l.Column[board.Columns-1].W; got != want {
 		t.Errorf("the band ends at %d, the last column at %d", got, want)
 	}
 	if l.Band.Y < l.Column[1].Y+l.Column[1].H {
@@ -69,8 +70,8 @@ func TestTheBandLiesUnderTheLastThreeColumns(t *testing.T) {
 
 func TestTheBandIsThreeLanesSharingItsWidth(t *testing.T) {
 	l := LayoutFor(1200, 800)
-	if len(engine.Stalled) != 3 {
-		t.Fatalf("there are %d lanes, want 3", len(engine.Stalled))
+	if len(board.Stalled) != 3 {
+		t.Fatalf("there are %d lanes, want 3", len(board.Stalled))
 	}
 	for i, lane := range l.Lane {
 		if lane.W != l.Lane[0].W {
@@ -150,7 +151,7 @@ func TestTheShapeAtTwoSizes(t *testing.T) {
 }
 
 func TestEveryFieldOfAFormFitsAtTheLeastSize(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Draft"}}})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Draft"}}})
 	w = w.Resized(Narrowest, Shortest).clicked(middleOf(w.Resized(Narrowest, Shortest), 1, 0)).Key("enter").Key("e")
 	if w.Screen() != OnForm {
 		t.Fatalf("the form did not open at the least size: %v", w.Screen())

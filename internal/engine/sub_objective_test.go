@@ -333,11 +333,11 @@ func TestObjective_crossesWithItsParentAndChildren(t *testing.T) {
 	e := openEngine(t)
 	addObjective(t, e, "Home automation")
 	under(t, e, "Enclosure", "1")
-	listed, err := e.Ask(objectiveList, Input{})
+	listed, err := e.Ask(ObjectiveList, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	shape := Of(objectiveList, listed).(objectivesListed)
+	shape := Of(ObjectiveList, listed).(objectivesListed)
 	if shape.Objectives[0].Parent != nil || !slices.Equal(shape.Objectives[0].Children, []int{2}) ||
 		shape.Objectives[1].Parent == nil || *shape.Objectives[1].Parent != 1 || shape.Objectives[1].Children == nil {
 		t.Errorf("the listing crosses as %+v", shape.Objectives)

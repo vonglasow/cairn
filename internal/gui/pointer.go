@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
@@ -273,7 +274,7 @@ func (w Window) servedAt(p Point) ([]string, Box, int) {
 	return nil, Box{}, 0
 }
 
-func (w Window) titleCut(c engine.Card, slot Box) bool {
+func (w Window) titleCut(c board.Card, slot Box) bool {
 	m := w.measured()
 	first, rest := TitleRoom(c, PartsOf(slot).Title)
 	lines := TitleLines(c.Title, first, rest, func(said string) int { return ends(m, said, reads) })
@@ -799,7 +800,7 @@ func (w Window) Scroll(p Point, by int) Window {
 		}
 		return w
 	}
-	for i := range engine.Columns {
+	for i := range board.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}
@@ -829,7 +830,7 @@ func (w Window) at(p Point) int {
 	return 0
 }
 
-func cardOn(here []engine.Card, down int) int {
+func cardOn(here []board.Card, down int) int {
 	index := down / CardHeight
 	if index >= len(here) || down%CardHeight >= CardHeight-gap {
 		return 0
@@ -883,24 +884,24 @@ func (w Window) dropped(number int, p Point) Window {
 func (w Window) where(l Layout, p Point) (state string, place map[string]string, found bool) {
 	if lane, in := l.LaneUnder(p); in {
 		all := w.inLane(lane)
-		return engine.Stalled[lane], placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Lane[lane], w.lanes[lane], p, len(all)))), true
+		return board.Stalled[lane], placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Lane[lane], w.lanes[lane], p, len(all)))), true
 	}
-	for i := range engine.Columns {
+	for i := range board.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}
 		all := w.inColumn(i)
-		return engine.StateAt(i), placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Column[i], w.scroll[i], p, len(all)))), true
+		return board.StateAt(i), placeAfter(w.besideHeld(all), w.leftBefore(all, landed(l.Column[i], w.scroll[i], p, len(all)))), true
 	}
 	return "", nil, false
 }
 
-func (w Window) leftBefore(all []engine.Card, at int) int {
+func (w Window) leftBefore(all []board.Card, at int) int {
 	kept := len(w.besideHeld(all[:min(at, len(all))]))
 	return kept
 }
 
-func (w Window) ownPlace(all []engine.Card, at int) bool {
+func (w Window) ownPlace(all []board.Card, at int) bool {
 	for i, c := range all {
 		if c.Number == w.held.Number {
 			return at == i || at == i+1
@@ -909,7 +910,7 @@ func (w Window) ownPlace(all []engine.Card, at int) bool {
 	return false
 }
 
-func placeAfter(here []engine.Card, at int) map[string]string {
+func placeAfter(here []board.Card, at int) map[string]string {
 	if at == 0 {
 		return map[string]string{"first": "true"}
 	}
@@ -920,11 +921,11 @@ func landed(body Box, scrolled int, p Point, room int) int {
 	return max(0, min(room, (p.Y-body.Y+scrolled+CardHeight/2)/CardHeight))
 }
 
-func (w Window) besideHeld(cards []engine.Card) []engine.Card {
+func (w Window) besideHeld(cards []board.Card) []board.Card {
 	if !w.Dragging() {
 		return cards
 	}
-	kept := make([]engine.Card, 0, len(cards))
+	kept := make([]board.Card, 0, len(cards))
 	for _, c := range cards {
 		if c.Number != w.held.Number && (!w.isTaken(w.held.Number) || !w.isTaken(c.Number)) {
 			kept = append(kept, c)
@@ -940,7 +941,7 @@ func (w Window) openedAt(l Layout) (column, at int, open bool) {
 	if _, inLane := l.LaneUnder(w.held.At); inLane {
 		return 0, 0, false
 	}
-	for i := range engine.Columns {
+	for i := range board.Columns {
 		if l.Column[i].In(w.held.At) {
 			return i, landed(l.Column[i], w.scroll[i], w.held.At, len(w.inColumn(i))), true
 		}

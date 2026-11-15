@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"fmt"
 	"slices"
@@ -22,7 +23,7 @@ func many(day string, n int) engine.TimesheetDay {
 
 func TestTheTimePageIsLaidOutToThePixel(t *testing.T) {
 	l := LayoutFor(1200, 800)
-	left, right := l.Column[0].X, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W
+	left, right := l.Column[0].X, l.Column[board.Columns-1].X+l.Column[board.Columns-1].W
 	strip := TimeStrip(l)
 	if strip != (Box{X: left, Y: l.Head[0].Y, W: right - left, H: barHigh}) {
 		t.Errorf("the strip is %+v", strip)
@@ -113,7 +114,7 @@ func TestTheTimePageShowsAWeekOrAMonth(t *testing.T) {
 		t.Fatalf("3 shows %v, monthly %v", month.week, month.Monthly())
 	}
 	in, _ := f.gave("timesheet", "show")
-	grid := engine.MonthGrid(dayNamed("2026-10-01"))
+	grid := board.MonthGrid(dayNamed("2026-10-01"))
 	if in.Given["since"] != calendar.FormatDay(grid[0]) || in.Given["until"] != "2026-10-14" {
 		t.Errorf("the month asked for %v", in.Given)
 	}
@@ -179,7 +180,7 @@ func TestADayOfAMonthSaysHowManyMore(t *testing.T) {
 		t.Errorf("nothing reads %q", got)
 	}
 	w := Window{tab: Time, width: 1200, height: 800, timeState: timeState{monthly: true, week: dayNamed("2026-10-01"), sheet: engine.Timesheet{Days: []engine.TimesheetDay{many("2026-10-01", 2)}}}}
-	at := slices.IndexFunc(engine.MonthGrid(w.week), func(d time.Time) bool { return d.Day() == 1 })
+	at := slices.IndexFunc(board.MonthGrid(w.week), func(d time.Time) bool { return d.Day() == 1 })
 	if got := w.MonthDay(at); got.Day != "2026-10-01" || len(got.Tasks) != 2 {
 		t.Errorf("the 1st reads %+v", got)
 	}
@@ -217,7 +218,7 @@ func TestTheRangeShownIsFilledAndTodayOutlined(t *testing.T) {
 	if !filled(m, TimeChip(l, "Month")) || filled(m, TimeChip(l, "Week")) {
 		t.Error("a month shown does not fill Month alone")
 	}
-	grid := engine.MonthGrid(m.week)
+	grid := board.MonthGrid(m.week)
 	today := slices.IndexFunc(grid, func(d time.Time) bool { return d.Equal(dayNamed("2026-09-30")) })
 	if !outlined(m, MonthCellAt(l, today)) || outlined(m, MonthCellAt(l, today-1)) {
 		t.Error("today is not the one day outlined")
@@ -281,7 +282,7 @@ func TestADayOfTheWeekLaysItsTasksOutAsCards(t *testing.T) {
 }
 
 func TestATaskOfTheTimePageIsTheCardTheBoardHolds(t *testing.T) {
-	w := Window{snap: engine.Snapshot{Cards: []engine.Card{{Number: 1, Title: "Write the spec", Estimate: "3h"}}}}
+	w := Window{snap: board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", Estimate: "3h"}}}}
 	if c := w.DayCard(engine.TimesheetTask{Number: 1, Title: "Write the spec"}); c.Estimate != "3h" {
 		t.Errorf("the time page's card is %+v", c)
 	}

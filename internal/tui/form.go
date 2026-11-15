@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,7 +22,7 @@ type Form struct {
 	asked  *huh.Form
 	held   map[string]*string
 	keep   *bool
-	fields []engine.Field
+	fields []board.Field
 	opened map[string]string
 }
 
@@ -48,8 +48,8 @@ func LongTitle(name, value string) string {
 	return fmt.Sprintf("%s · %d lines", name, count)
 }
 
-func (f Form) typed() []engine.Field {
-	out := make([]engine.Field, len(f.fields))
+func (f Form) typed() []board.Field {
+	out := make([]board.Field, len(f.fields))
 	for i, field := range f.fields {
 		if held, there := f.held[field.Name]; there {
 			field.Value = *held
@@ -59,7 +59,7 @@ func (f Form) typed() []engine.Field {
 	return out
 }
 
-func asking(fields []engine.Field, width, height int, skin Skin, about describer) Form {
+func asking(fields []board.Field, width, height int, skin Skin, about describer) Form {
 	held := make(map[string]*string, len(fields))
 	keep := new(bool)
 	*keep = true
@@ -113,7 +113,7 @@ func walkedByArrows() *huh.KeyMap {
 	return keys
 }
 
-func oneField(field engine.Field, into *string, about describer) huh.Field {
+func oneField(field board.Field, into *string, about describer) huh.Field {
 	if len(field.Choices) > 0 {
 		return huh.NewSelect[string]().
 			Key(field.Name).
@@ -162,15 +162,15 @@ func (b Board) formHeight() int { return max(1, b.height-fixed) }
 
 func (b Board) addForm() (Board, tea.Cmd) {
 	if b.tab == Objectives {
-		return b.addGoalForm(engine.NewGoalFields())
+		return b.addGoalForm(board.NewGoalFields())
 	}
-	state := engine.StateAt(b.column)
+	state := board.StateAt(b.column)
 	if b.inBand {
-		state = engine.Stalled[0]
+		state = board.Stalled[0]
 	}
-	fields := engine.NewTaskFields(state)
+	fields := board.NewTaskFields(state)
 	if b.pages.Recurs() {
-		fields = append(fields, engine.RepeatsField())
+		fields = append(fields, board.RepeatsField())
 	}
 	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
@@ -178,7 +178,7 @@ func (b Board) addForm() (Board, tea.Cmd) {
 	return b.started()
 }
 
-func (b Board) addGoalForm(fields []engine.Field) (Board, tea.Cmd) {
+func (b Board) addGoalForm(fields []board.Field) (Board, tea.Cmd) {
 	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(true, 0))
 	b.form.Adding, b.form.ForObjective = true, true
 	b.screen = OnForm
@@ -189,11 +189,11 @@ func (b Board) subGoalForm() (Board, tea.Cmd) {
 	if b.goal == 0 {
 		return b, nil
 	}
-	return b.addGoalForm(engine.NewSubGoalFields(b.snap.TreeOf(b.goal)))
+	return b.addGoalForm(board.NewSubGoalFields(b.snap.TreeOf(b.goal)))
 }
 
 func (b Board) linkedForm() (Board, tea.Cmd) {
-	b.form = asking(engine.LinkedTaskFields(b.task), b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
+	b.form = asking(board.LinkedTaskFields(b.task), b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
 	b.screen = OnForm
 	return b.started()
@@ -205,7 +205,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 			if g.Number != b.goal {
 				continue
 			}
-			b.form = asking(engine.GoalFields(g), b.formWidth(), b.formHeight(), b.skin, b.about(true, g.Number))
+			b.form = asking(board.GoalFields(g), b.formWidth(), b.formHeight(), b.skin, b.about(true, g.Number))
 			b.form.Number, b.form.ForObjective = g.Number, true
 			b.screen = OnForm
 			return b.started()
@@ -365,23 +365,23 @@ func (b Board) focusingOn(key string, fields int) Board {
 	return b
 }
 
-func (b Board) freshOpened() []engine.Field {
+func (b Board) freshOpened() []board.Field {
 	fresh, _ := b.freshFields()
 	return fresh
 }
 
-func (b Board) freshFields() ([]engine.Field, bool) {
+func (b Board) freshFields() ([]board.Field, bool) {
 	if b.form.ForSeries {
 		s, found := b.snap.SeriesOf(b.form.Number)
 		if !found {
 			return nil, false
 		}
-		return engine.SeriesFields(s), true
+		return board.SeriesFields(s), true
 	}
 	if b.form.ForObjective {
 		for _, g := range b.goals() {
 			if g.Number == b.form.Number {
-				return engine.GoalFields(g), true
+				return board.GoalFields(g), true
 			}
 		}
 		return nil, false

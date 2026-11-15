@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
 	"path/filepath"
 	"strconv"
@@ -66,7 +67,7 @@ func (b Board) placing() tea.Cmd {
 	return func() tea.Msg { return placedOf(b.work) }
 }
 
-func placedOf(w engine.Work) Placed {
+func placedOf(w board.Work) Placed {
 	answer, err := w.Ask(engine.WorkspaceShow, engine.Input{})
 	if err != nil || answer.WorkspaceShown == nil {
 		return Placed{Err: err}
@@ -96,7 +97,7 @@ func (b Board) opening(to engine.Elsewhere) Switched {
 	if err != nil {
 		return Switched{Err: err}
 	}
-	found, err := engine.Look(b.work)
+	found, err := board.Look(b.work)
 	return Switched{Pages: pages, Looked: Looked{Snapshot: found, Err: err}, Placed: placedOf(b.work)}
 }
 

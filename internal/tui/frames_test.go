@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,7 +17,7 @@ var update = os.Getenv("UPDATE_FRAMES") != ""
 
 func fullBoard() *fake {
 	f := newFake()
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: "Buy a lamp", State: "backlog", Priority: "normal"},
 		{Number: 2, Title: "Read the ADR", State: "backlog", Priority: "normal"},
 		{Number: 3, Title: "Ask legal about the retention clause", State: "backlog", Priority: "critical", Deadline: on("2026-08-29")},
@@ -30,7 +31,7 @@ func fullBoard() *fake {
 		{Number: 10, Title: "Refactor migrate", State: "paused", Priority: "normal", Because: "your call"},
 		{Number: 13, Title: "Waiting on the lawyer", State: "blocked", Priority: "normal", Because: "the fourth, so the band wraps"},
 	}
-	f.goals = []engine.Goal{
+	f.goals = []board.Goal{
 		{Number: 1, Title: "Ship the desktop board", State: "active", Priority: "high", Description: "something written", Done: 7, Total: 12, Labels: []string{"product"}, Deadline: on("2026-10-16")},
 		{Number: 2, Title: "Cut the onboarding time in half", State: "on-hold", Priority: "normal", Done: 1, Total: 8},
 	}
@@ -51,15 +52,15 @@ func fullBoard() *fake {
 func crowded() *fake {
 	f := newFake()
 	for i := 1; i <= 12; i++ {
-		f.cards = append(f.cards, engine.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo", Priority: "normal"})
+		f.cards = append(f.cards, board.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo", Priority: "normal"})
 	}
 	for i := 20; i < 28; i++ {
-		f.cards = append(f.cards, engine.Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked", Because: "waiting"})
+		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked", Because: "waiting"})
 	}
 	for i := 1; i <= 9; i++ {
-		f.goals = append(f.goals, engine.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active", Done: i, Total: 9})
+		f.goals = append(f.goals, board.Goal{Number: i, Title: "Objective " + strconv.Itoa(i), State: "active", Done: i, Total: 9})
 	}
-	f.goals = append(f.goals, engine.Goal{Number: 10, Title: "Nothing serves this yet", State: "active"})
+	f.goals = append(f.goals, board.Goal{Number: 10, Title: "Nothing serves this yet", State: "active"})
 	for i := 1; i <= 12; i++ {
 		f.cards[i-1].Objectives = []int{1}
 	}

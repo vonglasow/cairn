@@ -433,6 +433,37 @@ linters:
             - pkg: cairn/internal/gui
               desc: the store must not know how anything is displayed
 
+        # The board: what every surface shows, computed once. It reads the
+        # engine and changes anything only through Ask; it draws nothing, so
+        # the window and the terminal show the same thing.
+        board:
+          files: ["**/internal/board/**"]
+          deny:
+            - pkg: cairn/internal/store
+              desc: the board asks the engine, never the store
+            - pkg: database/sql
+              desc: the board asks the engine, it does not reach a database
+            - pkg: charm.land/lipgloss/v2
+              desc: the board says what is shown, never how it is drawn
+            - pkg: charm.land/bubbletea/v2
+              desc: the board holds no event loop and no screen
+            - pkg: charm.land/huh/v2
+              desc: the board says which fields a form asks about, not what it looks like
+            - pkg: charm.land/bubbles/v2
+              desc: the board holds no widget
+            - pkg: gioui.org
+              desc: the board says what is shown, never how it is drawn
+            - pkg: cairn/internal/cli
+              desc: the board is read by surfaces, it never reads them
+            - pkg: cairn/internal/mcp
+              desc: the board is read by surfaces, it never reads them
+            - pkg: cairn/internal/tui
+              desc: the board is read by surfaces, it never reads them
+            - pkg: cairn/internal/gui
+              desc: the board is read by surfaces, it never reads them
+            - pkg: github.com/spf13/cobra
+              desc: the board is not a surface
+
         # The engine is called by surfaces; it never calls them, and it never
         # opens a database itself — that is the whole reason the store exists.
         engine:

@@ -1,10 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"reflect"
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 func TestStartingANewTaskCanCarryALink(t *testing.T) {
@@ -14,7 +13,7 @@ func TestStartingANewTaskCanCarryALink(t *testing.T) {
 	if got.Screen() != OnForm || !got.form.Adding {
 		t.Fatalf("the window is on %v, adding %v", got.Screen(), got.form.Adding)
 	}
-	if want := engine.LinkedTaskFields(1); !reflect.DeepEqual(got.form.Fields(), want) {
+	if want := board.LinkedTaskFields(1); !reflect.DeepEqual(got.form.Fields(), want) {
 		t.Errorf("the form asks %+v, want %+v", got.form.Fields(), want)
 	}
 	if got.form.Changed() {
@@ -33,7 +32,7 @@ func TestOOpensANewLinkedTaskOnAChosenTaskOnly(t *testing.T) {
 	}
 	w.chosenGoal = false
 	got := w.Key("o")
-	if got.Screen() != OnForm || !reflect.DeepEqual(got.form.Fields(), engine.LinkedTaskFields(1)) {
+	if got.Screen() != OnForm || !reflect.DeepEqual(got.form.Fields(), board.LinkedTaskFields(1)) {
 		t.Errorf("o on a task left the window on %v with %+v", got.Screen(), got.form.Fields())
 	}
 }

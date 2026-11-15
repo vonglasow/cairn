@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/item"
 	"cairn/internal/engine/series"
 	"slices"
@@ -13,7 +14,7 @@ import (
 	"cairn/internal/engine"
 )
 
-func (b Board) allSeries() []engine.Series { return engine.ShownSeries(b.snap.Series, b.query) }
+func (b Board) allSeries() []engine.Series { return board.ShownSeries(b.snap.Series, b.query) }
 
 func (b Board) chosenSeries() (engine.Series, bool) {
 	all := b.allSeries()
@@ -91,11 +92,11 @@ func (b Board) inSeries(key string) (tea.Model, tea.Cmd, bool) {
 		if len(s.Open) == 0 {
 			return b, nil, true
 		}
-		return b, b.carry(engine.TaskSkip, engine.Numbered(s.Open[0])), true
+		return b, b.carry(engine.TaskSkip, board.Numbered(s.Open[0])), true
 	case "x":
-		return b, b.carry(engine.SeriesStop, engine.Numbered(s.Number)), true
+		return b, b.carry(engine.SeriesStop, board.Numbered(s.Number)), true
 	case "r":
-		return b, b.carry(engine.SeriesResume, engine.Numbered(s.Number)), true
+		return b, b.carry(engine.SeriesResume, board.Numbered(s.Number)), true
 	case "e":
 		model, cmd := b.seriesForm(s)
 		return model, cmd, true
@@ -131,11 +132,11 @@ func (b Board) seriesAct(key string) (tea.Model, tea.Cmd) {
 	}
 	switch key {
 	case "s":
-		return b, b.carry(engine.TaskSkip, engine.Numbered(c.Number))
+		return b, b.carry(engine.TaskSkip, board.Numbered(c.Number))
 	case "x":
-		return b, b.carry(engine.SeriesStop, engine.Numbered(c.Series.Series))
+		return b, b.carry(engine.SeriesStop, board.Numbered(c.Series.Series))
 	case "r":
-		return b, b.carry(engine.SeriesResume, engine.Numbered(c.Series.Series))
+		return b, b.carry(engine.SeriesResume, board.Numbered(c.Series.Series))
 	case "e":
 		b.screen = OnTheBoard
 		return b.onSeries(c.Series.Series), nil
@@ -160,7 +161,7 @@ func (b Board) seriesOffers() []string {
 	return append(offers, b.offer("r e", "its series"))
 }
 
-func (b Board) occursSaid(c engine.Card) string {
+func (b Board) occursSaid(c board.Card) string {
 	o := c.Series
 	said := "↻" + strconv.Itoa(o.Series) + " " + o.Often
 	if !strings.Contains(o.Says, "after the last is done") {
@@ -224,13 +225,13 @@ func (b Board) seriesList(width int) ([]string, int) {
 		if s.Number == on.Number {
 			edge, chosen = b.skin.Title.Render("┃ "), len(out)
 		}
-		when := engine.NextDaySaid(s, b.now())
+		when := board.NextDaySaid(s, b.now())
 		if s.State == "stopped" {
 			when = "stopped since " + b.whenSaid(s.Stopped)
 		}
 		head := b.skin.Faint.Render("↻"+strconv.Itoa(s.Number)) + "  " + b.skin.Bright.Render(s.Title)
 		out = append(out, edge+Spread(head, b.skin.Says.Render(when), width-2))
-		so := engine.RuleListed(s.Rule)
+		so := board.RuleListed(s.Rule)
 		for _, count := range []struct {
 			n    int
 			said string
@@ -288,7 +289,7 @@ func (b Board) whenSaid(days ...string) string {
 	if len(days) == 0 {
 		return ""
 	}
-	return engine.DaySaid(days[0], b.now())
+	return board.DaySaid(days[0], b.now())
 }
 
 func spentSaid(spent string) string {
@@ -347,20 +348,20 @@ func (b Board) choosingSeriesFate(key string) (tea.Model, tea.Cmd) {
 		b.seriesGoing = nil
 		return b, nil
 	case "enter", "return":
-		if engine.SeriesFates[going.choice] == "delete-tasks" && !going.again {
+		if board.SeriesFates[going.choice] == "delete-tasks" && !going.again {
 			going.again = true
 			b.seriesGoing = &going
 			return b, nil
 		}
 		b.seriesGoing = nil
-		in := engine.Agreed(engine.Numbered(s.Number))
-		in.Given[engine.SeriesFates[going.choice]] = "true"
+		in := engine.Agreed(board.Numbered(s.Number))
+		in.Given[board.SeriesFates[going.choice]] = "true"
 		return b, b.carry(engine.SeriesDelete, in)
 	}
 	if way, ok := direction(key); ok && !going.again {
 		switch way {
 		case goDown:
-			going.choice = min(len(engine.SeriesFates)-1, going.choice+1)
+			going.choice = min(len(board.SeriesFates)-1, going.choice+1)
 		case goUp:
 			going.choice = max(0, going.choice-1)
 		}
@@ -379,7 +380,7 @@ func (b Board) drawSeriesGoing() string {
 func (b Board) seriesGoingBox() string {
 	going := *b.seriesGoing
 	s, _ := b.snap.SeriesOf(going.number)
-	made := engine.MadeStill(s)
+	made := board.MadeStill(s)
 	wide := min(switcherWide, b.width-margin-2)
 	inner := wide - 2
 	edge := b.skin.Rule
@@ -417,32 +418,32 @@ func (b Board) seriesGoingFoot() string {
 	going := *b.seriesGoing
 	s, _ := b.snap.SeriesOf(going.number)
 	if going.again {
-		return " " + b.skin.Title.Render("delete all "+strconv.Itoa(len(engine.MadeStill(s)))+" tasks too?") + "  " +
+		return " " + b.skin.Title.Render("delete all "+strconv.Itoa(len(board.MadeStill(s)))+" tasks too?") + "  " +
 			b.bar(b.offer("⏎", "delete them all"), b.offer("esc", "choose again"))
 	}
 	return " " + b.skin.Title.Render("delete the series ↻"+strconv.Itoa(s.Number)+" "+s.Title+"?") + "  " +
 		b.bar(b.offer("jk", "choose"), b.offer("⏎", "delete the series"), b.offer("esc", "cancel"))
 }
 
-func (b Board) taskFields(c engine.Card) []engine.Field {
-	fields := engine.EditFields(c)
+func (b Board) taskFields(c board.Card) []board.Field {
+	fields := board.EditFields(c)
 	if c.Series == nil && b.pages.Recurs() {
-		fields = append(fields, engine.RepeatsField())
+		fields = append(fields, board.RepeatsField())
 	}
 	return fields
 }
 
 func (b Board) newSeriesForm() (Board, tea.Cmd) {
-	fields := append(engine.AddingFields(engine.StateAt(1)), engine.RepeatsField())
+	fields := append(board.AddingFields(board.StateAt(1)), board.RepeatsField())
 	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
 	b.screen = OnForm
 	b, cmd := b.started()
-	return b.focusingOn(engine.RepeatsField().Name, len(fields)), cmd
+	return b.focusingOn(board.RepeatsField().Name, len(fields)), cmd
 }
 
 func (b Board) seriesForm(s engine.Series) (Board, tea.Cmd) {
-	b.form = asking(engine.SeriesFields(s), b.formWidth(), b.formHeight(), b.skin, nil)
+	b.form = asking(board.SeriesFields(s), b.formWidth(), b.formHeight(), b.skin, nil)
 	b.form.Number, b.form.ForSeries = s.Number, true
 	b.screen = OnForm
 	return b.started()
@@ -453,7 +454,7 @@ func (b Board) asksWhole(form Form) bool {
 		return false
 	}
 	c, found := b.snap.Card(form.Number)
-	return found && engine.ChangesTheSeries(c, form.typed())
+	return found && board.ChangesTheSeries(c, form.typed())
 }
 
 func (b Board) answeringWhole(key string) (tea.Model, tea.Cmd) {

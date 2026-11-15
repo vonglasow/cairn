@@ -1,12 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/backup"
 	"errors"
 	"testing"
 	"time"
-
-	"cairn/internal/engine"
 )
 
 var errNoBackup = errors.New("the backups cannot be reached")
@@ -182,9 +181,9 @@ func TestAScrolledBackupsListLightsTheRightLine(t *testing.T) {
 }
 
 func TestTheWheelStaysInsideAPanel(t *testing.T) {
-	var many []engine.Card
+	var many []board.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, board.Card{Number: i, Title: "Task", State: "todo"})
 	}
 	w := holding(newFake(), many...)
 	l := w.Layout()

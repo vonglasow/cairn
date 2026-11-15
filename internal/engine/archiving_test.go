@@ -241,7 +241,7 @@ func archivingHome(t *testing.T) (string, Home) {
 func TestArchiving_onlyTheListingOfTasksSweeps(t *testing.T) {
 	path, home := archivingHome(t)
 	at := Places{Store: path, Home: home}
-	for op, in := range map[*Operation]Input{&TaskShow: given("number", "1"), &objectiveList: given()} {
+	for op, in := range map[*Operation]Input{&TaskShow: given("number", "1"), &ObjectiveList: given()} {
 		if _, err := doThere(*op, at, in, Acting{Through: "cli", By: "sam"}); err != nil {
 			t.Fatal(err)
 		}

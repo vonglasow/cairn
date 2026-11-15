@@ -1,10 +1,11 @@
 package tui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/engine"
 	"fmt"
 	"strings"
 
-	"cairn/internal/engine"
 	"cairn/internal/engine/task"
 )
 
@@ -27,7 +28,7 @@ func (w *world) bandNamed(name string) error {
 }
 
 func (w *world) bandCarries(want int) error {
-	_, band := engine.Deal(w.cards(), w.b.archived)
+	_, band := board.Deal(w.cards(), w.b.archived)
 	if len(band) != want {
 		return fmt.Errorf("the band carries %d tasks, not %d", len(band), want)
 	}
@@ -35,7 +36,7 @@ func (w *world) bandCarries(want int) error {
 }
 
 func (w *world) bandReads(list string) error {
-	_, band := engine.Deal(w.cards(), w.b.archived)
+	_, band := board.Deal(w.cards(), w.b.archived)
 	var got, want []string
 	for _, c := range band {
 		got = append(got, c.Title)
@@ -50,7 +51,7 @@ func (w *world) bandReads(list string) error {
 }
 
 func (w *world) columnCarries(column, title string) error {
-	found, ok := engine.At(w.columns(), lower(column))
+	found, ok := board.At(w.columns(), lower(column))
 	if !ok {
 		return fmt.Errorf("there is no column called %q", column)
 	}
@@ -64,16 +65,16 @@ func (w *world) columnCarries(column, title string) error {
 
 func lower(name string) string { return strings.ToLower(name) }
 
-func (w *world) cards() []engine.Card {
-	found, err := engine.Look(w.held)
+func (w *world) cards() []board.Card {
+	found, err := board.Look(w.held)
 	if err != nil {
 		w.t.Fatalf("looking: %v", err)
 	}
 	return found.Cards
 }
 
-func (w *world) columns() []engine.Column {
-	all, _ := engine.Deal(w.cards(), w.b.archived)
+func (w *world) columns() []board.Column {
+	all, _ := board.Deal(w.cards(), w.b.archived)
 	return all
 }
 
@@ -105,7 +106,7 @@ func (w *world) modeIs(name string) error {
 func (w *world) tabIs(name string) error { return w.mustSay(name) }
 
 func (w *world) cursorOnColumn(name string) error {
-	if got := engine.StateAt(w.b.Where().Column); got != lower(name) {
+	if got := board.StateAt(w.b.Where().Column); got != lower(name) {
 		return fmt.Errorf("the cursor is on %q, not on %q", got, lower(name))
 	}
 	return nil
@@ -225,14 +226,14 @@ func (w *world) cardArchived(number int) error {
 func (w *world) rowsOf(number int, check func([]string) error) error {
 	for _, c := range w.cards() {
 		if c.Number == number {
-			return check(Rows(c, GlyphsFor(Unicode), PlainSkin(), stood, LayoutFor(w.width, w.high).Interior))
+			return check(Rows(c, GlyphsFor(Unicode), PlainSkin(), stood, engine.Pages{}, LayoutFor(w.width, w.high).Interior))
 		}
 	}
 	return fmt.Errorf("there is no task %d", number)
 }
 
 func (w *world) goalCardSays(number int, text string) error {
-	found, err := engine.Look(w.held)
+	found, err := board.Look(w.held)
 	if err != nil {
 		return err
 	}
@@ -288,7 +289,7 @@ func (w *world) boardDoesNotSay(text string) error {
 }
 
 func (w *world) columnReads(column, list string) error {
-	found, ok := engine.At(w.columns(), lower(column))
+	found, ok := board.At(w.columns(), lower(column))
 	if !ok {
 		return fmt.Errorf("there is no column called %q", column)
 	}
@@ -320,7 +321,7 @@ func (w *world) ruleBetweenColumns() error {
 	if head < 0 {
 		return fmt.Errorf("no column header on the board:\n%s", w.screen())
 	}
-	for gap := 0; gap < engine.Columns-1; gap++ {
+	for gap := 0; gap < board.Columns-1; gap++ {
 		at := margin + l.Column + gap*(l.Column+1)
 		for _, line := range lines[head : head+2+l.Top] {
 			runes := []rune(line)

@@ -1,6 +1,6 @@
 package gui
 
-import "cairn/internal/engine"
+import "cairn/internal/board"
 
 // Widening is a gutter, or the edge above the band, being dragged: which one, where the pointer took it, the layout it was taken in and the sizes the board had then.
 type Widening struct {
@@ -42,7 +42,7 @@ type Grab struct {
 
 func grabsOf(l Layout) []Grab {
 	var grabs []Grab
-	for at := range engine.Columns - 1 {
+	for at := range board.Columns - 1 {
 		grabs = append(grabs, Grab{Gutter(l, at), Widening{At: at}})
 	}
 	for at := range len(l.Lane) - 1 {
@@ -103,7 +103,7 @@ func (g Widening) Evened() Sizes {
 	case g.Lane:
 		by.Lane = [3]int{}
 	default:
-		by.Column = [engine.Columns]int{}
+		by.Column = [board.Columns]int{}
 	}
 	return by
 }

@@ -1,12 +1,11 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"strconv"
 
 	"gioui.org/font"
 	"gioui.org/text"
-
-	"cairn/internal/engine"
 )
 
 func drawGoals(k Kit, l Layout, w Window) {
@@ -37,7 +36,7 @@ func drawGoals(k Kit, l Layout, w Window) {
 	drawDetail(k.inside("ground"), w, w.Detail())
 }
 
-func (w Window) goalItem(b engine.Branch, slot Box) ListItem {
+func (w Window) goalItem(b board.Branch, slot Box) ListItem {
 	g := b.Goal
 	shown, _ := w.Detailed()
 	searching := !w.looking.Empty()
@@ -75,7 +74,7 @@ func (w Window) goalItem(b engine.Branch, slot Box) ListItem {
 const leastTrack = 24
 
 // CountsIn is how much of an objective is done, as much of it as is written in room: its time given up first, then its steps, then its tasks, its share kept last.
-func CountsIn(g engine.Goal, room int) string {
+func CountsIn(g board.Goal, room int) string {
 	share := strconv.Itoa(g.Percent()) + "%"
 	tasks := strconv.Itoa(g.Done-g.Steps.Done) + "/" + strconv.Itoa(g.Total-g.Steps.Total)
 	for _, said := range []string{Counted(g), g.Counted() + " · " + share, tasks + " · " + share, share} {
@@ -151,7 +150,7 @@ func drawDetail(k Kit, w Window, d Detail) {
 func drawTaskLines(k Kit, w Window, lines []TaskLine) {
 	for _, line := range lines {
 		faded := k.faded(1)
-		if engine.Finished(line.Card) {
+		if board.Finished(line.Card) {
 			faded.Pop()
 			faded = k.faded(0.5)
 		}

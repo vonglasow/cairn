@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"strings"
 	"testing"
 )
@@ -48,7 +48,7 @@ func TestUnderTheBand(t *testing.T) {
 	if underTheBand(0) {
 		t.Fatal("the band was said to lie under the backlog, and it does not")
 	}
-	for i := 1; i < engine.Columns; i++ {
+	for i := 1; i < board.Columns; i++ {
 		if !underTheBand(i) {
 			t.Fatalf("the band was said not to lie under column %d", i)
 		}
@@ -72,7 +72,7 @@ func TestTheRuleStopsWhereTheBandStarts(t *testing.T) {
 		if strings.Contains(line, "│") {
 			ruled++
 		}
-		if strings.Contains(line, engine.Band) && strings.Contains(line, "│") {
+		if strings.Contains(line, board.Band) && strings.Contains(line, "│") {
 			t.Fatalf("the rule runs through the band: %q", line)
 		}
 	}

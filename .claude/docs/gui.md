@@ -927,7 +927,7 @@ is a backspace, so typing in capitals still deletes (`Typed`). The board narrows
 they are chosen (`@gui-a-filter-narrows-the-board`), two together keep what both
 reach (`@gui-filters-narrow-together`), and the search narrows what they kept
 (`@gui-a-filter-and-a-search-narrow-together`). The filters are the engine's
-(`engine.Filters`): what each keeps is what `task list` keeps with the same flag.
+(`board.Filters`): what each keeps is what `task list` keeps with the same flag.
 
 **The same filters narrow every page.** One set, shared by the pages, so the
 pills in force do not change with the tab: the question asked — the work on
@@ -1341,7 +1341,7 @@ sight (`engine.FoundBranches`, `@gui-objective-a-search-unfolds-the-parent-of-a-
 late — its deadline past, not reached — or waiting on one not reached, the
 late first, one named and the rest counted, after a dot in the late ink,
 `#13 Documentation late +1`; at 720 by number alone, `#13 late`, and the
-counts give their time up first (`engine.Snapshot.Hidden`, `CountsIn`,
+counts give their time up first (`board.Snapshot.Hidden`, `CountsIn`,
 `@gui-objective-a-folded-parent-says-what-it-hides`,
 `@gui-objective-a-narrow-window-shortens-what-is-hidden`). The pointer on
 it says the whole of it. On hold and reached stay inside: they need no
@@ -1545,8 +1545,8 @@ GitHub, Linear and Superhuman all open theirs at the top. Every action says
 the key that does the same on the board, at its right
 (`PaletteRow.Key`), so the palette teaches the keys it stands for. It offers,
 in this order: the
-actions on the task chosen (`Move #152 to…`, `Priority of #152…`,
-`Label #152 with…`, `Edit`, `Focus`, `Archive`, `Delete`) and the board's own
+actions on the task chosen, the lines of its right-click menu each led by
+its number (`#152 Move to…`, `#152 Edit`, …), so the two never part, and the board's own
 (`New task`, `Search`, `Filters`, `Labels`, `Help`…); then, once something is
 typed, the tasks it reaches by the engine's own rule (`engine.Reaches`), five
 at most, `#152` putting that task first; then what was done from it lately
@@ -2005,30 +2005,29 @@ system — the lines `cairn --version` prints, read from the same stamps
 those lines, three of them tall (`AboutLogo`, `SaidAt`), drawn from its
 256-pixel PNG.
 
-**A line of the menu bar is offered when it can be done now.** The bar was
-one fixed list, every line there whatever was in sight, so Focus stood over
-the objectives and Edit with nothing chosen, and picking them did nothing. Each line now names the acts it does (`actsOf`), which the pages
-offer or not (`engine.Pages`), and `Doable` says whether it does
-something now: on the board, with what it acts on in sight — a card chosen to
-edit or delete, a task to focus or archive, another page to go to
+**The menu bar holds cairn and Help.** It held every act once, a copy of the
+keys, the right click and the palette that drifted from them; now it holds
+what concerns the application — About cairn, Settings…, Upgrade, Quit, Help —
+and every other act lives where the board offers it. `Doable` says whether a
+line does something now: on the board or the search, and offered by the pages
 (`@gui-the-menu-offers-what-can-be-done-now`,
-`@gui-the-menu-follows-the-page-in-sight`,
-`@gui-the-menu-waits-while-a-panel-is-open`). The `☰` menu leaves out the
-rest, and picking it from anywhere does nothing
-(`@gui-a-line-that-cannot-be-done-does-nothing`); the native bars keep their
-lines in place and grey them, reading what the window told them at its last
-frame (`tellingTheBars`) as a menu opens — AppKit through `validateMenuItem:`,
-Win32 on `WM_INITMENUPOPUP` — so a line does not move under the pointer as
-the board changes.
+`@gui-the-menu-waits-while-a-panel-is-open`). On macOS the group cairn fills
+the application menu. The native bars keep their lines in place and grey
+them, reading what the window told them at its last frame (`tellingTheBars`)
+as a menu opens — AppKit through `validateMenuItem:`, Win32 on
+`WM_INITMENUPOPUP` — so a line does not move under the pointer.
 
 **A right click says what can be done to what is under it.** What a card can
 have done to it was on the bar once the card was chosen, so a hand on the
 mouse went to the card and then down to the foot of the window. A right press
 chooses what is under it and opens a menu beside the pointer (`menu.go`):
-Open (`⏎`, as the design puts it first: reading a task is what a click on it
-most often leads to), Edit, New linked task, Focus or Unfocus, Move to…,
-Priority…, Labels…, Archive or Unarchive, Delete on a task; Edit and Delete on an objective; the board's own offers
-where there is neither. Every line is an act the bar, a key or a drag already
+one line or more for each operation `board.MenuOf` offers on the thing
+chosen, in the catalogue's order and what loses work last, so a page turned
+off takes its lines and a new operation finds its place: Open for `show`
+(`⏎`), Edit, New linked task, Move to…, Priority… and Labels… for `edit`,
+Archive or Unarchive, Focus or Unfocus, Skip this one on a card that comes
+back (`@gui-a-recurring-cards-menu-skips-it`), Delete on a task; Edit and
+Delete on an objective; the board's own offers where there is neither. Every line is an act the bar, a key or a drag already
 does, done the same way. Move to… and Priority… turn the menu into the values
 the task may take, but the one it holds, and the one clicked is set at once;
 Labels… opens the list of its labels, as the form does

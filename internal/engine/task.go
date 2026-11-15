@@ -250,8 +250,8 @@ var TaskLabel = Operation{
 	},
 }
 
-// taskUnarchive brings one back onto the board.
-var taskUnarchive = Operation{
+// TaskUnarchive brings one back onto the board.
+var TaskUnarchive = Operation{
 	Thing:   "task",
 	Verb:    "unarchive",
 	Short:   "Unarchive a task, back on the board",

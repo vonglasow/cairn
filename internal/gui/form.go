@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/item"
 	"cairn/internal/engine/task"
 	"cairn/internal/engine/workspace"
@@ -22,7 +23,7 @@ type Form struct {
 	whole        bool
 	answered     bool
 
-	fields      []engine.Field
+	fields      []board.Field
 	at          int
 	caret       int
 	held        int
@@ -102,46 +103,46 @@ func (f Form) onto(at int) Form {
 
 func (w Window) adding(tab Tab, state string) Form {
 	if tab == Objectives {
-		return asOpened(Form{Adding: true, ForObjective: true, fields: engine.NewGoalFields()})
+		return asOpened(Form{Adding: true, ForObjective: true, fields: board.NewGoalFields()})
 	}
-	fields := engine.AddingFields(state)
+	fields := board.AddingFields(state)
 	if w.pages.Recurs() {
 		fields = withRepeats(fields)
 	}
 	return asOpened(Form{Adding: true, fields: fields})
 }
 
-func (w Window) editing(c engine.Card) Form {
+func (w Window) editing(c board.Card) Form {
 	return asOpened(Form{Number: c.Number, fields: w.taskFields(c)})
 }
 
-func (w Window) taskFields(c engine.Card) []engine.Field {
-	fields := engine.EditFields(c)
+func (w Window) taskFields(c board.Card) []board.Field {
+	fields := board.EditFields(c)
 	if c.Series == nil && w.pages.Recurs() {
 		fields = withRepeats(fields)
 	}
 	return fields
 }
 
-func withRepeats(fields []engine.Field) []engine.Field {
+func withRepeats(fields []board.Field) []board.Field {
 	at := len(fields)
 	if at > 0 && fields[at-1].Long {
 		at--
 	}
-	return slices.Insert(slices.Clone(fields), at, engine.RepeatsField(), engine.FromField())
+	return slices.Insert(slices.Clone(fields), at, board.RepeatsField(), board.FromField())
 }
 
 func (w Window) freshened() Window {
 	if w.form.Adding || w.form.ForSeries || w.form.Number == 0 || len(w.form.opened) != len(w.form.fields) {
 		return w
 	}
-	var fresh []engine.Field
+	var fresh []board.Field
 	if w.form.ForObjective {
 		g, found := w.snap.Goal(w.form.Number)
 		if !found {
 			return w
 		}
-		fresh = engine.GoalFields(g)
+		fresh = board.GoalFields(g)
 	} else {
 		c, found := w.snap.Card(w.form.Number)
 		if !found {
@@ -167,16 +168,16 @@ func (w Window) freshened() Window {
 	return w
 }
 
-func editingGoal(g engine.Goal) Form {
-	return asOpened(Form{Number: g.Number, ForObjective: true, fields: engine.GoalFields(g)})
+func editingGoal(g board.Goal) Form {
+	return asOpened(Form{Number: g.Number, ForObjective: true, fields: board.GoalFields(g)})
 }
 
 // Fields is what the form asks about, in the order it lays them out.
-func (f Form) Fields() []engine.Field { return f.fields }
+func (f Form) Fields() []board.Field { return f.fields }
 
 // Set writes a field.
 func (f Form) Set(name, value string) Form {
-	fields := make([]engine.Field, len(f.fields))
+	fields := make([]board.Field, len(f.fields))
 	copy(fields, f.fields)
 	for i := range fields {
 		if fields[i].Name == name {
@@ -401,7 +402,7 @@ func (w Window) readingActs() Window {
 	if w.chosenGoal || w.screen != OnForm || w.form.Adding || w.form.ForSeries {
 		return w
 	}
-	shown, err := w.work.Ask(engine.TraceShow, engine.Numbered(w.chosen))
+	shown, err := w.work.Ask(engine.TraceShow, board.Numbered(w.chosen))
 	if err != nil {
 		return w.failing(err)
 	}
@@ -426,7 +427,7 @@ func (w Window) formUnder() bool {
 }
 
 // PartsTicked is what the steps field of an open form is drawn as: a tile for each step it says now, done or not, unsaved lines included.
-func (w Window) PartsTicked() []engine.Card {
+func (w Window) PartsTicked() []board.Card {
 	if !w.formUnder() {
 		return nil
 	}
@@ -434,13 +435,13 @@ func (w Window) PartsTicked() []engine.Card {
 		if field.Name != "steps" {
 			continue
 		}
-		var cards []engine.Card
+		var cards []board.Card
 		for _, part := range engine.PartsIn(field.Value) {
 			state := item.Todo
 			if part.Done {
 				state = item.Done
 			}
-			cards = append(cards, engine.Card{Number: part.Number, Title: part.Title, State: string(state)})
+			cards = append(cards, board.Card{Number: part.Number, Title: part.Title, State: string(state)})
 		}
 		return cards
 	}
@@ -477,7 +478,7 @@ func (w Window) stored() (Window, int, error) {
 	w = w.warned(answer)
 	number := w.form.Number
 	if w.form.Adding {
-		number = engine.Added(answer)
+		number = board.Added(answer)
 		w.form.Adding, w.form.Number = false, number
 		if !w.form.ForObjective {
 			if err := w.drafts.Drop(); err != nil {
@@ -834,7 +835,7 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 	if w.form.ForSeries {
 		editing = engine.SeriesEdit
 	}
-	op, asked := engine.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
+	op, asked := board.Saved(w.form.fields, w.form.Adding, w.form.Number, adding, editing)
 	if w.form.whole {
 		asked.Given["series"] = "true"
 	}
@@ -842,17 +843,17 @@ func (w Window) saving() (engine.Operation, engine.Input) {
 }
 
 func (w Window) addingOn() string {
-	column, inBand, _, found := engine.Where(w.Showing().Cards, w.archived, w.chosen)
+	column, inBand, _, found := board.Where(w.Showing().Cards, w.archived, w.chosen)
 	if !found && w.aimed != "" {
 		return w.aimed
 	}
 	if !found {
-		return engine.StateAt(0)
+		return board.StateAt(0)
 	}
 	if inBand {
-		return engine.Stalled[0]
+		return board.Stalled[0]
 	}
-	return engine.StateAt(column)
+	return board.StateAt(column)
 }
 
 // Delete asks first, and deletes the second time.
@@ -876,7 +877,7 @@ func (w Window) deleting() Window {
 		op = engine.ObjectiveDelete
 	}
 	w.screen = OnTheBoard
-	if _, err := w.work.Ask(op, engine.Agreed(engine.Numbered(w.chosen))); err != nil {
+	if _, err := w.work.Ask(op, engine.Agreed(board.Numbered(w.chosen))); err != nil {
 		return w.failing(err)
 	}
 	w.chosen, w.chosenGoal = 0, false
@@ -901,7 +902,7 @@ func (w Window) ChoosingAt() int { return w.choosing }
 func (w Window) Ticked(number int) bool { return w.ticked[number] }
 
 // FieldSays is what a field reads on screen, which is not always what it carries: the engine names the numbers a field holds.
-func (w Window) FieldSays(field engine.Field) string { return w.snap.Named(field) }
+func (w Window) FieldSays(field board.Field) string { return w.snap.Named(field) }
 
 func (w Window) choosingList() Window {
 	on := w.form.Fields()[w.form.On()]
@@ -913,7 +914,7 @@ func (w Window) choosingList() Window {
 	if on.Arg == "label" {
 		w = w.openingLabels(on.Value)
 	} else {
-		for _, number := range engine.NumbersIn(on.Value) {
+		for _, number := range board.NumbersIn(on.Value) {
 			w.ticked[number] = true
 		}
 		if on.Arg == "parent" && len(w.ticked) == 0 {
@@ -957,7 +958,7 @@ func (w Window) RowSays(one Choice) string {
 		return one.Title
 	}
 	if len(w.closedSet()) == 0 && w.choosingFor != "label" {
-		said += "#" + Numbered(engine.Card{Number: one.Number}) + "  "
+		said += "#" + Numbered(board.Card{Number: one.Number}) + "  "
 	}
 	if w.choosingFor == "priority" {
 		said += priorityRoom
@@ -998,7 +999,7 @@ func (w Window) choices() []Choice {
 		}
 		return out
 	}
-	for _, g := range engine.FoundGoals(w.snap.Goals, looking) {
+	for _, g := range board.FoundGoals(w.snap.Goals, looking) {
 		out = append(out, Choice{Number: g.Number, Title: g.Title})
 	}
 	return out
@@ -1043,7 +1044,7 @@ func (w Window) closedSet() []string {
 	return w.setOf(w.form.Fields()[w.form.On()])
 }
 
-func (w Window) setOf(field engine.Field) []string { return field.Choices }
+func (w Window) setOf(field board.Field) []string { return field.Choices }
 
 func (w Window) inChoosing(name string) Window {
 	offered := w.Choosing()
@@ -1145,7 +1146,7 @@ func (w Window) keeping() Window {
 		w.screen = OnForm
 		return w
 	}
-	w.form = w.form.Writes(Ending(engine.Numbers(numbers)))
+	w.form = w.form.Writes(Ending(board.Numbers(numbers)))
 	w.screen = OnForm
 	return w
 }

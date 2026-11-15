@@ -1,14 +1,14 @@
 package gui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"slices"
 	"testing"
 
 	"gioui.org/io/key"
 )
 
-func gathered(cards []engine.Card, at ...Point) Window {
+func gathered(cards []board.Card, at ...Point) Window {
 	w := holding(newFake(), cards...)
 	w = w.clicked(at[0])
 	for _, p := range at[1:] {
@@ -18,7 +18,7 @@ func gathered(cards []engine.Card, at ...Point) Window {
 }
 
 func TestWhatIsTakenIsLetGoOf(t *testing.T) {
-	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
+	cards := []board.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
 	w := holding(newFake(), cards...)
 	w = gathered(cards, middleOf(w, 1, 0), middleOf(w, 1, 1), middleOf(w, 1, 2))
 	if got := w.Taken(); !slices.Equal(got, []int{1, 2, 3}) {
@@ -47,14 +47,14 @@ func TestWhatIsTakenIsLetGoOf(t *testing.T) {
 }
 
 func TestAStretchStaysInItsColumn(t *testing.T) {
-	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Elsewhere", "backlog")}
+	cards := []board.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Elsewhere", "backlog")}
 	w := holding(newFake(), cards...)
 	w = w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShift).clicked(middleOf(w, 0, 0)).KeysDown(0)
 	if got := w.Taken(); !slices.Equal(got, []int{1, 3}) || w.ChosenGoal() {
 		t.Errorf("a stretch across two columns took %v, chosen an objective: %v", got, w.ChosenGoal())
 	}
 	goals := New(newFake(), 1200, 800)
-	goals.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 1, Title: "One", State: "active"}, {Number: 2, Title: "Two", State: "active"}}}
+	goals.snap = board.Snapshot{Goals: []board.Goal{{Number: 1, Title: "One", State: "active"}, {Number: 2, Title: "Two", State: "active"}}}
 	goals.tab = Objectives
 	goals = goals.clicked(goalMiddle(goals, 1)).KeysDown(key.ModShift).clicked(goalMiddle(goals, 2)).KeysDown(0)
 	if got := goals.Taken(); !slices.Equal(got, []int{1, 2}) || !goals.ChosenGoal() {
@@ -64,7 +64,7 @@ func TestAStretchStaysInItsColumn(t *testing.T) {
 
 func TestArchivingSeveralLeavesOutWhatIsAlreadyOff(t *testing.T) {
 	f := newFake()
-	cards := []engine.Card{card(1, "First", "todo"), card(2, "Second", "todo"), {Number: 3, Title: "Gone", State: "todo", Archived: true}}
+	cards := []board.Card{card(1, "First", "todo"), card(2, "Second", "todo"), {Number: 3, Title: "Gone", State: "todo", Archived: true}}
 	w := holding(f, cards...)
 	w.archived = true
 	w = w.clicked(middleOf(w, 1, 0))

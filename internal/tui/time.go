@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"time"
 
@@ -28,7 +29,7 @@ func (b Board) walkingWeeks(key string) (Board, bool) {
 	case "right", "l":
 		b.week = b.week.AddDate(0, 0, 7)
 	case "t":
-		b.week = engine.Monday(b.clock())
+		b.week = board.Monday(b.clock())
 	case "j", "down":
 		b.timeAt++
 		return b, true
@@ -45,11 +46,11 @@ func (b Board) walkingWeeks(key string) (Board, bool) {
 func (b Board) readingWeek() tea.Cmd {
 	week := b.week
 	if week.IsZero() {
-		week = engine.Monday(b.clock())
+		week = board.Monday(b.clock())
 	}
-	since, until, today := week, week.AddDate(0, 0, 6), engine.DayOf(b.clock())
+	since, until, today := week, week.AddDate(0, 0, 6), board.DayOf(b.clock())
 	return func() tea.Msg {
-		sheet, err := engine.ReadPeriod(b.work, since, until, today)
+		sheet, err := board.ReadPeriod(b.work, since, until, today)
 		return Sheeted{Sheet: sheet, Err: err}
 	}
 }

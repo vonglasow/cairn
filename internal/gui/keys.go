@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"strconv"
 	"strings"
 	"time"
@@ -115,7 +116,7 @@ func (w Window) onBoard(name string) Window {
 		case "m":
 			return w.settingUnderTheCard("state", engine.States(), card.State)
 		case "p":
-			return w.settingUnderTheCard("priority", engine.Priorities(), card.Priority)
+			return w.settingUnderTheCard("priority", board.Priorities(), card.Priority)
 		case "l":
 			return w.labellingChosen()
 		case "t":
@@ -307,7 +308,7 @@ func (w Window) inSightOfTheCaret() Window {
 		return w
 	}
 	line, _ := lines.At(w.form.Writing().At)
-	w.saying = w.settledSaying(inSight(line, 1, rows, w.saying))
+	w.saying = w.settledSaying(board.InSight(line, 1, rows, w.saying))
 	return w
 }
 
@@ -356,37 +357,15 @@ func (w Window) walking(across, down int) Window {
 	if w.tab == Objectives {
 		return w.walkingGoals(across, down)
 	}
-	if lane, at, inBand := w.whereInBand(); inBand {
-		return w.walkingBand(lane, at, across, down)
-	}
-	column, at := w.whereChosen()
-	if down > 0 {
-		if here := w.inColumn(column); column > 0 && at == len(here)-1 {
-			if lane := w.inLane(column - 1); len(lane) > 0 {
-				w.chosen, w.chosenGoal = lane[0].Number, false
-				return w
-			}
-		}
-	}
-	if across != 0 {
-		for next := column + across; next >= 0 && next < engine.Columns; next += across {
-			here := w.inColumn(next)
-			if len(here) == 0 {
-				continue
-			}
-			at = min(at, len(here)-1)
-			w.chosen, w.chosenGoal = here[at].Number, false
-			return w.following(next, at)
-		}
+	c, spot, moved := board.Walk(w.Showing().Cards, w.archived, w.chosen, across, down)
+	if !moved {
 		return w
 	}
-	here := w.inColumn(column)
-	if len(here) == 0 {
-		return w
+	w.chosen, w.chosenGoal = c.Number, false
+	if spot.InBand {
+		return w.followingLane(spot.Column, spot.At)
 	}
-	at = min(len(here)-1, max(0, at+down))
-	w.chosen, w.chosenGoal = here[at].Number, false
-	return w.following(column, at)
+	return w.following(spot.Column, spot.At)
 }
 
 func (w Window) shifting(across, down int) Window {
@@ -394,12 +373,12 @@ func (w Window) shifting(across, down int) Window {
 		return w
 	}
 	showing := w.Showing().Cards
-	column, inBand, _, found := engine.Where(showing, w.archived, w.chosen)
+	column, inBand, _, found := board.Where(showing, w.archived, w.chosen)
 	if !found {
 		return w
 	}
 	if across != 0 {
-		state, ok := engine.Beside(column, inBand, across)
+		state, ok := board.Beside(column, inBand, across)
 		if !ok {
 			return w
 		}
@@ -409,7 +388,7 @@ func (w Window) shifting(across, down int) Window {
 	if inBand {
 		return w
 	}
-	given, ok := engine.Step(w.inColumn(column), w.chosen, down)
+	given, ok := board.Step(w.inColumn(column), w.chosen, down)
 	if !ok {
 		return w
 	}
@@ -417,57 +396,21 @@ func (w Window) shifting(across, down int) Window {
 	return w.asking(engine.TaskMove, engine.Input{Given: given})
 }
 
-func (w Window) whereInBand() (lane, at int, ok bool) {
-	for i := range engine.Stalled {
-		for j, c := range w.inLane(i) {
-			if c.Number == w.chosen {
-				return i, j, true
-			}
-		}
-	}
-	return 0, 0, false
-}
-
-func (w Window) walkingBand(lane, at, across, down int) Window {
-	if down < 0 && at == 0 {
-		if here := w.inColumn(lane + 1); len(here) > 0 {
-			last := len(here) - 1
-			w.chosen, w.chosenGoal = here[last].Number, false
-			return w.following(lane+1, last)
-		}
-		return w
-	}
-	if across != 0 {
-		for next := lane + across; next >= 0 && next < len(engine.Stalled); next += across {
-			if here := w.inLane(next); len(here) > 0 {
-				landed := min(at, len(here)-1)
-				w.chosen, w.chosenGoal = here[landed].Number, false
-				return w.followingLane(next, landed)
-			}
-		}
-		return w
-	}
-	here := w.inLane(lane)
-	landed := min(len(here)-1, max(0, at+down))
-	w.chosen, w.chosenGoal = here[landed].Number, false
-	return w.followingLane(lane, landed)
-}
-
 func (w Window) followingLane(lane, at int) Window {
 	run := w.Layout().Lane[lane]
-	w.lanes[lane] = w.settledLane(lane, inSight(at, CardHeight, run.H, w.lanes[lane]))
+	w.lanes[lane] = w.settledLane(lane, board.InSight(at, CardHeight, run.H, w.lanes[lane]))
 	return w
 }
 
 func (w Window) following(column, at int) Window {
 	run := w.Layout().Column[column]
-	w.scroll[column] = w.settled(column, inSight(at, CardHeight, run.H, w.scroll[column]))
+	w.scroll[column] = w.settled(column, board.InSight(at, CardHeight, run.H, w.scroll[column]))
 	return w
 }
 
 func (w Window) followingGoal(at int) Window {
 	run := GoalsRun(w.Layout())
-	w.goals = w.settledGoals(inSight(at, ItemHigh, run.H, w.goals))
+	w.goals = w.settledGoals(board.InSight(at, ItemHigh, run.H, w.goals))
 	return w
 }
 
@@ -523,23 +466,6 @@ func (w Window) agreed() Window {
 		w.err = failed
 	}
 	return w
-}
-
-func (w Window) whereChosen() (column, at int) {
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
-	for i, held := range dealt {
-		for j, c := range held.Cards {
-			if c.Number == w.chosen {
-				return i, j
-			}
-		}
-	}
-	for i, held := range dealt {
-		if len(held.Cards) > 0 {
-			return i, 0
-		}
-	}
-	return 0, 0
 }
 
 func (w Window) opening() Window { return w.Edit() }

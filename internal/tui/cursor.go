@@ -1,14 +1,13 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"slices"
-
-	"cairn/internal/engine"
 
 	tea "charm.land/bubbletea/v2"
 )
 
-func lastColumn() int { return engine.Columns - 1 }
+func lastColumn() int { return board.Columns - 1 }
 
 func underTheBand(column int) bool { return column > 0 }
 
@@ -100,7 +99,7 @@ func (b Board) stepTo(way string) Board {
 	return b
 }
 
-func wide() int { return engine.Columns - 1 }
+func wide() int { return board.Columns - 1 }
 
 func (b Board) stepInBand(way string) Board {
 	band := b.here()
@@ -188,13 +187,13 @@ func (b Board) outOfBand() Board {
 func (b Board) follow() Board {
 	l := LayoutFor(b.width, b.height)
 	if b.tab == Objectives {
-		b.goalAt = ScrolledBy(b.goalAt, b.goalPlace(), l.Top+l.Rows+2, goalHeight)
+		b.goalAt = board.InSight(b.goalPlace(), goalHeight, l.Top+l.Rows+2, b.goalAt)
 		return b
 	}
 	here := b.here()
 	at := max(0, b.at(here))
 	if b.inBand {
-		b.bandAt = Scrolled(b.bandAt, at/(engine.Columns-1), l.Rows)
+		b.bandAt = Scrolled(b.bandAt, at/(board.Columns-1), l.Rows)
 		return b
 	}
 	top := l.Top
@@ -263,7 +262,7 @@ func (b Board) toEdge(which func(int) int) Board {
 	return b.follow()
 }
 
-func (b Board) at(here []engine.Card) int {
+func (b Board) at(here []board.Card) int {
 	for i, c := range here {
 		if c.Number == b.task {
 			return i
@@ -272,7 +271,7 @@ func (b Board) at(here []engine.Card) int {
 	return -1
 }
 
-func (b Board) held() (engine.Card, bool) {
+func (b Board) held() (board.Card, bool) {
 	if b.tab == Series {
 		return b.snap.Card(b.task)
 	}
@@ -281,7 +280,7 @@ func (b Board) held() (engine.Card, bool) {
 			return c, true
 		}
 	}
-	return engine.Card{}, false
+	return board.Card{}, false
 }
 
 func (b Board) push(way string) (tea.Model, tea.Cmd) {
@@ -301,13 +300,13 @@ func (b Board) push(way string) (tea.Model, tea.Cmd) {
 
 func (b Board) pushDown() (tea.Model, tea.Cmd) {
 	if b.inBand {
-		if where, ok := engine.Step(b.ofItsKind(), b.task, 1); ok {
+		if where, ok := board.Step(b.ofItsKind(), b.task, 1); ok {
 			return b, b.moving(where)
 		}
 		return b, nil
 	}
 	here := b.here()
-	if where, ok := engine.Step(here, b.task, 1); ok {
+	if where, ok := board.Step(here, b.task, 1); ok {
 		return b, b.moving(where)
 	}
 	if b.at(here) < 0 {
@@ -319,24 +318,24 @@ func (b Board) pushDown() (tea.Model, tea.Cmd) {
 
 func (b Board) pushUp() (tea.Model, tea.Cmd) {
 	if b.inBand {
-		if where, ok := engine.Step(b.ofItsKind(), b.task, -1); ok {
+		if where, ok := board.Step(b.ofItsKind(), b.task, -1); ok {
 			return b, b.moving(where)
 		}
-		return b.land(engine.StateAt(b.cameFrom), b.cameFrom, false)
+		return b.land(board.StateAt(b.cameFrom), b.cameFrom, false)
 	}
-	if where, ok := engine.Step(b.here(), b.task, -1); ok {
+	if where, ok := board.Step(b.here(), b.task, -1); ok {
 		return b, b.moving(where)
 	}
 	return b, nil
 }
 
-func (b Board) ofItsKind() []engine.Card {
+func (b Board) ofItsKind() []board.Card {
 	held, _ := b.held()
-	lane := slices.Index(engine.Stalled, held.State)
+	lane := slices.Index(board.Stalled, held.State)
 	if lane < 0 {
 		return nil
 	}
-	return engine.InLanes(b.here())[lane]
+	return board.InLanes(b.here())[lane]
 }
 
 func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
@@ -344,11 +343,11 @@ func (b Board) sideways(way string) (tea.Model, tea.Cmd) {
 	if way == goRight {
 		by = 1
 	}
-	state, ok := engine.Beside(b.column, b.inBand, by)
+	state, ok := board.Beside(b.column, b.inBand, by)
 	if !ok {
 		return b, nil
 	}
-	return b.land(state, engine.IndexOf(state), false)
+	return b.land(state, board.IndexOf(state), false)
 }
 
 type landing struct {

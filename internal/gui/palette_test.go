@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"testing"
 	"time"
@@ -8,7 +9,7 @@ import (
 	"cairn/internal/engine"
 )
 
-func paletteOver(cards ...engine.Card) (*fake, Window) {
+func paletteOver(cards ...board.Card) (*fake, Window) {
 	f := newFake()
 	return f, holding(f, cards...)
 }
@@ -22,7 +23,7 @@ func says(rows []PaletteRow) []string {
 }
 
 func TestCmdKOpensThePaletteAndEscShutsIt(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	open := w.Key("cmd+k")
 	if open.Screen() != OnPalette {
 		t.Fatalf("cmd+k left the window on %v", open.Screen())
@@ -36,12 +37,12 @@ func TestCmdKOpensThePaletteAndEscShutsIt(t *testing.T) {
 }
 
 func TestThePaletteOffersTheChosenTasksVerbsFirst(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	rows := w.clicked(middleOf(w, 1, 0)).Key("cmd+k").PaletteRows()
 	if len(rows) == 0 || rows[0].Group != paletteActionsGroup || !strings.Contains(rows[0].Says, "#1") {
 		t.Fatalf("the palette opens on %v", says(rows))
 	}
-	for _, want := range []string{"Move #1 to…", "Priority of #1…", "Label #1 with…", "Edit #1"} {
+	for _, want := range []string{"#1 Move to…", "#1 Priority…", "#1 Labels…", "#1 Edit"} {
 		if !strings.Contains(strings.Join(says(rows), "|"), want) {
 			t.Errorf("the palette does not offer %q: %v", want, says(rows))
 		}
@@ -49,15 +50,15 @@ func TestThePaletteOffersTheChosenTasksVerbsFirst(t *testing.T) {
 }
 
 func TestTypingNarrowsThePaletteWordByWord(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	rows := w.clicked(middleOf(w, 1, 0)).Key("cmd+k").Types("to move").PaletteRows()
-	if len(rows) != 1 || rows[0].Says != "Move #1 to…" {
+	if len(rows) != 1 || rows[0].Says != "#1 Move to…" {
 		t.Errorf("'to move' leaves %v", says(rows))
 	}
 }
 
 func TestAMoveAsksForItsColumnThenAsksTheEngine(t *testing.T) {
-	f, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	f, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+k").Types("move").Key("enter")
 	if w.Screen() != OnPalette || len(w.PaletteRows()) != len(engine.States()) {
 		t.Fatalf("a move asks %v", says(w.PaletteRows()))
@@ -69,7 +70,7 @@ func TestAMoveAsksForItsColumnThenAsksTheEngine(t *testing.T) {
 }
 
 func TestAPriorityAndALabelAreAskedForTheSameWay(t *testing.T) {
-	f, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	f, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	chosen := w.clicked(middleOf(w, 1, 0))
 	chosen.Key("cmd+k").Types("priority").Key("enter").Types("high").Key("enter")
 	if got := f.wrote()[0].in.Given["priority"]; got != "high" {
@@ -82,7 +83,7 @@ func TestAPriorityAndALabelAreAskedForTheSameWay(t *testing.T) {
 }
 
 func TestThePaletteFindsATaskByTitleAndOpensIt(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"}, engine.Card{Number: 2, Title: "Ship it", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"}, board.Card{Number: 2, Title: "Ship it", State: "todo"})
 	w = w.Key("cmd+k").Types("ship")
 	at := -1
 	for i, row := range w.PaletteRows() {
@@ -102,7 +103,7 @@ func TestThePaletteFindsATaskByTitleAndOpensIt(t *testing.T) {
 }
 
 func TestANumberFindsItsTaskFirst(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"}, engine.Card{Number: 22, Title: "Ship it", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"}, board.Card{Number: 22, Title: "Ship it", State: "todo"})
 	rows := w.Key("cmd+k").Types("#22").PaletteRows()
 	if len(rows) == 0 || rows[0].Group != paletteTasksGroup || !strings.HasSuffix(rows[0].Says, "Ship it") {
 		t.Errorf("#22 finds %v", says(rows))
@@ -110,7 +111,7 @@ func TestANumberFindsItsTaskFirst(t *testing.T) {
 }
 
 func TestWhatThePaletteDidIsOfferedAgain(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("cmd+k").Types("help").Key("enter").Key("esc")
 	rows := w.Key("cmd+k").PaletteRows()
 	last := rows[len(rows)-1]
@@ -120,7 +121,7 @@ func TestWhatThePaletteDidIsOfferedAgain(t *testing.T) {
 }
 
 func TestAClickOnTheBarsLineOpensThePalette(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	line := CommandLine(w.Layout(), w.BarOffers())
 	if got := w.clicked(Point{X: line.X + 40, Y: line.Y + line.H/2}); got.Screen() != OnPalette {
 		t.Errorf("a click on the bar's line left the window on %v", got.Screen())
@@ -128,7 +129,7 @@ func TestAClickOnTheBarsLineOpensThePalette(t *testing.T) {
 }
 
 func TestThePaletteIsDrawnUnderTheTabs(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.Key("cmd+k")
 	w = w.At(w.now.Add(time.Second))
 	box, l := w.PaletteBox(), w.Layout()
@@ -141,7 +142,7 @@ func TestThePaletteIsDrawnUnderTheTabs(t *testing.T) {
 }
 
 func TestEveryActionOfThePaletteSaysItsKey(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+k")
 	keys := map[string]string{}
 	for _, row := range w.PaletteRows() {
@@ -149,7 +150,7 @@ func TestEveryActionOfThePaletteSaysItsKey(t *testing.T) {
 			keys[row.Says] = row.Key
 		}
 	}
-	for says, key := range map[string]string{"Move #1 to…": "m", "Edit #1": "e", "Delete #1": "cmd+backspace", "New task": "cmd+n", "Search": "/", "Help": "?"} {
+	for says, key := range map[string]string{"#1 Move to…": "m", "#1 Edit": "e", "#1 Delete": "cmd+backspace", "New task": "cmd+n", "Search": "/", "Help": "?"} {
 		if keys[says] != key {
 			t.Errorf("%q says the key %q, not %q", says, keys[says], key)
 		}
@@ -157,7 +158,7 @@ func TestEveryActionOfThePaletteSaysItsKey(t *testing.T) {
 }
 
 func TestASearchSaysHowManyItKeepsOfHowMany(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"}, engine.Card{Number: 2, Title: "Ship it", State: "todo"}, engine.Card{Number: 3, Title: "Spec the bar", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"}, board.Card{Number: 2, Title: "Ship it", State: "todo"}, board.Card{Number: 3, Title: "Spec the bar", State: "todo"})
 	if got := w.TabCount(Tasks); got != "3" {
 		t.Errorf("a board nobody searches counts %q", got)
 	}
@@ -168,7 +169,7 @@ func TestASearchSaysHowManyItKeepsOfHowMany(t *testing.T) {
 }
 
 func TestThePaletteRisesAsItOpens(t *testing.T) {
-	_, w := paletteOver(engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	_, w := paletteOver(board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	opened := time.Date(2026, 11, 1, 10, 0, 0, 0, time.UTC)
 	w = w.At(opened).Key("cmd+k")
 	if rise, rising := w.At(opened.Add(paletteRises / 2)).PaletteRise(); !rising || rise <= 0.4 || rise >= 0.95 {

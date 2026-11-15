@@ -297,8 +297,8 @@ cairn task focus`,
 	},
 }
 
-// taskUnfocus leaves nothing in focus.
-var taskUnfocus = Operation{
+// TaskUnfocus leaves nothing in focus.
+var TaskUnfocus = Operation{
 	Thing: "task",
 	Verb:  "unfocus",
 	Short: "Unfocus a task in focus, or all of them",

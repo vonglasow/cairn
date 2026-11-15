@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"strconv"
 	"strings"
@@ -195,7 +196,7 @@ func (b Board) drawDetail() string {
 	}, "\n")
 }
 
-func (b Board) detailOffers(c engine.Card) []string {
+func (b Board) detailOffers(c board.Card) []string {
 	offers := []string{b.offer("e", "edit"), b.offer("f", "focus")}
 	if len(c.Steps) > 0 {
 		offers = append([]string{b.offer("jk ↓↑", "steps")}, offers...)
@@ -210,7 +211,7 @@ func (b Board) detailOffers(c engine.Card) []string {
 	return append(offers, b.offer("?", "help"), b.offer("esc", "back"))
 }
 
-func (b Board) detailLeft(c engine.Card, width int) []string {
+func (b Board) detailLeft(c board.Card, width int) []string {
 	under := b.detailLeftUnder(c, width)
 	var out []string
 	if c.Description != "" {
@@ -230,7 +231,7 @@ const describing = 6
 
 const aroundTheDetail = 7
 
-func (b Board) saidOn(c engine.Card, width int, under []string) ([]string, int) {
+func (b Board) saidOn(c board.Card, width int, under []string) ([]string, int) {
 	taken := 0
 	for _, panel := range under {
 		taken += lipgloss.Height(panel)
@@ -239,7 +240,7 @@ func (b Board) saidOn(c engine.Card, width int, under []string) ([]string, int) 
 	return Paragraphs(c.Description, width-describing), rows
 }
 
-func (b Board) scrolledSaying(c engine.Card, lines []string, rows int) int {
+func (b Board) scrolledSaying(c board.Card, lines []string, rows int) int {
 	if b.sayingOf != c.Number {
 		return 0
 	}
@@ -264,7 +265,7 @@ func (b Board) scrollingSaying(down bool) Board {
 
 func (b Board) detailWidth() int { return (b.width-margin-margin)*3/5 - 1 }
 
-func (b Board) detailLeftUnder(c engine.Card, width int) []string {
+func (b Board) detailLeftUnder(c board.Card, width int) []string {
 	var under []string
 	if rows := b.steps(c, width-4); len(rows) > 0 {
 		under = append(under, b.named(b.stepsHead(c), strings.Join(rows, "\n"), width))
@@ -278,10 +279,10 @@ func (b Board) detailLeftUnder(c engine.Card, width int) []string {
 	return under
 }
 
-func (b Board) detailBand(c engine.Card) string {
+func (b Board) detailBand(c board.Card) string {
 	head := " " + b.skin.Faint.Render(strconv.Itoa(c.Number)) + "   " + b.skin.Title.Render(c.Title)
 	state := c.State
-	if engine.Stopped(c.State) {
+	if board.Stopped(c.State) {
 		state = b.skin.palette.Stopped(c.State).Style().
 			Render(StoppedGlyph(c.State, b.glyphs) + " " + c.State)
 	}
@@ -291,7 +292,7 @@ func (b Board) detailBand(c engine.Card) string {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
 	}
 	if day := calendar.FormatDay(c.Deadline); day != "" {
-		text, show, late := engine.CardDeadline(c, b.now())
+		text, show, late := board.CardDeadline(c, b.now())
 		style := b.skin.Bright
 		if late {
 			style = b.skin.Late
@@ -307,8 +308,8 @@ func (b Board) detailBand(c engine.Card) string {
 	if c.Spent != "" {
 		told = append(told, b.skin.Bright.Render(c.Spent)+b.skin.Says.Render(" spent"))
 	}
-	if way := inTheWay(c, b.glyphs); way != "" {
-		told = append(told, b.skin.Wrong.Render(way))
+	if way := c.InTheWay(); way != "" {
+		told = append(told, b.skin.Wrong.Render(b.glyphs.said(board.Fact{Said: way, Mark: board.InTheWay})))
 	}
 	first := Spread(head, right+" ", b.width)
 	if len(told) > 0 {
@@ -320,10 +321,10 @@ func (b Board) detailBand(c engine.Card) string {
 	return first
 }
 
-func (b Board) steps(c engine.Card, width int) []string {
+func (b Board) steps(c board.Card, width int) []string {
 	var out []string
 	chosen := b.chosenStep(c)
-	for i, part := range engine.Hanging(c) {
+	for i, part := range board.Hanging(c) {
 		box, name := "[ ]", b.skin.Bright.Render(part.Title)
 		if part.Done {
 			box, name = "[x]", b.skin.Faint.Strikethrough(true).Render(part.Title)
@@ -337,11 +338,11 @@ func (b Board) steps(c engine.Card, width int) []string {
 	return out
 }
 
-func (b Board) stepsHead(c engine.Card) string {
-	return "STEPS   " + engine.Tallied(engine.Hanging(c))
+func (b Board) stepsHead(c board.Card) string {
+	return "STEPS   " + board.Tallied(board.Hanging(c))
 }
 
-func (b Board) serves(c engine.Card, width int) string {
+func (b Board) serves(c board.Card, width int) string {
 	var out []string
 	for _, g := range b.snap.Served(c) {
 		out = append(out, Spread(
@@ -390,12 +391,12 @@ func (b Board) seriesBefore(number int) []string {
 	if !found {
 		return nil
 	}
-	return engine.BeforeIn(s, number)
+	return board.BeforeIn(s, number)
 }
 
 func (b Board) hearing(number int) tea.Cmd {
 	return func() tea.Msg {
-		shown, err := b.work.Ask(engine.TraceShow, engine.Numbered(number))
+		shown, err := b.work.Ask(engine.TraceShow, board.Numbered(number))
 		return Heard{Number: number, Acts: shown.Acts, Err: err}
 	}
 }
@@ -410,14 +411,14 @@ type Going struct {
 	Title string
 }
 
-func (b Board) detailFoot(c engine.Card) string {
+func (b Board) detailFoot(c board.Card) string {
 	if b.asking {
 		return b.question()
 	}
 	return b.bar(b.detailOffers(c)...)
 }
 
-func (b Board) chosenStep(c engine.Card) int { return min(b.stepOn, len(c.Steps)) }
+func (b Board) chosenStep(c board.Card) int { return min(b.stepOn, len(c.Steps)) }
 
 func (b Board) walkingSteps(way string) Board {
 	c, ok := b.held()
@@ -439,7 +440,7 @@ func (b Board) askingToDelete() Board {
 	if !ok || at == 0 {
 		return b
 	}
-	part := engine.Hanging(c)[at-1]
+	part := board.Hanging(c)[at-1]
 	b.asking = true
 	b.going = &Going{Title: part.Title, In: engine.Input{Given: map[string]string{
 		"number": strconv.Itoa(c.Number), "step": strconv.Itoa(part.Number)}}}

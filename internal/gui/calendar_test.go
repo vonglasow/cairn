@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"testing"
 	"time"
@@ -31,13 +32,13 @@ func TestTheCalendarIsLaidOutToThePixel(t *testing.T) {
 	if got, want := MonthBefore(box), (Box{X: 456 - monthWide - inset, Y: 62, W: monthWide, H: calendarHead}); got != want {
 		t.Errorf("the month before is offered at %+v, want %+v", got, want)
 	}
-	if got := len(engine.MonthGrid(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))); got != 42 {
+	if got := len(board.MonthGrid(time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC))); got != 42 {
 		t.Errorf("a month is shown as %d days, want six weeks", got)
 	}
 }
 
 func TestTheCalendarHangsUnderItsField(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
 		w = w.Key("tab")
@@ -54,7 +55,7 @@ func TestTheCalendarHangsUnderItsField(t *testing.T) {
 }
 
 func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for _, c := range []struct {
 		arg    string
@@ -74,7 +75,7 @@ func TestAClickOnTheDeadlineOpensTheCalendar(t *testing.T) {
 
 func TestThePointerWalksTheMonths(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 1, 31, 0, 0, 0, 0, time.UTC)}}
-	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(board.Card{Number: 1, Title: "A"})
 	box := w.CalendarBox()
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	if got := calendar.FormatDay(w.Click(middle(MonthAfter(box))).day); got != "2026-02-28" {
@@ -127,9 +128,9 @@ func TestTheCalendarWalksMonthsWithoutSpillingOver(t *testing.T) {
 
 func TestTheCalendarIsDrawn(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = Window{}.editing(engine.Card{Number: 1, Title: "Write the spec"})
+	w.form = Window{}.editing(board.Card{Number: 1, Title: "Write the spec"})
 	shot := drawn(t, w)
-	for i, day := range engine.MonthGrid(w.day) {
+	for i, day := range board.MonthGrid(w.day) {
 		edge := Edges(DayAt(w.CalendarBox(), i))[0]
 		outlined := ink(shot, edge, Dark().Colour.Surface.Raised) > 0
 		if day.Equal(w.day) && !outlined {
@@ -142,7 +143,7 @@ func TestTheCalendarIsDrawn(t *testing.T) {
 }
 
 func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
 		w = w.Key("tab")
@@ -180,7 +181,7 @@ func TestAPanelsOffersAreAsWideAsWhatTheySay(t *testing.T) {
 }
 
 func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	foot := ButtonIn(w.PanelOffers()[0])
 	skin := Dark()
@@ -203,7 +204,7 @@ func TestTheFormUnderAPanelOffersNothing(t *testing.T) {
 }
 
 func TestTheContextLineEndsBeforeTheOffersDrawn(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo", Context: "/notes/1"})
 	w.keyboard = KeyboardOf("windows")
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	offers := w.PanelOffers()
@@ -231,7 +232,7 @@ func TestACalendarWithNoFieldIsInTheMiddle(t *testing.T) {
 
 func TestTheMonthArrowsAreOnChips(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(board.Card{Number: 1, Title: "A"})
 	shot, skin := drawn(t, w), Dark()
 	box := w.CalendarBox()
 	for _, chip := range []Box{CalendarMonth(box), CalendarYear(box), MonthBefore(box), MonthAfter(box)} {
@@ -244,7 +245,7 @@ func TestTheMonthArrowsAreOnChips(t *testing.T) {
 
 func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "A", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "deadline" {
 		w = w.Key("tab")
@@ -271,7 +272,7 @@ func TestAClickOffTheCalendarClosesIt(t *testing.T) {
 }
 
 func TestACalendarOverATaskWithStepsIsDrawn(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Ship it", State: "todo",
+	w := holding(newFake(), board.Card{Number: 1, Title: "Ship it", State: "todo",
 		Steps: []engine.Part{{Number: 1, Title: "Draft the columns"}}})
 	w.chosen = 1
 	w = w.Edit()
@@ -292,7 +293,7 @@ func TestACalendarOverATaskWithStepsIsDrawn(t *testing.T) {
 
 func TestTheCalendarsDaysHaveRoomAndItStaysInTheSmallestWindow(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1024, height: 640, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(board.Card{Number: 1, Title: "A"})
 	box := w.CalendarBox()
 	day, next := DayAt(box, 0), DayAt(box, 1)
 	if day.H < 32 {
@@ -308,7 +309,7 @@ func TestTheCalendarsDaysHaveRoomAndItStaysInTheSmallestWindow(t *testing.T) {
 
 func TestTheCalendarsGridsAreWalkedAndLeftByTheKeyboard(t *testing.T) {
 	w := Window{screen: OnCalendar, width: 1200, height: 800, calendarState: calendarState{day: time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)}}
-	w.form = Window{}.editing(engine.Card{Number: 1, Title: "A"})
+	w.form = Window{}.editing(board.Card{Number: 1, Title: "A"})
 	middle := func(b Box) Point { return Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
 	months := w.Key("m")
 	if got := months.CalendarCells(); len(got) != 12 || got[0] != "Jan" {

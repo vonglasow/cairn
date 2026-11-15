@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"strconv"
 
 	"cairn/internal/engine"
@@ -32,7 +33,7 @@ const (
 // SeriesFatesAsked lays the question out over the window.
 func (w Window) SeriesFatesAsked() SeriesFates {
 	s, _ := w.snap.SeriesOf(w.fateOf)
-	made := engine.MadeStill(s)
+	made := board.MadeStill(s)
 	f := SeriesFates{Number: s.Number, On: w.seriesFate}
 	f.Asks = SeriesMadeSays(s) + " Its rule and template are deleted; its trace says so."
 	open := "none is open"
@@ -60,7 +61,7 @@ func (w Window) SeriesFatesAsked() SeriesFates {
 
 // SeriesMadeSays is what deleting a series says it made: how many tasks still here, how many open, done and skipped.
 func SeriesMadeSays(s engine.Series) string {
-	made := engine.MadeStill(s)
+	made := board.MadeStill(s)
 	said := "It made " + strconv.Itoa(len(made)) + " task" + plural(len(made)) + " still here: "
 	said += strconv.Itoa(len(s.Open)) + " open, " + strconv.Itoa(s.Done) + " done, " + strconv.Itoa(s.Skipped) + " skipped."
 	return said
@@ -69,7 +70,7 @@ func SeriesMadeSays(s engine.Series) string {
 func (w Window) onSeriesFates(name string) Window {
 	switch name {
 	case "down", "j":
-		w.seriesFate = min(len(engine.SeriesFates)-1, w.seriesFate+1)
+		w.seriesFate = min(len(board.SeriesFates)-1, w.seriesFate+1)
 	case "up", "k":
 		w.seriesFate = max(0, w.seriesFate-1)
 	}
@@ -86,7 +87,7 @@ func (w Window) clickingSeriesFates(p Point) Window {
 }
 
 func (w Window) confirmingSeriesFate() Window {
-	if engine.SeriesFates[w.seriesFate] == "delete-tasks" {
+	if board.SeriesFates[w.seriesFate] == "delete-tasks" {
 		w.screen, w.question = OnAsking, aboutDeletingSeriesTasks
 		return w
 	}
@@ -95,15 +96,15 @@ func (w Window) confirmingSeriesFate() Window {
 
 func (w Window) deletingSeries() Window {
 	w.screen, w.question = OnTheBoard, aboutDeleting
-	in := engine.Agreed(engine.Numbered(w.fateOf))
-	in.Given[engine.SeriesFates[w.seriesFate]] = "true"
+	in := engine.Agreed(board.Numbered(w.fateOf))
+	in.Given[board.SeriesFates[w.seriesFate]] = "true"
 	w.seriesOn = 0
 	return w.asking(engine.SeriesDelete, in)
 }
 
 func (w Window) deletingAllSays() string {
 	s, _ := w.snap.SeriesOf(w.fateOf)
-	return "Delete all " + strconv.Itoa(len(engine.MadeStill(s))) + " tasks too?"
+	return "Delete all " + strconv.Itoa(len(board.MadeStill(s))) + " tasks too?"
 }
 
 func drawSeriesFates(k Kit, w Window) {

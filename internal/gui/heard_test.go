@@ -1,8 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/debug"
-	"cairn/internal/engine"
 	"image"
 	"os"
 	"strings"
@@ -109,7 +109,7 @@ func at(w Window, column, index int) f32.Point {
 
 func TestAFrameOfEventsChoosesACard(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	where := at(w, 1, 0)
 
 	got, _, _ := frames(t, w,
@@ -123,7 +123,7 @@ func TestAFrameOfEventsChoosesACard(t *testing.T) {
 
 func TestAFrameOfEventsDragsACardToAnotherColumn(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	from, onto := at(w, 0, 0), at(w, 1, 0)
 
 	frames(t, w,
@@ -138,7 +138,7 @@ func TestAFrameOfEventsDragsACardToAnotherColumn(t *testing.T) {
 
 func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	where := at(w, 1, 0)
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 
@@ -152,7 +152,7 @@ func TestAFrameOfEventsOpensTheDetailOnTwoPresses(t *testing.T) {
 
 func TestAFrameOfEventsRemembersAPressForNextTime(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	where := at(w, 1, 0)
 	now := time.Date(2026, 9, 1, 10, 0, 0, 0, time.UTC)
 
@@ -169,9 +169,9 @@ func TestAFrameOfEventsRemembersAPressForNextTime(t *testing.T) {
 
 func TestAFrameOfEventsScrollsAColumn(t *testing.T) {
 	f := newFake()
-	var many []engine.Card
+	var many []board.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, board.Card{Number: i, Title: "Task", State: "todo"})
 	}
 	w := holding(f, many...)
 	where := at(w, 1, 0)
@@ -188,7 +188,7 @@ func TestAFrameOfEventsScrollsAColumn(t *testing.T) {
 
 func TestAFrameOfEventsTakesAKey(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	got, _, _ := frames(t, w,
 		key.Event{Name: "N", Modifiers: key.ModCommand, State: key.Press},
@@ -200,7 +200,7 @@ func TestAFrameOfEventsTakesAKey(t *testing.T) {
 
 func TestAFrameOfEventsIgnoresAKeyGoingBackUp(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	got, _, _ := frames(t, w,
 		key.Event{Name: "N", Modifiers: key.ModCommand, State: key.Release},
@@ -212,7 +212,7 @@ func TestAFrameOfEventsIgnoresAKeyGoingBackUp(t *testing.T) {
 
 func TestAFrameOfNothingChangesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	got, pressed, _ := frames(t, w)
 	if got.Chosen() != 0 || !pressed.IsZero() || len(f.asked) != 0 {
@@ -222,7 +222,7 @@ func TestAFrameOfNothingChangesNothing(t *testing.T) {
 
 func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	card := at(w, 1, 0)
 
 	w, _, _ = frames(t, w,
@@ -256,7 +256,7 @@ func TestAFrameOfEventsChoosesThenEdits(t *testing.T) {
 
 func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	w, _, _ = frames(t, w, key.EditEvent{Range: key.Range{Start: 14, End: 14}, Text: " properly"})
@@ -291,7 +291,7 @@ func TestAFrameOfEventsTypesIntoTheForm(t *testing.T) {
 
 func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title").Types(" properly")
 
 	button := w.PanelOffers()[0]
@@ -315,7 +315,7 @@ func TestAFrameOfEventsSavesByPressingSaveOnTheForm(t *testing.T) {
 
 func TestTheLoopWritesDownEachEventInDebugMode(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	traced, err := debug.Open(t.TempDir(), "gui", time.Now())
 	if err != nil {
 		t.Fatal(err)

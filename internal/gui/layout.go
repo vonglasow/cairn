@@ -2,7 +2,7 @@
 package gui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 )
 
 // Narrowest and Shortest are the window this board needs.
@@ -47,8 +47,8 @@ func (b Box) In(p Point) bool {
 type Layout struct {
 	Place  Box
 	Tabs   Box
-	Head   [engine.Columns]Box
-	Column [engine.Columns]Box
+	Head   [board.Columns]Box
+	Column [board.Columns]Box
 	Band   Box
 	Lane   [3]Box
 	Bar    Box
@@ -62,10 +62,10 @@ func TooSmall(width, height int) bool {
 
 // Sizes is how wide a person dragged each column and each lane, and how tall the columns above the band and the band, in dp at the size the window then had: what the board keeps of them is their shares, so a window resized keeps them in proportion. Zero, every column and every lane is as wide as the others, and the band as tall as it opens.
 type Sizes struct {
-	Column [engine.Columns]int `json:"columns"`
-	Lane   [3]int              `json:"lanes"`
-	Band   [2]int              `json:"band"`
-	Form   [2]int              `json:"form,omitempty"`
+	Column [board.Columns]int `json:"columns"`
+	Lane   [3]int             `json:"lanes"`
+	Band   [2]int             `json:"band"`
+	Form   [2]int             `json:"form,omitempty"`
 }
 
 // NarrowestColumn is the narrowest a gutter dragged leaves a column or a lane: room for a card's title, even when the window is wide enough for more.
@@ -76,7 +76,7 @@ func LayoutFor(width, height int) Layout { return LaidOut(width, height, Sizes{}
 
 // LaidOut works out every size at a given window, each column and lane given its share of the widths a person dragged.
 func LaidOut(width, height int, by Sizes) Layout {
-	room := width - margin - margin - (engine.Columns-1)*gap
+	room := width - margin - margin - (board.Columns-1)*gap
 	columns := sharesOf(room, by.Column[:])
 
 	usable := max(0, height-margin-margin-tabsHigh-headHigh-barHigh-gap-gap)
@@ -85,12 +85,12 @@ func LaidOut(width, height int, by Sizes) Layout {
 	l := Layout{Days: daysAWeek}
 	l.Tabs = Box{X: margin, Y: margin, W: width - margin - margin, H: tabsHigh}
 	x := margin
-	for i := range engine.Columns {
+	for i := range board.Columns {
 		l.Head[i] = Box{X: x, Y: margin + tabsHigh + gap, W: columns[i], H: headHigh}
 		l.Column[i] = Box{X: x, Y: l.Head[i].Y + headHigh, W: columns[i], H: top}
 		x += columns[i] + gap
 	}
-	last := l.Column[engine.Columns-1]
+	last := l.Column[board.Columns-1]
 	l.Band = Box{
 		X: l.Column[1].X,
 		Y: l.Column[1].Y + top + gap,
@@ -99,7 +99,7 @@ func LaidOut(width, height int, by Sizes) Layout {
 	}
 	l.Column[0].H = top + gap + band
 
-	lanes := sharesOf(l.Band.W-(len(engine.Stalled)-1)*gap, by.Lane[:])
+	lanes := sharesOf(l.Band.W-(len(board.Stalled)-1)*gap, by.Lane[:])
 	x = l.Band.X
 	for i := range l.Lane {
 		l.Lane[i] = Box{X: x, Y: l.Band.Y + laneHigh, W: lanes[i], H: max(0, band-laneHigh)}
@@ -194,7 +194,7 @@ func (l Layout) LaneCardAt(lane, at, scrolled int) Box {
 
 // Under says which column a point falls in and which card of it, given how far that column is scrolled.
 func (l Layout) Under(p Point, scrolled int) (column, at int, found bool) {
-	for i := range engine.Columns {
+	for i := range board.Columns {
 		if !l.Column[i].In(p) {
 			continue
 		}

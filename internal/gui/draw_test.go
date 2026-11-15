@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"fmt"
 	"image"
@@ -94,8 +95,8 @@ func ink(shot *image.RGBA, b Box, back color.NRGBA) int {
 func TestTheBoardIsDrawnWhereTheLayoutSaysItIs(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"},
-		engine.Card{Number: 2, Title: "Client's answer", State: "blocked"})
+		board.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"},
+		board.Card{Number: 2, Title: "Client's answer", State: "blocked"})
 
 	shot := drawn(t, w)
 	back := Dark().Colour.Surface.Back
@@ -220,7 +221,7 @@ func TestTheBarUnderTheBoardIsFaintUnderAPanel(t *testing.T) {
 
 func TestAChosenCardIsDrawnWithAnOutline(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	box := w.Layout().CardAt(1, 0, 0)
 	edge := Dark().Colour.Line.Selected
 
@@ -258,7 +259,7 @@ func TestWhatWentWrongIsDrawnAlongTheBottom(t *testing.T) {
 
 func TestWhatWentWrongLeavesTheBarDrawn(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	f.fail = errNope
 	w = w.Wonder()
 	if w.Wrong() == nil {
@@ -277,7 +278,7 @@ func TestWhatWentWrongLeavesTheBarDrawn(t *testing.T) {
 
 func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
+	w := holding(f, board.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 
 	shot := drawn(t, w)
 	back := Dark().Colour.Surface.Ground
@@ -288,7 +289,7 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 	for _, lane := range []int{1, 2} {
 		card := l.LaneCardAt(lane, 0, 0)
 		if got := painted(shot, inside(card), Dark().Colour.Surface.Raised); got != 0 {
-			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", engine.Stalled[lane], got)
+			t.Errorf("the %q lane drew %d pixels of a card that is not its kind", board.Stalled[lane], got)
 		}
 	}
 }
@@ -296,8 +297,8 @@ func TestOnlyTheLaneOfACardsKindHoldsIt(t *testing.T) {
 func TestTheDetailShowsOnlyTheTaskItWasOpenedOn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Description: "the first"},
-		engine.Card{Number: 2, Title: "Ship it", State: "todo", Description: "the second"})
+		board.Card{Number: 1, Title: "Write the spec", State: "todo", Description: "the first"},
+		board.Card{Number: 2, Title: "Ship it", State: "todo", Description: "the second"})
 
 	box, written := Over(w.width, w.height), Dark().Colour.Ink.Text
 	first := painted(drawn(t, w.doubleClicked(middleOf(w, 1, 0))), box, written)
@@ -312,7 +313,7 @@ func TestTheDetailShowsOnlyTheTaskItWasOpenedOn(t *testing.T) {
 
 func TestTheFieldTheKeyboardIsOnIsDrawnDifferently(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := Over(w.width, w.height)
@@ -352,7 +353,7 @@ func TestTheTabBeingLookedAtIsTheOpenOne(t *testing.T) {
 
 func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Client's answer", State: "blocked"})
+	w := holding(f, board.Card{Number: 1, Title: "Client's answer", State: "blocked"})
 	box := w.Layout().LaneCardAt(0, 0, 0)
 	edge := Dark().Colour.Line.Selected
 
@@ -366,8 +367,8 @@ func TestACardChosenInALaneIsDrawnChosen(t *testing.T) {
 func TestTwoCardsOfOneKindStackDownTheirLane(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Client's answer", State: "blocked"},
-		engine.Card{Number: 2, Title: "Supplier's answer", State: "blocked"})
+		board.Card{Number: 1, Title: "Client's answer", State: "blocked"},
+		board.Card{Number: 2, Title: "Supplier's answer", State: "blocked"})
 
 	shot := drawn(t, w)
 	back := Dark().Colour.Surface.Back
@@ -381,7 +382,7 @@ func TestTwoCardsOfOneKindStackDownTheirLane(t *testing.T) {
 
 func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.doubleClicked(middleOf(w, 1, 0))
 
 	if got := painted(drawn(t, w), Over(w.width, w.height), Dark().Colour.Ink.Text); got == 0 {
@@ -391,7 +392,7 @@ func TestADetailDrawsTheTaskItIsOpenedOn(t *testing.T) {
 
 func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 
 	box := w.formBox()
@@ -423,7 +424,7 @@ func TestOnlyTheFieldTheKeyboardIsOnIsLit(t *testing.T) {
 
 func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	window := offScreen(t, w.width*2, w.height*2)
 	t.Cleanup(window.Release)
@@ -457,8 +458,8 @@ func TestOnATwoPixelScreenEverythingIsDrawnTwiceAsLarge(t *testing.T) {
 func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "First", State: "todo"},
-		engine.Card{Number: 2, Title: "Second", State: "todo"})
+		board.Card{Number: 1, Title: "First", State: "todo"},
+		board.Card{Number: 2, Title: "Second", State: "todo"})
 
 	second := w.Layout().CardAt(1, 1, 0)
 	inDp := Point{X: second.X + second.W/2, Y: second.Y + second.H/2}
@@ -475,7 +476,7 @@ func TestAPointerIsReadInDpAndNotInPixels(t *testing.T) {
 func TestTheObjectivesTabIsDrawnAsAListBesideADetail(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{Goals: []engine.Goal{
+	w.snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
@@ -513,8 +514,8 @@ func TestTheBarDrawsWhatItOffers(t *testing.T) {
 func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "First", State: "todo"},
-		engine.Card{Number: 2, Title: "Second", State: "backlog"})
+		board.Card{Number: 1, Title: "First", State: "todo"},
+		board.Card{Number: 2, Title: "Second", State: "backlog"})
 
 	w = w.PressAt(middleOf(w, 0, 0))
 	w = w.MoveTo(middleOf(w, 1, 0))
@@ -532,7 +533,7 @@ func TestTheCardInMidAirAndItsLandingAreDrawn(t *testing.T) {
 
 func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	density := func(perDp float32) float64 {
 		wide, high := int(float32(w.width)*perDp), int(float32(w.height)*perDp)
@@ -574,8 +575,8 @@ func TestTextIsScaledOnceAndNotTwice(t *testing.T) {
 func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "A very long name indeed for a task", State: "todo"},
-		engine.Card{Number: 2, Title: "Short", State: "backlog"})
+		board.Card{Number: 1, Title: "A very long name indeed for a task", State: "todo"},
+		board.Card{Number: 2, Title: "Short", State: "backlog"})
 
 	w = w.PressAt(middleOf(w, 0, 0))
 	w = w.MoveTo(middleOf(w, 1, 0))
@@ -586,7 +587,7 @@ func TestTheCardInMidAirCarriesItsOwnTitle(t *testing.T) {
 		t.Fatal("the card in mid-air carries no title")
 	}
 
-	long := holding(f, engine.Card{Number: 2, Title: "A very long name indeed for a task", State: "backlog"})
+	long := holding(f, board.Card{Number: 2, Title: "A very long name indeed for a task", State: "backlog"})
 	long = long.PressAt(middleOf(long, 0, 0)).MoveTo(middleOf(long, 1, 0))
 	longGhost, _ := long.Ghost()
 	if written >= lit(drawn(t, long), PartsOf(longGhost).Title, 90) {
@@ -606,7 +607,7 @@ func TestNothingInHandDrawsNothingInMidAir(t *testing.T) {
 func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{Goals: []engine.Goal{
+	w.snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
@@ -633,8 +634,8 @@ func TestAnObjectiveChosenIsDrawnChosen(t *testing.T) {
 func TestASearchNarrowsWhatIsDrawn(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Write the spec", State: "backlog"},
-		engine.Card{Number: 2, Title: "Ship the board", State: "backlog"})
+		board.Card{Number: 1, Title: "Write the spec", State: "backlog"},
+		board.Card{Number: 2, Title: "Ship the board", State: "backlog"})
 
 	both := ink(drawn(t, w), w.Layout().CardAt(0, 1, 0), Dark().Colour.Surface.Ground)
 	if both == 0 {
@@ -648,7 +649,7 @@ func TestASearchNarrowsWhatIsDrawn(t *testing.T) {
 
 func TestWhatIsBeingSearchedForIsShown(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	w = w.Key("/").Types("spec")
 
 	shot := drawn(t, w)
@@ -697,7 +698,7 @@ func TestTheCaretIsDrawnWhereTypingGoes(t *testing.T) {
 
 func TestADescriptionIsDrawnOverSeveralRows(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{
+	w := holding(f, board.Card{
 		Number: 1, State: "todo", Title: "Write the spec",
 		Description: strings.Repeat("two columns, the client says, and nothing else. ", 6),
 	})
@@ -750,7 +751,7 @@ func TestTheColumnsStandClearOfTheTabs(t *testing.T) {
 
 func TestASearchSaysWhatItIs(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
 	box := Searching(l)
 
@@ -770,7 +771,7 @@ func TestASearchSaysWhatItIs(t *testing.T) {
 
 func TestAPanelSaysWhatItIsAndDrawsItsKeysOnChips(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	box := Over(w.width, w.height)
 	help := w.Key("?")
 
@@ -833,7 +834,7 @@ func TestAPanelButtonWritesItsWordThenItsKeyOnAChip(t *testing.T) {
 
 func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	box := Over(w.width, w.height)
@@ -866,7 +867,7 @@ func TestEveryFieldIsDrawnInABoxAndTheOneTypedIntoIsLit(t *testing.T) {
 
 func TestALongFieldWrapsInsideItsBox(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("description")
 
 	box := Over(w.width, w.height)
@@ -905,7 +906,7 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 	for range 40 {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("enter").Key("cmd+t")
 	if w.Screen() != OnForm {
 		t.Fatalf("the window is on %v, not the detail", w.Screen())
@@ -942,9 +943,9 @@ func TestTheHistoryIsDrawnInItsBoxAndStaysThere(t *testing.T) {
 
 func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 	f := newFake()
-	var goals []engine.Goal
+	var goals []board.Goal
 	for i := 1; i <= 12; i++ {
-		goals = append(goals, engine.Goal{Number: i, Title: "Ship it", State: "live"})
+		goals = append(goals, board.Goal{Number: i, Title: "Ship it", State: "live"})
 	}
 	w := holding(f)
 	w.snap.Goals = goals
@@ -961,17 +962,17 @@ func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 
 func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 	f := newFake()
-	var cards []engine.Card
+	var cards []board.Card
 	for i := range 30 {
-		cards = append(cards, engine.Card{
+		cards = append(cards, board.Card{
 			Number: i + 1, Title: fmt.Sprintf("Task %d", i+1), State: "done",
 			Objectives: []int{1},
 		})
 	}
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{
+	w.snap = board.Snapshot{
 		Cards: cards,
-		Goals: []engine.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 30}},
+		Goals: []board.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 30}},
 	}
 	w = w.Key("tab")
 	w = w.clicked(goalMiddle(w, 1)).Key("enter")
@@ -1010,8 +1011,8 @@ func TestTheWorkUnderAnObjectiveIsDrawnAsTilesInItsBox(t *testing.T) {
 func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{
-		Goals: []engine.Goal{{Number: 1, Title: "Ship the desktop board", State: "active"}},
+	w.snap = board.Snapshot{
+		Goals: []board.Goal{{Number: 1, Title: "Ship the desktop board", State: "active"}},
 	}
 	w = w.Key("tab")
 	w = w.clicked(goalMiddle(w, 1)).Key("enter")
@@ -1029,8 +1030,8 @@ func TestAnObjectiveNothingServesSaysSoInTheBox(t *testing.T) {
 func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{
-		Goals: []engine.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 12}},
+	w.snap = board.Snapshot{
+		Goals: []board.Goal{{Number: 1, Title: "Ship the desktop board", State: "active", Done: 7, Total: 12}},
 	}
 	w = w.Key("tab")
 
@@ -1048,7 +1049,7 @@ func TestAnObjectiveCardSaysHowFarAlongItIs(t *testing.T) {
 }
 
 func goalMiddle(w Window, number int) Point {
-	for at, g := range engine.Sorted(w.Showing().Goals) {
+	for at, g := range board.Sorted(w.Showing().Goals) {
 		if g.Number == number {
 			box := GoalAt(w.Layout(), at, w.goals)
 			return Point{X: box.X + box.W/2, Y: box.Y + box.H/2}
@@ -1060,9 +1061,9 @@ func goalMiddle(w Window, number int) Point {
 func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{
-		Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
-		Goals: []engine.Goal{
+	w.snap = board.Snapshot{
+		Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}},
+		Goals: []board.Goal{
 			{Number: 1, Title: "Ship the desktop board", State: "active"},
 			{Number: 2, Title: "Keep it honest", State: "active"},
 		},
@@ -1101,7 +1102,7 @@ func TestTheListOfObjectivesIsDrawn(t *testing.T) {
 func TestAListWithNothingToOfferSaysSo(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w.snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	for w.Form().Fields()[w.Form().On()].Arg != "objective" {
 		w = w.Key("tab")
@@ -1171,7 +1172,7 @@ func loosened(gtx layout.Context) layout.Context {
 
 func TestTheGhostIsSeeThrough(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	from := middleOf(w, 1, 0)
 	resting := PartsOf(w.Layout().CardAt(1, 0, 0)).Title
 	body := drawn(t, w).RGBAAt(resting.X+resting.W-1, resting.Y)
@@ -1189,8 +1190,8 @@ func TestTheGhostIsSeeThrough(t *testing.T) {
 func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Bare", State: "todo"},
-		engine.Card{Number: 2, Title: "Carries", State: "todo", Description: "something written", SubDone: 1, SubTotal: 3},
+		board.Card{Number: 1, Title: "Bare", State: "todo"},
+		board.Card{Number: 2, Title: "Carries", State: "todo", Description: "something written", SubDone: 1, SubTotal: 3},
 	)
 	shot := drawn(t, w)
 	beside := func(at int) Box {
@@ -1208,7 +1209,7 @@ func TestWhatACardCarriesIsDrawnBesideItsNumber(t *testing.T) {
 func TestAHeldRunIsPaintedBehindTheWords(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{Cards: []engine.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
+	w.snap = board.Snapshot{Cards: []board.Card{{Number: 1, Title: "Write the spec", State: "todo"}}}
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
 
 	box := Over(w.width, w.height)
@@ -1250,9 +1251,9 @@ func TestEveryCardHasAnEdge(t *testing.T) {
 func TestEveryRunOfCardsSaysHowManyItHolds(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Write the spec", State: "blocked"},
-		engine.Card{Number: 2, Title: "Ship it", State: "blocked"},
-		engine.Card{Number: 3, Title: "Later", State: "watching"})
+		board.Card{Number: 1, Title: "Write the spec", State: "blocked"},
+		board.Card{Number: 2, Title: "Ship it", State: "blocked"},
+		board.Card{Number: 3, Title: "Later", State: "watching"})
 	if got := w.LaneSays("blocked"); got != "blocked  2" {
 		t.Errorf("the blocked lane says %q", got)
 	}
@@ -1266,7 +1267,7 @@ func TestEveryRunOfCardsSaysHowManyItHolds(t *testing.T) {
 
 func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"}})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"}})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	shot := drawn(t, w)
 	box := w.formBox()
@@ -1284,7 +1285,7 @@ func TestTheFormWritesWhatEachFieldSays(t *testing.T) {
 }
 
 func TestAQuestionNamesWhatItAsksAboutByNumberAndTitle(t *testing.T) {
-	cards := []engine.Card{card(1, "First", "todo"), {Number: 2, Title: "Gone", State: "todo", Archived: true}}
+	cards := []board.Card{card(1, "First", "todo"), {Number: 2, Title: "Gone", State: "todo", Archived: true}}
 	w := holding(newFake(), cards...)
 	w.archived = true
 	asked := w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShortcut).clicked(middleOf(w, 1, 1)).KeysDown(0).Key("x")
@@ -1303,8 +1304,8 @@ func TestAQuestionNamesWhatItAsksAboutByNumberAndTitle(t *testing.T) {
 
 func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
 	w := holding(newFake(),
-		engine.Card{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "A step"}}},
-		engine.Card{Number: 3, Title: "Gone", State: "done", Archived: true})
+		board.Card{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "A step"}}},
+		board.Card{Number: 3, Title: "Gone", State: "done", Archived: true})
 	if got := w.Holds(Tasks); got != 1 {
 		t.Errorf("the tasks tab says %d, and the board lays out 1", got)
 	}
@@ -1313,9 +1314,9 @@ func TestTheTasksTabCountsWhatTheBoardLaysOut(t *testing.T) {
 func TestADragDrawsALineWhereTheCardWouldLandAndMovesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "First", State: "todo"},
-		engine.Card{Number: 2, Title: "Second", State: "todo"},
-		engine.Card{Number: 3, Title: "Third", State: "backlog"})
+		board.Card{Number: 1, Title: "First", State: "todo"},
+		board.Card{Number: 2, Title: "Second", State: "todo"},
+		board.Card{Number: 3, Title: "Third", State: "backlog"})
 	l := w.Layout()
 	second := l.CardAt(1, 1, 0)
 	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
@@ -1342,7 +1343,7 @@ func TestADragDrawsALineWhereTheCardWouldLandAndMovesNothing(t *testing.T) {
 
 func TestTheGhostOfACardIsTheCardsOwnSize(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "First", State: "todo"}, engine.Card{Number: 2, Title: "Second", State: "backlog"})
+	w := holding(f, board.Card{Number: 1, Title: "First", State: "todo"}, board.Card{Number: 2, Title: "Second", State: "backlog"})
 	panel := PartsOf(w.Layout().CardAt(1, 0, 0)).Panel
 	w = w.PressAt(middleOf(w, 1, 0)).MoveTo(middleOf(w, 0, 0))
 	ghost, ok := w.Ghost()
@@ -1354,9 +1355,9 @@ func TestTheGhostOfACardIsTheCardsOwnSize(t *testing.T) {
 func TestADragDrawsALineInALaneAndMovesNothing(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "First", State: "blocked"},
-		engine.Card{Number: 2, Title: "Second", State: "blocked"},
-		engine.Card{Number: 3, Title: "Third", State: "backlog"})
+		board.Card{Number: 1, Title: "First", State: "blocked"},
+		board.Card{Number: 2, Title: "Second", State: "blocked"},
+		board.Card{Number: 3, Title: "Third", State: "backlog"})
 	l := w.Layout()
 	second := l.LaneCardAt(0, 1, 0)
 	w = w.PressAt(middleOf(w, 0, 0)).MoveTo(Point{X: second.X + second.W/2, Y: second.Y + second.H/4})
@@ -1487,7 +1488,7 @@ func TestAPanelIsRaisedRoundedAndHasNoEdge(t *testing.T) {
 }
 
 func TestThePanelsOffersAreButtonsRightAlignedTheirVerbLast(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	panel := w.panel()
 	along := w.offersAlong(panel)
@@ -1512,7 +1513,7 @@ func TestThePanelsOffersAreButtonsRightAlignedTheirVerbLast(t *testing.T) {
 }
 
 func TestAnAnswerThatDestroysIsRed(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Delete")
 	if w.Screen() != OnAsking {
 		t.Fatalf("deleting asked nothing: %v", w.Screen())
@@ -1601,7 +1602,7 @@ func TestALandedStoneIsNotOneFlatColour(t *testing.T) {
 
 func TestAnObjectivesStandingIsAPillInItsOwnColour(t *testing.T) {
 	w := New(newFake(), 1200, 800)
-	w.snap = engine.Snapshot{Goals: []engine.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Wait", State: "on-hold"}}}
+	w.snap = board.Snapshot{Goals: []board.Goal{{Number: 1, Title: "Ship it", State: "active"}, {Number: 2, Title: "Wait", State: "on-hold"}}}
 	w = w.Key("tab")
 	for _, g := range w.Reading().Goals {
 		w.chosen, w.chosenGoal = g.Number, true

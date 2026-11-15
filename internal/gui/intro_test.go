@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
 	"image"
 	"image/png"
@@ -12,12 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"cairn/internal/engine"
 	"cairn/internal/store/files"
 )
 
 func introBoard() Window {
-	cards := []engine.Card{
+	cards := []board.Card{
 		{Number: 18, Title: "Write the packaging spec", State: "backlog", Priority: "high"},
 		{Number: 39, Title: "Back up before the migration", State: "backlog", Priority: "critical"},
 		{Number: 20, Title: "Settle the multi-chart question", State: "backlog", Priority: "normal"},
@@ -79,9 +79,9 @@ func TestAnIntroIsAPureFunctionOfTime(t *testing.T) {
 }
 
 func TestABusyBoardArrivesNoSlower(t *testing.T) {
-	var cards []engine.Card
+	var cards []board.Card
 	for n := range 80 {
-		cards = append(cards, engine.Card{Number: n + 1, Title: "Task " + strconv.Itoa(n+1), State: []string{"backlog", "todo", "current", "done"}[n%4]})
+		cards = append(cards, board.Card{Number: n + 1, Title: "Task " + strconv.Itoa(n+1), State: []string{"backlog", "todo", "current", "done"}[n%4]})
 	}
 	stage := holding(newFake(), cards...).Stage()
 	for _, name := range files.Intros() {
@@ -118,7 +118,7 @@ func TestADesktopTurningItsAnimationsOffAsksForLessMotion(t *testing.T) {
 
 func TestTheIntroChooserWalksPlaysAndKeeps(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"}).At(time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC))
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"}).At(time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC))
 	w.screen = OnConfiguration
 	w = w.openingIntros()
 	if got := w.IntroShown(); got != files.IntroRipple {

@@ -1,7 +1,7 @@
 package test
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/item"
 	"cairn/internal/engine/objective"
@@ -9,12 +9,12 @@ import (
 )
 
 // Searchable is a reading whose every card and objective says what the engine says it carries.
-func Searchable(s engine.Snapshot) engine.Snapshot {
-	cards := make([]engine.Card, 0, len(s.Cards))
+func Searchable(s board.Snapshot) board.Snapshot {
+	cards := make([]board.Card, 0, len(s.Cards))
 	for _, c := range s.Cards {
 		cards = append(cards, SearchableCard(c))
 	}
-	goals := make([]engine.Goal, 0, len(s.Goals))
+	goals := make([]board.Goal, 0, len(s.Goals))
 	for _, g := range s.Goals {
 		goals = append(goals, SearchableGoal(g))
 	}
@@ -23,7 +23,7 @@ func Searchable(s engine.Snapshot) engine.Snapshot {
 }
 
 // SearchableCard is a card saying what the engine says its task carries.
-func SearchableCard(c engine.Card) engine.Card {
+func SearchableCard(c board.Card) board.Card {
 	estimate, _ := calendar.ParseEstimate(c.Estimate)
 	spent, _ := calendar.ParseEstimate(c.Spent)
 	c.Said = task.Said(task.Made(task.Carried{
@@ -35,7 +35,7 @@ func SearchableCard(c engine.Card) engine.Card {
 }
 
 // SearchableGoal is an objective saying what the engine says it carries.
-func SearchableGoal(g engine.Goal) engine.Goal {
+func SearchableGoal(g board.Goal) board.Goal {
 	estimate, _ := calendar.ParseEstimate(g.Estimate)
 	g.Said = objective.Said(objective.Made(objective.Carried{
 		Number: g.Number, Title: g.Title, State: objective.State(g.State), Priority: item.Priority(g.Priority),

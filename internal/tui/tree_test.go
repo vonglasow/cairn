@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"testing"
 
@@ -9,13 +10,13 @@ import (
 
 func treeFake() *fake {
 	f := newFake()
-	f.goals = []engine.Goal{
+	f.goals = []board.Goal{
 		{Number: 1, Title: "Home automation", State: "active", Children: []int{2, 3}, Total: 3},
 		{Number: 2, Title: "Enclosure", State: "active", Parent: 1, Total: 1},
 		{Number: 3, Title: "Firmware", State: "active", Parent: 1, Total: 1},
 		{Number: 4, Title: "Features", State: "on-hold", WaitsOn: []int{3}},
 	}
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: "Vent slots", State: "backlog", Priority: "normal", Objectives: []int{2}, Serves: []string{"Enclosure"}},
 		{Number: 2, Title: "OTA updates", State: "backlog", Priority: "normal", Objectives: []int{3}, Serves: []string{"Firmware"}, Blockers: []int{4}},
 		{Number: 3, Title: "Buy the relay", State: "backlog", Priority: "normal", Objectives: []int{1}, Serves: []string{"Home automation"}},

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/backup"
 	"cairn/internal/engine/calendar"
 	"fmt"
@@ -72,7 +73,7 @@ func (w Window) onBackups(name string) Window {
 func (w Window) puttingBack() Window {
 	number := w.backups[w.backupOn].Number
 	w.screen, w.question = OnTheBoard, aboutDeleting
-	if _, err := w.work.Ask(engine.BackupRestore, engine.Agreed(engine.Numbered(number))); err != nil {
+	if _, err := w.work.Ask(engine.BackupRestore, engine.Agreed(board.Numbered(number))); err != nil {
 		return w.failing(err)
 	}
 	return w.Look().telling(fmt.Sprintf("backup %d was restored", number))

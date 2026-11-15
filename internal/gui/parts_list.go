@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 
@@ -8,7 +9,7 @@ import (
 )
 
 func (f Form) partsField() (int, bool) {
-	at := slices.IndexFunc(f.fields, func(field engine.Field) bool { return field.Name == "steps" })
+	at := slices.IndexFunc(f.fields, func(field board.Field) bool { return field.Name == "steps" })
 	return at, at != -1
 }
 
@@ -23,7 +24,7 @@ func (f Form) parts() []engine.Part {
 func (f Form) withParts(parts []engine.Part) Form {
 	if at, ok := f.partsField(); ok {
 		f.fields = slices.Clone(f.fields)
-		f.fields[at].Value = engine.PartsWritten(parts)
+		f.fields[at].Value = board.PartsWritten(parts)
 	}
 	return f
 }
@@ -101,7 +102,7 @@ func (f Form) openedWith(part engine.Part) Form {
 		}
 	}
 	f.opened = slices.Clone(f.opened)
-	f.opened[at] = engine.PartsWritten(opened)
+	f.opened[at] = board.PartsWritten(opened)
 	return f
 }
 
@@ -142,7 +143,7 @@ func (w Window) deletingPart() Window {
 	field, _ := w.form.partsField()
 	w.form = w.form.withParts(without(rest, gone)).takingTheOneOn()
 	w.form.opened = slices.Clone(w.form.opened)
-	w.form.opened[field] = engine.PartsWritten(without(engine.PartsIn(w.form.opened[field]), gone))
+	w.form.opened[field] = board.PartsWritten(without(engine.PartsIn(w.form.opened[field]), gone))
 	w.err = nil
 	w = w.asking(engine.StepDelete, engine.Input{Given: map[string]string{
 		"number": strconv.Itoa(w.form.Number), "step": strconv.Itoa(gone)}})
@@ -472,7 +473,7 @@ func (w Window) deletingParts() Window {
 		return w
 	}
 	field, _ := w.form.partsField()
-	kept := engine.PartsWritten(renumbered(engine.PartsIn(before.opened[field])))
+	kept := board.PartsWritten(renumbered(engine.PartsIn(before.opened[field])))
 	w.form.opened = slices.Clone(w.form.opened)
 	w.form.opened[field] = kept
 	w.err = nil

@@ -2,6 +2,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,13 +13,13 @@ import (
 )
 
 func (b Board) setState(state string) tea.Cmd {
-	in := engine.Numbered(b.task)
+	in := board.Numbered(b.task)
 	in.Given["state"] = state
 	return b.carry(engine.TaskEdit, in)
 }
 
 func (b Board) moving(where map[string]string) tea.Cmd {
-	in := engine.Numbered(b.task)
+	in := board.Numbered(b.task)
 	for name, value := range where {
 		in.Given[name] = value
 	}
@@ -30,7 +31,7 @@ func (b Board) choosingKind(key string) (tea.Model, tea.Cmd) {
 		if way == goUp && b.choice > 0 {
 			b.choice--
 		}
-		if way == goDown && b.choice < len(engine.Stalled)-1 {
+		if way == goDown && b.choice < len(board.Stalled)-1 {
 			b.choice++
 		}
 		return b, nil
@@ -43,7 +44,7 @@ func (b Board) choosingKind(key string) (tea.Model, tea.Cmd) {
 		b.choosing = false
 		b.cameFrom = b.column
 		b.inBand = true
-		return b, b.setState(engine.Stalled[b.choice])
+		return b, b.setState(board.Stalled[b.choice])
 	}
 	return b, nil
 }
@@ -53,11 +54,11 @@ func (b Board) toggleFocus() tea.Cmd {
 	if !holding {
 		return nil
 	}
-	return b.carry(engine.FocusOp(card), engine.Numbered(card.Number))
+	return b.carry(board.FocusOp(card), board.Numbered(card.Number))
 }
 
 func (b Board) remove() tea.Cmd {
-	return b.carry(engine.TaskDelete, engine.Agreed(engine.Numbered(b.task)))
+	return b.carry(engine.TaskDelete, engine.Agreed(board.Numbered(b.task)))
 }
 
 func (b Board) puttingAway() tea.Cmd {
@@ -65,18 +66,18 @@ func (b Board) puttingAway() tea.Cmd {
 	if !holding {
 		return nil
 	}
-	return b.carry(engine.AwayOp(card), engine.Numbered(card.Number))
+	return b.carry(board.AwayOp(card), board.Numbered(card.Number))
 }
 
 func (b Board) sweepingColumn() tea.Cmd {
-	return b.carry(engine.TaskArchive, engine.Agreed(engine.Input{Given: map[string]string{"state": engine.StateAt(b.column)}}))
+	return b.carry(engine.TaskArchive, engine.Agreed(engine.Input{Given: map[string]string{"state": board.StateAt(b.column)}}))
 }
 
 func (b Board) removeGoal() tea.Cmd {
 	if b.goal == 0 {
 		return nil
 	}
-	return b.carry(engine.ObjectiveDelete, engine.Agreed(engine.Numbered(b.goal)))
+	return b.carry(engine.ObjectiveDelete, engine.Agreed(board.Numbered(b.goal)))
 }
 
 var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Series: engine.PageTasks, Time: engine.PageTime}
@@ -84,7 +85,7 @@ var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageO
 // Paged answers the board showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
 func (b Board) Paged(p engine.Pages) Board {
 	b.pages = p
-	b.snap = b.pages.Recurring(b.snap)
+	b.snap = board.Recurring(b.pages, b.snap)
 	if shown := b.shown(); len(shown) > 0 && !slices.Contains(shown, b.tab) {
 		return b.onTab(shown[0])
 	}
@@ -123,7 +124,7 @@ func (b Board) onTab(tab Tab) Board {
 	case Time:
 		b.tab, b.inside = Time, 0
 		if b.week.IsZero() {
-			b.week = engine.Monday(b.clock())
+			b.week = board.Monday(b.clock())
 		}
 		return b
 	case Series:
@@ -141,9 +142,9 @@ func (b Board) firstGoal() int {
 	return goals[0].Number
 }
 
-func (b Board) goals() []engine.Goal {
-	branches := engine.Branches(engine.FoundGoals(b.snap.Goals, b.query))
-	out := make([]engine.Goal, 0, len(branches))
+func (b Board) goals() []board.Goal {
+	branches := board.Branches(board.FoundGoals(b.snap.Goals, b.query))
+	out := make([]board.Goal, 0, len(branches))
 	for _, br := range branches {
 		if br.Under && slices.Contains(b.folded, br.Goal.Parent) {
 			continue
@@ -167,13 +168,13 @@ func (b Board) folding() Board {
 	return b.follow()
 }
 
-func (b Board) segments() []engine.Segment {
+func (b Board) segments() []board.Segment {
 	if b.inside != 0 {
 		return b.snap.Segments(b.inside, b.unopened())
 	}
 	if value, ok := b.objectiveShown(); ok && b.tab == Tasks {
 		root, _ := strconv.Atoi(strings.TrimSuffix(value, " itself"))
-		return b.snap.Segments(b.snap.TreeOf(root), engine.OnTheBoard(b.snap.Cards, b.archived))
+		return b.snap.Segments(b.snap.TreeOf(root), board.OnTheBoard(b.snap.Cards, b.archived))
 	}
 	return nil
 }
@@ -211,7 +212,7 @@ func (b Board) walkingSegments(by int) Board {
 		b.segment = 0
 	}
 	b.mode, b.task, b.inBand = Normal, 0, false
-	b.offsets = [engine.Columns]int{}
+	b.offsets = [board.Columns]int{}
 	return b
 }
 
@@ -219,7 +220,7 @@ func (b Board) showingItsTasks() Board {
 	if b.goal == 0 {
 		return b
 	}
-	b.filters = engine.BoardFilters(b.snap, engine.DayOf(b.clock())).Keeping(b.filters).On("objective", strconv.Itoa(b.goal))
+	b.filters = board.FiltersOf(b.snap, board.DayOf(b.clock())).Keeping(b.filters).On("objective", strconv.Itoa(b.goal))
 	b = b.onTab(Tasks)
 	b.column, b.inBand, b.inside = 0, false, 0
 	return b
@@ -296,7 +297,7 @@ func (b Board) carry(op engine.Operation, in engine.Input) tea.Cmd {
 			}
 			return Looked{Err: err}
 		}
-		found, err := engine.Look(b.work)
+		found, err := board.Look(b.work)
 		return Looked{Snapshot: found, Err: err, Warned: answer.Warnings}
 	}
 }
@@ -307,7 +308,7 @@ func (b Board) telling(op engine.Operation, in engine.Input) tea.Cmd {
 		if err != nil {
 			return Looked{Err: err}
 		}
-		found, err := engine.Look(b.work)
+		found, err := board.Look(b.work)
 		return Answered{Text: engine.RenderText(op, answer), Looked: Looked{Snapshot: found, Err: err}}
 	}
 }

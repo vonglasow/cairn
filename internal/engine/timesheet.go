@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"time"
 
 	"cairn/internal/engine/act"
@@ -133,3 +134,61 @@ cairn timesheet add 3 --on 2026-09-01 -- -30m`,
 		return Answer{Sheet: &sheet, Named: titles, Gone: gone}, nil
 	},
 }
+
+// On is what the sheet holds of one day; a day nothing was done on is not in it, and reads as that day holding nothing.
+func (s Timesheet) On(day time.Time) TimesheetDay {
+	named := calendar.FormatDay(day)
+	for _, d := range s.Days {
+		if d.Day == named {
+			return d
+		}
+	}
+	return TimesheetDay{Day: named}
+}
+
+// Longest is the longest stretch any task had on any day: what a bar of time is a share of.
+func (s Timesheet) Longest() int {
+	most := 0
+	for _, d := range s.Days {
+		for _, one := range d.Tasks {
+			most = max(most, one.Minutes)
+		}
+	}
+	return most
+}
+
+// Worked is how many tasks the sheet holds time for, each counted once however many days it was worked on.
+func (s Timesheet) Worked() int {
+	worked := map[int]bool{}
+	for _, d := range s.Days {
+		for _, one := range d.Tasks {
+			worked[one.Number] = true
+		}
+	}
+	return len(worked)
+}
+
+// Says is a day's total, as a duration is written.
+func (d TimesheetDay) Says() string {
+	return calendar.FormatDuration(time.Duration(d.Minutes) * time.Minute)
+}
+
+// Spent is how long one task took on a day, as a duration is written.
+func (t TimesheetTask) Spent() string {
+	return calendar.FormatDuration(time.Duration(t.Minutes) * time.Minute)
+}
+
+// Says is one task's line on a day: its time, then which task.
+func (t TimesheetTask) Says() string {
+	return t.Spent() + "  #" + strconv.Itoa(t.Number) + " " + t.Shown()
+}
+
+// Shown is the task's title as the sheet writes it: said to be deleted when it was.
+func (t TimesheetTask) Shown() string {
+	if t.Deleted {
+		return t.Title + deletedMark
+	}
+	return t.Title
+}
+
+const deletedMark = " (deleted)"

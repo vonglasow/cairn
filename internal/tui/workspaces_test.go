@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
@@ -252,7 +253,7 @@ func TestSwitcher_aDigitOpensByPlace(t *testing.T) {
 
 func TestSwitcher_escLeavesTheBoardAsItWas(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "Rotate", State: "backlog", Priority: "normal"}}
+	f.cards = []board.Card{{Number: 1, Title: "Rotate", State: "backlog", Priority: "normal"}}
 	r := newRoaming(t, f)
 	b := pressing(roamingBoard(t, r), "ctrl+o", "h", "esc")
 	if b.screen != OnTheBoard || len(r.switched) != 0 || !strings.Contains(strip(b.Draw()), "Rotate") {
@@ -265,7 +266,7 @@ func TestSwitcher_escLeavesTheBoardAsItWas(t *testing.T) {
 
 func TestSwitched_replacesTheBoardAndSaysSo(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 152, Title: "Choose the month", State: "current", Priority: "normal", InFocus: true}}
+	f.cards = []board.Card{{Number: 152, Title: "Choose the month", State: "current", Priority: "normal", InFocus: true}}
 	f.focus = []int{152}
 	r := newRoaming(t, f)
 	b := pressing(roamingBoard(t, r), "l", "l", "i", "ctrl+o", "1")

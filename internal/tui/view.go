@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"cairn/internal/engine/migration"
 	"fmt"
 	"slices"
@@ -103,7 +103,7 @@ func (b Board) counted(tab Tab) string {
 	case Series:
 		return countOf(len(b.allSeries()), len(b.snap.Series))
 	}
-	return countOf(len(engine.OnTheBoard(b.cards(), b.archived)), len(engine.OnTheBoard(b.snap.Cards, b.archived)))
+	return countOf(len(board.OnTheBoard(b.cards(), b.archived)), len(board.OnTheBoard(b.snap.Cards, b.archived)))
 }
 
 func countOf(shown, all int) string {
@@ -145,12 +145,12 @@ func (b Board) modeName() string {
 }
 
 func (b Board) tasksBoard(l Layout) []string {
-	all, band := engine.Deal(b.cards(), b.archived)
-	var outside []engine.Card
+	all, band := board.Deal(b.cards(), b.archived)
+	var outside []board.Card
 	for _, r := range b.references() {
 		outside = append(outside, r.Card)
 	}
-	far, farBand := engine.Deal(outside, b.archived)
+	far, farBand := board.Deal(outside, b.archived)
 	top := l.Top
 	var out []string
 	if b.inside != 0 {
@@ -170,13 +170,13 @@ func (b Board) tasksBoard(l Layout) []string {
 	return append(out, b.bandRows(band, farBand, l)...)
 }
 
-func (b Board) bandRows(band, far []engine.Card, l Layout) []string {
+func (b Board) bandRows(band, far []board.Card, l Layout) []string {
 	offset := margin + l.Column + 1
 	under := strings.Repeat(" ", offset)
 	held := b.inBand && b.mode == Normal
-	head := Spread(b.skin.Band.Render(engine.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
+	head := Spread(b.skin.Band.Render(board.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
 	if held {
-		head = Spread(b.skin.HeadOn.Render("▌"+engine.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
+		head = Spread(b.skin.HeadOn.Render("▌"+board.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
 	}
 	return []string{
 		under + head,
@@ -199,12 +199,12 @@ func (b Board) rule(width int, under bool) string {
 	return b.skin.Rule.Render(strings.Repeat("─", width))
 }
 
-func (b Board) across(cards, far []engine.Card, l Layout) string {
+func (b Board) across(cards, far []board.Card, l Layout) string {
 	return through(b.laidOut(cards, far, l), l.Band, l.Rows, b.bandAt)
 }
 
-func (b Board) laidOut(cards, far []engine.Card, l Layout) string {
-	wide := engine.Columns - 1
+func (b Board) laidOut(cards, far []board.Card, l Layout) string {
+	wide := board.Columns - 1
 	drawn := make([]string, 0, len(cards)+len(far))
 	for _, c := range cards {
 		drawn = append(drawn, b.card(c, l))
@@ -220,7 +220,7 @@ func (b Board) laidOut(cards, far []engine.Card, l Layout) string {
 	return strings.Join(rows, "\n")
 }
 
-func (b Board) stack(cards, far []engine.Card, l Layout, rows, at int) string {
+func (b Board) stack(cards, far []board.Card, l Layout, rows, at int) string {
 	drawn := make([]string, 0, len(cards)+len(far))
 	for _, c := range cards {
 		drawn = append(drawn, b.card(c, l))
@@ -231,13 +231,13 @@ func (b Board) stack(cards, far []engine.Card, l Layout, rows, at int) string {
 	return through(strings.Join(drawn, "\n"), l.Column, rows, at)
 }
 
-func (b Board) card(c engine.Card, l Layout) string {
+func (b Board) card(c board.Card, l Layout) string {
 	return b.skin.Card(l.Column, c.Priority, c.InFocus, b.chosen(c)).
-		Render(strings.Join(Rows(b.servingNamed(c), b.glyphs, b.skin, b.now(), l.Interior), "\n"))
+		Render(strings.Join(Rows(b.servingNamed(c), b.glyphs, b.skin, b.now(), b.pages, l.Interior), "\n"))
 }
 
-func (b Board) reference(c engine.Card, l Layout) string {
-	rows := Rows(b.servingNamed(c), b.glyphs, SkinOf(Faded), b.now(), l.Interior)
+func (b Board) reference(c board.Card, l Layout) string {
+	rows := Rows(b.servingNamed(c), b.glyphs, SkinOf(Faded), b.now(), b.pages, l.Interior)
 	for _, r := range b.references() {
 		if r.Card.Number == c.Number {
 			rows[len(rows)-1] = b.skin.Late.Render(Clip(r.Touches(""), l.Interior))
@@ -246,7 +246,7 @@ func (b Board) reference(c engine.Card, l Layout) string {
 	return b.skin.Reference(l.Column).Render(strings.Join(rows, "\n"))
 }
 
-func (b Board) servingNamed(c engine.Card) engine.Card {
+func (b Board) servingNamed(c board.Card) board.Card {
 	opened, found := b.snap.Goal(b.inside)
 	if b.inside == 0 || !found {
 		return c
@@ -271,7 +271,7 @@ func through(content string, width, height, at int) string {
 	return pane.View()
 }
 
-func (b Board) chosen(c engine.Card) bool { return b.mode == Insert && c.Number == b.task }
+func (b Board) chosen(c board.Card) bool { return b.mode == Insert && c.Number == b.task }
 
 func (b Board) now() time.Time { return b.clock() }
 
@@ -319,7 +319,7 @@ func (b Board) chips() string {
 }
 
 func (b Board) objectivesList(l Layout) []string {
-	branches := engine.Branches(b.goals())
+	branches := board.Branches(b.goals())
 	width := b.width - margin - margin
 	drawn := make([]string, 0, len(branches))
 	for _, br := range branches {
@@ -336,7 +336,7 @@ func (b Board) objectivesList(l Layout) []string {
 
 const gutter = 2
 
-func (b Board) goalCard(br engine.Branch, width int) string {
+func (b Board) goalCard(br board.Branch, width int) string {
 	edge := b.skin.Faint.Render("  ")
 	if br.Goal.Number == b.goal {
 		edge = b.skin.Title.Render("┃ ")
@@ -456,7 +456,7 @@ func (b Board) question() string {
 	}
 	if b.sweeping {
 		return " " + b.skin.Title.Render("archive every task in "+
-			strings.ToUpper(engine.StateAt(b.column))+"?") + "  " +
+			strings.ToUpper(board.StateAt(b.column))+"?") + "  " +
 			b.bar(b.offer("⏎", "archive them"), b.offer("esc", "keep them"))
 	}
 	if b.going != nil {
@@ -484,8 +484,8 @@ func (b Board) question() string {
 }
 
 func (b Board) kindPopup() string {
-	out := make([]string, 0, len(engine.Stalled))
-	for i, kind := range engine.Stalled {
+	out := make([]string, 0, len(board.Stalled))
+	for i, kind := range board.Stalled {
 		if i == b.choice {
 			out = append(out, b.skin.Picked.Render(" "+kind+" "))
 			continue

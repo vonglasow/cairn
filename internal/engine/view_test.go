@@ -447,17 +447,6 @@ func TestViewObjectives_passOverAnObjectiveGone(t *testing.T) {
 	}
 }
 
-func TestView_findsTheFirstViewAndOnlyAViewThere(t *testing.T) {
-	s := Snapshot{Views: []Viewing{{View: View{Name: "Home"}}, {View: View{Name: "Work"}}}}
-	if _, found := s.View("home"); !found {
-		t.Error("the first view is not found")
-	}
-	cards := []Card{{Number: 1}, {Number: 2}}
-	if got := s.Viewed("nowhere", cards); len(got) != 2 {
-		t.Errorf("a view not there keeps %d cards", len(got))
-	}
-}
-
 func TestViewNew_refusesTheNameOfTheSecondView(t *testing.T) {
 	path := storeAt(t, "one")
 	did(t, path, ViewNew, ask("name", "Home", "state", "todo"))
@@ -572,5 +561,20 @@ func TestViewShow_anObjectiveGoneBeforeAnotherLeavesTheOtherNarrowing(t *testing
 	}
 	if v := viewShown(t, e, "Mine"); v == nil || v.Keeps != 1 {
 		t.Errorf("the view shown reads %+v", v)
+	}
+}
+
+func TestViewing_aViewOnTheFocusKeepsTheTasksInIt(t *testing.T) {
+	e := openEngine(t)
+	add(t, e, "held")
+	add(t, e, "left")
+	if _, err := e.Ask(TaskFocus, given("number", "1")); err != nil {
+		t.Fatal(err)
+	}
+	for focus, want := range map[string]int{"in": 1, "out": 2} {
+		kept, _, err := e.viewing(view.View{Name: "f", Focus: focus})
+		if err != nil || len(kept) != 1 || kept[0].Carried().Number != want {
+			t.Errorf("focus %s keeps %d tasks, %v; want task %d", focus, len(kept), err, want)
+		}
 	}
 }

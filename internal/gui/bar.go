@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
@@ -437,7 +438,7 @@ func (w Window) BoardOffers() []string {
 	}
 	{
 		card, _ := w.snap.Card(w.chosen)
-		offers = append(offers, "Edit", engine.AwayOp(card).Offered(), "Delete")
+		offers = append(offers, "Edit", board.Offered(board.AwayOp(card)), "Delete")
 	}
 	if c, ok := w.occurrenceChosen(); ok {
 		stop := StopTheSeries
@@ -469,13 +470,13 @@ func (w Window) clickingList(p Point) Window {
 	return w
 }
 
-func chosenOnACalendar(field engine.Field) bool {
-	return field.Arg == "deadline" || field.Arg == engine.FromField().Arg
+func chosenOnACalendar(field board.Field) bool {
+	return field.Arg == "deadline" || field.Arg == board.FromField().Arg
 }
 
-func chosenFromRules(field engine.Field) bool { return field.Arg == engine.RepeatsField().Arg }
+func chosenFromRules(field board.Field) bool { return field.Arg == board.RepeatsField().Arg }
 
-func chosenFromAList(field engine.Field) bool {
+func chosenFromAList(field board.Field) bool {
 	return field.Arg == "objective" || field.Arg == "label" || field.Arg == "parent" || len(field.Choices) > 0
 }
 
@@ -759,7 +760,7 @@ func (w Window) Asks() []Said {
 	return said
 }
 
-func goingWith(c engine.Card) string {
+func goingWith(c board.Card) string {
 	var what []string
 	switch c.SubTotal {
 	case 0:
@@ -823,7 +824,7 @@ func (w Window) sweeps() string {
 		return ""
 	}
 	state := w.stateOf(w.chosen)
-	if engine.Stopped(state) {
+	if board.Stopped(state) {
 		return ""
 	}
 	return state

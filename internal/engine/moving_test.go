@@ -193,7 +193,7 @@ func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	a, err := e.Ask(taskUnfocus, given("number", "2"))
+	a, err := e.Ask(TaskUnfocus, given("number", "2"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +207,7 @@ func TestTaskUnfocus_letsGoOfOneThenEveryTaskAndSaysWhatIsLeft(t *testing.T) {
 	if a.InFocus == nil || !slices.Equal(*a.InFocus, []int{1, 3}) || len(a.Held) != 2 || len(a.Sessions) != 2 {
 		t.Errorf("asking what is in focus: %v, held %d, sessions %d", a.InFocus, len(a.Held), len(a.Sessions))
 	}
-	a, err = e.Ask(taskUnfocus, Input{})
+	a, err = e.Ask(TaskUnfocus, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}

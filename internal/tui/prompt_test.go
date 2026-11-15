@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestAKeyThatMeansNothingAtAPromptIsIgnored(t *testing.T) {
 
 func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: "One", State: "todo", Description: "about the spec"},
 		{Number: 2, Title: "Two", State: "todo", Because: "the client"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -61,7 +62,7 @@ func TestSearchingReachesTheDescriptionAndTheReason(t *testing.T) {
 
 func TestSearchingTheObjectives(t *testing.T) {
 	f := newFake()
-	f.goals = []engine.Goal{
+	f.goals = []board.Goal{
 		{Number: 1, Title: "Ship the desktop board", State: "active"},
 		{Number: 2, Title: "Cut the onboarding time", State: "active"},
 	}

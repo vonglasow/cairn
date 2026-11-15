@@ -1,6 +1,6 @@
 package gui
 
-import "cairn/internal/engine"
+import "cairn/internal/board"
 
 func drawRule(k Kit, w Window) {
 	picker := w.RulePicked()
@@ -41,10 +41,10 @@ func drawReadBack(k Kit, w Window) {
 		return
 	}
 	for _, field := range w.form.Fields() {
-		if field.Arg != engine.RepeatsField().Arg {
+		if field.Arg != board.RepeatsField().Arg {
 			continue
 		}
-		said := engine.RuleReadBack(field.Value, w.now)
+		said := board.RuleReadBack(field.Value, w.now)
 		top := Box{X: read.X, Y: read.Y, W: read.W, H: lineHigh}
 		under := Box{X: read.X, Y: read.Y + lineHigh, W: read.W, H: lineHigh}
 		if said.Wrong != "" {

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"encoding/json"
 
 	"cairn/internal/engine"
@@ -14,10 +15,10 @@ type Drafts interface {
 }
 
 // DraftsOf keeps the draft through the engine holding the work.
-func DraftsOf(work engine.Work) Drafts { return windowKept{work, "draft"} }
+func DraftsOf(work board.Work) Drafts { return windowKept{work, "draft"} }
 
 type windowKept struct {
-	work engine.Work
+	work board.Work
 	name string
 }
 
@@ -146,6 +147,6 @@ func (w Window) Closing() Window {
 func (w Window) startingLinked() Window {
 	number := w.chosen
 	w = w.startingNew()
-	w.form, w.formMoved = asOpened(Form{Adding: true, fields: engine.LinkedTaskFields(number)}), Point{}
+	w.form, w.formMoved = asOpened(Form{Adding: true, fields: board.LinkedTaskFields(number)}), Point{}
 	return w
 }

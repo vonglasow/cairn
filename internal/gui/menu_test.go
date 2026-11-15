@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"slices"
 	"strings"
 	"testing"
@@ -40,7 +40,7 @@ func TestTheMenuIsWalkedBothWays(t *testing.T) {
 
 func TestTheSecondButtonOpensTheMenu(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if w.Screen() != OnMenu || w.Chosen() != 1 {
 		t.Errorf("a right press left the window on %v, choosing %d", w.Screen(), w.Chosen())
@@ -67,7 +67,7 @@ func TestTheMenuIsDrawn(t *testing.T) {
 
 func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Move, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if w.Screen() != OnTheBoard {
 		t.Errorf("a pointer moving with the second button held left the window on %v", w.Screen())
@@ -76,9 +76,9 @@ func TestOnlyASecondPressOpensTheMenu(t *testing.T) {
 
 func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
+	w := holding(f, board.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	opened := w.ContextAt(middleOf(w, 1, 0))
-	if got := opened.Menu(); !slices.Equal(got, []string{"Open", "Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"}) {
+	if got := opened.Menu(); !slices.Equal(got, []string{"Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", "Delete"}) {
 		t.Fatalf("a task's menu offers %v", got)
 	}
 	moving := opened.fromMenu(slices.Index(opened.Menu(), "Move to…"))
@@ -101,13 +101,13 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	if labelling.Screen() != OnChoosing || labelling.choosingFor != "label" {
 		t.Errorf("Labels… left the window on %v choosing %q", labelling.Screen(), labelling.choosingFor)
 	}
-	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[4] != "Move to…" {
+	if again := moving.Key("esc").ContextAt(middleOf(w, 1, 0)); again.Menu()[3] != "Move to…" {
 		t.Errorf("opened again, the menu offers %v", again.Menu())
 	}
 }
 
 func TestTheMenusLitLineStandsOnAPillAndEachLineSaysItsKey(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	at := middleOf(w, 1, 0)
 	w = w.ContextAt(at)
 	box := w.MenuBox()
@@ -128,7 +128,7 @@ func TestTheMenusLitLineStandsOnAPillAndEachLineSaysItsKey(t *testing.T) {
 }
 
 func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
 	w = w.Key("shift+f")
 	for w.Filters()[w.FilterOn()].Name != "priority" {
 		w = w.Key("down")
@@ -151,7 +151,7 @@ func TestAFilterInForceIsAPillWhoseCrossClearsIt(t *testing.T) {
 }
 
 func TestOpenFirstInACardsMenuOpensIt(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	opened := w.ContextAt(middleOf(w, 1, 0))
 	if MenuKey("Open") != "enter" {
 		t.Errorf("Open says the key %q", MenuKey("Open"))

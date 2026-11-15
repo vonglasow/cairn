@@ -1,11 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"strconv"
 	"time"
-
-	"cairn/internal/engine"
 )
 
 const (
@@ -44,7 +43,7 @@ func (w Window) At(now time.Time) Window {
 	return w
 }
 
-func (w Window) today() time.Time { return engine.DayOf(w.now) }
+func (w Window) today() time.Time { return board.DayOf(w.now) }
 
 // CalendarFor is the panel the calendar is drawn in at a corner, as wide as given: the month and the arrows, the weekdays, six weeks and the offers.
 func CalendarFor(x, y, wide int) Box {
@@ -120,9 +119,9 @@ func (w Window) monthClicked(p Point) (Window, bool) {
 	box := w.CalendarBox()
 	switch {
 	case MonthBefore(box).In(p):
-		w.day = engine.MonthOn(w.day, -w.pageMonths())
+		w.day = board.MonthOn(w.day, -w.pageMonths())
 	case MonthAfter(box).In(p):
-		w.day = engine.MonthOn(w.day, w.pageMonths())
+		w.day = board.MonthOn(w.day, w.pageMonths())
 	case CalendarMonth(box).In(p):
 		w.view = viewMonths
 	case CalendarYear(box).In(p):
@@ -138,7 +137,7 @@ func (w Window) scrollingMonths(p Point, by int) Window {
 		return w
 	}
 	months, left := turning(w.spareChoosing, by)
-	w.day, w.spareChoosing = engine.MonthOn(w.day, months), left
+	w.day, w.spareChoosing = board.MonthOn(w.day, months), left
 	return w
 }
 
@@ -148,7 +147,7 @@ func (w Window) Faded(day time.Time) bool { return day.Month() != w.day.Month() 
 func (w Window) openingCalendar() Window {
 	w.day = w.today()
 	if held, err := calendar.ParseDeadline(w.form.Fields()[w.form.On()].Value); err == nil && !held.IsZero() {
-		w.day = engine.DayOf(held)
+		w.day = board.DayOf(held)
 	}
 	w.screen = OnCalendar
 	return w
@@ -184,7 +183,7 @@ func (w Window) backFromGrid() Window {
 
 func (w Window) onCalendar(name string) Window {
 	if by, walking := gridSteps[name]; walking && w.view != viewDays {
-		w.day = engine.MonthOn(w.day, by*w.cellMonths())
+		w.day = board.MonthOn(w.day, by*w.cellMonths())
 		return w
 	}
 	switch name {
@@ -201,9 +200,9 @@ func (w Window) onCalendar(name string) Window {
 	case "down":
 		w.day = w.day.AddDate(0, 0, 7)
 	case "shift+left":
-		w.day = engine.MonthOn(w.day, -1)
+		w.day = board.MonthOn(w.day, -1)
 	case "shift+right":
-		w.day = engine.MonthOn(w.day, 1)
+		w.day = board.MonthOn(w.day, 1)
 	case "t":
 		w.day = w.today()
 	}
@@ -226,7 +225,7 @@ func (w Window) dated(day time.Time) Window {
 func (w Window) openingCalendarFor(key, value string) Window {
 	w.day = w.today()
 	if held, err := calendar.ParseDeadline(value); err == nil && !held.IsZero() {
-		w.day = engine.DayOf(held)
+		w.day = board.DayOf(held)
 	}
 	w.calendarKey, w.screen = key, OnCalendar
 	return w
@@ -246,7 +245,7 @@ func (w Window) dayClicked(p Point) (Window, bool) {
 		return w.cellClicked(p)
 	}
 	box := w.CalendarBox()
-	for i, day := range engine.MonthGrid(w.day) {
+	for i, day := range board.MonthGrid(w.day) {
 		if DayAt(box, i).In(p) {
 			return w.dated(day), true
 		}
@@ -313,9 +312,9 @@ func gridMarked(view calendarView, day time.Time) string {
 
 func gridPicked(view calendarView, day time.Time, i int) (time.Time, calendarView) {
 	if view == viewYears {
-		return engine.MonthOn(day, (firstYear(day)+i-day.Year())*12), viewMonths
+		return board.MonthOn(day, (firstYear(day)+i-day.Year())*12), viewMonths
 	}
-	return engine.MonthOn(day, i+1-int(day.Month())), viewDays
+	return board.MonthOn(day, i+1-int(day.Month())), viewDays
 }
 
 func (w Window) cellClicked(p Point) (Window, bool) {

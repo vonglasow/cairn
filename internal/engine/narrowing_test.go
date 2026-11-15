@@ -2,6 +2,7 @@ package engine
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"cairn/internal/engine/task"
@@ -104,7 +105,7 @@ func TestTaskList_refusesOnlyWhatAClosedSetExcludes(t *testing.T) {
 
 func TestObjectiveList_isHeldToTheObjectiveStates(t *testing.T) {
 	e := openEngine(t)
-	if _, err := objectiveList.Run(workedOn{Engine: e}, Input{
+	if _, err := ObjectiveList.Run(workedOn{Engine: e}, Input{
 		Given: map[string]string{"state": "todo"},
 	}); err == nil {
 		t.Error("an objective listing accepted a column a task sits in")
@@ -137,5 +138,12 @@ func TestTaskList_looksForALabelWrittenTheOneWay(t *testing.T) {
 	}
 	if got := titlesOf(answer); len(got) != 1 || got[0] != "Write the spec" {
 		t.Errorf("it listed %v, want the one task labelled sp26-20", got)
+	}
+}
+
+func TestTaskList_refusesTheTasksInFocusAndTheOnesThatAreNot(t *testing.T) {
+	_, err := keeping(Input{Given: map[string]string{"focus": "true", "no-focus": "true"}}, taskNarrowing, nil)
+	if err == nil || !strings.Contains(err.Error(), "--focus and --no-focus") {
+		t.Errorf("both asked gave %v", err)
 	}
 }

@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 
+	"cairn/internal/board"
 	"cairn/internal/engine"
 )
 
@@ -89,4 +90,24 @@ func GlyphsFor(s Set) Glyphs {
 		return nerd
 	}
 	return plain
+}
+
+// Of is the glyph a mark of the board is drawn with.
+func (g Glyphs) Of(m board.Mark) string {
+	return map[board.Mark]string{
+		board.Blocked: g.Blocked, board.Watching: g.Watching, board.Paused: g.Paused, board.Archived: g.Archived,
+		board.Repeats: g.Repeats, board.Described: g.Described, board.Steps: g.Steps, board.Label: g.Label,
+		board.Serves: g.Serves, board.InTheWay: g.InTheWay, board.Freed: g.Reached,
+	}[m]
+}
+
+func (g Glyphs) said(f board.Fact) string {
+	glyph := g.Of(f.Mark)
+	switch {
+	case glyph == "":
+		return f.Said
+	case f.Mark == board.Steps:
+		return glyph + f.Said
+	}
+	return glyph + " " + f.Said
 }

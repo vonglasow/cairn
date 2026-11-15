@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"math"
 	"strings"
 	"testing"
@@ -49,7 +49,7 @@ func TestTheWindowWritesItsKeysForItsSystem(t *testing.T) {
 
 func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	chosen := w.clicked(middleOf(w, 1, 0))
 	if got := Typed(chosen, "X", key.ModCtrl|key.ModAlt); f.what("task", "archive") != 0 || got.Screen() != OnTheBoard {
 		t.Errorf("AltGr+X archived, or left the window on %v", got.Screen())
@@ -64,7 +64,7 @@ func TestALetterWrittenWithAltIsNoShortcut(t *testing.T) {
 
 func TestARightPressEndsTheCairn(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"}).Born(moment)
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"}).Born(moment)
 	w, _, _ = frames(t, w, pointer.Event{Kind: pointer.Press, Position: at(w, 1, 0), Buttons: pointer.ButtonSecondary})
 	if _, on := w.Intro(); on {
 		t.Error("a right press left the cairn building")

@@ -1,18 +1,17 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strings"
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 func TestAnObjectiveTooLongForTheFilterIsCutAndShownWholeUnderThePointer(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Spec", State: "todo", Objectives: []int{1}})
+	w := holding(f, board.Card{Number: 1, Title: "Spec", State: "todo", Objectives: []int{1}})
 	long := "#1 Objective: late, its deadline past and nobody left to say why"
-	w.snap.Goals = []engine.Goal{{Number: 1, Title: strings.TrimPrefix(long, "#1 ")}}
+	w.snap.Goals = []board.Goal{{Number: 1, Title: strings.TrimPrefix(long, "#1 ")}}
 	w = w.Key("shift+f").Key("o")
 	columns, _ := w.FilterColumns()
 	for _, column := range columns {

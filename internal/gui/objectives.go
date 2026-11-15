@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/series"
 	"slices"
@@ -10,7 +11,7 @@ import (
 	"cairn/internal/engine"
 )
 
-func depthOf(b engine.Branch) int {
+func depthOf(b board.Branch) int {
 	if b.Under {
 		return 1
 	}
@@ -18,7 +19,7 @@ func depthOf(b engine.Branch) int {
 }
 
 // Detailed is the objective the right of the tab shows: the one chosen, or the first of the tree while none is, a parent drawn only as what holds a match passed over.
-func (w Window) Detailed() (engine.Goal, bool) {
+func (w Window) Detailed() (board.Goal, bool) {
 	tree := w.Tree()
 	shown := w.detailGoal
 	if w.chosenGoal {
@@ -34,12 +35,12 @@ func (w Window) Detailed() (engine.Goal, bool) {
 			return b.Goal, true
 		}
 	}
-	return engine.Goal{}, false
+	return board.Goal{}, false
 }
 
 // TaskLine is one task the detail lists: the task, what among the sub-objectives it serves, and where it stands.
 type TaskLine struct {
-	Card          engine.Card
+	Card          board.Card
 	Serves, Right string
 	At            Box
 }
@@ -53,7 +54,7 @@ type TilePlaced struct {
 
 // Detail is the right of the objectives tab: the objective shown and where each of its parts stands.
 type Detail struct {
-	Goal                                  engine.Goal
+	Goal                                  board.Goal
 	Box, Heading, Line, Progress, Figures Box
 	Buttons                               []Box
 	Note, Proposed, WaitsAt               Box
@@ -71,7 +72,7 @@ type Detail struct {
 }
 
 // DetailOffers is what the detail of an objective offers beside its heading; one of level one offers a sub-objective under it too.
-func DetailOffers(g engine.Goal) []string {
+func DetailOffers(g board.Goal) []string {
 	if g.Parent == 0 {
 		return []string{ShowItsTasks, AddSubSays, "Edit"}
 	}
@@ -146,9 +147,9 @@ func (w Window) Detail() Detail {
 		y += high + between
 	}
 	foot := inside.Y + inside.H - lineHigh
-	cards := engine.OnTheBoard(w.snap.Cards, w.archived)
-	own := ranked(engine.Serving(cards, g.Number))
-	var under []engine.Card
+	cards := board.OnTheBoard(w.snap.Cards, w.archived)
+	own := ranked(board.Serving(cards, g.Number))
+	var under []board.Card
 	if d.Subs {
 		d.SubsHead = Box{X: inside.X, Y: y, W: inside.W, H: lineHigh}
 		y += lineHigh + inset
@@ -163,14 +164,14 @@ func (w Window) Detail() Detail {
 			d.Tiles = append(d.Tiles, TilePlaced{Number: c, Tile: w.tileOf(sub), At: at})
 		}
 		y += TileHigh + inset
-		under = ranked(engine.Serving(cards, g.Children...))
+		under = ranked(board.Serving(cards, g.Children...))
 		d.OwnSaid = "On " + g.Title + " itself"
 	} else {
 		d.OwnSaid = "Its tasks"
 	}
 	d.OwnCount = strconv.Itoa(len(own))
 	shown := 0
-	place := func(head *Box, lines []engine.Card, into *[]TaskLine, serves bool) {
+	place := func(head *Box, lines []board.Card, into *[]TaskLine, serves bool) {
 		if y+lineHigh+lineRoom > foot {
 			return
 		}
@@ -216,18 +217,18 @@ func (w Window) widthsWide(offers []string) int {
 	return wide
 }
 
-func ranked(cards []engine.Card) []engine.Card {
+func ranked(cards []board.Card) []board.Card {
 	out := slices.Clone(cards)
-	rank := func(c engine.Card) int {
+	rank := func(c board.Card) int {
 		switch {
 		case c.State == "current":
 			return 0
-		case engine.Finished(c):
+		case board.Finished(c):
 			return 2
 		}
 		return 1
 	}
-	slices.SortStableFunc(out, func(a, b engine.Card) int { return rank(a) - rank(b) })
+	slices.SortStableFunc(out, func(a, b board.Card) int { return rank(a) - rank(b) })
 	return out
 }
 
@@ -241,7 +242,7 @@ func (w Window) spentSaid(spent string) string {
 	return spent
 }
 
-func (w Window) goalFacts(g engine.Goal) string {
+func (w Window) goalFacts(g board.Goal) string {
 	var facts []string
 	if g.Parent != 0 {
 		parent, _ := w.snap.Goal(g.Parent)
@@ -274,7 +275,7 @@ func (w Window) named(numbers []int) string {
 	return strings.Join(said, ", ")
 }
 
-func (w Window) waitsFacts(g engine.Goal) Facts {
+func (w Window) waitsFacts(g board.Goal) Facts {
 	var f Facts
 	if len(g.WaitsOn) > 0 {
 		f.Lines = append(f.Lines, Fact{Name: "waits on", Value: w.named(g.WaitsOn)})
@@ -285,7 +286,7 @@ func (w Window) waitsFacts(g engine.Goal) Facts {
 	return f
 }
 
-func (w Window) tileOf(g engine.Goal) GoalTile {
+func (w Window) tileOf(g board.Goal) GoalTile {
 	t := GoalTile{Number: "#" + strconv.Itoa(g.Number), Title: g.Title, State: g.State, Priority: g.Priority, Done: g.Done, Total: g.Total}
 	if len(g.Labels) > 0 {
 		t.Chip, t.ChipColour = g.Labels[0], w.LabelColour(g.Labels[0])
@@ -294,7 +295,7 @@ func (w Window) tileOf(g engine.Goal) GoalTile {
 	if g.Spent > 0 {
 		t.Counts += " · " + calendar.FormatDuration(g.Spent)
 	}
-	for _, c := range engine.Serving(engine.OnTheBoard(w.snap.Cards, w.archived), g.Number) {
+	for _, c := range board.Serving(board.OnTheBoard(w.snap.Cards, w.archived), g.Number) {
 		var also []string
 		for _, other := range w.snap.Served(c) {
 			if other.Number != g.Number && other.Number != g.Parent {
@@ -320,7 +321,7 @@ func (w Window) tileOf(g engine.Goal) GoalTile {
 	return t
 }
 
-func (w Window) servedAmong(c engine.Card, among []int) string {
+func (w Window) servedAmong(c board.Card, among []int) string {
 	var said []string
 	for _, g := range w.snap.Served(c) {
 		if slices.Contains(among, g.Number) {
@@ -335,7 +336,7 @@ func (w Window) showingItsTasks() Window {
 	if !ok {
 		return w
 	}
-	filters := engine.BoardFilters(w.snap, w.today()).Keeping(w.filters)
+	filters := board.FiltersOf(w.snap, w.today()).Keeping(w.filters)
 	w = w.onPage(Tasks)
 	w.filters = filters.On("objective", strconv.Itoa(g.Number))
 	return w
@@ -356,11 +357,11 @@ func (w Window) detailing(offer string) Window {
 	return w.Edit()
 }
 
-func (w Window) addingUnder(g engine.Goal) Window {
+func (w Window) addingUnder(g board.Goal) Window {
 	if g.Parent != 0 {
 		return w
 	}
-	w.form, w.formMoved = asOpened(Form{Adding: true, ForObjective: true, fields: engine.NewSubGoalFields(g.Number)}), Point{}
+	w.form, w.formMoved = asOpened(Form{Adding: true, ForObjective: true, fields: board.NewSubGoalFields(g.Number)}), Point{}
 	w = w.beside()
 	w.screen = OnForm
 	return w

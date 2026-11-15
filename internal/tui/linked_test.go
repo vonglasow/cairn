@@ -1,21 +1,20 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"reflect"
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 func TestOOnACardOpensALinkedFormInTodo(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 7, Title: "Ship it", State: "done", Priority: "normal"}}
-	f.goals = []engine.Goal{{Number: 3, Title: "Ship it", State: "active"}}
+	f.cards = []board.Card{{Number: 7, Title: "Ship it", State: "done", Priority: "normal"}}
+	f.goals = []board.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "l", "l", "l", "i", "o")
 	if b.screen != OnForm || !b.form.Adding {
 		t.Fatalf("o on a card left the board on %v, adding %v", b.screen, b.form.Adding)
 	}
-	if !reflect.DeepEqual(b.form.fields, engine.LinkedTaskFields(7)) {
+	if !reflect.DeepEqual(b.form.fields, board.LinkedTaskFields(7)) {
 		t.Fatalf("the form asks %+v, want the fields of a task linked to 7", b.form.fields)
 	}
 	if got := b.form.valueOf("column"); got != "todo" {

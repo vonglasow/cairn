@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"image"
 	"image/color"
 	"slices"
@@ -189,7 +190,7 @@ func cardDrawn(t *testing.T, c Card) (*image.RGBA, []Drawing, Parts) {
 
 func TestACardStandsOnTheGroundOfItsState(t *testing.T) {
 	s := Dark()
-	face := engine.Card{Number: 7, Title: "Write the scenario", State: "todo", Priority: "high"}
+	face := board.Card{Number: 7, Title: "Write the scenario", State: "todo", Priority: "high"}
 	focused := face
 	focused.InFocus = true
 	for _, c := range []struct {
@@ -231,7 +232,7 @@ func TestACardStandsOnTheGroundOfItsState(t *testing.T) {
 
 func TestACardIsStripedInItsPriorityAndAnArchivedOneInAnEdge(t *testing.T) {
 	s := Dark()
-	face := engine.Card{Number: 7, Title: "Write the scenario", State: "todo", Priority: "critical"}
+	face := board.Card{Number: 7, Title: "Write the scenario", State: "todo", Priority: "critical"}
 	shot, drawn, p := cardDrawn(t, Card{Face: face})
 	if got := pixel(shot, p.Edge.X+1, p.Edge.Y+p.Edge.H/2); got != s.Colour.Priority["critical"] {
 		t.Errorf("a critical card is striped in %v", got)
@@ -248,7 +249,7 @@ func TestACardIsStripedInItsPriorityAndAnArchivedOneInAnEdge(t *testing.T) {
 
 func TestACardCountsTheLabelsItLeavesOutInAPillWithNoRing(t *testing.T) {
 	s := Dark()
-	face := engine.Card{Number: 7, Title: "Write the scenario", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
+	face := board.Card{Number: 7, Title: "Write the scenario", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
 	shot, drawn, p := cardDrawn(t, Card{Face: face})
 	laid := CardRowOf(face, p.Number, Measured(drawingTheme()), time.Time{}, engine.Pages{})
 	if laid.Count == "" {
@@ -265,7 +266,7 @@ func TestACardCountsTheLabelsItLeavesOutInAPillWithNoRing(t *testing.T) {
 
 func TestAnObjectivesCardDrawsItsStandingAsAPillOfThatStanding(t *testing.T) {
 	s := Dark()
-	face := goalFace(engine.Goal{Number: 3, Title: "Ship v0.11", State: "on-hold"})
+	face := goalFace(board.Goal{Number: 3, Title: "Ship v0.11", State: "on-hold"})
 	shot, drawn, _ := cardDrawn(t, Card{Face: face, Standing: "on-hold"})
 	pill := StandingPill(face, Box{X: 10, Y: 10, W: 280, H: CardHeight}, Measured(drawingTheme()))
 	if got := pixel(shot, pill.X+pill.W/2, pill.Y+1); got != s.Colour.Standing["on-hold"].Back {
@@ -512,7 +513,7 @@ func TestAKeyOnAPickedRowStandsOutFromTheRow(t *testing.T) {
 }
 
 func TestACardRecordsWhereItWritesItsNumberAndItsFacts(t *testing.T) {
-	face := engine.Card{Number: 10, Title: "Write the scenario", State: "todo", Estimate: "2d"}
+	face := board.Card{Number: 10, Title: "Write the scenario", State: "todo", Estimate: "2d"}
 	_, drawn, p := cardDrawn(t, Card{Face: face})
 	laid := CardRowOf(face, p.Number, Measured(drawingTheme()), time.Time{}, engine.Pages{})
 	number := Box{X: p.Number.X, Y: p.Number.Y, W: monoWide(laid.Number, small), H: p.Number.H}

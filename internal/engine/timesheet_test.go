@@ -90,7 +90,7 @@ func TestTimesheet_refusesTimeThatCannotHaveBeenSpent(t *testing.T) {
 }
 
 func TestFocus_isTakenAndLetGoNowAndAtNoOtherMoment(t *testing.T) {
-	for _, op := range []Operation{TaskFocus, taskUnfocus} {
+	for _, op := range []Operation{TaskFocus, TaskUnfocus} {
 		if err := op.check(given("number", "1", "at", "09:00")); err == nil {
 			t.Errorf("%s takes a moment", op.Line())
 		}

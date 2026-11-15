@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"errors"
 	"strconv"
 	"strings"
@@ -12,9 +13,9 @@ import (
 
 const viewsByFigure = 9
 
-func (b Board) inView() (engine.Viewing, bool) {
+func (b Board) inView() (board.Viewing, bool) {
 	if b.viewing == "" {
-		return engine.Viewing{}, false
+		return board.Viewing{}, false
 	}
 	return b.snap.View(b.viewing)
 }
@@ -47,7 +48,7 @@ func (b Board) choosingAView(key string) Board {
 func (b Board) openingView(name string) Board {
 	b.viewing, b.query = name, ""
 	b.filters = b.filters.Cleared()
-	b.column, b.inBand, b.inside, b.offsets = 0, false, 0, [engine.Columns]int{}
+	b.column, b.inBand, b.inside, b.offsets = 0, false, 0, [board.Columns]int{}
 	return b
 }
 
@@ -76,9 +77,9 @@ func (b Board) viewSays() string {
 	if b.viewChanged() {
 		said += " *"
 	}
-	said += " · " + strconv.Itoa(len(engine.OnTheBoard(b.cards(), b.archived))) + " of " +
-		strconv.Itoa(len(engine.OnTheBoard(b.snap.Cards, b.archived))) + " tasks"
-	if gone := engine.GoneSays(v.View); gone != "" {
+	said += " · " + strconv.Itoa(len(board.OnTheBoard(b.cards(), b.archived))) + " of " +
+		strconv.Itoa(len(board.OnTheBoard(b.snap.Cards, b.archived))) + " tasks"
+	if gone := board.GoneSays(v.View); gone != "" {
 		said += " · " + gone
 	}
 	if b.filters.Narrows() {

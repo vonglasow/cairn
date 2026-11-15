@@ -94,10 +94,10 @@ func TestUpgrade_isAskedByAPersonAsTheCairnThatRuns(t *testing.T) {
 		t.Error("upgrade is to be asked by a person only, never over MCP")
 	}
 	installing(t, false, false, "/opt/homebrew/Cellar/cairn/0.10.0/bin/cairn")
-	if _, err := upgradeCairn.Run(workedOn{Home: Home{Version: "v0.10.0"}}, Input{}); !errors.Is(err, app.ErrKeptByHomebrew) {
+	if _, err := Upgrade.Run(workedOn{Home: Home{Version: "v0.10.0"}}, Input{}); !errors.Is(err, app.ErrKeptByHomebrew) {
 		t.Errorf("err = %v, want the cairn Homebrew keeps left to it", err)
 	}
-	if _, err := upgradeCairn.Run(workedOn{Home: Home{Version: "dev"}}, Input{}); !errors.Is(err, app.ErrBuiltFromSource) {
+	if _, err := Upgrade.Run(workedOn{Home: Home{Version: "dev"}}, Input{}); !errors.Is(err, app.ErrBuiltFromSource) {
 		t.Errorf("err = %v, want a cairn built from its source refused", err)
 	}
 }

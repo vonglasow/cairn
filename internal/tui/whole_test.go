@@ -1,16 +1,15 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 func TestTheWholeTitleIsGivenOnlyWhenCut(t *testing.T) {
 	long := "A title far longer than any column could ever hope to show in full, even over two lines of a card"
 	f := newFake()
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: long, State: "todo"},
 		{Number: 2, Title: "Short", State: "todo"},
 	}
@@ -29,7 +28,7 @@ func TestTheWholeTitleIsGivenOnlyWhenCut(t *testing.T) {
 func TestTheWholeTitleIsDrawnAboveTheBarWithinTheWindow(t *testing.T) {
 	long := "A title far longer than any column could ever hope to show in full, even over two lines of a card"
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: long, State: "todo"}}
+	f.cards = []board.Card{{Number: 1, Title: long, State: "todo"}}
 	b := standing(f)
 	b.width, b.height = 100, 40
 	plain := hit(b, "l", "i")

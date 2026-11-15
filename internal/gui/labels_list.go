@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/label"
 	"errors"
 	"maps"
@@ -47,7 +48,7 @@ func (w Window) openingLabels(held string) Window {
 			delete(known, name)
 		}
 	}
-	holding := engine.Words(held)
+	holding := board.Words(held)
 	for _, name := range holding {
 		known[name] = true
 	}

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
@@ -37,9 +38,9 @@ const (
 	viewsAtMostByKey = 9
 )
 
-func (w Window) inView() (engine.Viewing, bool) {
+func (w Window) inView() (board.Viewing, bool) {
 	if w.viewing == "" {
-		return engine.Viewing{}, false
+		return board.Viewing{}, false
 	}
 	return w.snap.View(w.viewing)
 }
@@ -196,7 +197,7 @@ func (w Window) KeepingHead() string {
 }
 
 func (w Window) keepingFacts() Facts {
-	of := len(engine.OnTheBoard(w.snap.Cards, w.archived))
+	of := len(board.OnTheBoard(w.snap.Cards, w.archived))
 	if v, in := w.inView(); in && w.ofView {
 		lines := []Fact{
 			{Name: "holds", Value: engine.HoldsSays(v.View)},
@@ -207,7 +208,7 @@ func (w Window) keepingFacts() Facts {
 				lines = append(lines, Fact{Name: "#" + strconv.Itoa(n), Value: strconv.Itoa(g.Done) + "/" + countOf(g.Total, "task") + " done, the store's", Aside: g.Title})
 			}
 		}
-		if gone := engine.GoneSays(v.View); gone != "" {
+		if gone := board.GoneSays(v.View); gone != "" {
 			lines = append(lines, Fact{Name: "gone", Value: gone})
 		}
 		return Facts{Lines: lines}
@@ -249,7 +250,7 @@ func (w Window) viewsAbove() int {
 	return len(w.snap.Views) + 2
 }
 
-func rowOf(v engine.Viewing) ViewRow {
+func rowOf(v board.Viewing) ViewRow {
 	return ViewRow{Name: v.Name, Keeps: len(v.Kept), Key: viewKey(v.Place), Holds: engine.HoldsSays(v.View), Late: len(v.Gone) > 0}
 }
 
@@ -329,7 +330,7 @@ func (w Window) viewsWarned() (string, Box, bool) {
 	if w.viewOn >= len(w.snap.Views) {
 		return "", Box{}, false
 	}
-	gone := engine.GoneSays(w.snap.Views[w.viewOn].View)
+	gone := board.GoneSays(w.snap.Views[w.viewOn].View)
 	return gone, Box{}, gone != ""
 }
 
@@ -344,9 +345,9 @@ func (w Window) ViewsWarning() (string, Box, bool) {
 	return said, Box{X: row.X, Y: row.Y + between, W: row.W, H: BannerHigh(w.measured(), said, viewsThenSays, row.W)}, true
 }
 
-func (w Window) chosenView() (engine.Viewing, bool) {
+func (w Window) chosenView() (board.Viewing, bool) {
 	if w.viewOn >= len(w.snap.Views) {
-		return engine.Viewing{}, false
+		return board.Viewing{}, false
 	}
 	return w.snap.Views[w.viewOn], true
 }

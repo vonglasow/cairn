@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"slices"
 )
@@ -30,29 +31,29 @@ const (
 )
 
 // FormPlace is where one field of a form is drawn: the name it is written under, the line its value starts on, and how many rows it is given.
-func FormPlace(over Box, fields []engine.Field, at int) (name, value Box, rows int) {
+func FormPlace(over Box, fields []board.Field, at int) (name, value Box, rows int) {
 	places, _, _, _ := formLayout(over, fields)
 	p := places[at]
 	return p.name, p.value, p.rows
 }
 
 // FormHeads are the heads of the sections a form groups its short fields in, each where it is written: a section none of the form's fields belong to has no head.
-func FormHeads(over Box, fields []engine.Field) []Readable {
+func FormHeads(over Box, fields []board.Field) []Readable {
 	_, heads, _, _ := formLayout(over, fields)
 	return heads
 }
 
 // RepeatsReadAt is where a form reads back the rule typed in its repeats field: two lines under the line the field stands on, and nothing for a form with no such field.
-func RepeatsReadAt(over Box, fields []engine.Field) (Box, bool) {
+func RepeatsReadAt(over Box, fields []board.Field) (Box, bool) {
 	_, _, _, read := formLayout(over, fields)
 	return read, read.H > 0
 }
 
 const readBackHigh = 2 * lineHigh
 
-func readsBack(row []int, fields []engine.Field) bool {
+func readsBack(row []int, fields []board.Field) bool {
 	for _, i := range row {
-		if fields[i].Arg == engine.RepeatsField().Arg {
+		if fields[i].Arg == board.RepeatsField().Arg {
 			return true
 		}
 	}
@@ -60,7 +61,7 @@ func readsBack(row []int, fields []engine.Field) bool {
 }
 
 // FormSize is the size a field of a form is written at: the title as large as a panel's heading, since it is what the task is called and the first thing read; everything else at the size the board reads at.
-func FormSize(field engine.Field) int {
+func FormSize(field board.Field) int {
 	if field.Arg == "title" {
 		return heading
 	}
@@ -93,7 +94,7 @@ type placed struct {
 	rows        int
 }
 
-func sectionOf(field engine.Field) (int, bool) {
+func sectionOf(field board.Field) (int, bool) {
 	for i, s := range formSections {
 		if slices.Contains(s.args, field.Arg) {
 			return i, true
@@ -111,7 +112,7 @@ func Shifted(b Box, by Point, width, height int) Box {
 	return b
 }
 
-func formLayout(over Box, fields []engine.Field) ([]placed, []Readable, int, Box) {
+func formLayout(over Box, fields []board.Field) ([]placed, []Readable, int, Box) {
 	places := make([]placed, len(fields))
 	left, full := over.X+padding, over.W-padding-padding
 	top := FirstRow(over)
@@ -226,7 +227,7 @@ func fieldsAcross(full int) int {
 	return max(1, (full-sectionWide+padding)/(formNamed+formValueFewest+padding))
 }
 
-func rowsWanted(field engine.Field, wide int) int {
+func rowsWanted(field board.Field, wide int) int {
 	if field.Name == "steps" {
 		tiles := len(engine.PartsIn(field.Value))*SubHeight + lineHigh
 		return max(listedFewest, (tiles+lineHigh-1)/lineHigh)

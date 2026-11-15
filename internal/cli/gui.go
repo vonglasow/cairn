@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
 	"context"
 	"fmt"
@@ -17,9 +18,9 @@ const (
 	high = 840
 )
 
-type opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error
+type opensWindow = func(work board.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error
 
-var openGui opensWindow = func(work engine.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error {
+var openGui opensWindow = func(work board.Work, pages engine.Pages, look gui.Skin, noted *debug.Log, width, height int, here gui.Here) error {
 	gui.Run(work, pages, look, noted, width, height, here)
 	return nil
 }

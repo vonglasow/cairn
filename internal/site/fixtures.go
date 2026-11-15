@@ -1,6 +1,7 @@
 package site
 
 import (
+	"cairn/internal/board"
 	"image"
 	"time"
 
@@ -48,7 +49,7 @@ func (f Fixtures) Close() error { return f.held.Close() }
 
 // Terminal is the terminal board as cairn draws it over the fixtures, escapes and all.
 func (f Fixtures) Terminal() (string, error) {
-	found, err := engine.Look(f.held)
+	found, err := board.Look(f.held)
 	if err != nil {
 		return "", err
 	}

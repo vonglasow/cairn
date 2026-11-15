@@ -1,18 +1,18 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 	want := []MenuGroup{
-		{Name: "File", Items: []string{"New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Settings…"}},
-		{Name: "Edit", Items: []string{"Edit", "Focus", "Archive", "Delete", "Search"}},
-		{Name: "View", Items: []string{"Tasks", "Objectives", "Time", "Series", "Archived", "Filter", "Save as a view…", "Views…", "Reset sizes"}},
-		{Name: "Help", Items: []string{"Help", "About cairn"}},
+		{Name: "cairn", Items: []string{"About cairn", "Settings…", "Upgrade", "Quit"}},
+		{Name: "Help", Items: []string{"Help"}},
 	}
 	got := MenuBar(engine.Pages{})
 	if len(got) != len(want) {
@@ -27,34 +27,26 @@ func TestTheMenuBarHoldsEveryAct(t *testing.T) {
 
 func TestALinePickedActsFromTheBoard(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "A", State: "todo"})
-	if got := w.Picked("New"); got.Screen() != OnForm || !got.Form().Adding {
-		t.Errorf("New left the window on %v", got.Screen())
+	w := holding(f, board.Card{Number: 1, Title: "A", State: "todo"})
+	if got := w.Picked("Help"); got.Screen() != OnHelp {
+		t.Errorf("Help left the window on %v", got.Screen())
 	}
-	if got := w.Picked("Objectives"); got.Tab() != Objectives {
-		t.Errorf("Objectives left the window on %v", got.Tab())
+	if got := w.Picked("About cairn"); got.Screen() != OnAsking {
+		t.Errorf("About cairn left the window on %v", got.Screen())
 	}
-	if got := w.Picked("Time"); got.Tab() != Time {
-		t.Errorf("Time left the window on %v", got.Tab())
+	if got := w.Picked("Upgrade"); f.what(engine.Upgrade.Thing, engine.Upgrade.Verb) != 1 || !strings.Contains(got.Note(), "newest already") {
+		t.Errorf("Upgrade asked the engine %d times, and told %q", f.what(engine.Upgrade.Thing, engine.Upgrade.Verb), got.Note())
 	}
-	if got := w.onPage(Time).Picked("Tasks"); got.Tab() != Tasks {
-		t.Errorf("Tasks left the window on %v", got.Tab())
+	if got := w.Picked("Quit"); !got.Leaving() {
+		t.Error("Quit left the window open")
 	}
-	chosen := w.clicked(middleOf(w, 1, 0))
-	if chosen.Picked("Focus"); f.what("task", "focus") != 1 {
-		t.Error("Take up took nothing up")
-	}
-	if got := chosen.Picked("Edit"); got.Screen() != OnForm || got.Form().Adding {
-		t.Errorf("Edit left the window on %v", got.Screen())
-	}
-	open := chosen.Picked("Edit")
-	if got := open.Picked("Objectives"); got.Tab() != Tasks || got.Screen() != OnForm {
-		t.Errorf("picked over a form, the window went to %v on %v", got.Tab(), got.Screen())
+	if got := w.Choose("New").Picked("Help"); got.Screen() != OnForm {
+		t.Errorf("picked over a form, the window went to %v", got.Screen())
 	}
 }
 
 func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	button := MenuButton(w.Layout())
 	if tabs := w.Layout().Tabs; button.X+button.W != tabs.X+tabs.W || button.Y < tabs.Y || button.Y+button.H > tabs.Y+tabs.H {
 		t.Errorf("the button %+v is not at the end of the tabs %+v", button, tabs)
@@ -68,14 +60,14 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 			}
 		}
 	}
-	if slices.Contains(all, "Edit") || !slices.Contains(all, "New") {
+	if !slices.Contains(all, "Upgrade") || !slices.Contains(all, "Help") {
 		t.Fatalf("with nothing chosen the button's menu would offer %v", all)
 	}
 	if opened.Screen() != OnMenu || !slices.Equal(opened.Menu(), all) {
 		t.Fatalf("the button opened %v offering %v", opened.Screen(), opened.Menu())
 	}
-	if got := opened.fromMenu(slices.Index(all, "Objectives")); got.Tab() != Objectives {
-		t.Errorf("Objectives from the button's menu left the window on %v", got.Tab())
+	if got := opened.fromMenu(slices.Index(all, "Help")); got.Screen() != OnHelp {
+		t.Errorf("Help from the button's menu left the window on %v", got.Screen())
 	}
 	box := opened.MenuBox()
 	if box.X+box.W != button.X+button.W || box.Y != button.Y+button.H {
@@ -101,11 +93,9 @@ func TestALineOfTheMenuBarSaysItsKey(t *testing.T) {
 	for _, c := range []struct {
 		item, mac, pc string
 	}{
-		{"New", "⌘N", "Ctrl+N"},
-		{"Export", "⌘E", "Ctrl+E"},
-		{"Archived", "⇧A", "Shift+A"},
-		{"Edit", "e", "e"},
-		{"Tasks", "", ""},
+		{"Settings…", "⌘,", "Ctrl+,"},
+		{"Help", "?", "?"},
+		{"Upgrade", "", ""},
 	} {
 		if got := mac.KeyOf(c.item); got != c.mac {
 			t.Errorf("%s is under %q on a Mac", c.item, got)
@@ -147,13 +137,13 @@ func TestWhatTheSystemsMenuBarsNeedDecided(t *testing.T) {
 			t.Errorf("message %#x, %#x reads line %d, %v", c.msg, c.wParam, line, ok)
 		}
 	}
-	if winTitle("New") != "New\tCtrl+N" || winTitle("Tasks") != "Tasks" {
-		t.Errorf("Win32 titles read %q and %q", winTitle("New"), winTitle("Tasks"))
+	if winTitle("Settings…") != "Settings…\tCtrl+," || winTitle("Upgrade") != "Upgrade" {
+		t.Errorf("Win32 titles read %q and %q", winTitle("Settings…"), winTitle("Upgrade"))
 	}
-	if winMenu("File") != "&File" {
-		t.Errorf("a menu reads %q", winMenu("File"))
+	if winMenu("Help") != "&Help" {
+		t.Errorf("a menu reads %q", winMenu("Help"))
 	}
-	for item, want := range map[string]string{"New": "n", "Export": "e", "Archived": "", "Edit": "", "Tasks": ""} {
+	for item, want := range map[string]string{"Settings…": ",", "Help": "", "Upgrade": ""} {
 		if got := macKey(item); got != want {
 			t.Errorf("%s answers %q on a Mac", item, got)
 		}
@@ -209,14 +199,14 @@ func TestALinePickedIsHandedOverWithoutWaiting(t *testing.T) {
 }
 
 func TestTheNativeBarsReadWhatCanBeDoneNow(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "A", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "A", State: "todo"})
 	w.tellingTheBars()
-	if lineDoable("Edit") || !lineDoable("New") {
-		t.Fatalf("with nothing chosen the bars read Edit %v and New %v", lineDoable("Edit"), lineDoable("New"))
+	if !lineDoable("Upgrade") || !lineDoable("Help") {
+		t.Fatalf("on the board the bars read Upgrade %v and Help %v", lineDoable("Upgrade"), lineDoable("Help"))
 	}
-	w.clicked(middleOf(w, 1, 0)).tellingTheBars()
-	if !lineDoable("Edit") {
-		t.Error("with a card chosen the bars still grey Edit")
+	w.Choose("New").tellingTheBars()
+	if lineDoable("Upgrade") {
+		t.Error("over a form the bars still offer Upgrade")
 	}
 	if lineDoable("a line nobody has") {
 		t.Error("a line no bar holds reads as doable")

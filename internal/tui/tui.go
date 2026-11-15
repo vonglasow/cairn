@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
 	rdebug "runtime/debug"
 	"time"
@@ -59,7 +60,7 @@ const (
 
 // Looked carries a fresh reading of the work.
 type Looked struct {
-	Snapshot engine.Snapshot
+	Snapshot board.Snapshot
 	Err      error
 	Warned   []string
 }
@@ -76,7 +77,7 @@ type Beat time.Time
 
 // Board is the whole screen.
 type Board struct {
-	work   engine.Work
+	work   board.Work
 	glyphs Glyphs
 	skin   Skin
 	clock  func() time.Time
@@ -84,7 +85,7 @@ type Board struct {
 	lookedAt time.Time
 
 	width, height int
-	snap          engine.Snapshot
+	snap          board.Snapshot
 
 	tab    Tab
 	pages  engine.Pages
@@ -108,7 +109,7 @@ type Board struct {
 	query    string
 	archived bool
 
-	filters   engine.Filters
+	filters   board.Filters
 	filterOn  int
 	filtering bool
 
@@ -134,7 +135,7 @@ type Board struct {
 
 	wasScreen Screen
 
-	offsets [engine.Columns]int
+	offsets [board.Columns]int
 	bandAt  int
 	goalAt  int
 	helpAt  int
@@ -164,7 +165,7 @@ type Board struct {
 	wholeSave     *Form
 
 	warned    []string
-	deleting  *engine.Deleting
+	deleting  *board.Deleting
 	deleteRow int
 	refusing  string
 
@@ -175,7 +176,7 @@ type Board struct {
 }
 
 // New opens a board over the work, at a given size.
-func New(w engine.Work, glyphs Glyphs, clock func() time.Time, width, height int) Board {
+func New(w board.Work, glyphs Glyphs, clock func() time.Time, width, height int) Board {
 	return Board{
 		work:   w,
 		glyphs: glyphs,
@@ -193,7 +194,7 @@ func (b Board) Init() tea.Cmd {
 
 func (b Board) look() tea.Cmd {
 	return func() tea.Msg {
-		found, err := engine.Look(b.work)
+		found, err := board.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -321,7 +322,7 @@ func (b Board) wonder(aged bool) tea.Cmd {
 		if version == b.snap.Version && !aged {
 			return nil
 		}
-		found, err := engine.Look(b.work)
+		found, err := board.Look(b.work)
 		return Looked{Snapshot: found, Err: err}
 	}
 }
@@ -342,7 +343,7 @@ func (b Board) took(l Looked) Board {
 	}
 	was := b.task
 	stood := b.at(b.here())
-	b.snap = b.pages.Recurring(l.Snapshot)
+	b.snap = board.Recurring(b.pages, l.Snapshot)
 	b.err = nil
 	b.warned = l.Warned
 	if b.form.asked != nil {
@@ -374,7 +375,7 @@ func (b Board) standingAt(place int) int {
 	return here[min(place, len(here)-1)].Number
 }
 
-func (b Board) cards() []engine.Card {
+func (b Board) cards() []board.Card {
 	found := b.unopened()
 	if b.inside == 0 {
 		return found
@@ -383,26 +384,26 @@ func (b Board) cards() []engine.Card {
 	if segments := b.segments(); b.segment < len(segments) {
 		reach = segments[b.segment].Reach
 	}
-	return engine.Serving(found, reach...)
+	return board.Serving(found, reach...)
 }
 
-func (b Board) unopened() []engine.Card {
+func (b Board) unopened() []board.Card {
 	cards := b.snap.Viewed(b.viewing, b.snap.Cards)
 	if kept, err := b.filters.Kept(cards); err == nil {
 		cards = kept
 	}
-	return engine.Found(cards, b.query, b.archived)
+	return board.Found(cards, b.query, b.archived)
 }
 
-func (b Board) references() []engine.Reference {
+func (b Board) references() []board.Reference {
 	if b.inside == 0 && b.viewing == "" && !b.filters.NarrowsBy("objective") {
 		return nil
 	}
-	return engine.Touching(b.cards(), engine.OnTheBoard(b.snap.Cards, b.archived))
+	return board.Touching(b.cards(), board.OnTheBoard(b.snap.Cards, b.archived))
 }
 
-func (b Board) here() []engine.Card {
-	all, band := engine.Deal(b.cards(), b.archived)
+func (b Board) here() []board.Card {
+	all, band := board.Deal(b.cards(), b.archived)
 	if b.inBand {
 		return band
 	}

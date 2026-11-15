@@ -1,13 +1,12 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/series"
 	"slices"
 	"strconv"
 	"time"
-
-	"cairn/internal/engine"
 )
 
 type ruleState struct {
@@ -49,7 +48,7 @@ func (w Window) openingRule() Window {
 	field := w.form.Fields()[w.form.On()]
 	from := ""
 	for _, f := range w.form.Fields() {
-		if f.Name == engine.FromField().Name {
+		if f.Name == board.FromField().Name {
 			from = f.Value
 		}
 	}
@@ -71,11 +70,11 @@ func (w Window) closingRule(keep bool) Window {
 }
 
 func (w Window) fromSet(day string) Window {
-	if !slices.ContainsFunc(w.form.Fields(), func(f engine.Field) bool { return f.Name == engine.FromField().Name }) {
+	if !slices.ContainsFunc(w.form.Fields(), func(f board.Field) bool { return f.Name == board.FromField().Name }) {
 		return w
 	}
 	at := w.form.at
-	w.form = w.form.Set(engine.FromField().Name, day)
+	w.form = w.form.Set(board.FromField().Name, day)
 	w.form.at = at
 	return w
 }

@@ -36,8 +36,9 @@ draw something nobody can read.
   band, **STALLED**, holding `blocked`, `watching` and `paused`, three cards
   across. An empty column stays on screen.
 - **The header** names the workspace shown, with its colour, then the tabs.
-- **A card** says its number, its title, how far its deadline is, its steps,
-  its labels, and what it is waiting on. The left border carries its priority.
+- **A card** says what a card says in the window: what it is waiting on, how
+  far its deadline is, its time spent against its estimate, its steps, its
+  labels and the objectives it serves. The left border carries its priority.
   `⊳2` says two tasks wait on it.
 - **The tasks in focus** come first in `current`.
 - **The bar at the bottom** shows only the keys that work where you are. A key

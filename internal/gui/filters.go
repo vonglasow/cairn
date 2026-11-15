@@ -1,15 +1,14 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
-
-	"cairn/internal/engine"
 )
 
 // Filters are the board's filters, as the menus walk them.
-func (w Window) Filters() engine.Filters { return w.filters }
+func (w Window) Filters() board.Filters { return w.filters }
 
 // FilterOn is the line of the menu of filters the keyboard is on.
 func (w Window) FilterOn() int { return w.filterOn }
@@ -21,7 +20,7 @@ func (w Window) FilterPick() int { return w.filterPick }
 func (w Window) FilteredBy() string { return w.filters.Said() }
 
 func (w Window) filteringBoard() Window {
-	w.filters = engine.BoardFilters(w.snap, w.today()).Keeping(w.filters)
+	w.filters = board.FiltersOf(w.snap, w.today()).Keeping(w.filters)
 	w.screen, w.filterOpen, w.filterFromPill, w.viewWalked = OnFiltering, false, false, 0
 	return w
 }
@@ -88,7 +87,7 @@ func (w Window) onFilters(name string) Window {
 }
 
 // FilterKey is the key that opens a filter from the menu of filters: the first letter of its name.
-func FilterKey(f engine.Filter) string { return f.Name[:1] }
+func FilterKey(f board.Filter) string { return f.Name[:1] }
 
 func (w Window) openingFilter(at int) Window {
 	w.filterOn, w.filterOpen, w.filterPick, w.viewWalked, w.filterTrail = at, true, max(1, w.filters[at].At), 0, nil
@@ -127,10 +126,10 @@ func (w Window) valueColumns() [][]int {
 	return columns
 }
 
-func (w Window) goalOfValue(value string) (engine.Goal, bool) {
+func (w Window) goalOfValue(value string) (board.Goal, bool) {
 	n, err := strconv.Atoi(value)
 	if err != nil {
-		return engine.Goal{}, false
+		return board.Goal{}, false
 	}
 	return w.snap.Goal(n)
 }
@@ -692,7 +691,7 @@ func (w Window) TabCount(page Tab) string {
 		}
 		return shown
 	}
-	return shown + "/" + strconv.Itoa(len(engine.OnTheBoard(w.Reading().Cards, w.archived)))
+	return shown + "/" + strconv.Itoa(len(board.OnTheBoard(w.Reading().Cards, w.archived)))
 }
 
 func (w Window) takingOffLast() Window {

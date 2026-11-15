@@ -596,7 +596,7 @@ either board.
 offer the closed set a listing narrows by — column, priority, label, objective,
 a day due by — as filters walked through their values. They narrow
 what the board already holds, in memory, but by the narrowing `task list`
-builds from the same flags (`engine.Filters.Kept`, through `keeping`), told to
+builds from the same flags (`board.Filters.Kept`, through `engine.TasksKept`), told to
 each card instead of to SQL: one rule, read twice. The label filter takes
 several labels at once, a task kept when it carries every one — what
 `--label` named twice already did (`Filter.Many`, `Toggled`). Each value says
@@ -702,8 +702,9 @@ row says how often an occurrence comes back, `· ↻3 every weekday at 10:30`,
 and an agent reads its series' number under `series`, 0 for any other task;
 with recurrence off neither is said, and neither filter is offered
 (`bdd/series.feature`, `@series-list-repeats`). Both boards offer the same as
-a filter, `series` on `all`, after the others but the focus, and only while there is
-a series (`engine.BoardFilters`, `@gui-series-the-board-narrows-to-what-comes-back`,
+a filter, `series` on `all`, last, and only while there is
+a series: a board's filters are the arguments of `task list` it can offer, in
+their order, so a narrowing added there finds its place (`board.FiltersOf`, `@gui-series-the-board-narrows-to-what-comes-back`,
 `@tui-series-the-board-narrows-to-what-comes-back`). The narrowing is the engine's,
 over what the store already handed back, like a view's search — see
 [series.md](series.md).

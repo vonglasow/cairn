@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"image/color"
 	"strconv"
 	"strings"
@@ -15,7 +16,7 @@ import (
 
 // Card is a task's card, or an objective's, in one of its states: at rest, under the pointer, chosen, dimmed, dragged, or a reference to one the board leaves out, saying why it is there; laid out as a tile when it carries a sub-objective.
 type Card struct {
-	Face                                        engine.Card
+	Face                                        board.Card
 	Chosen, Hovered, Dimmed, Dragged, Reference bool
 	Undotted                                    bool
 	Draft                                       *Draft
@@ -200,7 +201,7 @@ func (c Card) writing(s Skin) color.NRGBA {
 	return s.Writing(c.Face)
 }
 
-func priorityOf(c engine.Card) string {
+func priorityOf(c board.Card) string {
 	if c.Archived {
 		return ""
 	}

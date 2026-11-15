@@ -130,7 +130,7 @@ func TestRefusalOf_givesOneReasonForAValueOutsideItsSet(t *testing.T) {
 		{TaskEdit, given("number", "1", "state", "bogus"), "not-a-state"},
 		{TaskList, given("priority", "urgent"), "not-a-priority"},
 		{TaskEdit, given("number", "1", "priority", "urgent"), "not-a-priority"},
-		{objectiveList, given("state", "bogus"), "not-an-objective-state"},
+		{ObjectiveList, given("state", "bogus"), "not-an-objective-state"},
 	} {
 		_, err := Do(c.op, path, c.in)
 		if got := RefusalOf(err).Reason; got != c.reason {

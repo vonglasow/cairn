@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"image/color"
 	"testing"
@@ -8,21 +9,21 @@ import (
 
 func TestACardInFocusStandsItsGlowAtTheRightOfItsFirstLine(t *testing.T) {
 	title := Box{X: 100, Y: 200, W: 240, H: 2 * lineHigh}
-	mark, ok := FocusMark(engine.Card{InFocus: true}, title)
+	mark, ok := FocusMark(board.Card{InFocus: true}, title)
 	if !ok {
 		t.Fatal("a card in focus has no glowing dot")
 	}
 	if mark.X+mark.W != title.X+title.W || mark.Y < title.Y || mark.Y+mark.H > title.Y+lineHigh || mark.W != markSide {
 		t.Errorf("the glowing dot is at %+v, not at the right of the first line of %+v", mark, title)
 	}
-	if _, ok := FocusMark(engine.Card{}, title); ok {
+	if _, ok := FocusMark(board.Card{}, title); ok {
 		t.Error("a card nobody is on has a glowing dot")
 	}
 }
 
 func TestOnlyTheFirstLineOfATitleInFocusMakesRoomForTheGlow(t *testing.T) {
 	title := Box{W: 120, H: 2 * lineHigh}
-	first, rest := TitleRoom(engine.Card{InFocus: true}, title)
+	first, rest := TitleRoom(board.Card{InFocus: true}, title)
 	if first != 120-markSide-markSpace || rest != 120 {
 		t.Errorf("a title in focus runs %d then %d wide", first, rest)
 	}
@@ -30,14 +31,14 @@ func TestOnlyTheFirstLineOfATitleInFocusMakesRoomForTheGlow(t *testing.T) {
 	if len(got) != 2 || got[0] != "Write the" || got[1] != "abcdefghijklmno" {
 		t.Errorf("the title in focus was laid out %q", got)
 	}
-	if first, rest := TitleRoom(engine.Card{}, title); first != 120 || rest != 120 {
+	if first, rest := TitleRoom(board.Card{}, title); first != 120 || rest != 120 {
 		t.Errorf("a title nobody is on runs %d then %d wide", first, rest)
 	}
 }
 
 func TestTheGlowingDotIsDrawn(t *testing.T) {
-	on := engine.Card{Number: 1, Title: "Write the spec", State: "todo", InFocus: true}
-	off := engine.Card{Number: 2, Title: "Ship it", State: "todo"}
+	on := board.Card{Number: 1, Title: "Write the spec", State: "todo", InFocus: true}
+	off := board.Card{Number: 2, Title: "Ship it", State: "todo"}
 	w := holding(newFake(), on, off)
 	shot := drawn(t, w)
 	l := w.Layout()
@@ -50,7 +51,7 @@ func TestTheGlowingDotIsDrawn(t *testing.T) {
 }
 
 func TestACardIsRoundedAndStripedByItsPriority(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", Priority: "high"})
 	shot := drawn(t, w)
 	panel := PartsOf(w.Layout().CardAt(1, 0, 0)).Panel
 	high := Dark().Colour.Priority["high"]
@@ -69,7 +70,7 @@ func TestACardIsRoundedAndStripedByItsPriority(t *testing.T) {
 }
 
 func TestACardInFocusStandsOnTheTint(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", InFocus: true})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", InFocus: true})
 	panel := PartsOf(w.Layout().CardAt(1, 0, 0)).Panel
 	if painted(drawn(t, w), Box{X: panel.X + panel.W/2, Y: panel.Y + 2, W: 1, H: 1}, Dark().Colour.Surface.Tint) != 1 {
 		t.Error("the card in focus does not stand on the tint")
@@ -77,7 +78,7 @@ func TestACardInFocusStandsOnTheTint(t *testing.T) {
 }
 
 func TestTheCountOfLabelsOpensABubbleOfThemAll(t *testing.T) {
-	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
+	c := board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"an-altogether-overlong-label", "another-just-as-long-one", "gui"}}
 	w := holding(newFake(), c)
 	parts := PartsOf(w.Layout().CardAt(1, 0, 0))
 	more := CardRowOf(c, parts.Number, w.measured(), w.now, engine.Pages{}).More
@@ -97,8 +98,8 @@ func TestTheCountOfLabelsOpensABubbleOfThemAll(t *testing.T) {
 }
 
 func TestOnlyACardWithStepsDrawsItsBar(t *testing.T) {
-	with := engine.Card{Number: 1, Title: "Write the spec", State: "todo", SubDone: 1, SubTotal: 3}
-	without := engine.Card{Number: 2, Title: "Ship it", State: "todo"}
+	with := board.Card{Number: 1, Title: "Write the spec", State: "todo", SubDone: 1, SubTotal: 3}
+	without := board.Card{Number: 2, Title: "Ship it", State: "todo"}
 	w := holding(newFake(), with, without)
 	shot := drawn(t, w)
 	l := w.Layout()

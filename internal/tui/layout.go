@@ -1,6 +1,6 @@
 package tui
 
-import "cairn/internal/engine"
+import "cairn/internal/board"
 
 // Narrowest and Shortest are the two numbers written in rather than worked out.
 const (
@@ -33,11 +33,11 @@ type Layout struct {
 
 // LayoutFor works out every size at a given window.
 func LayoutFor(width, height int) Layout {
-	column := (width - margin - (engine.Columns - 1)) / engine.Columns
+	column := (width - margin - (board.Columns - 1)) / board.Columns
 	return Layout{
 		Column:   column,
 		Interior: column - frame,
-		Band:     column*(engine.Columns-1) + (engine.Columns - 2),
+		Band:     column*(board.Columns-1) + (board.Columns - 2),
 		Top:      topRows(height),
 		Rows:     bandRows(height),
 	}
@@ -55,10 +55,4 @@ func TooSmall(width, height int) bool {
 }
 
 // Scrolled says how far down a run of cards has to be pushed for the one at `at` to be wholly on screen, given where it is pushed to now.
-func Scrolled(offset, at, rows int) int { return ScrolledBy(offset, at, rows, CardHeight) }
-
-// ScrolledBy is the same for a run of things each as tall as said.
-func ScrolledBy(offset, at, rows, tall int) int {
-	top := at * tall
-	return min(top, max(offset, top+tall-rows))
-}
+func Scrolled(offset, at, rows int) int { return board.InSight(at, CardHeight, rows, offset) }

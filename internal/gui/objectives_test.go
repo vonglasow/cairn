@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"testing"
@@ -11,11 +12,11 @@ import (
 
 func homeWindow(width, height int) Window {
 	w := holding(newFake(),
-		engine.Card{Number: 1, Title: "Pin map", State: "backlog", Objectives: []int{2, 3}, Serves: []string{"Enclosure", "Firmware"}},
-		engine.Card{Number: 2, Title: "OTA updates", State: "done", Objectives: []int{3}, Serves: []string{"Firmware"}},
-		engine.Card{Number: 3, Title: "Buy the relay", State: "current", Objectives: []int{1}, Serves: []string{"Home automation"}},
+		board.Card{Number: 1, Title: "Pin map", State: "backlog", Objectives: []int{2, 3}, Serves: []string{"Enclosure", "Firmware"}},
+		board.Card{Number: 2, Title: "OTA updates", State: "done", Objectives: []int{3}, Serves: []string{"Firmware"}},
+		board.Card{Number: 3, Title: "Buy the relay", State: "current", Objectives: []int{1}, Serves: []string{"Home automation"}},
 	).Resized(width, height)
-	w.snap.Goals = []engine.Goal{
+	w.snap.Goals = []board.Goal{
 		{Number: 1, Title: "Home automation", State: "active", Children: []int{2, 3}, Done: 1, Total: 3},
 		{Number: 2, Title: "Enclosure", State: "active", Parent: 1, Done: 0, Total: 1},
 		{Number: 3, Title: "Firmware", State: "active", Parent: 1, Done: 1, Total: 2, WaitedOnBy: []int{4}},
@@ -145,7 +146,7 @@ func TestTShowsTheTasksOfTheObjectiveDetailed(t *testing.T) {
 
 func TestWorkStartedEarlyIsToldAboveTheBar(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "OTA updates", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "OTA updates", State: "todo"})
 	f.warn = []string{"#2 Features waits on #1 Firmware, not reached"}
 	w.chosen = 1
 	if got := w.working().Note(); got != "#2 Features waits on #1 Firmware, not reached" {

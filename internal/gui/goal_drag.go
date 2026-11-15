@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"time"
 
@@ -16,7 +17,7 @@ func (w Window) GoalDragging() bool { return w.grabbedGoal != 0 && w.held.Moved 
 func (w Window) hoveringGoal(p Point) Window {
 	over, zone := w.goalDropAt(p)
 	g, found := w.snap.Goal(over)
-	if !found || zone != engine.DropInto || !w.Folded(over) || len(g.Children) == 0 {
+	if !found || zone != board.DropInto || !w.Folded(over) || len(g.Children) == 0 {
 		w.hoverGoal = 0
 		return w
 	}
@@ -49,14 +50,14 @@ func (w Window) lettingGoOfAGoal(p Point) Window {
 			w = w.foldingAway(parent)
 		}
 	}
-	in, moves := engine.Dropped(w.Showing().Goals, n, over, zone)
+	in, moves := board.Dropped(w.Showing().Goals, n, over, zone)
 	if !moves {
 		return w.settlingGoals()
 	}
 	return w.asking(engine.ObjectiveMove, in).choosingGoal(n)
 }
 
-func (w Window) goalDropAt(p Point) (int, engine.DropZone) {
+func (w Window) goalDropAt(p Point) (int, board.DropZone) {
 	l := w.Layout()
 	for i, b := range w.Tree() {
 		box := ItemOf(GoalAt(l, i, w.goals), depthOf(b))
@@ -65,17 +66,17 @@ func (w Window) goalDropAt(p Point) (int, engine.DropZone) {
 		}
 		switch quarter := box.H / 4; {
 		case p.Y < box.Y+quarter:
-			return b.Goal.Number, engine.DropBefore
+			return b.Goal.Number, board.DropBefore
 		case p.Y >= box.Y+box.H-quarter:
 			if b.Under && b.Last && p.X < box.X {
-				return b.Goal.Parent, engine.DropAfter
+				return b.Goal.Parent, board.DropAfter
 			}
-			return b.Goal.Number, engine.DropAfter
+			return b.Goal.Number, board.DropAfter
 		default:
-			return b.Goal.Number, engine.DropInto
+			return b.Goal.Number, board.DropInto
 		}
 	}
-	return 0, engine.DropAfter
+	return 0, board.DropAfter
 }
 
 func (w Window) goalLanding() (engine.Input, Box, bool) {
@@ -83,7 +84,7 @@ func (w Window) goalLanding() (engine.Input, Box, bool) {
 		return engine.Input{}, Box{}, false
 	}
 	over, zone := w.goalDropAt(w.held.At)
-	in, moves := engine.Dropped(w.Showing().Goals, w.grabbedGoal, over, zone)
+	in, moves := board.Dropped(w.Showing().Goals, w.grabbedGoal, over, zone)
 	if !moves || over == 0 {
 		return engine.Input{}, Box{}, false
 	}
@@ -96,7 +97,7 @@ func (w Window) goalLanding() (engine.Input, Box, bool) {
 		if in.Given["last"] == "true" && in.Given["parent"] != "none" {
 			return in, box, true
 		}
-		if zone == engine.DropBefore {
+		if zone == board.DropBefore {
 			return in, Box{X: box.X, Y: box.Y - landingHigh/2 - 2, W: box.W, H: landingHigh}, true
 		}
 		return in, Box{X: box.X, Y: box.Y + box.H + 2 - landingHigh/2, W: box.W, H: landingHigh}, true

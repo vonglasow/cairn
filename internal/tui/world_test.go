@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"context"
 	"errors"
 	"fmt"
@@ -419,8 +420,8 @@ func (w *world) typeIn(text string) error {
 }
 
 func (w *world) choose(kind string) error {
-	for range len(engine.Stalled) {
-		if engine.Stalled[w.b.choice] == kind {
+	for range len(board.Stalled) {
+		if board.Stalled[w.b.choice] == kind {
 			w.press("enter")
 			return nil
 		}
@@ -717,7 +718,7 @@ func TestTheStepsOfATaskAreEditedInItsForm(t *testing.T) {
 		t.Fatal(err)
 	}
 	c, _ := w.b.snap.Card(1)
-	steps := engine.Hanging(c)
+	steps := board.Hanging(c)
 	if len(steps) != 2 {
 		t.Fatalf("the task carries %d steps, want 2", len(steps))
 	}

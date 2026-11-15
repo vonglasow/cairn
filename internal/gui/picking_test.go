@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"image"
 	"strings"
 	"testing"
@@ -19,7 +20,7 @@ func openTask(t *testing.T) (Window, *fake) {
 	f := newFake()
 	f.acts = []act.Act{anAct("changed", "title", "Write the spec", "")}
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
+		board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
 			Description: "Deux colonnes et une bande", Context: "/vault/1",
 			Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).Key("cmd+t")
@@ -110,7 +111,7 @@ func TestWhatIsHeldIsWhatIsPainted(t *testing.T) {
 }
 
 func TestAWordInTheFormIsHeldByADoubleClick(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit")
 	box := w.formBox()
 	fields := w.Form().Fields()

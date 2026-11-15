@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"cairn/internal/engine/label"
 	"strings"
@@ -80,15 +81,15 @@ func TestCarried_saysOnlyWhatThereIs(t *testing.T) {
 	g := Marks()
 	for _, c := range []struct {
 		what string
-		card engine.Card
+		card board.Card
 		want string
 	}{
-		{"nothing to say", engine.Card{}, ""},
-		{"a description and no parts", engine.Card{Description: "something written"}, g.Described},
-		{"steps and no description", engine.Card{SubDone: 1, SubTotal: 3}, g.Steps + " 1/3"},
-		{"both", engine.Card{Description: "something written", SubDone: 0, SubTotal: 2},
+		{"nothing to say", board.Card{}, ""},
+		{"a description and no parts", board.Card{Description: "something written"}, g.Described},
+		{"steps and no description", board.Card{SubDone: 1, SubTotal: 3}, g.Steps + " 1/3"},
+		{"both", board.Card{Description: "something written", SubDone: 0, SubTotal: 2},
 			g.Described + " " + g.Steps + " 0/2"},
-		{"nothing under it", engine.Card{SubDone: 0, SubTotal: 0}, ""},
+		{"nothing under it", board.Card{SubDone: 0, SubTotal: 0}, ""},
 	} {
 		if got := Carried(c.card, g); got != c.want {
 			t.Errorf("%s: Carried = %q, want %q", c.what, got, c.want)
@@ -110,7 +111,7 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 		{"months away", now.AddDate(0, 3, 0), "", false},
 	} {
 		t.Run(c.what, func(t *testing.T) {
-			said, late := Due(engine.Card{Deadline: c.due}, now)
+			said, late := Due(board.Card{Deadline: c.due}, now)
 			if said != c.says || late != c.late {
 				t.Fatalf("Due = %q %v, want %q %v", said, late, c.says, c.late)
 			}
@@ -119,7 +120,7 @@ func TestACardSaysWhenItIsDue(t *testing.T) {
 }
 
 func TestACardSummarisesWhatItCostAndWhatItServes(t *testing.T) {
-	c := engine.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Firmware"}}
+	c := board.Card{Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Firmware"}}
 	said, over := c.Cost()
 	if said != "9h/2h" {
 		t.Fatalf("Cost = %q, want 9h/2h", said)
@@ -144,7 +145,7 @@ func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 		"dropped": "✕",
 		"":        "",
 	} {
-		if got := Standing(engine.Goal{State: standing}); got != want {
+		if got := Standing(board.Goal{State: standing}); got != want {
 			t.Errorf("%q is marked %q, want %q", standing, got, want)
 		}
 	}
@@ -152,14 +153,14 @@ func TestAnObjectiveCardSaysWhereItStands(t *testing.T) {
 
 func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	if said, warn := CardFacts(engine.Card{State: "blocked", Freed: true}, now, engine.Pages{}); said != FreedMark || !warn {
+	if said, warn := CardFacts(board.Card{State: "blocked", Freed: true}, now, engine.Pages{}); said != FreedMark || !warn {
 		t.Fatalf("a card waiting on nothing any more says %q %v", said, warn)
 	}
-	said, warn := CardFacts(engine.Card{}, now, engine.Pages{})
+	said, warn := CardFacts(board.Card{}, now, engine.Pages{})
 	if said != "" || warn {
 		t.Fatalf("a card carrying nothing says %q %v", said, warn)
 	}
-	said, warn = CardFacts(engine.Card{
+	said, warn = CardFacts(board.Card{
 		Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Firmware"},
 	}, now, engine.Pages{})
 	for _, word := range []string{"2d", "9h/2h", "Firmware"} {
@@ -173,17 +174,17 @@ func TestACardsFactsRunTogetherAndWarnWhenTheyShould(t *testing.T) {
 }
 
 func TestAnObjectiveWithNoStandingWritesNothing(t *testing.T) {
-	if got := Standings(engine.Goal{}); got != nil {
+	if got := Standings(board.Goal{}); got != nil {
 		t.Fatalf("an objective standing nowhere says %v", got)
 	}
-	got := Standings(engine.Goal{State: "active"})
+	got := Standings(board.Goal{State: "active"})
 	if len(got) != 1 || !strings.Contains(got[0], "active") {
 		t.Fatalf("an active objective says %v", got)
 	}
 }
 
 func TestAStepSaysItsTitleAloneAndAServingTaskItsNumber(t *testing.T) {
-	c := engine.Card{Number: 2, Title: "Draft the columns"}
+	c := board.Card{Number: 2, Title: "Draft the columns"}
 	if got := StepLine(c); got != "Draft the columns" {
 		t.Errorf("a step reads %q: its place is not a task's number, and must not read like one", got)
 	}
@@ -193,10 +194,10 @@ func TestAStepSaysItsTitleAloneAndAServingTaskItsNumber(t *testing.T) {
 }
 
 func TestAnObjectivesCountSaysTheTimeSpentWhenThereIsAny(t *testing.T) {
-	if got := Counted(engine.Goal{Done: 1, Total: 2, Spent: 90 * time.Minute}); got != "1/2 · 50% · 1h30m" {
+	if got := Counted(board.Goal{Done: 1, Total: 2, Spent: 90 * time.Minute}); got != "1/2 · 50% · 1h30m" {
 		t.Errorf("Counted = %q", got)
 	}
-	if got := Counted(engine.Goal{Done: 1, Total: 2}); got != "1/2 · 50%" {
+	if got := Counted(board.Goal{Done: 1, Total: 2}); got != "1/2 · 50%" {
 		t.Errorf("Counted with no time = %q", got)
 	}
 }
@@ -231,9 +232,9 @@ func TestOnlyTheTitleOpensItsBubble(t *testing.T) {
 }
 
 func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
-	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Objectives: []int{1, 2}, Serves: []string{"Ship the desktop board", "Write the docs"}}
+	c := board.Card{Number: 1, Title: "Write the spec", State: "todo", Objectives: []int{1, 2}, Serves: []string{"Ship the desktop board", "Write the docs"}}
 	w := holding(newFake(), c)
-	w.snap.Goals = []engine.Goal{{Number: 1, Title: "Ship the desktop board"}, {Number: 2, Title: "Write the docs"}}
+	w.snap.Goals = []board.Goal{{Number: 1, Title: "Ship the desktop board"}, {Number: 2, Title: "Write the docs"}}
 	row := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now, engine.Pages{})
 	if row.ServesAt.W == 0 || row.ServesAt.X+row.ServesAt.W != row.FactsAt.X+row.FactsAt.W {
 		t.Fatalf("the objective mark is at %+v in the facts %+v", row.ServesAt, row.FactsAt)
@@ -245,7 +246,7 @@ func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
 }
 
 func TestTheFactsMakeRoomForTheMarkDrawnBeforeWhatTheyServe(t *testing.T) {
-	c := engine.Card{Number: 1, Objectives: []int{1}, Serves: []string{"Firmware"}}
+	c := board.Card{Number: 1, Objectives: []int{1}, Serves: []string{"Firmware"}}
 	m := holding(newFake()).measured()
 	row := CardRowOf(c, Box{W: 300, H: lineHigh}, m, time.Time{}, engine.Pages{})
 	if want := mixedWide(m, "Firmware", small) + servesSide + servesGap; row.FactsAt.W < want {
@@ -282,7 +283,7 @@ func TestGoMonoIsGivenItsWholeAdvance(t *testing.T) {
 }
 
 func TestALabelPillWearsItsColour(t *testing.T) {
-	c := engine.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"release"}}
+	c := board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"release"}}
 	w := holding(newFake(), c)
 	w.snap.Colours = map[string]string{"release": "peach"}
 	skin := Dark()
@@ -303,7 +304,7 @@ func TestALabelPillWearsItsColour(t *testing.T) {
 }
 
 func TestALabelsNameStandsInTheMiddleOfItsPill(t *testing.T) {
-	c := engine.Card{Number: 1, Title: "A", State: "todo", Labels: []string{"release"}}
+	c := board.Card{Number: 1, Title: "A", State: "todo", Labels: []string{"release"}}
 	w := holding(newFake(), c)
 	shot := drawn(t, w)
 	pill := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.now, engine.Pages{}).Pills[0]
@@ -314,7 +315,7 @@ func TestALabelsNameStandsInTheMiddleOfItsPill(t *testing.T) {
 
 func TestTheFactsGiveTheirLastPiecesUpBeforeTheyCoverTheNumber(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	c := engine.Card{Number: 10, Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Ops"}}
+	c := board.Card{Number: 10, Deadline: now.AddDate(0, 0, 2), Estimate: "2h", Spent: "9h", Overrun: true, Objectives: []int{4}, Serves: []string{"Ops"}}
 	m := holding(newFake()).measured()
 	whole, _ := CardFacts(c, now, engine.Pages{})
 	number := monoWide("#10", small) + 2*pillGap
@@ -343,7 +344,7 @@ func TestTheFactsGiveTheirLastPiecesUpBeforeTheyCoverTheNumber(t *testing.T) {
 
 func TestCardFactsSayFirstHowManyTasksItIsInTheWayOf(t *testing.T) {
 	now := time.Date(2026, 11, 13, 9, 0, 0, 0, time.Local)
-	if said, warn := CardFacts(engine.Card{Blocks: 2, Serves: []string{"Launch"}}, now, engine.Pages{}); said != "⊳2  Launch" || warn {
+	if said, warn := CardFacts(board.Card{Blocks: 2, Serves: []string{"Launch"}}, now, engine.Pages{}); said != "⊳2  Launch" || warn {
 		t.Errorf("CardFacts = %q, %v; want ⊳2 before what it serves, and no warning", said, warn)
 	}
 }

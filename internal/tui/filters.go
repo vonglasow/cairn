@@ -1,9 +1,9 @@
 package tui
 
-import "cairn/internal/engine"
+import "cairn/internal/board"
 
 func (b Board) openingFilters() Board {
-	b.filters = engine.BoardFilters(b.snap, engine.DayOf(b.clock())).Keeping(b.filters)
+	b.filters = board.FiltersOf(b.snap, board.DayOf(b.clock())).Keeping(b.filters)
 	b.filtering = true
 	return b
 }

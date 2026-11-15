@@ -1,0 +1,264 @@
+// Package board holds what every surface shows, computed once: the cards, the columns, the goals, the forms, what is chosen; no pixel, cell, font or key.
+package board
+
+import (
+	"cairn/internal/engine"
+	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
+	"cairn/internal/engine/series"
+	"slices"
+	"strconv"
+	"time"
+
+	"cairn/internal/engine/objective"
+	"cairn/internal/engine/task"
+)
+
+// Work is what the board needs from whatever holds the work.
+type Work interface {
+	Ask(engine.Operation, engine.Input) (engine.Answer, error)
+
+	Version() (int64, error)
+}
+
+// Card is one task, flattened into what a board draws.
+type Card struct {
+	Number      int
+	Title       string
+	State       string
+	Archived    bool
+	Priority    string
+	Labels      []string
+	Blockers    []int
+	Linked      []int
+	Because     string
+	Deadline    time.Time
+	Estimate    string
+	Spent       string
+	Overrun     bool
+	Objectives  []int
+	Serves      []string
+	Description string
+	Steps       []engine.Part
+	SubDone     int
+	SubTotal    int
+	InFocus     bool
+	Focused     int
+	Freed       bool
+	Blocks      int
+	Context     string
+	Said        []string
+	Series      *series.Occurs
+}
+
+// BlocksSaid is how many open tasks the task is in the way of, as a card writes it; nothing when it is in nobody's way.
+func (c Card) BlocksSaid() string {
+	if c.Blocks == 0 {
+		return ""
+	}
+	return task.BlocksSaid(c.Blocks)
+}
+
+// Described says whether anything is written about the task.
+func (c Card) Described() bool { return c.Description != "" }
+
+// Goal is one objective, flattened the same way.
+type Goal struct {
+	Number      int
+	Title       string
+	State       string
+	Priority    string
+	Description string
+	Labels      []string
+	Deadline    time.Time
+	Estimate    string
+	Done        int
+	Total       int
+	Steps       item.Tally
+	Spent       time.Duration
+	Said        []string
+	Parent      int
+	Children    []int
+	WaitsOn     []int
+	WaitedOnBy  []int
+	Proposed    bool
+}
+
+// described says whether anything is written about the objective.
+func (g Goal) described() bool { return g.Description != "" }
+
+// Snapshot is everything the board draws, read in one go.
+type Snapshot struct {
+	Cards   []Card
+	Goals   []Goal
+	Focus   []int
+	Colours map[string]string
+	Scopes  map[string]string
+	Views   []Viewing
+	Series  []engine.Series
+	Version int64
+}
+
+// Look reads the whole of it.
+func Look(w Work) (Snapshot, error) {
+	listed, err := w.Ask(engine.TaskList, engine.Input{
+		Given: map[string]string{"with-archived": "true"},
+	})
+	if err != nil {
+		return Snapshot{}, err
+	}
+	goals, err := w.Ask(engine.ObjectiveList, engine.Input{})
+	if err != nil {
+		return Snapshot{}, err
+	}
+	labels, err := w.Ask(engine.LabelList, engine.Input{})
+	if err != nil {
+		return Snapshot{}, err
+	}
+	views, err := lookAtViews(w)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	recurring, err := lookAtSeries(w)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	version, err := w.Version()
+	if err != nil {
+		return Snapshot{}, err
+	}
+	var held []int
+	if listed.InFocus != nil {
+		held = *listed.InFocus
+	}
+	found := Snapshot{Focus: held, Views: views, Series: recurring, Version: version, Colours: map[string]string{}, Scopes: map[string]string{}}
+	if labels.Labels != nil {
+		for _, one := range *labels.Labels {
+			found.Colours[one.Label] = one.Colour
+			found.Scopes[one.Label] = one.Scope
+		}
+	}
+	for _, t := range listed.Tasks {
+		card, err := cardOf(t, held, listed.NothingBlocks, listed.Along, listed.Contexts)
+		if err != nil {
+			return Snapshot{}, err
+		}
+		if o, is := listed.Occurring[card.Number]; is {
+			card.Series = &o
+		}
+		card.Blocks = len(listed.Choosing[card.Number].Blocks)
+		found.Cards = append(found.Cards, card)
+	}
+	by := map[int]objective.Objective{}
+	for _, o := range goals.Objectives {
+		by[o.Carried().Number] = o
+	}
+	for _, o := range goals.Objectives {
+		goal, err := goalOf(o, goals.Along)
+		if err != nil {
+			return Snapshot{}, err
+		}
+		goal.Spent = goals.Spent[goal.Number]
+		goal.Children = goals.Tree[goal.Number]
+		goal.WaitedOnBy = goals.Waiters[goal.Number]
+		goal.Proposed = objective.ProposedReached(o, objectivesOf(by, goal.Children))
+		found.Goals = append(found.Goals, goal)
+	}
+	for i, c := range found.Cards {
+		for _, g := range found.Served(c) {
+			found.Cards[i].Serves = append(found.Cards[i].Serves, g.Title)
+		}
+	}
+	return found, nil
+}
+
+func objectivesOf(by map[int]objective.Objective, numbers []int) []objective.Objective {
+	out := make([]objective.Objective, 0, len(numbers))
+	for _, n := range numbers {
+		out = append(out, by[n])
+	}
+	return out
+}
+
+// Numbered is what every operation about one task or one objective is given.
+func Numbered(n int) engine.Input {
+	return engine.Input{Given: map[string]string{"number": strconv.Itoa(n)}}
+}
+
+func shownAll(kept []string) []string {
+	shown := make([]string, 0, len(kept))
+	for _, k := range kept {
+		shown = append(shown, item.Shown(k))
+	}
+	return shown
+}
+
+func cardOf(t task.Task, held, freed []int, along map[int]item.Progress, contexts map[int]string) (Card, error) {
+	told := task.OfTask(t)
+	due, err := calendar.ParseDeadline(told.Deadline)
+	if err != nil {
+		return Card{}, err
+	}
+	sofar := along[told.Number]
+	return Card{
+		Number:      told.Number,
+		Steps:       partsOf(told.Steps),
+		Archived:    told.Archived,
+		Title:       item.Shown(told.Title),
+		State:       told.State,
+		Priority:    told.Priority,
+		Description: item.Shown(told.Description),
+		Labels:      shownAll(told.Labels),
+		Blockers:    told.BlockedBy,
+		Linked:      told.Linked,
+		Because:     item.Shown(told.Because),
+		Deadline:    due,
+		Estimate:    told.Estimate,
+		Spent:       told.TimeSpent,
+		Overrun:     overrun(told.Estimate, told.TimeSpent),
+		Objectives:  told.Objectives,
+		SubDone:     sofar.Done(),
+		SubTotal:    sofar.Total(),
+		InFocus:     slices.Contains(held, told.Number),
+		Focused:     slices.Index(held, told.Number) + 1,
+		Freed:       slices.Contains(freed, told.Number),
+		Context:     contexts[told.Number],
+		Said:        task.Said(t),
+	}, nil
+}
+
+func partsOf(steps []task.Step) []engine.Part {
+	if len(steps) == 0 {
+		return nil
+	}
+	parts := make([]engine.Part, 0, len(steps))
+	for i, s := range steps {
+		parts = append(parts, engine.Part{Number: i + 1, Title: item.Shown(s.Title), Done: s.Done})
+	}
+	return parts
+}
+
+func goalOf(o objective.Objective, along map[int]item.Progress) (Goal, error) {
+	told := objective.OfObjective(o)
+	due, err := calendar.ParseDeadline(told.Deadline)
+	if err != nil {
+		return Goal{}, err
+	}
+	sofar := along[told.Number]
+	return Goal{
+		Number:      told.Number,
+		Title:       item.Shown(told.Title),
+		State:       told.State,
+		Priority:    told.Priority,
+		Description: item.Shown(told.Description),
+		Labels:      shownAll(told.Labels),
+		Deadline:    due,
+		Estimate:    told.Estimate,
+		Done:        sofar.Done(),
+		Total:       sofar.Total(),
+		Steps:       sofar.Steps,
+		Said:        objective.Said(o),
+		Parent:      o.Carried().Parent,
+		WaitsOn:     o.Carried().WaitsOn,
+	}, nil
+}

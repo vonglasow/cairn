@@ -574,7 +574,7 @@ func viewKeptText(v View, said string) string {
 	if v.Was != "" {
 		said += " (was " + v.Was + ")"
 	}
-	return fmt.Sprintf("%s · %s · keeps %d of %s\n", said, view.CmdKey(v.Place), v.Keeps, manyOf(v.Of, "task", "tasks"))
+	return fmt.Sprintf("%s · %s · keeps %d of %s\n", said, view.CmdKey(v.Place), v.Keeps, item.ManyOf(v.Of, "task", "tasks"))
 }
 
 // HoldsSays is what a view holds, the way a person reads it: each filter and what it is on, what of it is gone said so.
@@ -634,7 +634,7 @@ func viewShownText(v View) string {
 	lines := []string{
 		fmt.Sprintf("view     %s  (%s)", v.Name, view.CmdKey(v.Place)),
 		"holds    " + HoldsSays(v),
-		fmt.Sprintf("keeps    %d of %s · %d done", v.Keeps, manyOf(v.Of, "task", "tasks"), v.Done),
+		fmt.Sprintf("keeps    %d of %s · %d done", v.Keeps, item.ManyOf(v.Of, "task", "tasks"), v.Done),
 	}
 	if len(v.Gone) > 0 {
 		lines = append(lines, "gone     "+strings.Join(v.Gone, " · "))

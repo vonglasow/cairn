@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"cairn/internal/engine/migration"
 	"errors"
@@ -12,7 +13,7 @@ import (
 
 func TestPushingIntoAColumnAsksTaskEdit(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
 	b := hit(standing(f), "l", "l", "i")
 	if _, cmd := b.pressed("shift+h"); cmd != nil {
 		cmd()
@@ -45,11 +46,11 @@ func asks(t *testing.T, f *fake, keys []string, press string) asked {
 }
 
 func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
-	two := []engine.Card{{Number: 1, Title: "One", State: "todo"}, {Number: 2, Title: "Two", State: "todo"}}
+	two := []board.Card{{Number: 1, Title: "One", State: "todo"}, {Number: 2, Title: "Two", State: "todo"}}
 	for _, c := range []struct {
 		what   string
-		cards  []engine.Card
-		goals  []engine.Goal
+		cards  []board.Card
+		goals  []board.Goal
 		keys   []string
 		press  string
 		thing  string
@@ -60,7 +61,7 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 		{what: "deleting a task", cards: two[:1], keys: []string{"l", "i", "D"}, press: "enter", thing: "task", verb: "delete", number: "1"},
 		{what: "pushing a task down", cards: two, keys: []string{"l", "i"}, press: "shift+j", thing: "task", verb: "move", number: "1"},
 		{
-			what: "deleting an objective", goals: []engine.Goal{{Number: 3, Title: "Ship"}},
+			what: "deleting an objective", goals: []board.Goal{{Number: 3, Title: "Ship"}},
 			keys: []string{"tab", "D"}, press: "enter", thing: "objective", verb: "delete", number: "3",
 		},
 	} {
@@ -80,7 +81,7 @@ func TestEveryGestureAsksTheOperationItMeans(t *testing.T) {
 
 func TestLettingTheFocusGoAsksTaskUnfocusByNumber(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo", InFocus: true}}
+	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo", InFocus: true}}
 	f.focus = []int{1}
 	got := asks(t, f, []string{"l", "i"}, "f")
 	if got.op.Thing != "task" || got.op.Verb != "unfocus" {
@@ -93,7 +94,7 @@ func TestLettingTheFocusGoAsksTaskUnfocusByNumber(t *testing.T) {
 
 func TestTakingUpATaskAsksTaskFocusByNumber(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo", InFocus: true},
 	}
@@ -125,7 +126,7 @@ func TestReadingTheHistoryAsksTraceShow(t *testing.T) {
 
 func TestTheBoardAsksWhatTheEngineSaysIsAQuestion(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
 	op := engine.Operation{Thing: "task", Verb: "done", Finishes: true}
 	in := engine.Agreed(engine.Input{Given: map[string]string{"number": "1"}})
 	model, _ := standing(f).Update(engine.Agreeing{Reason: "step-still-open", Op: op, In: in})

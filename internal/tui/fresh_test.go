@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"testing"
 
 	"cairn/internal/engine"
@@ -9,16 +10,16 @@ import (
 
 func TestAFormOpenTakesWhatChangedElsewhereButWhatWasTyped(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "Ship it", State: "todo"}}
+	f.cards = []board.Card{{Number: 1, Title: "Ship it", State: "todo"}}
 	b := hit(standing(f), "l", "i", "e")
 	if b.screen != OnForm {
 		t.Fatalf("e left the board on %v", b.screen)
 	}
 	b = hit(b, "space", "n", "o", "w")
 	focused := b.form.asked.GetFocusedField().GetKey()
-	changed := engine.Card{Number: 1, Title: "Ship it today", Description: "Two columns", State: "todo",
+	changed := board.Card{Number: 1, Title: "Ship it today", Description: "Two columns", State: "todo",
 		Steps: []engine.Part{{Number: 1, Title: "Draft"}}}
-	model, _ := b.Update(Looked{Snapshot: test.Searchable(engine.Snapshot{Cards: []engine.Card{changed}, Version: 2})})
+	model, _ := b.Update(Looked{Snapshot: test.Searchable(board.Snapshot{Cards: []board.Card{changed}, Version: 2})})
 	b = model.(Board)
 	if b.screen != OnForm || b.form.asked == nil {
 		t.Fatalf("a reading made elsewhere closed the form: on %v", b.screen)
@@ -38,12 +39,12 @@ func TestAFormOpenTakesWhatChangedElsewhereButWhatWasTyped(t *testing.T) {
 
 func TestASavedFormClosesOnTheReadingItAskedFor(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "Ship it", State: "todo"}}
+	f.cards = []board.Card{{Number: 1, Title: "Ship it", State: "todo"}}
 	b := hit(standing(f), "l", "i", "e", "ctrl+s")
 	if b.screen == OnForm || b.form.asked != nil {
 		t.Errorf("a saved form is still open, on %v", b.screen)
 	}
-	if model, _ := b.Update(Looked{Snapshot: test.Searchable(engine.Snapshot{Cards: f.cards, Version: 3})}); model.(Board).screen == OnForm {
+	if model, _ := b.Update(Looked{Snapshot: test.Searchable(board.Snapshot{Cards: f.cards, Version: 3})}); model.(Board).screen == OnForm {
 		t.Error("a later reading opened the form again")
 	}
 }

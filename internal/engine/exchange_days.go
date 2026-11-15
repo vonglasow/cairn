@@ -63,7 +63,7 @@ func (e *Engine) spentByDay() (map[int]map[string]string, error) {
 		return nil, err
 	}
 	now := time.Now()
-	first := startOfDay(now)
+	first := calendar.StartOfDay(now)
 	for _, a := range acts {
 		c := a.Carried()
 		at := c.At.Local()
@@ -72,12 +72,12 @@ func (e *Engine) spentByDay() (map[int]map[string]string, error) {
 				at = day
 			}
 		}
-		if day := startOfDay(at); day.Before(first) {
+		if day := calendar.StartOfDay(at); day.Before(first) {
 			first = day
 		}
 	}
 	out := map[int]map[string]string{}
-	for _, day := range act.Timed(act.WithoutTimeTaken(acts), first, startOfDay(now), now).Days {
+	for _, day := range act.Timed(act.WithoutTimeTaken(acts), first, calendar.StartOfDay(now), now).Days {
 		for _, w := range day.Tasks {
 			if out[w.Task] == nil {
 				out[w.Task] = map[string]string{}

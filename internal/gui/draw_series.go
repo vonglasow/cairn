@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"strconv"
 
 	"gioui.org/font"
@@ -22,7 +23,7 @@ func drawSeries(k Kit, l Layout, w Window) {
 		}
 		s := row.Series
 		ListItem{Number: strconv.Itoa(s.Number), Loop: true, Title: s.Title, Priority: s.Template.Priority,
-			Says: engine.RuleListed(s.Rule), Aside: w.SeriesWhen(s), Badge: s.State, BadgeStanding: StandingOfSeries(s),
+			Says: board.RuleListed(s.Rule), Aside: w.SeriesWhen(s), Badge: s.State, BadgeStanding: StandingOfSeries(s),
 			Chosen: s.Number == shown.Number, Hovered: row.At == w.pointed}.Draw(in, row.At)
 	}
 	clipped.Pop()
@@ -57,7 +58,7 @@ func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 			Figures{Said: d.Figures}.Draw(in, Box{X: room.X, Y: room.Y, W: room.W, H: FiguresHigh})
 			if s.TimeSpent != "" {
 				said := s.TimeSpent + " over its occurrences"
-				if each := engine.EachSaid(s); each != "" {
+				if each := board.EachSaid(s); each != "" {
 					said += " · " + each
 				}
 				say(in.gtx, in.th, in.skin.Colour.Ink.Faint, Box{X: room.X, Y: room.Y + FiguresHigh + inset, W: room.W, H: lineHigh}, fits(in.gtx, in.th, said, room.W, small), small)

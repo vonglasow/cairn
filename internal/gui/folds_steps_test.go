@@ -1,22 +1,21 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"slices"
 	"strings"
 
-	"cairn/internal/engine"
-
 	"github.com/cucumber/godog"
 )
 
-func (w *world) branchOf(title string) (engine.Branch, Box, error) {
+func (w *world) branchOf(title string) (board.Branch, Box, error) {
 	for i, b := range w.w.Tree() {
 		if b.Goal.Title == title {
 			return b, GoalAt(w.w.Layout(), i, w.w.goals), nil
 		}
 	}
-	return engine.Branch{}, Box{}, fmt.Errorf("no objective titled %q is listed", title)
+	return board.Branch{}, Box{}, fmt.Errorf("no objective titled %q is listed", title)
 }
 
 func (w *world) saidWithin(box Box) []string {

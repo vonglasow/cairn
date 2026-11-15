@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"slices"
 	"strconv"
@@ -8,7 +9,7 @@ import (
 )
 
 // Showing is the work narrowed to what the filters keep and a search reaches, which is what everything draws from.
-func (w Window) Showing() engine.Snapshot {
+func (w Window) Showing() board.Snapshot {
 	if w.looking.Empty() && !w.filters.Narrows() && w.viewing == "" {
 		return w.snap
 	}
@@ -16,9 +17,9 @@ func (w Window) Showing() engine.Snapshot {
 	if kept, err := w.filters.Kept(cards); err == nil {
 		cards = kept
 	}
-	found := engine.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
-	found.Cards = engine.Found(cards, w.looking.Reads(), w.archived)
-	found.Goals = engine.FoundGoals(w.filters.KeptGoals(w.snap.Goals), w.looking.Reads())
+	found := board.Snapshot{Focus: w.snap.Focus, Version: w.snap.Version}
+	found.Cards = board.Found(cards, w.looking.Reads(), w.archived)
+	found.Goals = board.FoundGoals(w.filters.KeptGoals(w.snap.Goals), w.looking.Reads())
 	return found
 }
 
@@ -61,7 +62,7 @@ func Titled(name string) string {
 
 // ColumnHeads is what each column's head says: its name, then how many cards it holds.
 func (w Window) ColumnHeads() []string {
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
 	heads := make([]string, 0, len(dealt))
 	for _, column := range dealt {
 		heads = append(heads, Titled(column.Name)+" "+strconv.Itoa(len(column.Cards)))
@@ -71,11 +72,11 @@ func (w Window) ColumnHeads() []string {
 
 // EmptySays is what a column holding nothing says in place of its cards: how to make the first task on a board holding none, nothing at all on a column holding some.
 func (w Window) EmptySays(column int) string {
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
 	if column < 0 || column >= len(dealt) || len(dealt[column].Cards) > 0 {
 		return ""
 	}
-	if len(w.Showing().Cards) == 0 && column == engine.IndexOf("todo") {
+	if len(w.Showing().Cards) == 0 && column == board.IndexOf("todo") {
 		return "No task yet. " + w.keyboard.Spelled(Pretty(Shortcut("new"))) + " makes one."
 	}
 	return nothingHere
@@ -84,7 +85,7 @@ func (w Window) EmptySays(column int) string {
 const nothingHere = "Nothing here"
 
 // Dimmed says a card is drawn at half strength: its work is behind it, done or archived.
-func Dimmed(c engine.Card) bool { return c.Archived || c.State == "done" }
+func Dimmed(c board.Card) bool { return c.Archived || c.State == "done" }
 
 // Blank says every page is turned off: the window is drawn, and nothing in it.
 func (w Window) Blank() bool { return w.pages.None() }
@@ -129,21 +130,21 @@ func (w Window) onPage(tab Tab) Window {
 	return w
 }
 
-func (w Window) working() Window { return w.toggling(engine.FocusOp) }
+func (w Window) working() Window { return w.toggling(board.FocusOp) }
 
-func (w Window) puttingAway() Window { return w.toggling(engine.AwayOp) }
+func (w Window) puttingAway() Window { return w.toggling(board.AwayOp) }
 
-func (w Window) toggling(op func(engine.Card) engine.Operation) Window {
+func (w Window) toggling(op func(board.Card) engine.Operation) Window {
 	card, found := w.snap.Card(w.chosen)
 	if !found {
 		return w
 	}
-	return w.asking(op(card), engine.Numbered(w.chosen))
+	return w.asking(op(card), board.Numbered(w.chosen))
 }
 
 // LaneSays is what a lane of the band writes above itself: what it is, and how many it holds.
 func (w Window) LaneSays(kind string) string {
-	lane := slices.Index(engine.Stalled, kind)
+	lane := slices.Index(board.Stalled, kind)
 	if lane < 0 {
 		return kind + "  0"
 	}
@@ -161,5 +162,5 @@ func (w Window) Holds(tab Tab) int {
 	if tab == Time {
 		return w.sheet.Worked()
 	}
-	return len(engine.OnTheBoard(w.Showing().Cards, w.archived))
+	return len(board.OnTheBoard(w.Showing().Cards, w.archived))
 }

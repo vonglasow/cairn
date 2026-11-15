@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"strconv"
 	"time"
@@ -73,17 +74,17 @@ func (w Window) readingWeek() Window {
 		return w
 	}
 	if w.week.IsZero() {
-		w.week = engine.Monday(w.today())
+		w.week = board.Monday(w.today())
 	}
 	since, until := w.week, w.week.AddDate(0, 0, 6)
 	if w.daily {
 		until = w.week
 	}
 	if w.monthly {
-		grid := engine.MonthGrid(w.week)
+		grid := board.MonthGrid(w.week)
 		since, until = grid[0], grid[len(grid)-1]
 	}
-	sheet, err := engine.ReadPeriod(w.work, since, until, w.today())
+	sheet, err := board.ReadPeriod(w.work, since, until, w.today())
 	if err != nil {
 		return w.failing(err)
 	}
@@ -99,9 +100,9 @@ func (w Window) onWeek(name string) Window {
 		w.week = w.stepped(1)
 	case "t":
 		w.grid = viewDays
-		w.week = engine.Monday(w.today())
+		w.week = board.Monday(w.today())
 		if w.monthly {
-			w.week = engine.FirstOfMonth(w.today())
+			w.week = board.FirstOfMonth(w.today())
 		}
 		if w.daily {
 			w.week = w.today()
@@ -120,11 +121,11 @@ func (w Window) onWeek(name string) Window {
 func (w Window) stepped(by int) time.Time {
 	switch {
 	case w.monthly && w.grid == viewYears:
-		return engine.MonthOn(w.week, 144*by)
+		return board.MonthOn(w.week, 144*by)
 	case w.monthly && w.grid == viewMonths:
-		return engine.MonthOn(w.week, 12*by)
+		return board.MonthOn(w.week, 12*by)
 	case w.monthly:
-		return engine.MonthOn(w.week, by)
+		return board.MonthOn(w.week, by)
 	case w.daily:
 		return w.week.AddDate(0, 0, by)
 	}
@@ -150,9 +151,9 @@ func (w Window) ranged(to string) Window {
 	case "Day":
 		w.week = on
 	case "Month":
-		w.week = engine.FirstOfMonth(on)
+		w.week = board.FirstOfMonth(on)
 	default:
-		w.week = engine.Monday(on)
+		w.week = board.Monday(on)
 	}
 	return w
 }
@@ -179,7 +180,7 @@ func weekKeys(name string) (mine, shared bool) {
 
 // TimeStrip is the strip along the top of the time page: the board's whole width, where the columns' headers are on the other pages.
 func TimeStrip(l Layout) Box {
-	left, right := l.Column[0].X, l.Column[engine.Columns-1].X+l.Column[engine.Columns-1].W
+	left, right := l.Column[0].X, l.Column[board.Columns-1].X+l.Column[board.Columns-1].W
 	return Box{X: left, Y: l.Head[0].Y, W: right - left, H: barHigh}
 }
 
@@ -413,7 +414,7 @@ func CellLines(tasks []engine.TimesheetTask, room int) []string {
 
 // MonthDay is the sheet's day for the i-th day of the month's six weeks.
 func (w Window) MonthDay(i int) engine.TimesheetDay {
-	day := calendar.FormatDay(engine.MonthGrid(w.week)[i])
+	day := calendar.FormatDay(board.MonthGrid(w.week)[i])
 	for _, d := range w.TimeShown().Days {
 		if d.Day == day {
 			return d
@@ -461,9 +462,9 @@ func (w Window) clickingTime(p Point) Window {
 	if !w.monthly {
 		return w
 	}
-	for i, day := range engine.MonthGrid(w.week) {
+	for i, day := range board.MonthGrid(w.week) {
 		if MonthCellAt(l, i).In(p) {
-			w.monthly, w.week, w.dayFrom = false, engine.Monday(day), [7]int{}
+			w.monthly, w.week, w.dayFrom = false, board.Monday(day), [7]int{}
 			return w.readingWeek()
 		}
 	}
@@ -514,11 +515,11 @@ func WeekBar(row Box, minutes, longest int) Box {
 }
 
 // DayCard is a task of the time page as the board holds it, so it is drawn the way the board draws it; a task the board no longer holds is drawn from what the sheet says of it.
-func (w Window) DayCard(one engine.TimesheetTask) engine.Card {
+func (w Window) DayCard(one engine.TimesheetTask) board.Card {
 	if c, found := w.snap.Card(one.Number); found {
 		return c
 	}
-	return engine.Card{Number: one.Number, Title: one.Shown()}
+	return board.Card{Number: one.Number, Title: one.Shown()}
 }
 
 func (w Window) goneOnTime(number int) bool {
@@ -550,7 +551,7 @@ func (w Window) timeCardAt(p Point) int {
 		return 0
 	}
 	if w.monthly {
-		for i := range engine.MonthGrid(w.week) {
+		for i := range board.MonthGrid(w.week) {
 			cell := MonthCellAt(l, i)
 			if !cell.In(p) {
 				continue

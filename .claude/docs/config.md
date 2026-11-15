@@ -525,9 +525,8 @@ next call, and the client is told the list changed — no reconnect (see
 menu bar asked nothing at first — one fixed list, `MenuBar`, read by the native
 bars of macOS and Windows and by the button standing in for them — so a page
 turned off kept its lines there, and the terminal's `:` line still ran its
-commands. Now each line of the menu bar names the acts it does,
-and is offered while one of them is (`@gui-a-page-off-takes-its-menus`,
-`@gui-the-tasks-off-take-their-menus`); a menu left with no line goes, and the
+commands. Now the bar holds only cairn and Help, and Upgrade is offered
+while its operation is (`@gui-every-page-off-leaves-what-belongs-to-none`); the
 `:` line runs only what is offered (`@tui-a-page-off-takes-its-commands`).
 
 **The time says one of three words.** `"on"`, the default, is recorded and

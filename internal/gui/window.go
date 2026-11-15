@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"time"
 
@@ -83,10 +84,10 @@ const Wobble = 4
 
 // Window is everything the desktop board is, at one moment.
 type Window struct {
-	work engine.Work
+	work board.Work
 
 	width, height int
-	snap          engine.Snapshot
+	snap          board.Snapshot
 	version       int64
 
 	screen     Screen
@@ -94,7 +95,7 @@ type Window struct {
 	chosen     int
 	chosenGoal bool
 
-	scroll                                   [engine.Columns]int
+	scroll                                   [board.Columns]int
 	lanes                                    [3]int
 	goals                                    int
 	history                                  int
@@ -166,7 +167,7 @@ type Window struct {
 	sizes                 Sizes
 	kept                  SizesKept
 	widening              Widening
-	filters               engine.Filters
+	filters               board.Filters
 	filterOn              int
 	filterOpen            bool
 	filterTrail           []int
@@ -205,7 +206,7 @@ type Window struct {
 	wasScreen             Screen
 	ticked                map[int]bool
 	choosing              int
-	fates                 engine.Deleting
+	fates                 board.Deleting
 	refusedChoice         string
 	refusedThen           string
 	viewWalked            int
@@ -220,7 +221,7 @@ type Window struct {
 func Lingers() int { return 4 }
 
 // New builds a window over whatever holds the work, recurrence off until its pages say otherwise, as the configuration has it by default.
-func New(work engine.Work, width, height int) Window {
+func New(work board.Work, width, height int) Window {
 	w := Window{work: work, width: width, height: height, keyboard: thisKeyboard(), drafts: noDrafts{}, kept: noSizes{}, pages: engine.Pages{}.WithoutRecurrence()}
 	return w.sized()
 }
@@ -304,18 +305,18 @@ func (w Window) contextPath() Box {
 func (w Window) ChosenGoal() bool { return w.chosenGoal }
 
 // Under is what the box beside the fields of an open objective holds: the work that serves it.
-func (w Window) Under() []engine.Card {
-	serving := slices.Clone(engine.Serving(w.snap.Cards, w.chosen))
-	rank := func(c engine.Card) int {
+func (w Window) Under() []board.Card {
+	serving := slices.Clone(board.Serving(w.snap.Cards, w.chosen))
+	rank := func(c board.Card) int {
 		switch {
 		case c.State == "current":
 			return 0
-		case engine.Finished(c):
+		case board.Finished(c):
 			return 2
 		}
 		return 1
 	}
-	slices.SortStableFunc(serving, func(a, b engine.Card) int { return rank(a) - rank(b) })
+	slices.SortStableFunc(serving, func(a, b board.Card) int { return rank(a) - rank(b) })
 	return serving
 }
 
@@ -371,7 +372,7 @@ func (w Window) Leaving() bool { return w.quitting }
 
 // Look reads the work again and draws from what came back.
 func (w Window) Look() Window {
-	found, err := engine.Look(w.work)
+	found, err := board.Look(w.work)
 	if err != nil {
 		if agreeing, ok := engine.AgreeingTo(engine.Operation{}, engine.Input{}, err); ok && w.screen != OnAsking {
 			return w.agreeingTo(agreeing)
@@ -379,8 +380,8 @@ func (w Window) Look() Window {
 		return w.failing(err)
 	}
 	w = w.readingPlace()
-	w.snap, w.version, w.err, w.lookedAt = w.pages.Recurring(found), found.Version, nil, w.now
-	for i := range engine.Columns {
+	w.snap, w.version, w.err, w.lookedAt = board.Recurring(w.pages, found), found.Version, nil, w.now
+	for i := range board.Columns {
 		w.scroll[i] = w.settled(i, w.scroll[i])
 	}
 	for i := range w.lanes {
@@ -421,14 +422,14 @@ func (w Window) applying(agreeing engine.Agreeing) Window {
 	return w
 }
 
-func (w Window) inColumn(column int) []engine.Card {
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+func (w Window) inColumn(column int) []board.Card {
+	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
 	return dealt[column].Cards
 }
 
-func (w Window) inLane(lane int) []engine.Card {
-	_, stalled := engine.Deal(w.Showing().Cards, w.archived)
-	return engine.InLanes(stalled)[lane]
+func (w Window) inLane(lane int) []board.Card {
+	_, stalled := board.Deal(w.Showing().Cards, w.archived)
+	return board.InLanes(stalled)[lane]
 }
 
 func (w Window) stateOf(number int) string {
@@ -447,6 +448,6 @@ func (w Window) settledLane(lane, want int) int {
 	return min(most, max(0, want))
 }
 
-func line(act act.Act) string { return engine.SaidOf(act).Line() }
+func line(act act.Act) string { return board.SaidOf(act).Line() }
 
 func abs(n int) int { return max(n, -n) }

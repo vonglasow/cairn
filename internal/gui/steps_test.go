@@ -2,6 +2,7 @@ package gui
 
 import (
 	"bytes"
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"fmt"
 	"image/color"
@@ -37,7 +38,7 @@ func quoted(list string) []string {
 func (w *world) columnsRead(list string) error {
 	want := quoted(list)
 	var got []string
-	dealt, _ := engine.Deal(w.w.Reading().Cards, w.w.archived)
+	dealt, _ := board.Deal(w.w.Reading().Cards, w.w.archived)
 	for _, column := range dealt {
 		got = append(got, column.Name)
 	}
@@ -47,12 +48,12 @@ func (w *world) columnsRead(list string) error {
 	return nil
 }
 
-func (w *world) cardsOf(column string) ([]engine.Card, error) {
-	at := engine.IndexOf(strings.ToLower(column))
+func (w *world) cardsOf(column string) ([]board.Card, error) {
+	at := board.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return nil, fmt.Errorf("no column called %q", column)
 	}
-	dealt, _ := engine.Deal(w.w.Showing().Cards, w.w.archived)
+	dealt, _ := board.Deal(w.w.Showing().Cards, w.w.archived)
 	return dealt[at].Cards, nil
 }
 
@@ -86,16 +87,16 @@ func (w *world) columnReads(column, list string) error {
 }
 
 func (w *world) bandNamed(name string) error {
-	if engine.Band != name {
-		return fmt.Errorf("the band is named %q", engine.Band)
+	if board.Band != name {
+		return fmt.Errorf("the band is named %q", board.Band)
 	}
 	return nil
 }
 
 func (w *world) lanesRead(list string) error {
 	want := quoted(list)
-	if strings.Join(engine.Stalled, "|") != strings.Join(want, "|") {
-		return fmt.Errorf("the lanes read %v, want %v", engine.Stalled, want)
+	if strings.Join(board.Stalled, "|") != strings.Join(want, "|") {
+		return fmt.Errorf("the lanes read %v, want %v", board.Stalled, want)
 	}
 	return nil
 }
@@ -105,9 +106,9 @@ func (w *world) laneReads(kind, list string) error {
 	if err != nil {
 		return err
 	}
-	_, stalled := engine.Deal(w.w.Showing().Cards, w.w.archived)
+	_, stalled := board.Deal(w.w.Showing().Cards, w.w.archived)
 	var got []string
-	for _, c := range engine.InLanes(stalled)[lane] {
+	for _, c := range board.InLanes(stalled)[lane] {
 		got = append(got, c.Title)
 	}
 	want := quoted(list)
@@ -118,7 +119,7 @@ func (w *world) laneReads(kind, list string) error {
 }
 
 func (w *world) laneCarries(kind, title string) error {
-	_, stalled := engine.Deal(w.w.Reading().Cards, w.w.archived)
+	_, stalled := board.Deal(w.w.Reading().Cards, w.w.archived)
 	for _, c := range stalled {
 		if c.State == kind && c.Title == title {
 			return nil
@@ -152,7 +153,7 @@ func (w *world) sameHeight(column string) error {
 	if err != nil {
 		return err
 	}
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	l := w.w.Layout()
 	for i := range here {
 		if got := l.CardAt(at, i, 0).H; got != CardHeight {
@@ -167,7 +168,7 @@ func (w *world) titleEndsIn(column, ending string) error {
 	if err != nil {
 		return err
 	}
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	title := PartsOf(w.w.Layout().CardAt(at, 0, 0)).Title
 	m := w.w.measured()
 	for _, c := range here {
@@ -281,7 +282,7 @@ func (w *world) detailSaysNothingServes() error {
 	return nil
 }
 
-func titles(cards []engine.Card) []string {
+func titles(cards []board.Card) []string {
 	var said []string
 	for _, c := range cards {
 		said = append(said, c.Title)
@@ -306,7 +307,7 @@ func (w *world) detailShows(text string) error {
 }
 
 func (w *world) isScrolled(column string) error {
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	if w.w.scroll[at] == w.scrolled[at] {
 		return fmt.Errorf("%q did not move", column)
 	}
@@ -418,7 +419,7 @@ func (w *world) laneIsNotScrolled(kind string) error {
 }
 
 func (w *world) isNotScrolled(column string) error {
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	if w.w.scroll[at] != w.scrolled[at] {
 		return fmt.Errorf("%q moved and should not have", column)
 	}
@@ -555,13 +556,13 @@ func (w *world) saysWhatWentWrong() error {
 	return nil
 }
 
-func (w *world) cardNumbered(n int) (engine.Card, error) {
+func (w *world) cardNumbered(n int) (board.Card, error) {
 	for _, c := range w.w.Showing().Cards {
 		if c.Number == n {
 			return c, nil
 		}
 	}
-	return engine.Card{}, fmt.Errorf("the board carries no card numbered %d", n)
+	return board.Card{}, fmt.Errorf("the board carries no card numbered %d", n)
 }
 
 func (w *world) markedDescribed(n int, want bool) error {
@@ -695,7 +696,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return fmt.Errorf("the parts are drawn as %v, and %q is not among them", w.w.PartsTicked(), title)
 	})
 	sc.Then(`^the trace begins with the last thing done to task (\d+)$`, func(n int) error {
-		shown, err := w.held.Ask(engine.TraceShow, engine.Numbered(n))
+		shown, err := w.held.Ask(engine.TraceShow, board.Numbered(n))
 		if err != nil {
 			return err
 		}
@@ -788,7 +789,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^it would land below "([^"]*)"$`, func(title string) error {
 		line, ok := w.w.PartLanding()
-		at := slices.IndexFunc(w.w.PartsTicked(), func(c engine.Card) bool { return c.Title == title })
+		at := slices.IndexFunc(w.w.PartsTicked(), func(c board.Card) bool { return c.Title == title })
 		tile := w.w.partTiles()[at-w.w.partsFrom()]
 		if !ok || line.Y != tile.Y+tile.H+1-landingHigh/2 {
 			return fmt.Errorf("it would land at %v (%v), and %q ends at %d", line, ok, title, tile.Y+tile.H)
@@ -803,7 +804,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the step "([^"]*)" is ticked$`, func(title string) error {
 		for _, c := range w.w.PartsTicked() {
-			if c.Title == title && engine.Finished(c) {
+			if c.Title == title && board.Finished(c) {
 				return nil
 			}
 		}
@@ -1270,7 +1271,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		return nil
 	})
 	dayOfMonth := func(day string) (int, error) {
-		for i, shown := range engine.MonthGrid(w.w.week) {
+		for i, shown := range board.MonthGrid(w.w.week) {
 			if calendar.FormatDay(shown) == day {
 				return i, nil
 			}
@@ -1561,7 +1562,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		for i, day := range engine.MonthGrid(w.w.day) {
+		for i, day := range board.MonthGrid(w.w.day) {
 			if day.Equal(w.w.day) || day.Equal(w.w.today()) {
 				continue
 			}
@@ -2035,7 +2036,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if !somewhere {
 			return nil
 		}
-		for i := range engine.Columns {
+		for i := range board.Columns {
 			if w.w.Layout().Column[i].X == landing.X {
 				return fmt.Errorf("the landing at %+v is column %d's, not the box's", landing, i)
 			}
@@ -2767,7 +2768,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	sc.Then(`^the bar offers "([^"]*)" under "([^"]*)"$`, w.barOffersUnder)
 	sc.Then(`^the window is asking what to look for$`, w.askingWhatToLookFor)
 	sc.Then(`^the board says nothing of "([^"]*)"$`, func(title string) error {
-		dealt, stalled := engine.Deal(w.w.Showing().Cards, w.w.archived)
+		dealt, stalled := board.Deal(w.w.Showing().Cards, w.w.archived)
 		for _, held := range dealt {
 			for _, c := range held.Cards {
 				if c.Title == title {
@@ -2923,7 +2924,7 @@ func (w *world) landsNowhere() error {
 }
 
 func (w *world) landsIn(column string) error {
-	at := engine.IndexOf(strings.ToLower(column))
+	at := board.IndexOf(strings.ToLower(column))
 	if at < 0 {
 		return fmt.Errorf("no column called %q", column)
 	}
@@ -3299,7 +3300,7 @@ func (w *world) fieldDrawnByName(field string) error {
 			return fmt.Errorf("the field %q is drawn as %q, which is what it carries", field, said)
 		}
 		fields := w.w.Form().Fields()
-		at := slices.IndexFunc(fields, func(x engine.Field) bool { return x.Name == field })
+		at := slices.IndexFunc(fields, func(x board.Field) bool { return x.Name == field })
 		box := w.w.formBox()
 		value := formValue(box, fields, at)
 		frame := Framed(value, formRows(box, fields, at))
@@ -3473,13 +3474,13 @@ func (w *world) objectivesMoved() error {
 	return nil
 }
 
-func (w *world) cardOf(title string) (engine.Card, error) {
+func (w *world) cardOf(title string) (board.Card, error) {
 	for _, c := range w.w.Showing().Cards {
 		if c.Title == title {
 			return c, nil
 		}
 	}
-	return engine.Card{}, fmt.Errorf("no card titled %q", title)
+	return board.Card{}, fmt.Errorf("no card titled %q", title)
 }
 
 func (w *world) cardSays(title, said string) error {
@@ -3581,7 +3582,7 @@ func (w *world) stripedWide(title string, wide int) error {
 	if err != nil {
 		return err
 	}
-	at := PartsOf(w.w.Layout().CardAt(engine.IndexOf(card.State), 0, 0)).Edge
+	at := PartsOf(w.w.Layout().CardAt(board.IndexOf(card.State), 0, 0)).Edge
 	want := Dark().Colour.Priority[card.Priority]
 	stripe := Box{X: at.X, Y: at.Y + Dark().Radius.Stripe, W: wide, H: at.H - 2*Dark().Radius.Stripe}
 	if got := painted(shot, stripe, want); got != stripe.W*stripe.H {
@@ -3613,7 +3614,7 @@ func buttonsDrawn(th *material.Theme, w Window, buttons []Box, grounds ...color.
 }
 
 func dayIndex(w Window, day time.Time) int {
-	for i, one := range engine.MonthGrid(w.day) {
+	for i, one := range board.MonthGrid(w.day) {
 		if one.Equal(day) {
 			return i
 		}

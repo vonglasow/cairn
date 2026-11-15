@@ -30,32 +30,54 @@ extern void cairnFileChosen(char *path);
 
 static CairnMenuTarget *cairnTarget;
 static NSMenu *cairnLast;
+static NSInteger cairnAt = -1;
 
-// cairn_menu_group adds a menu to the menu bar; the lines added after it go in
-// it. AppKit is only ever touched on the main thread.
+// cairn_menu_group adds a menu to the menu bar, or, named as the
+// application, takes the application's own menu; the lines added after it go
+// in it. AppKit is only ever touched on the main thread.
 void cairn_menu_group(const char *title) {
 	NSString *named = [NSString stringWithUTF8String:title];
 	dispatch_async(dispatch_get_main_queue(), ^{
 		if (cairnTarget == nil) {
 			cairnTarget = [CairnMenuTarget new];
 		}
+		NSMenu *bar = [NSApp mainMenu];
+		if ([named isEqualToString:@"cairn"] && [bar numberOfItems] > 0) {
+			cairnLast = [[bar itemAtIndex:0] submenu];
+			cairnAt = 0;
+			return;
+		}
 		NSMenuItem *top = [[NSMenuItem alloc] initWithTitle:named action:nil keyEquivalent:@""];
 		NSMenu *menu = [[NSMenu alloc] initWithTitle:named];
 		[top setSubmenu:menu];
-		[[NSApp mainMenu] addItem:top];
+		[bar addItem:top];
 		cairnLast = menu;
+		cairnAt = -1;
 	});
 }
 
 // cairn_menu_item adds a line to the last menu: a title, the key it answers
-// with ⌘ (none when empty), and the number it calls back with.
+// with ⌘ (none when empty), and the number it calls back with. In the
+// application's menu the lines go first, in order, and a Quit the menu holds
+// already is kept rather than doubled.
 void cairn_menu_item(const char *title, const char *key, int tag) {
 	NSString *named = [NSString stringWithUTF8String:title];
 	NSString *keyed = [NSString stringWithUTF8String:key];
 	dispatch_async(dispatch_get_main_queue(), ^{
+		if (cairnAt >= 0 && [named isEqualToString:@"Quit"]) {
+			for (NSMenuItem *held in [cairnLast itemArray]) {
+				if ([held action] == @selector(terminate:)) {
+					return;
+				}
+			}
+		}
 		NSMenuItem *line = [[NSMenuItem alloc] initWithTitle:named action:@selector(picked:) keyEquivalent:keyed];
 		[line setTarget:cairnTarget];
 		[line setTag:tag];
+		if (cairnAt >= 0) {
+			[cairnLast insertItem:line atIndex:cairnAt++];
+			return;
+		}
 		[cairnLast addItem:line];
 	});
 }

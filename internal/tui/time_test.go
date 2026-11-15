@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"strings"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestTheTimeTabWalksTheWeeks(t *testing.T) {
 	if got := hit(b, "tab").tab; got != Tasks {
 		t.Errorf("a third tab left the board on %v", got)
 	}
-	monday := engine.Monday(today)
+	monday := board.Monday(today)
 	if !b.week.Equal(monday) {
 		t.Errorf("the week shown starts on %v, want %v", b.week, monday)
 	}
@@ -69,7 +70,7 @@ func TestBackupsAreReachedFromTheBoard(t *testing.T) {
 func TestTheTimeTabLaysOutFiveDaysWhenTheWeekendsAreHidden(t *testing.T) {
 	b := standing(newFake()).Paged(engine.Pages{}.WithoutWeekends())
 	said := hit(b, "tab", "tab").Draw()
-	monday := engine.Monday(today)
+	monday := board.Monday(today)
 	if !strings.Contains(said, monday.AddDate(0, 0, 4).Format("Mon 02/01")) {
 		t.Errorf("the week does not lay out its Friday:\n%s", said)
 	}

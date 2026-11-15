@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/filter"
 	"time"
 
@@ -69,5 +70,5 @@ func (e *Engine) spendOn(number int, was, becomes time.Duration) error {
 	if becomes == was {
 		return nil
 	}
-	return e.addTime(number, startOfDay(time.Now()), (becomes - was).String())
+	return e.addTime(number, calendar.StartOfDay(time.Now()), (becomes - was).String())
 }

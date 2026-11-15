@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"errors"
 
 	"cairn/internal/debug"
@@ -223,7 +224,7 @@ type Here struct {
 }
 
 // Run opens a window wearing the skin given and keeps it until it is closed; a window already showing the store is brought forward instead, and none opened.
-func Run(work engine.Work, pages engine.Pages, look Skin, noted *debug.Log, width, height int, here Here) {
+func Run(work board.Work, pages engine.Pages, look Skin, noted *debug.Log, width, height int, here Here) {
 	window := new(app.Window)
 	windows := WindowsHere(os.LookupEnv)
 	claim, err := windows.Claim(here.Store, func() { window.Perform(system.ActionRaise) })
@@ -286,7 +287,7 @@ func (a elsewhereOf) opening(to engine.Elsewhere) Went {
 
 var errNoElsewhere = errors.New("this window cannot open another")
 
-func loop(window *app.Window, work engine.Work, pages engine.Pages, skin Skin, noted *debug.Log, width, height int, elsewhere elsewhereOf) error {
+func loop(window *app.Window, work board.Work, pages engine.Pages, skin Skin, noted *debug.Log, width, height int, elsewhere elsewhereOf) error {
 	seen := ""
 
 	theme := Theme()

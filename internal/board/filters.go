@@ -1,0 +1,365 @@
+package board
+
+import (
+	"cairn/internal/engine"
+	"cairn/internal/engine/calendar"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// anyValue is the value a filter opens on: it narrows nothing.
+const anyValue = "any"
+
+// Filter is one of the narrowings a board offers on top of its search: what it is called, the argument of task list it stands for, the values it walks through and how each reads, the one it is on, and for a filter that takes several, the values ticked together.
+type Filter struct {
+	Name   string
+	Arg    string
+	Values []string
+	Shown  []string
+	At     int
+	Many   bool
+	Ticked []string
+	Reach  map[string][]int
+}
+
+// Taken is every value the filter is on: none on Any, the one it is on, or every value ticked on a filter that takes several.
+func (f Filter) Taken() []string {
+	if len(f.Ticked) > 0 {
+		return f.Ticked
+	}
+	if f.At == 0 {
+		return nil
+	}
+	return []string{f.Values[f.At]}
+}
+
+// ReachesGoals says whether the filter means anything to an objective: what it carries — its labels, its priority — or which one it is.
+func (f Filter) ReachesGoals() bool {
+	return f.Arg == "label" || f.Arg == "priority" || f.Arg == "objective"
+}
+
+func (f Filter) shownOf(value string) string {
+	if at := slices.Index(f.Values, value); at >= 0 {
+		return f.Shown[at]
+	}
+	return value
+}
+
+// value is what the filter is on.
+func (f Filter) value() string { return f.Values[f.At] }
+
+// Says is how what the filter is on reads.
+func (f Filter) Says() string { return f.Shown[f.At] }
+
+// Filters are a board's filters, in the order it lists them.
+type Filters []Filter
+
+var dueIn = []int{0, 7, 30}
+
+// FiltersOf are the filters a board offers over what it read, one for each argument a task listing takes that a board can offer, in its order: a column, a priority, a label some card carries, an objective there is, and a day things are due by — today, in a week, in a month — each opening on Any.
+func FiltersOf(s Snapshot, today time.Time) Filters {
+	var labels []string
+	for _, c := range s.Cards {
+		for _, l := range c.Labels {
+			if !slices.Contains(labels, l) {
+				labels = append(labels, l)
+			}
+		}
+	}
+	slices.Sort(labels)
+	var goals, named []string
+	reach := map[string][]int{}
+	for _, b := range Branches(s.Goals) {
+		g := b.Goal
+		value, name := strconv.Itoa(g.Number), strings.TrimSpace("#"+strconv.Itoa(g.Number)+" "+g.Title)
+		reach[value] = s.Reach(g.Number)
+		if len(g.Children) == 0 {
+			goals, named = append(goals, value), append(named, name)
+			continue
+		}
+		reach[value+" itself"] = []int{g.Number}
+		goals = append(goals, value, value+" itself")
+		named = append(named, name+", with its sub-objectives", name+", itself")
+	}
+	objectives := offered("objective", "objective", goals, named)
+	objectives.Reach = reach
+	var days []string
+	for _, in := range dueIn {
+		days = append(days, calendar.FormatDay(today.AddDate(0, 0, in)))
+	}
+	var fs Filters
+	for _, arg := range engine.TaskList.Takes {
+		switch arg.Name {
+		case "state":
+			fs = append(fs, offered("column", arg.Name, arg.OneOf, nil))
+		case "priority":
+			fs = append(fs, offered(arg.Name, arg.Name, arg.OneOf, nil))
+		case "label":
+			fs = append(fs, several(offered(arg.Name, arg.Name, labels, nil)))
+		case "objective":
+			fs = append(fs, objectives)
+		case "deadline-before":
+			fs = append(fs, offered("deadline", arg.Name, days, nil))
+		case "focus":
+			fs = append(fs, offered(arg.Name, arg.Name, []string{"in", "out"}, []string{"in focus", "not in focus"}))
+		case "series":
+			if len(s.Series) > 0 {
+				fs = append(fs, offered(arg.Name, arg.Name, []string{"0"}, []string{"all"}))
+			}
+		}
+	}
+	return fs
+}
+
+func focusAsked(value string) string {
+	if value == "out" {
+		return "no-focus"
+	}
+	return "focus"
+}
+
+func several(f Filter) Filter {
+	f.Many = true
+	return f
+}
+
+func offered(name, arg string, values, shown []string) Filter {
+	if shown == nil {
+		shown = values
+	}
+	return Filter{Name: name, Arg: arg, Values: append([]string{anyValue}, values...), Shown: append([]string{anyValue}, shown...)}
+}
+
+// On is the filters with the one standing for an argument put on a value it offers.
+func (fs Filters) On(arg, value string) Filters {
+	out := slices.Clone(fs)
+	for i := range out {
+		if at := slices.Index(out[i].Values, value); out[i].Arg == arg && at >= 0 {
+			out[i].At, out[i].Ticked = at, nil
+		}
+	}
+	return out
+}
+
+func (f Filter) reaching(value string) []int {
+	if reached, found := f.Reach[value]; found {
+		return reached
+	}
+	return NumbersIn(value)
+}
+
+// Walked is the filters with one of them moved on, or back, through its values, coming round to Any again past the last.
+func (fs Filters) Walked(at, by int) Filters {
+	out := slices.Clone(fs)
+	n := len(out[at].Values)
+	out[at].At = ((out[at].At+by)%n + n) % n
+	out[at].Ticked = nil
+	return out
+}
+
+// Toggled is the filters with one value of a filter that takes several ticked, or let go of when it was ticked already.
+func (fs Filters) Toggled(at int, value string) Filters {
+	out := slices.Clone(fs)
+	taken := slices.Clone(out[at].Taken())
+	if i := slices.Index(taken, value); i >= 0 {
+		taken = slices.Delete(taken, i, i+1)
+	} else {
+		taken = append(taken, value)
+	}
+	out[at].At, out[at].Ticked = 0, taken
+	if len(taken) == 1 {
+		out[at].At, out[at].Ticked = max(0, slices.Index(out[at].Values, taken[0])), nil
+	}
+	return out
+}
+
+// Cleared is the filters every one back on Any.
+func (fs Filters) Cleared() Filters {
+	out := slices.Clone(fs)
+	for i := range out {
+		out[i].At, out[i].Ticked = 0, nil
+	}
+	return out
+}
+
+// Keeping is these filters on the values the ones held were on, wherever such a value is still offered: a label nobody carries any more is let go of rather than narrowing to nothing.
+func (fs Filters) Keeping(held Filters) Filters {
+	out := slices.Clone(fs)
+	for i := range out {
+		for _, h := range held {
+			if h.Arg != out[i].Arg {
+				continue
+			}
+			var still []string
+			for _, value := range h.Taken() {
+				if slices.Contains(out[i].Values, value) {
+					still = append(still, value)
+				}
+			}
+			if len(still) > 1 {
+				out[i].Ticked = still
+			} else if len(still) == 1 {
+				out[i].At = slices.Index(out[i].Values, still[0])
+			}
+		}
+	}
+	return out
+}
+
+// Narrows says whether any filter is on something other than Any.
+func (fs Filters) Narrows() bool {
+	for _, f := range fs {
+		if len(f.Taken()) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// NarrowsBy says whether the filter standing for an argument is on something other than Any.
+func (fs Filters) NarrowsBy(arg string) bool {
+	for _, f := range fs {
+		if f.Arg == arg && len(f.Taken()) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// Said is what the filters narrow by, the way a board writes it beside its search: each one on something, named and what it is on.
+func (fs Filters) Said() string {
+	var said []string
+	for _, f := range fs {
+		if taken := f.Taken(); len(taken) > 0 {
+			said = append(said, f.Name+" "+f.TakenSays())
+		}
+	}
+	return strings.Join(said, " · ")
+}
+
+// TakenSays is how what the filter is on reads: the values taken, joined by a plus.
+func (f Filter) TakenSays() string {
+	var shown []string
+	for _, value := range f.Taken() {
+		shown = append(shown, f.shownOf(value))
+	}
+	return strings.Join(shown, " + ")
+}
+
+// Counts is how many of the cards each value of a filter keeps, Any first, under every other filter as it stands.
+func (fs Filters) Counts(cards []Card, at int) ([]int, error) {
+	counts := make([]int, 0, len(fs[at].Values))
+	for i := range fs[at].Values {
+		one := slices.Clone(fs)
+		one[at].At, one[at].Ticked = i, nil
+		kept, err := one.Kept(cards)
+		if err != nil {
+			return nil, err
+		}
+		counts = append(counts, len(kept))
+	}
+	return counts, nil
+}
+
+// KeptGoals is the objectives the filters keep: by what an objective carries — its labels, its priority — or by which one it is; a filter that means nothing to an objective keeps every one.
+func (fs Filters) KeptGoals(goals []Goal) []Goal {
+	var out []Goal
+	for _, g := range goals {
+		if fs.keepsGoal(g) {
+			out = append(out, g)
+		}
+	}
+	return out
+}
+
+func (fs Filters) keepsGoal(g Goal) bool {
+	for _, f := range fs {
+		for _, value := range f.Taken() {
+			switch f.Arg {
+			case "label":
+				if !slices.Contains(g.Labels, value) {
+					return false
+				}
+			case "priority":
+				if g.Priority != value {
+					return false
+				}
+			case "objective":
+				if !slices.Contains(f.reaching(value), g.Number) {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// Kept is the cards the filters keep, narrowed by the same rule task list narrows by.
+func (fs Filters) Kept(cards []Card) ([]Card, error) {
+	in := engine.Input{Given: map[string]string{}, Listed: map[string][]string{}}
+	var serving [][]int
+	repeats := false
+	for _, f := range fs {
+		taken := f.Taken()
+		if len(taken) == 0 {
+			continue
+		}
+		switch f.Arg {
+		case "objective":
+			for _, value := range taken {
+				serving = append(serving, f.reaching(value))
+			}
+		case "label":
+			in.Listed[f.Arg] = taken
+		case "series":
+			repeats = true
+		case "focus":
+			in.Given[focusAsked(taken[0])] = "true"
+		default:
+			in.Given[f.Arg] = taken[0]
+		}
+	}
+	kept, err := engine.TasksKept(in)
+	if err != nil {
+		return nil, err
+	}
+	var out []Card
+	for _, c := range cards {
+		judged := &cardJudged{card: c, kept: true}
+		kept.Tell(judged)
+		for _, reached := range serving {
+			judged.Serving(reached)
+		}
+		if judged.kept && (!repeats || c.Series != nil) {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
+type cardJudged struct {
+	card Card
+	kept bool
+}
+
+func (j *cardJudged) InColumn(state string)    { j.kept = j.kept && j.card.State == state }
+func (j *cardJudged) Carrying(priority string) { j.kept = j.kept && j.card.Priority == priority }
+func (j *cardJudged) Serving(objectives []int) {
+	j.kept = j.kept && slices.ContainsFunc(j.card.Objectives, func(o int) bool { return slices.Contains(objectives, o) })
+}
+func (j *cardJudged) InFocus(held bool) { j.kept = j.kept && j.card.InFocus == held }
+func (j *cardJudged) Archived()         {}
+func (j *cardJudged) WithArchived()     {}
+
+func (j *cardJudged) DueBefore(day string) {
+	by, err := calendar.ParseDeadline(day)
+	j.kept = j.kept && err == nil && !j.card.Deadline.IsZero() && !j.card.Deadline.After(by)
+}
+
+func (j *cardJudged) Labelled(labels []string) {
+	for _, l := range labels {
+		j.kept = j.kept && slices.Contains(j.card.Labels, l)
+	}
+}

@@ -1,13 +1,13 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"cairn/internal/engine"
 	"cairn/internal/engine/objective"
 
 	"charm.land/lipgloss/v2"
@@ -36,7 +36,7 @@ func (b Board) progress(done, total, width int) string {
 		b.skin.Empty.Render(strings.Repeat("░", len([]rune(plain))-filled))
 }
 
-func (b Board) goalFacts(g engine.Goal, width int) string {
+func (b Board) goalFacts(g board.Goal, width int) string {
 	room := min(barWidth, width)
 	told := []string{}
 	dressed := []string{}
@@ -65,7 +65,7 @@ func (b Board) goalFacts(g engine.Goal, width int) string {
 	return b.progress(g.Done, g.Total, room) + "  " + rest
 }
 
-func (b Board) waitsOn(g engine.Goal, numbered bool) string {
+func (b Board) waitsOn(g board.Goal, numbered bool) string {
 	var names []string
 	for _, n := range g.WaitsOn {
 		on, _ := b.snap.Goal(n)
@@ -81,7 +81,7 @@ func (b Board) waitsOn(g engine.Goal, numbered bool) string {
 	return "waits on " + strings.Join(names, ", ")
 }
 
-func (b Board) typeLabels(g engine.Goal) (string, string) {
+func (b Board) typeLabels(g board.Goal) (string, string) {
 	var told, dressed []string
 	for _, label := range g.Labels {
 		tag := b.glyphs.Label + " " + label
@@ -107,7 +107,7 @@ const barWidth = 28
 
 const rowIndent = 3
 
-func (b Board) goalRows(g engine.Goal, width int) []string {
+func (b Board) goalRows(g board.Goal, width int) []string {
 	mark := b.skin.palette.Standing(g.State).Style().Render(pad(StandingGlyph(g.State, b.glyphs), 1))
 	told, dressed := b.typeLabels(g)
 	if lipgloss.Width(told) > width/3 {

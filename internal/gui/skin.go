@@ -1,13 +1,13 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/item"
 	"cairn/internal/engine/label"
 	"image/color"
 
 	"gioui.org/font"
 
-	"cairn/internal/engine"
 	"cairn/internal/theme"
 )
 
@@ -152,7 +152,7 @@ var labelColours = func() map[string]color.NRGBA {
 func (s Skin) LabelPill(colour string) (ground, ink color.NRGBA) { return s.Colour.LabelPill(colour) }
 
 // Writing is the ink a card's title is written in.
-func (s Skin) Writing(c engine.Card) color.NRGBA {
+func (s Skin) Writing(c board.Card) color.NRGBA {
 	if c.Archived {
 		return s.Colour.Ink.Faint
 	}

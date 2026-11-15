@@ -51,11 +51,11 @@ func TestObjectiveWaitsOn_isChangedTheWayASetIs(t *testing.T) {
 	if _, said = shownObjective(t, path, "3"); !slices.Equal(said.WaitsOn, []int{2}) {
 		t.Errorf("#3 waits on %v once #1 is taken off", said.WaitsOn)
 	}
-	listed, err := Do(objectiveList, path, Input{})
+	listed, err := Do(ObjectiveList, path, Input{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if all := Of(objectiveList, listed).(objectivesListed).Objectives; !slices.Equal(all[1].WaitedOnBy, []int{3}) || !slices.Equal(all[2].WaitsOn, []int{2}) {
+	if all := Of(ObjectiveList, listed).(objectivesListed).Objectives; !slices.Equal(all[1].WaitedOnBy, []int{3}) || !slices.Equal(all[2].WaitsOn, []int{2}) {
 		t.Errorf("the listing reads %+v", all)
 	}
 }

@@ -1,13 +1,13 @@
 package tui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/engine"
 	"cairn/internal/engine/item"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
-
-	"cairn/internal/engine"
 
 	"charm.land/lipgloss/v2"
 )
@@ -28,69 +28,25 @@ func StoppedGlyph(state string, g Glyphs) string {
 	}
 }
 
-func marks(c engine.Card, g Glyphs) string {
+func marks(c board.Card, g Glyphs) string {
 	var found []string
-	if c.Archived {
-		found = append(found, g.Archived)
-	}
-	if c.Series != nil {
-		found = append(found, g.Repeats)
-	}
-	if c.Described() {
-		found = append(found, g.Described)
-	}
-	if glyph := StoppedGlyph(c.State, g); glyph != "" {
-		found = append(found, glyph)
+	for _, m := range board.MarksOf(c) {
+		found = append(found, g.Of(m))
 	}
 	return strings.Join(found, " ")
 }
 
-func facts(c engine.Card, g Glyphs, s Skin, now time.Time, width int) string {
-	if engine.Stopped(c.State) {
-		if c.Freed {
-			return s.Bright.Render(Clip(g.Reached+" nothing blocks it", width))
-		}
-		return s.Faint.Render(Clip(inTheWay(c, g), width))
-	}
+func facts(c board.Card, g Glyphs, s Skin, now time.Time, pages engine.Pages, width int) string {
 	var told, dressed []string
-	if blocks := c.BlocksSaid(); blocks != "" {
-		told = append(told, blocks)
-		dressed = append(dressed, s.Bright.Render(blocks))
+	said := board.FactsOf(c, now, pages)
+	for _, f := range said {
+		told = append(told, g.said(f))
+		dressed = append(dressed, s.Of(f.Tone).Render(g.said(f)))
 	}
-	if text, show, late, passed := engine.OccurrenceDay(c, now); show {
-		told = append(told, text)
-		switch {
-		case late:
-			dressed = append(dressed, s.Late.Render(text))
-		case passed:
-			dressed = append(dressed, s.Band.Render(text))
-		default:
-			dressed = append(dressed, s.Bright.Render(text))
-		}
-	} else if text, show, late := engine.CardDeadline(c, now); show && c.Series == nil {
-		told = append(told, text)
-		if late {
-			dressed = append(dressed, s.Late.Render(text))
-		} else {
-			dressed = append(dressed, s.Bright.Render(text))
-		}
+	if row := withMore(told, dressed, s, width); row != "" || len(told) == 0 || (said[0].Mark != board.InTheWay && said[0].Mark != board.Freed) {
+		return row
 	}
-	if done := c.PartsDone(); done != "" {
-		count := g.Steps + done
-		told = append(told, count)
-		dressed = append(dressed, s.Faint.Render(count))
-	}
-	for _, label := range c.Labels {
-		tag := g.Label + " " + label
-		told = append(told, tag)
-		dressed = append(dressed, s.Says.Render(tag))
-	}
-	for _, name := range c.Serves {
-		mark := g.Serves + " " + name
-		told = append(told, mark)
-		dressed = append(dressed, s.Says.Render(mark))
-	}
-	return withMore(told, dressed, s, width)
+	return s.Of(said[0].Tone).Render(Clip(told[0], width))
 }
 
 func dress(kept string, told, dressed []string) string {
@@ -127,15 +83,8 @@ func fit(told []string, width int) int {
 	return len(told)
 }
 
-func inTheWay(c engine.Card, g Glyphs) string {
-	if way := c.InTheWay(); way != "" {
-		return g.InTheWay + " " + way
-	}
-	return ""
-}
-
 // Rows is the four lines a card carries, before anything is drawn around them.
-func Rows(c engine.Card, g Glyphs, s Skin, now time.Time, width int) []string {
+func Rows(c board.Card, g Glyphs, s Skin, now time.Time, pages engine.Pages, width int) []string {
 	var rows []string
 	number := s.Faint.Render(strconv.Itoa(c.Number))
 	mark := marks(c, g)
@@ -151,5 +100,5 @@ func Rows(c engine.Card, g Glyphs, s Skin, now time.Time, width int) []string {
 		}
 		rows = append(rows, s.Bright.Render(line))
 	}
-	return append(rows, facts(c, g, s, now, width))
+	return append(rows, facts(c, g, s, now, pages, width))
 }

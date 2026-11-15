@@ -152,7 +152,7 @@ func TestOfTask_carriesEveryFieldAScriptReads(t *testing.T) {
 				WaitsOn:    []int{},
 				WaitedOnBy: []int{},
 			}},
-			{"a list of objectives", objectiveList, Answer{Objectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, item.Progress{})}}},
+			{"a list of objectives", ObjectiveList, Answer{Objectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, item.Progress{})}}},
 			{"what a search found among objectives", ObjectiveSearch, Answer{MatchedObjectives: []objective.Objective{obj}}, objectivesListed{Objectives: []objectiveRow{ofObjective(obj, nil, item.Progress{})}}},
 			{"a backup with what it holds", backupShow, Answer{Backup: &made, Holds: &held}, ofBackup(made, &held)},
 			{"a list of backups", BackupList, Answer{Backups: []backup.Backup{made}}, kept{Backups: []BackupShape{ofBackup(made, nil)}}},
@@ -224,8 +224,8 @@ func TestRenderText_rendersEveryFieldAnswerCarries(t *testing.T) {
 			task.Line(built) + "\n",
 		},
 		{"an objective", ObjectiveShow, Answer{Objective: &obj, Progress: progress}, objective.Text(obj, progress, objective.Review{}, objective.Family{}) + objective.Serving(nil)},
-		{"an empty list of objectives says so", objectiveList, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
-		{"a list of objectives", objectiveList, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj}, nil, nil)},
+		{"an empty list of objectives says so", ObjectiveList, Answer{Objectives: []objective.Objective{}}, "there is no objective\n"},
+		{"a list of objectives", ObjectiveList, Answer{Objectives: []objective.Objective{obj}}, objective.List([]objective.Objective{obj}, nil, nil)},
 		{"a backup with what it holds", backupShow, Answer{Backup: &made, Holds: &held}, backupLine(made, held)},
 		{"an empty list of backups says so", BackupList, Answer{Backups: []backup.Backup{}}, "there is no backup\n"},
 		{"a list of backups", BackupList, Answer{Backups: []backup.Backup{made}}, backupsText([]backup.Backup{made})},
@@ -280,9 +280,9 @@ func TestOf_handsOverEveryTaskInFocus(t *testing.T) {
 }
 
 func TestOf_saysNothingIsInFocusAsTheSameShape(t *testing.T) {
-	none, ok := Of(taskUnfocus, Answer{InFocus: list()}).(Focus)
+	none, ok := Of(TaskUnfocus, Answer{InFocus: list()}).(Focus)
 	if !ok {
-		t.Fatalf("Of with nothing held = %T, want Focus", Of(taskUnfocus, Answer{InFocus: list()}))
+		t.Fatalf("Of with nothing held = %T, want Focus", Of(TaskUnfocus, Answer{InFocus: list()}))
 	}
 	if none.InFocus == nil || len(none.InFocus) != 0 {
 		t.Errorf("in_focus = %v, want an empty list", none.InFocus)
@@ -328,7 +328,7 @@ func TestOf_answersACardWithoutTheFocusWhenNobodyAskedAboutIt(t *testing.T) {
 }
 
 func TestRenderText_saysNothingIsInFocus(t *testing.T) {
-	got := RenderText(taskUnfocus, Answer{InFocus: list()})
+	got := RenderText(TaskUnfocus, Answer{InFocus: list()})
 	if got != "nothing is in focus\n" {
 		t.Errorf("RenderText = %q, want it to say nothing is in focus", got)
 	}

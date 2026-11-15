@@ -19,11 +19,3 @@ func OpenApart(held *Engine, to Elsewhere) (workspace.Apart, error) {
 	}
 	return workspace.Apart{Store: at.Store, Flags: []string{workspace.StoreFlagName, at.Store}}, nil
 }
-
-// Cost is what a card says it cost against what it was reckoned to cost, and whether that is over, when the time is shown; nothing when it is hidden or off.
-func (p Pages) Cost(c Card) (string, bool) {
-	if !p.Shows(PageTime) {
-		return "", false
-	}
-	return c.Cost()
-}

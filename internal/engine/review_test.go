@@ -165,3 +165,7 @@ func TestOfReview_saysTheParentItselfAndEverySubObjective(t *testing.T) {
 		t.Errorf("the months read %+v", r.Months)
 	}
 }
+
+func anAct(did, field, was, became, through string, at time.Time) act.Act {
+	return act.Made(act.Carried{Task: 1, Did: did, Field: field, Was: was, Became: became, Through: through, At: at})
+}

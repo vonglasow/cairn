@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"cairn/internal/board"
+	"cairn/internal/engine/app"
 	"cairn/internal/engine/workspace"
 	"errors"
 	"time"
@@ -64,6 +66,8 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 		return engine.Answer{Warnings: f.warn}, nil
 	}
 	switch op.Thing + " " + op.Verb {
+	case " upgrade":
+		return engine.Answer{Upgraded: &app.Upgraded{From: "v0.12.0", To: "v0.12.0", Binary: "/usr/local/bin/cairn"}}, nil
 	case "task list":
 		f.reads++
 		return engine.Answer{Tasks: f.tasks, InFocus: &f.focus}, nil
@@ -104,14 +108,14 @@ func (f *fake) gave(thing, verb string) (engine.Input, bool) {
 	return engine.Input{}, false
 }
 
-func holding(f *fake, cards ...engine.Card) Window {
+func holding(f *fake, cards ...board.Card) Window {
 	w := New(f, 1200, 800)
-	w.snap = test.Searchable(engine.Snapshot{Cards: cards, Focus: f.focus, Version: f.version})
+	w.snap = test.Searchable(board.Snapshot{Cards: cards, Focus: f.focus, Version: f.version})
 	return w
 }
 
-func card(number int, title, state string) engine.Card {
-	return engine.Card{Number: number, Title: title, State: state}
+func card(number int, title, state string) board.Card {
+	return board.Card{Number: number, Title: title, State: state}
 }
 
 func middleOf(w Window, column, at int) Point {
@@ -155,17 +159,17 @@ func (w Window) doubleClicked(at Point) Window {
 	return w
 }
 
-func formName(box Box, fields []engine.Field, at int) Box {
+func formName(box Box, fields []board.Field, at int) Box {
 	name, _, _ := FormPlace(box, fields, at)
 	return name
 }
 
-func formValue(box Box, fields []engine.Field, at int) Box {
+func formValue(box Box, fields []board.Field, at int) Box {
 	_, value, _ := FormPlace(box, fields, at)
 	return value
 }
 
-func formRows(box Box, fields []engine.Field, at int) int {
+func formRows(box Box, fields []board.Field, at int) int {
 	_, _, rows := FormPlace(box, fields, at)
 	return rows
 }

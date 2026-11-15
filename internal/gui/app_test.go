@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"errors"
 	"image"
 	"strconv"
@@ -12,13 +13,12 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 
-	"cairn/internal/engine"
 	"cairn/internal/engine/act"
 )
 
 func TestEveryPointerEventItsGesture(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	at := middleOf(w, 0, 0)
 
 	pressed := Pointed(w, pointer.Press, at, 0)
@@ -72,7 +72,7 @@ func TestWhenTwoPressesAreOneDoubleClick(t *testing.T) {
 
 func TestEveryKeyItsShortcut(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	if got := Typed(w, "N", key.ModCommand); got.Screen() != OnForm {
 		t.Errorf("⌘N left the window on %v", got.Screen())
@@ -104,7 +104,7 @@ func TestEveryKeyItsShortcut(t *testing.T) {
 func TestTheDetailIsDrawnWithWhatACardOnlyMarked(t *testing.T) {
 	f := newFake()
 	f.acts = []act.Act{anAct("added", "", "", "")}
-	w := holding(f, engine.Card{
+	w := holding(f, board.Card{
 		Number: 1, Title: "Write the spec", State: "todo",
 		Description: "The client wants two columns",
 	})
@@ -138,8 +138,8 @@ func TestADropRefusedChangesNothingAndSaysSo(t *testing.T) {
 	f := newFake()
 	f.refuseMove = errRefuse
 	w := holding(f,
-		engine.Card{Number: 1, Title: "First", State: "todo"},
-		engine.Card{Number: 2, Title: "Second", State: "backlog"})
+		board.Card{Number: 1, Title: "First", State: "todo"},
+		board.Card{Number: 2, Title: "Second", State: "backlog"})
 
 	w = w.PressAt(middleOf(w, 0, 0))
 	w = w.MoveTo(middleOf(w, 1, 1))
@@ -155,7 +155,7 @@ func TestADropRefusedChangesNothingAndSaysSo(t *testing.T) {
 
 func TestATaskTheReadingDoesNotHoldStillMoves(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "backlog"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "backlog"})
 	w.snap.Cards[0].Number = 7
 
 	at := middleOf(w, 0, 0)
@@ -205,7 +205,7 @@ func TestTheGripOfADoubleClickInBothDirections(t *testing.T) {
 
 func TestClickingATabChangesToIt(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
 
 	second := TabAt(l, 1)
@@ -222,7 +222,7 @@ func TestClickingATabChangesToIt(t *testing.T) {
 
 func TestClickingBesideTheTabsChangesNothing(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	l := w.Layout()
 	beside := Point{X: l.Tabs.X + l.Tabs.W - 10, Y: l.Tabs.Y + l.Tabs.H/2}
 	if got := w.clicked(beside); got.Tab() != Tasks {
@@ -243,9 +243,9 @@ func TestExactlyTheSpanOfADoubleClick(t *testing.T) {
 
 func TestAFrameOfEventsScrollsBackUp(t *testing.T) {
 	f := newFake()
-	var many []engine.Card
+	var many []board.Card
 	for i := 1; i <= 12; i++ {
-		many = append(many, engine.Card{Number: i, Title: "Task", State: "todo"})
+		many = append(many, board.Card{Number: i, Title: "Task", State: "todo"})
 	}
 	w := holding(f, many...)
 	l := w.Layout()
@@ -301,7 +301,7 @@ func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 	for i := range said {
 		said[i] = "Une ligne de ce que la tâche raconte, assez longue pour compter"
 	}
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo",
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo",
 		Description: strings.Join(said, "\n")})
 	w = w.doubleClicked(middleOf(w, 1, 0))
 	if w.Screen() != OnForm {
@@ -327,7 +327,7 @@ func TestPointed_theWheelOverADescriptionScrollsIt(t *testing.T) {
 
 func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	at := middleOf(w, 1, 0)
 	now := time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC)
 
@@ -353,7 +353,7 @@ func TestPointing_tellsADoubleClickFromTheClicksBeforeIt(t *testing.T) {
 func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 	f := newFake()
 	long := strings.Repeat("Une ligne de ce que la tâche raconte, bien assez longue\n", 30)
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo", Description: long})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo", Description: long})
 	at := middleOf(w, 1, 0)
 
 	if got := Pointed(w, pointer.Press, at, 0); !got.pressed {
@@ -376,7 +376,7 @@ func TestPointed_sendsEachKindWhereItBelongs(t *testing.T) {
 
 func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title").Key("cmd+a")
 	if !w.Pasting() {
 		w = w.Key("cmd+v")
@@ -404,9 +404,9 @@ func (failing) Read([]byte) (int, error) { return 0, errors.New("no") }
 
 func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
 	long := strings.Repeat("une phrase de description assez longue pour replier ", 60)
-	cards := []engine.Card{{Number: 1, Title: "Ship it", State: "todo", Description: long}}
+	cards := []board.Card{{Number: 1, Title: "Ship it", State: "todo", Description: long}}
 	for i := 2; i <= 40; i++ {
-		cards = append(cards, engine.Card{Number: i, Title: "Other " + strconv.Itoa(i), State: "todo"})
+		cards = append(cards, board.Card{Number: i, Title: "Other " + strconv.Itoa(i), State: "todo"})
 	}
 	w := holding(newFake(), cards...)
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0))

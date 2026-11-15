@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/series"
 	"slices"
@@ -32,14 +33,14 @@ const (
 
 // SeriesListed is the series the tab lists for what is searched and the state it is narrowed to: the active ones, then the stopped ones.
 func (w Window) SeriesListed() []engine.Series {
-	return engine.InState(engine.ShownSeries(w.snap.Series, w.looking.Reads()), w.SeriesState())
+	return board.InState(board.ShownSeries(w.snap.Series, w.looking.Reads()), w.SeriesState())
 }
 
 // SeriesState is the state the series' tab is narrowed to: all, active or stopped.
-func (w Window) SeriesState() string { return engine.SeriesStates[w.seriesIn] }
+func (w Window) SeriesState() string { return board.SeriesStates[w.seriesIn] }
 
 func (w Window) walkingSeriesState() Window {
-	w.seriesIn = (w.seriesIn + 1) % len(engine.SeriesStates)
+	w.seriesIn = (w.seriesIn + 1) % len(board.SeriesStates)
 	return w
 }
 
@@ -93,9 +94,9 @@ func (w Window) SeriesRows() []SeriesRow {
 // SeriesWhen is what a series' line says at its right: its next day, or the day it was stopped.
 func (w Window) SeriesWhen(s engine.Series) string {
 	if s.State == "stopped" {
-		return "since " + engine.DaySaid(s.Stopped, w.now)
+		return "since " + board.DaySaid(s.Stopped, w.now)
 	}
-	return engine.NextDaySaid(s, w.now)
+	return board.NextDaySaid(s, w.now)
 }
 
 // StandingOfSeries is the standing a series' state is drawn in: an active one as an active objective, a stopped one as one on hold.
@@ -305,7 +306,7 @@ func (w Window) nowSaid(s engine.Series) []string {
 		return []string{"#" + strconv.Itoa(s.Open[0])}
 	}
 	said := c.State
-	if text, show, _, _ := engine.OccurrenceDay(c, w.now); show {
+	if text, show, _, _ := board.OccurrenceDay(c, w.now); show {
 		said += " · " + text
 	}
 	if c.SubTotal > 0 {
@@ -316,7 +317,7 @@ func (w Window) nowSaid(s engine.Series) []string {
 
 // OccurrenceSays is what a line of the occurrences says: its day, its task, its title, where it stands and the time spent on it.
 func (w Window) OccurrenceSays(o series.Occurrence) (day, number, title, is, spent string) {
-	day = engine.DaySaid(o.Day, w.now)
+	day = board.DaySaid(o.Day, w.now)
 	number, title = "—", "no task made"
 	if o.Task != 0 {
 		number = "#" + strconv.Itoa(o.Task)
@@ -435,17 +436,17 @@ func (w Window) seriesActing(offer string) Window {
 	w.seriesOn = s.Number
 	switch offer {
 	case EditSeriesSays:
-		w.form, w.screen, w.formMoved = asOpened(Form{Number: s.Number, ForSeries: true, fields: engine.SeriesFields(s)}), OnForm, Point{}
+		w.form, w.screen, w.formMoved = asOpened(Form{Number: s.Number, ForSeries: true, fields: board.SeriesFields(s)}), OnForm, Point{}
 		return w.beside()
 	case SkipNextSays:
 		if len(s.Open) == 0 {
 			return w
 		}
-		return w.asking(engine.TaskSkip, engine.Numbered(s.Open[0]))
+		return w.asking(engine.TaskSkip, board.Numbered(s.Open[0]))
 	case StopSeriesSays:
-		return w.asking(engine.SeriesStop, engine.Numbered(s.Number))
+		return w.asking(engine.SeriesStop, board.Numbered(s.Number))
 	case ResumeSeriesSays:
-		return w.asking(engine.SeriesResume, engine.Numbered(s.Number))
+		return w.asking(engine.SeriesResume, board.Numbered(s.Number))
 	case DeleteSeriesSays:
 		w.screen, w.fateOf, w.seriesFate = OnSeriesFates, s.Number, 0
 		return w
@@ -460,10 +461,10 @@ func (w Window) onSeries(n int) Window {
 }
 
 func (w Window) startingSeries() Window {
-	fields := withRepeats(engine.AddingFields(engine.StateAt(1)))
+	fields := withRepeats(board.AddingFields(board.StateAt(1)))
 	w.form, w.screen, w.formMoved = asOpened(Form{Adding: true, fields: fields}), OnForm, Point{}
 	for i, f := range fields {
-		if f.Arg == engine.RepeatsField().Arg {
+		if f.Arg == board.RepeatsField().Arg {
 			w.form = w.form.onto(i)
 		}
 	}
@@ -529,13 +530,13 @@ func (w Window) asksWhole() bool {
 		return false
 	}
 	c, found := w.snap.Card(w.form.Number)
-	return found && engine.ChangesTheSeries(c, w.form.fields)
+	return found && board.ChangesTheSeries(c, w.form.fields)
 }
 
 func (w Window) changedOfTheSeries() string {
 	var names []string
 	for _, f := range w.form.fields {
-		if f.Value != f.Was && engine.ChangesTheSeries(engine.Card{Series: &series.Occurs{}}, []engine.Field{f}) {
+		if f.Value != f.Was && board.ChangesTheSeries(board.Card{Series: &series.Occurs{}}, []board.Field{f}) {
 			names = append(names, f.Name)
 		}
 	}
@@ -607,7 +608,7 @@ const (
 	ResumeTheSeries = "Resume the series"
 )
 
-func (w Window) occurrenceChosen() (engine.Card, bool) {
+func (w Window) occurrenceChosen() (board.Card, bool) {
 	c, found := w.snap.Card(w.chosen)
 	return c, found && w.chosen != 0 && !w.chosenGoal && c.Series != nil && w.pages.Recurs()
 }
@@ -619,11 +620,11 @@ func (w Window) chording(name string) Window {
 	}
 	switch name {
 	case "s":
-		return w.asking(engine.TaskSkip, engine.Numbered(c.Number))
+		return w.asking(engine.TaskSkip, board.Numbered(c.Number))
 	case "x":
-		return w.asking(engine.SeriesStop, engine.Numbered(c.Series.Series))
+		return w.asking(engine.SeriesStop, board.Numbered(c.Series.Series))
 	case "r":
-		return w.asking(engine.SeriesResume, engine.Numbered(c.Series.Series))
+		return w.asking(engine.SeriesResume, board.Numbered(c.Series.Series))
 	case "e":
 		return w.onSeries(c.Series.Series)
 	}
@@ -635,7 +636,7 @@ func (w Window) occurrenceOffers() []string {
 		return nil
 	}
 	c, found := w.snap.Card(w.form.Number)
-	if !found || c.Series == nil || engine.Finished(c) {
+	if !found || c.Series == nil || board.Finished(c) {
 		return nil
 	}
 	if c.Series.Stopped {
@@ -658,11 +659,11 @@ func (w Window) actingOnOccurrence(offer string) (Window, bool) {
 	}
 	switch offer {
 	case SkipThisOneSays:
-		return leaving(w).asking(engine.TaskSkip, engine.Numbered(c.Number)), true
+		return leaving(w).asking(engine.TaskSkip, board.Numbered(c.Number)), true
 	case StopTheSeries:
-		return leaving(w).asking(engine.SeriesStop, engine.Numbered(c.Series.Series)), true
+		return leaving(w).asking(engine.SeriesStop, board.Numbered(c.Series.Series)), true
 	case ResumeTheSeries:
-		return leaving(w).asking(engine.SeriesResume, engine.Numbered(c.Series.Series)), true
+		return leaving(w).asking(engine.SeriesResume, board.Numbered(c.Series.Series)), true
 	case ItsSeriesSays:
 		return w.onSeries(c.Series.Series), true
 	}
@@ -729,7 +730,7 @@ func (w Window) occurrenceFacts() Facts {
 		{Name: "since", Value: since},
 		{Name: "so far", Value: strconv.Itoa(s.Done) + " done · " + strconv.Itoa(s.Skipped) + " skipped"},
 	}
-	if missed := engine.MissedDays(s); len(missed) > 0 {
+	if missed := board.MissedDays(s); len(missed) > 0 {
 		lines = append(lines, Fact{Name: "missed", Value: strconv.Itoa(len(missed)) + " · " + strings.Join(missed, ", "), Aside: "nobody was there; not made up", Late: true})
 	}
 	return Facts{Lines: lines}

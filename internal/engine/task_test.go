@@ -87,7 +87,7 @@ func TestTask_unarchiveAnswersTheTask(t *testing.T) {
 	if _, err := Do(TaskArchive, path, given("number", "1")); err != nil {
 		t.Fatal(err)
 	}
-	back, err := Do(taskUnarchive, path, given("number", "1"))
+	back, err := Do(TaskUnarchive, path, given("number", "1"))
 	if err != nil {
 		t.Fatal(err)
 	}

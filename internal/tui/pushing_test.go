@@ -1,11 +1,10 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/task"
 	"strings"
 	"testing"
-
-	"cairn/internal/engine"
 )
 
 func TestTheKindPopupWalksAndCancels(t *testing.T) {
@@ -14,7 +13,7 @@ func TestTheKindPopupWalksAndCancels(t *testing.T) {
 		t.Fatal("pushing the last task down asked nothing")
 	}
 	b = hit(b, "j", "j", "j")
-	if b.choice != len(engine.Stalled)-1 {
+	if b.choice != len(board.Stalled)-1 {
 		t.Fatalf("the popup walked to %d, want its last answer", b.choice)
 	}
 	b = hit(b, "k", "k", "k")
@@ -66,7 +65,7 @@ func TestPushingRightOutOfTheBandDoesNothing(t *testing.T) {
 
 func TestPushingPastTheLastColumnDoesNothing(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "Done", State: "done"}}
+	f.cards = []board.Card{{Number: 1, Title: "Done", State: "done"}}
 	b := hit(standing(f), "l", "l", "l", "i", "shift+l")
 	if len(f.edited) != 0 {
 		t.Fatalf("pushing past the last column wrote %v", f.edited)
@@ -85,7 +84,7 @@ func TestPushingWithNothingHeldDoesNothing(t *testing.T) {
 
 func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
 	left := hit(standing(f), "l", "l", "i")
 	if _, cmd := left.pressed("shift+h"); cmd != nil {
 		cmd()
@@ -104,7 +103,7 @@ func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 
 func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "One", State: "todo"}}
+	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo"}}
 	b := hit(standing(f), "l", "i")
 	if _, cmd := b.pressed("shift+h"); cmd != nil {
 		cmd()
@@ -116,7 +115,7 @@ func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 
 func TestPushingRightReachesTheLastColumn(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{{Number: 1, Title: "One", State: "current"}}
+	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
 	b := hit(standing(f), "l", "l", "i")
 	if _, cmd := b.pressed("shift+l"); cmd != nil {
 		cmd()
@@ -136,17 +135,17 @@ func TestThePopupMarksTheOneItIsOn(t *testing.T) {
 	if first == second {
 		t.Fatal("the popup looks the same whichever answer it is on")
 	}
-	if !strings.Contains(first, b.skin.Picked.Render(" "+engine.Stalled[0]+" ")) {
+	if !strings.Contains(first, b.skin.Picked.Render(" "+board.Stalled[0]+" ")) {
 		t.Fatalf("the first answer is not the one picked out:\n%q", first)
 	}
-	if !strings.Contains(second, b.skin.Picked.Render(" "+engine.Stalled[1]+" ")) {
+	if !strings.Contains(second, b.skin.Picked.Render(" "+board.Stalled[1]+" ")) {
 		t.Fatalf("the second answer is not the one picked out:\n%q", second)
 	}
 }
 
 func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
@@ -168,7 +167,7 @@ func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 
 func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 	f := newFake()
-	f.cards = []engine.Card{
+	f.cards = []board.Card{
 		{Number: 1, Title: "One", State: "todo"},
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},

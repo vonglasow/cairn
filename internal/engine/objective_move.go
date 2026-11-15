@@ -32,7 +32,7 @@ cairn objective move 13 --parent none`,
 		if err := on.Engine.moveObjective(n, in); err != nil {
 			return Answer{}, err
 		}
-		return objectiveList.Run(on, Input{})
+		return ObjectiveList.Run(on, Input{})
 	},
 }
 

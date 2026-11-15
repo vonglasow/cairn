@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"slices"
 	"strconv"
 	"strings"
@@ -11,9 +12,9 @@ import (
 	"cairn/internal/engine"
 )
 
-var subFates = []engine.Fate{engine.Undecided, engine.KeepIt, engine.DeleteIt}
+var subFates = []board.Fate{board.Undecided, board.KeepIt, board.DeleteIt}
 
-var taskFates = []engine.Fate{engine.Undecided, engine.DetachThem, engine.DeleteIt}
+var taskFates = []board.Fate{board.Undecided, board.DetachThem, board.DeleteIt}
 
 func (b Board) deletingGoal() Board {
 	d := b.snap.Deleting(b.goal)
@@ -69,7 +70,7 @@ func (b Board) choosingFates(key string) (tea.Model, tea.Cmd) {
 	return b, nil
 }
 
-func fated(d engine.Deleting, row, by int) engine.Deleting {
+func fated(d board.Deleting, row, by int) board.Deleting {
 	if row < len(d.Subs) {
 		sub := d.Subs[row]
 		return d.Choose(sub, stepped(subFates, d.FateOf(sub), by))
@@ -77,18 +78,18 @@ func fated(d engine.Deleting, row, by int) engine.Deleting {
 	return d.Tasks(stepped(taskFates, d.TasksFate(), by))
 }
 
-func stepped(fates []engine.Fate, was engine.Fate, by int) engine.Fate {
+func stepped(fates []board.Fate, was board.Fate, by int) board.Fate {
 	at := slices.Index(fates, was) + by
 	return fates[min(len(fates)-1, max(1, at))]
 }
 
-func fateSaid(f engine.Fate, many bool) string {
+func fateSaid(f board.Fate, many bool) string {
 	switch f {
-	case engine.KeepIt:
+	case board.KeepIt:
 		return "keep it, on its own"
-	case engine.DetachThem:
+	case board.DetachThem:
 		return "detach them"
-	case engine.DeleteIt:
+	case board.DeleteIt:
 		if many {
 			return "delete them"
 		}
@@ -120,7 +121,7 @@ func (b Board) deletingBox() string {
 	}
 	row("")
 	name := inner / 2
-	choice := func(at int, label string, f engine.Fate, many bool) {
+	choice := func(at int, label string, f board.Fate, many bool) {
 		mark := "  "
 		said := b.skin.Says.Render(fateSaid(f, many))
 		if at == b.deleteRow {

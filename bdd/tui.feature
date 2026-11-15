@@ -1755,7 +1755,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And I added a task titled "Stand-up" coming back "every day"
     And I added a task titled "Write the spec"
     When I open the board
-    And I press "shift+f", "l", "l", "l", "l", "l", "j"
+    And I press "shift+f", "l", "l", "l", "l", "l", "l", "j"
     Then the board says "series all"
     And the board says "Stand-up"
     And the board says nothing of "Write the spec"

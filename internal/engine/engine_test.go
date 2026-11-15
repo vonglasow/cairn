@@ -494,7 +494,7 @@ func TestObjectiveDelete_takesSeveralTogetherOrNone(t *testing.T) {
 	if _, err := Do(ObjectiveDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}}); err != nil {
 		t.Fatal(err)
 	}
-	if listed, _ := Do(objectiveList, path, Input{}); len(listed.Objectives) != 0 {
+	if listed, _ := Do(ObjectiveList, path, Input{}); len(listed.Objectives) != 0 {
 		t.Errorf("a deletion of both left %d objectives", len(listed.Objectives))
 	}
 }

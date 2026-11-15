@@ -1,10 +1,9 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"strings"
-
-	"cairn/internal/engine"
 
 	"gioui.org/io/pointer"
 	"github.com/cucumber/godog"
@@ -41,7 +40,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 		}
 	}
 	column := func(name string) (int, error) {
-		at := engine.IndexOf(strings.ToLower(name))
+		at := board.IndexOf(strings.ToLower(name))
 		if at < 0 {
 			return 0, fmt.Errorf("no column called %q", name)
 		}
@@ -195,7 +194,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^the columns fill the window's width$`, func() error {
 		l := w.w.Layout()
-		last := l.Column[engine.Columns-1]
+		last := l.Column[board.Columns-1]
 		if end := last.X + last.W; end != l.Tabs.X+l.Tabs.W {
 			return fmt.Errorf("the columns end at %d, the window's room at %d", end, l.Tabs.X+l.Tabs.W)
 		}
@@ -300,7 +299,7 @@ func (w *world) gutters(sc *godog.ScenarioContext) {
 	})
 	sc.Step(`^every column is as wide as the others$`, func() error {
 		l := w.w.Layout()
-		for at := range engine.Columns {
+		for at := range board.Columns {
 			if l.Column[at].W != l.Column[0].W {
 				return fmt.Errorf("column %d is %d wide, the first %d", at, l.Column[at].W, l.Column[0].W)
 			}

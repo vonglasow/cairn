@@ -299,8 +299,8 @@ var ObjectiveNew = Operation{
 	},
 }
 
-// objectiveList names every objective, or only the ones carrying what was named.
-var objectiveList = Operation{
+// ObjectiveList names every objective, or only the ones carrying what was named.
+var ObjectiveList = Operation{
 	Thing: "objective",
 	Verb:  "list",
 	Short: "List objectives, all of them or only some",

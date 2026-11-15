@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/board"
 	"context"
 	"fmt"
 	"image/color"
@@ -65,7 +66,7 @@ func (w *workspaces) registerThemes(sc *godog.ScenarioContext) {
 		return ctx, nil
 	})
 	opening := func(line string) error {
-		w.window = func(_ engine.Work, _ engine.Pages, look gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
+		w.window = func(_ board.Work, _ engine.Pages, look gui.Skin, _ *debug.Log, _, _ int, _ gui.Here) error {
 			worn = &look
 			return nil
 		}

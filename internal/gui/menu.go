@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"strconv"
 	"strings"
 
@@ -37,11 +38,34 @@ func (w Window) menuFor() []string {
 	if w.chosen == 0 {
 		return []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Labels", "Export", "Import"}
 	}
+	thing := "task"
 	if w.chosenGoal {
-		return []string{"Edit", "Delete"}
+		thing = "objective"
 	}
-	card, _ := w.snap.Card(w.chosen)
-	return []string{"Open", "Edit", "New linked task", engine.FocusOp(card).Offered(), "Move to…", "Priority…", "Labels…", engine.AwayOp(card).Offered(), "Delete"}
+	var lines []string
+	for _, op := range board.MenuOf(thing, w.pages) {
+		lines = append(lines, w.linesOf(op)...)
+	}
+	return lines
+}
+
+func (w Window) linesOf(op engine.Operation) []string {
+	card := w.chosenCard()
+	switch {
+	case w.chosenGoal && (op.Verb == "edit" || op.Verb == "delete"):
+		return []string{board.Offered(op)}
+	case w.chosenGoal:
+		return nil
+	case op.Verb == "show":
+		return []string{"Open"}
+	case op.Verb == "edit":
+		return []string{"Edit", "New linked task", "Move to…", "Priority…", "Labels…"}
+	case op.Verb == "delete", op.Verb == board.FocusOp(card).Verb, op.Verb == board.AwayOp(card).Verb:
+		return []string{board.Offered(op)}
+	case op.Verb == "skip" && card.Series != nil:
+		return []string{SkipThisOneSays}
+	}
+	return nil
 }
 
 func (w Window) labellingChosen() Window {
@@ -164,22 +188,30 @@ func (w Window) clickingMenu(p Point) Window {
 }
 
 func (w Window) fromMenu(i int) Window {
-	said, card := w.menu[i], w.chosenCard()
+	said := w.menu[i]
 	if w.menuSets != "" {
 		w.screen = OnTheBoard
 		return w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
 			"number": strconv.Itoa(w.chosen), w.menuSets: said}})
 	}
+	return w.doingLine(said)
+}
+
+func (w Window) doingLine(said string) Window {
+	card := w.chosenCard()
 	switch said {
 	case "Move to…":
 		return w.settingFrom("state", engine.States(), card.State)
 	case "Priority…":
-		return w.settingFrom("priority", engine.Priorities(), card.Priority)
+		return w.settingFrom("priority", board.Priorities(), card.Priority)
 	case "Labels…":
 		return w.labellingChosen()
 	case "Open":
 		w.screen = OnTheBoard
 		return w.opening()
+	case SkipThisOneSays:
+		w.screen = OnTheBoard
+		return w.asking(engine.TaskSkip, board.Numbered(w.chosen))
 	}
 	w.screen = OnTheBoard
 	if said == "Focus" || said == "Unfocus" {
@@ -188,7 +220,7 @@ func (w Window) fromMenu(i int) Window {
 	return w.Choose(said)
 }
 
-func (w Window) chosenCard() engine.Card {
+func (w Window) chosenCard() board.Card {
 	card, _ := w.snap.Card(w.chosen)
 	return card
 }

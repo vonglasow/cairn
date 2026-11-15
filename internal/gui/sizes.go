@@ -1,6 +1,6 @@
 package gui
 
-import "cairn/internal/engine"
+import "cairn/internal/board"
 
 // SizesKept keeps how wide and how tall the window was left, past it closing, for the next one to open with.
 type SizesKept interface {
@@ -9,7 +9,7 @@ type SizesKept interface {
 }
 
 // SizesOf keeps the sizes through the engine holding the work, when the configuration says to.
-func SizesOf(work engine.Work) SizesKept { return askedSizes{windowKept{work, "sizes"}} }
+func SizesOf(work board.Work) SizesKept { return askedSizes{windowKept{work, "sizes"}} }
 
 type askedSizes struct{ windowKept }
 

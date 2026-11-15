@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/backup"
 	"errors"
 	"reflect"
@@ -21,8 +22,8 @@ import (
 )
 
 type fake struct {
-	cards []engine.Card
-	goals []engine.Goal
+	cards []board.Card
+	goals []board.Goal
 	focus []int
 	acts  []act.Act
 
@@ -75,12 +76,12 @@ func (f *fake) Version() (int64, error) { return f.version, f.fail }
 
 func standing(f *fake) Board {
 	b := New(f, GlyphsFor(Unicode), func() time.Time { return today }, 100, 40).Paged(engine.Pages{}.WithoutRecurrence())
-	cards := make([]engine.Card, 0, len(f.cards))
+	cards := make([]board.Card, 0, len(f.cards))
 	for _, c := range f.cards {
 		c.InFocus = slices.Contains(f.focus, c.Number)
 		cards = append(cards, c)
 	}
-	b.snap = test.Searchable(engine.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version})
+	b.snap = test.Searchable(board.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version})
 	return b
 }
 

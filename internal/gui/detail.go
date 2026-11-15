@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/store/files"
@@ -102,7 +103,7 @@ func (w Window) seriesBefore() []string {
 	if !found {
 		return nil
 	}
-	return engine.BeforeIn(s, c.Number)
+	return board.BeforeIn(s, c.Number)
 }
 
 // ServingSays is what that box reads when there is no card to draw in it.
@@ -275,7 +276,7 @@ func (w Window) openingWork(tile WorkTile) Window {
 	goal := w.form.Number
 	if tile.Number == 0 {
 		w = w.startingNew()
-		w.form, w.formMoved = asOpened(Form{Adding: true, fields: engine.ServingTaskFields(goal)}), Point{}
+		w.form, w.formMoved = asOpened(Form{Adding: true, fields: board.ServingTaskFields(goal)}), Point{}
 		return w
 	}
 	w.chosen, w.chosenGoal, w.screen = tile.Number, false, OnTheBoard
@@ -425,7 +426,7 @@ func (w Window) closesOnAClickOff() bool {
 func (w Window) ServingAt() int { return w.serving }
 
 // Reading is the work as it was last read, which is what everything draws from.
-func (w Window) Reading() engine.Snapshot { return w.snap }
+func (w Window) Reading() board.Snapshot { return w.snap }
 
 // Says is what a window too small to draw in says instead.
 func (w Window) Says() string {
@@ -514,7 +515,7 @@ func (w Window) clickingBesideTab(p Point) (Window, bool) {
 	return w, false
 }
 
-func (w Window) hidden(field engine.Field) bool {
+func (w Window) hidden(field board.Field) bool {
 	_, sectional := sectionOf(field)
 	return sectional && w.Tracing()
 }
@@ -551,7 +552,7 @@ func (w Window) ProgressBox() Box {
 const progressHead = lineHigh + between + 2*padding + lineHigh
 
 // GoalProgress is what an objective's form says of how far it has got: what is done, the time spent against the estimate, what is left, where else it is counted, and the days to its deadline.
-func (w Window) GoalProgress(g engine.Goal) Facts {
+func (w Window) GoalProgress(g board.Goal) Facts {
 	f := Facts{Lines: []Fact{{Name: "done", Value: strconv.Itoa(g.Done) + " of " + strconv.Itoa(g.Total) + " tasks"}}}
 	if w.pages.Shows(engine.PageTime) {
 		time := Fact{Name: "time spent", Value: w.spentSaid(calendar.FormatDuration(g.Spent))}
@@ -566,7 +567,7 @@ func (w Window) GoalProgress(g engine.Goal) Facts {
 			Aside: strconv.Itoa(parent.Done) + " of " + strconv.Itoa(parent.Total) + " there, each task once"})
 	}
 	if !g.Deadline.IsZero() {
-		f.Lines = append(f.Lines, Fact{Name: "deadline", Value: calendar.FormatDay(g.Deadline) + ", " + daysTo(engine.DayOf(g.Deadline), w.today())})
+		f.Lines = append(f.Lines, Fact{Name: "deadline", Value: calendar.FormatDay(g.Deadline) + ", " + daysTo(board.DayOf(g.Deadline), w.today())})
 	}
 	return f
 }

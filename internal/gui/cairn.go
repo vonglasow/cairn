@@ -1,7 +1,7 @@
 package gui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"cairn/internal/engine/item"
 	"cairn/internal/store/files"
 	"image"
@@ -85,7 +85,7 @@ func (w Window) replaying() Window {
 func (w Window) Stage() Stage {
 	l := w.Layout()
 	s := Stage{Wide: w.width, High: w.height, Lead: -1}
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
 	current := -1
 	for i, column := range dealt {
 		s.Grounds = append(s.Grounds, Box{X: l.Head[i].X, Y: l.Head[i].Y, W: l.Head[i].W, H: l.Head[i].H + l.Column[i].H})
@@ -93,7 +93,7 @@ func (w Window) Stage() Stage {
 			current = len(s.Grounds) - 1
 		}
 	}
-	for lane := range engine.Stalled {
+	for lane := range board.Stalled {
 		s.Grounds = append(s.Grounds, LaneGround(l, lane))
 	}
 	rows := map[int]int{}
@@ -124,7 +124,7 @@ func (w Window) groundOf(l Layout, within Box) int {
 			return i
 		}
 	}
-	for lane := range engine.Stalled {
+	for lane := range board.Stalled {
 		if l.Lane[lane] == within {
 			return len(l.Column) + lane
 		}
@@ -143,7 +143,7 @@ func Arriving(progress float64, k, n int) (fall, fade float64) {
 
 // Placed is a card where the board draws it: its slot, and the column or lane it is seen through.
 type Placed struct {
-	Card      engine.Card
+	Card      board.Card
 	Slot      Box
 	Within    Box
 	Reference bool
@@ -154,13 +154,13 @@ type Placed struct {
 func (w Window) Placed() []Placed {
 	l := w.Layout()
 	var out []Placed
-	dealt, _ := engine.Deal(w.Showing().Cards, w.archived)
+	dealt, _ := board.Deal(w.Showing().Cards, w.archived)
 	for i, column := range dealt {
 		for at, c := range column.Cards {
 			out = append(out, Placed{Card: c, Slot: l.CardAt(i, at, w.scroll[i]), Within: l.Column[i]})
 		}
 	}
-	for lane := range engine.Stalled {
+	for lane := range board.Stalled {
 		for at, c := range w.inLane(lane) {
 			out = append(out, Placed{Card: c, Slot: l.LaneCardAt(lane, at, w.lanes[lane]), Within: l.Lane[lane]})
 		}

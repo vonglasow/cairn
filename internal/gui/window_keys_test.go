@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"errors"
 	"fmt"
 	"strconv"
@@ -170,7 +171,7 @@ func sentences(said []Said) string {
 
 func TestEEditsWhateverIsChosen(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	if got := w.Key("e"); got.Screen() != OnTheBoard {
 		t.Error("e with nothing chosen opened something")
@@ -184,9 +185,9 @@ func TestEEditsWhateverIsChosen(t *testing.T) {
 func TestTheArrowsWalkTheBoard(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "In the heap", State: "backlog"},
-		engine.Card{Number: 2, Title: "First", State: "todo"},
-		engine.Card{Number: 3, Title: "Second", State: "todo"})
+		board.Card{Number: 1, Title: "In the heap", State: "backlog"},
+		board.Card{Number: 2, Title: "First", State: "todo"},
+		board.Card{Number: 3, Title: "Second", State: "todo"})
 
 	w = w.clicked(middleOf(w, 0, 0))
 	if got := w.Key("right").Chosen(); got != 2 {
@@ -207,8 +208,8 @@ func TestTheArrowsWalkTheBoard(t *testing.T) {
 func TestTheArrowsStopAtTheEdges(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "Only", State: "backlog"},
-		engine.Card{Number: 2, Title: "Last", State: "done"})
+		board.Card{Number: 1, Title: "Only", State: "backlog"},
+		board.Card{Number: 2, Title: "Last", State: "done"})
 
 	w = w.clicked(middleOf(w, 0, 0))
 	if got := w.Key("left").Chosen(); got != 1 {
@@ -227,7 +228,7 @@ func TestTheArrowsStopAtTheEdges(t *testing.T) {
 
 func TestAnArrowWithNothingChosenChoosesSomewhereToBegin(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Only", State: "backlog"})
+	w := holding(f, board.Card{Number: 1, Title: "Only", State: "backlog"})
 	if got := w.Key("down").Chosen(); got != 1 {
 		t.Errorf("an arrow on an untouched board chose %d", got)
 	}
@@ -236,7 +237,7 @@ func TestAnArrowWithNothingChosenChoosesSomewhereToBegin(t *testing.T) {
 func TestTheArrowsWalkTheObjectives(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{Goals: []engine.Goal{
+	w.snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "Ship cairn", State: "active"},
 		{Number: 4, Title: "Keep it honest", State: "active"},
 	}}
@@ -257,7 +258,7 @@ func TestTheArrowsWalkTheObjectives(t *testing.T) {
 
 func TestEnterOpensWhatIsChosen(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Write the spec", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
 
 	if got := w.Key("enter"); got.Screen() != OnTheBoard {
 		t.Error("enter with nothing chosen opened something")
@@ -274,10 +275,10 @@ func TestEnterOpensWhatIsChosen(t *testing.T) {
 func TestWalkingAcrossIntoAShorterColumnLandsOnItsLast(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "One", State: "backlog"},
-		engine.Card{Number: 2, Title: "Two", State: "backlog"},
-		engine.Card{Number: 3, Title: "Three", State: "backlog"},
-		engine.Card{Number: 4, Title: "Only", State: "todo"})
+		board.Card{Number: 1, Title: "One", State: "backlog"},
+		board.Card{Number: 2, Title: "Two", State: "backlog"},
+		board.Card{Number: 3, Title: "Three", State: "backlog"},
+		board.Card{Number: 4, Title: "Only", State: "todo"})
 
 	w = w.clicked(middleOf(w, 0, 2))
 	if got := w.Chosen(); got != 3 {
@@ -291,7 +292,7 @@ func TestWalkingAcrossIntoAShorterColumnLandsOnItsLast(t *testing.T) {
 func TestWalkingTheObjectivesFromTheMiddle(t *testing.T) {
 	f := newFake()
 	w := New(f, 1200, 800)
-	w.snap = engine.Snapshot{Goals: []engine.Goal{
+	w.snap = board.Snapshot{Goals: []board.Goal{
 		{Number: 3, Title: "First", State: "active"},
 		{Number: 4, Title: "Second", State: "active"},
 		{Number: 5, Title: "Third", State: "active"},
@@ -308,7 +309,7 @@ func TestWalkingTheObjectivesFromTheMiddle(t *testing.T) {
 
 func TestAnArrowBeginsInTheFirstColumnThatHasAnything(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 7, Title: "Only", State: "current"})
+	w := holding(f, board.Card{Number: 7, Title: "Only", State: "current"})
 	if got := w.Key("down").Chosen(); got != 7 {
 		t.Errorf("an arrow chose %d, and the only card is 7", got)
 	}
@@ -318,7 +319,7 @@ func TestTheArrowsReachTheBand(t *testing.T) {
 	f := newFake()
 	w := holding(f,
 		card(1, "Write the spec", "todo"),
-		engine.Card{Number: 2, Title: "Waiting on them", State: "blocked"})
+		board.Card{Number: 2, Title: "Waiting on them", State: "blocked"})
 	w = w.clicked(middleOf(w, 1, 0))
 	if w.Chosen() != 1 {
 		t.Fatalf("the board chose %d", w.Chosen())
@@ -370,8 +371,8 @@ func TestADeletionIsAgreedToWithEnter(t *testing.T) {
 
 func TestAWholeColumnGoesOffTheBoardAtOnce(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "One", State: "done"},
-		engine.Card{Number: 2, Title: "Two", State: "done"})
+	w := holding(f, board.Card{Number: 1, Title: "One", State: "done"},
+		board.Card{Number: 2, Title: "Two", State: "done"})
 	w = w.clicked(middleOf(w, 3, 0))
 	w = Typed(w, "X", key.ModShift)
 	if w.Screen() != OnAsking {
@@ -391,8 +392,8 @@ func TestAWholeColumnGoesOffTheBoardAtOnce(t *testing.T) {
 
 func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "One", State: "todo"},
-		engine.Card{Number: 2, Title: "Two", State: "todo"})
+	w := holding(f, board.Card{Number: 1, Title: "One", State: "todo"},
+		board.Card{Number: 2, Title: "Two", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 0))
 
 	w.Key("shift+right")
@@ -407,7 +408,7 @@ func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 		t.Fatalf("shift+left asked %v", f.asked)
 	}
 	f.asked = nil
-	holding(f, engine.Card{Number: 9, Title: "Last", State: "done"}).
+	holding(f, board.Card{Number: 9, Title: "Last", State: "done"}).
 		clicked(middleOf(w, 3, 0)).Key("shift+right")
 	if askedFor(f, "task", "edit") != nil {
 		t.Fatalf("shift+right off the last column asked %v", f.asked)
@@ -436,9 +437,9 @@ func TestShiftAndAnArrowMovesTheChosenCard(t *testing.T) {
 func TestShiftUpFromFurtherDownGoesBehindTheCardTwoAbove(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "First", State: "todo"},
-		engine.Card{Number: 2, Title: "Second", State: "todo"},
-		engine.Card{Number: 3, Title: "Third", State: "todo"})
+		board.Card{Number: 1, Title: "First", State: "todo"},
+		board.Card{Number: 2, Title: "Second", State: "todo"},
+		board.Card{Number: 3, Title: "Third", State: "todo"})
 	w = w.clicked(middleOf(w, 1, 2))
 	f.asked = nil
 	w.Key("shift+up")
@@ -451,8 +452,8 @@ func TestShiftUpFromFurtherDownGoesBehindTheCardTwoAbove(t *testing.T) {
 func TestShiftSidewaysOutOfTheBand(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "In todo", State: "todo"},
-		engine.Card{Number: 2, Title: "Blocked", State: "blocked"})
+		board.Card{Number: 1, Title: "In todo", State: "todo"},
+		board.Card{Number: 2, Title: "Blocked", State: "blocked"})
 	w = w.clicked(middleOf(w, 1, 0)).Key("down")
 	if w.Chosen() != 2 {
 		t.Fatalf("down out of TODO chose %d, want the blocked task", w.Chosen())
@@ -478,10 +479,10 @@ func TestShiftSidewaysOutOfTheBand(t *testing.T) {
 func TestTheArrowsWalkTheBandAndClimbOutOfIt(t *testing.T) {
 	f := newFake()
 	w := holding(f,
-		engine.Card{Number: 1, Title: "In todo", State: "todo"},
-		engine.Card{Number: 2, Title: "Blocked one", State: "blocked"},
-		engine.Card{Number: 3, Title: "Blocked two", State: "blocked"},
-		engine.Card{Number: 4, Title: "Watched", State: "watching"})
+		board.Card{Number: 1, Title: "In todo", State: "todo"},
+		board.Card{Number: 2, Title: "Blocked one", State: "blocked"},
+		board.Card{Number: 3, Title: "Blocked two", State: "blocked"},
+		board.Card{Number: 4, Title: "Watched", State: "watching"})
 
 	w = w.clicked(middleOf(w, 1, 0)).Key("down")
 	if w.Chosen() != 2 {
@@ -515,11 +516,11 @@ func TestTheArrowsWalkTheBandAndClimbOutOfIt(t *testing.T) {
 
 func TestClimbingOutOfTheBandBringsTheCardIntoSight(t *testing.T) {
 	f := newFake()
-	var cards []engine.Card
+	var cards []board.Card
 	for i := 1; i <= 20; i++ {
-		cards = append(cards, engine.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
+		cards = append(cards, board.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
 	}
-	cards = append(cards, engine.Card{Number: 99, Title: "Stuck", State: "blocked"})
+	cards = append(cards, board.Card{Number: 99, Title: "Stuck", State: "blocked"})
 	w := holding(f, cards...)
 
 	w = w.clicked(middleOf(w, 1, 0))
@@ -552,8 +553,8 @@ func TestAKeyboardMoveTheStoreRefusesIsSaid(t *testing.T) {
 		t.Run(c.what, func(t *testing.T) {
 			f := newFake()
 			f.failOp = errNope
-			w := holding(f, engine.Card{Number: 1, Title: "One", State: "todo"},
-				engine.Card{Number: 2, Title: "Two", State: "todo"})
+			w := holding(f, board.Card{Number: 1, Title: "One", State: "todo"},
+				board.Card{Number: 2, Title: "Two", State: "todo"})
 			w = w.clicked(middleOf(w, 1, 0)).Key(c.key)
 			if w.Wrong() == nil {
 				t.Fatalf("%s was refused and the window says nothing", c.what)
@@ -564,8 +565,8 @@ func TestAKeyboardMoveTheStoreRefusesIsSaid(t *testing.T) {
 
 func TestWalkingOffTheBottomOfTheBacklogGoesNowhere(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "One", State: "backlog"},
-		engine.Card{Number: 2, Title: "Stuck", State: "blocked"})
+	w := holding(f, board.Card{Number: 1, Title: "One", State: "backlog"},
+		board.Card{Number: 2, Title: "Stuck", State: "blocked"})
 	w = w.clicked(middleOf(w, 0, 0))
 	if got := w.Key("down").Chosen(); got != 1 {
 		t.Fatalf("down out of the backlog chose %d, want to stay on 1", got)
@@ -574,7 +575,7 @@ func TestWalkingOffTheBottomOfTheBacklogGoesNowhere(t *testing.T) {
 
 func TestClimbingOutOfALaneWithNothingAboveItStays(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Stuck", State: "blocked"})
+	w := holding(f, board.Card{Number: 1, Title: "Stuck", State: "blocked"})
 	w = w.clicked(onLaneCard(w, 0, 0))
 	if w.Chosen() != 1 {
 		t.Fatalf("the blocked card was not chosen: %d", w.Chosen())
@@ -586,8 +587,8 @@ func TestClimbingOutOfALaneWithNothingAboveItStays(t *testing.T) {
 
 func TestWalkingLeftReachesTheFirstLane(t *testing.T) {
 	f := newFake()
-	w := holding(f, engine.Card{Number: 1, Title: "Stuck", State: "blocked"},
-		engine.Card{Number: 2, Title: "Watched", State: "watching"})
+	w := holding(f, board.Card{Number: 1, Title: "Stuck", State: "blocked"},
+		board.Card{Number: 2, Title: "Watched", State: "watching"})
 	w = w.clicked(onLaneCard(w, 1, 0))
 	if w.Chosen() != 2 {
 		t.Fatalf("the watched card was not chosen: %d", w.Chosen())
@@ -640,7 +641,7 @@ func TestTheWindowAppliesWhatIsWaitingOnceAgreed(t *testing.T) {
 }
 
 func TestDeletingATaskSaysItsStepsGoWithIt(t *testing.T) {
-	w := holding(newFake(), engine.Card{Number: 1, Title: "Write the spec", State: "todo", SubTotal: 3})
+	w := holding(newFake(), board.Card{Number: 1, Title: "Write the spec", State: "todo", SubTotal: 3})
 	w = w.clicked(middleOf(w, 1, 0)).Key("cmd+backspace")
 	said := ""
 	for _, line := range w.Asks() {

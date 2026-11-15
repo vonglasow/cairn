@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
 	"errors"
 	"os"
@@ -147,7 +148,7 @@ func typedKey(name string, with key.Modifiers) string {
 	return said
 }
 
-func atPlace(f *fake, shown workspace.Shown, cards ...engine.Card) Window {
+func atPlace(f *fake, shown workspace.Shown, cards ...board.Card) Window {
 	f.shown = &shown
 	return holding(f, cards...).Look()
 }
@@ -295,7 +296,7 @@ func TestTheSettingsOfAWorkspaceSayWhereEachKeyComesFrom(t *testing.T) {
 
 func TestACardSaysNothingOfItsTimeWhenTheTimeIsNotShown(t *testing.T) {
 	now := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	c := engine.Card{Estimate: "2h", Spent: "1h", Objectives: []int{4}, Serves: []string{"Ops"}}
+	c := board.Card{Estimate: "2h", Spent: "1h", Objectives: []int{4}, Serves: []string{"Ops"}}
 	if said, _ := CardFacts(c, now, engine.PagesOff(engine.PageTime)); strings.Contains(said, "1h") || !strings.Contains(said, "Ops") {
 		t.Errorf("with the time off a card says %q", said)
 	}

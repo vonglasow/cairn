@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"image"
 	"slices"
 	"strings"
@@ -12,12 +13,10 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget/material"
-
-	"cairn/internal/engine"
 )
 
-func cardTitled(title string) engine.Card {
-	return engine.Card{Number: 1, Title: title, State: "backlog"}
+func cardTitled(title string) board.Card {
+	return board.Card{Number: 1, Title: title, State: "backlog"}
 }
 
 func TestAConnectorRunsDownAndElbowsIntoWhatItJoins(t *testing.T) {

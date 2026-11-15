@@ -1,12 +1,12 @@
 package tui
 
 import (
-	"cairn/internal/engine"
+	"cairn/internal/board"
 	"cairn/internal/engine/act"
 )
 
 func (b Board) line(act act.Act) string {
-	said := engine.SaidOf(act)
+	said := board.SaidOf(act)
 	out := b.skin.Faint.Render(said.When) + "  " + b.skin.Bright.Render(said.Did)
 	if said.Field != "" {
 		out += "  " + b.skin.Says.Render(said.Field) + "  " +

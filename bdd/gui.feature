@@ -355,12 +355,14 @@ Feature: The desktop board
       Then the band is as tall as it opened
 
     @gui-reset-sizes-takes-every-size-back
-    Scenario: Reset sizes, in the menu, takes back every width and the band's height
+    Scenario: Reset sizes, in the command bar, takes back every width and the band's height
       When I open the window
       And I drag the gutter between "todo" and "current" 60 to the right
       And I drag the gutter between the "blocked" and "watching" lanes 40 to the right
       And I drag the edge above the band 100 up
-      And I pick "Reset sizes" from the menu bar
+      And I press "cmd+k"
+      And I type "reset sizes"
+      And I press "enter"
       Then every column is as wide as the others
       And every lane is as wide as the others
       And the band is as tall as it opened
@@ -382,7 +384,9 @@ Feature: The desktop board
       Given the configuration keeps the window's sizes
       When I open the window
       And I drag the gutter between "todo" and "current" 60 to the right
-      And I pick "Reset sizes" from the menu bar
+      And I press "cmd+k"
+      And I type "reset sizes"
+      And I press "enter"
       And the window is closed and opened again
       Then every column is as wide as the others
 
@@ -526,12 +530,6 @@ Feature: The desktop board
       Then the menu of filters shows 2 columns and a stub
       When I click the stub of the menu of filters
       Then the menu of filters shows 2 columns
-
-    @gui-the-filters-open-from-the-menu-bar
-    Scenario: the menu bar opens the filters
-      When I open the window
-      And I pick "Filter" in the menu bar
-      Then the window shows the filters
 
     @gui-a-filter-and-a-search-narrow-together
     Scenario: a search narrows what the filters kept
@@ -2091,24 +2089,20 @@ Feature: The desktop board
       Then the bar offers "Export" under "⌘E"
       And the bar offers "Import" under "⌘O"
 
-  Rule: Every act is in the window's menu bar
+  Rule: The window's menu bar holds cairn and Help; every other act has its key, the bar under the board, the right click or the palette
 
     @gui-the-menu-bar-acts-from-the-board
     Scenario: a line of the menu bar does what its key does
-      Given I added a task titled "Write the spec" with the state "todo"
       When I open the window
-      And I pick "New" in the menu bar
-      Then the window is on the form
-      When I press "esc"
-      And I pick "Objectives" in the menu bar
-      Then the window is on the page "OBJECTIVES"
+      And I pick "Help" in the menu bar
+      Then the panel is headed "Help"
 
     @gui-the-menu-button-stands-in-for-a-menu-bar
     Scenario: with no menu bar of the system's, a button opens the lines that can be done now
       Given the window runs on "linux"
       When I open the window
       And I click the menu button
-      Then the menu offers "New", "New backup", "Backups", "Labels", "Export", "Import", "Open a workspace…", "Settings…", "Search", "Objectives", "Time", "Archived", "Filter", "Reset sizes", "Help", "About cairn"
+      Then the menu offers "About cairn", "Settings…", "Upgrade", "Quit", "Help"
 
     @gui-the-version-is-shown-from-the-menu
     Scenario: About cairn, in the menu bar, says which version this is
@@ -2132,60 +2126,26 @@ Feature: The desktop board
       Then the window is on the page "TASKS"
 
     @gui-the-menu-offers-what-can-be-done-now
-    Scenario: the menu bar offers what can be done now, and what is chosen opens the rest
+    Scenario: on the board the menu bar can do every line
       Given I added a task titled "Write the spec"
       When I open the window
-      Then the menu bar can do "New", "Search", "Archived", "Export", "Import", "Labels", "Objectives", "Time", "Help"
-      And the menu bar cannot do "Edit", "Focus", "Archive", "Delete", "Tasks"
-      When I click the card "Write the spec"
-      Then the menu bar can do "Edit", "Focus", "Archive", "Delete"
-
-    @gui-the-menu-follows-the-page-in-sight
-    Scenario: on the objectives, the lines that act on a task cannot be done
-      Given I added an objective titled "Ship it"
-      When I open the window
-      And I click the tab "OBJECTIVES"
-      And I click the objective "Ship it"
-      Then the menu bar can do "New", "Edit", "Delete", "Tasks"
-      And the menu bar cannot do "Focus", "Archive", "Archived", "Objectives"
+      Then the menu bar can do "About cairn", "Settings…", "Upgrade", "Quit", "Help"
 
     @gui-the-menu-waits-while-a-panel-is-open
     Scenario: with a form open, nothing of the menu bar can be done until it closes
       Given I added a task titled "Write the spec"
       When I open the window
       And I double-click the card "Write the spec"
-      Then the menu bar cannot do "New", "Edit", "Search", "Help", "Tasks"
-
-    @gui-a-line-that-cannot-be-done-does-nothing
-    Scenario: picking a line that cannot be done now does nothing, and the button's menu does not offer it
-      Given I added a task titled "Write the spec"
-      When I open the window
-      And I pick "Edit" from the menu bar
-      Then the window is on the board
-      When I open the menu from its button
-      Then the menu offers no "Edit", "Focus", "Archive", "Delete"
-      And the menu also offers "New", "Search"
-
-    @gui-a-page-off-takes-its-menus
-    Scenario: a page turned off takes its lines out of the menu bar, and only those
-      Given the pages turned off are "time"
-      When I open the window
-      Then the menu bar offers no "Time"
-      And the menu bar offers "Tasks", "Objectives", "Focus", "Archive"
-
-    @gui-the-tasks-off-take-their-menus
-    Scenario: the tasks turned off take every line that acts on a task
-      Given the pages turned off are "tasks"
-      When I open the window
-      Then the menu bar offers no "Tasks", "Focus", "Archive", "Archived", "Export", "Import"
-      And the menu bar offers "Objectives", "New", "Edit", "Delete", "Search", "Labels"
+      Then the menu bar cannot do "About cairn", "Upgrade", "Help"
+      When I pick "Help" from the menu bar
+      Then the window is on the form
 
     @gui-every-page-off-leaves-what-belongs-to-none
     Scenario: every page turned off leaves the menu bar nothing but the settings
       Given the pages turned off are "tasks, objectives, time"
       When I open the window
       Then the menu bar offers "Settings…"
-      And the menu bar offers no "Help", "New", "Tasks"
+      And the menu bar offers no "Help", "Upgrade", "About cairn"
       When I pick "Help" from the menu bar
       Then the window is on the board
       When I pick "Settings…" from the menu bar
@@ -2217,7 +2177,7 @@ Feature: The desktop board
       Given I added a task titled "Write the spec"
       And I edited task 1 with the labels "doc" and "sp26-20"
       When I open the window
-      And I pick "Labels" in the menu bar
+      And I press "shift+l"
       Then the labels list "doc" carried by 1 task and 0 objectives
       And the labels list "sp26-20" carried by 1 task and 0 objectives
 
@@ -2480,7 +2440,7 @@ Feature: The desktop board
       When I open the window
       And I right-click the card "Write the spec"
       Then the card "Write the spec" is chosen
-      And the menu offers "Open", "Edit", "New linked task", "Focus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      And the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", "Delete"
 
     @gui-a-menu-acts
     Scenario: what is clicked in the menu is done to the card
@@ -2491,7 +2451,18 @@ Feature: The desktop board
       Then task 1 is in focus
       And the window is on the board
       When I right-click the card "Write the spec"
-      Then the menu offers "Open", "Edit", "New linked task", "Unfocus", "Move to…", "Priority…", "Labels…", "Archive", "Delete"
+      Then the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Unfocus", "Delete"
+
+    @gui-a-recurring-cards-menu-skips-it
+    Scenario: the menu of a card that comes back skips it, and its series makes the next
+      Given recurrence is on in the window
+      And I added a task titled "Stand-up" coming back "every day"
+      When I open the window
+      And I right-click the card "Stand-up"
+      Then the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", "Skip this one", "Delete"
+      When I click "Skip this one" in the menu
+      Then task 1 is archived
+      And task 2 is in the column "todo"
 
     @gui-a-card-is-moved-from-its-menu
     Scenario: a card's menu moves it to another column, and sets its priority
@@ -5615,11 +5586,10 @@ Feature: The desktop board
       And a cairn is started with "gui --workspace garden"
 
     @gui-workspace-the-menu-offers-the-switcher
-    Scenario: Open a workspace… in the menu bar drops the switcher
+    Scenario: ⌘⇧O drops the switcher
       Given the workspace "work", the default
       When I open the window on the workspace "work"
-      Then the menu bar offers "Open a workspace…"
-      When I pick "Open a workspace…" in the menu bar
+      And I press "cmd+shift+o"
       Then the switcher lists the workspaces "work"
 
     @gui-workspace-its-settings-say-where-each-comes-from
@@ -6419,7 +6389,9 @@ Feature: The desktop board
       Given I kept the view "Sprint" holding the label "sprint"
       And I kept the view "High" holding the priority "high"
       When I open the window
-      And I pick "Views…" in the menu bar
+      And I press "cmd+k"
+      And I type "views…"
+      And I press "enter"
       Then the views panel lists "Sprint", "High"
       When I press "shift+down"
       Then the views read "High", "Sprint"
@@ -6438,7 +6410,9 @@ Feature: The desktop board
       And I edited task 1 with the labels "sprint" and "backend"
       And I deleted the label "sprint"
       When I open the window
-      And I pick "Views…" in the menu bar
+      And I press "cmd+k"
+      And I type "views…"
+      And I press "enter"
       Then the views panel warns "label sprint is gone and narrows nothing"
 
     @gui-view-the-keyboard-walks-the-views

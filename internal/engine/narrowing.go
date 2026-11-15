@@ -27,6 +27,9 @@ func narrowedBy(attributes []Argument, means map[string]string) []Argument {
 	return taken
 }
 
+// TasksKept reads what an input keeps of the tasks, by the arguments a task listing takes.
+func TasksKept(in Input) (*filter.Narrowing, error) { return keeping(in, TaskList.Takes, nil) }
+
 func keeping(in Input, taken []Argument, e *Engine) (*filter.Narrowing, error) {
 	for _, argument := range taken {
 		if err := accepted(in, argument); err != nil {

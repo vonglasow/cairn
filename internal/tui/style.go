@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/item"
 	"image/color"
 
@@ -218,4 +219,12 @@ func (p Palette) Standing(named string) Ink {
 	default:
 		return p.Paused
 	}
+}
+
+// Of is the style a tone of the board is written in.
+func (s Skin) Of(t board.Tone) lipgloss.Style {
+	return map[board.Tone]lipgloss.Style{
+		board.Normal: s.Bright, board.Faint: s.Faint, board.Late: s.Late, board.Passed: s.Band,
+		board.Says: s.Says, board.Accent: s.Bright,
+	}[t]
 }

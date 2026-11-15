@@ -2,6 +2,7 @@ package engine
 
 import (
 	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
 	"cairn/internal/engine/label"
 	"fmt"
 	"maps"
@@ -103,10 +104,10 @@ func (e *Engine) scope(given, named string) error {
 		return err
 	}
 	if !scope.Admits(label.OnTasks) && len(found.Tasks) > 0 {
-		return fmt.Errorf("%q is carried by %s; %w", name, manyOf(len(found.Tasks), "task", "tasks"), label.ErrOutOfScope)
+		return fmt.Errorf("%q is carried by %s; %w", name, item.ManyOf(len(found.Tasks), "task", "tasks"), label.ErrOutOfScope)
 	}
 	if !scope.Admits(label.OnObjectives) && len(found.Objectives) > 0 {
-		return fmt.Errorf("%q is carried by %s; %w", name, manyOf(len(found.Objectives), "objective", "objectives"), label.ErrOutOfScope)
+		return fmt.Errorf("%q is carried by %s; %w", name, item.ManyOf(len(found.Objectives), "objective", "objectives"), label.ErrOutOfScope)
 	}
 	return e.store.ScopeLabel(name, string(scope))
 }
@@ -204,7 +205,7 @@ var LabelDelete = Operation{
 		}
 		answer, err := listedLabels(on)
 		if held > 0 {
-			answer.Warnings = []string{fmt.Sprintf("%s the label %s; it narrows nothing there now", manyOf(held, "view holds", "views hold"), name)}
+			answer.Warnings = []string{fmt.Sprintf("%s the label %s; it narrows nothing there now", item.ManyOf(held, "view holds", "views hold"), name)}
 		}
 		return answer, err
 	},
@@ -343,7 +344,7 @@ func labelsText(listed []label.Carried) string {
 	var out strings.Builder
 	tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
 	for _, one := range listed {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\tfor %s\n", one.Label, manyOf(one.Tasks, "task", "tasks"), manyOf(one.Objectives, "objective", "objectives"), one.Scope)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\tfor %s\n", one.Label, item.ManyOf(one.Tasks, "task", "tasks"), item.ManyOf(one.Objectives, "objective", "objectives"), one.Scope)
 	}
 	_ = tw.Flush()
 	return out.String()

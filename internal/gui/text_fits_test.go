@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"image"
 	"os"
@@ -27,7 +28,7 @@ type saidAt struct {
 	high int
 }
 
-func onTheFixtures(t *testing.T) engine.Work {
+func onTheFixtures(t *testing.T) board.Work {
 	t.Helper()
 	store := filepath.Join(t.TempDir(), "cairn.db")
 	from := filepath.Join(t.TempDir(), "fixtures.json")
