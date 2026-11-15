@@ -26,6 +26,10 @@ happened to a task and `cairn timesheet show` how long the day's work took.
 
 | to | read |
 |---|---|
+| plan a week, and see how long it took | [Plan a week](plan-a-week.md) |
+| follow what the work is for | [Follow an objective](follow-an-objective.md) |
+| let an agent work on your board | [Plug in an agent](plug-in-an-agent.md) |
+| know what a word means | [Glossary](glossary.md) |
 | set the order, and say what you are working on | [The order](ordering.md) |
 | split a task into steps | [Steps](steps.md) |
 | say what stops a task, and start it again | [Blocking](blocking.md) |

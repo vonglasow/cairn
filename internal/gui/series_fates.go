@@ -43,7 +43,7 @@ func (w Window) SeriesFatesAsked() SeriesFates {
 	}
 	f.Rows = []SeriesFateRow{
 		{Said: "Keep its tasks, as ordinary tasks", Then: "They lose the link to the series; notes, time, steps and trace stay."},
-		{Said: "Keep the tasks done, delete the open one (" + open + ")", Then: "The history stays; nothing more lands on the board."},
+		{Said: "Keep the tasks done, delete the open one (" + open + ")", Then: "The trace stays; nothing more lands on the board."},
 		{Said: "Delete all " + strconv.Itoa(len(made)) + " tasks too", Then: "Their notes and time go with them. Asks once more, naming the count."},
 	}
 	wide := min(seriesFatesWide, w.width-2*geom.Margin)

@@ -10,7 +10,7 @@ type Shape struct {
 	Priority    string   `json:"priority" jsonschema:"low, normal, high or critical"`
 	Description string   `json:"description" jsonschema:"what is written about it; empty when nothing is"`
 	Labels      []string `json:"labels" jsonschema:"the labels it carries, lower case and sorted; empty or null when it carries none"`
-	Deadline    string   `json:"deadline" jsonschema:"the day it is due, as 2026-12-01; empty when it has none"`
+	Deadline    string   `json:"deadline" jsonschema:"the day it is wanted by, as 2026-12-01; empty when it has none"`
 	Estimate    string   `json:"estimate" jsonschema:"how long it was expected to take, as 40h; empty when nobody said"`
 }
 

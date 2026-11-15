@@ -224,7 +224,7 @@ var objectiveAttributes = []Argument{
 	{Name: "state", Kind: Text, OneOf: oneOf(objective.ObjectiveStates), Outside: objective.ErrNotAnObjectiveState, Means: "where the objective stands"},
 	{Name: "priority", Kind: Text, OneOf: oneOf(item.Priorities), Outside: item.ErrNotAPriority, Means: "the priority it carries"},
 	{Name: "label", Kind: List, Means: "a label it carries; when changing, x or +x adds one, -x takes one off, =x replaces them all"},
-	{Name: "deadline", Kind: day, Means: "the day it is due"},
+	{Name: "deadline", Kind: day, Means: "the day it is wanted by"},
 	{Name: "estimate", Kind: duration, Means: "how long it should take"},
 	{Name: "parent", Kind: Text, Of: "an objective", Means: "the number of the objective it sits under, two levels deep at most; none to stand on its own"},
 	{Name: "waits-on", Kind: List, Of: "an objective", Means: "the number of an objective it waits on, which warns when work starts on it and never blocks; when changing, 6 or +6 adds one, -6 takes one away, =6 replaces them all"},

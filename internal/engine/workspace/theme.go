@@ -9,10 +9,10 @@ import (
 // ThemeSeen is one scheme config show lists: its name, where it comes from, whether the window wears it, why it cannot be worn, and every contrast it falls short of.
 type ThemeSeen struct {
 	Slug    string   `json:"slug"`
-	From    string   `json:"from" jsonschema:"shipped, for a scheme cairn carries, or the file a scheme of one's own is read from"`
+	From    string   `json:"from" jsonschema:"shipped, for a theme cairn carries, or the file a theme of one's own is read from"`
 	InForce bool     `json:"in_force,omitempty"`
-	Problem string   `json:"problem,omitempty" jsonschema:"why the scheme cannot be worn"`
-	Short   []string `json:"short,omitempty" jsonschema:"every contrast the scheme falls short of, the tokens named and the ratio they read at"`
+	Problem string   `json:"problem,omitempty" jsonschema:"why the theme cannot be worn"`
+	Short   []string `json:"short,omitempty" jsonschema:"every contrast the theme falls short of, the tokens named and the ratio they read at"`
 }
 
 // ThemesIn is the folder of a person's own themes.

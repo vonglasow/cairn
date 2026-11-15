@@ -12,6 +12,10 @@ type source struct{ from, group, top string }
 var published = []source{
 	{"INSTALL.md", "Start", "install"},
 	{"docs/usage.md", "Start", "guide"},
+	{"docs/plan-a-week.md", "Guide", "guide"},
+	{"docs/follow-an-objective.md", "Guide", "guide"},
+	{"docs/plug-in-an-agent.md", "Guide", "guide"},
+	{"docs/glossary.md", "Guide", "guide"},
 	{"docs/tui.md", "Guide", "guide"},
 	{"docs/gui.md", "Guide", "guide"},
 	{"docs/labels.md", "Guide", "guide"},

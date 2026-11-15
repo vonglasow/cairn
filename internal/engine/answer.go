@@ -28,7 +28,7 @@ type Task struct {
 	Added      *sets               `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
 	TakenOff   *sets               `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 	Warnings   []string            `json:"warnings,omitempty" jsonschema:"what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"`
-	Series     *series.Occurs      `json:"series,omitempty" jsonschema:"the series it is an occurrence of, while recurrence is on; left out otherwise"`
+	Series     *series.Occurs      `json:"series,omitempty" jsonschema:"the series it is an occurrence of, while series are on; left out otherwise"`
 	Made       []series.MadeNext   `json:"made,omitempty" jsonschema:"each occurrence a series made because this act left it with none open, after the days it missed; left out when none was"`
 }
 
@@ -41,7 +41,7 @@ func ofTask(t task.Task, p item.Progress) Task {
 type Row struct {
 	task.Facts
 	Described     bool `json:"described"`
-	Series        int  `json:"series" jsonschema:"the number of the series it is an occurrence of; 0 when it is none, or recurrence is off"`
+	Series        int  `json:"series" jsonschema:"the number of the series it is an occurrence of; 0 when it is none, or series are off"`
 	Blocks        int  `json:"blocks" jsonschema:"how many open tasks name it as a blocker"`
 	Overdue       *int `json:"overdue" jsonschema:"how many days past its deadline it is; null when it has none, is done, or is not past it"`
 	DueIn         *int `json:"due_in" jsonschema:"how many days are left before its deadline, 0 on the day; null when it has none, is done, or is past it"`

@@ -88,7 +88,7 @@ type WindowConfig struct {
 	Theme     string `json:"theme"`
 	Intro     string `json:"intro" jsonschema:"how the board arrives when the window opens"`
 	Ghost     int    `json:"ghost" jsonschema:"how much of what is dragged shows, in percent"`
-	Unworn    string `json:"unworn,omitempty" jsonschema:"why the scheme named cannot be worn; the window then wears default"`
+	Unworn    string `json:"unworn,omitempty" jsonschema:"why the theme named cannot be worn; the window then wears default"`
 }
 
 // RecurrenceConfig is whether a task may come back as a series.
@@ -238,7 +238,7 @@ func themesText(c Config) string {
 	if len(c.Themes) == 0 {
 		return said.String()
 	}
-	said.WriteString("# the schemes cairn sees, any of them a theme:\n")
+	said.WriteString("# the themes cairn sees:\n")
 	for _, seen := range c.Themes {
 		fmt.Fprintf(&said, "#   %-18s %s", seen.Slug, seen.From)
 		if seen.InForce {

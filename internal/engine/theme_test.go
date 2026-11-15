@@ -102,7 +102,7 @@ func TestConfigShow_saysTheSchemeAndEverySchemeSeen(t *testing.T) {
 	said := workspace.ConfigText(c)
 	for _, line := range []string{
 		"\n[window]\nkeep_sizes = false\ntheme = \"dim\"\n",
-		"\n# the schemes cairn sees, any of them a theme:\n",
+		"\n# the themes cairn sees:\n",
 		"\n#   default            shipped\n",
 		"\n#   dim                " + dim.From + ", in force\n",
 		"\n# dim falls short: ink.text on surface.back reads at ",

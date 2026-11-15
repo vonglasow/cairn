@@ -92,7 +92,7 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 	Argument{
 		Name:  "deadline-before",
 		Kind:  day,
-		Means: "keep only the tasks due on or before this day",
+		Means: "keep only the tasks whose deadline is on or before this day",
 	},
 	Argument{
 		Name:  "focus",
@@ -483,7 +483,7 @@ var taskAttributes = []Argument{
 	{Name: "blocker", Kind: List, Of: "a task", Means: "the number of a task in its way; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
 	{Name: "link", Kind: List, Of: "a task", Means: "the number of a task it is linked to; when changing, 3 or +3 adds one, -3 takes one away, =3 replaces them all"},
 	{Name: "because", Kind: Text, Means: "what is in its way and is not a task cairn holds"},
-	{Name: "deadline", Kind: day, Means: "the day it is due"},
+	{Name: "deadline", Kind: day, Means: "the day it is wanted by"},
 	{Name: "estimate", Kind: duration, Means: "how long it should take"},
 	{Name: "spent", Kind: duration, Means: "the time spent on it, the time in focus included; +30m adds time today, -15m takes some back"},
 	{Name: "objective", Kind: List, Of: "an objective", Means: "the number of an objective it serves; when changing, 4 or +4 adds one, -1 takes one away, =4 replaces them all"},
