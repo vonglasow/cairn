@@ -1,4 +1,4 @@
-# The trace, and the time it took
+# The trace and the time
 
 Every change to a task is written down, and how long the work took is read
 back from it.
@@ -12,8 +12,8 @@ cairn trace list --since 2026-08-20
 cairn trace list --by sam        # what one author did
 ```
 
-Each entry says what changed, from what to what, when, and who did it through
-which surface — `(by sam, through gui)`. A trace reads as a sentence:
+Each entry says what changed, from what to what, when, and who did it, and from
+where — `(by sam, through gui)`. A trace reads as a sentence:
 
 ```
 2026-08-28 17:50  column    backlog → blocked

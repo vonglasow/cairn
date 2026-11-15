@@ -1,8 +1,9 @@
 Feature: the documentation site
 
-  cairn's documentation, published as a site with each release: what it is,
-  how to install it, a guide per surface, and a reference of every command,
-  every tool an agent sees, every key of the configuration and every scheme.
+  cairn's documentation, published as a site with each release: what it does,
+  where to download it, what it gives an agent, the guides, and a reference of
+  every command, every tool an agent sees, every key of the configuration and
+  every scheme.
   Every page comes from docs/ or is read off cairn itself, so nothing on the
   site is written twice.
 
@@ -13,8 +14,9 @@ Feature: the documentation site
 
     @site-pages
     Scenario: the pages for a person using cairn are published
-      Then the site has a page for "docs/install.md"
+      Then the site has a page for "docs/download.md"
       And the site has a page for "docs/usage.md"
+      And the site has a page for "docs/backups.md"
       And the site has a page for "docs/tui.md"
       And the site has a page for "docs/gui.md"
       And the site has a page for "docs/config.md"
@@ -22,13 +24,26 @@ Feature: the documentation site
       And the site has no page "changelog.html"
       And no page says "make build"
 
+    @site-words
+    Scenario: no page speaks of how cairn is built
+      Then no page says "surface"
+      And no page says "notion"
+
     @site-nav
-    Scenario: the top bar walks from starting to the reference
-      Then the top bar reads "Start, Guides, Boards, Agents, Reference"
+    Scenario: the top bar says what cairn does, what it gives an agent, and where to download it
+      Then the top bar reads "Features, For your agent, Docs, GitHub, Download"
 
     @site-home
     Scenario: the home page sends to every guide by task
       Then the home page links to "plan-a-week.html", "follow-an-objective.html" and "plug-in-an-agent.html"
+
+    @site-docs
+    Scenario: the docs page leads to every page of docs/ the site publishes
+      Then the page "docs.html" links to every page of docs/ the site publishes
+
+    @site-agents
+    Scenario: the page for an agent says how to plug in the version it documents
+      Then the page "agents.html" says "/plugin marketplace add vonglasow/cairn@v0.12.0"
 
   Rule: The reference is read off cairn itself
 

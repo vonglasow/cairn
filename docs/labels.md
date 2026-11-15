@@ -5,7 +5,7 @@ nothing to cairn: a listing narrows by it, and that is all.
 
 ## How a label is written
 
-Every surface writes a label the same way, so one word is always one label:
+The boards, the command line and an agent write a label the same way, so one word is always one label:
 
 1. lower case;
 2. the accents of the Latin letters taken off — `café` is `cafe`;

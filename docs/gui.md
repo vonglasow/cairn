@@ -1,4 +1,4 @@
-# The board in a window
+# In a window
 
 ```sh
 cairn gui                        # the same board, in a window

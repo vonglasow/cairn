@@ -116,4 +116,5 @@ longer holds is taken out.
 - The developer reads `ARCHITECTURE.md` and this register; `.claude/docs` is gone — twelve thousand lines told the history of each choice, and drifted from the code.
 - The site is for the person using cairn: installing a release, the guides, the boards, agents, the reference; building from source, the decisions and the changelog stay off it (#325) — they spoke to whoever develops cairn. The release notes on GitHub say what changed.
 - Each guide by task opens on the window at its own page, drawn over the fixtures when the site is built — a picture made by hand drifts from the window.
+- The site leads with what cairn does, what it gives an agent and where to download it, like the sites of comparable tools; the docs are one section of it, under a home of their own (#326). Its pictures are the window, drawn when the site is built; the columns are the board's picture cropped, so they follow the scheme picked.
 - One word for each notion on every surface: series, rule, occurrence, trace, column, deadline, notes, theme, settings, tab, report (#292) — one notion was named three ways.

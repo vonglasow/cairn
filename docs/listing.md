@@ -1,9 +1,9 @@
-# Listing, searching, and views
+# Listing, search and views
 
 Two commands answer with several tasks. `task list` narrows by facts from a
 closed set — the column, the priority, a label. `task search` looks for words
-in everything a task says. Both narrow the same way, and every surface uses the
-same search.
+in everything a task says. Both narrow the same way, and the boards, the command line and an agent
+all use the same search.
 
 ## Narrowing a listing
 

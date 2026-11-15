@@ -86,13 +86,32 @@ func docPages(said Said) ([]page, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", s.from, err)
 		}
-		p := page{Name: nameOf(s.from), Title: got.title, Group: s.group, Top: s.top, Source: s.from, Body: got.body, Toc: got.toc}
+		p := page{Name: nameOf(s.from), Title: got.title, Group: s.group, Top: "docs", Source: s.from, Body: got.body, Toc: got.toc}
+		if p.Name == downloadPage {
+			p.Top = "download"
+		}
 		if at := slices.IndexFunc(byTask, func(g guide) bool { return g.from == s.from }); at >= 0 && said.Window != nil {
-			p.Body = fmt.Sprintf(`<img class="shot" src="%s" alt="%s">`, guidePicture(s.from), e(byTask[at].shows)) + p.Body
+			p.Body = illustrated(p.Body, byTask[at].pictures)
 		}
 		pages = append(pages, p)
 	}
 	return pages, nil
+}
+
+func illustrated(body string, pictures []picture) string {
+	for _, p := range pictures {
+		if p.at != "" {
+			body = strings.Replace(body, `<h2 id="`+p.at+`">`, drawing(p.of, p.shows)+`<h2 id="`+p.at+`">`, 1)
+			continue
+		}
+		lead, rest, found := strings.Cut(body, "</p>\n")
+		if !found || !strings.HasPrefix(lead, "<p>") {
+			body = drawing(p.of, p.shows) + body
+			continue
+		}
+		body = lead + "</p>\n" + drawing(p.of, p.shows) + rest
+	}
+	return body
 }
 
 func ordered(docs []page, generated ...page) []page {
@@ -100,7 +119,7 @@ func ordered(docs []page, generated ...page) []page {
 	for _, p := range generated {
 		by[p.Name] = p
 	}
-	pages := []page{by["index.html"]}
+	pages := []page{by[homePage], by[docsPage], by[agentsPage]}
 	for _, group := range groups {
 		for _, p := range docs {
 			if p.Group == group {
@@ -135,12 +154,12 @@ func pictures(to string, said Said, schemes []theme.Scheme) error {
 			return err
 		}
 	}
-	for _, g := range byTask {
-		drawn, err := said.Window(darkFirst, g.page)
+	for _, of := range shots {
+		drawn, err := said.Window(darkFirst, of)
 		if err != nil {
-			return fmt.Errorf("the window for %s: %w", g.from, err)
+			return fmt.Errorf("the window on %s: %w", of, err)
 		}
-		if err := saved(filepath.Join(to, guidePicture(g.from)), drawn); err != nil {
+		if err := saved(filepath.Join(to, shotPicture(of)), drawn); err != nil {
 			return err
 		}
 	}
@@ -221,8 +240,8 @@ func Build(to string, said Said) error {
 	if err != nil {
 		return err
 	}
-	generated := append(commandPages(), toolsPageOf(), keysPageOf(), themesPageOf(schemes, said.Window != nil), home(said, schemes))
-	pages := ordered(docs, generated...)
+	generated := append(commandPages(), toolsPageOf(), keysPageOf(), themesPageOf(schemes, said.Window != nil), home(said, schemes), agents(said.Version))
+	pages := ordered(docs, append(generated, docsHome(append(docs, generated...)))...)
 	common = common.nav(pages)
 	if err := os.MkdirAll(to, 0o755); err != nil {
 		return err
@@ -304,44 +323,4 @@ func built(out, version, repo string) error {
 	}
 	said.Window = boards.Window
 	return Build(out, said)
-}
-
-func home(said Said, schemes []theme.Scheme) page {
-	var body strings.Builder
-	body.WriteString(`<section class="hero"><div>
-<h1>Your objectives and tasks on one board, wherever you work.</h1>
-<p class="lead">A command line, a board in the terminal, the same board in a window, and an MCP server for your agent. Four ways in to one store that stays on your machine.</p>
-<pre><code>brew install vonglasow/tap/cairn</code></pre>
-<div class="cta"><a class="btn" href="install.html">Install</a><a class="btn ghost" href="usage.html">Read the guide</a></div>
-</div>`)
-	if said.Window != nil {
-		fmt.Fprintf(&body, `<img class="shot" data-shot src="%s" alt="The board in a window">`, windowPicture(darkFirst))
-	}
-	body.WriteString(`</section>
-<section class="band"><h2 id="what-you-do">What you do with it</h2><div class="grid3">
-<a class="tile" href="plan-a-week.html"><span class="k">cairn task move 4 --state todo</span><b>Plan a week</b><span>Choose the week's tasks, in the order you work them, and see how long they took.</span></a>
-<a class="tile" href="follow-an-objective.html"><span class="k">cairn objective show 1</span><b>Follow an objective</b><span>Say what the work is for, and see how far along it is.</span></a>
-<a class="tile" href="plug-in-an-agent.html"><span class="k">cairn mcp serve</span><b>Plug in an agent</b><span>Let Claude Code, or any MCP client, work on your board.</span></a>
-<a class="tile" href="ordering.html"><span class="k">⊳3</span><b>Choose what to do</b><span>Facts on every task. Your agent proposes, you decide.</span></a>
-<a class="tile" href="trace.html"><span class="k">cairn trace list</span><b>See what happened</b><span>What was done to every task, and the time it took.</span></a>
-<a class="tile" href="context.html"><span class="k">cairn task show 1</span><b>Keep notes beside a task</b><span>A folder per task, for what was done and decided.</span></a>
-</div>
-<p class="faint">The same board four ways: the <a href="` + commandsPage + `">command line</a>, <a href="tui.html">the terminal</a>, <a href="gui.html">a window</a> on macOS, Linux and Windows, and <a href="mcp.html">an agent</a>.</p></section>
-<section class="band"><h2 id="in-the-terminal">In the terminal</h2><pre class="term">`)
-	body.WriteString(terminalHTML(said.Terminal))
-	body.WriteString(`</pre></section>
-<section class="band"><h2 id="wear-it">Wear it your way</h2><p class="faint">Every scheme cairn carries, the same in the window and on this site. Pick one at the top: the site keeps it for your next visit. <a href="` + themesPage + `">All of them</a>.</p><div class="schemes">`)
-	for _, s := range schemes {
-		fmt.Fprintf(&body, `<button class="scheme" data-pick="%s"><span class="sw">`, s.Slug)
-		for _, slot := range []int{0x0, 0x2, 0x5, 0xD, 0xB, 0xA, 0x8} {
-			fmt.Fprintf(&body, `<i style="background:%s"></i>`, hex(s.Slots()[slot]))
-		}
-		fmt.Fprintf(&body, `</span><b>%s</b></button>`, e(s.Name))
-	}
-	body.WriteString(`</div></section>
-<section class="band"><div class="grid2">
-<div class="tile"><b>Local first</b><span>One SQLite file. No account, no server, nothing sent anywhere.</span></div>
-<div class="tile"><b>Says why</b><span>Every refusal names what was in the way.</span></div>
-</div></section>`)
-	return page{Name: "index.html", Title: "cairn", Wide: true, Body: body.String()}
 }

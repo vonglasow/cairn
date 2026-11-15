@@ -1,6 +1,6 @@
-# Glossary
+# Words cairn uses
 
-One word for each notion, the same on every board, at the command line, for
+One word for each thing, the same on every board, at the command line, for
 an agent and on these pages.
 
 | term | what it is |

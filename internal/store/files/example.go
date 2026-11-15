@@ -5,7 +5,7 @@ const Example = `# Where cairn writes its Claude Code plugin, and keeps it at it
 # a folder. Beside the store when it is not said. Absolute, or under ~.
 plugin = "~/.cairn/claude-plugin"
 
-# The pages every surface offers: the boards' tabs, the commands, the MCP
+# The pages cairn offers: the boards' tabs, the commands, the MCP
 # tools. Each is on unless it says false. The time is "on", recorded and
 # shown; "hidden", recorded and not shown, there again once it is on; or
 # "off", neither: a task in focus counts no time until it is on again.

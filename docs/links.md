@@ -26,7 +26,7 @@ Moving a task out of `done` is still possible, for a task put there by mistake.
 
 ## Opening a linked task
 
-Every surface opens a new task already linked to the one you are on, in `todo`
+The boards, the command line and an agent all open a new task already linked to the one you are on, in `todo`
 whatever that one's column:
 
 - the command line: `cairn task new "…" --link 105`;

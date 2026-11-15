@@ -1,4 +1,4 @@
-# A task's notes in Obsidian
+# Notes in Obsidian
 
 How to open the notes of a workspace in Obsidian. cairn knows no note tool:
 everything below is set up in the configuration and in Obsidian. What a task's

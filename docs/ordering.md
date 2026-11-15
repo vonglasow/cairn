@@ -1,4 +1,4 @@
-# The order, and what you are working on
+# Columns and order
 
 ## One list, in seven columns
 
@@ -72,7 +72,7 @@ help choose:
 
 | fact | what it says |
 |---|---|
-| `blocks` | how many open tasks wait on this one, `⊳3` on every surface |
+| `blocks` | how many open tasks wait on this one, `⊳3` everywhere |
 | `overdue`, `due_in` | how far past or ahead of its deadline |
 | `age` | how many days it has sat in its column |
 | `objective_late` | whether an objective it serves is behind |

@@ -1,4 +1,4 @@
-# Configuration
+# Settings and workspaces
 
 Nothing needs configuring: cairn keeps its tasks in `~/.cairn/cairn.db` and
 their notes in `~/.cairn/notes` until told otherwise. `cairn config init`

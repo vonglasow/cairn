@@ -1,4 +1,4 @@
-# Tasks that come back
+# Series
 
 A stand-up every weekday, a review every other Thursday, the plants three days
 after they were last watered: work that reaches `done` and then comes back. In

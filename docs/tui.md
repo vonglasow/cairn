@@ -1,11 +1,11 @@
-# The board in the terminal
+# In the terminal
 
 ```sh
 cairn tui                        # open it
 cairn tui --icons unicode        # without a Nerd Font installed
 ```
 
-The same board as every other surface, on a screen that stays open, in the
+The same board as in the window, on a screen that stays open, in the
 colours of the scheme the window wears. It reads like vim: `hjkl` walks the
 cards, `:` takes any command, and `?` answers everywhere. `:q` leaves.
 

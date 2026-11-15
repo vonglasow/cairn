@@ -96,7 +96,7 @@ func commandPages() []page {
 		}
 		index.WriteString(`</table></div>`)
 	}
-	return append([]page{{Name: commandsPage, Title: "Commands", Group: "Reference", Top: "reference", Body: index.String(), Toc: toc}}, pages...)
+	return append([]page{{Name: commandsPage, Title: "Commands", Group: "Reference", Body: index.String(), Toc: toc}}, pages...)
 }
 
 func flagTable(flags *pflag.FlagSet) string {
@@ -146,7 +146,7 @@ func commandOf(c *cobra.Command, served map[string]bool) page {
 		section("see-also", "See also")
 		fmt.Fprintf(&body, `<p><a href="%s#%s">%s</a>, the same for an agent.</p>`, toolsPage, tool, tool)
 	}
-	return page{Name: commandPage(c), Title: c.CommandPath(), Group: "Reference", Top: "reference", Parent: commandsPage, Body: body.String(), Toc: toc}
+	return page{Name: commandPage(c), Title: c.CommandPath(), Group: "Reference", Parent: commandsPage, Body: body.String(), Toc: toc}
 }
 
 func argumentsOf(tool *sdk.Tool) string {
@@ -189,7 +189,7 @@ func toolsPageOf() page {
 		fmt.Fprintf(&body, `<h2 id="%s">%s <span class="tag">%s</span></h2><p><b>%s.</b> %s</p>%s`,
 			tool.Name, tool.Name, kind, e(tool.Annotations.Title), e(tool.Description), argumentsOf(tool))
 	}
-	return page{Name: toolsPage, Title: "MCP tools", Group: "Reference", Top: "reference", Body: body.String(), Toc: toc}
+	return page{Name: toolsPage, Title: "Agent tools", Group: "Reference", Body: body.String(), Toc: toc}
 }
 
 func takes(k files.Key) string {
@@ -226,7 +226,7 @@ func keysPageOf() page {
 		body.WriteString(`</table></div>`)
 	}
 	body.WriteString(`<h2 id="the-whole-file">The whole file</h2><p>What <code>cairn config init</code> writes: every key, explained, set to what cairn uses when the file says nothing.</p><pre><code class="toml">` + e(files.Example) + `</code></pre>`)
-	return page{Name: keysPage, Title: "Configuration keys", Group: "Reference", Top: "reference", Body: body.String(), Toc: toc}
+	return page{Name: keysPage, Title: "Settings keys", Group: "Reference", Body: body.String(), Toc: toc}
 }
 
 func themesPageOf(schemes []theme.Scheme, pictured bool) page {
@@ -248,5 +248,5 @@ func themesPageOf(schemes []theme.Scheme, pictured bool) page {
 			fmt.Fprintf(&body, `<img class="shot" loading="lazy" src="%s" alt="The window in %s">`, windowPicture(s.Slug), e(s.Name))
 		}
 	}
-	return page{Name: themesPage, Title: "Themes", Group: "Reference", Top: "reference", Body: body.String(), Toc: toc}
+	return page{Name: themesPage, Title: "Themes", Group: "Reference", Body: body.String(), Toc: toc}
 }

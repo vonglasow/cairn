@@ -50,6 +50,8 @@ func initSite(sc *godog.ScenarioContext) {
 	sc.Step(`^the site has no page "([^"]*)"$`, w.theSiteHasNoPage)
 	sc.Step(`^no page says "([^"]*)"$`, w.noPageSays)
 	sc.Step(`^the top bar reads "([^"]*)"$`, w.theTopBarReads)
+	sc.Step(`^the page "([^"]*)" links to every page of docs/ the site publishes$`, w.thePageLinksToEveryDoc)
+	sc.Step(`^the page "([^"]*)" says "([^"]*)"$`, w.thePageSays)
 	sc.Step(`^the home page links to "([^"]*)", "([^"]*)" and "([^"]*)"$`, w.theHomePageLinksTo)
 	sc.Step(`^the reference lists "([^"]*)", "([^"]*)", "([^"]*)", "([^"]*)" and "([^"]*)" under "([^"]*)", after the others$`, w.theReferenceListsUnder)
 	sc.Step(`^every guide by task opens on a picture of the window of its own$`, w.everyGuideOpensOnAPicture)
@@ -336,6 +338,30 @@ func (w *siteWorld) theTopBarReads(want string) error {
 	}
 	if got := strings.Join(read, ", "); got != want {
 		return fmt.Errorf("the top bar reads %q, want %q", got, want)
+	}
+	return nil
+}
+
+func (w *siteWorld) thePageLinksToEveryDoc(name string) error {
+	page, err := w.read(name)
+	if err != nil {
+		return err
+	}
+	for _, s := range published {
+		if !strings.Contains(page, `href="`+nameOf(s.from)+`"`) {
+			return fmt.Errorf("%s has no link to %s", name, nameOf(s.from))
+		}
+	}
+	return nil
+}
+
+func (w *siteWorld) thePageSays(name, said string) error {
+	page, err := w.read(name)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(page, said) {
+		return fmt.Errorf("%s does not say %q", name, said)
 	}
 	return nil
 }

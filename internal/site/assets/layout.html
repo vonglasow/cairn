@@ -21,16 +21,15 @@
   <button class="tool menu-btn" id="menuBtn" aria-label="Sections">☰</button>
   <a class="brand" href="index.html"><img src="logo.svg" width="28" height="28" alt="">cairn</a>
   <nav class="topnav">
-    <a href="install.html"{{if eq .Page.Top "start"}} class="on"{{end}}>Start</a>
-    <a href="plan-a-week.html"{{if eq .Page.Top "guides"}} class="on"{{end}}>Guides</a>
-    <a href="tui.html"{{if eq .Page.Top "boards"}} class="on"{{end}}>Boards</a>
-    <a href="claude-code.html"{{if eq .Page.Top "agents"}} class="on"{{end}}>Agents</a>
-    <a href="commands.html"{{if eq .Page.Top "reference"}} class="on"{{end}}>Reference</a>
+    <a href="index.html#features">Features</a>
+    <a href="agents.html"{{if eq .Page.Top "agents"}} class="on"{{end}}>For your agent</a>
+    <a href="docs.html"{{if eq .Page.Top "docs"}} class="on"{{end}}>Docs</a>
+    <a href="{{.Source}}">GitHub</a>
+    <a href="download.html" class="btn">Download</a>
   </nav>
   <div class="bar-tools">
     <button class="tool" id="searchBtn" aria-label="Search"><span>⌕</span><span class="search-label">Search</span><kbd>/</kbd></button>
     <button class="tool" id="themeBtn" aria-haspopup="true" aria-expanded="false"><span>◐</span><span id="themeName">Theme</span></button>
-    <a class="ver" href="{{.Source}}" title="Source on GitHub">{{.Version}} · GitHub</a>
   </div>
 </div></header>
 <div class="theme-pop" id="themePop" role="dialog" aria-label="Theme">
@@ -43,22 +42,26 @@
 {{if .Page.Wide}}<main class="home"><article>{{.Body}}</article></main>{{else}}
 <div class="shell">
   <nav class="side" id="side">
+  <a href="docs.html"{{if eq .Page.Name "docs.html"}} class="on"{{end}}>Docs home</a>
   {{range .Groups}}<h4>{{.Name}}</h4>
   {{range .Pages}}<a href="{{.Name}}"{{if or (eq .Name $.Page.Name) (eq .Name $.Page.Parent)}} class="on"{{end}}>{{.Title}}</a>
   {{end}}{{end}}
   </nav>
   <article>
+    {{if .Page.Group}}<p class="crumb"><a href="docs.html">Docs</a> / {{.Page.Group}}</p>{{end}}
     <h1>{{.Page.Title}}</h1>
     {{.Body}}
-    {{if .Page.Source}}<p class="src">From <a href="{{.Source}}/blob/main/{{.Page.Source}}">{{.Page.Source}}</a> · cairn {{.Version}}</p>{{end}}
+    {{if .Page.Source}}<p class="src"><a href="{{.Source}}/blob/main/{{.Page.Source}}">Edit this page on GitHub</a> · cairn {{.Version}}</p>{{end}}
   </article>
   {{if .Page.Toc}}<nav class="toc"><b>On this page</b>
   {{range .Page.Toc}}<a href="#{{.ID}}">{{.Title}}</a>
   {{end}}</nav>{{end}}
 </div>{{end}}
 <footer class="foot"><div class="foot-in">
-  <span>cairn {{.Version}}</span>
-  <span><a href="{{.Source}}/releases">Releases</a> · <a href="{{.Source}}">Source</a> · <a href="{{.Source}}/issues">Issues</a></span>
+  <div><b>cairn</b><a href="download.html">Download</a><a href="index.html#features">Features</a><a href="agents.html">For your agent</a></div>
+  <div><b>Learn</b><a href="docs.html">Docs</a><a href="usage.html">Get started</a><a href="plan-a-week.html">Guides</a><a href="commands.html">Reference</a></div>
+  <div><b>Project</b><a href="{{.Source}}">GitHub</a><a href="{{.Source}}/releases">Releases</a><a href="{{.Source}}/issues">Report a bug</a></div>
+  <div><b>cairn {{.Version}}</b><span>Local first. No account.</span></div>
 </div></footer>
 <script src="search.js"></script>
 <script src="site.js"></script>

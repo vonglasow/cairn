@@ -1,4 +1,4 @@
-# What stops a task, and how it starts again
+# What stops a task
 
 Three of the seven columns mean the work is not moving. They are three rather
 than one because what gets each moving again differs:

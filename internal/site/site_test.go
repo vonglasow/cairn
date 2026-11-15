@@ -42,9 +42,9 @@ func TestLinked_takesALinkToWhereItLandsOnTheSite(t *testing.T) {
 		{"docs/tui.md", "gui.md#the-design-system", "gui.html#the-design-system"},
 		{"docs/tui.md", "#keys", "#keys"},
 		{"docs/tui.md", "architecture.md#layers", "https://github.com/vonglasow/cairn/blob/v0.12.0/docs/architecture.md#layers"},
-		{"docs/tui.md", "install.md", "install.html"},
+		{"docs/tui.md", "download.md", "download.html"},
 		{"docs/trace.md", "../bdd/trace.feature", "https://github.com/vonglasow/cairn/blob/v0.12.0/bdd/trace.feature"},
-		{"docs/install.md", "claude-code.md", "claude-code.html"},
+		{"docs/download.md", "claude-code.md", "claude-code.html"},
 		{"docs/tui.md", "https://example.org/x.md", "https://example.org/x.md"},
 		{"docs/tui.md", "mailto:a@b", "mailto:a@b"},
 	} {
@@ -61,7 +61,7 @@ func TestLinked_aBuildThatIsNoVersionLinksToMain(t *testing.T) {
 }
 
 func TestPageFor_namesThePageOfEverySourcePublished(t *testing.T) {
-	for source, want := range map[string]string{"docs/install.md": "install.html", "docs/usage.md": "usage.html", "docs/config.md": "config.html"} {
+	for source, want := range map[string]string{"docs/download.md": "download.html", "docs/usage.md": "usage.html", "docs/config.md": "config.html"} {
 		if got, ok := pageFor(source); !ok || got != want {
 			t.Errorf("pageFor(%q) = %q, %v; want %q", source, got, ok, want)
 		}
