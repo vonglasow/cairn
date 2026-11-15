@@ -17,6 +17,7 @@ type NarrowingTold interface {
 	Archived()
 	WithArchived()
 	InFocus(held bool)
+	Unblocked()
 }
 
 func (n *Narrowing) name(narrows bool, tell func(NarrowingTold)) {
@@ -62,6 +63,11 @@ func (n *Narrowing) WithArchived() {
 // InFocus keeps what is being worked on, or what is not.
 func (n *Narrowing) InFocus(held bool) {
 	n.name(true, func(to NarrowingTold) { to.InFocus(held) })
+}
+
+// Unblocked keeps what nothing stops: no open task in its way, and no reason said.
+func (n *Narrowing) Unblocked() {
+	n.name(true, func(to NarrowingTold) { to.Unblocked() })
 }
 
 // Narrows says whether anything was named that keeps less than everything.

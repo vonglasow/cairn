@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -61,5 +62,27 @@ func TestTaskList_refusesTheTasksInFocusAndTheOnesThatAreNot(t *testing.T) {
 	_, err := keeping(Input{Given: map[string]string{"focus": "true", "no-focus": "true"}}, taskNarrowing, nil)
 	if err == nil || !strings.Contains(err.Error(), "--focus and --no-focus") {
 		t.Errorf("both asked gave %v", err)
+	}
+}
+
+func TestTaskList_keepsTheTasksNothingStops(t *testing.T) {
+	path := storeAt(t)
+	for _, title := range []string{"free", "waits on 1", "waits on 4, done", "done", "waits on the client"} {
+		did(t, path, TaskNew, ask("title", title))
+	}
+	did(t, path, TaskEdit, ask("number", "2").with("blocker", "1"))
+	did(t, path, TaskEdit, ask("number", "3").with("blocker", "4"))
+	did(t, path, TaskEdit, ask("number", "4", "state", "done"))
+	did(t, path, TaskEdit, ask("number", "5", "because", "the client"))
+	listed := Of(TaskList, did(t, path, TaskList, ask("unblocked", "true"))).(Tasks)
+	if got := rowsListed(listed); !slices.Equal(got, []int{1, 3, 4}) {
+		t.Errorf("unblocked keeps %v, want 1, 3 and 4", got)
+	}
+	did(t, path, ViewNew, ask("name", "Free", "unblocked", "true"))
+	if views := Of(ViewList, did(t, path, ViewList, ask())).(Views); !views.Views[0].Holds.Unblocked || views.Views[0].Keeps != 3 {
+		t.Errorf("the view holds %+v", views.Views[0])
+	}
+	if got := rowsListed(Of(TaskList, did(t, path, TaskList, ask("view", "Free"))).(Tasks)); !slices.Equal(got, []int{1, 3, 4}) {
+		t.Errorf("the view keeps %v", got)
 	}
 }

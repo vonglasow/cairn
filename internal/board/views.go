@@ -79,6 +79,8 @@ func Narrows(h engine.Holds, arg string) bool {
 		return len(h.Objective) > 0
 	case "focus":
 		return h.Focus != ""
+	case "unblocked":
+		return h.Unblocked
 	}
 	return h.DueBefore != ""
 }
@@ -196,8 +198,10 @@ func (fs Filters) Holding(over engine.View, search string) engine.Input {
 			in.Listed["objective"] = append(in.Listed["objective"], strconv.Itoa(n))
 		}
 	}
-	if held.Itself {
-		in.Given["itself"] = "true"
+	for name, held := range map[string]bool{"itself": held.Itself, "unblocked": held.Unblocked} {
+		if held {
+			in.Given[name] = "true"
+		}
 	}
 	if _, named := in.Given["focus"]; !named && held.Focus != "" {
 		if _, named := in.Given["no-focus"]; !named {

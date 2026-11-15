@@ -3,6 +3,7 @@ package board
 import (
 	"cairn/internal/engine"
 	"cairn/internal/engine/calendar"
+	"cairn/internal/engine/item"
 	"slices"
 	"strconv"
 	"strings"
@@ -104,6 +105,8 @@ func FiltersOf(s Snapshot, today time.Time) Filters {
 			fs = append(fs, offered("deadline", arg.Name, days, nil))
 		case "focus":
 			fs = append(fs, offered(arg.Name, arg.Name, []string{"in", "out"}, []string{"in focus", "not in focus"}))
+		case "unblocked":
+			fs = append(fs, offered(arg.Name, arg.Name, []string{"true"}, []string{"yes"}))
 		case "series":
 			if len(s.Series) > 0 {
 				fs = append(fs, offered(arg.Name, arg.Name, []string{"0"}, []string{"all"}))
@@ -325,9 +328,13 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 	if err != nil {
 		return nil, err
 	}
+	done := map[int]bool{}
+	for _, c := range cards {
+		done[c.Number] = c.State == string(item.Done)
+	}
 	var out []Card
 	for _, c := range cards {
-		judged := &cardJudged{card: c, kept: true}
+		judged := &cardJudged{card: c, kept: true, done: done}
 		kept.Tell(judged)
 		for _, reached := range serving {
 			judged.Serving(reached)
@@ -342,6 +349,7 @@ func (fs Filters) Kept(cards []Card) ([]Card, error) {
 type cardJudged struct {
 	card Card
 	kept bool
+	done map[int]bool
 }
 
 func (j *cardJudged) InColumn(state string)    { j.kept = j.kept && j.card.State == state }
@@ -351,7 +359,10 @@ func (j *cardJudged) Serving(objectives []int) {
 }
 func (j *cardJudged) InFocus(held bool) { j.kept = j.kept && j.card.InFocus == held }
 func (j *cardJudged) Archived()         {}
-func (j *cardJudged) WithArchived()     {}
+func (j *cardJudged) Unblocked() {
+	j.kept = j.kept && j.card.Because == "" && !slices.ContainsFunc(j.card.Blockers, func(n int) bool { return !j.done[n] })
+}
+func (j *cardJudged) WithArchived() {}
 
 func (j *cardJudged) DueBefore(day string) {
 	by, err := calendar.ParseDeadline(day)

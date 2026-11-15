@@ -137,7 +137,7 @@ rule and what the series did so far.
   headers count what matched. `esc` gives the whole board back. A search
   reaches what `task search` reaches.
 - `⇧F` turns the foot into filters — column, priority, label, objective, a day
-  due by, series, focus — `←→` choosing one and `↑↓` walking its values, each
+  due by, unblocked, series, focus — `←→` choosing one and `↑↓` walking its values, each
   with how many tasks it keeps. `⌫` clears them all.
 - `v` lists the [views](listing.md#views): a figure opens one, `0` the whole
   board. `:view new Urgent` keeps what is filtered under a name.

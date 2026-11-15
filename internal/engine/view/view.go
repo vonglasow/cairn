@@ -24,6 +24,7 @@ type View struct {
 	Itself       bool
 	Archived     bool
 	WithArchived bool
+	Unblocked    bool
 }
 
 // Objective is an objective a view holds, with the store's figures for it: the same in a view and out of one.
@@ -55,7 +56,7 @@ type Touch struct {
 
 // NarrowsAnything says whether a view holds any filter.
 func NarrowsAnything(v View) bool {
-	return v.Focus != "" || v.State != "" || v.Priority != "" || v.DueBefore != "" || v.Archived || v.Search != "" || len(v.Objectives) > 0 || len(v.Labels) > 0
+	return v.Focus != "" || v.Unblocked || v.State != "" || v.Priority != "" || v.DueBefore != "" || v.Archived || v.Search != "" || len(v.Objectives) > 0 || len(v.Labels) > 0
 }
 
 // Seen is a view as a listing reads it: its name, the filters it lost, whether it keeps nothing, its search words.

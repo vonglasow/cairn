@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	everyView     = `SELECT id, name, place, state, priority, due_before, focus, search, itself, archived, with_archived FROM views ORDER BY place, id`
-	keepView      = `INSERT INTO views (name, place, state, priority, due_before, focus, search, itself, archived, with_archived) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	everyView     = `SELECT id, name, place, state, priority, due_before, focus, search, itself, archived, with_archived, unblocked FROM views ORDER BY place, id`
+	keepView      = `INSERT INTO views (name, place, state, priority, due_before, focus, search, itself, archived, with_archived, unblocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	viewObjective = `INSERT OR IGNORE INTO view_objectives (view_id, objective_number) VALUES (?, ?)`
 	viewLabel     = `INSERT OR IGNORE INTO view_labels (view_id, label) VALUES (?, ?)`
 )
@@ -40,7 +40,7 @@ func (s *Store) viewRows() ([]int64, []view.View, error) {
 	for rows.Next() {
 		var id int64
 		var v view.View
-		if err := rows.Scan(&id, &v.Name, &v.Place, &v.State, &v.Priority, &v.DueBefore, &v.Focus, &v.Search, &v.Itself, &v.Archived, &v.WithArchived); err != nil {
+		if err := rows.Scan(&id, &v.Name, &v.Place, &v.State, &v.Priority, &v.DueBefore, &v.Focus, &v.Search, &v.Itself, &v.Archived, &v.WithArchived, &v.Unblocked); err != nil {
 			return nil, nil, err
 		}
 		ids, views = append(ids, id), append(views, v)
@@ -56,7 +56,7 @@ func (s *Store) KeepViews(views []view.View) error {
 		}
 	}
 	for i, v := range views {
-		res, err := s.on.Exec(keepView, v.Name, i+1, v.State, v.Priority, v.DueBefore, v.Focus, v.Search, v.Itself, v.Archived, v.WithArchived)
+		res, err := s.on.Exec(keepView, v.Name, i+1, v.State, v.Priority, v.DueBefore, v.Focus, v.Search, v.Itself, v.Archived, v.WithArchived, v.Unblocked)
 		if err != nil {
 			return fmt.Errorf("keeping the view %q: %w", v.Name, err)
 		}

@@ -16,6 +16,7 @@ func (h *heard) Labelled(l []string) { h.said = append(h.said, "labels "+l[0]) }
 func (h *heard) Archived()           { h.said = append(h.said, "archived") }
 func (h *heard) WithArchived()       { h.said = append(h.said, "both") }
 func (h *heard) InFocus(held bool)   { h.said = append(h.said, fmt.Sprint("focus ", held)) }
+func (h *heard) Unblocked()          { h.said = append(h.said, "unblocked") }
 
 func TestNarrowing_tellsWhatWasNamedInTheOrderItWasNamed(t *testing.T) {
 	var n Narrowing
@@ -26,9 +27,10 @@ func TestNarrowing_tellsWhatWasNamedInTheOrderItWasNamed(t *testing.T) {
 	n.Labelled([]string{"spec"})
 	n.Archived()
 	n.WithArchived()
+	n.Unblocked()
 	h := &heard{}
 	n.Tell(h)
-	want := []string{"column done", "priority high", "due 2026-10-01", "serving [3 5]", "labels spec", "archived", "both"}
+	want := []string{"column done", "priority high", "due 2026-10-01", "serving [3 5]", "labels spec", "archived", "both", "unblocked"}
 	if !slices.Equal(h.said, want) {
 		t.Errorf("told %v, want %v", h.said, want)
 	}

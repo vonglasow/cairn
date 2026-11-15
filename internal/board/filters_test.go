@@ -67,6 +67,23 @@ func TestFilters_keepTheCardsEveryFilterKeeps(t *testing.T) {
 	}
 }
 
+func TestFilters_keepTheCardsNothingStops(t *testing.T) {
+	cards := []Card{
+		{Number: 1, State: "todo"},
+		{Number: 2, State: "blocked", Blockers: []int{1}},
+		{Number: 3, State: "blocked", Blockers: []int{4}},
+		{Number: 4, State: "done", Archived: true},
+		{Number: 5, State: "blocked", Because: "the client"},
+	}
+	kept, err := on(FiltersOf(Snapshot{Cards: cards}, time.Now()), "unblocked", "true").Kept(cards)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := filteredNumbers(kept); got != "1 3 4" {
+		t.Errorf("unblocked keeps %q, want 1 3 4", got)
+	}
+}
+
 func TestFilters_walkWrapsAndClearingPutsEveryOneBackOnAny(t *testing.T) {
 	fs := FiltersOf(Snapshot{Cards: filterCards()}, time.Date(2026, 10, 24, 0, 0, 0, 0, time.UTC))
 	walked := fs.Walked(1, -1)

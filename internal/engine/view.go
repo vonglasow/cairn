@@ -42,6 +42,7 @@ type Holds struct {
 	Focus        string   `json:"focus,omitempty" jsonschema:"in: only the tasks in focus; out: only the ones that are not"`
 	Archived     bool     `json:"archived,omitempty"`
 	WithArchived bool     `json:"with_archived,omitempty"`
+	Unblocked    bool     `json:"unblocked,omitempty" jsonschema:"only the tasks nothing stops"`
 	Search       string   `json:"search,omitempty"`
 }
 
@@ -274,7 +275,7 @@ func (e *Engine) holding(v view.View, in Input) (view.View, error) {
 	if said, named := in.Given["search"]; named {
 		v.Search = strings.Join(strings.Fields(said), " ")
 	}
-	for name, into := range map[string]*bool{"itself": &v.Itself, "archived": &v.Archived, "with-archived": &v.WithArchived} {
+	for name, into := range map[string]*bool{"itself": &v.Itself, "archived": &v.Archived, "with-archived": &v.WithArchived, "unblocked": &v.Unblocked} {
 		if in.Named(name) {
 			*into = in.yes(name)
 		}
@@ -376,7 +377,7 @@ func (e *Engine) viewOf(views []view.View, at int) (View, []task.Task, error) {
 	return View{
 		Name: v.Name, Place: at + 1, Keeps: len(kept), Of: len(board), Done: done, Gone: listed(s.Lost),
 		Holds: Holds{State: v.State, Priority: v.Priority, Label: v.Labels, Objective: v.Objectives, Itself: v.Itself,
-			DueBefore: v.DueBefore, Focus: v.Focus, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search},
+			DueBefore: v.DueBefore, Focus: v.Focus, Archived: v.Archived, WithArchived: v.WithArchived, Unblocked: v.Unblocked, Search: v.Search},
 	}, kept, nil
 }
 
@@ -437,6 +438,7 @@ func (e *Engine) seeing(v view.View, kept *filter.Narrowing) (view.Seen, error) 
 	tell(v.Priority != "", func() { kept.Carrying(v.Priority) })
 	tell(v.DueBefore != "", func() { kept.DueBefore(v.DueBefore) })
 	tell(v.Focus != "", func() { kept.InFocus(v.Focus == "in") })
+	tell(v.Unblocked, kept.Unblocked)
 	tell(v.Archived, kept.Archived)
 	tell(len(s.Words) > 0, func() {})
 	if v.WithArchived {
@@ -597,6 +599,7 @@ func HoldsSays(v View) string {
 		{v.Holds.DueBefore != "", "deadline before " + v.Holds.DueBefore},
 		{v.Holds.Focus == "in", "in focus"},
 		{v.Holds.Focus == "out", "not in focus"},
+		{v.Holds.Unblocked, "unblocked"},
 		{v.Holds.Archived, "archived"},
 		{v.Holds.WithArchived, "with archived"},
 		{v.Holds.Search != "", fmt.Sprintf("search %q", v.Holds.Search)},

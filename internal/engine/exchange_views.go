@@ -28,7 +28,7 @@ func (e *Engine) viewsWritten(t objective.Tree) ([]viewFiled, error) {
 			continue
 		}
 		out = append(out, viewFiled{Name: v.Name, Holds: Holds{State: v.State, Priority: v.Priority, Label: v.Labels, Objective: v.Objectives,
-			Itself: v.Itself, DueBefore: v.DueBefore, Focus: v.Focus, Archived: v.Archived, WithArchived: v.WithArchived, Search: v.Search}})
+			Itself: v.Itself, DueBefore: v.DueBefore, Focus: v.Focus, Archived: v.Archived, WithArchived: v.WithArchived, Unblocked: v.Unblocked, Search: v.Search}})
 	}
 	return out, nil
 }
@@ -79,7 +79,7 @@ func viewOfFile(v viewFiled) (view.View, error) {
 		return view.View{}, err
 	}
 	kept := view.View{Name: name, State: v.State, Priority: v.Priority, DueBefore: v.DueBefore, Focus: v.Focus, Search: strings.Join(strings.Fields(v.Search), " "), Labels: labels,
-		Objectives: slices.Clone(v.Objective), Itself: v.Itself, Archived: v.Archived, WithArchived: v.WithArchived}
+		Objectives: slices.Clone(v.Objective), Itself: v.Itself, Archived: v.Archived, WithArchived: v.WithArchived, Unblocked: v.Unblocked}
 	if !view.NarrowsAnything(kept) {
 		return view.View{}, Refusing("view-holds-nothing", "a view holds at least one filter or a search")
 	}

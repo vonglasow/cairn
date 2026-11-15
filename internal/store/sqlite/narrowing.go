@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"cairn/internal/engine/filter"
+	"cairn/internal/engine/item"
 	"fmt"
 	"strings"
 
@@ -36,6 +37,13 @@ func (n *narrowing) InFocus(held bool) {
 		clause = `number NOT IN (SELECT task_number FROM focused)`
 	}
 	n.focus = append(n.focus, clause)
+}
+
+// Unblocked keeps what nothing stops: no blocker that is not done, and no reason said.
+func (n *narrowing) Unblocked() {
+	n.keep(`because = '' AND NOT EXISTS (SELECT 1 FROM blockers
+		JOIN tasks AS blocker ON blocker.number = blockers.blocker_number
+		WHERE blockers.task_number = tasks.number AND blocker.state <> ?)`, string(item.Done))
 }
 
 // InColumn keeps what sits in one column.

@@ -94,7 +94,7 @@ itself** every couple of seconds; `⌘⏎` or `⌘S` saves at once.
 
 `⌘F` narrows the board in place as you type, every page alike. `⇧F`, or
 **+ Filter**, adds a filter — column, priority, label, objective, a day due by,
-series, focus — and what filters the board stands above it as pills. Each
+unblocked, series, focus — and what filters the board stands above it as pills. Each
 value says how many tasks it would keep.
 
 The filter menu lists the [views](listing.md#views) at its head; `⌘1`…`⌘9`

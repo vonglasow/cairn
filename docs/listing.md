@@ -15,6 +15,7 @@ cairn task list --objective 1                  # what serves 1 or a sub-objectiv
 cairn task list --objective 1 --itself         # 1 alone
 cairn task list --deadline-before 2026-10-01   # due on or before that day
 cairn task list --blocker 3                    # what task 3 is in the way of
+cairn task list --unblocked                    # what nothing stops: no open blocker, no reason
 cairn task list --focus                        # in focus; --no-focus, the others
 cairn task list --number 25 --number 18        # those tasks, archived or not
 cairn task list --series                       # occurrences of a series; --series 3 for one
@@ -63,7 +64,7 @@ With `--any`, the JSON says under `matched` which tasks each word found,
 including the words that found none.
 
 Both boards search the same way, and filter by the same narrowings: column,
-priority, label, objective, a day due by, series, focus. Each value of a filter
+priority, label, objective, a day due by, unblocked, series, focus. Each value of a filter
 says how many tasks it would keep.
 
 ## What a row carries

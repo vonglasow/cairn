@@ -13,6 +13,7 @@ an agent and on these pages.
 | **label** | a word a task or an objective carries; it may have a colour |
 | **step** | a piece of a task, done or not, named by its place in the task |
 | **blocker** | a task in the way of another; a blocked task waits on its blockers |
+| **unblocked** | a task nothing stops: no blocker still open, no reason said |
 | **link** | two tasks said to go together, both ways |
 | **deadline** | the day a task or an objective is wanted by |
 | **estimate** | how long a task or an objective should take |

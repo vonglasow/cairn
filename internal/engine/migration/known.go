@@ -439,4 +439,12 @@ ALTER TABLE views ADD COLUMN focus TEXT NOT NULL DEFAULT '';`,
 ALTER TABLE views DROP COLUMN focus;`,
 		loses: "what a view said of the focus; every view keeps the rest of its filters, and every task stays where it is",
 	},
+	{
+		name: "a view keeps the tasks nothing stops",
+		does: `
+ALTER TABLE views ADD COLUMN unblocked INTEGER NOT NULL DEFAULT 0;`,
+		undoes: `
+ALTER TABLE views DROP COLUMN unblocked;`,
+		loses: "which views kept only the tasks nothing stops; every view keeps the rest of its filters, and every task stays where it is",
+	},
 }

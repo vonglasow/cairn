@@ -72,6 +72,9 @@ func keeping(in Input, taken []Argument, e *Engine) (*filter.Narrowing, error) {
 	if in.yes("focus") || in.yes("no-focus") {
 		kept.InFocus(in.yes("focus"))
 	}
+	if in.yes("unblocked") {
+		kept.Unblocked()
+	}
 	if in.yes("archived") {
 		kept.Archived()
 	}

@@ -166,6 +166,15 @@ Feature: Tasks
       Then the JSON row of task 1 gives "blocks" as 2
       And the JSON row of task 2 gives "blocks" as 0
 
+    @task-list-unblocked
+    Scenario: only the tasks nothing stops
+      Given I added a task titled "Write the spec"
+      And I added a task titled "Ship it"
+      And I edited task 2 with the blocker "1"
+      When I run `cairn task list --unblocked`
+      Then it lists 1 task
+      And it lists task 1 titled "Write the spec"
+
   Rule: A task can be deleted
 
     @task-delete

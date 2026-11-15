@@ -95,6 +95,11 @@ var taskNarrowing = append(narrowedBy(taskAttributes, map[string]string{
 		Means: "keep only the tasks whose deadline is on or before this day",
 	},
 	Argument{
+		Name:  "unblocked",
+		Kind:  Bool,
+		Means: "keep only the tasks nothing stops: no open task in their way, and no reason said",
+	},
+	Argument{
 		Name:  "focus",
 		Kind:  Bool,
 		Means: "keep only the tasks in focus",
