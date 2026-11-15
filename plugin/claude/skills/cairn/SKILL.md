@@ -1,6 +1,6 @@
 ---
 name: cairn
-description: Work on a cairn task — a "task cairn", written cairn#123. Use when the person names one ("on travaille sur cairn#123", "work on cairn#42"), asks what to work on ("sur quoi je travaille ?", "what should I work on?"), asks to load a task's ticket, or stops working on it. Ties the session to the task, loads its notes as context, and writes back where it stands.
+description: Work on a cairn task — a "task cairn", written cairn#123. Use when the person names one ("let's work on cairn#123", "work on cairn#42"), asks what to work on ("what should I work on?", "what next?"), asks to load a task's ticket, or stops working on it. Ties the session to the task, loads its notes as context, and writes back where it stands.
 ---
 
 # A session tied to a cairn task
@@ -24,7 +24,7 @@ names it at the session's start, and `workspace_show {}` says it again.
 Switching is the person's: another workspace is another server, which they
 start.
 
-## Attaching — "on travaille sur cairn#123"
+## Attaching — "let's work on cairn#123"
 
 1. `task_focus` with the number. The hook ties the session to the task, and
    a task waiting in `backlog`, `todo` or `paused` moves into `current` with
@@ -49,7 +49,7 @@ is — a PDF, an export, a note written in another tool. A file moved out of
 it no longer does. The names above (`summary.md`, dated entries,
 `ticket.md`) are conventions of this skill, not rules of cairn.
 
-When the person asks for everything tied to a task ("tout ce qui concerne
+When the person asks for everything tied to a task ("everything about
 cairn#42"), list its directory, then look in the folders they point you to
 for notes carrying, at their top:
 
@@ -71,7 +71,7 @@ before anything else, and do not ask the person unless you cannot tell.
 
 ## The ticket — only when asked
 
-Read the external ticket only when the person asks for it ("charge le
+Read the external ticket only when the person asks for it ("load the
 ticket"). A task tied to Azure DevOps carries the label `ado`, and each work
 item's id as a label of digits alone (`77594`). Read it through whatever
 Azure DevOps access there is — its MCP server, or `az boards work-item show
@@ -79,7 +79,7 @@ Azure DevOps access there is — its MCP server, or `az boards work-item show
 When that fails, read the copy already there, and say it may be stale. No
 label, no access: say so, and carry on without it.
 
-## Choosing — "sur quoi je travaille ?"
+## Choosing — "what should I work on?"
 
 cairn gives the facts and ranks nothing; the choosing is yours, only when
 asked, and nothing you propose is written without the person's yes.

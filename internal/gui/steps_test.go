@@ -846,7 +846,7 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		return os.WriteFile(entry(name), append(was, []byte("Comment=Mes tâches\n")...), 0o644)
+		return os.WriteFile(entry(name), append(was, []byte("Comment=My tasks\n")...), 0o644)
 	})
 	sc.Then(`^the desktop entry "([^"]*)" still shows the icon "([^"]*)"$`, func(name, icon string) error {
 		return entrySays(entry(name), "Icon="+icon)

@@ -104,8 +104,8 @@ func TestPasting_takesWhatTheClipboardHeld(t *testing.T) {
 		w = w.Key("cmd+v")
 	}
 
-	got := pasting(w, strings.NewReader("colonnes"))
-	if said := valueOf(got.Form, "title"); said != "colonnes" {
+	got := pasting(w, strings.NewReader("columns"))
+	if said := valueOf(got.Form, "title"); said != "columns" {
 		t.Errorf("the title reads %q after pasting", said)
 	}
 	if got.Pasting() {
@@ -125,7 +125,7 @@ type failing struct{}
 func (failing) Read([]byte) (int, error) { return 0, errors.New("no") }
 
 func TestTheRestOfATurnDoesNotReachWhatOpensUnderIt(t *testing.T) {
-	long := strings.Repeat("une phrase de description assez longue pour replier ", 60)
+	long := strings.Repeat("a sentence of description long enough to wrap ", 60)
 	cards := []board.Card{{Number: 1, Title: "Ship it", State: "todo", Description: long}}
 	for i := 2; i <= 40; i++ {
 		cards = append(cards, board.Card{Number: i, Title: "Other " + strconv.Itoa(i), State: "todo"})

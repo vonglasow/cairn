@@ -1,6 +1,6 @@
 ---
 name: recap
-description: Read back what was done on the cairn board over the last day worked or over a week. Use when the person asks "qu'est-ce que j'ai fait hier ?", "ma journée", "ma semaine", "what did I do yesterday?", "recap my week", or prepares a stand-up. Reads the trace, the timesheet and the objectives, finds the Claude Code sessions no task names, and proposes a task for each.
+description: Read back what was done on the cairn board over the last day worked or over a week. Use when the person asks "what did I do yesterday?", "my day", "my week", "recap my week", or prepares a stand-up. Reads the trace, the timesheet and the objectives, finds the Claude Code sessions no task names, and proposes a task for each.
 ---
 
 # Reading back a day or a week

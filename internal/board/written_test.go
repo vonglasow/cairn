@@ -49,29 +49,29 @@ func TestWhatIsTakenBackIsWhatIsBeforeTheCaret(t *testing.T) {
 }
 
 func TestWritten_holdsARunOfText(t *testing.T) {
-	w := Ending("Deux colonnes")
+	w := Ending("Two columns")
 	if w.Holding() {
 		t.Error("a text nobody selected is holding a run")
 	}
 
-	held := w.CaretAt(5).Selects(9)
-	if got := held.Holds(); got != "colo" {
-		t.Errorf("held %q, want %q", got, "colo")
+	held := w.CaretAt(4).Selects(8)
+	if got := held.Holds(); got != "colu" {
+		t.Errorf("held %q, want %q", got, "colu")
 	}
-	if got := w.CaretAt(9).Selects(5).Holds(); got != "colo" {
-		t.Errorf("held backwards %q, want %q", got, "colo")
+	if got := w.CaretAt(8).Selects(4).Holds(); got != "colu" {
+		t.Errorf("held backwards %q, want %q", got, "colu")
 	}
 
-	if got := held.Types("X").Reads(); got != "Deux Xnnes" {
+	if got := held.Types("X").Reads(); got != "Two Xmns" {
 		t.Errorf("typing over the run gave %q", got)
 	}
-	if got := held.Back().Reads(); got != "Deux nnes" {
+	if got := held.Back().Reads(); got != "Two mns" {
 		t.Errorf("deleting the run gave %q", got)
 	}
 	if held.CaretAt(2).Holding() {
 		t.Error("moving the caret kept the run held")
 	}
-	if got := w.All().Holds(); got != "Deux colonnes" {
+	if got := w.All().Holds(); got != "Two columns" {
 		t.Errorf("holding all of it gave %q", got)
 	}
 }

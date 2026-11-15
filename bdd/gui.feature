@@ -1131,12 +1131,12 @@ Feature: The desktop board
 
     @gui-a-triple-click-holds-the-paragraph
     Scenario: a triple click holds the whole paragraph it lands in
-      Given I added a task titled "Write the spec" with the paragraphs "Deux colonnes et une bande" and "Puis le reste"
+      Given I added a task titled "Write the spec" with the paragraphs "Two columns and a band" and "Then the rest"
       When I open the window
       And I double-click the card "Write the spec"
       And I triple-click the first word of "field:description" on the open task
       And I press "cmd+c"
-      Then the clipboard reads "Deux colonnes et une bande"
+      Then the clipboard reads "Two columns and a band"
 
     @gui-a-held-run-is-typed-over
     Scenario: typing over a held run replaces it, and cutting takes it away

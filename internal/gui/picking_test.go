@@ -17,7 +17,7 @@ func openTask(t *testing.T) (Window, *fake) {
 	f.acts = []act.Act{anAct("changed", "title", "Write the spec", "")}
 	w := holding(f,
 		board.Card{Number: 1, Title: "Write the spec", State: "todo", Labels: []string{"backend"},
-			Description: "Deux colonnes et une bande", Context: "/vault/1",
+			Description: "Two columns and a band", Context: "/vault/1",
 			Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}})
 	w = w.clicked(middleOf(w, 1, 0)).DoubleClick(middleOf(w, 1, 0)).Key("cmd+t")
 	if w.Screen != board.OnForm {

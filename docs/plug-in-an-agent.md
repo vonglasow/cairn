@@ -29,7 +29,7 @@ server started on.
 
 Ask it, in your own words:
 
-- "on travaille sur cairn#12" — it focuses the task and reads its notes;
+- "let's work on cairn#12" — it focuses the task and reads its notes;
 - "what should I work on?" — it weighs the board and proposes;
 - "where do things stand?" — it reads back the work in focus and done.
 

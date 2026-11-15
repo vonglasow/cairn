@@ -437,11 +437,11 @@
     },
     {
       "number": 19,
-      "title": "Accents: réécrire la façade, déjà côté hôte",
+      "title": "Accents: a naïve résumé of the café façade",
       "state": "todo",
       "priority": "normal",
       "labels": [
-        "modularité"
+        "café"
       ],
       "objectives": [
         3

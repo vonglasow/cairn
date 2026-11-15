@@ -546,14 +546,14 @@ func TestTheBoardsFormFollowsTheSameRuleAsTheWindows(t *testing.T) {
 	w.press("i")
 	w.press("e")
 	w.press("tab")
-	for _, r := range "un" {
+	for _, r := range "one" {
 		w.press(string(r))
 	}
 	w.press("enter")
-	for _, r := range "deux" {
+	for _, r := range "two" {
 		w.press(string(r))
 	}
-	if said := w.b.form.valueOf("description"); said != "un\ndeux" {
+	if said := w.b.form.valueOf("description"); said != "one\ntwo" {
 		t.Fatalf("the description reads %q", said)
 	}
 	if w.b.screen != board.OnForm {
@@ -575,7 +575,7 @@ func TestTheBoardsFormFollowsTheSameRuleAsTheWindows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(task.OfTask(found).Description, "deux") {
+	if !strings.Contains(task.OfTask(found).Description, "two") {
 		t.Fatalf("what was saved reads %q", task.OfTask(found).Description)
 	}
 }
@@ -583,7 +583,7 @@ func TestTheBoardsFormFollowsTheSameRuleAsTheWindows(t *testing.T) {
 func TestTheDetailsDescriptionScrollsToItsEnd(t *testing.T) {
 	w := newWorld(t)
 	w.reset()
-	text := strings.Repeat("une phrase de description assez longue pour replier ", 40) + "LA FIN"
+	text := strings.Repeat("a sentence of description long enough to wrap ", 40) + "THE END"
 	if err := w.addTask("Write the spec", "", text, 0); err != nil {
 		t.Fatal(err)
 	}
@@ -597,19 +597,19 @@ func TestTheDetailsDescriptionScrollsToItsEnd(t *testing.T) {
 	if !strings.Contains(drawn, Track) && !strings.Contains(drawn, Thumb) {
 		t.Fatal("the description carries no bar")
 	}
-	if strings.Contains(drawn, "LA FIN") {
+	if strings.Contains(drawn, "THE END") {
 		t.Fatal("this proves nothing: the whole description fits")
 	}
 	for range 60 {
 		w.press("ctrl+d")
 	}
-	if !strings.Contains(w.b.Draw(), "LA FIN") {
+	if !strings.Contains(w.b.Draw(), "THE END") {
 		t.Fatal("^D to the end does not bring the last line into sight")
 	}
 	for range 60 {
 		w.press("ctrl+u")
 	}
-	if !strings.Contains(w.b.Draw(), "une phrase") {
+	if !strings.Contains(w.b.Draw(), "a sentence") {
 		t.Fatal("^U back up does not bring the beginning into sight")
 	}
 }

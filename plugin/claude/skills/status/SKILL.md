@@ -1,6 +1,6 @@
 ---
 name: status
-description: Say where things stand on the cairn board, at any moment. Use when the person asks "où j'en suis ?", "status", "where do things stand?", "what's going on?". The tasks current and in focus with their open steps, what was done since the last day worked, what is left in the version, what waits on the person.
+description: Say where things stand on the cairn board, at any moment. Use when the person asks "where am I?", "status", "where do things stand?", "what's going on?". The tasks current and in focus with their open steps, what was done since the last day worked, what is left in the version, what waits on the person.
 ---
 
 # Where things stand

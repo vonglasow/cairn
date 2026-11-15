@@ -44,8 +44,8 @@ func TestSpaced(t *testing.T) {
 }
 
 func TestATextIsLaidOutParagraphByParagraph(t *testing.T) {
-	got := Paragraphs("un deux trois\n\nquatre", 8)
-	want := []string{"un deux", "trois", "", "quatre"}
+	got := Paragraphs("one two three\n\nfour", 8)
+	want := []string{"one two", "three", "", "four"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Fatalf("laid out as %q, want %q", got, want)
 	}

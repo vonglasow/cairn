@@ -33,7 +33,7 @@ func TestTheStepsOfATaskAreWrittenWhatIsLeftFirstAndReadBackAsLines(t *testing.T
 		t.Fatalf("the parts read\n%q\nwant\n%q", said, want)
 	}
 
-	back := engine.PartsIn(said + "\n[ ] Une nouvelle\n   \n[x] Déjà faite")
+	back := engine.PartsIn(said + "\n[ ] A new one\n   \n[x] Already done")
 	if len(back) != 4 {
 		t.Fatalf("read back %d parts, want 4 — a line of spaces is not one", len(back))
 	}
@@ -44,8 +44,8 @@ func TestTheStepsOfATaskAreWrittenWhatIsLeftFirstAndReadBackAsLines(t *testing.T
 	}{
 		{3, "Relire l'ADR", false},
 		{2, "Trancher", true},
-		{0, "Une nouvelle", false},
-		{0, "Déjà faite", true},
+		{0, "A new one", false},
+		{0, "Already done", true},
 	} {
 		if back[i].Number != c.number || back[i].Title != c.title || back[i].Done != c.done {
 			t.Errorf("part %d read %+v, want %d %q %v", i, back[i], c.number, c.title, c.done)

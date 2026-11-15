@@ -47,7 +47,7 @@ cairn task is said **"task cairn"** and written **`cairn#123`** — beside
 
 ## What a session does
 
-**Attaching.** Say which task you work on — "on travaille sur cairn#123",
+**Attaching.** Say which task you work on — "let's work on cairn#123",
 "work on cairn#42". Claude puts it in focus, which moves waiting work into
 `current`, then reads from the task's notes `summary.md`, the latest dated
 entries, its steps, and `ticket.md` when there is one.
@@ -71,8 +71,8 @@ summary and lets go of the focus. A session closed abruptly lets go of it
 through the hook.
 
 **The ticket, on demand.** A task tied to Azure DevOps carries the label `ado`
-and the work item's id as a label of digits alone. Only when you ask ("charge
-le ticket") does Claude read it and rewrite `ticket.md` from it.
+and the work item's id as a label of digits alone. Only when you ask ("load
+the ticket") does Claude read it and rewrite `ticket.md` from it.
 
 **An agreed approach.** When the configuration names an
 [`[approach] label`](config.md#every-key), a task carrying it

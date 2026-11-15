@@ -106,7 +106,7 @@ func TestEveryBarCanBePulled(t *testing.T) {
 		f.acts = append(f.acts, anAct("moved", "column", "todo", "current"))
 	}
 	cards := []board.Card{{Number: 1, Title: "Ship it", State: "todo",
-		Description: strings.Repeat("une ligne de description de plus ", 40)}}
+		Description: strings.Repeat("one more line of description ", 40)}}
 	for i := range 6 {
 		cards[0].Steps = append(cards[0].Steps, engine.Part{Number: i + 1, Title: fmt.Sprintf("Step %d", i+1)})
 	}

@@ -135,7 +135,7 @@ func onTheObjectives(w Window) Window {
 func manyGoals(n int) []board.Goal {
 	goals := make([]board.Goal, 0, n)
 	for i := 1; i <= n; i++ {
-		goals = append(goals, board.Goal{Number: i, Title: "Une de plus", State: "active"})
+		goals = append(goals, board.Goal{Number: i, Title: "One more", State: "active"})
 	}
 	return goals
 }
@@ -200,8 +200,8 @@ func TestEnterMovesOnOrBreaksALineAndNeverSaves(t *testing.T) {
 			w.Form = w.Form.Onto(i)
 		}
 	}
-	w = w.Types("Deux colonnes").Key("enter").Types("et une bande")
-	if said := w.Form.Writing().Reads(); said != "Deux colonnes\net une bande" {
+	w = w.Types("Two columns").Key("enter").Types("and a band")
+	if said := w.Form.Writing().Reads(); said != "Two columns\nand a band" {
 		t.Fatalf("the description reads %q", said)
 	}
 	if w.Screen != board.OnForm || len(f.wrote()) != 0 {

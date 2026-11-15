@@ -7,9 +7,9 @@ import (
 
 func TestBackspaceInASearchTakesBackOneCharacter(t *testing.T) {
 	f := newFake()
-	w := holding(f, board.Card{Number: 1, Title: "réunion", State: "backlog"})
+	w := holding(f, board.Card{Number: 1, Title: "résumé", State: "backlog"})
 
-	w = w.Key("/").Types("réu")
+	w = w.Key("/").Types("rés")
 	if got := w.Key("backspace").Looking.Reads(); got != "ré" {
 		t.Fatalf("taking one back left %q", got)
 	}

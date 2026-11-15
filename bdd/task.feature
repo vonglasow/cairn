@@ -301,7 +301,7 @@ Feature: Tasks
 
       Examples: encoding is not the place to lose data
         | title                    | what it checks  |
-        | Écrire la spéc — enfin ! | accents, dashes |
+        | Résumé of the café — at last! | accents, dashes |
         | 🧗 climb                 | an emoji        |
         | 90% done, right?         | punctuation     |
 

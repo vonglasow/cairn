@@ -315,9 +315,9 @@ Feature: The board
       Given I added a task titled "Write the spec"
       When I open the board
       And I press "e", "tab"
-      And I type "Deux colonnes"
+      And I type "Two columns"
       And I press "enter"
-      And I type "et une bande"
+      And I type "and a band"
       Then the mode is "EDIT"
       And task 1 is titled "Write the spec"
 

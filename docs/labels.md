@@ -8,7 +8,7 @@ nothing to cairn: a listing narrows by it, and that is all.
 Every surface writes a label the same way, so one word is always one label:
 
 1. lower case;
-2. the accents of the Latin letters taken off — `modularité` is `modularite`;
+2. the accents of the Latin letters taken off — `café` is `cafe`;
 3. spaces, `_` and `/` become `-`, a run of `-` becomes one, and none is kept
    at either end — `Sp26 20` is `sp26-20`;
 4. what is left holds `a`–`z`, `0`–`9`, `-` and `.`, and nothing else.
