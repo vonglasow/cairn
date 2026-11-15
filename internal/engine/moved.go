@@ -1,10 +1,7 @@
 package engine
 
 import (
-	"cairn/internal/engine/item"
-	"fmt"
 	"slices"
-	"strings"
 
 	"cairn/internal/engine/objective"
 	"cairn/internal/engine/task"
@@ -77,39 +74,4 @@ func (m *moves) takenOff() *sets {
 		return nil
 	}
 	return &m.TakenOff
-}
-
-func movedText(m *moves) string {
-	if m == nil {
-		return ""
-	}
-	var lines []string
-	for _, of := range []struct {
-		name        string
-		added, gone []string
-	}{
-		{"labels", m.Added.Labels, m.TakenOff.Labels},
-		{"blockers", refs(m.Added.Blockers), refs(m.TakenOff.Blockers)},
-		{"links", refs(m.Added.Links), refs(m.TakenOff.Links)},
-		{"objectives", refs(m.Added.Objectives), refs(m.TakenOff.Objectives)},
-	} {
-		lines = append(lines, movedLine(of.name+" added", of.added)...)
-		lines = append(lines, movedLine(of.name+" taken off", of.gone)...)
-	}
-	return "\n" + strings.Join(lines, "")
-}
-
-func movedLine(said string, members []string) []string {
-	if len(members) == 0 {
-		return nil
-	}
-	return []string{fmt.Sprintf("%-16s  %s\n", said, strings.Join(members, ", "))}
-}
-
-func refs(numbers []int) []string {
-	out := make([]string, 0, len(numbers))
-	for _, n := range numbers {
-		out = append(out, item.Ref(n))
-	}
-	return out
 }

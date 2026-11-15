@@ -3,6 +3,7 @@ package tui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/cli/render"
 	"slices"
 	"strconv"
 	"strings"
@@ -306,6 +307,6 @@ func (b Board) telling(op engine.Operation, in engine.Input) tea.Cmd {
 			return Looked{Err: err}
 		}
 		found, err := board.Look(b.work)
-		return Answered{Text: engine.RenderText(op, answer), Looked: Looked{Snapshot: found, Err: err}}
+		return Answered{Text: render.Text(op, answer), Looked: Looked{Snapshot: found, Err: err}}
 	}
 }

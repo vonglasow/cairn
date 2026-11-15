@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/cli/render"
 	"cairn/internal/engine/workspace"
 	"cairn/internal/tui/geom"
 	"fmt"
@@ -143,7 +144,7 @@ func (b Board) configuring(op engine.Operation, in engine.Input) tea.Cmd {
 		if err != nil {
 			return Configured{Err: err}
 		}
-		said := Configured{Text: strings.TrimSpace(engine.RenderText(op, answer))}
+		said := Configured{Text: strings.TrimSpace(render.Text(op, answer))}
 		if got, err := b.work.Ask(engine.ConfigShow, engine.Input{}); err == nil && got.Config != nil {
 			said.Config, said.Stamp = got.Config, workspace.StampOf(*got.Config)
 		}

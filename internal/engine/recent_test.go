@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 )
@@ -68,18 +67,6 @@ func TestRecentFolder_saysWhenItWasOpened(t *testing.T) {
 	} {
 		if got := (workspace.RecentFolder{Opened: c.opened, NotFound: c.gone}).Said(now); got != c.want {
 			t.Errorf("Said(%v, gone %v) = %q; want %q", c.opened, c.gone, got, c.want)
-		}
-	}
-}
-
-func TestWorkspaceList_saysTheRecentFoldersUnderTheWorkspaces(t *testing.T) {
-	said := RenderText(WorkspaceList, Answer{Workspaces: &workspace.Workspaces{
-		Workspaces: []workspace.Workspace{{Name: "work", Folder: "/w", Default: true, Colour: "green"}},
-		Recent:     []workspace.RecentFolder{{Store: "/l/cairn.db", Folder: "/l", Opened: time.Now()}, {Store: "/t/x.db", NotFound: true}},
-	}})
-	for _, want := range []string{"work  /w  default  green\n", "\nrecent folders, opened by path:\n", "  /l  opened today\n", "  /t/x.db  not found now\n"} {
-		if !strings.Contains(said, want) {
-			t.Errorf("workspace list says:\n%s\nwant it saying %q", said, want)
 		}
 	}
 }

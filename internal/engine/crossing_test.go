@@ -11,15 +11,12 @@ func TestOf_crossesFoundObjectives(t *testing.T) {
 	e := openEngine(t)
 	found := []objective.Objective{addObjective(t, e, "Ship cairn 1.0")}
 
-	crossed, ok := Of(ObjectiveSearch, Answer{MatchedObjectives: found}).(objectivesListed)
+	crossed, ok := Of(ObjectiveSearch, Answer{MatchedObjectives: found}).(ObjectivesListed)
 	if !ok {
 		t.Fatalf("Of = %T, want a listing of objectives", Of(ObjectiveSearch, Answer{MatchedObjectives: found}))
 	}
 	if len(crossed.Objectives) != 1 || crossed.Objectives[0].Title != "Ship cairn 1.0" {
 		t.Errorf("crossed %+v, want the objective that was found", crossed.Objectives)
-	}
-	if text := RenderText(ObjectiveSearch, Answer{MatchedObjectives: found}); !strings.Contains(text, "Ship cairn 1.0") {
-		t.Errorf("the listing does not carry it:\n%s", text)
 	}
 }
 

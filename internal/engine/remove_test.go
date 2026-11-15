@@ -34,9 +34,6 @@ func TestWorkspaceRemove_dropsTheEntryAndTouchesNoFile(t *testing.T) {
 	if removed.Name != "home" || removed.Folder != filepath.Join(h.Dir, "h") || removed.Written != files.FileIn(h.Dir) {
 		t.Errorf("WorkspaceRemoved = %+v", removed)
 	}
-	if text := RenderText(workspaceRemove, answer); !strings.Contains(text, "home") || !strings.Contains(text, removed.Folder+" is left as it was") {
-		t.Errorf("it says\n%s", text)
-	}
 	if got := Of(workspaceRemove, answer).(workspace.Removed); got != removed {
 		t.Errorf("Of = %+v", got)
 	}

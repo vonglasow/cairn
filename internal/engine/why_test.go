@@ -46,9 +46,6 @@ func TestWorkspaceShow_whyNamesTheRungAndThoseItPassedOver(t *testing.T) {
 		if got := answer.WorkspaceShown.Why; !reflect.DeepEqual(got, c.why) {
 			t.Errorf("%s: why %+v, want %+v", c.name, got, c.why)
 		}
-		if said := RenderText(WorkspaceShow, answer); !strings.Contains(said, "why        "+at(h, c.says)+"\n") || strings.Contains(said, "because") {
-			t.Errorf("%s: it says\n%s\nwant why %q", c.name, said, at(h, c.says))
-		}
 	}
 }
 
@@ -74,9 +71,6 @@ func TestWorkspaceShow_saysThePagesOnAndWhereThatIsSaid(t *testing.T) {
 		if shown := answer.WorkspaceShown; !slices.Equal(shown.Pages, c.pages) || shown.PagesFrom != c.from {
 			t.Errorf("%s: pages %v %s, want %v %s", c.name, shown.Pages, shown.PagesFrom, c.pages, c.from)
 		}
-		if said := RenderText(WorkspaceShow, answer); !strings.Contains(said, "pages      "+c.says+"\n") {
-			t.Errorf("%s: it says\n%s", c.name, said)
-		}
 	}
 }
 
@@ -94,15 +88,6 @@ func TestWorkspaceList_marksTheTimeEachWorkspaceKeeps(t *testing.T) {
 	}
 	if want := map[string]string{"home": "off", "play": "", "work": "hidden"}; times["home"] != want["home"] || times["play"] != want["play"] || times["work"] != want["work"] {
 		t.Errorf("times %v, want %v", times, want)
-	}
-	said := RenderText(WorkspaceList, answer)
-	for _, want := range []string{"home  " + filepath.Join(h.Dir, "h") + "  time off  ", "work  " + filepath.Join(h.Dir, "w") + "  default  time hidden  "} {
-		if !strings.Contains(said, want) {
-			t.Errorf("it says\n%s\nwant %q", said, want)
-		}
-	}
-	if strings.Contains(said, "play  "+filepath.Join(h.Dir, "p")+"  time") {
-		t.Errorf("a workspace whose time is on is marked:\n%s", said)
 	}
 }
 

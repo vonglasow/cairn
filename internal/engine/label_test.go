@@ -88,8 +88,12 @@ func TestLabels_carryAScope(t *testing.T) {
 		t.Errorf("the labels offered for tasks are %v", got)
 	}
 	listed, _ := Do(LabelList, path, Input{})
-	if text := RenderText(LabelList, listed); !strings.Contains(text, "for objectives") || !strings.Contains(text, "for tasks") || !strings.Contains(text, "for both") {
-		t.Errorf("a person reads:\n%s", text)
+	scopes := map[string]bool{}
+	for _, one := range Of(LabelList, listed).(label.List).Labels {
+		scopes[one.Scope] = true
+	}
+	if !scopes["objectives"] || !scopes["tasks"] || !scopes["both"] {
+		t.Errorf("the scopes listed are %v", scopes)
 	}
 	if _, err := Do(labelScope, path, given("label", "area", "scope", "both")); err != nil {
 		t.Fatal(err)

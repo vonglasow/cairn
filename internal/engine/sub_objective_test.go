@@ -127,8 +127,8 @@ func TestObjectiveEdit_proposesTheParentWhenTheLastSubObjectiveIsReached(t *test
 	if again, _ := e.Ask(ObjectiveEdit, given("number", "3", "title", "Firmware, flashed")); again.Proposes != nil {
 		t.Error("an act that reached nothing proposes the parent")
 	}
-	if !strings.Contains(RenderText(ObjectiveEdit, last), "every sub-objective of #1 Home automation is reached") {
-		t.Errorf("the answer does not propose it:\n%s", RenderText(ObjectiveEdit, last))
+	if said := Of(ObjectiveEdit, last).(ObjectiveRow); said.Proposed == nil || *said.Proposed != 1 {
+		t.Errorf("the answer does not propose #1: %v", said.Proposed)
 	}
 }
 
@@ -173,8 +173,8 @@ func TestObjectiveDelete_keepsTheSubObjectivesAndDetachesTheTasks(t *testing.T) 
 	if kept.Carried().Parent != 0 || !slices.Equal(wiring.Carried().Objectives, []int{3}) {
 		t.Errorf("kept %+v, the task serves %v", kept.Carried(), wiring.Carried().Objectives)
 	}
-	if !strings.Contains(RenderText(ObjectiveDelete, answer), "task 1 was detached from it") {
-		t.Errorf("the answer reads:\n%s", RenderText(ObjectiveDelete, answer))
+	if said := Of(ObjectiveDelete, answer).(Deleted); !slices.Contains(said.Detached, 1) {
+		t.Errorf("the answer detached %v, want task 1", said.Detached)
 	}
 }
 
@@ -215,7 +215,7 @@ func TestObjectiveReport_splitsEachMonthBySubObjective(t *testing.T) {
 		!slices.Equal(months[0].Split, []objective.Part{{Number: 2, Spent: 2 * time.Hour}, {Spent: 30 * time.Minute}}) {
 		t.Errorf("months = %+v", months)
 	}
-	shape := Of(objectiveReport, answer).(review)
+	shape := Of(objectiveReport, answer).(Reported)
 	if shape.Months[0].Itself != "30m" || len(shape.Months[0].SubObjectives) != 1 || shape.Months[0].SubObjectives[0].TimeSpent != "2h" {
 		t.Errorf("the JSON month = %+v", shape.Months[0])
 	}
@@ -229,13 +229,13 @@ func TestObjective_crossesWithItsParentAndChildren(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	shape := Of(ObjectiveList, listed).(objectivesListed)
+	shape := Of(ObjectiveList, listed).(ObjectivesListed)
 	if shape.Objectives[0].Parent != nil || !slices.Equal(shape.Objectives[0].Children, []int{2}) ||
 		shape.Objectives[1].Parent == nil || *shape.Objectives[1].Parent != 1 || shape.Objectives[1].Children == nil {
 		t.Errorf("the listing crosses as %+v", shape.Objectives)
 	}
 	shown, _ := e.Ask(ObjectiveShow, given("number", "1"))
-	if said := Of(ObjectiveShow, shown).(objectiveRow); !slices.Equal(said.Children, []int{2}) {
+	if said := Of(ObjectiveShow, shown).(ObjectiveRow); !slices.Equal(said.Children, []int{2}) {
 		t.Errorf("show crosses children %v", said.Children)
 	}
 }

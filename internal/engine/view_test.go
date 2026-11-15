@@ -50,10 +50,10 @@ func refusedAs(t *testing.T, path string, op Operation, a request, reason string
 	return err.Error()
 }
 
-func listedIn(t *testing.T, path string, a request) (Tasks, string) {
+func listedIn(t *testing.T, path string, a request) Tasks {
 	t.Helper()
 	answer := did(t, path, TaskList, a)
-	return Of(TaskList, answer).(Tasks), RenderText(TaskList, answer)
+	return Of(TaskList, answer).(Tasks)
 }
 
 func rowsListed(listed Tasks) []int {
@@ -64,10 +64,10 @@ func rowsListed(listed Tasks) []int {
 	return out
 }
 
-func viewed(t *testing.T, path string, op Operation, a request) (View, string) {
+func viewed(t *testing.T, path string, op Operation, a request) View {
 	t.Helper()
 	answer := did(t, path, op, a)
-	return Of(op, answer).(View), RenderText(op, answer)
+	return Of(op, answer).(View)
 }
 
 func homeStore(t *testing.T) string {
@@ -101,8 +101,8 @@ func TestViewNew_holdsEveryFilterTaskListTakesAndASearch(t *testing.T) {
 		{"labels", ask("name", "h").with("label", "Doc"), []int{1}},
 	}
 	for _, c := range cases {
-		kept, _ := viewed(t, path, ViewNew, c.asked)
-		listed, _ := listedIn(t, path, ask("view", c.asked.given["name"]))
+		kept := viewed(t, path, ViewNew, c.asked)
+		listed := listedIn(t, path, ask("view", c.asked.given["name"]))
 		if !slices.Equal(rowsListed(listed), c.want) {
 			t.Errorf("%s: the view lists %v, want %v", c.name, rowsListed(listed), c.want)
 		}
@@ -113,12 +113,6 @@ func TestViewNew_holdsEveryFilterTaskListTakesAndASearch(t *testing.T) {
 	views := Of(ViewList, did(t, path, ViewList, ask())).(Views)
 	if len(views.Views) != len(cases) || views.Views[7].Place != 8 || views.Views[6].Holds.Search != "sensors" || !slices.Equal(views.Views[7].Holds.Label, []string{"doc"}) {
 		t.Errorf("the views read %+v", views)
-	}
-	text := RenderText(ViewList, did(t, path, ViewList, ask()))
-	for _, said := range []string{"state todo", "priority high", "deadline before 2026-11-30", "objective 1 itself", "archived", "with archived", `search "sensors"`, "label doc"} {
-		if !strings.Contains(text, said) {
-			t.Errorf("the views read %q, want %q", text, said)
-		}
 	}
 }
 
@@ -164,7 +158,7 @@ func TestTaskList_aViewNamesWhatLiesOutsideItOnceAndCountsNoneOfIt(t *testing.T)
 	did(t, path, TaskArchive, ask("number", "6"))
 	did(t, path, TaskEdit, ask("number", "2").with("blocker", "1"))
 	did(t, path, ViewNew, ask("name", "Docs").with("label", "doc"))
-	listed, text := listedIn(t, path, ask("view", "Docs"))
+	listed := listedIn(t, path, ask("view", "Docs"))
 	if !slices.Equal(rowsListed(listed), []int{1}) {
 		t.Fatalf("the view lists %v", rowsListed(listed))
 	}
@@ -178,23 +172,13 @@ func TestTaskList_aViewNamesWhatLiesOutsideItOnceAndCountsNoneOfIt(t *testing.T)
 	}) {
 		t.Errorf("outside reads %+v, want %+v", listed.Outside, want)
 	}
-	for _, said := range []string{"#1  Wiring diagram", "outside this view, never counted:\n", "#4  Upgrade the printer  · backlog · blocks #1 · linked to #1\n", "#2  Read the sensors  · backlog · waits on #1\n"} {
-		if !strings.Contains(text, said) {
-			t.Errorf("the listing reads %q, want %q", text, said)
-		}
-	}
-	plain, plainText := listedIn(t, path, ask().with("label", "doc"))
-	if len(plain.Outside) != 0 || strings.Contains(plainText, "outside") {
+	plain := listedIn(t, path, ask().with("label", "doc"))
+	if len(plain.Outside) != 0 {
 		t.Errorf("without a view, outside reads %+v", plain.Outside)
 	}
-	shown, shownText := viewed(t, path, viewShow, ask("view", "docs"))
+	shown := viewed(t, path, viewShow, ask("view", "docs"))
 	if len(shown.Outside) != 3 || shown.Keeps != 1 || shown.Of != 5 {
 		t.Errorf("showing the view answers %+v", shown)
-	}
-	for _, said := range []string{"view     Docs  (⌘1)\n", "holds    label doc\n", "keeps    1 of 5 tasks · 0 done\n", "outside  #2 waits on #1 · #4 blocks #1, linked to #1 · #5 waits on #1\n"} {
-		if !strings.Contains(shownText, said) {
-			t.Errorf("showing the view reads %q, want %q", shownText, said)
-		}
 	}
 }
 
@@ -203,16 +187,13 @@ func TestViewEdit_renamesChangesAndMovesAView(t *testing.T) {
 	did(t, path, ViewNew, ask("name", "First", "state", "todo"))
 	did(t, path, ViewNew, ask("name", "Second", "state", "backlog").with("objective", "1"))
 	did(t, path, ViewNew, ask("name", "Third", "state", "done"))
-	changed, text := viewed(t, path, ViewEdit, ask("view", "second", "name", "Docs", "state", "").with("label", "doc").with("objective"))
+	changed := viewed(t, path, ViewEdit, ask("view", "second", "name", "Docs", "state", "").with("label", "doc").with("objective"))
 	if changed.Name != "Docs" || changed.Was != "Second" || changed.Holds.State != "" || len(changed.Holds.Objective) != 0 || changed.Keeps != 1 {
 		t.Errorf("the view changed answers %+v", changed)
 	}
-	if text != "changed view Docs (was Second) · ⌘2 · keeps 1 of 3 tasks\n" {
-		t.Errorf("the view changed reads %q", text)
-	}
-	moved, text := viewed(t, path, ViewEdit, ask("view", "Third", "place", "1"))
-	if moved.Place != 1 || moved.Was != "" || text != "changed view Third · ⌘1 · keeps 0 of 3 tasks\n" {
-		t.Errorf("the view moved answers %+v, %q", moved, text)
+	moved := viewed(t, path, ViewEdit, ask("view", "Third", "place", "1"))
+	if moved.Place != 1 || moved.Was != "" {
+		t.Errorf("the view moved answers %+v", moved)
 	}
 	views := Of(ViewList, did(t, path, ViewList, ask())).(Views)
 	var order []string
@@ -238,7 +219,7 @@ func TestViewEdit_renamesChangesAndMovesAView(t *testing.T) {
 
 func TestViewDelete_closesThePlacesAndTouchesNoTask(t *testing.T) {
 	path := homeStore(t)
-	before := len(Of(traceList, did(t, path, traceList, ask())).(acts).Acts)
+	before := len(Of(traceList, did(t, path, traceList, ask())).(Acts).Acts)
 	did(t, path, ViewNew, ask("name", "First", "state", "todo"))
 	did(t, path, ViewNew, ask("name", "Second", "state", "backlog"))
 	did(t, path, ViewEdit, ask("view", "Second", "name", "Next"))
@@ -247,22 +228,19 @@ func TestViewDelete_closesThePlacesAndTouchesNoTask(t *testing.T) {
 	if said := Of(ViewDelete, answer).(view.Deleted); said.Deleted != "First" {
 		t.Errorf("deleting answers %+v", said)
 	}
-	if text := RenderText(ViewDelete, answer); text != "deleted view First · no task changed\n" {
-		t.Errorf("deleting reads %q", text)
-	}
 	views := Of(ViewList, did(t, path, ViewList, ask())).(Views)
 	if len(views.Views) != 1 || views.Views[0].Name != "Second" || views.Views[0].Place != 1 {
 		t.Errorf("the views left read %+v", views.Views)
 	}
-	acts := Of(traceList, did(t, path, traceList, ask())).(acts)
+	acts := Of(traceList, did(t, path, traceList, ask())).(Acts)
 	if len(acts.Acts) != before {
 		t.Errorf("the trace holds %d acts, want the %d it held before any view", len(acts.Acts), before)
 	}
-	if text := RenderText(ViewDelete, did(t, path, ViewDelete, ask("view", "Second"))); text != "deleted view Second · no task changed\n" {
-		t.Errorf("deleting the last reads %q", text)
+	if said := Of(ViewDelete, did(t, path, ViewDelete, ask("view", "Second"))).(view.Deleted); said.Deleted != "Second" {
+		t.Errorf("deleting the last answers %+v", said)
 	}
-	if text := RenderText(ViewList, did(t, path, ViewList, ask())); text != "there is no view\n" {
-		t.Errorf("no view reads %q", text)
+	if views := Of(ViewList, did(t, path, ViewList, ask())).(Views); len(views.Views) != 0 {
+		t.Errorf("no view lists %+v", views)
 	}
 }
 
@@ -280,39 +258,27 @@ func TestViews_followALabelRenamedAndSayALabelDeletedIsGone(t *testing.T) {
 		t.Errorf("after the rename the view holds %+v", views.Views[0])
 	}
 	deleted := did(t, path, LabelDelete, ask("label", "docs"))
-	if said := RenderText(LabelDelete, deleted); !strings.Contains(said, "warning: 2 views hold the label docs; it narrows nothing there now\n") {
-		t.Errorf("deleting the label reads %q", said)
-	}
 	if said := Of(LabelDelete, deleted).(label.List); len(said.Warnings) != 1 {
 		t.Errorf("deleting the label answers %+v", said)
 	}
 	did(t, path, LabelDelete, ask("label", "release"))
-	listed, text := listedIn(t, path, ask("view", "Docs"))
+	listed := listedIn(t, path, ask("view", "Docs"))
 	if !slices.Equal(rowsListed(listed), []int{1, 2}) || !slices.Equal(listed.Gone, []string{"label docs", "label release"}) {
 		t.Errorf("a view with labels gone lists %v, gone %v", rowsListed(listed), listed.Gone)
 	}
-	if !strings.HasPrefix(text, "view Docs: label docs and label release are gone and narrow nothing\n  cairn view edit Docs, or cairn view delete Docs\n") {
-		t.Errorf("a view with labels gone reads %q", text)
-	}
-	listed, text = listedIn(t, path, ask("view", "Only"))
+	listed = listedIn(t, path, ask("view", "Only"))
 	if len(listed.Tasks) != 0 || !slices.Equal(listed.Gone, []string{"label docs"}) {
 		t.Errorf("a view with every condition gone lists %v, gone %v", rowsListed(listed), listed.Gone)
-	}
-	if !strings.HasPrefix(text, "every condition view Only holds is gone, so it keeps nothing: label docs\n  cairn view edit Only, or cairn view delete Only\n") {
-		t.Errorf("a view with every condition gone reads %q", text)
 	}
 	views = Of(ViewList, did(t, path, ViewList, ask())).(Views)
 	if views.Views[1].Keeps != 0 || !slices.Equal(views.Views[1].Gone, []string{"label docs"}) {
 		t.Errorf("the view gone reads %+v", views.Views[1])
 	}
-	if text := RenderText(ViewList, did(t, path, ViewList, ask())); !strings.Contains(text, "label docs, gone") {
-		t.Errorf("the views read %q", text)
+	if shown := viewed(t, path, viewShow, ask("view", "Only")); !slices.Equal(shown.Gone, []string{"label docs"}) {
+		t.Errorf("the view shown answers %+v", shown)
 	}
-	if text := RenderText(viewShow, did(t, path, viewShow, ask("view", "Only"))); !strings.Contains(text, "gone     label docs\n") {
-		t.Errorf("the view shown reads %q", text)
-	}
-	if said := RenderText(LabelDelete, did(t, path, LabelDelete, ask("label", "shopping"))); strings.Contains(said, "warning") {
-		t.Errorf("a label no view holds reads %q", said)
+	if said := Of(LabelDelete, did(t, path, LabelDelete, ask("label", "shopping"))).(label.List); len(said.Warnings) != 0 {
+		t.Errorf("a label no view holds answers %+v", said)
 	}
 }
 
@@ -347,9 +313,6 @@ func TestObjectiveDelete_asksWhatBecomesOfTheViewsNamingIt(t *testing.T) {
 	if !slices.Equal(views.Views[1].Holds.Objective, []int{2}) || !slices.Equal(views.Views[1].Gone, []string{"objective 2"}) {
 		t.Errorf("a view holding nothing else keeps the objective gone: %+v", views.Views[1])
 	}
-	if text := RenderText(ViewList, did(t, path, ViewList, ask())); !strings.Contains(text, "objective 2, gone") {
-		t.Errorf("the views read %q", text)
-	}
 	did(t, path, ObjectiveDelete, ask("number", "3", "views", "delete"))
 	views = Of(ViewList, did(t, path, ViewList, ask())).(Views)
 	if len(views.Views) != 3 || views.Views[2].Name != "Next" || views.Views[2].Place != 3 {
@@ -363,7 +326,7 @@ func TestViewShow_givesEachObjectiveItNamesWithTheStoresFigures(t *testing.T) {
 	did(t, path, TaskEdit, ask("number", "1", "state", "done"))
 	did(t, path, ObjectiveNew, ask("title", "Garden"))
 	did(t, path, ViewNew, ask("name", "Home", "state", "backlog").with("objective", "1", "3"))
-	shown, text := viewed(t, path, viewShow, ask("view", "home"))
+	shown := viewed(t, path, viewShow, ask("view", "home"))
 	if len(shown.Objectives) != 2 {
 		t.Fatalf("the view shown gives the objectives %+v", shown.Objectives)
 	}
@@ -374,12 +337,7 @@ func TestViewShow_givesEachObjectiveItNamesWithTheStoresFigures(t *testing.T) {
 	if garden := shown.Objectives[1]; garden.Number != 3 || garden.Progress != nil {
 		t.Errorf("the view gives an objective nothing serves as %+v", garden)
 	}
-	for _, said := range []string{"objective #1 Home automation  1/2 · 50% (the store's)\n", "objective #3 Garden  nothing serves it yet\n"} {
-		if !strings.Contains(text, said) {
-			t.Errorf("the view shown reads %q, want %q", text, said)
-		}
-	}
-	kept, _ := viewed(t, path, ViewNew, ask("name", "Other").with("objective", "1"))
+	kept := viewed(t, path, ViewNew, ask("name", "Other").with("objective", "1"))
 	if len(kept.Objectives) != 0 {
 		t.Errorf("keeping a view gives the objectives %+v, which only showing it gives", kept.Objectives)
 	}

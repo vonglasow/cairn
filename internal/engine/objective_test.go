@@ -3,6 +3,7 @@ package engine
 import (
 	"cairn/internal/engine/item"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -48,11 +49,8 @@ func TestObjectiveShown_withSubObjectivesSaysTheTasksApart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	said := RenderText(ObjectiveShow, a)
-	for _, want := range []string{"Write", "Draft", "Chapter"} {
-		if !strings.Contains(said, want) {
-			t.Errorf("%q is not in\n%s", want, said)
-		}
+	if said := Of(ObjectiveShow, a).(ObjectiveRow); !slices.Equal(said.Children, []int{2}) || !slices.Equal(said.Tasks, []int{1, 2}) {
+		t.Errorf("it answers children %v and tasks %v, want 2 and 1, 2", said.Children, said.Tasks)
 	}
 }
 

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/cli/render"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
@@ -768,7 +769,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if said := engine.RenderText(engine.TaskShow, shown); !strings.Contains(said, "priority     "+priority) {
+		if said := render.Text(engine.TaskShow, shown); !strings.Contains(said, "priority     "+priority) {
 			return fmt.Errorf("task %d reads:\n%s", n, said)
 		}
 		return nil

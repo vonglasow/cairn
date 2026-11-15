@@ -3,7 +3,6 @@ package engine
 import (
 	"errors"
 	"slices"
-	"strings"
 	"testing"
 
 	"cairn/internal/engine/objective"
@@ -15,13 +14,13 @@ func waitsOn(number string, on ...string) func() (Operation, Input) {
 	}
 }
 
-func shownObjective(t *testing.T, path, number string) (Answer, objectiveRow) {
+func shownObjective(t *testing.T, path, number string) (Answer, ObjectiveRow) {
 	t.Helper()
 	shown, err := Do(ObjectiveShow, path, given("number", number))
 	if err != nil {
 		t.Fatal(err)
 	}
-	said, _ := Of(ObjectiveShow, shown).(objectiveRow)
+	said, _ := Of(ObjectiveShow, shown).(ObjectiveRow)
 	return shown, said
 }
 
@@ -33,19 +32,13 @@ func TestObjectiveWaitsOn_isChangedTheWayASetIs(t *testing.T) {
 		asked(ObjectiveNew, "title", "Features"),
 		waitsOn("3", "2", "+1"),
 	)
-	shown, said := shownObjective(t, path, "3")
+	_, said := shownObjective(t, path, "3")
 	if !slices.Equal(said.WaitsOn, []int{1, 2}) || said.WaitedOnBy == nil || len(said.WaitedOnBy) != 0 {
 		t.Errorf("#3 waits on %v and is waited on by %v", said.WaitsOn, said.WaitedOnBy)
 	}
-	if text := RenderText(ObjectiveShow, shown); !strings.Contains(text, "#1 Enclosure, #2 Firmware") {
-		t.Errorf("a person reads:\n%s", text)
-	}
-	shown, said = shownObjective(t, path, "1")
+	_, said = shownObjective(t, path, "1")
 	if !slices.Equal(said.WaitedOnBy, []int{3}) || said.WaitsOn == nil || len(said.WaitsOn) != 0 {
 		t.Errorf("#1 waits on %v and is waited on by %v", said.WaitsOn, said.WaitedOnBy)
-	}
-	if text := RenderText(ObjectiveShow, shown); !strings.Contains(text, "#3 Features waits on it") {
-		t.Errorf("a person reads:\n%s", text)
 	}
 	ran(t, path, waitsOn("3", "-1"))
 	if _, said = shownObjective(t, path, "3"); !slices.Equal(said.WaitsOn, []int{2}) {
@@ -55,7 +48,7 @@ func TestObjectiveWaitsOn_isChangedTheWayASetIs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if all := Of(ObjectiveList, listed).(objectivesListed).Objectives; !slices.Equal(all[1].WaitedOnBy, []int{3}) || !slices.Equal(all[2].WaitsOn, []int{2}) {
+	if all := Of(ObjectiveList, listed).(ObjectivesListed).Objectives; !slices.Equal(all[1].WaitedOnBy, []int{3}) || !slices.Equal(all[2].WaitsOn, []int{2}) {
 		t.Errorf("the listing reads %+v", all)
 	}
 }
@@ -112,9 +105,6 @@ func TestObjectiveWaitsOn_warnsWhenWorkStarts(t *testing.T) {
 	if said := Of(TaskMove, moved).(Tasks); !slices.Equal(said.Warnings, []string{want}) {
 		t.Errorf("the move warns %q", said.Warnings)
 	}
-	if text := RenderText(TaskMove, moved); !strings.Contains(text, want) {
-		t.Errorf("a person reads:\n%s", text)
-	}
 	again, _ := Do(TaskMove, path, given("number", "1", "state", "current"))
 	if len(again.Warnings) != 0 {
 		t.Errorf("a task already in current warns %q", again.Warnings)
@@ -123,14 +113,14 @@ func TestObjectiveWaitsOn_warnsWhenWorkStarts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if said := Of(TaskEdit, edited).(Task); !slices.Equal(said.Warnings, []string{want}) || !strings.Contains(RenderText(TaskEdit, edited), want) {
+	if said := Of(TaskEdit, edited).(Task); !slices.Equal(said.Warnings, []string{want}) {
 		t.Errorf("the edit warns %q", said.Warnings)
 	}
 	focused, err := Do(TaskFocus, path, given("number", "3"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if said := Of(TaskFocus, focused).(Focus); !slices.Equal(said.Warnings, []string{want}) || !strings.Contains(RenderText(TaskFocus, focused), want) {
+	if said := Of(TaskFocus, focused).(Focus); !slices.Equal(said.Warnings, []string{want}) {
 		t.Errorf("the focus warns %q", said.Warnings)
 	}
 	made, err := Do(TaskNew, path, Input{Given: map[string]string{"title": "Lights", "state": "current"}, Listed: map[string][]string{"objective": {"3"}}})

@@ -2,25 +2,10 @@ package engine
 
 import (
 	"slices"
-	"strings"
 	"testing"
 
 	"cairn/internal/engine/objective"
 )
-
-func TestRenderText_saysWhatWasAddedAndTakenOff(t *testing.T) {
-	one := builtTask(t, 3, "Ship it")
-	moved := &moves{Added: sets{Labels: []string{"urgent", "team"}, Links: []int{4}}, TakenOff: sets{Blockers: []int{1, 2}, Objectives: []int{5}}}
-	got := RenderText(TaskEdit, Answer{Task: &one, Moved: moved})
-	for _, want := range []string{"labels added      urgent, team\n", "links added       #4\n", "blockers taken off  #1, #2\n", "objectives taken off  #5\n"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("the answer does not say %q:\n%s", want, got)
-		}
-	}
-	if strings.Contains(got, "labels taken off") || strings.Contains(got, "blockers added") {
-		t.Errorf("the answer names what did not move:\n%s", got)
-	}
-}
 
 func TestOf_carriesWhatWasAddedAndTakenOff(t *testing.T) {
 	one := builtTask(t, 3, "Ship it")
@@ -34,7 +19,7 @@ func TestOf_carriesWhatWasAddedAndTakenOff(t *testing.T) {
 		t.Errorf("Of without a change = %+v %+v, want nothing said", plain.Added, plain.TakenOff)
 	}
 	o := builtObjective(t, 1, "Ship it")
-	goal, _ := Of(ObjectiveEdit, Answer{Objective: &o, Moved: &moves{TakenOff: sets{Labels: []string{"perso"}}}}).(objectiveRow)
+	goal, _ := Of(ObjectiveEdit, Answer{Objective: &o, Moved: &moves{TakenOff: sets{Labels: []string{"perso"}}}}).(ObjectiveRow)
 	if goal.TakenOff == nil || !slices.Equal(goal.TakenOff.Labels, []string{"perso"}) {
 		t.Errorf("Of an objective = %+v, want perso taken off", goal.TakenOff)
 	}

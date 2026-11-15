@@ -19,7 +19,7 @@ cairn objective move 13 --parent none`,
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: objectivesListed{},
+	Answers: ObjectivesListed{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "first", Kind: Bool, Means: "put it at the head of the ones it sits with"},

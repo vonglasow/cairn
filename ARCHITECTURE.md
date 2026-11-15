@@ -34,6 +34,7 @@ names.
 | `store/files` | the files beside it: configuration, drafts, window sizes, recent workspaces |
 | `board` | what every board reads: cards, goals, forms, menus, the walk, `Board` the state on screen |
 | `cli`, `mcp` | the command tree and the tools, both made from the catalogue |
+| `cli/render` | an answer as a person reads it, for every surface |
 | `tui`, `tui/geom`, `tui/design` | the board in a terminal: the program, cells, styles |
 | `gui`, `gui/geom`, `gui/design`, `gui/motion` | the board in a window: the program, pixels, skin, motion |
 | `theme` | a base16 scheme turned into every colour, and its contrasts |

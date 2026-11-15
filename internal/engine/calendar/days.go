@@ -92,3 +92,11 @@ func ParseMoment(s string) (time.Time, error) {
 func StartOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
+
+// DaysFrom counts the days from one moment's day to another's, in local time.
+func DaysFrom(since, now time.Time) int {
+	from, to := since.Local(), now.Local()
+	first := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.Local)
+	last := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, time.Local)
+	return int(last.Sub(first).Round(24*time.Hour) / (24 * time.Hour))
+}

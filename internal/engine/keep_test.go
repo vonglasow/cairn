@@ -3,9 +3,9 @@ package engine
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
+	"cairn/internal/engine/workspace"
 	"cairn/internal/store/files"
 )
 
@@ -36,10 +36,8 @@ func TestWorkspaceShow_aServerSaysSwitchingIsNotDoneThere(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	said := RenderText(WorkspaceShow, answer)
-	for _, want := range []string{"workspace  home\n", "why        when this server started, --workspace — over the default, work\n", "switch     not from here: this server keeps its store; another workspace is another server, which the person starts\n"} {
-		if !strings.Contains(said, want) {
-			t.Errorf("it says\n%s\nwant %q", said, want)
-		}
+	said := Of(WorkspaceShow, answer).(workspace.Shown)
+	if said.Workspace != "home" || !said.Why.Started || said.Why.Rung != "--workspace" || said.Switch == "" {
+		t.Errorf("it answers %+v", said)
 	}
 }

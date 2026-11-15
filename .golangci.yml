@@ -528,6 +528,26 @@ linters:
             - pkg: database/sql
               desc: a surface never opens a database
 
+        # The text a person reads, for every surface. It reads answers and
+        # reaches no surface, so each surface may import it.
+        cli-render:
+          files: ["**/internal/cli/render/**"]
+          deny:
+            - pkg: cairn/internal/store
+              desc: an answer is shown, the store is never read
+            - pkg: database/sql
+              desc: an answer is shown, the store is never read
+            - pkg: cairn/internal/cli$
+              desc: every surface imports it, so it imports none
+            - pkg: cairn/internal/mcp
+              desc: every surface imports it, so it imports none
+            - pkg: cairn/internal/tui
+              desc: every surface imports it, so it imports none
+            - pkg: cairn/internal/gui
+              desc: every surface imports it, so it imports none
+            - pkg: github.com/spf13/cobra
+              desc: it writes text, it parses nothing
+
         # The fourth surface: the same board in a window. Held exactly as the
         # terminal one is, and forbidden it as well — two surfaces do not reach
         # each other, however alike they look. What they share sits underneath
@@ -535,7 +555,7 @@ linters:
         gui:
           files: ["**/internal/gui/**"]
           deny:
-            - pkg: cairn/internal/cli
+            - pkg: cairn/internal/cli$
               desc: the command line opens the window, the window never reads it
             - pkg: cairn/internal/store/sqlite
               desc: a surface changes state through the engine, never behind it
@@ -598,7 +618,7 @@ linters:
         tui:
           files: ["**/internal/tui/**"]
           deny:
-            - pkg: cairn/internal/cli
+            - pkg: cairn/internal/cli$
               desc: the command line opens the board, the board never reads it
             - pkg: cairn/internal/store/sqlite
               desc: a surface changes state through the engine, never behind it
@@ -623,7 +643,7 @@ linters:
         mcp:
           files: ["**/internal/mcp/**", "!**/internal/mcp/*_test.go"]
           deny:
-            - pkg: cairn/internal/cli
+            - pkg: cairn/internal/cli$
               desc: the command line builds the server, the server never reads it
             - pkg: cairn/internal/store/sqlite
               desc: a surface changes state through the engine, never behind it

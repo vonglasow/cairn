@@ -15,7 +15,7 @@ var MigrationList = Operation{
 	Example: "cairn migration list",
 	Level:   Read,
 	Needs:   aStoreBehind,
-	Answers: ledger{},
+	Answers: Ledger{},
 	Run: func(on workedOn, _ Input) (Answer, error) {
 		all, err := on.Engine.migrations()
 		if err != nil {
@@ -63,7 +63,7 @@ cairn migration apply 4`,
 	Level:   write,
 	Needs:   aStoreBehind,
 	Again:   ChangesNothingMore,
-	Answers: applied{},
+	Answers: Applied{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a migration", Means: "the number of the change"},
 	},

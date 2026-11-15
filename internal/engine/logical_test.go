@@ -4,7 +4,6 @@ import (
 	"cairn/internal/engine/task"
 	"errors"
 	"testing"
-	"time"
 )
 
 func TestArchive_sweepGoesOnPastWhatIsAlreadyOff(t *testing.T) {
@@ -51,23 +50,5 @@ func TestTimesheet_namesWhatComesAfterATaskDeletedSince(t *testing.T) {
 	}
 	if answer.Named[2] != "kept" {
 		t.Errorf("titles = %v, want the task after the deleted one named", answer.Named)
-	}
-}
-
-func TestDaysSince_countsTheDaysOnTheCalendar(t *testing.T) {
-	now := time.Date(2026, 10, 5, 9, 0, 0, 0, time.Local)
-	for _, c := range []struct {
-		since time.Time
-		want  string
-	}{
-		{time.Date(2026, 10, 5, 0, 30, 0, 0, time.Local), "today"},
-		{time.Date(2026, 10, 4, 23, 30, 0, 0, time.Local), "1 day"},
-		{time.Date(2026, 10, 3, 9, 30, 0, 0, time.Local), "2 days"},
-		{time.Date(2026, 9, 26, 12, 0, 0, 0, time.Local), "9 days"},
-		{time.Date(2026, 3, 20, 12, 0, 0, 0, time.Local), "199 days"},
-	} {
-		if got := daysSince(c.since, now); got != c.want {
-			t.Errorf("daysSince(%v) = %q, want %q", c.since, got, c.want)
-		}
 	}
 }

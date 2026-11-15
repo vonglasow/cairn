@@ -45,7 +45,7 @@ var BackupList = Operation{
 	Example: "cairn backup list",
 	Level:   Read,
 	Needs:   noStore,
-	Answers: kept{},
+	Answers: BackupsKept{},
 	Run: func(on workedOn, _ Input) (Answer, error) {
 		all, err := on.Backups.All()
 		if err != nil {
@@ -119,7 +119,7 @@ cairn backup restore 3 --yes`,
 	Level:   Full,
 	Needs:   noStore,
 	Again:   doesItAgain,
-	Answers: restored{},
+	Answers: Restored{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a backup", Means: "the number of the backup"},
 	},

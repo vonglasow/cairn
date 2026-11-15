@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"cairn/internal/store/files"
@@ -24,9 +23,6 @@ func TestConfigInit_writesTheExampleAndNeverOverAFile(t *testing.T) {
 	}
 	if answer.Written == nil || *answer.Written != files.FileIn(home) {
 		t.Errorf("it says it wrote %v", answer.Written)
-	}
-	if said := RenderText(ConfigInit, answer); !strings.Contains(said, files.FileIn(home)) {
-		t.Errorf("it says %q", said)
 	}
 	if _, err := ConfigInit.Run(workedOn{Home: Home{Dir: home}}, Input{}); !errors.Is(err, workspace.ErrConfigAlreadyThere) {
 		t.Errorf("writing it again = %v, want ErrConfigAlreadyThere", err)

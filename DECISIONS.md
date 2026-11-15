@@ -21,6 +21,7 @@ A decision added, changed or undone is a line here, in the commit that does it.
 - Drafts, window sizes and recent workspaces are written through operations no command or tool lists — a surface writes nothing behind the engine.
 - Files on disk are written by `store/files` only; their paths and formats stay.
 - The Claude sessions holding a task are the hook's, not the engine's — cairn never reads a task's notes.
+- The text a person reads is `cli/render`, which every surface imports; the engine answers shapes, and its tests check them — the engine held its rules and the words that say them, and its tests checked both. The notions' own `text.go` stay where they are: they read the notions' unexported fields, and only `cli/render` calls them.
 - `--json` is a flag of every command — one flag at the root reads the same everywhere.
 - Several tasks are deleted or archived in one act, under `--also` — three asked one by one left two gone when the third was refused.
 - `engine/item`, `engine/calendar` and `engine/change` keep their names; `domain` is gone — a name says what a package holds, never a layer.

@@ -391,7 +391,7 @@ type Answer struct {
 	Choosing          map[int]task.Choosing
 	Followed          []series.MadeNext
 	SeriesShown       *Series
-	SeriesKept        *seriesListed
+	SeriesKept        *SeriesListed
 	SeriesGone        *series.Deleted
 	Untimed           bool
 	Kept              *string

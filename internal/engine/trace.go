@@ -16,7 +16,7 @@ var TraceShow = Operation{
 	Example: "cairn trace show 1",
 	Level:   Read,
 	Needs:   aStore,
-	Answers: acts{},
+	Answers: Acts{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 	},
@@ -42,7 +42,7 @@ cairn trace list --since 2026-09-29 --until 2026-09-29
 cairn trace list --by sam`,
 	Level:   Read,
 	Needs:   aStore,
-	Answers: acts{},
+	Answers: Acts{},
 	Takes: []Argument{
 		{Name: "since", Kind: day, Means: "the first day to look at; today when left out"},
 		{Name: "until", Kind: day, Means: "the last day to look at, the whole of it; no end when left out"},

@@ -40,9 +40,8 @@ func TestAppInstall_writesTheApplicationRunningThisCairn(t *testing.T) {
 	if launcher, _ := os.ReadFile(filepath.Join(installed, "Contents", "MacOS", "cairn")); !strings.Contains(string(launcher), running) {
 		t.Errorf("the launcher runs %q, not %s", launcher, running)
 	}
-	said := RenderText(appInstall, answer)
-	if !strings.Contains(said, installed) || !strings.Contains(said, running) || !strings.Contains(said, "Spotlight") {
-		t.Errorf("it says %q", said)
+	if said := Of(appInstall, answer).(app.Installed); said.Installed != installed || said.Runs != running || !strings.Contains(said.OpenedFrom, "Spotlight") {
+		t.Errorf("it answers %+v", said)
 	}
 	if shaped, ok := Of(appInstall, answer).(app.Installed); !ok || shaped.Installed != installed || shaped.Runs != running || !strings.Contains(shaped.OpenedFrom, "Spotlight") {
 		t.Errorf("a machine is told %#v", Of(appInstall, answer))
@@ -67,8 +66,8 @@ func TestAppInstall_writesTheDesktopEntryOnLinux(t *testing.T) {
 	if said, _ := os.ReadFile(entry); !strings.Contains(string(said), "Exec="+running+" gui") {
 		t.Errorf("the entry says %q", said)
 	}
-	if said := RenderText(appInstall, answer); !strings.Contains(said, entry) || !strings.Contains(said, "applications menu") {
-		t.Errorf("it says %q", said)
+	if said := Of(appInstall, answer).(app.Installed); said.Installed != entry || !strings.Contains(said.OpenedFrom, "applications menu") {
+		t.Errorf("it answers %+v", said)
 	}
 }
 

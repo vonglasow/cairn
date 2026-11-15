@@ -175,7 +175,7 @@ cairn task archive --state done`,
 	Level:   write,
 	Needs:   aStore,
 	Again:   ChangesNothingMore,
-	Answers: swept{},
+	Answers: Swept{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the number of the task"},
 		alsoOf("a task"),
@@ -226,7 +226,7 @@ var TaskLabel = Operation{
 	Needs:      aStore,
 	Again:      ChangesNothingMore,
 	Overwrites: true,
-	Answers:    labelled{},
+	Answers:    Labelled{},
 	Takes: append([]Argument{
 		{Name: "put", Kind: Text, Positional: true, Required: true, Means: "the label to put on them"},
 	}, taskNarrowing...),

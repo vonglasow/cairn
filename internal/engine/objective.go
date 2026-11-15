@@ -277,7 +277,7 @@ var ObjectiveNew = Operation{
 	Level:   write,
 	Needs:   aStore,
 	Again:   doesItAgain,
-	Answers: objectiveRow{},
+	Answers: ObjectiveRow{},
 	Takes: append([]Argument{
 		{Name: "title", Kind: Text, Positional: true, Required: true, Means: "what the objective is called"},
 	}, objectiveAttributes...),
@@ -309,7 +309,7 @@ var ObjectiveList = Operation{
 cairn objective list --state reached`,
 	Level:   Read,
 	Needs:   aStore,
-	Answers: objectivesListed{},
+	Answers: ObjectivesListed{},
 	Takes:   objectiveNarrowing,
 	Run: func(on workedOn, in Input) (Answer, error) {
 		kept, err := keeping(in, objectiveNarrowing, nil)
@@ -354,7 +354,7 @@ var ObjectiveShow = Operation{
 	Example: "cairn objective show 1",
 	Level:   Read,
 	Needs:   aStore,
-	Answers: objectiveRow{},
+	Answers: ObjectiveRow{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 	},
@@ -375,7 +375,7 @@ var ObjectiveEdit = Operation{
 	Needs:      aStore,
 	Again:      ChangesNothingMore,
 	Overwrites: true,
-	Answers:    objectiveRow{},
+	Answers:    ObjectiveRow{},
 	Takes: append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "title", Kind: Text, Means: "what the objective is called"},
@@ -413,7 +413,7 @@ var ObjectiveSearch = Operation{
 	Example: "cairn objective search ship",
 	Level:   Read,
 	Needs:   aStore,
-	Answers: objectivesListed{},
+	Answers: ObjectivesListed{},
 	Takes: []Argument{
 		{Name: "named", Kind: List, Positional: true, Required: true, Means: "what to look for, read the way it is shown"},
 	},

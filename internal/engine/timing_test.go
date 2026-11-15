@@ -3,7 +3,6 @@ package engine
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -127,12 +126,12 @@ func TestAnswer_saysNoTimeSpentWhileTheTimeIsNotShown(t *testing.T) {
 			if spent := (*shown.Task).Carried().Spent; spent != 0 {
 				t.Errorf("task show says %s spent", spent)
 			}
-			if said := RenderText(TaskShow, shown); strings.Contains(said, "time spent") {
-				t.Errorf("task show says the time spent:\n%s", said)
+			if said := Of(TaskShow, shown).(Task); said.TimeSpent != "" {
+				t.Errorf("task show says %s spent", said.TimeSpent)
 			}
 			objective := ranAt(t, ObjectiveShow, not, given("number", "1"))
-			if said := RenderText(ObjectiveShow, objective); strings.Contains(said, "time spent") {
-				t.Errorf("objective show says the time spent:\n%s", said)
+			if said := Of(ObjectiveShow, objective).(ObjectiveRow); said.TimeSpent != "" {
+				t.Errorf("objective show says %s spent", said.TimeSpent)
 			}
 			if listed := ranAt(t, ObjectiveList, not, given()); len(listed.Spent) != 0 {
 				t.Errorf("objective list says %v spent", listed.Spent)

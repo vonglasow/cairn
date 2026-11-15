@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"cairn/internal/cli/render"
 	"encoding/json"
 	"fmt"
 
@@ -27,7 +28,7 @@ func write(cmd *cobra.Command, op engine.Operation, a engine.Answer) error {
 	if wantsJSON(cmd) {
 		return writeJSON(cmd, engine.Of(op, a))
 	}
-	_, err := fmt.Fprint(cmd.OutOrStdout(), engine.RenderText(op, a))
+	_, err := fmt.Fprint(cmd.OutOrStdout(), render.Text(op, a))
 	return err
 }
 

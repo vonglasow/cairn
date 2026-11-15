@@ -105,24 +105,24 @@ func ofSheet(s act.Sheet, titles map[int]string, gone map[int]bool) Timesheet {
 	return Timesheet{Days: days}
 }
 
-// objectivesListed is how a listing of objectives crosses.
-type objectivesListed struct {
-	Objectives []objectiveRow `json:"objectives"`
+// ObjectivesListed is how a listing of objectives crosses.
+type ObjectivesListed struct {
+	Objectives []ObjectiveRow `json:"objectives"`
 }
 
-// kept is how a listing of backups crosses — named for what is kept beside the store, since Backups already names the way to reach them.
-type kept struct {
+// BackupsKept is how a listing of backups crosses — named for what is kept beside the store, since Backups already names the way to reach them.
+type BackupsKept struct {
 	Backups []BackupShape `json:"backups"`
 }
 
-// ledger is how a listing of changes to the shape of the store crosses, with what the store holds — which the text has always said and the JSON used to lose, having nowhere to put it.
-type ledger struct {
+// Ledger is how a listing of changes to the shape of the store crosses, with what the store holds — which the text has always said and the JSON used to lose, having nowhere to put it.
+type Ledger struct {
 	Changes []migration.Shape `json:"changes"`
 	Holds   *backup.Held      `json:"holds"`
 }
 
-// acts is how what was done to a task, or over a period, crosses.
-type acts struct {
+// Acts is how what was done to a task, or over a period, crosses.
+type Acts struct {
 	Acts []act.Shape `json:"acts"`
 }
 
@@ -134,8 +134,8 @@ type Focus struct {
 	Warnings []string       `json:"warnings,omitempty" jsonschema:"what the focus did and should be known: each objective the task brought into current counts in, waiting on one not reached; left out when there is nothing to say"`
 }
 
-// objectiveRow is how an objective crosses to a machine.
-type objectiveRow struct {
+// ObjectiveRow is how an objective crosses to a machine.
+type ObjectiveRow struct {
 	objective.Shape
 	Tasks      []int               `json:"tasks"`
 	Progress   *item.ProgressShape `json:"progress"`
@@ -151,12 +151,12 @@ type objectiveRow struct {
 }
 
 // ofObjective turns an objective into what crosses.
-func ofObjective(o objective.Objective, under []task.Task, p item.Progress) objectiveRow {
+func ofObjective(o objective.Objective, under []task.Task, p item.Progress) ObjectiveRow {
 	numbers := make([]int, 0, len(under))
 	for _, t := range under {
 		numbers = append(numbers, t.Carried().Number)
 	}
-	return objectiveRow{
+	return ObjectiveRow{
 		Shape:      objective.OfObjective(o),
 		Tasks:      numbers,
 		Progress:   item.OfProgress(p),
@@ -168,7 +168,7 @@ func ofObjective(o objective.Objective, under []task.Task, p item.Progress) obje
 	}
 }
 
-func seated(said objectiveRow, o objective.Objective, a Answer) objectiveRow {
+func seated(said ObjectiveRow, o objective.Objective, a Answer) ObjectiveRow {
 	c := o.Carried()
 	if c.Parent != 0 {
 		said.Parent = &c.Parent
@@ -191,13 +191,13 @@ func proposedIn(a Answer) *int {
 	return nil
 }
 
-// labelled is how labelling answers: how many it put one on.
-type labelled struct {
+// Labelled is how labelling answers: how many it put one on.
+type Labelled struct {
 	Labelled int `json:"labelled"`
 }
 
-// swept is how archiving answers: how many were taken off the board and, when one was named by its number, that task as it ends up.
-type swept struct {
+// Swept is how archiving answers: how many were taken off the board and, when one was named by its number, that task as it ends up.
+type Swept struct {
 	Archived int   `json:"archived"`
 	Task     *Task `json:"task,omitempty"`
 }
@@ -213,13 +213,13 @@ type Deleted struct {
 	TasksDeleted  []int `json:"tasks_deleted,omitempty" jsonschema:"the tasks deleted with it; left out when none was"`
 }
 
-// restored confirms a backup was restored, replacing the store with what it held.
-type restored struct {
+// Restored confirms a backup was restored, replacing the store with what it held.
+type Restored struct {
 	Restored int `json:"restored"`
 }
 
-// applied names what a change command made — every name it applied, or none when nothing was waiting.
-type applied struct {
+// Applied names what a change command made — every name it applied, or none when nothing was waiting.
+type Applied struct {
 	Applied []string `json:"applied"`
 }
 
@@ -242,7 +242,7 @@ func Of(op Operation, a Answer) any {
 		return *a.WorkspaceShown
 	case Timesheet:
 		return ofSheet(*a.Sheet, a.Named, a.Gone)
-	case review:
+	case Reported:
 		r := ofReview(*a.Objective, a.Under, a.Progress, *a.Period)
 		r.Objective = seated(r.Objective, *a.Objective, a)
 		return r
@@ -251,7 +251,7 @@ func Of(op Operation, a Answer) any {
 		if a.Task != nil {
 			held = []task.Task{*a.Task}
 		}
-		said := ofFocus(held, a.Progress, heldOr(a.InFocus), a.Sessions)
+		said := ofFocus(held, a.Progress, HeldOr(a.InFocus), a.Sessions)
 		said.Warnings = a.Warnings
 		return said
 	case Task:
@@ -268,8 +268,8 @@ func Of(op Operation, a Answer) any {
 		}
 		said.Made = a.Followed
 		return said
-	case swept:
-		swept := swept{Archived: *a.Archived}
+	case Swept:
+		swept := Swept{Archived: *a.Archived}
 		if a.Task != nil {
 			one := ofTask(*a.Task, a.Progress)
 			swept.Task = &one
@@ -294,28 +294,28 @@ func Of(op Operation, a Answer) any {
 		}
 		said.Made = a.Followed
 		return said
-	case objectiveRow:
+	case ObjectiveRow:
 		said := seated(ofObjective(*a.Objective, a.Under, a.Progress), *a.Objective, a)
 		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
 		said.Proposed = proposedIn(a)
 		return said
-	case objectivesListed:
+	case ObjectivesListed:
 		if a.MatchedObjectives != nil {
-			return objectivesListed{Objectives: ofObjectives(a.MatchedObjectives, a)}
+			return ObjectivesListed{Objectives: ofObjectives(a.MatchedObjectives, a)}
 		}
-		return objectivesListed{Objectives: ofObjectives(a.Objectives, a)}
+		return ObjectivesListed{Objectives: ofObjectives(a.Objectives, a)}
 	case BackupShape:
 		return ofBackup(*a.Backup, a.Holds)
-	case kept:
-		return kept{Backups: ofBackups(a.Backups)}
+	case BackupsKept:
+		return BackupsKept{Backups: ofBackups(a.Backups)}
 	case migration.Shape:
 		return migration.OfMigration(*a.Change)
-	case ledger:
-		return ledger{Changes: ofChanges(a.Changes), Holds: a.Holds}
+	case Ledger:
+		return Ledger{Changes: ofChanges(a.Changes), Holds: a.Holds}
 	case migration.RolledBack:
 		return migration.OfRolledBack(*a.RolledBack)
-	case labelled:
-		return labelled{Labelled: *a.Labelled}
+	case Labelled:
+		return Labelled{Labelled: *a.Labelled}
 	case label.List:
 		return label.List{Labels: *a.Labels, Warnings: a.Warnings}
 	case View:
@@ -326,14 +326,14 @@ func Of(op Operation, a Answer) any {
 		return view.Deleted{Deleted: *a.ViewGone}
 	case Series:
 		return *a.SeriesShown
-	case seriesListed:
+	case SeriesListed:
 		return *a.SeriesKept
 	case series.Deleted:
 		return *a.SeriesGone
 	case workspace.ConfigWritten:
 		return workspace.ConfigWritten{Written: *a.Written}
-	case debugReported:
-		return debugReported{Written: *a.Written, Files: *a.Packed}
+	case DebugReported:
+		return DebugReported{Written: *a.Written, Files: *a.Packed}
 	case task.Steps:
 		return task.OfSteps(*a.Task)
 	case Deleted:
@@ -342,8 +342,8 @@ func Of(op Operation, a Answer) any {
 			said.Kept, said.SubObjectives, said.Detached, said.TasksDeleted = a.Went.Kept, a.Went.Gone, a.Went.Detached, a.Went.Deleted
 		}
 		return said
-	case restored:
-		return restored{Restored: *a.Restored}
+	case Restored:
+		return Restored{Restored: *a.Restored}
 	case app.PluginWritten:
 		return app.PluginWritten{Plugin: *a.Plugin}
 	case app.PluginShown:
@@ -356,13 +356,13 @@ func Of(op Operation, a Answer) any {
 		return exchange.Exported{Exported: *a.Exported, Holds: a.Holds}
 	case exchange.ImportedFile:
 		return exchange.ImportedFile{Imported: *a.Imported, Added: *a.Holds}
-	case applied:
-		return applied{Applied: a.Applied}
-	case acts:
+	case Applied:
+		return Applied{Applied: a.Applied}
+	case Acts:
 		if a.Since != nil {
-			return acts{Acts: ofActs(a.Since)}
+			return Acts{Acts: ofActs(a.Since)}
 		}
-		return acts{Acts: ofActs(a.Acts)}
+		return Acts{Acts: ofActs(a.Acts)}
 	}
 	return nil
 }
@@ -398,7 +398,8 @@ func ofTasks(tasks []task.Task, inFocus *[]int, kept []string) Tasks {
 	return Tasks{Tasks: out, InFocus: listed(*inFocus)}
 }
 
-func heldOr(inFocus *[]int) []int {
+// HeldOr is the tasks in focus, none when the answer does not say.
+func HeldOr(inFocus *[]int) []int {
 	if inFocus == nil {
 		return nil
 	}
@@ -412,8 +413,8 @@ func listed[T any](items []T) []T {
 	return items
 }
 
-func ofObjectives(all []objective.Objective, a Answer) []objectiveRow {
-	out := make([]objectiveRow, 0, len(all))
+func ofObjectives(all []objective.Objective, a Answer) []ObjectiveRow {
+	out := make([]ObjectiveRow, 0, len(all))
 	for _, o := range all {
 		said := seated(ofObjective(o, nil, a.Along[o.Carried().Number]), o, a)
 		said.TimeSpent = calendar.FormatDuration(a.Spent[o.Carried().Number])

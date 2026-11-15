@@ -186,9 +186,10 @@ func (t TimesheetTask) Says() string {
 // Shown is the task's title as the sheet writes it: said to be deleted when it was.
 func (t TimesheetTask) Shown() string {
 	if t.Deleted {
-		return t.Title + deletedMark
+		return t.Title + DeletedMark
 	}
 	return t.Title
 }
 
-const deletedMark = " (deleted)"
+// DeletedMark follows the title of a task deleted since.
+const DeletedMark = " (deleted)"

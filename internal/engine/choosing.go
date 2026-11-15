@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/filter"
 	"cairn/internal/engine/item"
 	"fmt"
@@ -51,9 +52,9 @@ func (e *Engine) choosing(shown []task.Task) (map[int]task.Choosing, error) {
 	out := map[int]task.Choosing{}
 	for _, t := range shown {
 		f := t.Carried()
-		said := task.Choosing{Blocks: slices.Sorted(slices.Values(in[f.Number])), Age: daysFrom(moved[f.Number], today)}
+		said := task.Choosing{Blocks: slices.Sorted(slices.Values(in[f.Number])), Age: calendar.DaysFrom(moved[f.Number], today)}
 		if !f.Deadline.IsZero() && f.State != item.Done {
-			days := daysFrom(today, f.Deadline)
+			days := calendar.DaysFrom(today, f.Deadline)
 			if days < 0 {
 				days = -days
 				said.Overdue = &days

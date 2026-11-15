@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/cli/render"
 	"cairn/internal/gui/geom"
 	"strings"
 	"sync"
@@ -71,7 +72,7 @@ func (w Window) upgrading() Window {
 	if err != nil {
 		return w.failing(err)
 	}
-	return w.telling(strings.TrimSpace(engine.RenderText(engine.Upgrade, answer)))
+	return w.telling(strings.TrimSpace(render.Text(engine.Upgrade, answer)))
 }
 
 var doableNow struct {

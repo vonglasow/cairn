@@ -13,7 +13,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 
 	"cairn/internal/engine/task"
 )
@@ -570,13 +569,6 @@ func (e *Engine) unview(goners []int, how string) error {
 	return e.store.KeepViews(kept)
 }
 
-func viewKeptText(v View, said string) string {
-	if v.Was != "" {
-		said += " (was " + v.Was + ")"
-	}
-	return fmt.Sprintf("%s · %s · keeps %d of %s\n", said, view.CmdKey(v.Place), v.Keeps, item.ManyOf(v.Of, "task", "tasks"))
-}
-
 // HoldsSays is what a view holds, the way a person reads it: each filter and what it is on, what of it is gone said so.
 func HoldsSays(v View) string {
 	var said []string
@@ -614,60 +606,4 @@ func HoldsSays(v View) string {
 		}
 	}
 	return strings.Join(said, " · ")
-}
-
-func viewsText(views []View) string {
-	if len(views) == 0 {
-		return "there is no view\n"
-	}
-	var out strings.Builder
-	tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "#\tname\tholds\tkeeps")
-	for _, v := range views {
-		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%d\n", v.Place, v.Name, HoldsSays(v), v.Keeps)
-	}
-	_ = tw.Flush()
-	return out.String()
-}
-
-func viewShownText(v View) string {
-	lines := []string{
-		fmt.Sprintf("view     %s  (%s)", v.Name, view.CmdKey(v.Place)),
-		"holds    " + HoldsSays(v),
-		fmt.Sprintf("keeps    %d of %s · %d done", v.Keeps, item.ManyOf(v.Of, "task", "tasks"), v.Done),
-	}
-	if len(v.Gone) > 0 {
-		lines = append(lines, "gone     "+strings.Join(v.Gone, " · "))
-	}
-	if len(v.Outside) > 0 {
-		var outside []string
-		for _, o := range v.Outside {
-			var why []string
-			for _, w := range o.Why {
-				why = append(why, fmt.Sprintf("%s #%d", w.Is, w.Of))
-			}
-			outside = append(outside, fmt.Sprintf("#%d %s", o.Number, strings.Join(why, ", ")))
-		}
-		lines = append(lines, "outside  "+strings.Join(outside, " · "))
-	}
-	for _, o := range v.Objectives {
-		lines = append(lines, fmt.Sprintf("objective #%d %s  %s", o.Number, o.Title, view.StoreFigures(o)))
-	}
-	return strings.Join(lines, "\n") + "\n"
-}
-
-func lostText(a Answer) string {
-	if a.InView == "" || len(a.Lost) == 0 {
-		return ""
-	}
-	name := view.TypedName(a.InView)
-	hint := fmt.Sprintf("  cairn view edit %s, or cairn view delete %s\n", name, name)
-	if a.KeepsNothing {
-		return fmt.Sprintf("every condition view %s holds is gone, so it keeps nothing: %s\n", a.InView, strings.Join(a.Lost, ", ")) + hint
-	}
-	verb := "is gone and narrows nothing"
-	if len(a.Lost) > 1 {
-		verb = "are gone and narrow nothing"
-	}
-	return fmt.Sprintf("view %s: %s %s\n", a.InView, strings.Join(a.Lost, " and "), verb) + hint
 }

@@ -52,7 +52,7 @@ func (a Answer) untimed() Answer {
 		a.SeriesShown = &s
 	}
 	if a.SeriesKept != nil {
-		kept := seriesListed{Series: make([]Series, 0, len(a.SeriesKept.Series))}
+		kept := SeriesListed{Series: make([]Series, 0, len(a.SeriesKept.Series))}
 		for _, s := range a.SeriesKept.Series {
 			kept.Series = append(kept.Series, s.untimed())
 		}
@@ -61,7 +61,8 @@ func (a Answer) untimed() Answer {
 	return a
 }
 
-func (a Answer) review() objective.Review {
+// ReviewOf is what the answer says of an objective beyond its progress.
+func (a Answer) ReviewOf() objective.Review {
 	r := reviewOf(a.Under)
 	r.Untimed = a.Untimed
 	return r

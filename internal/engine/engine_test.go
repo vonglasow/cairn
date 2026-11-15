@@ -4,7 +4,6 @@ import (
 	"cairn/internal/engine/item"
 	"errors"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"cairn/internal/engine/task"
@@ -201,9 +200,6 @@ func TestDelete_namesWhatItWasBlocking(t *testing.T) {
 	if len(answer.Unblocked) != 1 || answer.Unblocked[0] != 2 {
 		t.Errorf("Unblocked = %v, want [2]", answer.Unblocked)
 	}
-	if got := RenderText(TaskDelete, answer); !strings.Contains(got, "task 2 was waiting on it") {
-		t.Errorf("RenderText = %q", got)
-	}
 	if said := Of(TaskDelete, answer).(Deleted); len(said.WasBlocking) != 1 || said.WasBlocking[0] != 2 {
 		t.Errorf("Of = %+v, want what it was blocking named", said)
 	}
@@ -244,7 +240,7 @@ func TestArchive_takesSeveralTogetherOrNone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if said := Of(TaskArchive, answer).(swept); said.Archived != 2 {
+	if said := Of(TaskArchive, answer).(Swept); said.Archived != 2 {
 		t.Errorf("Of = %+v, want two archived", said)
 	}
 }

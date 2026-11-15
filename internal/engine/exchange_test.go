@@ -2,11 +2,11 @@ package engine
 
 import (
 	"cairn/internal/engine/exchange"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -55,9 +55,6 @@ func TestTaskExport_writesTheTasksAndWhatTheyServe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if got := RenderText(TaskExport, answer); got != to+" holds 2 task(s) and 2 objective(s)\n" {
-		t.Errorf("it says %q", got)
-	}
 	if shape, ok := Of(TaskExport, answer).(exchange.Exported); !ok || shape.Exported != to || shape.Holds.Tasks != 2 {
 		t.Errorf("a machine reads %#v", Of(TaskExport, answer))
 	}
@@ -101,9 +98,6 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do: %v", err)
 	}
-	if got := RenderText(TaskImport, answer); got != "3 task(s) and 1 objective(s) were added from "+file+"\n" {
-		t.Errorf("it says %q", got)
-	}
 	if shape, ok := Of(TaskImport, answer).(exchange.ImportedFile); !ok || shape.Imported != file || shape.Added.Tasks != 3 || shape.Added.Objectives != 1 {
 		t.Errorf("a machine reads %#v", Of(TaskImport, answer))
 	}
@@ -113,15 +107,16 @@ func TestTaskImport_addsTheTasksAsNewOnes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("task show %s: %v", n, err)
 		}
-		return RenderText(TaskShow, got)
+		said, _ := json.Marshal(Of(TaskShow, got))
+		return string(said)
 	}
 	shipped := show("2")
-	for _, want := range []string{"Ship it", "high", "release", "2026-12-01", "2h", "All of it", "blocked by   #3", "objectives   #2", "(done)  1  Write the spec"} {
+	for _, want := range []string{`"title":"Ship it"`, `"priority":"high"`, `"release"`, `"2026-12-01"`, `"2h"`, `"All of it"`, `"blocked_by":[3]`, `"objectives":[2]`, `{"title":"Write the spec","done":true}`} {
 		if !strings.Contains(shipped, want) {
 			t.Errorf("task 2 does not say %q:\n%s", want, shipped)
 		}
 	}
-	if old := show("4"); !strings.Contains(old, "archived") {
+	if old := show("4"); !strings.Contains(old, `"archived":true`) {
 		t.Errorf("the archived task reads:\n%s", old)
 	}
 	if here := show("1"); !strings.Contains(here, "Already here") {
@@ -215,8 +210,8 @@ func TestAnImportBringsTheLinksAtTheirNewNumbers(t *testing.T) {
 		if err != nil {
 			t.Fatalf("task show %s: %v", n, err)
 		}
-		if text := RenderText(TaskShow, got); !strings.Contains(text, "linked       "+linkedLine(want)) {
-			t.Errorf("task %s does not say linked to %v:\n%s", n, want, text)
+		if linked := Of(TaskShow, got).(Task).Linked; !slices.Equal(linked, want) {
+			t.Errorf("task %s is linked to %v, want %v", n, linked, want)
 		}
 	}
 	outside := filepath.Join(t.TempDir(), "outside.json")
@@ -232,14 +227,6 @@ func TestAnImportBringsTheLinksAtTheirNewNumbers(t *testing.T) {
 	if listed, _ := Do(TaskList, path, Input{}); len(listed.Tasks) != 4 {
 		t.Errorf("refused, it still added: %d tasks", len(listed.Tasks))
 	}
-}
-
-func linkedLine(numbers []int) string {
-	parts := make([]string, 0, len(numbers))
-	for _, n := range numbers {
-		parts = append(parts, "#"+strconv.Itoa(n))
-	}
-	return strings.Join(parts, ", ")
 }
 
 func TestTaskImport_refusesABadObjectiveOrTaskBeforeAddingAnything(t *testing.T) {

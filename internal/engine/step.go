@@ -163,11 +163,3 @@ var stepList = Operation{
 		return on.Engine.stepsAnswer(n)
 	},
 }
-
-func stepsText(t task.Task) string {
-	steps := t.Carried().Steps
-	if len(steps) == 0 {
-		return fmt.Sprintf("task %d has no steps\n", t.Carried().Number)
-	}
-	return task.StepsText(steps)[1:]
-}

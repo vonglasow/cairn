@@ -40,8 +40,8 @@ type Series struct {
 	Acts        []series.Act        `json:"acts,omitempty" jsonschema:"its trace: everything that happened to it, oldest first; left out unless it is shown"`
 }
 
-// seriesListed is how a listing of series crosses.
-type seriesListed struct {
+// SeriesListed is how a listing of series crosses.
+type SeriesListed struct {
 	Series []Series `json:"series"`
 }
 
@@ -68,7 +68,7 @@ var SeriesList = Operation{
 	Level:   Read,
 	Needs:   aStore,
 	Repeats: true,
-	Answers: seriesListed{},
+	Answers: SeriesListed{},
 	Takes: []Argument{
 		{Name: "state", Kind: Text, OneOf: []string{"active", "stopped"}, Means: "keep only the series in this state"},
 		{Name: "search", Kind: Text, Means: "keep only the series carrying every word of it in their title or their rule"},
@@ -88,7 +88,7 @@ var SeriesList = Operation{
 		if err != nil {
 			return Answer{}, err
 		}
-		listed := seriesListed{Series: []Series{}}
+		listed := SeriesListed{Series: []Series{}}
 		for _, kept := range every {
 			s, err := on.Engine.aSeries(kept)
 			if err != nil {
@@ -1082,23 +1082,6 @@ func NextSaid(s Series) string {
 	return series.ShortDays(s.Next)
 }
 
-func seriesListText(all []Series) string {
-	if len(all) == 0 {
-		return "there is no series\n"
-	}
-	var out strings.Builder
-	for _, s := range all {
-		fmt.Fprintf(&out, "↻%d  %s  · %s", s.Number, s.Title, StandingSaid(s))
-		if s.State == "active" {
-			next := s
-			next.Next = s.Next[:min(1, len(s.Next))]
-			fmt.Fprintf(&out, "  · next %s", NextSaid(next))
-		}
-		fmt.Fprintf(&out, "\n    %s · %d done · %d skipped · %d missed\n", strings.SplitN(s.Says, ", ", 2)[0], s.Done, s.Skipped, s.Missed)
-	}
-	return out.String()
-}
-
 // TemplateSaid is what the next occurrence of a series is made from, in a line.
 func TemplateSaid(t series.Template) string {
 	said := []string{t.Title, t.Priority}
@@ -1115,87 +1098,6 @@ func TemplateSaid(t series.Template) string {
 		said = append(said, "serves "+act.NumbersOrNothing(t.Objectives))
 	}
 	return strings.Join(said, " · ")
-}
-
-func seriesShownText(s Series) string {
-	var out strings.Builder
-	fmt.Fprintf(&out, "↻%d  %s  %s\n\n", s.Number, s.Title, StandingSaid(s))
-	fmt.Fprintf(&out, "rule      %s\nnext      %s\n", s.Says, NextSaid(s))
-	if strings.Contains(s.Says, "after the last is done") && !s.Ended {
-		rule, _ := series.ParseRule(s.Rule)
-		fmt.Fprintf(&out, "then      %s\n", rule.Then())
-	}
-	fmt.Fprintf(&out, "template  %s\n", TemplateSaid(s.Template))
-	soFar := fmt.Sprintf("%d done · %d skipped · %d missed", s.Done, s.Skipped, s.Missed)
-	if s.TimeSpent != "" {
-		soFar += " · " + s.TimeSpent
-	}
-	fmt.Fprintf(&out, "so far    %s\nopen      %s\n", soFar, item.OrNothing(act.NumbersOrNothing(s.Open)))
-	if len(s.Occurrences) > 0 {
-		out.WriteString("\noccurrences\n")
-		for _, o := range s.Occurrences {
-			what := "—"
-			if o.Task != 0 {
-				what = item.Ref(o.Task)
-			}
-			is := o.Is
-			if o.Archived {
-				is += " · archived"
-			}
-			fmt.Fprintf(&out, "  %-10s  %-5s  %s", series.ShortDays([]string{o.Day}), what, is)
-			if o.TimeSpent != "" {
-				out.WriteString("  " + o.TimeSpent)
-			}
-			out.WriteString("\n")
-		}
-	}
-	if len(s.Acts) > 0 {
-		out.WriteString("\ntrace\n")
-		for _, a := range s.Acts {
-			at, _ := time.Parse(time.RFC3339, a.At)
-			line := fmt.Sprintf("  %s  %s", calendar.FormatMoment(at), series.ActSaid(a))
-			for _, more := range []string{a.Through, a.By} {
-				if more != "" {
-					line += " · " + more
-				}
-			}
-			out.WriteString(line + "\n")
-		}
-	}
-	return out.String()
-}
-
-func seriesActedText(verb string, a Answer) string {
-	s := *a.SeriesShown
-	switch verb {
-	case "stop":
-		if len(s.Open) > 0 {
-			return fmt.Sprintf("↻%d stopped; %s stays open, and nothing more is made\n", s.Number, act.NumbersOrNothing(s.Open))
-		}
-		return fmt.Sprintf("↻%d stopped; nothing more is made\n", s.Number)
-	case "resume":
-		if len(a.Followed) > 0 {
-			return fmt.Sprintf("↻%d resumed · next %s, made as #%d\n", s.Number, series.ShortDays([]string{a.Followed[0].Day}), a.Followed[0].Task)
-		}
-		if len(s.Open) > 0 {
-			return fmt.Sprintf("↻%d resumed; %s is still open, and the next comes when it is done or skipped\n", s.Number, act.NumbersOrNothing(s.Open))
-		}
-		return fmt.Sprintf("↻%d resumed; it has ended, and nothing more is made\n", s.Number)
-	case "edit":
-		return fmt.Sprintf("changed ↻%d %s\nrule      %s\ntemplate  %s\n", s.Number, s.Title, s.Says, TemplateSaid(s.Template))
-	}
-	return seriesShownText(s)
-}
-
-func seriesDeletedText(d series.Deleted) string {
-	said := fmt.Sprintf("↻%d was deleted", d.Deleted)
-	if len(d.TasksDeleted) > 0 {
-		said += " · " + act.NumbersOrNothing(d.TasksDeleted) + " deleted"
-	}
-	if len(d.Kept) > 0 {
-		said += fmt.Sprintf(" · %s kept as ordinary tasks", item.ManyOf(len(d.Kept), "task", "tasks"))
-	}
-	return said + "\n"
 }
 
 var inSeriesArgument = Argument{Name: "series", Kind: Number, Of: "a series", Repeats: true, Bare: "0", Means: "keep only the occurrences of this series, by its number; named alone, or 0, the occurrences of every series"}

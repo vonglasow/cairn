@@ -22,7 +22,7 @@ var objectiveReport = Operation{
 cairn objective report 6 --since 2026-07-01 --until 2026-09-30`,
 	Level:   Read,
 	Needs:   aStore,
-	Answers: review{},
+	Answers: Reported{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "an objective", Means: "the number of the objective"},
 		{Name: "since", Kind: day, Required: true, Means: "the first day of the period"},
@@ -56,9 +56,9 @@ cairn objective report 6 --since 2026-07-01 --until 2026-09-30`,
 	},
 }
 
-// review is how an objective's review crosses: the objective as show gives it, the period, the time spent on its tasks in the period and month by month, and the tasks done in it.
-type review struct {
-	Objective objectiveRow           `json:"objective"`
+// Reported is how an objective's report crosses: the objective as show gives it, the period, the time spent on its tasks in the period and month by month, and the tasks done in it.
+type Reported struct {
+	Objective ObjectiveRow           `json:"objective"`
 	Since     string                 `json:"since"`
 	Until     string                 `json:"until"`
 	TimeSpent string                 `json:"time_spent" jsonschema:"the time spent on its tasks in the period, as 1h30m; empty when none was"`
@@ -67,8 +67,8 @@ type review struct {
 }
 
 // ofReview turns an objective's review into what crosses.
-func ofReview(o objective.Objective, under []task.Task, p item.Progress, in objective.Period) review {
-	r := review{
+func ofReview(o objective.Objective, under []task.Task, p item.Progress, in objective.Period) Reported {
+	r := Reported{
 		Objective: ofObjective(o, under, p),
 		Since:     calendar.FormatDay(in.Since),
 		Until:     calendar.FormatDay(in.Until),

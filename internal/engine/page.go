@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strings"
-	"unicode/utf8"
 
 	"cairn/internal/engine/task"
 )
@@ -106,27 +104,4 @@ func ofCounts(counts []count) *map[string]int {
 		said[c.Of] = c.Tasks
 	}
 	return &said
-}
-
-func countsText(counts []count, total int) string {
-	width := 0
-	for _, c := range counts {
-		width = max(width, utf8.RuneCountInString(c.Of))
-	}
-	var said strings.Builder
-	for _, c := range counts {
-		fmt.Fprintf(&said, "%-*s  %d\n", width, c.Of, c.Tasks)
-	}
-	fmt.Fprintf(&said, "%d task(s) in all\n", total)
-	return said.String()
-}
-
-func pageText(a Answer, shown int) string {
-	if a.Total == nil {
-		return ""
-	}
-	if shown == 0 {
-		return fmt.Sprintf("no task past %d, of %d\n", a.Offset, *a.Total)
-	}
-	return fmt.Sprintf("tasks %d to %d of %d\n", a.Offset+1, a.Offset+shown, *a.Total)
 }

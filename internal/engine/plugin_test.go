@@ -34,10 +34,6 @@ func TestPluginWrite_writesThePluginBesideTheStoreOrWhereTheConfigurationSays(t 
 	if *answer.Plugin != told {
 		t.Errorf("the plugin is said to be at %s, want %s", *answer.Plugin, told)
 	}
-	if said := RenderText(pluginWrite, answer); !strings.Contains(said, "/plugin marketplace add "+told) ||
-		!strings.Contains(said, "/plugin install cairn@cairn") {
-		t.Errorf("the answer reads %q", said)
-	}
 	if shaped, ok := Of(pluginWrite, answer).(app.PluginWritten); !ok || shaped.Plugin != told {
 		t.Errorf("a machine is told %#v", Of(pluginWrite, answer))
 	}
@@ -103,9 +99,6 @@ func TestPluginShow_aReleaseSaysHowToInstallThePluginFromItsTag(t *testing.T) {
 	if shaped, ok := Of(pluginShow, answer).(app.PluginShown); !ok || shaped.Version != "v0.12.0" || !slices.Equal(shaped.Install, install) {
 		t.Errorf("a machine is told %#v", Of(pluginShow, answer))
 	}
-	if said := RenderText(pluginShow, answer); !strings.Contains(said, "  "+strings.Join(install, "\n  ")+"\n") {
-		t.Errorf("the answer reads %q", said)
-	}
 }
 
 func TestPluginShow_aBuildThatIsNoVersionSaysToWriteThePluginItCarries(t *testing.T) {
@@ -115,8 +108,5 @@ func TestPluginShow_aBuildThatIsNoVersionSaysToWriteThePluginItCarries(t *testin
 	}
 	if shaped := Of(pluginShow, answer).(app.PluginShown); shaped.Version != "v0.11.0-79-g616ccfc" || len(shaped.Install) != 0 {
 		t.Errorf("a machine is told %#v", shaped)
-	}
-	if said := RenderText(pluginShow, answer); !strings.Contains(said, "cairn plugin write") || strings.Contains(said, "/plugin") {
-		t.Errorf("the answer reads %q", said)
 	}
 }

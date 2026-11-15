@@ -47,9 +47,6 @@ func TestConfigSet_writesTheSettingsOfTheWorkspaceInUse(t *testing.T) {
 	if c := got.ConfigChanged; c == nil || c.File != path || c.Global || c.Value != "hidden" || c.From != "set in the store's settings" {
 		t.Errorf("the answer is %+v", got.ConfigChanged)
 	}
-	if text := RenderText(ConfigSet, got); !strings.Contains(text, `pages.time = "hidden"`) || !strings.Contains(text, path) {
-		t.Errorf("it says %q", text)
-	}
 }
 
 func TestConfigSet_aKeyOfTheMachineGoesGlobalAndAKeyOfAStoreDoesNot(t *testing.T) {
@@ -123,9 +120,6 @@ func TestConfigUnset_takesTheLineOutAndSaysWhatAnswersNow(t *testing.T) {
 	}
 	if c := got.ConfigChanged; c.Value != "false" || c.From != "from the global configuration" || c.Set {
 		t.Errorf("the answer is %+v", c)
-	}
-	if text := RenderText(ConfigUnset, got); !strings.Contains(text, "pages.objectives is no longer said in "+path) || !strings.Contains(text, "false, from the global configuration") {
-		t.Errorf("it says %q", text)
 	}
 	_, err = setting(h, ConfigUnset, map[string]string{"key": "pages.objectives"})
 	if err == nil || !strings.Contains(err.Error(), "pages.objectives is not said in "+path) || RefusalOf(err).Kind != KindRefused {

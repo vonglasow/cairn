@@ -3,6 +3,7 @@ package engine
 import (
 	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/task"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -39,15 +40,12 @@ func TestTimesheet_measuresWhatWasDoneOnADayPast(t *testing.T) {
 		said.Days[0].Tasks[0].Number != 1 || said.Days[0].Tasks[0].Title != "one" || said.Days[0].Tasks[0].Minutes != 120 {
 		t.Errorf("a machine reads %+v", Of(TimesheetShow, answer))
 	}
-	if text := RenderText(TimesheetShow, answer); !strings.Contains(text, "#1  2h  one") || !strings.Contains(text, "total  2h") {
-		t.Errorf("a person reads:\n%s", text)
-	}
 	history, err := Do(TraceShow, path, given("number", "1"))
 	if err != nil {
 		t.Fatalf("trace show: %v", err)
 	}
-	if text := RenderText(TraceShow, history); !strings.Contains(text, "30m for 2026-09-29") {
-		t.Errorf("the history does not say what was added by hand:\n%s", text)
+	if said, _ := json.Marshal(Of(TraceShow, history)); !strings.Contains(string(said), "2026-09-29") || !strings.Contains(string(said), "30m") {
+		t.Errorf("the history does not say what was added by hand: %s", said)
 	}
 }
 

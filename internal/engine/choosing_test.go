@@ -2,6 +2,7 @@ package engine
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -45,10 +46,10 @@ func TestTaskShow_namesTheTasksItIsInTheWayOf(t *testing.T) {
 	did(t, path, TaskEdit, ask("number", "3").with("blocker", "1"))
 	did(t, path, TaskEdit, ask("number", "2").with("blocker", "1"))
 	answer := did(t, path, TaskShow, ask("number", "1"))
-	if said := RenderText(TaskShow, answer); !strings.Contains(said, "blocks       ⊳2  #2, #3\n") {
-		t.Errorf("task show said:\n%s\nwant it to name tasks 2 and 3", said)
+	if said := Of(TaskShow, answer).(Task); !slices.Equal(said.Blocking, []int{2, 3}) {
+		t.Errorf("task show answered %v, want it to name tasks 2 and 3", said.Blocking)
 	}
-	if said := RenderText(TaskShow, did(t, path, TaskShow, ask("number", "2"))); strings.Contains(said, "⊳") {
-		t.Errorf("task show said:\n%s\nwant nothing of what it blocks", said)
+	if said := Of(TaskShow, did(t, path, TaskShow, ask("number", "2"))).(Task); len(said.Blocking) != 0 {
+		t.Errorf("task show answered %v, want nothing of what it blocks", said.Blocking)
 	}
 }

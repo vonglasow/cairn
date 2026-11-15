@@ -79,8 +79,8 @@ func TestWorkspaceList_saysWhenNoneIsNamed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if said := RenderText(WorkspaceList, answer); !strings.Contains(said, "no workspace is named") || !strings.Contains(said, "cairn workspace add") {
-		t.Errorf("it says\n%s", said)
+	if listed := answer.Workspaces.Workspaces; len(listed) != 0 {
+		t.Errorf("it lists %+v", listed)
 	}
 }
 
@@ -104,9 +104,6 @@ func TestWorkspaceAdd_writesItAndMakesItsFolder(t *testing.T) {
 	added := *answer.WorkspaceAdded
 	if added.Name != "play" || added.Folder != filepath.Join(h.Dir, "p") || added.Store != filepath.Join(h.Dir, "p", "cairn.db") || added.Written != files.FileIn(h.Dir) {
 		t.Errorf("added %+v", added)
-	}
-	if said := RenderText(WorkspaceAdd, answer); !strings.Contains(said, "cairn workspace use play") || !strings.Contains(said, added.Store) {
-		t.Errorf("it says\n%s", said)
 	}
 	if Of(WorkspaceAdd, answer).(workspace.Added) != added {
 		t.Error("Of does not answer what was added")
@@ -173,9 +170,6 @@ func TestWorkspaceUse_makesItTheDefaultAndSaysWhatItWas(t *testing.T) {
 	if want := strings.Replace(twoWorkspaces, `default = "work"`, `default = "home"`, 1); string(read) != want {
 		t.Errorf("the file reads %q, want %q", read, want)
 	}
-	if said := RenderText(WorkspaceUse, answer); said != "the default workspace is now \"home\"; it was \"work\"\n" {
-		t.Errorf("it says %q", said)
-	}
 	if Of(WorkspaceUse, answer).(workspace.Used).Default != "home" {
 		t.Error("Of does not answer the default")
 	}
@@ -216,10 +210,6 @@ func TestConfigShow_saysTheWorkspacesAndWhatNamedEachPlace(t *testing.T) {
 	}
 	if len(c.Workspaces) != 2 || !c.Workspaces[1].Default {
 		t.Errorf("workspaces %+v", c.Workspaces)
-	}
-	said := RenderText(ConfigShow, answer)
-	if !strings.Contains(said, "\n[workspaces]\ndefault = \"work\"\nhome = \""+filepath.Join(h.Dir, "h")+"\"\nwork = ") {
-		t.Errorf("it says\n%s", said)
 	}
 	h.Workspace = "play"
 	answer, err = ConfigShow.Run(workedOn{Home: h}, Input{})

@@ -255,8 +255,8 @@ func unreadable(err error) [][2]string {
 	return [][2]string{{"store", "cannot be read: " + RefusalOf(err).Reason}}
 }
 
-// debugReported says where debug report wrote its archive, and how many debug files it packed.
-type debugReported struct {
+// DebugReported says where debug report wrote its archive, and how many debug files it packed.
+type DebugReported struct {
 	Written string `json:"written"`
 	Files   int    `json:"files"`
 }
@@ -274,7 +274,7 @@ var debugReport = Operation{
 	Takes: []Argument{
 		{Name: "to", Kind: Text, Means: "the folder to write the archive in; the current one when not said"},
 	},
-	Answers: debugReported{},
+	Answers: DebugReported{},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		to := in.Given["to"]
 		if to == "" {

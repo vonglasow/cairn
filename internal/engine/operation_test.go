@@ -101,7 +101,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"label_rename":       {{Labels: &[]label.Carried{}}},
 		"view_list":          {{ViewsKept: &Views{}}},
 		"task_skip":          {{Task: of(task.Task{})}},
-		"series_list":        {{SeriesKept: &seriesListed{}}},
+		"series_list":        {{SeriesKept: &SeriesListed{}}},
 		"series_show":        {{SeriesShown: &Series{}}},
 		"series_edit":        {{SeriesShown: &Series{}}},
 		"series_stop":        {{SeriesShown: &Series{}}},

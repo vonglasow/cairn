@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strings"
-	"text/tabwriter"
 )
 
 func (e *Engine) everyLabel() (map[string]label.Carriers, error) {
@@ -335,17 +333,4 @@ var LabelColour = Operation{
 		}
 		return listedLabels(on)
 	},
-}
-
-func labelsText(listed []label.Carried) string {
-	if len(listed) == 0 {
-		return "no label is carried\n"
-	}
-	var out strings.Builder
-	tw := tabwriter.NewWriter(&out, 0, 0, 2, ' ', 0)
-	for _, one := range listed {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\tfor %s\n", one.Label, item.ManyOf(one.Tasks, "task", "tasks"), item.ManyOf(one.Objectives, "objective", "objectives"), one.Scope)
-	}
-	_ = tw.Flush()
-	return out.String()
 }

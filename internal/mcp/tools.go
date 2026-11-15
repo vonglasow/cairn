@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"cairn/internal/cli/render"
 	"context"
 	"reflect"
 
@@ -126,7 +127,7 @@ func handlerFor(op engine.Operation, home engine.Home) sdk.ToolHandler {
 		if err != nil {
 			return refused(err), nil
 		}
-		said := []sdk.Content{&sdk.TextContent{Text: engine.RenderText(op, answer)}}
+		said := []sdk.Content{&sdk.TextContent{Text: render.Text(op, answer)}}
 		for _, ask := range answer.Asked {
 			said = append(said, &sdk.TextContent{Text: ask})
 		}

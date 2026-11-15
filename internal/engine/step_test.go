@@ -91,7 +91,7 @@ func TestStepList_saysATaskHasNoSteps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := RenderText(stepList, answer); got != "task 1 has no steps\n" {
-		t.Errorf("step list says %q", got)
+	if steps := (*answer.Task).Carried().Steps; len(steps) != 0 {
+		t.Errorf("step list answers %v", steps)
 	}
 }

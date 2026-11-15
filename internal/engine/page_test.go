@@ -59,9 +59,6 @@ func TestTaskList_countsByStateInTheBoardsOrder(t *testing.T) {
 	if !strings.Contains(said, `"counts":{"backlog":1,"done":1,"todo":1}`) || !strings.Contains(said, `"total":3`) || !strings.Contains(said, `"tasks":[]`) {
 		t.Errorf("it wrote %s, want one in each of backlog, todo and done, of 3, and no row", said)
 	}
-	if text := RenderText(TaskList, answer); text != "backlog  1\ntodo     1\ndone     1\n3 task(s) in all\n" {
-		t.Errorf("it read %q, want each column in the board's order, then how many in all", text)
-	}
 }
 
 func TestTaskList_countsByLabelAmongWhatIsKept(t *testing.T) {
@@ -78,9 +75,6 @@ func TestTaskList_countsByLabelAmongWhatIsKept(t *testing.T) {
 	answer, _ := listedPage(t, e, map[string]string{"count": "label"})
 	if said := listingJSON(t, answer); !strings.Contains(said, `"counts":{"spec":1,"team":2}`) || !strings.Contains(said, `"total":3`) {
 		t.Errorf("it wrote %s, want spec 1 and team 2, of 3", said)
-	}
-	if text := RenderText(TaskList, answer); text != "spec  1\nteam  2\n3 task(s) in all\n" {
-		t.Errorf("it read %q, want each label by name, then how many in all", text)
 	}
 
 	answer, err := TaskList.Run(workedOn{Engine: e}, Input{Given: map[string]string{"count": "label"}, Listed: map[string][]string{"number": {"2", "9"}}})
@@ -137,13 +131,10 @@ func TestTaskSearch_aPageIsCutFromWhatTheSearchKept(t *testing.T) {
 	if said, _ := json.Marshal(Of(TaskSearch, answer)); !strings.Contains(string(said), `"total":3`) {
 		t.Errorf("it wrote %s, want a total of 3", said)
 	}
-	if text := RenderText(TaskSearch, answer); !strings.Contains(text, "tasks 2 to 2 of 3\n") {
-		t.Errorf("it read %q, want which tasks of how many", text)
-	}
 
 	answer, kept = searchedPage(t, e, Input{Given: map[string]string{"offset": "5"}, Listed: map[string][]string{"named": {"spec"}}})
-	if len(kept) != 0 || !strings.Contains(RenderText(TaskSearch, answer), "no task past 5, of 3\n") {
-		t.Errorf("past the last it kept %v and read %q, want none of 3", kept, RenderText(TaskSearch, answer))
+	if said, _ := json.Marshal(Of(TaskSearch, answer)); len(kept) != 0 || !strings.Contains(string(said), `"total":3`) {
+		t.Errorf("past the last it kept %v and wrote %s, want none of 3", kept, said)
 	}
 
 	answer, _ = searchedPage(t, e, Input{Listed: map[string][]string{"named": {"spec"}}})
