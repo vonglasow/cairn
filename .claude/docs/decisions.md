@@ -77,6 +77,12 @@ develops cairn meets: one line per decision, and where its reason lives.
 | a form's commands are waited for in the terminal board's tests, all but the cursor's blink, passed over at once | the blink is a timer of 530 ms nobody can wait out, and its function names it before it runs; racing every command against five milliseconds, as before, dropped one a machine busy with the rest of the suite was slow to schedule (cairn#298), and raising that deadline made the suite three times slower | `internal/tui/fake_test.go`, `quickly` |
 | the window embeds `board.Board`, its state; the terminal board will too | one state for both boards is what makes them show the same; embedding kept every call site of the window as it was | `internal/board/board.go` |
 | gui splits into `geom`, `design` and `motion` only; components, input, screens and platform stay in `gui` | the components draw with the card's parts and the window's methods, and moving them dragged most of the window along; the three packages split cleanly, each denied `gui` by `depguard` | `.golangci.yml` |
+| the terminal board wears the window's scheme, not the terminal's sixteen colours | the user chose that both boards show the same; a dark scheme on a light terminal reads worse, which the window's settings can change | [tui.md](tui.md#the-schemes-colours) |
+| the form's blurred fields keep huh's white and black | huh hands over no style for them | `internal/tui/colours_steps_test.go` |
+| the terminal has no Normal and Insert modes; hjkl walks the cards with `board.Walk`, `^H` `^L` reach another column at once, `^J` `^K` the band | the window has no modes, and one walk for both boards is one walk to learn | [tui.md](tui.md#the-cursor) |
+| the terminal's band is three lanes under the last three columns, the lanes' heads taken from the band's rows | the window draws it so; the columns above keep their height, so the smallest terminal still reads a card's title | [tui.md](tui.md#the-boards-shape) |
+| the terminal splits into `geom` and `design` only, as the window did; its screens and components stay in `tui` | they draw with the board's own fields, and moving them would move the board | `.golangci.yml` |
+| the terminal uses the board's `Tab` and `Screen`, two screens added for it (`OnDetail`, `OnSaid`) | one list of screens for both boards | `internal/board/screens.go` |
 
 ## Known and not yet answered
 

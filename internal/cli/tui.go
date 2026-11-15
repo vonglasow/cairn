@@ -40,7 +40,8 @@ func openTerminal(cmd *cobra.Command, h engine.Home, icons string) error {
 		return err
 	}
 	defer func() { _ = held.Close() }()
-	board := tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(h)).Noting(notedIn(cmd.Context()))
+	worn, _ := engine.Wearing(h)
+	board := tui.New(held, tui.GlyphsFor(set), time.Now, 0, 0).Paged(engine.PagesFrom(h)).Wearing(worn).Noting(notedIn(cmd.Context()))
 	return boardFor(cmd)(cmd, board.Switching(func(to engine.Elsewhere) (engine.Pages, error) { return engine.Switch(held, to) }))
 }
 

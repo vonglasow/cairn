@@ -3,7 +3,9 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine"
+	"cairn/internal/tui/geom"
 	"fmt"
+	"slices"
 	"strings"
 
 	"cairn/internal/engine/task"
@@ -48,6 +50,41 @@ func (w *world) bandReads(list string) error {
 		return fmt.Errorf("the band reads %q, want %q", got, want)
 	}
 	return nil
+}
+
+func (w *world) lanesRead(list string) error {
+	var names []string
+	for _, name := range strings.Split(list, ",") {
+		names = append(names, strings.Trim(strings.TrimSpace(name), `"`))
+	}
+	for _, line := range strings.Split(w.screen(), "\n") {
+		at, read := 0, 0
+		for _, name := range names {
+			i := strings.Index(line[at:], name)
+			if i < 0 {
+				break
+			}
+			at, read = at+i+len(name), read+1
+		}
+		if read == len(names) {
+			return nil
+		}
+	}
+	return fmt.Errorf("no line reads the lanes %q:\n%s", names, w.screen())
+}
+
+func (w *world) laneCarries(lane, title string) error {
+	at := slices.Index(board.Stalled, lane)
+	if at < 0 {
+		return fmt.Errorf("%q is no lane", lane)
+	}
+	_, band := board.Deal(w.cards(), w.b.archived)
+	for _, c := range board.InLanes(band)[at] {
+		if c.Title == title && strings.Contains(w.screen(), title) {
+			return nil
+		}
+	}
+	return fmt.Errorf("the lane %q does not carry %q:\n%s", lane, title, w.screen())
 }
 
 func (w *world) columnCarries(column, title string) error {
@@ -226,7 +263,7 @@ func (w *world) cardArchived(number int) error {
 func (w *world) rowsOf(number int, check func([]string) error) error {
 	for _, c := range w.cards() {
 		if c.Number == number {
-			return check(Rows(c, GlyphsFor(Unicode), PlainSkin(), stood, engine.Pages{}, LayoutFor(w.width, w.high).Interior))
+			return check(Rows(c, GlyphsFor(Unicode), PlainSkin(), stood, engine.Pages{}, geom.LayoutFor(w.width, w.high).Interior))
 		}
 	}
 	return fmt.Errorf("there is no task %d", number)
@@ -309,7 +346,7 @@ func (w *world) columnReads(column, list string) error {
 }
 
 func (w *world) ruleBetweenColumns() error {
-	l := LayoutFor(w.width, w.high)
+	l := geom.LayoutFor(w.width, w.high)
 	lines := strings.Split(w.screen(), "\n")
 	head := -1
 	for i, line := range lines {
@@ -322,7 +359,7 @@ func (w *world) ruleBetweenColumns() error {
 		return fmt.Errorf("no column header on the board:\n%s", w.screen())
 	}
 	for gap := 0; gap < board.Columns-1; gap++ {
-		at := margin + l.Column + gap*(l.Column+1)
+		at := geom.Margin + l.Column + gap*(l.Column+1)
 		for _, line := range lines[head : head+2+l.Top] {
 			runes := []rune(line)
 			if len(runes) <= at || runes[at] != '│' {

@@ -108,7 +108,7 @@ const barWidth = 28
 const rowIndent = 3
 
 func (b Board) goalRows(g board.Goal, width int) []string {
-	mark := b.skin.palette.Standing(g.State).Style().Render(pad(StandingGlyph(g.State, b.glyphs), 1))
+	mark := b.skin.Palette.Standing(g.State).Style().Render(pad(StandingGlyph(g.State, b.glyphs), 1))
 	told, dressed := b.typeLabels(g)
 	if lipgloss.Width(told) > width/3 {
 		told, dressed = "", ""
@@ -119,7 +119,7 @@ func (b Board) goalRows(g board.Goal, width int) []string {
 	}
 	room := max(1, width-rowIndent-len(strconv.Itoa(g.Number))-2-lipgloss.Width(told)-2-len(hidden))
 	title := b.skin.Bright.Render(Clip(g.Title, room))
-	if g.Number == b.goal && b.tab == Objectives {
+	if g.Number == b.goal && b.tab == board.Objectives {
 		title = b.skin.Title.Render(Clip(g.Title, room))
 	}
 	head := mark + "  " + b.skin.Faint.Render(strconv.Itoa(g.Number)) + "  " + title + b.skin.Faint.Render(hidden)

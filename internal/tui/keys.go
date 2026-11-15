@@ -83,10 +83,10 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 		if b.leaving {
 			b.leaving = false
 			if !agreed {
-				b.screen = OnForm
+				b.screen = board.OnForm
 				return b, nil
 			}
-			b.screen = OnTheBoard
+			b.screen = board.OnTheBoard
 			return b, nil
 		}
 		if b.sweeping {
@@ -116,15 +116,15 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 		if !agreed {
 			return b, nil
 		}
-		if b.tab == Objectives {
+		if b.tab == board.Objectives {
 			return b, b.removeGoal()
 		}
 		return b, b.remove()
 	}
-	if b.screen == OnWorkspaces {
+	if b.screen == board.OnWorkspaces {
 		return b.inWorkspaces(key)
 	}
-	if b.screen != OnTheBoard {
+	if b.screen != board.OnTheBoard {
 		return b.onScreen(key)
 	}
 	if b.choosing {
@@ -142,10 +142,7 @@ func (b Board) pressed(key string) (tea.Model, tea.Cmd) {
 	if key == switcherKey && b.roams() {
 		return b, b.listing()
 	}
-	if b.mode == Insert {
-		return b.inInsert(key)
-	}
-	return b.inNormal(key)
+	return b.onBoard(key)
 }
 
 func (b Board) aboutStore() bool {
@@ -186,35 +183,35 @@ func (b Board) jumping(key string) (bool, tea.Model, tea.Cmd) {
 }
 
 func (b Board) jumpable() bool {
-	if b.screen != OnTheBoard || b.prompt != NoPrompt || b.choosing {
+	if b.screen != board.OnTheBoard || b.prompt != NoPrompt || b.choosing {
 		return false
 	}
-	return b.tab == Objectives || b.mode == Insert
+	return b.tab == board.Objectives || b.task != 0
 }
 
 func (b Board) help() Board {
-	if b.screen == OnHelp {
+	if b.screen == board.OnHelp {
 		b.screen = b.wasScreen
 		return b
 	}
 	b.wasScreen = b.screen
-	b.screen = OnHelp
+	b.screen = board.OnHelp
 	return b
 }
 
 func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 	if key == "esc" {
 		b.screen, b.stepOn = b.wasScreen, 0
-		if b.screen == OnHelp {
-			b.screen = OnTheBoard
+		if b.screen == board.OnHelp {
+			b.screen = board.OnTheBoard
 		}
 		return b, nil
 	}
 	if way, ok := direction(key); ok {
-		if b.screen == OnHelp {
+		if b.screen == board.OnHelp {
 			return b.readOn(way), nil
 		}
-		if b.screen == OnSaid {
+		if b.screen == board.OnSaid {
 			switch way {
 			case goDown:
 				b.saidAt++
@@ -223,15 +220,15 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 			}
 			return b, nil
 		}
-		if b.screen == OnDetail {
+		if b.screen == board.OnDetail {
 			return b.walkingSteps(way), nil
 		}
 	}
-	if b.screen == OnDetail && b.setting == "series" {
+	if b.screen == board.OnDetail && b.setting == "series" {
 		b.setting = ""
 		return b.seriesAct(key)
 	}
-	if b.screen == OnDetail {
+	if b.screen == board.OnDetail {
 		switch key {
 		case "r":
 			if b.heldRecurs() {
@@ -253,15 +250,23 @@ func (b Board) onScreen(key string) (tea.Model, tea.Cmd) {
 	return b, nil
 }
 
-func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
-	if b.tab == Series {
+func (b Board) onBoard(key string) (tea.Model, tea.Cmd) {
+	if b.setting != "" {
+		return b.settingByLetter(key)
+	}
+	if b.tab == board.Series {
 		if model, cmd, took := b.inSeries(key); took {
 			return model, cmd
 		}
 	}
-	if b.tab == Time {
+	if b.tab == board.Time {
 		if walked, ok := b.walkingWeeks(key); ok {
 			return walked, walked.readingWeek()
+		}
+	}
+	if b.tab == board.Tasks {
+		if model, cmd, took := b.onTasks(key); took {
+			return model, cmd
 		}
 	}
 	if way, ok := direction(key); ok {
@@ -276,8 +281,10 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		if b.inside != 0 {
 			return b.leaveObjective(), nil
 		}
-	case "i", "enter":
-		return b.takeHold(), nil
+	case "enter":
+		if b.tab == board.Objectives {
+			return b.openObjective(), nil
+		}
 	case "a":
 		return b.addForm()
 	case "shift+a":
@@ -285,10 +292,10 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 	case "shift+f":
 		return b.openingFilters(), nil
 	case "v":
-		b.choosingView = b.tab == Tasks && b.inside == 0
+		b.choosingView = b.tab == board.Tasks && b.inside == 0
 		return b, nil
 	case "shift+x":
-		if b.tab != Objectives {
+		if b.tab != board.Objectives {
 			b.asking, b.sweeping = true, true
 		}
 		return b, nil
@@ -300,7 +307,7 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 		return b, nil
 	case "tab":
 		b = b.otherTab()
-		if b.tab == Time {
+		if b.tab == board.Time {
 			return b, b.readingWeek()
 		}
 		return b, nil
@@ -309,27 +316,27 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 	case "B", "shift+b":
 		return b, b.telling(engine.BackupList, engine.Input{})
 	case "e":
-		if b.tab == Objectives {
+		if b.tab == board.Objectives {
 			return b.editForm()
 		}
 	case "D", "shift+d":
-		if b.tab == Objectives && b.goal != 0 {
+		if b.tab == board.Objectives && b.goal != 0 {
 			return b.deletingGoal(), nil
 		}
 	case "t":
-		if b.tab == Objectives {
+		if b.tab == board.Objectives {
 			return b.showingItsTasks(), nil
 		}
 	case "N", "shift+n":
-		if b.tab == Objectives {
+		if b.tab == board.Objectives {
 			return b.subGoalForm()
 		}
 	case "z":
-		if b.tab == Objectives {
+		if b.tab == board.Objectives {
 			return b.folding(), nil
 		}
 	case "J", "shift+j", "K", "shift+k":
-		if b.tab == Objectives && b.goal != 0 {
+		if b.tab == board.Objectives && b.goal != 0 {
 			in, moves := board.Stepped(b.snap.Goals, b.goal, key == "K" || key == "shift+k")
 			if !moves {
 				return b, nil
@@ -344,59 +351,54 @@ func (b Board) inNormal(key string) (tea.Model, tea.Cmd) {
 	return b, nil
 }
 
-func (b Board) inInsert(key string) (tea.Model, tea.Cmd) {
-	if b.setting != "" {
-		return b.settingByLetter(key)
+func (b Board) onTasks(key string) (tea.Model, tea.Cmd, bool) {
+	switch key {
+	case "ctrl+h":
+		return b.toColumn(b.column - 1), nil, true
+	case "ctrl+l":
+		return b.toColumn(b.column + 1), nil, true
+	case "ctrl+j":
+		return b.intoBand(), nil, true
+	case "ctrl+k":
+		return b.outOfBand(), nil, true
+	}
+	if b.task == 0 {
+		return b, nil, false
 	}
 	if way, ok := shifted(key); ok {
-		return b.push(way)
-	}
-	if way, ok := direction(key); ok {
-		return b.stepTo(way), nil
+		model, cmd := b.push(way)
+		return model, cmd, true
 	}
 	switch key {
-	case "esc":
-		b.mode = Normal
-		return b, nil
 	case "enter":
-		b.screen = OnDetail
-		return b, b.hearing(b.task)
+		b.screen = board.OnDetail
+		return b, b.hearing(b.task), true
 	case "e":
-		return b.editForm()
+		model, cmd := b.editForm()
+		return model, cmd, true
 	case "f":
-		return b, b.toggleFocus()
+		return b, b.toggleFocus(), true
 	case "o":
-		return b.linkedForm()
+		model, cmd := b.linkedForm()
+		return model, cmd, true
 	case "D", "shift+d":
-		if b.task != 0 {
-			b.asking = true
-		}
-		return b, nil
+		b.asking = true
+		return b, nil, true
 	case "m":
-		if b.task != 0 {
-			b.setting = "state"
-		}
-		return b, nil
+		b.setting = "state"
+		return b, nil, true
 	case "p":
-		if b.task != 0 {
-			b.setting = "priority"
-		}
-		return b, nil
+		b.setting = "priority"
+		return b, nil, true
 	case "r":
 		if b.heldRecurs() {
 			b.setting = "series"
 		}
-		return b, nil
+		return b, nil, true
 	case "x":
-		return b, b.puttingAway()
-	case "shift+a":
-		return b.showingArchived(), nil
-	case "[":
-		return b.walkingSegments(-1), nil
-	case "]":
-		return b.walkingSegments(1), nil
+		return b, b.puttingAway(), true
 	}
-	return b, nil
+	return b, nil, false
 }
 
 func (b Board) showingArchived() Board {
@@ -417,11 +419,11 @@ func (b Board) typing(key string) (tea.Model, tea.Cmd) {
 	case "tab":
 		return b.completed(), nil
 	case "backspace":
-		b.typed = trimLast(b.typed)
+		b.typed = board.Ending(b.typed).Back().Value
 		return b.afterTyping(), nil
 	}
 	if letter, ok := typed(key); ok {
-		b.typed += letter
+		b.typed = board.Ending(b.typed).Types(letter).Value
 		return b.afterTyping(), nil
 	}
 	return b, nil
@@ -445,14 +447,6 @@ func typed(key string) (string, bool) {
 		return key, true
 	}
 	return "", false
-}
-
-func trimLast(s string) string {
-	runes := []rune(s)
-	if len(runes) == 0 {
-		return s
-	}
-	return string(runes[:len(runes)-1])
 }
 
 func (b Board) settingByLetter(key string) (tea.Model, tea.Cmd) {

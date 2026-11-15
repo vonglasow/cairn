@@ -3,6 +3,7 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/migration"
+	"cairn/internal/tui/geom"
 	"fmt"
 	"slices"
 	"strconv"
@@ -24,19 +25,19 @@ func (b Board) Draw() string {
 	if b.pages.None() {
 		return ""
 	}
-	if TooSmall(b.width, b.height) {
+	if geom.TooSmall(b.width, b.height) {
 		return b.tooSmall()
 	}
 	switch b.screen {
-	case OnHelp:
+	case board.OnHelp:
 		return b.drawHelp()
-	case OnDetail:
+	case board.OnDetail:
 		return b.drawDetail()
-	case OnForm:
+	case board.OnForm:
 		return b.drawForm()
-	case OnSaid:
+	case board.OnSaid:
 		return b.drawSaid()
-	case OnWorkspaces:
+	case board.OnWorkspaces:
 		return b.drawSwitcher()
 	}
 	if b.deleting != nil {
@@ -51,19 +52,19 @@ func (b Board) Draw() string {
 func (b Board) tooSmall() string {
 	return b.skin.Title.Render(" cairn needs a bigger window.") + "\n" +
 		b.skin.Faint.Render(fmt.Sprintf(" %d by %d at least. This one is %d by %d.",
-			Narrowest, Shortest, b.width, b.height))
+			geom.Narrowest, geom.Shortest, b.width, b.height))
 }
 
 func (b Board) drawBoard() string {
-	l := LayoutFor(b.width, b.height)
+	l := geom.LayoutFor(b.width, b.height)
 	var out []string
 	out = append(out, b.tabs(), "")
 	switch b.tab {
-	case Objectives:
+	case board.Objectives:
 		out = append(out, b.objectivesList(l)...)
-	case Time:
+	case board.Time:
 		out = append(out, b.timeWeek(l)...)
-	case Series:
+	case board.Series:
 		out = append(out, b.seriesTab()...)
 	default:
 		out = append(out, b.tasksBoard(l)...)
@@ -78,7 +79,7 @@ func (b Board) drawBoard() string {
 }
 
 func (b Board) tabs() string {
-	names := map[Tab]string{Tasks: "tasks", Objectives: "objectives", Series: "series", Time: "time"}
+	names := map[board.Tab]string{board.Tasks: "tasks", board.Objectives: "objectives", board.Series: "series", board.Time: "time"}
 	left := " " + b.placeMark()
 	for _, tab := range b.shown() {
 		name := b.skin.TabOff.Render(names[tab] + " " + b.counted(tab))
@@ -91,16 +92,19 @@ func (b Board) tabs() string {
 	if b.inside != 0 {
 		left += "  " + b.skin.Crumb.Render("▸ "+strconv.Itoa(b.inside))
 	}
+	if b.modeName() == "" {
+		return left
+	}
 	return Spread(left, b.skin.Mode.Render(b.modeName())+" ", b.width)
 }
 
-func (b Board) counted(tab Tab) string {
+func (b Board) counted(tab board.Tab) string {
 	switch tab {
-	case Objectives:
+	case board.Objectives:
 		return countOf(len(b.goals()), len(b.snap.Goals))
-	case Time:
+	case board.Time:
 		return strconv.Itoa(b.sheet.Worked())
-	case Series:
+	case board.Series:
 		return countOf(len(b.allSeries()), len(b.snap.Series))
 	}
 	return countOf(len(board.Laid(b.cards(), b.archived)), len(board.Laid(b.snap.Cards, b.archived)))
@@ -114,16 +118,16 @@ func countOf(shown, all int) string {
 }
 
 func (b Board) modeName() string {
-	if b.screen == OnHelp {
+	if b.screen == board.OnHelp {
 		return "HELP"
 	}
-	if b.screen == OnDetail {
+	if b.screen == board.OnDetail {
 		return "DETAILS"
 	}
-	if b.screen == OnForm {
+	if b.screen == board.OnForm {
 		return "EDIT"
 	}
-	if b.screen == OnWorkspaces {
+	if b.screen == board.OnWorkspaces {
 		return "WORKSPACES"
 	}
 	if b.filtering {
@@ -138,51 +142,53 @@ func (b Board) modeName() string {
 	if b.prompt == Commanding {
 		return "COMMAND"
 	}
-	if b.mode == Insert {
-		return "INSERT"
-	}
-	return "NORMAL"
+	return ""
 }
 
-func (b Board) tasksBoard(l Layout) []string {
+func (b Board) tasksBoard(l geom.Layout) []string {
 	all, band := board.Deal(b.cards(), b.archived)
 	var outside []board.Card
 	for _, r := range b.references() {
 		outside = append(outside, r.Card)
 	}
 	far, farBand := board.Deal(outside, b.archived)
+	lanes, farLanes := board.InLanes(band), board.InLanes(farBand)
 	top := l.Top
 	var out []string
 	if b.inside != 0 {
 		out = append(out, b.insideBand(), "")
-		top = max(0, top-insideRows)
+		top = max(0, top-geom.InsideRows)
 	}
 	columns := make([]string, 0, len(all))
 	for i, column := range all {
-		under := !b.inBand && b.mode == Normal && b.column == i
-		columns = append(columns, strings.Join([]string{
+		under := !b.inBand && b.task == 0 && b.column == i
+		drawn := []string{
 			b.header(column.Name, len(column.Cards), l.Column, under),
 			b.rule(l.Column, under),
-			b.stack(column.Cards, far[i].Cards, l, top, b.offsets[i]),
-		}, "\n"))
+		}
+		if i == 0 {
+			drawn = append(drawn, b.stack(column.Cards, far[i].Cards, l, top+geom.BandHead+l.Rows, b.offsets[i]))
+		} else {
+			drawn = append(drawn, b.stack(column.Cards, far[i].Cards, l, top, b.offsets[i]), b.lane(i, lanes[i-1], farLanes[i-1], len(band), l))
+		}
+		columns = append(columns, strings.Join(drawn, "\n"))
 	}
-	out = append(out, lipgloss.NewStyle().PaddingLeft(margin).Render(b.apart(columns)))
-	return append(out, b.bandRows(band, farBand, l)...)
+	return append(out, lipgloss.NewStyle().PaddingLeft(geom.Margin).Render(b.apart(columns)))
 }
 
-func (b Board) bandRows(band, far []board.Card, l Layout) []string {
-	offset := margin + l.Column + 1
-	under := strings.Repeat(" ", offset)
-	held := b.inBand && b.mode == Normal
-	head := Spread(b.skin.Band.Render(board.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
-	if held {
-		head = Spread(b.skin.HeadOn.Render("▌"+board.Band), b.skin.Count.Render(strconv.Itoa(len(band))), l.Band)
+func (b Board) lane(column int, cards, far []board.Card, stalled int, l geom.Layout) string {
+	under := b.inBand && b.task == 0 && b.column == column
+	kind := board.Stalled[column-1]
+	head := strings.Repeat(" ", l.Column)
+	if column == 1 {
+		head = Spread(b.skin.Band.Render(board.Band), b.skin.Count.Render(strconv.Itoa(stalled)), l.Column)
 	}
-	return []string{
-		under + head,
-		under + b.rule(l.Band, held),
-		lipgloss.NewStyle().PaddingLeft(offset).Render(b.across(band, far, l)),
-	}
+	return strings.Join([]string{
+		head,
+		b.header(kind, len(cards), l.Column, under),
+		b.rule(l.Column, under),
+		b.stack(cards, far, l, l.Rows, b.laneAt[column-1]),
+	}, "\n")
 }
 
 func (b Board) header(name string, held, width int, under bool) string {
@@ -199,28 +205,7 @@ func (b Board) rule(width int, under bool) string {
 	return b.skin.Rule.Render(strings.Repeat("─", width))
 }
 
-func (b Board) across(cards, far []board.Card, l Layout) string {
-	return through(b.laidOut(cards, far, l), l.Band, l.Rows, b.bandAt)
-}
-
-func (b Board) laidOut(cards, far []board.Card, l Layout) string {
-	wide := board.Columns - 1
-	drawn := make([]string, 0, len(cards)+len(far))
-	for _, c := range cards {
-		drawn = append(drawn, b.card(c, l))
-	}
-	for _, c := range far {
-		drawn = append(drawn, b.reference(c, l))
-	}
-	var rows []string
-	for at := 0; at < len(drawn); at += wide {
-		end := min(at+wide, len(drawn))
-		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, spaced(drawn[at:end])...))
-	}
-	return strings.Join(rows, "\n")
-}
-
-func (b Board) stack(cards, far []board.Card, l Layout, rows, at int) string {
+func (b Board) stack(cards, far []board.Card, l geom.Layout, rows, at int) string {
 	drawn := make([]string, 0, len(cards)+len(far))
 	for _, c := range cards {
 		drawn = append(drawn, b.card(c, l))
@@ -231,13 +216,13 @@ func (b Board) stack(cards, far []board.Card, l Layout, rows, at int) string {
 	return through(strings.Join(drawn, "\n"), l.Column, rows, at)
 }
 
-func (b Board) card(c board.Card, l Layout) string {
+func (b Board) card(c board.Card, l geom.Layout) string {
 	return b.skin.Card(l.Column, c.Priority, c.InFocus, b.chosen(c)).
 		Render(strings.Join(Rows(b.servingNamed(c), b.glyphs, b.skin, b.now(), b.pages, l.Interior), "\n"))
 }
 
-func (b Board) reference(c board.Card, l Layout) string {
-	rows := Rows(b.servingNamed(c), b.glyphs, SkinOf(Faded), b.now(), b.pages, l.Interior)
+func (b Board) reference(c board.Card, l geom.Layout) string {
+	rows := Rows(b.servingNamed(c), b.glyphs, b.faded, b.now(), b.pages, l.Interior)
 	for _, r := range b.references() {
 		if r.Card.Number == c.Number {
 			rows[len(rows)-1] = b.skin.Late.Render(Clip(r.Touches(""), l.Interior))
@@ -271,7 +256,7 @@ func through(content string, width, height, at int) string {
 	return pane.View()
 }
 
-func (b Board) chosen(c board.Card) bool { return b.mode == Insert && c.Number == b.task }
+func (b Board) chosen(c board.Card) bool { return c.Number == b.task }
 
 func (b Board) now() time.Time { return b.clock() }
 
@@ -291,7 +276,7 @@ func (b Board) insideBand() string {
 	if !found {
 		return ""
 	}
-	mark := b.skin.palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs) + " " + g.State)
+	mark := b.skin.Palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs) + " " + g.State)
 	right := mark + " "
 	if waits := b.waitsOn(g, true); waits != "" {
 		right = b.skin.Band.Render(waits) + "   " + right
@@ -318,9 +303,9 @@ func (b Board) chips() string {
 	return strings.Join(said, "  ")
 }
 
-func (b Board) objectivesList(l Layout) []string {
+func (b Board) objectivesList(l geom.Layout) []string {
 	branches := board.Branches(b.goals())
-	width := b.width - margin - margin
+	width := b.width - geom.Margin - geom.Margin
 	drawn := make([]string, 0, len(branches))
 	for _, br := range branches {
 		drawn = append(drawn, b.goalCard(br, width))
@@ -329,7 +314,7 @@ func (b Board) objectivesList(l Layout) []string {
 	return []string{
 		" " + Spread(b.skin.Head.Render("OBJECTIVES"), b.skin.Count.Render(strconv.Itoa(len(branches))), b.width-2),
 		" " + b.rule(b.width-2, false),
-		lipgloss.NewStyle().PaddingLeft(margin).Render(
+		lipgloss.NewStyle().PaddingLeft(geom.Margin).Render(
 			through(strings.Join(drawn, "\n"), width, rows, b.goalAt)),
 	}
 }
@@ -366,7 +351,7 @@ func (b Board) foot() string {
 	if b.seriesGoing != nil {
 		return b.seriesGoingFoot()
 	}
-	if b.screen == OnWorkspaces {
+	if b.screen == board.OnWorkspaces {
 		return b.switcherBar()
 	}
 	if b.choosing {
@@ -388,7 +373,7 @@ func (b Board) foot() string {
 }
 
 func (b Board) bar(offers ...string) string {
-	return " " + Join("   ", b.width-margin, offers...)
+	return " " + Join("   ", b.width-geom.Margin, offers...)
 }
 
 func (b Board) offer(key, does string) string {
@@ -396,24 +381,28 @@ func (b Board) offer(key, does string) string {
 }
 
 func (b Board) offers() []string {
-	if b.tab == Series {
+	if b.tab == board.Series {
 		return b.seriesTabOffers()
 	}
-	if b.tab == Objectives {
+	if b.tab == board.Objectives {
 		return []string{
 			b.offer("jk ↓↑", "objectives"), b.offer("JK", "order"), b.offer("⏎", "open"), b.offer("t", "its tasks"), b.offer("a", "new"),
 			b.offer("e", "edit"), b.offer("D", "delete"), b.offer("?", "help"),
 			b.offer("N", "sub-objective"), b.offer("z", "fold"), b.offer("/", "search"), b.offer("⇥", "tab"), b.offer(":", "command"), b.roaming(),
 		}
 	}
-	if b.mode == Insert {
+	if b.task != 0 {
+		var walking []string
+		if len(b.segments()) > 0 {
+			walking = []string{b.offer("[ ]", "sub-objective")}
+		}
 		return slices.Concat([]string{
-			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move"), b.offer("⏎", "open"),
+			b.offer("hjkl ←↓↑→", "tasks"), b.offer("⇧hjkl", "move")}, walking, []string{b.offer("⏎", "open"),
 			b.offer("e", "edit"), b.offer("f", "focus"), b.offer("D", "delete"),
-			b.offer("x", "archive")}, b.seriesOffers(), []string{b.offer("?", "help"), b.offer("esc", "back"), b.roaming(), b.offer("o", "linked")})
+			b.offer("x", "archive")}, b.seriesOffers(), []string{b.offer("?", "help"), b.offer("a", "new"), b.roaming(), b.offer("o", "linked")})
 	}
 	out := []string{
-		b.offer("hjkl ←↓↑→", "columns"), b.offer("i", "insert"),
+		b.offer("hjkl ←↓↑→", "tasks"), b.offer("^hl", "columns"),
 	}
 	if b.inside != 0 {
 		if len(b.segments()) > 0 {
@@ -476,7 +465,7 @@ func (b Board) question() string {
 			b.bar(b.offer("⏎", "finish them all"), b.offer("esc", "keep them as they are"))
 	}
 	what, number := "task", b.task
-	if b.tab == Objectives {
+	if b.tab == board.Objectives {
 		what, number = "objective", b.goal
 	}
 	asked := b.skin.Title.Render("delete " + what + " " + strconv.Itoa(number) + "?")
@@ -500,38 +489,38 @@ func (b Board) titleLine() string {
 		return b.troubleLine()
 	}
 	if b.configured.notice != "" {
-		return " " + b.skin.Faint.Render(Clip(b.configured.notice, b.width-margin-margin))
+		return " " + b.skin.Faint.Render(Clip(b.configured.notice, b.width-geom.Margin-geom.Margin))
 	}
 	if len(b.warned) > 0 {
-		return " " + b.skin.Band.Render(Clip(strings.Join(b.warned, " · "), b.width-margin-margin))
+		return " " + b.skin.Band.Render(Clip(strings.Join(b.warned, " · "), b.width-geom.Margin-geom.Margin))
 	}
 	if b.opened != "" {
-		return " " + b.skin.Faint.Render(Clip(b.opened, b.width-margin-margin))
+		return " " + b.skin.Faint.Render(Clip(b.opened, b.width-geom.Margin-geom.Margin))
 	}
 	title := b.wholeTitle()
 	if said := b.viewSays(); title == "" && said != "" {
-		return " " + b.skin.Faint.Render(Clip(said, b.width-margin-margin))
+		return " " + b.skin.Faint.Render(Clip(said, b.width-geom.Margin-geom.Margin))
 	}
 	if title == "" && b.filters.Narrows() && !b.filtering {
 		said := b.skin.Faint.Render("filtered by " + b.filters.Said())
 		if chips := b.chips(); chips != "" {
 			said += "   " + chips
 		}
-		return " " + Clip(said, b.width-margin-margin)
+		return " " + Clip(said, b.width-geom.Margin-geom.Margin)
 	}
 	if title == "" {
 		return ""
 	}
-	return " " + b.skin.Faint.Render(Clip(title, b.width-margin-margin))
+	return " " + b.skin.Faint.Render(Clip(title, b.width-geom.Margin-geom.Margin))
 }
 
-// wholeTitle is the title of the card under the cursor in insert mode when the card cuts it, and nothing otherwise.
+// wholeTitle is the title of the card under the cursor when the card cuts it, and nothing otherwise.
 func (b Board) wholeTitle() string {
 	c, ok := b.held()
-	if !ok || b.mode != Insert {
+	if !ok {
 		return ""
 	}
-	lines := Wrap(c.Title, LayoutFor(b.width, b.height).Interior, titleLines)
+	lines := Wrap(c.Title, geom.LayoutFor(b.width, b.height).Interior, titleLines)
 	if !strings.HasSuffix(lines[titleLines-1], ellipsis) {
 		return ""
 	}

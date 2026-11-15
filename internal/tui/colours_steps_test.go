@@ -1,82 +1,86 @@
 package tui
 
 import (
+	"cairn/internal/theme"
 	"fmt"
+	"image/color"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/cucumber/godog"
 )
 
-var terminalColours = map[string]string{
-	"red": "31", "green": "32", "yellow": "33", "blue": "34", "magenta": "35", "cyan": "36",
-	"bright red": "91", "bright green": "92", "bright yellow": "93",
-	"bright blue": "94", "bright magenta": "95", "bright cyan": "96",
-}
-
-var labelsInTheTerminal = map[string]string{
-	"rosewater": "bright magenta", "flamingo": "bright red", "pink": "magenta", "mauve": "bright magenta",
-	"red": "red", "maroon": "bright red", "peach": "bright yellow", "yellow": "yellow",
-	"green": "green", "teal": "cyan", "sky": "bright cyan", "sapphire": "bright blue",
-	"blue": "blue", "lavender": "bright blue",
-}
-
 var graphic = regexp.MustCompile("\x1b\\[([0-9;:]*)m")
 
+var painted = regexp.MustCompile(`(?:^|;)(?:38|48|58);2;(\d+);(\d+);(\d+)|(?:^|;)(3[1-6]|4[0-7]|9[0-7]|10[0-7]|38;5|48;5)(?:;|$)`)
+
 func (w *world) registerColours(sc *godog.ScenarioContext) {
-	sc.Then(`^no screen wears a colour the terminal's theme does not set$`, w.noScreenWearsAColourOfItsOwn)
-	sc.Then(`^the rule between two columns is faint, in no colour of its own$`, w.ruleIsFaint)
-	sc.Then(`^the left edge of the card for task (\d+) wears the terminal's (.+)$`, w.leftEdgeWears)
-	sc.Then(`^the tab "([^"]*)" is drawn reversed in the terminal's (.+)$`, w.tabReversed)
-	sc.Then(`^the dot of the header wears the terminal's (.+)$`, w.dotWearsTheTerminals)
+	sc.Then(`^no screen wears a colour the scheme does not have$`, w.noScreenWearsAColourOfItsOwn)
+	sc.Then(`^the rule between two columns wears the scheme's line$`, w.ruleWearsTheLine)
+	sc.Then(`^the left edge of the card for task (\d+) wears the scheme's (\w+) priority$`, w.leftEdgeWears)
+	sc.Then(`^the tab "([^"]*)" is drawn reversed in the accent of "([^"]*)"$`, w.tabReversed)
+	sc.Then(`^the dot of the header wears the scheme's (\w+)$`, w.dotWearsTheSchemes)
 }
 
-func outsideTheTheme(drawn string) []string {
+func ink(c color.NRGBA) string { return fmt.Sprintf("38;2;%d;%d;%d", c.R, c.G, c.B) }
+
+func schemeColours(c theme.Colours) map[string]bool {
+	seen := map[string]bool{}
+	add := func(c color.NRGBA) { seen[fmt.Sprintf("%d;%d;%d", c.R, c.G, c.B)] = true }
+	for _, c := range []color.NRGBA{c.Ink.Text, c.Ink.Faint, c.Ink.Low, c.Line.Rule, c.Line.Edge, c.Line.Raised, c.Line.Selected,
+		c.Accent.Base, c.State.Late, c.State.Done, c.Surface.Back} {
+		add(c)
+	}
+	for _, c := range c.Priority {
+		add(c)
+	}
+	for _, c := range c.Standing {
+		add(c.Ink)
+	}
+	for _, c := range c.Labels {
+		add(c)
+	}
+	return seen
+}
+
+func outsideTheScheme(drawn string, c theme.Colours) []string {
+	known := schemeColours(c)
 	var found []string
 	for _, match := range graphic.FindAllStringSubmatch(drawn, -1) {
-		for _, param := range strings.FieldsFunc(match[1], func(r rune) bool { return r == ';' || r == ':' }) {
-			n, err := strconv.Atoi(param)
-			if err == nil && paintsOfItsOwn(n) {
+		for _, p := range painted.FindAllStringSubmatch(match[1], -1) {
+			if p[4] != "" || !known[p[1]+";"+p[2]+";"+p[3]] {
 				found = append(found, match[0])
-				break
 			}
 		}
 	}
 	return found
 }
 
-func paintsOfItsOwn(n int) bool {
-	return n == 38 || n == 48 || n == 58 || n == 90 || n == 100
-}
-
 func (w *world) noScreenWearsAColourOfItsOwn() error {
 	var problems []string
 	look := func(name string) {
-		if found := outsideTheTheme(w.b.Draw()); len(found) > 0 {
+		if found := outsideTheScheme(w.b.Draw(), theme.Default()); len(found) > 0 {
 			problems = append(problems, fmt.Sprintf("%s wears %q", name, found))
 		}
 	}
 	w.everyScreen(look)
 	if len(problems) > 0 {
-		return fmt.Errorf("%d screen(s) wear a colour of their own:\n%s", len(problems), strings.Join(problems, "\n"))
+		return fmt.Errorf("%d screen(s) wear a colour the scheme does not have:\n%s", len(problems), strings.Join(problems, "\n"))
 	}
 	return nil
 }
 
-func (w *world) ruleIsFaint() error {
+func (w *world) ruleWearsTheLine() error {
+	want := ink(theme.Default().Line.Edge) + "m│"
 	for _, line := range strings.Split(w.b.Draw(), "\n") {
-		if strings.Contains(strip(line), "BACKLOG") {
-			continue
-		}
-		if strings.Contains(line, "\x1b[2m│") {
+		if strings.Contains(line, want) {
 			return nil
 		}
 	}
-	return fmt.Errorf("no rule is drawn faint and bare:\n%q", w.b.Draw())
+	return fmt.Errorf("no rule wears the scheme's line (%q):\n%q", want, w.b.Draw())
 }
 
-func (w *world) leftEdgeWears(number int, colour string) error {
+func (w *world) leftEdgeWears(number int, priority string) error {
 	title := ""
 	for _, c := range w.cards() {
 		if c.Number == number {
@@ -86,6 +90,7 @@ func (w *world) leftEdgeWears(number int, colour string) error {
 	if title == "" {
 		return fmt.Errorf("there is no task %d", number)
 	}
+	want := ink(theme.Default().Priority[priority]) + "m"
 	for _, line := range strings.Split(w.b.Draw(), "\n") {
 		if !strings.Contains(strip(line), title) {
 			continue
@@ -94,45 +99,30 @@ func (w *world) leftEdgeWears(number int, colour string) error {
 		if edge < 0 {
 			return fmt.Errorf("the card for task %d has no left edge: %q", number, line)
 		}
-		before := line[:edge]
-		if colour == "own foreground" {
-			if last := graphic.FindAllStringSubmatchIndex(before, -1); len(last) > 0 && last[len(last)-1][1] == len(before) && last[len(last)-1][3] > last[len(last)-1][2] {
-				return fmt.Errorf("the left edge of task %d wears a colour: %q", number, line)
-			}
-			return nil
-		}
-		code, ok := terminalColours[colour]
-		if !ok {
-			return fmt.Errorf("%q is none of the terminal's colours", colour)
-		}
-		if !strings.HasSuffix(before, "\x1b["+code+"m") {
-			return fmt.Errorf("the left edge of task %d does not wear the terminal's %s (%s): %q", number, colour, code, line)
+		if !strings.HasSuffix(line[:edge], want) {
+			return fmt.Errorf("the left edge of task %d does not wear the scheme's %s priority (%s): %q", number, priority, want, line)
 		}
 		return nil
 	}
 	return fmt.Errorf("task %d is not on the board:\n%s", number, w.screen())
 }
 
-func (w *world) tabReversed(tab, colour string) error {
-	code, ok := terminalColours[colour]
-	if !ok {
-		return fmt.Errorf("%q is none of the terminal's colours", colour)
+func (w *world) tabReversed(tab, scheme string) error {
+	s, err := theme.Find("", scheme)
+	if err != nil {
+		return err
 	}
 	header := strings.SplitN(w.b.Draw(), "\n", 2)[0]
-	if want := "\x1b[1;7;" + code + "m" + tab; !strings.Contains(header, want) {
-		return fmt.Errorf("the tab %q is not drawn reversed in the terminal's %s (%q):\n%q", tab, colour, want, header)
+	if want := "\x1b[1;7;" + ink(s.Colours().Accent.Base) + "m" + tab; !strings.Contains(header, want) {
+		return fmt.Errorf("the tab %q is not drawn reversed in the accent of %s (%q):\n%q", tab, scheme, want, header)
 	}
 	return nil
 }
 
-func (w *world) dotWearsTheTerminals(colour string) error {
-	code, ok := terminalColours[colour]
-	if !ok {
-		return fmt.Errorf("%q is none of the terminal's colours", colour)
-	}
-	worn := "\x1b[" + code + "m● "
+func (w *world) dotWearsTheSchemes(colour string) error {
+	worn := "\x1b[" + ink(theme.Default().Labels[colour]) + "m● "
 	if header := strings.SplitN(w.b.Draw(), "\n", 2)[0]; !strings.Contains(header, worn) {
-		return fmt.Errorf("the dot of the header does not wear the terminal's %s (%q):\n%q", colour, worn, header)
+		return fmt.Errorf("the dot of the header does not wear the scheme's %s (%q):\n%q", colour, worn, header)
 	}
 	return nil
 }

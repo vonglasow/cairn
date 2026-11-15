@@ -79,6 +79,10 @@ func (w *world) shownPages() engine.Pages {
 
 func (w *world) open() {
 	w.b = New(w.held, GlyphsFor(Unicode), func() time.Time { return stood }, w.width, w.high).Paged(w.shownPages())
+	if w.spaces.Dir != "" {
+		worn, _ := engine.Wearing(w.homeOf(""))
+		w.b = w.b.Wearing(worn)
+	}
 	w.opened = true
 	w.refresh()
 	if w.spaces.Dir != "" {
@@ -136,12 +140,12 @@ func (w *world) press(name string) {
 	was := w.b.screen
 	model, cmd := w.b.Update(keyPress(name))
 	w.b = model.(Board)
-	if w.b.screen == OnForm {
+	if w.b.screen == board.OnForm {
 		w.b = pump(w.b, cmd)
 	} else {
 		w.settle(cmd)
 	}
-	if was != OnForm && w.b.screen == OnForm {
+	if was != board.OnForm && w.b.screen == board.OnForm {
 		w.b = settleForm(w.b)
 	}
 }
@@ -263,6 +267,8 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	sc.Then(`^the band is named "([^"]*)"$`, w.bandNamed)
 	sc.Then(`^the band carries (\d+) tasks?$`, w.bandCarries)
 	sc.Then(`^the band reads (".*")$`, w.bandReads)
+	sc.Then(`^the band's lanes read (".*")$`, w.lanesRead)
+	sc.Then(`^the lane "([^"]*)" carries "([^"]*)"$`, w.laneCarries)
 	sc.Then(`^"([^"]*)" carries "([^"]*)"$`, w.columnCarries)
 	sc.Then(`^"([^"]*)" reads (".*")$`, w.columnReads)
 	sc.Then(`^it says it needs (\d+) columns$`, w.saysItNeeds)
@@ -512,7 +518,7 @@ func TestARefusedFormKeepsWhatWasTyped(t *testing.T) {
 	w.open()
 	w.press("i")
 	w.press("e")
-	if w.b.screen != OnForm {
+	if w.b.screen != board.OnForm {
 		t.Fatalf("the form did not open: %v", w.b.screen)
 	}
 	if err := w.setField("title", ""); err != nil {
@@ -521,7 +527,7 @@ func TestARefusedFormKeepsWhatWasTyped(t *testing.T) {
 	if err := w.saveForm(); err != nil {
 		t.Fatal(err)
 	}
-	if w.b.screen != OnForm {
+	if w.b.screen != board.OnForm {
 		t.Errorf("a refused form left the board on %v, losing what was typed", w.b.screen)
 	}
 	if w.b.err == nil {
@@ -538,12 +544,12 @@ func TestTheHelpGivesBackWhatItWasAskedOver(t *testing.T) {
 	w.open()
 	w.press("i")
 	w.press("e")
-	if w.b.screen != OnForm {
+	if w.b.screen != board.OnForm {
 		t.Fatalf("the form did not open: %v", w.b.screen)
 	}
 	w.press("?")
 	w.press("esc")
-	if w.b.screen != OnForm {
+	if w.b.screen != board.OnForm {
 		t.Errorf("leaving the help by esc put the board on %v", w.b.screen)
 	}
 }
@@ -622,7 +628,7 @@ func TestLeavingAFilledFormAsksFirst(t *testing.T) {
 	w.open()
 	w.press("i")
 	w.press("e")
-	if w.b.screen != OnForm {
+	if w.b.screen != board.OnForm {
 		t.Fatalf("the form did not open: %v", w.b.screen)
 	}
 	w.b.form = w.b.form.typedInto("title", "Write the spec, differently")
@@ -631,12 +637,12 @@ func TestLeavingAFilledFormAsksFirst(t *testing.T) {
 		t.Fatal("a filled form was thrown away without a question")
 	}
 	w.press("esc")
-	if w.b.screen != OnForm {
+	if w.b.screen != board.OnForm {
 		t.Fatalf("backing out of the question left the board on %v", w.b.screen)
 	}
 	w.press("esc")
 	w.press("enter")
-	if w.b.screen == OnForm {
+	if w.b.screen == board.OnForm {
 		t.Fatal("agreeing to lose what was typed left the form open")
 	}
 }
@@ -678,14 +684,14 @@ func TestSavingHandsTheWindowBackAndARefusalGivesItBack(t *testing.T) {
 	w.b.form = w.b.form.typedInto("title", "Something else")
 	model, _ := w.b.save()
 	w.b = model.(Board)
-	if w.b.screen != OnTheBoard {
+	if w.b.screen != board.OnTheBoard {
 		t.Fatalf("saving left the window on %v", w.b.screen)
 	}
 	if !w.b.form.Changed() {
 		t.Fatal("what was typed went with the window")
 	}
 	after := w.b.took(Looked{Err: errNope})
-	if after.screen != OnForm {
+	if after.screen != board.OnForm {
 		t.Fatalf("a refused write left the board on %v", after.screen)
 	}
 	if after.form.valueOf("title") != "Something else" {
@@ -754,7 +760,7 @@ func TestTheBoardsFormFollowsTheSameRuleAsTheWindows(t *testing.T) {
 	if said := w.b.form.valueOf("description"); said != "un\ndeux" {
 		t.Fatalf("the description reads %q", said)
 	}
-	if w.b.screen != OnForm {
+	if w.b.screen != board.OnForm {
 		t.Fatalf("enter in the description left the form on %v", w.b.screen)
 	}
 	w.press("up")
@@ -766,7 +772,7 @@ func TestTheBoardsFormFollowsTheSameRuleAsTheWindows(t *testing.T) {
 	if err := w.lookAgain(); err != nil {
 		t.Fatal(err)
 	}
-	if w.b.screen == OnForm {
+	if w.b.screen == board.OnForm {
 		t.Fatal("^S did not save the form")
 	}
 	found, err := w.givens().Task(1)

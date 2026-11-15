@@ -127,11 +127,7 @@ func (w *world) stillInFocus(number int, name string) error {
 }
 
 func (w *world) dotWears(colour string) error {
-	inTheTerminal, ok := labelsInTheTerminal[colour]
-	if !ok {
-		return fmt.Errorf("%q is none of the label colours", colour)
-	}
-	return w.dotWearsTheTerminals(inTheTerminal)
+	return w.dotWearsTheSchemes(colour)
 }
 
 func (w *world) recentMarked(folder, mark string) error {

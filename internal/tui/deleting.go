@@ -2,6 +2,7 @@ package tui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/tui/geom"
 	"slices"
 	"strconv"
 	"strings"
@@ -101,14 +102,14 @@ func fateSaid(f board.Fate, many bool) string {
 func (b Board) drawDeleting() string {
 	return lipgloss.NewCompositor(
 		lipgloss.NewLayer(b.drawBoard()),
-		lipgloss.NewLayer(b.deletingBox()).X(margin+1).Y(2).Z(1),
+		lipgloss.NewLayer(b.deletingBox()).X(geom.Margin+1).Y(2).Z(1),
 	).Render()
 }
 
 func (b Board) deletingBox() string {
 	d := *b.deleting
 	g, _ := b.snap.Goal(d.Number)
-	wide := min(switcherWide, b.width-margin-2)
+	wide := min(switcherWide, b.width-geom.Margin-2)
 	inner := wide - 2
 	edge := b.skin.Rule
 	title := "─ DELETE #" + strconv.Itoa(d.Number) + " " + strings.ToUpper(g.Title) + " "

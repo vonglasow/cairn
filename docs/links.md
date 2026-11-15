@@ -30,7 +30,7 @@ Every surface opens a new task already linked to the one you are on, in `todo`
 whatever that one's column:
 
 - the command line: `cairn task new "…" --link 105`;
-- the terminal board: `o` on a card, in insert mode, opens the form with the
+- the terminal board: `o` on a card opens the form with the
   card already in `links`;
 - the window: `o` on a chosen card, or **New linked task** in its right-click
   menu;

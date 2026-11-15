@@ -13,15 +13,12 @@ func TestTheWholeTitleIsGivenOnlyWhenCut(t *testing.T) {
 		{Number: 1, Title: long, State: "todo"},
 		{Number: 2, Title: "Short", State: "todo"},
 	}
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	if got := b.wholeTitle(); got != long {
 		t.Fatalf("the cut title was given as %q, want %q", got, long)
 	}
 	if got := hit(b, "j").wholeTitle(); got != "" {
 		t.Fatalf("a title that fits was given as %q, want nothing", got)
-	}
-	if got := hit(b, "esc").wholeTitle(); got != "" {
-		t.Fatalf("outside insert the title was given as %q, want nothing", got)
 	}
 }
 

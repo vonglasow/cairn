@@ -2,6 +2,7 @@ package site
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"os"
@@ -33,6 +34,7 @@ func TestTerminalHTML_colouresWhatTheEscapesColour(t *testing.T) {
 		"\x1b[1mx\x1b[22mx":        `<span class="b">x</span>x`,
 		"\x1b[31ma\x1b[32mb\x1b[m": `<span class="t1">a</span><span class="t2">b</span>`,
 		"\x1b[38;2;1;2;3mx\x1b[m":  `x`,
+		"\x1b[" + truecolour(theme.Default().Accent.Base) + "mx\x1b[m": `<span class="tp-accent">x</span>`,
 	} {
 		if got := terminalHTML(said); got != want {
 			t.Errorf("terminalHTML(%q) = %q, want %q", said, got, want)
@@ -182,3 +184,5 @@ func TestIDs_putCountsAnIDAlreadyGiven(t *testing.T) {
 		t.Errorf("Generate after Put = %q, want keys-1", got)
 	}
 }
+
+func truecolour(c color.NRGBA) string { return fmt.Sprintf("38;2;%d;%d;%d", c.R, c.G, c.B) }

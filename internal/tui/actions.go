@@ -80,7 +80,7 @@ func (b Board) removeGoal() tea.Cmd {
 	return b.carry(engine.ObjectiveDelete, engine.Agreed(board.Numbered(b.goal)))
 }
 
-var pageOfTab = map[Tab]string{Tasks: engine.PageTasks, Objectives: engine.PageObjectives, Series: engine.PageTasks, Time: engine.PageTime}
+var pageOfTab = map[board.Tab]string{board.Tasks: engine.PageTasks, board.Objectives: engine.PageObjectives, board.Series: engine.PageTasks, board.Time: engine.PageTime}
 
 // Paged answers the board showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
 func (b Board) Paged(p engine.Pages) Board {
@@ -92,10 +92,10 @@ func (b Board) Paged(p engine.Pages) Board {
 	return b
 }
 
-func (b Board) shown() []Tab {
-	var shown []Tab
-	for _, tab := range []Tab{Tasks, Objectives, Time, Series} {
-		if tab == Series && !b.pages.Recurs() {
+func (b Board) shown() []board.Tab {
+	var shown []board.Tab
+	for _, tab := range []board.Tab{board.Tasks, board.Objectives, board.Time, board.Series} {
+		if tab == board.Series && !b.pages.Recurs() {
 			continue
 		}
 		if b.pages.Shows(pageOfTab[tab]) {
@@ -113,25 +113,24 @@ func (b Board) otherTab() Board {
 	return b.onTab(shown[(max(0, slices.Index(shown, b.tab))+1)%len(shown)])
 }
 
-func (b Board) onTab(tab Tab) Board {
-	b.mode = Normal
+func (b Board) onTab(tab board.Tab) Board {
 	switch tab {
-	case Objectives:
-		b.tab = Objectives
+	case board.Objectives:
+		b.tab = board.Objectives
 		b.task = 0
 		b.goal = b.firstGoal()
 		return b.follow()
-	case Time:
-		b.tab, b.inside = Time, 0
+	case board.Time:
+		b.tab, b.inside = board.Time, 0
 		if b.week.IsZero() {
 			b.week = board.Monday(b.clock())
 		}
 		return b
-	case Series:
+	case board.Series:
 		return b.onSeries(b.seriesOn)
 	}
-	b.tab = Tasks
-	return b
+	b.tab = board.Tasks
+	return b.settled()
 }
 
 func (b Board) firstGoal() int {
@@ -172,7 +171,7 @@ func (b Board) segments() []board.Segment {
 	if b.inside != 0 {
 		return b.snap.Segments(b.inside, b.unopened())
 	}
-	if value, ok := b.objectiveShown(); ok && b.tab == Tasks {
+	if value, ok := b.objectiveShown(); ok && b.tab == board.Tasks {
 		root, _ := strconv.Atoi(strings.TrimSuffix(value, " itself"))
 		return b.snap.Segments(b.snap.TreeOf(root), board.Laid(b.snap.Cards, b.archived))
 	}
@@ -211,9 +210,9 @@ func (b Board) walkingSegments(by int) Board {
 		b.filters = b.filters.On("objective", segments[b.segment].Value)
 		b.segment = 0
 	}
-	b.mode, b.task, b.inBand = Normal, 0, false
+	b.task, b.inBand = 0, false
 	b.offsets = [board.Columns]int{}
-	return b
+	return b.settled()
 }
 
 func (b Board) showingItsTasks() Board {
@@ -221,9 +220,9 @@ func (b Board) showingItsTasks() Board {
 		return b
 	}
 	b.filters = board.FiltersOf(b.snap, board.DayOf(b.clock())).Keeping(b.filters).On("objective", strconv.Itoa(b.goal))
-	b = b.onTab(Tasks)
-	b.column, b.inBand, b.inside = 0, false, 0
-	return b
+	b = b.onTab(board.Tasks)
+	b.column, b.inBand, b.inside, b.task = 0, false, 0, 0
+	return b.settled()
 }
 
 func (b Board) openObjective() Board {
@@ -232,18 +231,16 @@ func (b Board) openObjective() Board {
 	}
 	b.inside = b.goal
 	b.segment = 0
-	b.tab = Tasks
-	b.mode = Normal
-	b.column = 0
+	b.tab = board.Tasks
+	b.column, b.task = 0, 0
 	b.inBand = false
-	return b
+	return b.settled()
 }
 
 func (b Board) leaveObjective() Board {
 	b.goal = b.inside
 	b.inside, b.segment = 0, 0
-	b.tab = Objectives
-	b.mode = Normal
+	b.tab = board.Objectives
 	b.task = 0
 	b.inBand = false
 	return b.follow()

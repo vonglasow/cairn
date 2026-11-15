@@ -1,26 +1,21 @@
-package tui
+package geom
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestLayoutFor(t *testing.T) {
-	for _, c := range []struct{ width, column, interior, band int }{
-		{120, 29, 25, 89},
-		{100, 24, 20, 74},
-		{80, 19, 15, 59},
-		{60, 14, 10, 44},
+	for _, c := range []struct{ width, column, interior int }{
+		{120, 29, 25},
+		{100, 24, 20},
+		{80, 19, 15},
+		{60, 14, 10},
 	} {
 		l := LayoutFor(c.width, 40)
-		if l.Column != c.column || l.Interior != c.interior || l.Band != c.band {
-			t.Fatalf("LayoutFor(%d) = %+v, want column %d interior %d band %d",
-				c.width, l, c.column, c.interior, c.band)
+		if l.Column != c.column || l.Interior != c.interior {
+			t.Fatalf("LayoutFor(%d) = %+v, want column %d interior %d",
+				c.width, l, c.column, c.interior)
 		}
-	}
-}
-
-func TestLayoutBandSpansTheLastThreeColumns(t *testing.T) {
-	l := LayoutFor(100, 40)
-	if want := l.Column*3 + 2; l.Band != want {
-		t.Fatalf("the band is %d wide, want %d", l.Band, want)
 	}
 }
 
@@ -45,25 +40,25 @@ func TestTheBandIsNeverGivenNothing(t *testing.T) {
 		if l.Top < 1 {
 			t.Fatalf("at %d rows the columns were given %d", height, l.Top)
 		}
-		if l.Top+l.Rows+fixed != height {
-			t.Fatalf("at %d rows the board takes %d", height, l.Top+l.Rows+fixed)
+		if l.Top+l.Rows+Fixed+1 != height {
+			t.Fatalf("at %d rows the board takes %d", height, l.Top+l.Rows+Fixed+1)
 		}
 	}
 }
 
 func TestTheBandTakesTwoRowsOfCardsWhenThereIsRoom(t *testing.T) {
-	if got := LayoutFor(100, 60).Rows; got != bandCards*CardHeight {
+	if got := LayoutFor(100, 60).Rows; got != BandCards*CardHeight {
 		t.Fatalf("the band got %d rows in a tall window, want two rows of cards", got)
 	}
-	if got := LayoutFor(100, 26).Rows; got != 9 {
-		t.Fatalf("the band got %d rows in a short window, want half of what was left", got)
+	if got := LayoutFor(100, 26).Rows; got != 8 {
+		t.Fatalf("the band got %d rows in a short window, want half of what was left, less its lanes' heads", got)
 	}
 }
 
 func TestShowing(t *testing.T) {
 	for _, c := range []struct{ rows, want int }{{30, 5}, {6, 1}, {5, 0}, {0, 0}} {
-		if got := Showing(c.rows); got != c.want {
-			t.Fatalf("Showing(%d) = %d, want %d", c.rows, got, c.want)
+		if got := c.rows / CardHeight; got != c.want {
+			t.Fatalf("%d rows show %d cards, want %d", c.rows, got, c.want)
 		}
 	}
 }

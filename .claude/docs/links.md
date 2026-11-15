@@ -28,7 +28,7 @@ Every surface opens a task already linked:
 
 - the command line and the MCP: `task new "…" --link 105`, `task_new` with
   `link` (`@mcp-a-task-opened-with-a-link`);
-- the board in the terminal: `o` on a card, in insert mode, opens the form of a
+- the board in the terminal: `o` on a card opens the form of a
   new task in `todo` with `links` already holding the card
   (`@tui-o-opens-a-linked-task`);
 - the window: `o` on a chosen card, or New linked task in its right-click menu,

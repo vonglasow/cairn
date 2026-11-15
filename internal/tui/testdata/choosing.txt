@@ -1,4 +1,4 @@
-  TASKS 0   objectives 0   time 0                                                           NORMAL
+  TASKS 0   objectives 0   time 0
 
  BACKLOG                0│▌TODO                  0│CURRENT                0│DONE                   0
  ────────────────────────│━━━━━━━━━━━━━━━━━━━━━━━━│────────────────────────│────────────────────────
@@ -21,20 +21,20 @@
                          │                        │                        │
                          │                        │                        │
                          │                        │                        │
+                         │STALLED                0│                        │
+                         │blocked                0│watching               0│paused                 0
+                         │────────────────────────│────────────────────────│────────────────────────
                          │                        │                        │
-                          STALLED                                                                  0
-                          ──────────────────────────────────────────────────────────────────────────
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
 
-
-
-
-
-
-
-
-
-
-
-
-
- hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab   ? help   : command
+ hjkl ←↓↑→ tasks   ^hl columns   a new   / search   ⇥ tab   ? help   : command

@@ -2,6 +2,7 @@ package tui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/theme"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -77,8 +78,8 @@ func TestFramesOfACrowdedBoard(t *testing.T) {
 		keys          []string
 	}{
 		{"crowded", 100, 40, nil},
-		{"crowded-scrolled", 100, 40, []string{"l", "i", "j", "j", "j", "j", "j", "j"}},
-		{"crowded-band", 100, 40, []string{"l", "i", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j"}},
+		{"crowded-scrolled", 100, 40, []string{"ctrl+l", "j", "j", "j", "j", "j", "j"}},
+		{"crowded-band", 100, 40, []string{"ctrl+l", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j", "j"}},
 		{"crowded-objectives", 100, 40, []string{"tab", "j", "j", "j", "j", "j", "j"}},
 		{"crowded-inside", 100, 40, []string{"tab", "enter", "l", "i", "j", "j", "j", "j"}},
 	} {
@@ -101,26 +102,25 @@ func TestFrames(t *testing.T) {
 		{"board-short", 100, 26, nil},
 		{"board-narrow", 60, 40, nil},
 		{"too-narrow", 47, 20, nil},
-		{"insert", 100, 40, []string{"l", "i"}},
+		{"holding", 100, 40, []string{"ctrl+l"}},
 		{"search", 100, 40, []string{"/", "s", "p", "e", "c"}},
 		{"command", 100, 40, []string{":", "b", "a"}},
-		{"choosing", 100, 40, []string{"l", "i", "shift+j"}},
+		{"choosing", 100, 40, []string{"ctrl+l", "shift+j"}},
 		{"help", 100, 40, []string{"?"}},
-		{"detail", 100, 40, []string{"l", "i", "enter"}},
-		{"form", 100, 40, []string{"l", "i", "e"}},
+		{"detail", 100, 40, []string{"ctrl+l", "enter"}},
+		{"form", 100, 40, []string{"ctrl+l", "e"}},
 		{"objectives", 100, 40, []string{"tab"}},
 		{"objectives-help", 100, 40, []string{"tab", "?"}},
 		{"inside", 100, 40, []string{"tab", "enter"}},
-		{"band", 100, 40, []string{"l", "j"}},
-		{"band-insert", 100, 40, []string{"l", "j", "i"}},
-		{"form-on-a-choice", 100, 40, []string{"l", "i", "e", "tab", "tab"}},
-		{"form-changed-a-choice", 100, 40, []string{"l", "i", "e", "tab", "tab", "right"}},
+		{"band", 100, 40, []string{"ctrl+l", "ctrl+j"}},
+		{"form-on-a-choice", 100, 40, []string{"ctrl+l", "e", "tab", "tab"}},
+		{"form-changed-a-choice", 100, 40, []string{"ctrl+l", "e", "tab", "tab", "right"}},
 		{"objectives-form", 100, 40, []string{"tab", "e"}},
-		{"detail-stalled", 100, 40, []string{"l", "j", "i", "enter"}},
+		{"detail-stalled", 100, 40, []string{"ctrl+l", "ctrl+j", "enter"}},
 		{"help-narrow", 72, 30, []string{"?"}},
-		{"detail-narrow", 72, 28, []string{"l", "i", "enter"}},
-		{"detail-stalled-short", 100, 28, []string{"l", "j", "i", "enter"}},
-		{"form-narrow", 72, 28, []string{"l", "i", "e"}},
+		{"detail-narrow", 72, 28, []string{"ctrl+l", "enter"}},
+		{"detail-stalled-short", 100, 28, []string{"ctrl+l", "ctrl+j", "enter"}},
+		{"form-narrow", 72, 28, []string{"ctrl+l", "e"}},
 		{"objectives-narrow", 72, 30, []string{"tab"}},
 		{"board-tall", 100, 52, nil},
 	} {
@@ -135,8 +135,8 @@ func TestFrames(t *testing.T) {
 
 func pinned(t *testing.T, name, got string) {
 	t.Helper()
-	if found := outsideTheTheme(got); len(found) > 0 {
-		t.Errorf("the frame %s wears colours the terminal's theme does not set: %q", name, found)
+	if found := outsideTheScheme(got, theme.Default()); len(found) > 0 {
+		t.Errorf("the frame %s wears colours the scheme does not have: %q", name, found)
 	}
 	got = bare(got)
 	path := filepath.Join("testdata", name+".txt")

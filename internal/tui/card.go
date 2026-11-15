@@ -4,6 +4,7 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine"
 	"cairn/internal/engine/item"
+	"cairn/internal/tui/design"
 	"fmt"
 	"strconv"
 	"strings"
@@ -36,7 +37,7 @@ func marks(c board.Card, g Glyphs) string {
 	return strings.Join(found, " ")
 }
 
-func facts(c board.Card, g Glyphs, s Skin, now time.Time, pages engine.Pages, width int) string {
+func facts(c board.Card, g Glyphs, s design.Skin, now time.Time, pages engine.Pages, width int) string {
 	var told, dressed []string
 	said := board.FactsOf(c, now, pages)
 	for _, f := range said {
@@ -56,7 +57,7 @@ func dress(kept string, told, dressed []string) string {
 	return strings.Join(dressed[:max(fit(told, lipgloss.Width(kept)), 1)], "  ")
 }
 
-func withMore(told, dressed []string, s Skin, width int) string {
+func withMore(told, dressed []string, s design.Skin, width int) string {
 	shown := fit(told, width)
 	if shown == len(told) {
 		return dress(Join("  ", width, told...), told, dressed)
@@ -84,13 +85,13 @@ func fit(told []string, width int) int {
 }
 
 // Rows is the four lines a card carries, before anything is drawn around them.
-func Rows(c board.Card, g Glyphs, s Skin, now time.Time, pages engine.Pages, width int) []string {
+func Rows(c board.Card, g Glyphs, s design.Skin, now time.Time, pages engine.Pages, width int) []string {
 	var rows []string
 	number := s.Faint.Render(strconv.Itoa(c.Number))
 	mark := marks(c, g)
 	if glyph := StoppedGlyph(c.State, g); glyph != "" {
 		mark = strings.Replace(mark, glyph,
-			s.palette.Stopped(c.State).Style().Render(glyph), 1)
+			s.Palette.Stopped(c.State).Style().Render(glyph), 1)
 	}
 	rows = append(rows, Spread(number, mark, width))
 	for i, line := range Wrap(c.Title, width, titleLines) {

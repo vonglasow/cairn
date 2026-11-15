@@ -1,11 +1,10 @@
-  TASKS 12/20   objectives 10   time 0   ▸ 1                                                INSERT
+  TASKS 12/20   objectives 10   time 0   ▸ 1
 
  1   Objective 1                                                                           ▶ active
  ███░░░░░░░░░░░░░░░░░░░░░░░░░  1/9
 
  BACKLOG                0│TODO                  12│CURRENT                0│DONE                   0
  ────────────────────────│────────────────────────│────────────────────────│────────────────────────
-                         │┃ 3                    ┃│                        │
                          │┃ Task 3               ┃│                        │
                          │┃                      ┃│                        │
                          │┃                      ┃│                        │
@@ -22,19 +21,20 @@
                          │┃                      ┃│                        │
                          │┃                      ┃│                        │
                          │┗━━━━━━━━━━━━━━━━━━━━━━┛│                        │
-                          STALLED                                                                  0
-                          ──────────────────────────────────────────────────────────────────────────
+                         │STALLED                0│                        │
+                         │blocked                0│watching               0│paused                 0
+                         │────────────────────────│────────────────────────│────────────────────────
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
 
-
-
-
-
-
-
-
-
-
-
-
-
- hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus   D delete   x archive   ? help   esc back
+ hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus   D delete   x archive   ? help   a new

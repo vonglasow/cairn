@@ -1,13 +1,18 @@
 package site
 
 import (
+	"cairn/internal/tui/design"
+	"fmt"
 	"html"
 	"image/color"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
 	"cairn/internal/theme"
+
+	"maps"
 )
 
 var escapes = regexp.MustCompile("\x1b\\[([0-9;]*)m")
@@ -79,11 +84,31 @@ func (p pen) took(codes []string) pen {
 				p.bg = strconv.Itoa(slot)
 			}
 			i += 2
-		case (n == 38 || n == 48) && i+1 < len(codes) && codes[i+1] == "2":
+		case (n == 38 || n == 48) && i+4 < len(codes) && codes[i+1] == "2":
+			if role, known := drawnAs[strings.Join(codes[i+2:i+5], ";")]; known && n == 38 {
+				p.fg = "p-" + role
+			} else if known {
+				p.bg = "p-" + role
+			}
 			i += 4
 		}
 	}
 	return p
+}
+
+var drawnAs = rolesOf(design.PaletteOf(theme.Default()))
+
+func rolesOf(p design.Palette) map[string]string {
+	roles := map[string]string{}
+	names := slices.Sorted(maps.Keys(p.Inks()))
+	for _, name := range names {
+		r, g, b, _ := p.Inks()[name].RGBA()
+		said := fmt.Sprintf("%d;%d;%d", r>>8, g>>8, b>>8)
+		if _, taken := roles[said]; !taken {
+			roles[said] = name
+		}
+	}
+	return roles
 }
 
 func terminalHTML(said string) string {

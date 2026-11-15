@@ -3,28 +3,28 @@
  ╭───────────────────────────────╮ ╭───────────────────────────────╮
  │ KEYS                          │ │ LEGEND                        │
  │                               │ │                               │
- │ NORMAL — the cursor on a      │ │ PRIORITY — the left edge of a │
+ │ THE BOARD — the cursor on a   │ │ PRIORITY — the left edge of a │
  │ column                        │ │ card                          │
- │   hjkl ←↓↑→   columns, and    │ │   ▌ low                       │
- │ the band                      │ │   ▌ normal                    │
- │   i           insert mode     │ │   ▌ high                      │
- │   a           a new task      │ │   ▌ critical                  │
- │   ⇧A          show what was   │ │                               │
- │ archived                      │ │ STALLED — the top right of a  │
- │   ⇧X          archive every   │ │ card                          │
- │ task in this column — it asks │ │   ⊘  blocked   waiting on     │
- │ first                         │ │ somebody else                 │
- │   /           search          │ │   ◉  watching  handed over,   │
- │   ⇧F          filter — ←→     │ │ needs a look                  │
- │ which, ↑↓ its value, ⌫ clears │ │   ‖  paused    waiting on     │
- │ all                           │ │ your decision                 │
- │   v           the views — a   │ │                               │
- │ figure opens one, 0 the whole │ │ OBJECTIVES — a tree, sub-     │
- │ board                         │ │ objectives under ├─ └─        │
- │   [ ]         filtered on an  │ │   ▶  active    being worked   │
- │ objective: walk its sub-      │ │ towards                       │
- │ objectives                    │ │   ‖  on-hold   not for now    │
- │   ⇥           next tab —      │ │   ✓  reached   done with      │
- │ tasks, objectives, the time   │ │   ✕  dropped   given up       │
+ │   hjkl ←↓↑→   the cards, and  │ │   ▌ low                       │
+ │ the band's lanes              │ │   ▌ normal                    │
+ │   ^H ^L       the column left │ │   ▌ high                      │
+ │ or right, at once             │ │   ▌ critical                  │
+ │   ^J ^K       into the band,  │ │                               │
+ │ out of it                     │ │ STALLED — the top right of a  │
+ │   a           a new task      │ │ card                          │
+ │   ⇧A          show what was   │ │   ⊘  blocked   waiting on     │
+ │ archived                      │ │ somebody else                 │
+ │   ⇧X          archive every   │ │   ◉  watching  handed over,   │
+ │ task in this column — it asks │ │ needs a look                  │
+ │ first                         │ │   ‖  paused    waiting on     │
+ │   /           search          │ │ your decision                 │
+ │   ⇧F          filter — ←→     │ │                               │
+ │ which, ↑↓ its value, ⌫ clears │ │ OBJECTIVES — a tree, sub-     │
+ │ all                           │ │ objectives under ├─ └─        │
+ │   v           the views — a   │ │   ▶  active    being worked   │
+ │ figure opens one, 0 the whole │ │ towards                       │
+ │ board                         │ │   ‖  on-hold   not for now    │
+ │   [ ]         filtered on an  │ │   ✓  reached   done with      │
+ │ objective: walk its sub-      │ │   ✕  dropped   given up       │
 
  ↓↑ read on   esc close

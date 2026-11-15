@@ -36,7 +36,6 @@ Feature: The board
       Given I added a task titled "Migration Jenkins"
       And I added a task titled "Spike Argo"
       When I open the board
-      And I press "i"
       Then the cursor is on the task "Migration Jenkins"
       When I press "x"
       Then the board carries 1 task
@@ -94,54 +93,50 @@ Feature: The board
       When I open the board
       Then the columns read "BACKLOG", "TODO", "CURRENT", "DONE"
 
-  Rule: Normal moves between columns, insert between tasks
+  Rule: hjkl walks the cards, and ctrl+h and ctrl+l go to another column at once
 
-    @tui-the-board-opens-in-normal
-    Scenario: the board opens on a column
-      When I open the board
-      Then the mode is "NORMAL"
-      And the cursor is on the column "BACKLOG"
-
-    @tui-normal-moves-between-columns
-    Scenario: l moves to the next column
-      When I open the board
-      And I press "l"
-      Then the cursor is on the column "TODO"
-
-    @tui-normal-stops-at-the-last-column
-    Scenario: there is nothing to the right of done
-      When I open the board
-      And I press "l", "l", "l", "l"
-      Then the cursor is on the column "DONE"
-
-    @tui-insert-takes-hold-of-a-task
-    Scenario: i puts the cursor on a task
+    @tui-the-board-opens-on-the-first-card
+    Scenario: the board opens on the first card of the backlog, in no mode
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i"
-      Then the mode is "INSERT"
-      And the cursor is on the task "Write the spec"
+      Then the cursor is on the task "Write the spec"
+      And the board does not say "NORMAL"
 
-    @tui-insert-moves-between-tasks
+    @tui-an-empty-board-opens-on-the-backlog
+    Scenario: an empty board opens on the backlog
+      When I open the board
+      Then the cursor is on the column "BACKLOG"
+
+    @tui-ctrl-l-goes-to-the-next-column
+    Scenario: ctrl+l goes to the next column, even an empty one
+      Given I added a task titled "Write the spec"
+      When I open the board
+      And I press "ctrl+l"
+      Then the cursor is on the column "TODO"
+      When I press "ctrl+h"
+      Then the cursor is on the task "Write the spec"
+
+    @tui-ctrl-l-stops-at-the-last-column
+    Scenario: there is nothing to the right of done
+      When I open the board
+      And I press "ctrl+l", "ctrl+l", "ctrl+l", "ctrl+l"
+      Then the cursor is on the column "DONE"
+
+    @tui-l-walks-to-the-next-card
+    Scenario: l walks over an empty column to the next card
+      Given I added a task titled "First"
+      And I added a task titled "Further" with the state "current"
+      When I open the board
+      And I press "l"
+      Then the cursor is on the task "Further"
+
+    @tui-j-walks-down-the-column
     Scenario: j moves down the column
       Given I added a task titled "First"
       And I added a task titled "Second"
       When I open the board
-      And I press "i", "j"
+      And I press "j"
       Then the cursor is on the task "Second"
-
-    @tui-escape-goes-back-to-normal
-    Scenario: escape lets go of the task
-      Given I added a task titled "Write the spec"
-      When I open the board
-      And I press "i", "esc"
-      Then the mode is "NORMAL"
-
-    @tui-insert-does-nothing-on-an-empty-column
-    Scenario: there is no task to take hold of
-      When I open the board
-      And I press "i"
-      Then the mode is "NORMAL"
 
   Rule: Walking sideways keeps the level, and the ends are one key away
 
@@ -152,7 +147,7 @@ Feature: The board
       And I added a task titled "Also first" with the state "current"
       And I added a task titled "Also second" with the state "current"
       When I open the board
-      And I press "l", "i", "j"
+      And I press "ctrl+l", "j"
       Then the cursor is on the task "Second"
       When I press "l"
       Then the cursor is on the task "Also second"
@@ -163,7 +158,7 @@ Feature: The board
       And I added a task titled "Second" with the state "todo"
       And I added a task titled "Only one" with the state "current"
       When I open the board
-      And I press "l", "i", "j", "l"
+      And I press "ctrl+l", "j", "l"
       Then the cursor is on the task "Only one"
 
     @tui-G-and-gg-reach-the-ends
@@ -172,26 +167,60 @@ Feature: The board
       And I added a task titled "Second" with the state "todo"
       And I added a task titled "Third" with the state "todo"
       When I open the board
-      And I press "l", "i", "shift+g"
+      And I press "ctrl+l", "shift+g"
       Then the cursor is on the task "Third"
       When I press "g", "g"
       Then the cursor is on the task "First"
 
-  Rule: The band is walked the way it is drawn
+  Rule: The band is three lanes, one under each of the last three columns
 
-    @tui-the-band-is-a-grid
-    Scenario: right walks along the band's row, down goes a row lower
+    @tui-the-band-has-three-lanes
+    Scenario: the band names the three kinds of stopped
+      When I open the board
+      Then the band is named "STALLED"
+      And the band's lanes read "blocked", "watching", "paused"
+
+    @tui-a-stopped-task-sits-in-its-lane
+    Scenario: a stopped task sits in the lane of its kind
+      Given I added a task titled "Client's answer" with the state "blocked"
+      And I added a task titled "Handed over" with the state "watching"
+      When I open the board
+      Then the lane "blocked" carries "Client's answer"
+      And the lane "watching" carries "Handed over"
+
+    @tui-a-lane-is-walked-as-a-column
+    Scenario: j walks down a lane, l over an empty lane to the next card
       Given I added a task titled "First" with the state "blocked"
       And I added a task titled "Second" with the state "blocked"
-      And I added a task titled "Third" with the state "blocked"
-      And I added a task titled "Fourth" with the state "blocked"
+      And I added a task titled "Elsewhere" with the state "paused"
       When I open the board
-      And I press "l", "j", "i"
+      And I press "ctrl+l", "ctrl+j"
       Then the cursor is on the task "First"
-      When I press "l"
+      When I press "j"
       Then the cursor is on the task "Second"
-      When I press "h", "j"
-      Then the cursor is on the task "Fourth"
+      When I press "l"
+      Then the cursor is on the task "Elsewhere"
+
+    @tui-j-goes-down-into-the-lane-under
+    Scenario: j from the last card of a column goes into the lane under it, k back out
+      Given I added a task titled "Above" with the state "todo"
+      And I added a task titled "Below" with the state "blocked"
+      When I open the board
+      And I press "l", "j"
+      Then the cursor is on the task "Below"
+      When I press "k"
+      Then the cursor is on the task "Above"
+
+    @tui-ctrl-k-leaves-the-band
+    Scenario: ctrl+j goes into the band at once, and ctrl+k out of it
+      Given I added a task titled "Above" with the state "todo"
+      And I added a task titled "Further" with the state "todo"
+      And I added a task titled "Below" with the state "blocked"
+      When I open the board
+      And I press "l", "ctrl+j"
+      Then the cursor is on the task "Below"
+      When I press "ctrl+k"
+      Then the cursor is on the task "Further"
 
   Rule: A page turned off in the configuration is not drawn
 
@@ -227,7 +256,7 @@ Feature: The board
     Scenario: pushing a task right puts it in the next column
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "shift+l"
+      And I press "shift+l"
       Then task 1 is in the column "todo"
 
     @tui-done-asks-about-open-steps
@@ -235,7 +264,7 @@ Feature: The board
       Given I added a task titled "Ship it" with the state "current"
       And I added the step "Write the spec" to task 1
       When I open the board
-      And I press "l", "l", "i", "shift+l"
+      And I press "ctrl+l", "ctrl+l", "shift+l"
       And the board looks again
       Then the board says "put task 1 in done, ticking its steps?"
       When I press "enter"
@@ -248,7 +277,7 @@ Feature: The board
       Given I added a task titled "Ship it" with the state "current"
       And I added the step "Write the spec" to task 1
       When I open the board
-      And I press "l", "l", "i", "shift+l"
+      And I press "ctrl+l", "ctrl+l", "shift+l"
       And the board looks again
       And I press "esc"
       Then task 1 is in the column "current"
@@ -258,7 +287,7 @@ Feature: The board
       Given I added a task titled "Ship it" with the state "current"
       And I added the step "Write the spec" to task 1
       When I open the board
-      And I press "l", "l", "i", "shift+l"
+      And I press "ctrl+l", "ctrl+l", "shift+l"
       And the board looks again
       And I press "esc"
       And the board looks again
@@ -270,7 +299,7 @@ Feature: The board
       Given I added a task titled "First" with the state "todo"
       And I added a task titled "Second" with the state "todo"
       When I open the board
-      And I press "l", "i", "shift+j"
+      And I press "ctrl+l", "shift+j"
       Then task 1 is in the column "todo"
       And "TODO" reads "Second", "First"
 
@@ -278,7 +307,7 @@ Feature: The board
     Scenario: pushing the last task down asks which kind of stopped it is
       Given I added a task titled "Write the spec" with the state "todo"
       When I open the board
-      And I press "l", "i", "shift+j"
+      And I press "ctrl+l", "shift+j"
       Then it asks which of "blocked", "watching", "paused"
       And task 1 is in the column "todo"
 
@@ -286,7 +315,7 @@ Feature: The board
     Scenario: choosing in the popup is what changes the task
       Given I added a task titled "Write the spec" with the state "todo"
       When I open the board
-      And I press "l", "i", "shift+j"
+      And I press "ctrl+l", "shift+j"
       And I choose "watching"
       Then task 1 is in the column "watching"
 
@@ -294,7 +323,7 @@ Feature: The board
     Scenario: coming back out returns the task to the column it was pushed from
       Given I added a task titled "Write the spec" with the state "current"
       When I open the board
-      And I press "l", "l", "i", "shift+j"
+      And I press "ctrl+l", "ctrl+l", "shift+j"
       And I choose "blocked"
       And I press "shift+k"
       Then task 1 is in the column "current"
@@ -305,7 +334,7 @@ Feature: The board
       And I added a task titled "Second" with the state "blocked"
       And I added a task titled "Elsewhere" with the state "watching"
       When I open the board
-      And I press "l", "j", "i", "shift+j"
+      And I press "ctrl+l", "ctrl+j", "shift+j"
       Then task 1 is in the column "blocked"
       And the band reads "Second", "First", "Elsewhere"
 
@@ -315,7 +344,7 @@ Feature: The board
       And I added a task titled "First" with the state "paused"
       And I added a task titled "Second" with the state "paused"
       When I open the board
-      And I press "l", "j", "i", "l", "l", "shift+k"
+      And I press "ctrl+l", "ctrl+j", "l", "j", "shift+k"
       Then task 3 is in the column "paused"
       And the band reads "Elsewhere", "Second", "First"
 
@@ -324,7 +353,7 @@ Feature: The board
       Given I added a task titled "First" with the state "blocked"
       And I added a task titled "Second" with the state "watching"
       When I open the board
-      And I press "l", "j", "i", "shift+j"
+      And I press "ctrl+l", "ctrl+j", "shift+j"
       Then task 1 is in the column "blocked"
       And the band reads "First", "Second"
 
@@ -332,25 +361,25 @@ Feature: The board
     Scenario: pushing left out of the band reaches the backlog
       Given I added a task titled "Write the spec" with the state "blocked"
       When I open the board
-      And I press "l", "j", "i", "shift+h"
+      And I press "ctrl+l", "ctrl+j", "shift+h"
       Then task 1 is in the column "backlog"
 
     @tui-navigating-into-the-band-asks-nothing
     Scenario: looking at what is stalled does not ask a question
       Given I added a task titled "Client's answer" with the state "blocked"
       When I open the board
-      And I press "l", "j"
+      And I press "ctrl+l", "ctrl+j"
       Then it asks nothing
 
   Rule: The bar shows only what works here
 
     @tui-the-bar-follows-the-mode
-    Scenario: the bar changes with the mode
+    Scenario: the bar changes with what the cursor holds
       Given I added a task titled "Write the spec"
       When I open the board
-      Then the bar does not offer "move"
-      When I press "i"
       Then the bar offers "move"
+      When I press "ctrl+l"
+      Then the bar does not offer "move"
 
   Rule: Help answers in every mode
 
@@ -373,8 +402,9 @@ Feature: The board
     Scenario: closing help puts the board back as it was
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "?", "esc"
-      Then the mode is "INSERT"
+      And I press "?", "esc"
+      Then the cursor is on the task "Write the spec"
+      And the board does not say "HELP"
 
   Rule: Searching narrows the board in place
 
@@ -481,18 +511,16 @@ Feature: The board
       Then the card for task 1 says "1"
       And the card for task 1 says "Write the spec"
 
-    @tui-a-cut-title-is-read-whole-in-insert
+    @tui-a-cut-title-is-read-whole
     Scenario: the card under the cursor gives its whole title when the card cuts it
       Given I added a task titled "A title far longer than any column could ever hope to show in full, even over two lines of a card"
       When I open the board
-      And I press "i"
       Then the board says "A title far longer than any column could ever hope to show in full, even over two lines of a card"
 
     @tui-a-title-that-fits-is-not-said-twice
     Scenario: a title the card holds whole is not written again
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i"
       Then the board says "Write the spec" once
 
     @tui-a-card-marks-a-description-without-showing-it
@@ -864,7 +892,7 @@ Feature: The board
       And I added an objective titled "Firmware" under objective 1
       And I added a task titled "Pin map" serving objectives 2 and 3
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       Then the board says "counted through 2 below"
 
     @tui-objective-the-task-form-refuses-a-double-count
@@ -873,7 +901,7 @@ Feature: The board
       And I added an objective titled "Enclosure" under objective 1
       And I added a task titled "Pin map" serving objective 2
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I set the field "objectives" to "1 2"
       And I save the form
       Then the board says "is already counted in #1 Home automation through #2 Enclosure"
@@ -917,7 +945,7 @@ Feature: The board
       And objective 2 waits on objective 1
       And I added a task titled "OTA updates" serving objective 2
       When I open the board
-      And I press "i", "f"
+      And I press "f"
       Then the board says "#2 Features waits on #1 Firmware, not reached"
 
   Rule: Nothing is written until it is saved
@@ -926,16 +954,16 @@ Feature: The board
     Scenario: escape closes the form and writes nothing
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I press "esc"
-      Then the mode is "INSERT"
+      Then the cursor is on the task "Write the spec"
       And task 1 is titled "Write the spec"
 
     @tui-a-form-cancelled-changes-nothing
     Scenario: leaving the form throws the change away
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I set the field "title" to "Something else"
       And I press "esc"
       Then task 1 is titled "Write the spec"
@@ -944,7 +972,7 @@ Feature: The board
     Scenario: saving is what writes it
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I set the field "title" to "Something else"
       And I save the form
       Then task 1 is titled "Something else"
@@ -952,7 +980,7 @@ Feature: The board
     @tui-adding-a-task-lands-in-the-column-under-the-cursor
     Scenario: a task added takes the column the cursor was on
       When I open the board
-      And I press "l"
+      And I press "ctrl+l"
       And I press "a"
       And I set the field "title" to "Write the spec"
       And I save the form
@@ -965,7 +993,7 @@ Feature: The board
       Given I added a task titled "Write the spec"
       And I added a task titled "Ship it"
       When I open the board
-      And I press "i", "j", "e"
+      And I press "j", "e"
       And I set the field "links" to "1"
       And I save the form
       Then task 2 is linked to task 1
@@ -975,7 +1003,7 @@ Feature: The board
     Scenario: o on a card opens a new task linked to it, in todo
       Given I added a task titled "Ship it" with the state "done"
       When I open the board
-      And I press "l", "l", "l", "i", "o"
+      And I press "ctrl+l", "ctrl+l", "ctrl+l", "o"
       And I set the field "title" to "It does not hold"
       And I save the form
       Then task 2 is in the column "todo"
@@ -988,7 +1016,7 @@ Feature: The board
     Scenario: enter writes a line in the description rather than saving
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "e", "tab"
+      And I press "e", "tab"
       And I type "Deux colonnes"
       And I press "enter"
       And I type "et une bande"
@@ -999,7 +1027,7 @@ Feature: The board
     Scenario: ^S saves the form, and every field typed into is kept
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I set the field "labels" to "backend"
       And I press "ctrl+s"
       And the board looks again
@@ -1011,7 +1039,7 @@ Feature: The board
     Scenario: deleting asks before it takes the task away
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "D"
+      And I press "D"
       Then the board says "delete task 1?"
       And the board carries 1 task
       When I press "esc"
@@ -1024,7 +1052,7 @@ Feature: The board
     Scenario: one letter destroys nothing: d no longer deletes, D asks first
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "d"
+      And I press "d"
       Then the board carries 1 task
       And the board says nothing of "delete task 1?"
 
@@ -1032,7 +1060,7 @@ Feature: The board
     Scenario: m then a column's first letter moves the chosen task there
       Given I added a task titled "Write the spec" with the state "todo"
       When I open the board
-      And I press "l", "i", "m", "d"
+      And I press "ctrl+l", "m", "d"
       And the board looks again
       Then "DONE" carries "Write the spec"
 
@@ -1040,7 +1068,7 @@ Feature: The board
     Scenario: a form somebody typed into is asked about before it goes
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I set the field "title" to "Something else"
       And I press "esc"
       Then the board says "throw away what you typed?"
@@ -1051,17 +1079,17 @@ Feature: The board
     Scenario: a form nobody typed into closes without a question
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I press "esc"
       Then the board does not say "throw away what you typed?"
-      And the mode is "INSERT"
+      And the cursor is on the task "Write the spec"
 
     @tui-a-whole-column-goes-off-the-board-at-once
     Scenario: the column the cursor is on is archived in one gesture
       Given I added a task titled "Write the spec" with the state "done"
       And I added a task titled "Ship it" with the state "done"
       When I open the board
-      And I press "l", "l", "l"
+      And I press "ctrl+l", "ctrl+l", "ctrl+l"
       And I press "shift+x"
       Then the board says "archive every task in DONE?"
       When I press "enter"
@@ -1074,7 +1102,7 @@ Feature: The board
     Scenario: opening a task shows what the card only marked
       Given I added a task titled "Write the spec" with the description "The client wants two columns"
       When I open the board
-      And I press "i", "enter"
+      And I press "enter"
       Then the board says "The client wants two columns"
       And the board says "created"
 
@@ -1084,7 +1112,7 @@ Feature: The board
       And I added the step "Draft the columns" to task 1, done
       And I added the step "Get the client's nod" to task 1
       When I open the board
-      And I press "i", "enter"
+      And I press "enter"
       Then the board says "1 left · 1 done"
       And the board says "[ ] 2  Get the client's nod"
       And the board says "[x] 1  Draft the columns"
@@ -1095,7 +1123,7 @@ Feature: The board
       And I added the step "Draft" to task 1
       And I added the step "Keep" to task 1
       When I open the board
-      And I press "i", "enter", "down"
+      And I press "enter", "down"
       Then the board says "› [ ] 1  Draft"
       When I press "backspace"
       Then the board says "delete step 1 of task 1, “Draft”?"
@@ -1110,7 +1138,7 @@ Feature: The board
       And I added the step "Draft" to task 1
       And I added the step "Keep" to task 1
       When I open the board
-      And I press "i", "enter", "down", "down"
+      And I press "enter", "down", "down"
       Then the board says "› [ ] 2  Keep"
       When I press "delete"
       Then the board says "delete step 2 of task 1, “Keep”?"
@@ -1123,7 +1151,7 @@ Feature: The board
     Scenario: a long description stays in its box, and ^D walks it to the end
       Given I added a task titled "Write the spec" with a description of 80 lines ending "LA FIN"
       When I open the board
-      And I press "i", "enter"
+      And I press "enter"
       Then the board says nothing of "LA FIN"
       When I press "ctrl+d" 40 times
       Then the board says "LA FIN"
@@ -1132,7 +1160,7 @@ Feature: The board
     Scenario: a task being read is edited without closing it first
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "enter"
+      And I press "enter"
       And I press "e"
       Then the mode is "EDIT"
       And the board says "Write the spec"
@@ -1141,7 +1169,7 @@ Feature: The board
     Scenario: the key the detail offers for focus focuses what it is showing
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "enter"
+      And I press "enter"
       And I press "f"
       And I press "esc"
       Then the card for task 1 is drawn as the one in focus
@@ -1150,7 +1178,7 @@ Feature: The board
     Scenario: an open task says where what was written about it elsewhere lives
       Given I added a task titled "Write the spec"
       When I open the board
-      And I press "i", "enter"
+      And I press "enter"
       Then the open task says where the context of task 1 lives
 
   Rule: The board follows the store while it stays open
@@ -1168,7 +1196,7 @@ Feature: The board
       Given I added a task titled "First"
       And I added a task titled "Second"
       When I open the board
-      And I press "i", "j"
+      And I press "j"
       And I edited task 1 with the state "done"
       And the board looks again
       Then the cursor is on the task "Second"
@@ -1178,7 +1206,6 @@ Feature: The board
       Given I added a task titled "First"
       And I added a task titled "Second"
       When I open the board
-      And I press "i"
       And I deleted task 1
       And the board looks again
       Then the cursor is on the task "Second"
@@ -1244,7 +1271,7 @@ Feature: The board
     Scenario: a step added elsewhere appears on the task open on the board
       Given I added a task titled "Ship it"
       When I open the board
-      And I press "i", "enter"
+      And I press "enter"
       And somebody else adds the step "Draft" to task 1
       And the board looks again
       Then the board says "[ ] 1  Draft"
@@ -1253,7 +1280,7 @@ Feature: The board
     Scenario: the form keeps what was typed, and takes the rest from what was done elsewhere
       Given I added a task titled "Ship it"
       When I open the board
-      And I press "i", "e"
+      And I press "e"
       And I set the field "title" to "Ship it now"
       And somebody else renames task 1 "Ship it today"
       And somebody else adds the step "Draft" to task 1
@@ -1297,7 +1324,7 @@ Feature: The board
     Scenario: the board says what it is filtered by, once the filters are closed
       When I open the board
       And I press "shift+f", "l", "j", "j", "j", "esc"
-      Then the mode is "NORMAL"
+      Then the board does not say "FILTER"
       And the board says "filtered by priority high"
       And the board says nothing of "Review the plan"
 
@@ -1547,51 +1574,62 @@ Feature: The board
       And the board does not say "RECENT FOLDERS"
       And the configuration names the workspace "scratch"
 
-  Rule: The board wears the terminal's own colours, whatever theme the terminal has
+  Rule: The board wears the colour scheme the window wears
 
-    @tui-colours-follow-the-terminal
-    Scenario: on the fixtures, every screen is drawn in the terminal's own colours alone
+    @tui-colours-follow-the-scheme
+    Scenario: on the fixtures, every screen is drawn in the scheme's colours alone
       Given the fixtures
       When I open the board
       Then the board says "Done this week"
-      And no screen wears a colour the terminal's theme does not set
+      And no screen wears a colour the scheme does not have
 
-    @tui-colours-faint-is-the-terminals-own-foreground
-    Scenario: the rule between two columns is faint, in the terminal's own foreground
+    @tui-colours-the-rule-is-the-schemes-line
+    Scenario: the rule between two columns wears the scheme's line
       When I open the board
-      Then the rule between two columns is faint, in no colour of its own
+      Then the rule between two columns wears the scheme's line
 
-    @tui-colours-a-priority-is-one-of-the-terminals
-    Scenario Outline: the left edge of a card wears its priority in one of the terminal's colours
+    @tui-colours-a-priority-is-the-schemes
+    Scenario Outline: the left edge of a card wears its priority as the scheme colours it
       Given I added a task titled "Ask legal" in "todo" at the priority "<priority>" carrying the label "spec"
       When I open the board
-      Then the left edge of the card for task 1 wears the terminal's <colour>
+      Then the left edge of the card for task 1 wears the scheme's <priority> priority
 
       Examples:
-        | priority | colour         |
-        | low      | cyan           |
-        | normal   | own foreground |
-        | high     | yellow         |
-        | critical | red            |
+        | priority |
+        | low      |
+        | normal   |
+        | high     |
+        | critical |
 
     @tui-colours-the-tab-open-is-reversed
-    Scenario: the tab open is the terminal's blue, reversed onto its ground
+    Scenario: the tab open is the scheme's accent, reversed
       When I open the board
-      Then the tab "TASKS" is drawn reversed in the terminal's blue
+      Then the tab "TASKS" is drawn reversed in the accent of "default"
 
-    @tui-colours-a-workspace-wears-the-nearest-of-the-terminals
-    Scenario Outline: the colour of a workspace is the nearest the terminal has
+    @tui-colours-a-workspace-wears-the-schemes
+    Scenario Outline: the dot of a workspace wears its colour as the scheme says it
       Given the workspace "work", the default
       And the settings of the workspace "work" say its colour is "<colour>"
       When I open the board
-      Then the dot of the header wears the terminal's <terminal>
+      Then the dot of the header wears the scheme's <colour>
 
       Examples:
-        | colour   | terminal       |
-        | green    | green          |
-        | lavender | bright blue    |
-        | peach    | bright yellow  |
-        | maroon   | bright red     |
+        | colour   |
+        | green    |
+        | lavender |
+        | peach    |
+        | maroon   |
+
+    @tui-colours-the-theme-the-settings-name
+    Scenario: the board wears the theme the settings name
+      Given the workspace "work", the default
+      And the settings of the workspace "work" are written by hand:
+        """
+        [window]
+        theme = "nord"
+        """
+      When I open the board
+      Then the tab "TASKS" is drawn reversed in the accent of "nord"
 
   Rule: Every screen fits the terminal it is drawn in, whatever the store holds
 
@@ -1631,7 +1669,7 @@ Feature: The board
       Given I kept the view "Sprint" holding the label "sprint"
       When I open the board
       And I press "v", "1"
-      Then the mode is "NORMAL"
+      Then the board does not say "VIEWS"
       And the board carries 1 task
       And the board says "view Sprint · 1 of 3 tasks"
 
@@ -1715,7 +1753,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Stand-up" coming back "every day"
     When I open the board
-    And I press "l", "i", "enter"
+    And I press "ctrl+l", "enter"
     Then the board says "↻1 every day, on the calendar"
     And the board says "0 done · 0 skipped · 0 missed"
     And the bar offers "skip"
@@ -1727,7 +1765,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And task 1 was skipped
     And a window of 140 by 44
     When I open the board
-    And I press "l", "i", "enter"
+    And I press "ctrl+l", "enter"
     Then the board says "made from series  ↻1"
 
   @tui-series-the-trace-goes-on-with-the-series-before-it
@@ -1737,7 +1775,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     And task 1 was skipped
     And a window of 140 by 44
     When I open the board
-    And I press "l", "i", "enter"
+    And I press "ctrl+l", "enter"
     Then the board says "in the series, before this one"
     And the board says "skipped #1"
 
@@ -1776,7 +1814,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Stand-up" coming back "every day"
     When I open the board
-    And I press "l", "i", "r", "s"
+    And I press "ctrl+l", "r", "s"
     Then task 1 is archived
     And task 2 is titled "Stand-up"
     And task 2 is in the column "todo"
@@ -1786,7 +1824,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Stand-up" coming back "every day"
     When I open the board
-    And I press "l", "i", "r", "x"
+    And I press "ctrl+l", "r", "x"
     Then series 1 is stopped
     And task 1 is in the column "todo"
     When I press "r", "r"
@@ -1797,7 +1835,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Stand-up" coming back "every day"
     When I open the board
-    And I press "l", "i", "r", "e"
+    And I press "ctrl+l", "r", "e"
     Then the tab is "SERIES"
     And the board says "TEMPLATE"
 
@@ -1806,7 +1844,6 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Write the spec"
     When I open the board
-    And I press "i"
     Then the bar does not offer "skip"
 
   @tui-series-the-tabs-count-what-they-hold
@@ -1935,7 +1972,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Water the plants"
     When I open the board
-    And I press "i", "e"
+    And I press "e"
     And I set the field "rule" to "every 3 days"
     And I save the form
     Then task 1 is an occurrence of series 1
@@ -1945,7 +1982,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Stand-up" coming back "every day"
     When I open the board
-    And I press "l", "i", "e"
+    And I press "ctrl+l", "e"
     And I set the field "title" to "Daily stand-up"
     And I press "ctrl+s"
     Then the board says "this one only"
@@ -1958,7 +1995,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
     Given recurrence is on on the board
     And I added a task titled "Stand-up" coming back "every day"
     When I open the board
-    And I press "l", "i", "e"
+    And I press "ctrl+l", "e"
     And I set the field "title" to "Daily stand-up"
     And I press "ctrl+s"
     And I press "enter"
@@ -2015,7 +2052,7 @@ Rule: A task that comes back is told from another at a glance, and its series ha
       And the board says "hiden"
       And the board says "the board keeps what it read at 10:00"
       And the board says "time 0"
-      When I press "l"
+      When I press "ctrl+l"
       Then the board says "the board keeps what it read at 10:00"
       When the settings of the workspace "home" are written by hand:
         """

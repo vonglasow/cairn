@@ -1,4 +1,4 @@
-  TASKS 1/11   objectives 2   time 0   ▸ 1                                                  NORMAL
+  TASKS 1/11   objectives 2   time 0   ▸ 1
 
  1   Ship the desktop board                                                                ▶ active
  ████████████████░░░░░░░░░░░░  7/12
@@ -21,20 +21,20 @@
                          │                        │                        │
                          │                        │                        │
                          │                        │                        │
+                         │STALLED                1│                        │
+                         │blocked                1│watching               0│paused                 0
+                         │────────────────────────│────────────────────────│────────────────────────
+                         │┏━━━━━━━━━━━━━━━━━━━━━━┓│                        │
+                         │┃ 8                ≡ ⊘ ┃│                        │
+                         │┃ Client's answer      ┃│                        │
+                         │┃                      ┃│                        │
+                         │┃ ↳ 4                  ┃│                        │
+                         │┗━━━━━━━━━━━━━━━━━━━━━━┛│                        │
                          │                        │                        │
-                          STALLED                                                                  1
-                          ──────────────────────────────────────────────────────────────────────────
-                          ┏━━━━━━━━━━━━━━━━━━━━━━┓
-                          ┃ 8                ≡ ⊘ ┃
-                          ┃ Client's answer      ┃
-                          ┃                      ┃
-                          ┃ ↳ 4                  ┃
-                          ┗━━━━━━━━━━━━━━━━━━━━━━┛
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
+                         │                        │                        │
 
-
-
-
-
-
-
- hjkl ←↓↑→ columns   i insert   a new here   / search   ? help   esc objectives
+ hjkl ←↓↑→ tasks   ^hl columns   a new here   / search   ? help   esc objectives

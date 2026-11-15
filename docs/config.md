@@ -244,7 +244,7 @@ intro = "ripple"        # how the board arrives when the window opens
 in `~/.config/cairn/themes/<name>.yaml`. A scheme that cannot be worn leaves
 the window in `default`, and `cairn gui` says why. `config show` lists every
 scheme it sees, and says when one of your own is hard to read. The terminal
-board does not wear it: it uses the terminal's own colours.
+board wears it too, on the terminal's own ground.
 
 **keep_sizes** — the widths of the columns and the height of the band, kept
 beside the store. A double-click on a gutter, or Reset sizes, takes them back.

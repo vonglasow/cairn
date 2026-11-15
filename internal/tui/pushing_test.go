@@ -3,12 +3,14 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/task"
+	"cairn/internal/theme"
+	"cairn/internal/tui/design"
 	"strings"
 	"testing"
 )
 
 func TestTheKindPopupWalksAndCancels(t *testing.T) {
-	b := hit(standing(twoTasks()), "l", "i", "j", "shift+j")
+	b := hit(standing(twoTasks()), "ctrl+l", "j", "shift+j")
 	if !strings.Contains(bare(b.Draw()), "which kind of stopped") {
 		t.Fatal("pushing the last task down asked nothing")
 	}
@@ -28,7 +30,7 @@ func TestTheKindPopupWalksAndCancels(t *testing.T) {
 
 func TestPushingIntoTheBandWritesTheKindChosen(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "j", "shift+j", "j")
+	b := hit(standing(f), "ctrl+l", "j", "shift+j", "j")
 	_, cmd := b.pressed("enter")
 	cmd()
 	if got := f.edited[2].State; got == nil || *got != "watching" {
@@ -38,7 +40,7 @@ func TestPushingIntoTheBandWritesTheKindChosen(t *testing.T) {
 
 func TestPushingDownFromTheBandDoesNothing(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "j", "i")
+	b := hit(standing(f), "ctrl+l", "ctrl+j")
 	b = hit(b, "shift+j")
 	if strings.Contains(b.Draw(), "which kind of stopped") {
 		t.Fatal("pushing down out of the band asked which kind")
@@ -47,7 +49,7 @@ func TestPushingDownFromTheBandDoesNothing(t *testing.T) {
 
 func TestPushingUpFromAColumnDoesNothing(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "shift+k")
+	b := hit(standing(f), "ctrl+l", "shift+k")
 	if len(f.edited) != 0 {
 		t.Fatalf("pushing up from a column wrote %v", f.edited)
 	}
@@ -56,7 +58,7 @@ func TestPushingUpFromAColumnDoesNothing(t *testing.T) {
 
 func TestPushingRightOutOfTheBandDoesNothing(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "j", "i", "shift+l")
+	b := hit(standing(f), "ctrl+l", "ctrl+j", "shift+l")
 	if len(f.edited) != 0 {
 		t.Fatalf("pushing right out of the band wrote %v", f.edited)
 	}
@@ -66,7 +68,7 @@ func TestPushingRightOutOfTheBandDoesNothing(t *testing.T) {
 func TestPushingPastTheLastColumnDoesNothing(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "Done", State: "done"}}
-	b := hit(standing(f), "l", "l", "l", "i", "shift+l")
+	b := hit(standing(f), "ctrl+l", "ctrl+l", "ctrl+l", "shift+l")
 	if len(f.edited) != 0 {
 		t.Fatalf("pushing past the last column wrote %v", f.edited)
 	}
@@ -76,7 +78,6 @@ func TestPushingPastTheLastColumnDoesNothing(t *testing.T) {
 func TestPushingWithNothingHeldDoesNothing(t *testing.T) {
 	f := newFake()
 	b := standing(f)
-	b.mode = Insert
 	if _, cmd := b.push(goRight); cmd != nil {
 		t.Fatal("a push with no task under the cursor still asked for a change")
 	}
@@ -85,14 +86,14 @@ func TestPushingWithNothingHeldDoesNothing(t *testing.T) {
 func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
-	left := hit(standing(f), "l", "l", "i")
+	left := hit(standing(f), "ctrl+l", "ctrl+l")
 	if _, cmd := left.pressed("shift+h"); cmd != nil {
 		cmd()
 	}
 	if got := f.edited[1].State; got == nil || *got != "todo" {
 		t.Fatalf("pushing left wrote %v, want todo", got)
 	}
-	right := hit(standing(f), "l", "l", "i")
+	right := hit(standing(f), "ctrl+l", "ctrl+l")
 	if _, cmd := right.pressed("shift+l"); cmd != nil {
 		cmd()
 	}
@@ -104,7 +105,7 @@ func TestPushingLeftAndRightLandsInTheRightColumn(t *testing.T) {
 func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo"}}
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	if _, cmd := b.pressed("shift+h"); cmd != nil {
 		cmd()
 	}
@@ -116,7 +117,7 @@ func TestPushingLeftReachesTheFirstColumn(t *testing.T) {
 func TestPushingRightReachesTheLastColumn(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
-	b := hit(standing(f), "l", "l", "i")
+	b := hit(standing(f), "ctrl+l", "ctrl+l")
 	if _, cmd := b.pressed("shift+l"); cmd != nil {
 		cmd()
 	}
@@ -127,7 +128,7 @@ func TestPushingRightReachesTheLastColumn(t *testing.T) {
 
 func TestThePopupMarksTheOneItIsOn(t *testing.T) {
 	b := standing(twoTasks())
-	b.skin = SkinOf(Default)
+	b.skin = design.SkinOf(design.PaletteOf(theme.Default()))
 	b.choosing = true
 	first := b.kindPopup()
 	b.choice = 1
@@ -150,7 +151,7 @@ func TestPushingDownMovesTheTaskOnePlaceLower(t *testing.T) {
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
 	}
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	if _, cmd := b.pressed("shift+j"); cmd != nil {
 		cmd()
 	}
@@ -172,7 +173,7 @@ func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 		{Number: 2, Title: "Two", State: "todo"},
 		{Number: 3, Title: "Three", State: "todo"},
 	}
-	b := hit(standing(f), "l", "i", "j", "j")
+	b := hit(standing(f), "ctrl+l", "j", "j")
 	if _, cmd := b.pressed("shift+k"); cmd != nil {
 		cmd()
 	}
@@ -180,7 +181,7 @@ func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 		t.Fatalf("pushing the third up asked for %+v, want task 3 behind task 1", got)
 	}
 	f.moved = nil
-	second := hit(standing(f), "l", "i", "j")
+	second := hit(standing(f), "ctrl+l", "j")
 	if _, cmd := second.pressed("shift+k"); cmd != nil {
 		cmd()
 	}
@@ -191,7 +192,7 @@ func TestPushingUpMovesTheTaskOnePlaceHigher(t *testing.T) {
 
 func TestPushingTheFirstTaskUpDoesNothing(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	if _, cmd := b.pressed("shift+k"); cmd != nil {
 		t.Fatal("pushing the first task up asked for something")
 	}
@@ -201,7 +202,7 @@ func TestPushingTheFirstTaskUpDoesNothing(t *testing.T) {
 func TestAMoveThatRefusesIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	_, cmd := b.pressed("shift+j")
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
 		t.Fatal("a move that was refused was passed over")

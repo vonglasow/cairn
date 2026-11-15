@@ -4,6 +4,7 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/item"
 	"cairn/internal/engine/series"
+	"cairn/internal/tui/geom"
 	"slices"
 	"strconv"
 	"strings"
@@ -30,7 +31,7 @@ func (b Board) chosenSeries() (engine.Series, bool) {
 }
 
 func (b Board) onSeries(n int) Board {
-	b.tab, b.mode, b.task, b.inside = Series, Normal, 0, 0
+	b.tab, b.task, b.inside = board.Series, 0, 0
 	b.inOccurrences, b.occurrenceAt = false, 0
 	b.seriesOn = n
 	if s, found := b.chosenSeries(); found {
@@ -85,7 +86,7 @@ func (b Board) inSeries(key string) (tea.Model, tea.Cmd, bool) {
 		return model, cmd, true
 	}
 	if !found {
-		return b, nil, slices.Contains([]string{"s", "x", "r", "e", "D", "shift+d", "backspace", "delete", "a", "i"}, key)
+		return b, nil, slices.Contains([]string{"s", "x", "r", "e", "D", "shift+d", "backspace", "delete", "a"}, key)
 	}
 	switch key {
 	case "s":
@@ -103,7 +104,7 @@ func (b Board) inSeries(key string) (tea.Model, tea.Cmd, bool) {
 	case "D", "shift+d", "backspace", "delete":
 		b.seriesGoing = &seriesGoing{number: s.Number}
 		return b, nil, true
-	case "a", "i":
+	case "a":
 		return b, nil, true
 	}
 	return b, nil, false
@@ -121,7 +122,7 @@ func (b Board) intoOccurrences(s engine.Series, found bool) Board {
 	if _, there := b.snap.Card(at.Task); at.Task == 0 || !there {
 		return b
 	}
-	b.task, b.wasScreen, b.screen, b.stepOn = at.Task, OnTheBoard, OnDetail, 0
+	b.task, b.wasScreen, b.screen, b.stepOn = at.Task, board.OnTheBoard, board.OnDetail, 0
 	return b
 }
 
@@ -138,7 +139,7 @@ func (b Board) seriesAct(key string) (tea.Model, tea.Cmd) {
 	case "r":
 		return b, b.carry(engine.SeriesResume, board.Numbered(c.Series.Series))
 	case "e":
-		b.screen = OnTheBoard
+		b.screen = board.OnTheBoard
 		return b.onSeries(c.Series.Series), nil
 	}
 	return b, nil
@@ -181,12 +182,12 @@ func (b Board) occursSaid(c board.Card) string {
 
 func (b Board) seriesTab() []string {
 	rows := max(1, b.height-4)
-	width := b.width - margin - margin
+	width := b.width - geom.Margin - geom.Margin
 	left := width * 2 / 5
 	right := width - left - 2
 	list := b.seen(left, rows)(b.seriesList(left))
 	chosen := b.seen(right, rows)(b.seriesChosen(right))
-	return []string{lipgloss.NewStyle().PaddingLeft(margin).Render(
+	return []string{lipgloss.NewStyle().PaddingLeft(geom.Margin).Render(
 		lipgloss.JoinHorizontal(lipgloss.Top, list, b.skin.Rule.Render(strings.TrimSuffix(strings.Repeat(" │\n", rows), "\n")), chosen))}
 }
 
@@ -373,7 +374,7 @@ func (b Board) choosingSeriesFate(key string) (tea.Model, tea.Cmd) {
 func (b Board) drawSeriesGoing() string {
 	return lipgloss.NewCompositor(
 		lipgloss.NewLayer(b.drawBoard()),
-		lipgloss.NewLayer(b.seriesGoingBox()).X(margin+1).Y(2).Z(1),
+		lipgloss.NewLayer(b.seriesGoingBox()).X(geom.Margin+1).Y(2).Z(1),
 	).Render()
 }
 
@@ -381,7 +382,7 @@ func (b Board) seriesGoingBox() string {
 	going := *b.seriesGoing
 	s, _ := b.snap.SeriesOf(going.number)
 	made := board.MadeStill(s)
-	wide := min(switcherWide, b.width-margin-2)
+	wide := min(switcherWide, b.width-geom.Margin-2)
 	inner := wide - 2
 	edge := b.skin.Rule
 	title := Clip("─ DELETE THE SERIES ↻"+strconv.Itoa(s.Number)+" "+strings.ToUpper(s.Title)+" ", inner)
@@ -437,7 +438,7 @@ func (b Board) newSeriesForm() (Board, tea.Cmd) {
 	fields := append(board.AddingFields(board.StateAt(1)), board.RepeatsField())
 	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
-	b.screen = OnForm
+	b.screen = board.OnForm
 	b, cmd := b.started()
 	return b.focusingOn(board.RepeatsField().Name, len(fields)), cmd
 }
@@ -445,7 +446,7 @@ func (b Board) newSeriesForm() (Board, tea.Cmd) {
 func (b Board) seriesForm(s engine.Series) (Board, tea.Cmd) {
 	b.form = asking(board.SeriesFields(s), b.formWidth(), b.formHeight(), b.skin, nil)
 	b.form.Number, b.form.ForSeries = s.Number, true
-	b.screen = OnForm
+	b.screen = board.OnForm
 	return b.started()
 }
 
@@ -468,7 +469,7 @@ func (b Board) answeringWhole(key string) (tea.Model, tea.Cmd) {
 		return b, b.saveTask(form, true)
 	case "esc":
 		b.asking, b.wholeSave = false, nil
-		b.form, b.screen = form, OnForm
+		b.form, b.screen = form, board.OnForm
 		return b, nil
 	}
 	return b, nil

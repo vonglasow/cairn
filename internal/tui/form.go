@@ -2,6 +2,8 @@ package tui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/tui/design"
+	"cairn/internal/tui/geom"
 	"fmt"
 	"strconv"
 	"strings"
@@ -59,7 +61,7 @@ func (f Form) typed() []board.Field {
 	return out
 }
 
-func asking(fields []board.Field, width, height int, skin Skin, about describer) Form {
+func asking(fields []board.Field, width, height int, skin design.Skin, about describer) Form {
 	held := make(map[string]*string, len(fields))
 	keep := new(bool)
 	*keep = true
@@ -137,13 +139,16 @@ func oneField(field board.Field, into *string, about describer) huh.Field {
 	return input
 }
 
-func themeOf(skin Skin) *huh.Styles {
+func themeOf(skin design.Skin) *huh.Styles {
 	theme := huh.ThemeBase(true)
-	p := skin.palette
+	p := skin.Palette
 	for _, state := range []*huh.FieldStyles{&theme.Focused, &theme.Blurred} {
 		state.FocusedButton = p.Accent.On(state.FocusedButton).Background(lipgloss.NoColor{}).Reverse(true).Bold(true)
 		state.BlurredButton = p.Faint.On(state.BlurredButton).Background(lipgloss.NoColor{})
 		state.TextInput.Placeholder = p.Faint.Style()
+		state.TextInput.Prompt = p.Faint.Style()
+		state.TextInput.Text = p.Bright.Style()
+		state.TextInput.CursorText = p.Bright.Style()
 	}
 	theme.Focused.Base = theme.Focused.Base.BorderForeground(p.Accent.Border())
 	theme.Focused.Title = p.Accent.On(theme.Focused.Title).Bold(true)
@@ -157,11 +162,11 @@ func themeOf(skin Skin) *huh.Styles {
 	return theme
 }
 
-func (b Board) formWidth() int  { return b.width - margin - margin - frame }
-func (b Board) formHeight() int { return max(1, b.height-fixed) }
+func (b Board) formWidth() int  { return b.width - geom.Margin - geom.Margin - geom.Frame }
+func (b Board) formHeight() int { return max(1, b.height-geom.Fixed) }
 
 func (b Board) addForm() (Board, tea.Cmd) {
-	if b.tab == Objectives {
+	if b.tab == board.Objectives {
 		return b.addGoalForm(board.NewGoalFields())
 	}
 	state := board.StateAt(b.column)
@@ -174,14 +179,14 @@ func (b Board) addForm() (Board, tea.Cmd) {
 	}
 	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
-	b.screen = OnForm
+	b.screen = board.OnForm
 	return b.started()
 }
 
 func (b Board) addGoalForm(fields []board.Field) (Board, tea.Cmd) {
 	b.form = asking(fields, b.formWidth(), b.formHeight(), b.skin, b.about(true, 0))
 	b.form.Adding, b.form.ForObjective = true, true
-	b.screen = OnForm
+	b.screen = board.OnForm
 	return b.started()
 }
 
@@ -195,19 +200,19 @@ func (b Board) subGoalForm() (Board, tea.Cmd) {
 func (b Board) linkedForm() (Board, tea.Cmd) {
 	b.form = asking(board.LinkedTaskFields(b.task), b.formWidth(), b.formHeight(), b.skin, b.about(false, 0))
 	b.form.Adding = true
-	b.screen = OnForm
+	b.screen = board.OnForm
 	return b.started()
 }
 
 func (b Board) editForm() (Board, tea.Cmd) {
-	if b.tab == Objectives {
+	if b.tab == board.Objectives {
 		for _, g := range b.goals() {
 			if g.Number != b.goal {
 				continue
 			}
 			b.form = asking(board.GoalFields(g), b.formWidth(), b.formHeight(), b.skin, b.about(true, g.Number))
 			b.form.Number, b.form.ForObjective = g.Number, true
-			b.screen = OnForm
+			b.screen = board.OnForm
 			return b.started()
 		}
 		return b, nil
@@ -218,7 +223,7 @@ func (b Board) editForm() (Board, tea.Cmd) {
 	}
 	b.form = asking(b.taskFields(held), b.formWidth(), b.formHeight(), b.skin, b.about(false, held.Number))
 	b.form.Number = held.Number
-	b.screen = OnForm
+	b.screen = board.OnForm
 	return b.started()
 }
 
@@ -242,14 +247,14 @@ func (b Board) inForm(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch b.form.asked.State {
 	case huh.StateAborted:
 		if b.form.Changed() {
-			b.asking, b.leaving, b.screen = true, true, OnTheBoard
+			b.asking, b.leaving, b.screen = true, true, board.OnTheBoard
 			return b, nil
 		}
-		b.screen = OnTheBoard
+		b.screen = board.OnTheBoard
 		return b, nil
 	case huh.StateCompleted:
 		if !*b.form.keep {
-			b.screen = OnTheBoard
+			b.screen = board.OnTheBoard
 			return b, nil
 		}
 		return b.save()
@@ -269,14 +274,14 @@ func (b Board) drawForm() string {
 	rows := min(b.formHeight()+1, len(strings.Split(drawn, "\n")))
 	body := b.panel(b.formHead(),
 		through(drawn, b.formWidth(), rows, 0),
-		b.width-margin-margin)
+		b.width-geom.Margin-geom.Margin)
 	refused := ""
 	if b.err != nil {
-		refused = " " + b.skin.Wrong.Render(Clip(b.err.Error(), b.width-margin-margin))
+		refused = " " + b.skin.Wrong.Render(Clip(b.err.Error(), b.width-geom.Margin-geom.Margin))
 	}
 	return strings.Join([]string{
 		b.tabs(), "",
-		lipgloss.NewStyle().PaddingLeft(margin).Render(body),
+		lipgloss.NewStyle().PaddingLeft(geom.Margin).Render(body),
 		refused, b.bar(b.offer("⇥", "field"), b.offer("←→", "change"),
 			b.offer("⏎", "next · a line"), b.offer("^S", "save"),
 			b.offer("?", "help"), b.offer("esc", "cancel")),
@@ -298,22 +303,22 @@ func (b Board) formHead() string {
 		title = b.skin.Title.Render(title)
 	}
 	standing, priority := b.form.valueOf("column"), b.form.valueOf("priority")
-	dressed := b.skin.palette.Stopped(standing).Style()
+	dressed := b.skin.Palette.Stopped(standing).Style()
 	if b.form.ForObjective {
 		standing = b.form.valueOf("state")
-		dressed = b.skin.palette.Standing(standing).Style()
+		dressed = b.skin.Palette.Standing(standing).Style()
 	}
 	if b.form.ForSeries {
 		standing = b.form.valueOf("rule")
 		dressed = b.skin.Says
 	}
 	right := dressed.Render(standing) + "  " +
-		b.skin.palette.Priority(priority).Style().Render(priority)
-	return Spread(number+"   "+title, right, b.width-margin-margin-frame)
+		b.skin.Palette.Priority(priority).Style().Render(priority)
+	return Spread(number+"   "+title, right, b.width-geom.Margin-geom.Margin-geom.Frame)
 }
 
 func (b Board) formStays() bool {
-	return b.screen == OnForm || b.leaving || b.screen == OnHelp && b.wasScreen == OnForm
+	return b.screen == board.OnForm || b.leaving || b.screen == board.OnHelp && b.wasScreen == board.OnForm
 }
 
 func (b Board) freshened() Board {

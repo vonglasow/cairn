@@ -2,6 +2,7 @@ package tui
 
 import (
 	"cairn/internal/engine/workspace"
+	"cairn/internal/tui/geom"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -225,7 +226,7 @@ func (b Board) completionLines() []string {
 			from = "from global"
 		}
 		said := fmt.Sprintf("   %-20s %-14s ", key.Name, value)
-		lines = append(lines, b.skin.Title.Render(Clip(said, b.width-margin))+b.skin.Faint.Render(Clip(from, max(0, b.width-margin-len([]rune(said))))))
+		lines = append(lines, b.skin.Title.Render(Clip(said, b.width-geom.Margin))+b.skin.Faint.Render(Clip(from, max(0, b.width-geom.Margin-len([]rune(said))))))
 	}
 	return lines
 }
@@ -236,9 +237,9 @@ func (b Board) troubleLine() string {
 	if t.Line > 0 {
 		where = fmt.Sprintf("%s:%d", where, t.Line)
 	}
-	return " " + b.skin.Wrong.Render(Clip(where+" "+t.Said, b.width-margin-margin))
+	return " " + b.skin.Wrong.Render(Clip(where+" "+t.Said, b.width-geom.Margin-geom.Margin))
 }
 
 func (b Board) keptFoot() string {
-	return " " + b.skin.Faint.Render(Clip("the board keeps what it read at "+b.configured.readAt.Format("15:04")+" until the file reads again", b.width-margin-margin))
+	return " " + b.skin.Faint.Render(Clip("the board keeps what it read at "+b.configured.readAt.Format("15:04")+" until the file reads again", b.width-geom.Margin-geom.Margin))
 }

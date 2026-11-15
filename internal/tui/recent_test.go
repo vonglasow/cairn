@@ -1,7 +1,10 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/theme"
+	"cairn/internal/tui/geom"
 	"fmt"
 	"slices"
 	"strings"
@@ -38,7 +41,7 @@ func TestSwitcher_listsTheRecentFoldersUnderTheWorkspaces(t *testing.T) {
 func TestSwitcher_aRecentFolderChosenOpensItsStore(t *testing.T) {
 	r := withRecent(t)
 	b := pressing(roamingBoard(t, r), "ctrl+o", "down", "down", "enter")
-	if !slices.Equal(r.switched, []string{"/s/scratch/cairn.db"}) || b.screen != OnTheBoard {
+	if !slices.Equal(r.switched, []string{"/s/scratch/cairn.db"}) || b.screen != board.OnTheBoard {
 		t.Errorf("switched = %v, screen %v; want the store of scratch opened", r.switched, b.screen)
 	}
 	r = withRecent(t)
@@ -64,7 +67,7 @@ func TestSwitcher_theRecentFolderHereOnlyCloses(t *testing.T) {
 		t.Errorf("scratch's line = %q; want it marked here", got)
 	}
 	b = pressing(b, "ctrl+o", "down", "down", "down", "enter")
-	if len(r.switched) != 0 || b.screen != OnTheBoard {
+	if len(r.switched) != 0 || b.screen != board.OnTheBoard {
 		t.Errorf("switched = %v, screen %v; want nothing opened", r.switched, b.screen)
 	}
 }
@@ -76,7 +79,7 @@ func TestSwitcher_ctrlOOpensAFolderTyped(t *testing.T) {
 		t.Fatalf("ctrl+o in the list asks for no folder:\n%s", screen)
 	}
 	b = pressing(b, "~", "/", "x", "y", "backspace", "enter")
-	if !slices.Equal(r.switched, []string{"~/x"}) || b.screen != OnTheBoard {
+	if !slices.Equal(r.switched, []string{"~/x"}) || b.screen != board.OnTheBoard {
 		t.Errorf("switched = %v, screen %v; want ~/x opened", r.switched, b.screen)
 	}
 }
@@ -86,14 +89,14 @@ func TestSwitcher_aFolderRefusedSaysWhyAndKeepsWhatWasTyped(t *testing.T) {
 	r.refuse = fmt.Errorf("%q: must be absolute", "x")
 	b := pressing(roamingBoard(t, r), "ctrl+o", "ctrl+o", "x", "enter")
 	screen := strip(b.Draw())
-	if b.screen != OnWorkspaces || !strings.Contains(screen, "must be absolute") || !strings.Contains(screen, "folder › x") {
+	if b.screen != board.OnWorkspaces || !strings.Contains(screen, "must be absolute") || !strings.Contains(screen, "folder › x") {
 		t.Errorf("a refused folder shows:\n%s", screen)
 	}
 	b = pressing(b, "esc")
-	if screen := strip(b.Draw()); b.screen != OnWorkspaces || strings.Contains(screen, "folder ›") {
+	if screen := strip(b.Draw()); b.screen != board.OnWorkspaces || strings.Contains(screen, "folder ›") {
 		t.Errorf("esc leaves:\n%s", screen)
 	}
-	if b = pressing(b, "esc"); b.screen != OnTheBoard {
+	if b = pressing(b, "esc"); b.screen != board.OnTheBoard {
 		t.Errorf("a second esc leaves the screen at %v", b.screen)
 	}
 }
@@ -139,7 +142,7 @@ func TestSwitcher_ctrlKKeepsARecentFolderAsAWorkspace(t *testing.T) {
 	if !slices.Equal(r.added, []string{"sc /s/scratch"}) || len(r.switched) != 0 {
 		t.Errorf("added %v, switched %v; want scratch kept as sc, nothing opened", r.added, r.switched)
 	}
-	if b.screen != OnWorkspaces || !slices.Contains(names(b.listed()), "sc") || len(b.recentListed()) != 2 {
+	if b.screen != board.OnWorkspaces || !slices.Contains(names(b.listed()), "sc") || len(b.recentListed()) != 2 {
 		t.Errorf("screen %v, listed %v, recent %+v; want sc among the workspaces", b.screen, names(b.listed()), b.recentListed())
 	}
 }
@@ -163,7 +166,7 @@ func TestSwitcher_theFootOffersToOpenAFolderAndMakeAWorkspace(t *testing.T) {
 }
 
 func inked(colour string) string {
-	return "\x1b[" + terminalColours[labelsInTheTerminal[colour]] + "m● "
+	return "\x1b[" + ink(theme.Default().Labels[colour]) + "m● "
 }
 
 func TestHeader_theDotWearsTheColourOfTheWorkspace(t *testing.T) {
@@ -192,7 +195,7 @@ func TestSwitcher_withRecentFoldersFitsANarrowWindow(t *testing.T) {
 	r.recent[0].Folder = "/" + strings.Repeat("deep/", 30)
 	for _, keys := range [][]string{{"ctrl+o"}, {"ctrl+o", "ctrl+n"}, {"ctrl+o", "down", "down"}, {"ctrl+o", "down", "down", "ctrl+k"}} {
 		b := roamingBoard(t, r)
-		b.width, b.height = Narrowest, Shortest
+		b.width, b.height = geom.Narrowest, geom.Shortest
 		if err := fits(pressing(b, keys...)); err != nil {
 			t.Errorf("%v: %v", keys, err)
 		}

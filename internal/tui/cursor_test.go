@@ -7,20 +7,10 @@ import (
 	"testing"
 )
 
-func TestWalkingAcrossToAnEmptyColumnLetsGo(t *testing.T) {
-	b := hit(standing(twoTasks()), "l", "i", "l")
-	if b.Where().Mode != Normal {
-		t.Fatal("the cursor kept hold of a task on a column with none")
-	}
-	if b.Where().Task != 0 {
-		t.Fatalf("the cursor still holds task %d", b.Where().Task)
-	}
-}
-
 func TestWalkingAcrossKeepsHoldWhereThereIsSomething(t *testing.T) {
 	f := twoTasks()
 	f.cards = append(f.cards, board.Card{Number: 4, Title: "Over there", State: "current"})
-	b := hit(standing(f), "l", "i", "l")
+	b := hit(standing(f), "ctrl+l", "l")
 	if b.Where().Task != 4 {
 		t.Fatalf("the cursor holds %d, want 4", b.Where().Task)
 	}
@@ -28,23 +18,14 @@ func TestWalkingAcrossKeepsHoldWhereThereIsSomething(t *testing.T) {
 
 func TestWalkingAcrossStopsAtEitherEnd(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "h", "h")
+	b := hit(standing(f), "ctrl+l", "ctrl+h", "ctrl+h")
 	if b.Where().Column != 0 {
 		t.Fatalf("the cursor walked past the first column to %d", b.Where().Column)
 	}
 }
 
-func TestTheBandIsOnePlaceHoweverWideItIs(t *testing.T) {
-	b := hit(standing(twoTasks()), "l", "j")
-	before := b.Where().Column
-	b = hit(b, "l", "h")
-	if b.Where().Column != before || !b.Where().InBand {
-		t.Fatal("walking left and right inside the band moved between columns")
-	}
-}
-
 func TestSteppingUpAndDownAColumn(t *testing.T) {
-	b := hit(standing(twoTasks()), "l", "i")
+	b := hit(standing(twoTasks()), "ctrl+l")
 	if b.Where().Task != 1 {
 		t.Fatalf("the cursor took hold of %d, want 1", b.Where().Task)
 	}
@@ -68,7 +49,7 @@ func TestSteppingUpAndDownAColumn(t *testing.T) {
 
 func TestTheCursorFallsToTheNextOneAlong(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	fewer := board.Snapshot{Cards: []board.Card{{Number: 2, Title: "Second", State: "todo"}}}
 	after := b.took(Looked{Snapshot: fewer})
 	if after.Where().Task != 2 {
@@ -78,7 +59,7 @@ func TestTheCursorFallsToTheNextOneAlong(t *testing.T) {
 
 func TestTheCursorFallsBackToTheOneBefore(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "j")
+	b := hit(standing(f), "ctrl+l", "j")
 	fewer := board.Snapshot{Cards: []board.Card{{Number: 1, Title: "First", State: "todo"}}}
 	after := b.took(Looked{Snapshot: fewer})
 	if after.Where().Task != 1 {
@@ -88,10 +69,10 @@ func TestTheCursorFallsBackToTheOneBefore(t *testing.T) {
 
 func TestTheCursorLetsGoWhenTheColumnEmpties(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	after := b.took(Looked{Snapshot: board.Snapshot{}})
-	if after.Where().Mode != Normal || after.Where().Task != 0 {
-		t.Fatalf("the cursor still holds %d in mode %v", after.Where().Task, after.Where().Mode)
+	if after.Where().Task != 0 {
+		t.Fatalf("the cursor still holds %d", after.Where().Task)
 	}
 }
 
@@ -101,7 +82,7 @@ func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 		{Number: 1, Title: "One", State: "backlog"},
 		{Number: 2, Title: "Four", State: "done"},
 	}
-	b := hit(standing(f), "l", "l", "l")
+	b := hit(standing(f), "ctrl+l", "ctrl+l", "ctrl+l")
 	if b.Where().Column != lastColumn() {
 		t.Fatalf("walking right stopped at %d, want %d", b.Where().Column, lastColumn())
 	}
@@ -116,7 +97,7 @@ func TestWalkingRightToTheLastColumnAndNoFurther(t *testing.T) {
 		{Number: 3, Title: "Three", State: "current"},
 		{Number: 4, Title: "Four", State: "done"},
 	}
-	held := hit(standing(full), "i", "l", "l", "l")
+	held := hit(standing(full), "l", "l", "l")
 	if held.Where().Task != 4 {
 		t.Fatalf("walking right in insert landed on %d, want the task in done", held.Where().Task)
 	}
@@ -133,7 +114,7 @@ func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 		{Number: 3, Title: "Second", State: "todo"},
 		{Number: 9, Title: "Third", State: "todo"},
 	}
-	b := hit(standing(f), "l", "i", "j")
+	b := hit(standing(f), "ctrl+l", "j")
 	fewer := board.Snapshot{Cards: []board.Card{
 		{Number: 5, Title: "First", State: "todo"},
 		{Number: 9, Title: "Third", State: "todo"},
@@ -144,27 +125,13 @@ func TestTheCursorFallsToWhateverStandsInItsPlace(t *testing.T) {
 	}
 }
 
-func TestSteppingWithATaskThatIsNotInTheColumn(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{
-		{Number: 1, Title: "One", State: "todo"},
-		{Number: 2, Title: "Two", State: "todo"},
-		{Number: 3, Title: "Three", State: "todo"},
-	}
-	b := standing(f)
-	b.mode, b.column, b.task = Insert, 1, 99
-	if after := b.stepBy(goDown); after.Where().Task != 99 {
-		t.Fatalf("stepping from a task that is not there landed on %d", after.Where().Task)
-	}
-}
-
 func TestTheCursorReachesTheFirstColumnAndTheLast(t *testing.T) {
 	b := standing(twoTasks())
-	b = hit(b, "l", "l", "l")
+	b = hit(b, "ctrl+l", "ctrl+l", "ctrl+l", "ctrl+l")
 	if b.Where().Column != lastColumn() {
 		t.Fatalf("walking right stopped at %d", b.Where().Column)
 	}
-	b = hit(b, "h", "h", "h")
+	b = hit(b, "ctrl+h", "ctrl+h", "ctrl+h", "ctrl+h")
 	if b.Where().Column != 0 {
 		t.Fatalf("walking left stopped at %d", b.Where().Column)
 	}
@@ -237,7 +204,7 @@ func TestAColumnScrollsToTheCursor(t *testing.T) {
 	for i := 1; i <= 12; i++ {
 		f.cards = append(f.cards, board.Card{Number: i, Title: "Task " + strconv.Itoa(i), State: "todo"})
 	}
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	if b.offsets[1] != 0 {
 		t.Fatalf("the column opened scrolled to %d", b.offsets[1])
 	}
@@ -264,14 +231,14 @@ func TestTheBandScrollsToTheCursor(t *testing.T) {
 	for i := 20; i < 32; i++ {
 		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled " + strconv.Itoa(i), State: "blocked"})
 	}
-	b := hit(standing(f), "l", "i", "j")
+	b := hit(standing(f), "ctrl+l", "j")
 	if !b.Where().InBand {
 		t.Fatal("j off the last task did not reach the band")
 	}
 	for range 11 {
 		b = hit(b, "j")
 	}
-	if b.bandAt == 0 {
+	if b.laneAt[0] == 0 {
 		t.Fatal("the band never scrolled, so what is at its bottom is unreachable")
 	}
 }
@@ -294,116 +261,6 @@ func TestTheCursorFollowsInsideAnObjective(t *testing.T) {
 	}
 }
 
-func TestWalkingAlongTheBandsFirstRow(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{
-		{Number: 1, Title: "One", State: "todo"},
-		{Number: 2, Title: "Blocked one", State: "blocked"},
-		{Number: 3, Title: "Blocked two", State: "blocked"},
-	}
-	b := hit(standing(f), "l", "i", "j", "l")
-	if !b.Where().InBand || b.Where().Task != 3 {
-		t.Fatalf("the cursor is on %d, band %v, want the second stalled card", b.Where().Task, b.Where().InBand)
-	}
-	b = hit(b, "h")
-	if !b.Where().InBand || b.Where().Task != 2 {
-		t.Fatalf("left inside the band left it: task %d, band %v", b.Where().Task, b.Where().InBand)
-	}
-	b = hit(b, "k")
-	if b.Where().InBand || b.Where().Task != 1 {
-		t.Fatalf("up off the top row landed on %d, band %v", b.Where().Task, b.Where().InBand)
-	}
-}
-
-func TestTheBandScrollsByTheRowACardIsIn(t *testing.T) {
-	f := newFake()
-	f.cards = append(f.cards, board.Card{Number: 1, Title: "One", State: "todo"})
-	for i := 20; i < 32; i++ {
-		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled", State: "blocked"})
-	}
-	b := hit(standing(f), "l", "i", "j", "j", "j")
-	if b.Where().Task != 26 {
-		t.Fatalf("two rows down landed on %d, want the seventh stalled card", b.Where().Task)
-	}
-	l := LayoutFor(b.width, b.height)
-	if want := Scrolled(0, 2, l.Rows); b.bandAt != want {
-		t.Fatalf("the band scrolled to %d for the third row, want %d", b.bandAt, want)
-	}
-}
-
-func TestTheBandIsWalkedAsAGrid(t *testing.T) {
-	f := newFake()
-	f.cards = append(f.cards, board.Card{Number: 1, Title: "One", State: "todo"})
-	for i := 20; i < 27; i++ {
-		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled", State: "blocked"})
-	}
-	b := hit(standing(f), "l", "i", "j")
-	if b.Where().Task != 20 {
-		t.Fatalf("the band opened on %d, want the first", b.Where().Task)
-	}
-	b = hit(b, "l")
-	if b.Where().Task != 21 {
-		t.Fatalf("right moved to %d, want along the row", b.Where().Task)
-	}
-	b = hit(b, "j")
-	if b.Where().Task != 24 {
-		t.Fatalf("down moved to %d, want down a row", b.Where().Task)
-	}
-	b = hit(b, "h")
-	if b.Where().Task != 23 {
-		t.Fatalf("left moved to %d, want back along the row", b.Where().Task)
-	}
-	b = hit(b, "l", "l")
-	if b.Where().Task != 25 {
-		t.Fatal("right walked off the end of the row")
-	}
-	b = hit(b, "k")
-	if b.Where().Task != 22 {
-		t.Fatalf("up moved to %d, want up a row", b.Where().Task)
-	}
-	b = hit(b, "k")
-	if b.Where().InBand {
-		t.Fatal("up off the top row stayed in the band")
-	}
-}
-
-func TestTheBandStopsAtTheEndOfWhatIsInIt(t *testing.T) {
-	f := newFake()
-	f.cards = append(f.cards, board.Card{Number: 1, Title: "One", State: "todo"})
-	for i := 20; i < 24; i++ {
-		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled", State: "blocked"})
-	}
-	b := hit(standing(f), "l", "i", "j", "l", "l")
-	if b.Where().Task != 22 {
-		t.Fatalf("the cursor is on %d, want the last of the first row", b.Where().Task)
-	}
-	if after := hit(b, "j"); after.Where().Task != 22 {
-		t.Fatalf("down with nothing under it moved to %d", after.Where().Task)
-	}
-	if after := hit(b, "l"); after.Where().Task != 22 {
-		t.Fatal("right walked off the end of the row")
-	}
-}
-
-func TestTheBandsRowsAreNotWalkedIntoOneAnother(t *testing.T) {
-	f := newFake()
-	f.cards = append(f.cards, board.Card{Number: 1, Title: "One", State: "todo"})
-	for i := 20; i < 26; i++ {
-		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled", State: "blocked"})
-	}
-	b := hit(standing(f), "l", "i", "j", "j")
-	if b.Where().Task != 23 {
-		t.Fatalf("down a row landed on %d, want the head of the second row", b.Where().Task)
-	}
-	if after := hit(b, "h"); after.Where().Task != 23 {
-		t.Fatalf("left off the head of a row moved to %d", after.Where().Task)
-	}
-	up := hit(b, "k")
-	if !up.Where().InBand || up.Where().Task != 20 {
-		t.Fatalf("up from the second row landed on %d, band %v", up.Where().Task, up.Where().InBand)
-	}
-}
-
 func aColumnOf(n int) *fake {
 	f := newFake()
 	for i := 1; i <= n; i++ {
@@ -419,7 +276,7 @@ func TestWalkingSidewaysKeepsTheLevel(t *testing.T) {
 		board.Card{Number: 12, Title: "Also two", State: "current"},
 		board.Card{Number: 13, Title: "Also three", State: "current"},
 	)
-	b := hit(standing(f), "l", "i", "j", "j")
+	b := hit(standing(f), "ctrl+l", "j", "j")
 	if b.Where().Task != 3 {
 		t.Fatalf("the cursor is on %d, want the third of todo", b.Where().Task)
 	}
@@ -435,7 +292,7 @@ func TestWalkingSidewaysKeepsTheLevel(t *testing.T) {
 func TestWalkingIntoAShorterColumnStopsAtItsEnd(t *testing.T) {
 	f := aColumnOf(5)
 	f.cards = append(f.cards, board.Card{Number: 11, Title: "Only one", State: "current"})
-	b := hit(standing(f), "l", "i", "j", "j", "j", "j")
+	b := hit(standing(f), "ctrl+l", "j", "j", "j", "j")
 	if b.Where().Task != 5 {
 		t.Fatalf("the cursor is on %d, want the fifth", b.Where().Task)
 	}
@@ -446,7 +303,7 @@ func TestWalkingIntoAShorterColumnStopsAtItsEnd(t *testing.T) {
 }
 
 func TestGoesToTheEndOfAColumnAndBackToItsStart(t *testing.T) {
-	b := hit(standing(aColumnOf(6)), "l", "i")
+	b := hit(standing(aColumnOf(6)), "ctrl+l")
 	b = hit(b, "shift+g")
 	if b.Where().Task != 6 {
 		t.Fatalf("G landed on %d, want the last", b.Where().Task)
@@ -458,7 +315,7 @@ func TestGoesToTheEndOfAColumnAndBackToItsStart(t *testing.T) {
 }
 
 func TestOneGOnItsOwnDoesNothingAndIsForgotten(t *testing.T) {
-	b := hit(standing(aColumnOf(6)), "l", "i")
+	b := hit(standing(aColumnOf(6)), "ctrl+l")
 	after := hit(b, "g")
 	if after.Where().Task != 1 || after.pending != "g" {
 		t.Fatalf("one g moved to %d, pending %q", after.Where().Task, after.pending)
@@ -481,7 +338,7 @@ func TestGoesToTheEndsOfTheBandToo(t *testing.T) {
 	for i := 20; i < 26; i++ {
 		f.cards = append(f.cards, board.Card{Number: i, Title: "Stalled", State: "blocked"})
 	}
-	b := hit(standing(f), "l", "i", "j", "shift+g")
+	b := hit(standing(f), "ctrl+l", "j", "shift+g")
 	if b.Where().Task != 25 {
 		t.Fatalf("G in the band landed on %d, want the last", b.Where().Task)
 	}
@@ -509,14 +366,14 @@ func TestGIsALetterWhereALetterIsWhatItMeans(t *testing.T) {
 	if onColumn.Where().Task != 0 {
 		t.Fatalf("G on a column took hold of task %d", onColumn.Where().Task)
 	}
-	inForm := hit(standing(aColumnOf(3)), "l", "i", "e", "g")
-	if inForm.screen != OnForm {
+	inForm := hit(standing(aColumnOf(3)), "ctrl+l", "e", "g")
+	if inForm.screen != board.OnForm {
 		t.Fatal("a g in the form closed it")
 	}
 	if !strings.Contains(inForm.form.valueOf("title"), "g") {
 		t.Fatalf("a g in the form did not reach the field: %q", inForm.form.valueOf("title"))
 	}
-	choosing := hit(standing(aColumnOf(1)), "l", "i", "shift+j")
+	choosing := hit(standing(aColumnOf(1)), "ctrl+l", "shift+j")
 	if after := hit(choosing, "shift+g"); !after.choosing {
 		t.Fatal("G closed the popup")
 	}
@@ -525,7 +382,6 @@ func TestGIsALetterWhereALetterIsWhatItMeans(t *testing.T) {
 func TestGoesNowhereWhenThereIsNothingToGoTo(t *testing.T) {
 	f := newFake()
 	b := standing(f)
-	b.mode = Insert
 	if after := hit(b, "shift+g"); after.Where().Task != 0 {
 		t.Fatalf("G on an empty column took hold of %d", after.Where().Task)
 	}

@@ -492,7 +492,7 @@ func (w *siteWorld) theHomePageShowsTheTerminal() error {
 		return err
 	}
 	_, term, found := strings.Cut(page, `<pre class="term"`)
-	if !found || !strings.Contains(term, "BACKLOG") || !strings.Contains(term, `class="t4`) {
+	if !found || !strings.Contains(term, "BACKLOG") || !strings.Contains(term, `class="tp-`) {
 		return fmt.Errorf("the home page shows no terminal board in colour")
 	}
 	return nil

@@ -56,6 +56,8 @@ all of them.
 | `internal/cli` | parsing and choosing a rendering, and which exit code an answer is | everything below |
 | `internal/mcp` | the same, for an agent | everything below but `cli` |
 | `internal/tui` | the board on a terminal | `board` and everything below, but `cli`, `mcp` and `gui` |
+| `internal/tui/geom` | where the terminal lays things out, in cells | `board` |
+| `internal/tui/design` | the palette a scheme gives the terminal, and every style made from it | `board`, `theme`, the item and objective notions, lipgloss |
 | `internal/gui` | the same board in a window | everything below but `cli`, `mcp` and `tui` |
 | `internal/gui/geom` | where the window lays things out, in dp: boxes, points, the layout of a window of a size | `board` |
 | `internal/gui/design` | the skin: the colours a theme gives, the faces and sizes, the symbols | `theme`, `board`, `geom`, the label and item notions, gioui |
@@ -83,13 +85,12 @@ did not know about — the boards searched with a rule the command line did not
 have. `depguard` denies the engine every drawing library outright: it says what
 a card carries, never how it is drawn.
 
-**Where a card goes is shared; how the cursor walks is not.** `engine.Step`,
+**Where a card goes and how the cursor walks are shared.** `board.Step`,
 `Beside` and `Where` say where a pushed card lands and which column is beside
-it, once, for both boards. The cursor is each board's own, because the two
-draw the stalled band differently — the terminal as a grid of three across,
-the window as three lanes under the columns they belong to — and the same key
-is a different journey across a different shape. A cursor shared between them
-would make one of the two drawings walk like the other.
+it; `board.Walk` says which card the arrows reach, across the columns and the
+band's lanes. Both boards draw the band as three lanes under the last three
+columns, so one walk fits both. The terminal adds `^H` `^L` to reach an empty
+column, where a task is added, since its keys have no pointer to click there.
 
 **A label is not a notion.** Neither is a priority, nor a column, nor a
 deadline. None of them has an identity: you cannot list one, show one or delete

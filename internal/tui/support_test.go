@@ -1,5 +1,10 @@
 package tui
 
+import (
+	"cairn/internal/theme"
+	"cairn/internal/tui/design"
+)
+
 func (f Form) typedInto(name, value string) Form {
 	if held, there := f.held[name]; there {
 		*held = value
@@ -8,7 +13,6 @@ func (f Form) typedInto(name, value string) Form {
 }
 
 // Showing is how many whole cards a run of rows has room for.
-func Showing(rows int) int { return rows / CardHeight }
 
 // PlainSkin is a skin with no colour in it.
-func PlainSkin() Skin { return Skin{palette: Default} }
+func PlainSkin() design.Skin { return design.Skin{Palette: design.PaletteOf(theme.Default())} }

@@ -42,6 +42,10 @@ const (
 	OnSeriesFates
 	// OnRule is the picker a rule is built in by its parts, over the form, under its repeats field.
 	OnRule
+	// OnDetail is one task open, whole: its facts, its steps, what was said on it.
+	OnDetail
+	// OnSaid is what a command typed at the foot answered, until esc.
+	OnSaid
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )

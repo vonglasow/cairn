@@ -1,8 +1,10 @@
-package tui
+// Package design is how the terminal draws: the palette a colour scheme gives, and every style made from it.
+package design
 
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/item"
+	"cairn/internal/theme"
 	"image/color"
 
 	"cairn/internal/engine/objective"
@@ -12,7 +14,7 @@ import (
 
 // Skin carries every style the board draws with.
 type Skin struct {
-	palette Palette
+	Palette Palette
 
 	TabOn  lipgloss.Style
 	TabOff lipgloss.Style
@@ -43,7 +45,7 @@ type Skin struct {
 func SkinOf(p Palette) Skin {
 	pill := lipgloss.NewStyle().Padding(0, 1)
 	return Skin{
-		palette: p,
+		Palette: p,
 		TabOn:   pill.Foreground(p.Accent.Border()).Reverse(true).Bold(true),
 		TabOff:  p.Faint.On(pill),
 		Mode:    pill.Reverse(true).Bold(true),
@@ -84,12 +86,12 @@ func (l Skin) Card(width int, priority string, focused, chosen bool) lipgloss.St
 	}
 	style := lipgloss.NewStyle().
 		Border(border).
-		BorderForeground(l.palette.Line.Border()).
-		BorderLeftForeground(l.palette.Priority(priority).Border()).
+		BorderForeground(l.Palette.Line.Border()).
+		BorderLeftForeground(l.Palette.Priority(priority).Border()).
 		Width(width).
 		Padding(0, 1)
 	if chosen {
-		return style.BorderForeground(l.palette.Accent.Border())
+		return style.BorderForeground(l.Palette.Accent.Border())
 	}
 	return style
 }
@@ -99,15 +101,14 @@ func (l Skin) Reference(width int) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Border(lipgloss.Border{Top: "┄", Bottom: "┄", Left: "┆", Right: "┆",
 			TopLeft: "┌", TopRight: "┐", BottomLeft: "└", BottomRight: "┘"}).
-		BorderForeground(l.palette.Line.Border()).
+		BorderForeground(l.Palette.Line.Border()).
 		Width(width).
 		Padding(0, 1)
 }
 
-// Ink is how one thing is drawn: in one of the terminal's own accents, or in its own foreground, faint or not.
+// Ink is how one thing is drawn: in a colour of the scheme, or in the terminal's own foreground.
 type Ink struct {
 	Colour color.Color
-	Faint  bool
 }
 
 // Style answers a style that draws in the ink.
@@ -115,10 +116,10 @@ func (i Ink) Style() lipgloss.Style { return i.On(lipgloss.NewStyle()) }
 
 // On answers the style given, drawing in the ink.
 func (i Ink) On(style lipgloss.Style) lipgloss.Style {
-	return style.Foreground(i.Border()).Faint(i.Faint)
+	return style.Foreground(i.Border())
 }
 
-// Border answers the colour a border is drawn in with the ink, the terminal's own foreground when it has none: a border carries no faint.
+// Border answers the colour a border is drawn in with the ink, the terminal's own foreground when it has none.
 func (i Ink) Border() color.Color {
 	if i.Colour == nil {
 		return lipgloss.NoColor{}
@@ -142,43 +143,49 @@ type Palette struct {
 	Line     Ink
 	Accent   Ink
 	Stalled  Ink
+	Labels   map[string]color.Color
 }
 
-var quiet = Ink{Faint: true}
-
-// Default is the palette the board draws with: the terminal's own accents and its own foreground, so that the board wears whatever theme the terminal has.
-var Default = Palette{
-	Low:      Ink{Colour: lipgloss.Cyan},
-	Normal:   quiet,
-	High:     Ink{Colour: lipgloss.Yellow},
-	Critical: Ink{Colour: lipgloss.Red},
-	Blocked:  Ink{Colour: lipgloss.Red},
-	Watching: Ink{Colour: lipgloss.Cyan},
-	Paused:   quiet,
-	Reached:  Ink{Colour: lipgloss.Green},
-	Late:     Ink{Colour: lipgloss.Red},
-	Faint:    quiet,
-	Bright:   Ink{},
-	Line:     quiet,
-	Accent:   Ink{Colour: lipgloss.Blue},
-	Stalled:  Ink{Colour: lipgloss.Yellow},
+// PaletteOf is the palette the board draws with in a colour scheme: the colours the window wears, so that both boards wear the same.
+func PaletteOf(c theme.Colours) Palette {
+	of := func(c color.NRGBA) Ink { return Ink{Colour: c} }
+	labels := map[string]color.Color{}
+	for name, said := range c.Labels {
+		labels[name] = said
+	}
+	return Palette{
+		Low: of(c.Priority[string(item.Low)]), Normal: of(c.Priority[string(item.Normal)]),
+		High: of(c.Priority[string(item.High)]), Critical: of(c.Priority[string(item.Critical)]),
+		Blocked: of(c.Priority[string(item.Critical)]), Watching: of(c.Priority[string(item.Normal)]),
+		Paused: of(c.Ink.Faint), Reached: of(c.State.Done), Late: of(c.State.Late), Faint: of(c.Ink.Faint),
+		Bright: of(c.Ink.Text), Line: of(c.Line.Edge), Accent: of(c.Accent.Base), Stalled: of(c.Priority[string(item.High)]),
+		Labels: labels,
+	}
 }
 
-// Faded is the palette a reference is drawn with: every ink quiet, since it stands for a task kept in sight, not one of those counted.
-var Faded = Palette{
-	Low: quiet, Normal: quiet, High: quiet, Critical: quiet, Blocked: quiet, Watching: quiet, Paused: quiet,
-	Reached: quiet, Late: quiet, Faint: quiet, Bright: quiet, Line: quiet, Accent: quiet, Stalled: quiet,
+// Inks are the colours of the palette, each by the name of what it draws, the labels' as label-<colour>.
+func (p Palette) Inks() map[string]color.Color {
+	named := map[string]color.Color{}
+	for name, ink := range map[string]Ink{
+		"low": p.Low, "normal": p.Normal, "high": p.High, "critical": p.Critical, "blocked": p.Blocked,
+		"watching": p.Watching, "paused": p.Paused, "reached": p.Reached, "late": p.Late, "faint": p.Faint,
+		"bright": p.Bright, "line": p.Line, "accent": p.Accent, "stalled": p.Stalled,
+	} {
+		named[name] = ink.Border()
+	}
+	for name, c := range p.Labels {
+		named["label-"+name] = c
+	}
+	return named
 }
 
-// LabelsInTheTerminal are the fourteen label colours, each as the nearest of the terminal's own accents.
-var LabelsInTheTerminal = map[string]color.Color{
-	"rosewater": lipgloss.BrightMagenta, "flamingo": lipgloss.BrightRed,
-	"pink": lipgloss.Magenta, "mauve": lipgloss.BrightMagenta,
-	"red": lipgloss.Red, "maroon": lipgloss.BrightRed,
-	"peach": lipgloss.BrightYellow, "yellow": lipgloss.Yellow,
-	"green": lipgloss.Green, "teal": lipgloss.Cyan,
-	"sky": lipgloss.BrightCyan, "sapphire": lipgloss.BrightBlue,
-	"blue": lipgloss.Blue, "lavender": lipgloss.BrightBlue,
+// FadedOf is the palette a reference is drawn with: every ink the scheme's faint, since it stands for a task kept in sight, not one of those counted.
+func FadedOf(c theme.Colours) Palette {
+	q := Ink{Colour: c.Ink.Faint}
+	return Palette{
+		Low: q, Normal: q, High: q, Critical: q, Blocked: q, Watching: q, Paused: q,
+		Reached: q, Late: q, Faint: q, Bright: q, Line: q, Accent: q, Stalled: q,
+	}
 }
 
 // Priority answers the ink a priority is drawn in.

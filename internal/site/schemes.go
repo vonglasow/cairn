@@ -1,11 +1,15 @@
 package site
 
 import (
+	"cairn/internal/tui/design"
 	"fmt"
 	"image/color"
+	"slices"
 	"strings"
 
 	"cairn/internal/theme"
+
+	"maps"
 )
 
 const (
@@ -32,6 +36,10 @@ func schemeRules(s theme.Scheme) string {
 	}
 	for i, slot := range terminal16(s) {
 		fmt.Fprintf(&rules, "--t%d:%s;", i, hex(slot))
+	}
+	inks := design.PaletteOf(c).Inks()
+	for _, name := range slices.Sorted(maps.Keys(inks)) {
+		fmt.Fprintf(&rules, "--p-%s:%s;", name, hex(color.NRGBAModel.Convert(inks[name]).(color.NRGBA)))
 	}
 	variant := "dark"
 	if s.Light() {

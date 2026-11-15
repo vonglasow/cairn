@@ -1,7 +1,7 @@
-  TASKS 11   objectives 2   time 0                  NORMAL
+  TASKS 11   objectives 2   time 0
 
- ▌BACKLOG     3│TODO         2│CURRENT      1│DONE         1
- ━━━━━━━━━━━━━━│──────────────│──────────────│──────────────
+ BACKLOG      3│TODO         2│CURRENT      1│DONE         1
+ ──────────────│──────────────│──────────────│──────────────
  ┏━━━━━━━━━━━━┓│┏━━━━━━━━━━━━┓│╔════════════╗│┏━━━━━━━━━━━━┓
  ┃ 1          ┃│┃ 4        ≡ ┃│║ 6        ≡ ║│┃ 7          ┃
  ┃ Buy a lamp ┃│┃ Write the  ┃│║ Spec       ║│┃ Migrate    ┃
@@ -21,20 +21,20 @@
  ┃ −3d        ┃│              │              │
  ┗━━━━━━━━━━━━┛│              │              │
                │              │              │
-               │              │              │
-                STALLED                                    4
-                ────────────────────────────────────────────
-                ┏━━━━━━━━━━━━┓ ┏━━━━━━━━━━━━┓ ┏━━━━━━━━━━━━┓
-                ┃ 8      ≡ ⊘ ┃ ┃ 9      ≡ ◉ ┃ ┃ 10       ‖ ┃
-                ┃ Client's   ┃ ┃ Handed to  ┃ ┃ Refactor   ┃
-                ┃ answer     ┃ ┃ Marie      ┃ ┃ migrate    ┃
-                ┃ ↳ 4        ┃ ┃ ↳ she con… ┃ ┃ ↳ your ca… ┃
-                ┗━━━━━━━━━━━━┛ ┗━━━━━━━━━━━━┛ ┗━━━━━━━━━━━━┛
-                ┏━━━━━━━━━━━━┓
-                ┃ 13       ⊘ ┃
-                ┃ Waiting on ┃
-                ┃ the lawyer ┃
-                ┃ ↳ the fou… ┃
-                ┗━━━━━━━━━━━━┛
+               │STALLED      4│              │
+               │blocked      2│watching     1│paused       1
+               │──────────────│──────────────│──────────────
+               │┏━━━━━━━━━━━━┓│┏━━━━━━━━━━━━┓│┏━━━━━━━━━━━━┓
+               │┃ 8      ≡ ⊘ ┃│┃ 9      ≡ ◉ ┃│┃ 10       ‖ ┃
+               │┃ Client's   ┃│┃ Handed to  ┃│┃ Refactor   ┃
+               │┃ answer     ┃│┃ Marie      ┃│┃ migrate    ┃
+               │┃ ↳ 4        ┃│┃ ↳ she con… ┃│┃ ↳ your ca… ┃
+               │┗━━━━━━━━━━━━┛│┗━━━━━━━━━━━━┛│┗━━━━━━━━━━━━┛
+               │┏━━━━━━━━━━━━┓│              │
+               │┃ 13       ⊘ ┃│              │
+               │┃ Waiting on ┃│              │
+               │┃ the lawyer ┃│              │
+               │┃ ↳ the fou… ┃│              │
+               │┗━━━━━━━━━━━━┛│              │
 
- hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab
+ hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus

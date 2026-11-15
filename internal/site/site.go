@@ -14,9 +14,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"cairn/internal/theme"
+
+	"maps"
 )
 
 //go:embed assets
@@ -164,6 +167,9 @@ func styled(schemes []theme.Scheme) ([]byte, error) {
 	css.Write(base)
 	for i := range 16 {
 		fmt.Fprintf(&css, ".term .t%d{color:var(--t%d)}.term .u%d{background:var(--t%d)}\n", i, i, i, i)
+	}
+	for _, role := range slices.Sorted(maps.Values(drawnAs)) {
+		fmt.Fprintf(&css, ".term .tp-%s{color:var(--p-%s)}.term .up-%s{background:var(--p-%s)}\n", role, role, role, role)
 	}
 	for _, s := range schemes {
 		css.WriteString(schemeRules(s))

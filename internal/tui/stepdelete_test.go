@@ -19,8 +19,8 @@ func steppedTasks() *fake {
 
 func openOnFirst(t *testing.T, f *fake) Board {
 	t.Helper()
-	b := hit(standing(f), "l", "i", "enter")
-	if b.screen != OnDetail || b.task != 1 {
+	b := hit(standing(f), "ctrl+l", "enter")
+	if b.screen != board.OnDetail || b.task != 1 {
 		t.Fatalf("the board is on %v with task %d open", b.screen, b.task)
 	}
 	return b
@@ -70,7 +70,7 @@ func TestADeleteKeyAsksOnlyWithAStepChosen(t *testing.T) {
 		}
 	}
 	other := hit(b, "down", "esc", "l", "enter")
-	if other.task != 2 || other.screen != OnDetail {
+	if other.task != 2 || other.screen != board.OnDetail {
 		t.Fatalf("the board opened task %d on %v", other.task, other.screen)
 	}
 	if hit(other, "down", "backspace").asking || says(hit(other, "down"), "›") {

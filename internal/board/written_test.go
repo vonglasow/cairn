@@ -50,6 +50,9 @@ func TestWhatIsTakenBackIsWhatIsBeforeTheCaret(t *testing.T) {
 	if got := (Written{Value: "abcd", At: 0}).Back(); got.Value != "abcd" {
 		t.Errorf("taking back at the beginning gave %q", got.Value)
 	}
+	if got := Ending("héllo").Back(); got.Value != "héll" {
+		t.Fatalf("back after an accented word gave %q", got.Value)
+	}
 	if got := (Written{}).Back(); got.Value != "" {
 		t.Errorf("taking back from nothing gave %q", got.Value)
 	}

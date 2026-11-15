@@ -2,6 +2,7 @@ package tui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/tui/geom"
 	"strings"
 	"time"
 
@@ -55,7 +56,7 @@ func (b Board) readingWeek() tea.Cmd {
 	}
 }
 
-func (b Board) timeWeek(l Layout) []string {
+func (b Board) timeWeek(l geom.Layout) []string {
 	var lines []string
 	for i := range b.pages.WeekDays() {
 		day := b.week.AddDate(0, 0, i)
@@ -90,7 +91,7 @@ func timeOn(sheet engine.Timesheet, day time.Time) spent {
 func (b Board) answering(text string) Board {
 	b.said, b.saidAt = text, 0
 	if text != "" {
-		b.wasScreen, b.screen = OnTheBoard, OnSaid
+		b.wasScreen, b.screen = board.OnTheBoard, board.OnSaid
 	}
 	return b
 }

@@ -3,6 +3,7 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/tui/geom"
 	"errors"
 	"os"
 	"path/filepath"
@@ -155,7 +156,7 @@ func TestHeader_saysNothingOfAPlaceItWasNotTold(t *testing.T) {
 func TestCtrlO_listsTheWorkspacesTheOneHereMarked(t *testing.T) {
 	b := pressing(roamingBoard(t, newRoaming(t, newFake())), "ctrl+o")
 	screen := strip(b.Draw())
-	if b.screen != OnWorkspaces || !strings.Contains(screen, "OPEN A WORKSPACE") {
+	if b.screen != board.OnWorkspaces || !strings.Contains(screen, "OPEN A WORKSPACE") {
 		t.Fatalf("ctrl+o shows:\n%s", screen)
 	}
 	for _, want := range []string{"WORKSPACES", "here · default", "home", "esc back"} {
@@ -186,7 +187,7 @@ func lineOf(screen, holding string) string {
 func TestCtrlO_isNotOfferedByABoardThatCannotSwitch(t *testing.T) {
 	b := New(newFake(), GlyphsFor(Unicode), func() time.Time { return today }, 160, 40)
 	b = pressing(b, "ctrl+o")
-	if b.screen != OnTheBoard || strings.Contains(strip(b.Draw()), "workspace") {
+	if b.screen != board.OnTheBoard || strings.Contains(strip(b.Draw()), "workspace") {
 		t.Errorf("a board that cannot switch offers it:\n%s", strip(b.Draw()))
 	}
 	r := roamingBoard(t, newRoaming(t, newFake()))
@@ -225,7 +226,7 @@ func TestSwitcher_arrowsChooseAndEnterOpens(t *testing.T) {
 	if !slices.Equal(r.switched, []string{"client-a"}) {
 		t.Fatalf("switched = %v; want client-a", r.switched)
 	}
-	if b.screen != OnTheBoard {
+	if b.screen != board.OnTheBoard {
 		t.Errorf("screen = %v; want the board", b.screen)
 	}
 }
@@ -233,7 +234,7 @@ func TestSwitcher_arrowsChooseAndEnterOpens(t *testing.T) {
 func TestSwitcher_enterOnTheOneHereOnlyCloses(t *testing.T) {
 	r := newRoaming(t, newFake())
 	b := pressing(roamingBoard(t, r), "ctrl+o", "up", "up", "enter")
-	if len(r.switched) != 0 || b.screen != OnTheBoard {
+	if len(r.switched) != 0 || b.screen != board.OnTheBoard {
 		t.Errorf("switched = %v, screen %v; want nothing opened, the board back", r.switched, b.screen)
 	}
 }
@@ -256,7 +257,7 @@ func TestSwitcher_escLeavesTheBoardAsItWas(t *testing.T) {
 	f.cards = []board.Card{{Number: 1, Title: "Rotate", State: "backlog", Priority: "normal"}}
 	r := newRoaming(t, f)
 	b := pressing(roamingBoard(t, r), "ctrl+o", "h", "esc")
-	if b.screen != OnTheBoard || len(r.switched) != 0 || !strings.Contains(strip(b.Draw()), "Rotate") {
+	if b.screen != board.OnTheBoard || len(r.switched) != 0 || !strings.Contains(strip(b.Draw()), "Rotate") {
 		t.Errorf("esc left:\n%s", strip(b.Draw()))
 	}
 	if b = pressing(b, "ctrl+o"); len(b.listed()) != 3 {
@@ -277,7 +278,7 @@ func TestSwitched_replacesTheBoardAndSaysSo(t *testing.T) {
 	if !strings.Contains(screen, "opened home in place of work · work's focus on #152 is still held") {
 		t.Errorf("the board does not say what it opened:\n%s", screen)
 	}
-	if strings.Contains(screen, "Choose the month") || b.mode != Normal || b.task != 0 {
+	if strings.Contains(screen, "Choose the month") || b.task != 0 {
 		t.Errorf("work's board is still there:\n%s", screen)
 	}
 	if b = pressing(b, "l"); strings.Contains(strip(b.Draw()), "opened home") {
@@ -298,11 +299,11 @@ func TestSwitched_takesThePagesOfTheOneOpened(t *testing.T) {
 	r.pages["home"] = engine.PagesOff(engine.PageTime)
 	b := roamingBoard(t, r)
 	b = pressing(b, "tab", "tab")
-	if b.tab != Time {
+	if b.tab != board.Time {
 		t.Fatalf("tab = %v; want time", b.tab)
 	}
 	b = pressing(b, "ctrl+o", "1")
-	if b.tab != Tasks || slices.Contains(b.shown(), Time) {
+	if b.tab != board.Tasks || slices.Contains(b.shown(), board.Time) {
 		t.Errorf("tabs = %v on %v; want no time tab", b.shown(), b.tab)
 	}
 }
@@ -312,7 +313,7 @@ func TestSwitched_refusedSaysWhyAndStaysOnTheList(t *testing.T) {
 	r.refuse = workspace.ErrWorkspaceNotThere
 	b := pressing(roamingBoard(t, r), "ctrl+o", "1")
 	screen := strip(b.Draw())
-	if b.screen != OnWorkspaces || !strings.Contains(screen, workspace.ErrWorkspaceNotThere.Error()) {
+	if b.screen != board.OnWorkspaces || !strings.Contains(screen, workspace.ErrWorkspaceNotThere.Error()) {
 		t.Errorf("a refusal shows:\n%s", screen)
 	}
 	if !strings.HasPrefix(headerOf(b), "● work") {
@@ -337,7 +338,7 @@ func TestSwitcher_aListThatCannotBeReadIsSaid(t *testing.T) {
 	r := newRoaming(t, newFake())
 	b := roamingBoard(t, r)
 	model, _ := b.Update(Listed{Err: errNope})
-	if b = model.(Board); b.screen != OnTheBoard || !errors.Is(b.err, errNope) {
+	if b = model.(Board); b.screen != board.OnTheBoard || !errors.Is(b.err, errNope) {
 		t.Errorf("screen %v, err %v; want the board saying why", b.screen, b.err)
 	}
 }
@@ -354,7 +355,7 @@ func TestSwitcher_fitsANarrowWindow(t *testing.T) {
 	r := newRoaming(t, newFake())
 	r.spaces[2].Folder = "/" + strings.Repeat("deep/", 30)
 	b := roamingBoard(t, r)
-	b.width, b.height = Narrowest, Shortest
+	b.width, b.height = geom.Narrowest, geom.Shortest
 	b = pressing(b, "ctrl+o")
 	if err := fits(b); err != nil {
 		t.Error(err)

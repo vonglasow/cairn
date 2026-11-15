@@ -5,9 +5,9 @@ cairn tui                        # open it
 cairn tui --icons unicode        # without a Nerd Font installed
 ```
 
-The same board as every other surface, on a screen that stays open. It reads
-like vim: `hjkl` moves, `i` takes hold of a task, `:` takes any command, and `?`
-answers in every mode. `:q` leaves.
+The same board as every other surface, on a screen that stays open, in the
+colours of the scheme the window wears. It reads like vim: `hjkl` walks the
+cards, `:` takes any command, and `?` answers everywhere. `:q` leaves.
 
 It needs a terminal of 60 columns by 26 rows; below that it says so rather than
 draw something nobody can read.
@@ -15,26 +15,29 @@ draw something nobody can read.
 ## What it shows
 
 ```
- ‹ TASKS ›  objectives                                                    ── NORMAL ──
- BACKLOG               12 TODO                   5 CURRENT                2 DONE                  31
- ──────────────────────── ──────────────────────── ──────────────────────── ────────────────────────
- ┌──────────────────────┐ ┃──────────────────────┐ ╔══════════════════════╗ ┌──────────────────────┐
- │ 26                   │ ┃ 14                 ≡ │ ║ 31                 ≡ ║ │ 08                   │
- │ Buy a lamp           │ ┃ Write the spec       │ ║ Spec review          ║ │ Migrate the store    │
- │                      │ ┃                      │ ║                      ║ │                      │
- │                      │ ┃ 2d  ▪3/5  ⚑ spec     │ ║ 1d  ▪2/4  ⚑ spec     ║ │                      │
- └──────────────────────┘ ┃──────────────────────┘ ╚══════════════════════╝ └──────────────────────┘
-                          STALLED                                                                  6
-                          ──────────────────────────────────────────────────────────────────────────
-                          ┃ 19                 ⊘ │ │ 24               ≡ ◉ │ │ 30                 ‖ │
-                          ┃ Client's answer      │ │ Handed to Marie      │ │ Refactor migrate     │
-                          ┃ ↳ 12                 │ │ ↳ she confirms first │ │ ↳ your call          │
- hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab   ? help   : command
+ TASKS 11   objectives 2   time 0
+
+ BACKLOG                3│TODO                   2│CURRENT                1│DONE                   1
+ ────────────────────────│────────────────────────│────────────────────────│────────────────────────
+ ┏━━━━━━━━━━━━━━━━━━━━━━┓│┏━━━━━━━━━━━━━━━━━━━━━━┓│╔══════════════════════╗│┏━━━━━━━━━━━━━━━━━━━━━━┓
+ ┃ 1                    ┃│┃ 4                  ≡ ┃│║ 6                  ≡ ║│┃ 7                    ┃
+ ┃ Buy a lamp           ┃│┃ Write the spec       ┃│║ Spec review          ║│┃ Migrate the store    ┃
+ ┃                      ┃│┃                      ┃│║                      ║│┃                      ┃
+ ┃                      ┃│┃ 2d  ▪1/2  ⚑ spec     ┃│║ 1d  ▪2/4  ⚑ spec     ║│┃                      ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━┛│┗━━━━━━━━━━━━━━━━━━━━━━┛│╚══════════════════════╝│┗━━━━━━━━━━━━━━━━━━━━━━┛
+                         │STALLED                4│                        │
+                         │blocked                2│watching               1│paused                 1
+                         │────────────────────────│────────────────────────│────────────────────────
+                         │┏━━━━━━━━━━━━━━━━━━━━━━┓│┏━━━━━━━━━━━━━━━━━━━━━━┓│┏━━━━━━━━━━━━━━━━━━━━━━┓
+                         │┃ 8                ≡ ⊘ ┃│┃ 9                ≡ ◉ ┃│┃ 10                 ‖ ┃
+                         │┃ Client's answer      ┃│┃ Handed to Marie      ┃│┃ Refactor migrate     ┃
+ hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus   D delete   x archive   ? help   a new
 ```
 
 - **Four columns** — backlog, todo, current, done — and under the last three a
-  band, **STALLED**, holding `blocked`, `watching` and `paused`, three cards
-  across. An empty column stays on screen.
+  band, **STALLED**, in three lanes: `blocked` under todo, `watching` under
+  current, `paused` under done, as in the window. An empty column stays on
+  screen.
 - **The header** names the workspace shown, with its colour, then the tabs.
 - **A card** says what a card says in the window: what it is waiting on, how
   far its deadline is, its time spent against its estimate, its steps, its
@@ -48,54 +51,51 @@ Tabs, walked with `⇥`: **tasks**, **objectives**, **time** — a week, day by
 day, task by task — and **series** while recurrence is on. Each counts what it
 holds. A page turned off in the [configuration](config.md#pages) has no tab.
 
-## Modes
+## The cursor
 
-| mode | the cursor is on |
-|---|---|
-| **normal** | a column |
-| **insert** | a task |
-| **edit** | a field of the form |
-
-The objectives list has only normal mode: moving between objectives is already
-holding one.
+The cursor is always on a column, and on a card of it when there is one: the
+board opens on the backlog's first card. There are no modes.
 
 ## Keys
 
-`hjkl` and the arrows only ever navigate, in every mode.
+`hjkl` and the arrows only ever navigate.
 
-| key | where | what it does |
-|---|---|---|
-| `hjkl` `←↓↑→` | everywhere | navigate |
-| `i` | normal | take hold of a task (insert) · on objectives, open one |
-| `⇧hjkl` | insert | move the task; sideways changes its column, up and down its place |
-| `a` | normal | a new task, in the column under the cursor |
-| `o` | insert | a new task linked to this one, in `todo` |
-| `e` | insert | the form |
-| `⏎` | insert | the detail |
-| `D` | insert | delete — it asks first |
-| `x` | insert | archive or unarchive the task |
-| `⇧A` | normal, insert | show what was archived, or hide it |
-| `⇧X` | normal | archive the whole column — it asks first |
-| `m` then a letter | insert | move to a column: `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused |
-| `p` then a letter | insert | priority: `l` low, `n` normal, `h` high, `c` critical |
-| `f` | insert | focus or unfocus |
-| `r` then a letter | insert, on an occurrence | `s` skip it, `x` stop the series, `r` resume it, `e` open the series |
-| `/` | normal | search |
-| `⇧F` | normal | filters |
-| `v` | normal | the views |
-| `gg` `G` | insert | the first, the last |
-| `b` `⇧B` | normal | back the store up, list the backups |
-| `^O` | everywhere | open another workspace in place of this one |
-| `?` | everywhere | help |
-| `:` | normal | a command |
-| `⇥` | normal | next tab |
-| `esc` | | back one level |
+| key | what it does |
+|---|---|
+| `hjkl` `←↓↑→` | walk the cards: sideways over an empty column to the next card, down from a column's last card into the lane under it, up out of a lane |
+| `^H` `^L` | the column left or right, at once, even an empty one |
+| `^J` `^K` | into the band, out of it |
+| `⇧hjkl` | move the task; sideways changes its column, up and down its place |
+| `a` | a new task, in the column under the cursor |
+| `o` | a new task linked to the one held, in `todo` |
+| `e` | the form |
+| `⏎` | the detail · on objectives, open one |
+| `D` | delete — it asks first |
+| `x` | archive or unarchive the task |
+| `⇧A` | show what was archived, or hide it |
+| `⇧X` | archive the whole column — it asks first |
+| `m` then a letter | move to a column: `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused |
+| `p` then a letter | priority: `l` low, `n` normal, `h` high, `c` critical |
+| `f` | focus or unfocus |
+| `r` then a letter | on an occurrence: `s` skip it, `x` stop the series, `r` resume it, `e` open the series |
+| `/` | search |
+| `⇧F` | filters |
+| `v` | the views |
+| `gg` `G` | the first, the last |
+| `b` `⇧B` | back the store up, list the backups |
+| `^O` | open another workspace in place of this one |
+| `?` | help |
+| `:` | a command |
+| `⇥` | next tab |
+| `esc` | back one level |
 
+A terminal that sends `^H` or `^J` as another key keeps them for it; `hjkl`
+reach the same places, but for an empty column.
 
 ## Objectives
 
 The objectives tab is a tree, two lines an objective, each sub-objective under
-its parent. `i` or `⏎` opens an objective's own board, holding only the tasks
+its parent. `⏎` opens an objective's own board, holding only the tasks
 that serve it; `esc` goes back to the list. `t` shows an objective's tasks on
 the tasks board, `N` makes a sub-objective, `z` folds a parent away, and `[`
 `]` narrow an objective's board to one sub-objective, the objective itself, or

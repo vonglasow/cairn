@@ -11,10 +11,10 @@ import (
 func TestTheTimeTabWalksTheWeeks(t *testing.T) {
 	f := newFake()
 	b := hit(standing(f), "tab", "tab")
-	if b.tab != Time {
+	if b.tab != board.Time {
 		t.Fatalf("two tabs left the board on %v", b.tab)
 	}
-	if got := hit(b, "tab").tab; got != Tasks {
+	if got := hit(b, "tab").tab; got != board.Tasks {
 		t.Errorf("a third tab left the board on %v", got)
 	}
 	monday := board.Monday(today)
@@ -51,10 +51,10 @@ func TestBackupsAreReachedFromTheBoard(t *testing.T) {
 	if !added {
 		t.Error("b made no backup")
 	}
-	if b.screen != OnSaid {
+	if b.screen != board.OnSaid {
 		t.Errorf("b left the board on %v", b.screen)
 	}
-	if got := hit(b, "esc"); got.screen != OnTheBoard {
+	if got := hit(b, "esc"); got.screen != board.OnTheBoard {
 		t.Errorf("esc left the board on %v", got.screen)
 	}
 	hit(standing(f), "B")

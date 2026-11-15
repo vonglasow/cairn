@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cairn/internal/board"
 	"fmt"
 	"strconv"
 
@@ -13,7 +14,7 @@ func (w *world) registerSeries(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Then(`^the open task is task (\d+)$`, func(n int) error {
-		if w.b.screen != OnDetail || w.b.task != n {
+		if w.b.screen != board.OnDetail || w.b.task != n {
 			return fmt.Errorf("the screen %v is open on task %d, not on task %d", w.b.screen, w.b.task, n)
 		}
 		return w.mustSay(strconv.Itoa(n))

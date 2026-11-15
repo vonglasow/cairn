@@ -3,6 +3,7 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/backup"
+	"cairn/internal/tui/design"
 	"errors"
 	"reflect"
 	"runtime"
@@ -82,7 +83,7 @@ func standing(f *fake) Board {
 		cards = append(cards, c)
 	}
 	b.snap = test.Searchable(board.Snapshot{Cards: cards, Goals: f.goals, Focus: f.focus, Version: f.version})
-	return b
+	return b.settled()
 }
 
 func hit(b Board, keys ...string) Board {
@@ -90,7 +91,7 @@ func hit(b Board, keys ...string) Board {
 		was := b.screen
 		model, cmd := b.Update(keyPress(key))
 		b = pump(model.(Board), cmd)
-		if was != OnForm && b.screen == OnForm {
+		if was != board.OnForm && b.screen == board.OnForm {
 			b = settleForm(b)
 		}
 	}
@@ -98,7 +99,7 @@ func hit(b Board, keys ...string) Board {
 }
 
 func settleForm(b Board) Board {
-	if b.screen != OnForm {
+	if b.screen != board.OnForm {
 		return b
 	}
 	cmd := b.form.asked.Init()
@@ -141,7 +142,7 @@ func pump(b Board, cmd tea.Cmd) Board {
 }
 
 func ran(b Board, cmd tea.Cmd) (tea.Msg, bool) {
-	if b.screen == OnForm {
+	if b.screen == board.OnForm {
 		return quickly(cmd)
 	}
 	msg := cmd()
@@ -206,7 +207,7 @@ func aChange(field, became string) act.Act {
 	return told.Act()
 }
 
-func (b Board) with(skin Skin) Board {
+func (b Board) with(skin design.Skin) Board {
 	b.skin = skin
 	return b
 }

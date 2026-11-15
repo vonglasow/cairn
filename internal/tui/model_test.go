@@ -3,6 +3,9 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/series"
+	"cairn/internal/theme"
+	"cairn/internal/tui/design"
+	"cairn/internal/tui/geom"
 	"errors"
 	"strconv"
 	"strings"
@@ -29,7 +32,7 @@ func twoTasks() *fake {
 
 func TestTakingTheFocusAndLettingItGo(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	if _, cmd := b.pressed("f"); cmd != nil {
 		cmd()
 	}
@@ -51,7 +54,7 @@ func TestTakingTheFocusAndLettingItGo(t *testing.T) {
 func TestATaskThatRefusesToBeDeletedIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse
-	b := hit(standing(f), "l", "i", "D")
+	b := hit(standing(f), "ctrl+l", "D")
 	_, cmd := b.pressed("enter")
 	looked, ok := cmd().(Looked)
 	if !ok || looked.Err == nil {
@@ -64,7 +67,7 @@ func TestATaskThatRefusesToBeDeletedIsSaid(t *testing.T) {
 
 func TestDeleting(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "D")
+	b := hit(standing(f), "ctrl+l", "D")
 	if _, cmd := b.pressed("enter"); cmd != nil {
 		cmd()
 	}
@@ -76,7 +79,7 @@ func TestDeleting(t *testing.T) {
 func TestAFailureIsSaidRatherThanSwallowed(t *testing.T) {
 	f := twoTasks()
 	f.fail = errNope
-	b := hit(standing(f), "l", "i", "D")
+	b := hit(standing(f), "ctrl+l", "D")
 	_, cmd := b.pressed("enter")
 	msg := cmd()
 	looked, ok := msg.(Looked)
@@ -113,10 +116,10 @@ func TestTheOtherTab(t *testing.T) {
 	if b.Where().Goal != 7 {
 		t.Fatalf("the cursor landed on objective %d, want 7", b.Where().Goal)
 	}
-	if b = hit(b, "tab"); b.tab != Time {
+	if b = hit(b, "tab"); b.tab != board.Time {
 		t.Fatal("the second press did not go on to the time spent")
 	}
-	if b = hit(b, "tab"); b.tab != Tasks {
+	if b = hit(b, "tab"); b.tab != board.Tasks {
 		t.Fatal("the third press did not come back to the tasks")
 	}
 }
@@ -136,7 +139,7 @@ func TestHelpOpensAndClosesFromAnywhere(t *testing.T) {
 		b := hit(standing(twoTasks()), keys...)
 		was := b.screen
 		b = hit(b, "?")
-		if b.screen != OnHelp {
+		if b.screen != board.OnHelp {
 			t.Fatalf("help did not answer after %v", keys)
 		}
 		b = hit(b, "?")
@@ -151,11 +154,11 @@ func TestHelpIsContextual(t *testing.T) {
 	f.goals = []board.Goal{{Number: 1, Title: "Ship it", State: "active"}}
 	onTasks := bare(hit(standing(f), "?").Draw())
 	onGoals := bare(hit(standing(f), "tab", "?").Draw())
-	if !strings.Contains(onTasks, "INSERT") {
-		t.Fatal("the tasks tab's help says nothing about insert")
+	if !strings.Contains(onTasks, "A TASK") {
+		t.Fatal("the tasks tab's help says nothing about a task")
 	}
-	if strings.Contains(onGoals, "INSERT") {
-		t.Fatal("the objectives tab's help offers a mode it has not got")
+	if strings.Contains(onGoals, "A TASK") {
+		t.Fatal("the objectives tab's help offers the keys of a task")
 	}
 }
 
@@ -228,7 +231,7 @@ func TestATaskInFocusIsReadAgainEachMinute(t *testing.T) {
 
 func TestTheDetailOfATaskThatWentAway(t *testing.T) {
 	b := standing(twoTasks())
-	b.screen = OnDetail
+	b.screen = board.OnDetail
 	if !strings.Contains(b.Draw(), "no such task") {
 		t.Fatalf("the detail of nothing says:\n%s", b.Draw())
 	}
@@ -247,7 +250,7 @@ func TestTheDetailShowsStepsAndHistory(t *testing.T) {
 	told.Became("Parent")
 	told.At(today)
 	f.acts = []act.Act{told.Act()}
-	b := hit(standing(f), "l", "i", "enter")
+	b := hit(standing(f), "ctrl+l", "enter")
 	drawn := strip(b.Draw())
 	for _, want := range []string{"STEPS", "Child", "TRACE", "created", "title"} {
 		if !strings.Contains(drawn, want) {
@@ -260,7 +263,7 @@ func TestTheDetailSaysWhenAHistoryCannotBeRead(t *testing.T) {
 	f := twoTasks()
 	f.fail = errNope
 	b := heardOf(standing(f), 1)
-	b.mode, b.task, b.screen = Insert, 1, OnDetail
+	b.task, b.screen = 1, board.OnDetail
 	if !strings.Contains(b.Draw(), errNope.Error()) {
 		t.Fatalf("a history that could not be read was passed over:\n%s", b.Draw())
 	}
@@ -408,13 +411,13 @@ func TestAnObjectiveThatRefusesToBeDeletedIsSaid(t *testing.T) {
 func TestAFocusThatRefusesIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	_, cmd := b.pressed("f")
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
 		t.Fatal("a focus that could not be taken was passed over")
 	}
 	f.focus = []int{1}
-	held := hit(standing(f), "l", "i")
+	held := hit(standing(f), "ctrl+l")
 	_, cmd = held.pressed("f")
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
 		t.Fatal("a focus that could not be let go was passed over")
@@ -424,7 +427,7 @@ func TestAFocusThatRefusesIsSaid(t *testing.T) {
 func TestAStateThatRefusesIsSaid(t *testing.T) {
 	f := twoTasks()
 	f.failOp = errRefuse
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	_, cmd := b.pressed("shift+l")
 	if looked, ok := cmd().(Looked); !ok || looked.Err == nil {
 		t.Fatal("a move that could not be written was passed over")
@@ -435,10 +438,10 @@ func TestASaveThatRefusesIsSaid(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "First", State: "todo"}}
 	f.failOp = errRefuse
-	if b := finish(hit(standing(f), "l", "i", "e"), true); b.err == nil {
+	if b := finish(hit(standing(f), "ctrl+l", "e"), true); b.err == nil {
 		t.Fatal("a save that could not be written was passed over")
 	}
-	if b := finish(hit(standing(f), "l", "a"), true); b.err == nil {
+	if b := finish(hit(standing(f), "ctrl+l", "a"), true); b.err == nil {
 		t.Fatal("an add that could not be written was passed over")
 	}
 }
@@ -467,7 +470,7 @@ func TestChosenIsOnlyTheOneHeldInInsert(t *testing.T) {
 	if b.chosen(card) {
 		t.Fatal("a card was picked out while the cursor was on a column")
 	}
-	b.mode, b.task = Insert, 1
+	b.task = 1
 	if !b.chosen(card) {
 		t.Fatal("the card the cursor holds was not picked out")
 	}
@@ -483,7 +486,7 @@ func TestTheObjectiveUnderTheCursorIsDrawnApart(t *testing.T) {
 		{Number: 2, Title: "Two", State: "active"},
 	}
 	b := hit(standing(f), "tab")
-	width := b.width - 2*margin
+	width := b.width - 2*geom.Margin
 	held := b
 	held.goal = 1
 	chosen := strings.TrimRight(rowOf(t, held.goalCard(board.Branch{Goal: f.goals[0]}, width), "One"), " ")
@@ -522,27 +525,13 @@ func rowOf(t *testing.T, drawn, title string) string {
 func TestTheBarIsCutToTheScreenAndNoWider(t *testing.T) {
 	b := standing(twoTasks())
 	b.skin = plainSkin
-	b.width = 47
-	if got := b.foot(); got != " hjkl ←↓↑→ columns   i insert   a new" {
-		t.Fatalf("at 47 the bar reads %q", got)
-	}
 	b.width = 48
-	if got := b.foot(); got != " hjkl ←↓↑→ columns   i insert   a new   / search" {
+	if got := b.foot(); got != " hjkl ←↓↑→ tasks   ^hl columns   a new" {
 		t.Fatalf("at 48 the bar reads %q", got)
 	}
-}
-
-func TestABandOfExactlyOneRowDrawsOneRow(t *testing.T) {
-	f := newFake()
-	f.cards = []board.Card{
-		{Number: 1, State: "blocked", Title: "A"},
-		{Number: 2, State: "watching", Title: "B"},
-		{Number: 3, State: "paused", Title: "C"},
-	}
-	b := standing(f)
-	drawn := b.laidOut(f.cards, nil, LayoutFor(100, 40))
-	if got := len(strings.Split(drawn, "\n")); got != CardHeight {
-		t.Fatalf("three cards across drew %d rows, want %d:\n%s", got, CardHeight, drawn)
+	b.width = 49
+	if got := b.foot(); got != " hjkl ←↓↑→ tasks   ^hl columns   a new   / search" {
+		t.Fatalf("at 49 the bar reads %q", got)
 	}
 }
 
@@ -563,7 +552,7 @@ func TestLeavingAnObjectiveGoesBackToTheList(t *testing.T) {
 		t.Fatalf("opening the objective left inside at %d", b.inside)
 	}
 	b = hit(b, "esc")
-	if b.inside != 0 || b.tab != Objectives || b.Where().Goal != 3 {
+	if b.inside != 0 || b.tab != board.Objectives || b.Where().Goal != 3 {
 		t.Fatalf("escape left inside=%d tab=%v goal=%d", b.inside, b.tab, b.Where().Goal)
 	}
 }
@@ -576,7 +565,7 @@ func TestEscapeOnTheBoardItselfDoesNothing(t *testing.T) {
 }
 
 func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
-	skin := SkinOf(Default)
+	skin := design.SkinOf(design.PaletteOf(theme.Default()))
 	g := GlyphsFor(Unicode)
 	todo := Rows(board.Card{Number: 1, Title: "One", State: "todo"}, g, skin, today, engine.Pages{}, 20)
 	if got, want := todo[0], Spread(skin.Faint.Render("1"), "", 20); got != want {
@@ -590,7 +579,7 @@ func TestACardThatIsNotStalledIsNotMarkedAsThoughItWere(t *testing.T) {
 
 func TestAnObjectiveThatIsNotStandingSomewhereKnownIsNotMarked(t *testing.T) {
 	b := standing(newFake())
-	b.skin = SkinOf(Default)
+	b.skin = design.SkinOf(design.PaletteOf(theme.Default()))
 	known := b.goalRows(board.Goal{Number: 1, Title: "One", State: "active"}, 40)
 	unknown := b.goalRows(board.Goal{Number: 1, Title: "One", State: "invented"}, 40)
 	if known[0] == unknown[0] {
@@ -610,7 +599,7 @@ func TestTheObjectiveDrawnAsTheOneUnderTheCursor(t *testing.T) {
 		{Number: 2, Title: "Two", State: "active"},
 	}
 	b := hit(standing(f), "tab").with(plainSkin)
-	width := b.width - 2*margin
+	width := b.width - 2*geom.Margin
 	b.goal = 1
 	if got := b.goalCard(board.Branch{Goal: f.goals[0]}, width); !strings.HasPrefix(got, "┃ ") {
 		t.Fatalf("the objective under the cursor is not marked: %q", got)
@@ -630,21 +619,6 @@ func TestAWindowOfOneRowStillDrawsARow(t *testing.T) {
 	}
 }
 
-func TestTheBandDrawsEveryRowItIsGiven(t *testing.T) {
-	f := newFake()
-	for i := 1; i <= 3; i++ {
-		f.cards = append(f.cards, board.Card{Number: i, Title: "One", State: "blocked"})
-	}
-	b := standing(f)
-	if got := len(strings.Split(b.laidOut(f.cards, nil, LayoutFor(100, 40)), "\n")); got != CardHeight {
-		t.Fatalf("three cards across drew %d rows, want %d", got, CardHeight)
-	}
-	f.cards = append(f.cards, board.Card{Number: 4, Title: "Four", State: "blocked"})
-	if got := len(strings.Split(b.laidOut(f.cards, nil, LayoutFor(100, 40)), "\n")); got != 2*CardHeight {
-		t.Fatalf("four cards across drew %d rows, want two rows of cards", got)
-	}
-}
-
 func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo"}}
@@ -652,7 +626,7 @@ func TestTheHistoryShowsTheLatestAndScrollsForTheRest(t *testing.T) {
 		f.acts = append(f.acts, aChange("title", "act-"+strconv.Itoa(i)))
 	}
 	b := heardOf(standing(f), 1)
-	b.mode, b.task = Insert, 1
+	b.task = 1
 	got := b.history(1, 60, 3)
 	if len(got) != 3 {
 		t.Fatalf("a window three rows tall showed %d acts", len(got))
@@ -724,7 +698,7 @@ func TestTheHistoryIsGivenWhatTheWindowLeavesIt(t *testing.T) {
 	for _, height := range []int{28, 40} {
 		b := heardOf(standing(f), 1)
 		b.width, b.height = 100, height
-		b.mode, b.task, b.screen = Insert, 1, OnDetail
+		b.task, b.screen = 1, board.OnDetail
 		if got := len(b.history(1, 40, height-10)); got != height-10 {
 			t.Fatalf("in a window %d tall the history drew %d rows, want %d", height, got, height-10)
 		}
@@ -753,7 +727,7 @@ func TestEveryScreenFitsTheWindowItIsDrawnIn(t *testing.T) {
 		{"l", "a"}, {"tab"}, {"tab", "?"}, {"tab", "e"}, {"tab", "a"},
 		{"tab", "enter"}, {"/", "s"}, {":", "b"}, {"l", "j"},
 	} {
-		for _, size := range [][2]int{{Narrowest, Shortest}, {72, 30}, {100, 44}, {160, 60}} {
+		for _, size := range [][2]int{{geom.Narrowest, geom.Shortest}, {72, 30}, {100, 44}, {160, 60}} {
 			b := standing(f)
 			b.width, b.height = size[0], size[1]
 			b = hit(b, keys...)
@@ -768,12 +742,12 @@ func TestEveryScreenFitsTheWindowItIsDrawnIn(t *testing.T) {
 func TestEscapeClosesTheForm(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "One", State: "todo", Priority: "normal"}}
-	b := hit(standing(f), "l", "i", "e")
-	if b.screen != OnForm {
+	b := hit(standing(f), "ctrl+l", "e")
+	if b.screen != board.OnForm {
 		t.Fatal("the form did not open")
 	}
 	b = hit(b, "esc")
-	if b.screen != OnTheBoard {
+	if b.screen != board.OnTheBoard {
 		t.Fatal("escape did not close the form")
 	}
 	if len(f.edited) != 0 {
@@ -785,11 +759,11 @@ func TestEscapeClosesAnObjectivesForm(t *testing.T) {
 	f := newFake()
 	f.goals = []board.Goal{{Number: 3, Title: "Ship it", State: "active"}}
 	b := hit(standing(f), "tab", "e")
-	if b.screen != OnForm {
+	if b.screen != board.OnForm {
 		t.Fatal("the objective's form did not open")
 	}
 	b = hit(b, "esc")
-	if b.screen != OnTheBoard || b.tab != Objectives {
+	if b.screen != board.OnTheBoard || b.tab != board.Objectives {
 		t.Fatalf("escape left screen=%v tab=%v", b.screen, b.tab)
 	}
 	if len(f.editedGoal) != 0 {
@@ -799,7 +773,7 @@ func TestEscapeClosesAnObjectivesForm(t *testing.T) {
 
 func TestTheHelpCanBeReadPastTheBottomOfTheWindow(t *testing.T) {
 	b := standing(fullBoard())
-	b.width, b.height = Narrowest, Shortest
+	b.width, b.height = geom.Narrowest, geom.Shortest
 	b = hit(b, "?")
 	if b.helpAt != 0 {
 		t.Fatalf("the help opened scrolled to %d", b.helpAt)
@@ -817,14 +791,14 @@ func TestTheHelpCanBeReadPastTheBottomOfTheWindow(t *testing.T) {
 func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 7, Title: "Write the spec", State: "blocked", Priority: "critical"}}
-	b := hit(standing(f), "l", "j", "i", "e").with(plainSkin)
+	b := hit(standing(f), "ctrl+l", "ctrl+j", "e").with(plainSkin)
 	head := b.formHead()
 	for _, want := range []string{"7", "Write the spec", "blocked", "critical"} {
 		if !strings.Contains(head, want) {
 			t.Fatalf("the form's head %q is missing %q", head, want)
 		}
 	}
-	adding := hit(standing(f), "l", "a").with(plainSkin)
+	adding := hit(standing(f), "ctrl+l", "a").with(plainSkin)
 	if got := adding.formHead(); !strings.Contains(got, "new") || !strings.Contains(got, "untitled") {
 		t.Fatalf("a new task's head reads %q", got)
 	}
@@ -838,23 +812,23 @@ func TestTheFormHeadSaysWhatIsBeingChanged(t *testing.T) {
 
 func TestAReadingAfterASaveClosesTheFormAndNothingElse(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "e")
-	if b.screen != OnForm {
+	b := hit(standing(f), "ctrl+l", "e")
+	if b.screen != board.OnForm {
 		t.Fatalf("the form did not open: %v", b.screen)
 	}
-	if after := b.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != OnForm {
+	if after := b.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != board.OnForm {
 		t.Fatalf("a reading made while the form is open closed it, on %v", after.screen)
 	}
-	b.screen = OnTheBoard
-	if after := b.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != OnTheBoard || after.form.asked != nil {
+	b.screen = board.OnTheBoard
+	if after := b.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != board.OnTheBoard || after.form.asked != nil {
 		t.Fatalf("a write that went through left the board on %v", after.screen)
 	}
 
-	onDetail := hit(standing(f), "l", "i", "enter")
-	if onDetail.screen != OnDetail {
+	onDetail := hit(standing(f), "ctrl+l", "enter")
+	if onDetail.screen != board.OnDetail {
 		t.Fatalf("the detail did not open: %v", onDetail.screen)
 	}
-	if after := onDetail.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != OnDetail {
+	if after := onDetail.took(Looked{Snapshot: board.Snapshot{Cards: f.cards}}); after.screen != board.OnDetail {
 		t.Fatalf("a reading coming back closed the detail: %v", after.screen)
 	}
 }
@@ -866,8 +840,8 @@ func TestAStepTheStoreRefusesIsSaid(t *testing.T) {
 			f.cards = []board.Card{
 				{Number: 1, Title: "Ship it", State: "todo", Steps: []engine.Part{{Number: 1, Title: "Relire l'ADR"}}},
 			}
-			b := hit(standing(f), "l", "i", "e")
-			if b.screen != OnForm {
+			b := hit(standing(f), "ctrl+l", "e")
+			if b.screen != board.OnForm {
 				t.Fatalf("the form did not open: %v", b.screen)
 			}
 			b.form = b.form.typedInto("steps", "[ ] Rédiger la section Flux")
@@ -886,9 +860,9 @@ func TestAStepTheStoreRefusesIsSaid(t *testing.T) {
 
 func TestTheHistoryIsReadWhenTheTaskOpensAndNotWhenItIsDrawn(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	b = hit(b, "enter")
-	if b.screen != OnDetail {
+	if b.screen != board.OnDetail {
 		t.Fatalf("enter left the board on %v", b.screen)
 	}
 	heard := 0
@@ -941,7 +915,7 @@ func TestAHistoryLineSaysTheSeriesAnOccurrenceWasMadeFrom(t *testing.T) {
 
 func TestReadingTheBoardAgainReadsTheOpenHistoryAgain(t *testing.T) {
 	f := twoTasks()
-	b := hit(standing(f), "l", "i", "enter")
+	b := hit(standing(f), "ctrl+l", "enter")
 	if _, cmd := b.Update(Looked{Snapshot: b.snap}); cmd == nil {
 		t.Fatal("reading the board again with a task open read nothing more")
 	}

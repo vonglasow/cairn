@@ -103,7 +103,7 @@ func TestABlockerOutsideIsDrawnAndNotCounted(t *testing.T) {
 
 func TestTShowsTheTasksOfTheTree(t *testing.T) {
 	b := hit(standing(treeFake()).with(plainSkin), "tab", "t")
-	if b.tab != Tasks || b.inside != 0 {
+	if b.tab != board.Tasks || b.inside != 0 {
 		t.Fatalf("t left the board on tab %d, inside %d", b.tab, b.inside)
 	}
 	if got := b.Where().Showing; got != 3 {
@@ -168,7 +168,7 @@ func TestTheParentFieldOffersTheObjectivesOfLevelOne(t *testing.T) {
 func TestTheServesFieldIsATree(t *testing.T) {
 	f := treeFake()
 	f.cards[0].Objectives = []int{2, 3}
-	b := hit(standing(f).with(plainSkin), "i", "e")
+	b := hit(standing(f).with(plainSkin), "e")
 	if !strings.Contains(strip(b.Draw()), "counted through 2 below") {
 		t.Errorf("the parent is not said to be counted through what is below:\n%s", strip(b.Draw()))
 	}
@@ -177,7 +177,7 @@ func TestTheServesFieldIsATree(t *testing.T) {
 func TestShiftNOpensAnObjectiveFormUnderTheChosenTree(t *testing.T) {
 	for _, keys := range [][]string{{"tab", "shift+n"}, {"tab", "j", "shift+n"}} {
 		b := hit(standing(treeFake()).with(plainSkin), keys...)
-		if b.screen != OnForm || !b.form.ForObjective || !b.form.Adding {
+		if b.screen != board.OnForm || !b.form.ForObjective || !b.form.Adding {
 			t.Fatalf("%v opened no new objective's form", keys)
 		}
 		if parent := b.form.valueOf("parent"); parent != "1" {

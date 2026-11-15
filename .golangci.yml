@@ -550,6 +550,22 @@ linters:
 
         # Beneath the window: where things lie, how they look and how they
         # move. None reads the window or the store; the window reads them.
+        tui-geom:
+          files: ["**/internal/tui/geom/**"]
+          deny:
+            - pkg: cairn/internal/tui$
+              desc: the terminal reads where things lie, never the other way
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
+            - pkg: charm.land
+              desc: where things lie is said in numbers, never drawn
+        tui-design:
+          files: ["**/internal/tui/design/**"]
+          deny:
+            - pkg: cairn/internal/tui$
+              desc: the terminal wears its design, the design never reads it
+            - pkg: cairn/internal/store
+              desc: a surface changes state through the engine, never behind it
         geom:
           files: ["**/internal/gui/geom/**"]
           deny:

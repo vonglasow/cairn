@@ -3,6 +3,7 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine"
+	"cairn/internal/tui/geom"
 	"strings"
 	"testing"
 	"time"
@@ -135,21 +136,21 @@ func TestCardRowsAreFour(t *testing.T) {
 }
 
 func TestCardIsAlwaysSixRows(t *testing.T) {
-	l := LayoutFor(100, 40)
+	l := geom.LayoutFor(100, 40)
 	for _, c := range []board.Card{
 		{Number: 1, Title: "Short"},
 		{Number: 2, Title: "A title long enough to run over two whole lines and then some", Description: "something written", SubDone: 1, SubTotal: 2, Labels: []string{"a", "b"}, Deadline: on("2026-09-02")},
 		{Number: 3, Title: "In focus", InFocus: true},
 	} {
 		drawn := standing(newFake()).with(plainSkin).card(c, l)
-		if got := len(strings.Split(drawn, "\n")); got != CardHeight {
-			t.Fatalf("task %d drew %d rows, want %d:\n%s", c.Number, got, CardHeight, drawn)
+		if got := len(strings.Split(drawn, "\n")); got != geom.CardHeight {
+			t.Fatalf("task %d drew %d rows, want %d:\n%s", c.Number, got, geom.CardHeight, drawn)
 		}
 	}
 }
 
 func TestTheOneInFocusIsDrawnUnlikeTheOthers(t *testing.T) {
-	l := LayoutFor(100, 40)
+	l := geom.LayoutFor(100, 40)
 	b := standing(newFake()).with(plainSkin)
 	plainCard := b.card(board.Card{Number: 1, Title: "One"}, l)
 	held := b.card(board.Card{Number: 1, Title: "One", InFocus: true}, l)
@@ -162,11 +163,11 @@ func TestTheOneInFocusIsDrawnUnlikeTheOthers(t *testing.T) {
 }
 
 func TestTheCardTheCursorHoldsIsDrawnApart(t *testing.T) {
-	l := LayoutFor(100, 40)
+	l := geom.LayoutFor(100, 40)
 	c := board.Card{Number: 1, Title: "One", State: "todo"}
 	f := newFake()
 	f.cards = []board.Card{c}
-	held := hit(standing(f), "l", "i").with(plainSkin)
+	held := hit(standing(f), "ctrl+l").with(plainSkin)
 	if held.card(c, l) == standing(f).with(plainSkin).card(c, l) {
 		t.Fatal("the card under the cursor is drawn exactly like the others")
 	}

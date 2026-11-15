@@ -96,18 +96,6 @@ func TestJoin(t *testing.T) {
 	}
 }
 
-func TestTrimLast(t *testing.T) {
-	if got := trimLast(""); got != "" {
-		t.Fatalf("trimLast on nothing gave %q", got)
-	}
-	if got := trimLast("héllo"); got != "héll" {
-		t.Fatalf("trimLast gave %q", got)
-	}
-	if got := trimLast("é"); got != "" {
-		t.Fatalf("trimLast on one accented letter gave %q", got)
-	}
-}
-
 func TestPad(t *testing.T) {
 	if got := pad("ab", 4); got != "ab  " {
 		t.Fatalf("pad gave %q", got)

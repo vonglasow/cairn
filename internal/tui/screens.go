@@ -3,6 +3,8 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
+	"cairn/internal/tui/design"
+	"cairn/internal/tui/geom"
 	"strconv"
 	"strings"
 
@@ -23,14 +25,14 @@ func (b Board) named(title, body string, width int) string {
 }
 
 func (b Board) drawHelp() string {
-	half := (b.width - margin - margin - 3) / 2
+	half := (b.width - geom.Margin - geom.Margin - 3) / 2
 	keys := b.named("KEYS", strings.Join(b.helpKeys(), "\n"), half)
 	legend := b.named("LEGEND", strings.Join(b.legend(), "\n"), half)
 	both := lipgloss.JoinHorizontal(lipgloss.Top, keys, " ", legend)
 	rows := max(1, b.height-4)
 	return strings.Join([]string{
 		b.tabs(), "",
-		lipgloss.NewStyle().PaddingLeft(margin).Render(through(both, half*2+1, rows, b.helpAt)),
+		lipgloss.NewStyle().PaddingLeft(geom.Margin).Render(through(both, half*2+1, rows, b.helpAt)),
 		"", b.bar(b.offer("↓↑", "read on"), b.offer("esc", "close")),
 	}, "\n")
 }
@@ -44,7 +46,7 @@ func (b Board) says(key, does string) string {
 }
 
 func (b Board) helpKeys() []string {
-	if b.tab == Series {
+	if b.tab == board.Series {
 		return b.group("SERIES — the cursor on a series", append([]string{
 			b.says("jk ↓↑", "change series, or occurrence once inside"),
 			b.says("⏎", "its occurrences, archived ones included — ⏎ again opens one"),
@@ -60,7 +62,7 @@ func (b Board) helpKeys() []string {
 			b.says("esc", "back from its occurrences"),
 		}, b.roamingSays()...)...)
 	}
-	if b.tab == Objectives {
+	if b.tab == board.Objectives {
 		return b.group("NORMAL — the cursor on an objective", append([]string{
 			b.says("hjkl ←↓↑→", "change objective"),
 			b.says("gg / G", "first / last"),
@@ -77,9 +79,10 @@ func (b Board) helpKeys() []string {
 			b.says("?", "help"),
 		}, b.roamingSays()...)...)
 	}
-	out := b.group("NORMAL — the cursor on a column", append([]string{
-		b.says("hjkl ←↓↑→", "columns, and the band"),
-		b.says("i", "insert mode"),
+	out := b.group("THE BOARD — the cursor on a column", append([]string{
+		b.says("hjkl ←↓↑→", "the cards, and the band's lanes"),
+		b.says("^H ^L", "the column left or right, at once"),
+		b.says("^J ^K", "into the band, out of it"),
 		b.says("a", "a new task"),
 		b.says("⇧A", "show what was archived"),
 		b.says("⇧X", "archive every task in this column — it asks first"),
@@ -93,8 +96,7 @@ func (b Board) helpKeys() []string {
 		b.says("⇧B", "the backups"),
 		b.says("←→ t on time", "walk the weeks, back to today's"),
 	}, b.roamingSays()...)...)
-	out = append(out, b.group("INSERT — the cursor on a task", append([]string{
-		b.says("hjkl ←↓↑→", "tasks, and the band"),
+	out = append(out, b.group("A TASK — the cursor on one", append([]string{
 		b.says("gg / G", "first / last in the column"),
 		b.says("⇧hjkl", "move it: sideways changes column, up and down change place"),
 		b.says("⏎", "the detail"),
@@ -105,7 +107,6 @@ func (b Board) helpKeys() []string {
 		b.says("p then a letter", "its priority"),
 		b.says("D", "delete"),
 		b.says("x", "archive or unarchive"),
-		b.says("esc", "back to normal"),
 	}, append(b.seriesSays(), b.roamingSays()...)...)...)...)
 	out = append(out, b.group("DETAIL — one task, open",
 		b.says("^D ^U", "walk its description, half a box at a time"),
@@ -134,12 +135,12 @@ func (b Board) roamingSays() []string {
 }
 
 func (b Board) legend() []string {
-	g, p := b.glyphs, b.skin.palette
-	swatch := func(c Ink, name string) string {
+	g, p := b.glyphs, b.skin.Palette
+	swatch := func(c design.Ink, name string) string {
 		return "  " + lipgloss.NewStyle().Foreground(c.Border()).Render("▌") +
 			" " + b.skin.Says.Render(name)
 	}
-	mark := func(glyph string, c Ink, name, means string) string {
+	mark := func(glyph string, c design.Ink, name, means string) string {
 		return "  " + c.Style().Render(glyph) +
 			"  " + b.skin.Bright.Render(pad(name, 10)) + b.skin.Says.Render(means)
 	}
@@ -181,7 +182,7 @@ func (b Board) drawDetail() string {
 		return strings.Join([]string{b.tabs(), "", " " + b.skin.Wrong.Render("there is no such task"),
 			"", b.bar(b.offer("esc", "back"))}, "\n")
 	}
-	width := b.width - margin - margin
+	width := b.width - geom.Margin - geom.Margin
 	left := b.detailWidth()
 	right := width - left - 1
 	body := lipgloss.JoinHorizontal(lipgloss.Top,
@@ -191,7 +192,7 @@ func (b Board) drawDetail() string {
 	)
 	return strings.Join([]string{
 		b.tabs(), "", b.detailBand(held), "",
-		lipgloss.NewStyle().PaddingLeft(margin).Render(body),
+		lipgloss.NewStyle().PaddingLeft(geom.Margin).Render(body),
 		"", b.detailFoot(held),
 	}, "\n")
 }
@@ -263,7 +264,7 @@ func (b Board) scrollingSaying(down bool) Board {
 	return b
 }
 
-func (b Board) detailWidth() int { return (b.width-margin-margin)*3/5 - 1 }
+func (b Board) detailWidth() int { return (b.width-geom.Margin-geom.Margin)*3/5 - 1 }
 
 func (b Board) detailLeftUnder(c board.Card, width int) []string {
 	var under []string
@@ -283,10 +284,10 @@ func (b Board) detailBand(c board.Card) string {
 	head := " " + b.skin.Faint.Render(strconv.Itoa(c.Number)) + "   " + b.skin.Title.Render(c.Title)
 	state := c.State
 	if board.Stopped(c.State) {
-		state = b.skin.palette.Stopped(c.State).Style().
+		state = b.skin.Palette.Stopped(c.State).Style().
 			Render(StoppedGlyph(c.State, b.glyphs) + " " + c.State)
 	}
-	right := state + "  " + b.skin.palette.Priority(c.Priority).Style().Render(c.Priority)
+	right := state + "  " + b.skin.Palette.Priority(c.Priority).Style().Render(c.Priority)
 	var told []string
 	for _, label := range c.Labels {
 		told = append(told, b.skin.Says.Render(b.glyphs.Label+" "+label))
@@ -316,7 +317,7 @@ func (b Board) detailBand(c board.Card) string {
 		first += "\n " + strings.Join(told, "   ")
 	}
 	if c.Series != nil {
-		first += "\n " + b.skin.Says.Render(Clip(b.occursSaid(c), b.width-margin-margin))
+		first += "\n " + b.skin.Says.Render(Clip(b.occursSaid(c), b.width-geom.Margin-geom.Margin))
 	}
 	return first
 }
@@ -346,7 +347,7 @@ func (b Board) serves(c board.Card, width int) string {
 	var out []string
 	for _, g := range b.snap.Served(c) {
 		out = append(out, Spread(
-			b.skin.palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs))+
+			b.skin.Palette.Standing(g.State).Style().Render(StandingGlyph(g.State, b.glyphs))+
 				" "+b.skin.Faint.Render(strconv.Itoa(g.Number))+"  "+b.skin.Bright.Render(g.Title),
 			b.skin.Says.Render(g.Counted()), width))
 	}

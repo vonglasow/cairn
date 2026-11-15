@@ -3,6 +3,7 @@ package tui
 import (
 	"cairn/internal/board"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/tui/geom"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -128,7 +129,7 @@ func (b Board) listedAll(m Listed) Board {
 		b.err = m.Err
 		return b
 	}
-	b.spaces, b.recent, b.sought, b.screen = m.Spaces, m.Recent, "", OnWorkspaces
+	b.spaces, b.recent, b.sought, b.screen = m.Spaces, m.Recent, "", board.OnWorkspaces
 	b.spaceAsk, b.spaceIn = narrowing, ""
 	b.spaceAt = b.firstElsewhere()
 	return b
@@ -222,7 +223,7 @@ func (b Board) isHereStore(one workspace.RecentFolder) bool {
 }
 
 func (b Board) leavingSwitcher() Board {
-	b.screen, b.spaces, b.recent, b.sought = OnTheBoard, nil, nil, ""
+	b.screen, b.spaces, b.recent, b.sought = board.OnTheBoard, nil, nil, ""
 	b.spaceAsk, b.spaceIn = narrowing, ""
 	return b
 }
@@ -233,7 +234,7 @@ func (b Board) typingIn(key string) (tea.Model, tea.Cmd) {
 		b.spaceAsk, b.spaceIn = narrowing, ""
 		return b, nil
 	case "backspace":
-		b.spaceIn = trimLast(b.spaceIn)
+		b.spaceIn = board.Ending(b.spaceIn).Back().Value
 		return b, nil
 	case "enter":
 		switch b.spaceAsk {
@@ -249,7 +250,7 @@ func (b Board) typingIn(key string) (tea.Model, tea.Cmd) {
 		}
 	}
 	if letter, ok := typed(key); ok {
-		b.spaceIn += letter
+		b.spaceIn = board.Ending(b.spaceIn).Types(letter).Value
 	}
 	return b, nil
 }
@@ -291,7 +292,7 @@ func (b Board) inWorkspaces(key string) (tea.Model, tea.Cmd) {
 		}
 		return b, nil
 	case "backspace":
-		b.sought = trimLast(b.sought)
+		b.sought = board.Ending(b.sought).Back().Value
 		b.spaceAt = b.firstElsewhere()
 		return b, nil
 	}
@@ -304,7 +305,7 @@ func (b Board) inWorkspaces(key string) (tea.Model, tea.Cmd) {
 		return b, nil
 	}
 	if letter, ok := typed(key); ok {
-		b.sought += letter
+		b.sought = board.Ending(b.sought).Types(letter).Value
 		b.spaceAt = b.firstElsewhere()
 	}
 	return b, nil
@@ -318,7 +319,7 @@ func (b Board) choosingSpace(one workspace.Workspace) (tea.Model, tea.Cmd) {
 }
 
 func (b Board) wearing(colour string) lipgloss.Style {
-	ink, ok := LabelsInTheTerminal[colour]
+	ink, ok := b.skin.Palette.Labels[colour]
 	if !ok {
 		return b.skin.Crumb
 	}
@@ -346,12 +347,12 @@ func clipStart(s string, width int) string {
 func (b Board) drawSwitcher() string {
 	return lipgloss.NewCompositor(
 		lipgloss.NewLayer(b.drawBoard()),
-		lipgloss.NewLayer(b.switcherBox()).X(margin+1).Y(2).Z(1),
+		lipgloss.NewLayer(b.switcherBox()).X(geom.Margin+1).Y(2).Z(1),
 	).Render()
 }
 
 func (b Board) switcherBox() string {
-	wide := min(switcherWide, b.width-margin-2)
+	wide := min(switcherWide, b.width-geom.Margin-2)
 	inner := wide - 2
 	edge := b.skin.Rule
 	title := "─ OPEN A WORKSPACE "

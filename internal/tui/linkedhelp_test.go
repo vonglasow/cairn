@@ -9,7 +9,7 @@ import (
 func TestTheBarAndTheHelpNameO(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 7, Title: "Ship it", State: "todo", Priority: "normal"}}
-	b := hit(standing(f), "l", "i")
+	b := hit(standing(f), "ctrl+l")
 	if bar := strings.Join(b.offers(), " "); !strings.Contains(bar, "linked") {
 		t.Errorf("the insert bar reads %q, and does not offer o", bar)
 	}

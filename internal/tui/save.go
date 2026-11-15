@@ -10,7 +10,7 @@ import (
 
 func (b Board) save() (tea.Model, tea.Cmd) {
 	form := b.form
-	b.screen = OnTheBoard
+	b.screen = board.OnTheBoard
 	if form.ForObjective {
 		return b, b.saveGoal(form)
 	}

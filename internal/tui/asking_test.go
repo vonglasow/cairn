@@ -14,7 +14,7 @@ import (
 func TestPushingIntoAColumnAsksTaskEdit(t *testing.T) {
 	f := newFake()
 	f.cards = []board.Card{{Number: 1, Title: "One", State: "current"}}
-	b := hit(standing(f), "l", "l", "i")
+	b := hit(standing(f), "ctrl+l", "ctrl+l")
 	if _, cmd := b.pressed("shift+h"); cmd != nil {
 		cmd()
 	}

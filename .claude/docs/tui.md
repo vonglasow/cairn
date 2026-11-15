@@ -3,7 +3,7 @@
 How it is used is [docs/tui.md](../../docs/tui.md), which the site publishes;
 this page is why it is that way, for whoever changes it.
 
-Read this before touching the terminal board — its shape, its keys, its modes —
+Read this before touching the terminal board — its shape, its keys, its cursor —
 or before adding anything a person sees on screen.
 
 `cairn tui` opens it. What follows is what it does and why it does it that
@@ -23,8 +23,8 @@ afternoon to spend:
 - **Three tabs**, tasks, objectives as a tree of two-line rows, and the time spent; four columns and a band of three stopped
   states under the last three, and the backlog full height. A fourth, the
   series, while recurrence is on.
-- **Modes**: normal stands on a column, insert holds a task, edit is the form.
-  The bar shows only what works where it is.
+- **No modes**: the cursor stands on a column and holds the card there, if
+  any; edit is the form. The bar shows only what works where it is.
 - **The cursor holds a task's number**, never a place on screen — a redraw can
   move it, a keystroke cannot land on the wrong task.
 - **`hjkl` moves the cursor; `⇧hjkl` moves the task.** Sideways is a change of
@@ -43,9 +43,9 @@ afternoon to spend:
 - [Width](#width)
 - [A card is six lines](#a-card-is-six-lines)
 - [Colour carries what a glyph would cost width for](#colour-carries-what-a-glyph-would-cost-width-for)
-- [The terminal's own colours](#the-terminals-own-colours)
+- [The scheme's colours](#the-schemes-colours)
 - [Glyphs](#glyphs)
-- [The modes](#the-modes)
+- [The cursor](#the-cursor)
 - [Every key](#every-key)
 - [The form](#the-form)
 - [The detail](#the-detail)
@@ -103,32 +103,46 @@ A gesture on the board says nothing: what it did is on the board.
 ## The board's shape
 
 ```
- ‹ TASKS ›  objectives                                                    ── NORMAL ──
+  TASKS 11   objectives 2   time 0
 
- BACKLOG               12 TODO                   5 CURRENT                2 DONE                  31
- ──────────────────────── ──────────────────────── ──────────────────────── ────────────────────────
- ┌──────────────────────┐ ┃──────────────────────┐ ╔══════════════════════╗ ┌──────────────────────┐
- │ 26                   │ ┃ 14                 ≡ │ ║ 31                 ≡ ║ │ 08                   │
- │ Buy a lamp           │ ┃ Write the spec       │ ║ Spec review          ║ │ Migrate the store    │
- │                      │ ┃                      │ ║                      ║ │                      │
- │                      │ ┃ 2d  ▪3/5  ⚑ spec     │ ║ 1d  ▪2/4  ⚑ spec     ║ │                      │
- └──────────────────────┘ ┃──────────────────────┘ ╚══════════════════════╝ └──────────────────────┘
- ┌──────────────────────┐ ┌──────────────────────┐                          ┌──────────────────────┐
- │ 18                   │ │ 33                   │                          │ 11                   │
- │ Read the ADR         │ │ Fix the hook         │                          │ Answer over MCP      │
- │                      │ │                      │                          │                      │
- │                      │ │                      │                          │                      │
- └──────────────────────┘ └──────────────────────┘                          └──────────────────────┘
- ┃──────────────────────┐ STALLED                                                                  6
- ┃ 21                   │ ──────────────────────────────────────────────────────────────────────────
- ┃ Ask legal about the  │ ┃──────────────────────┐ ┌──────────────────────┐ ┌──────────────────────┐
- ┃ retention clause     │ ┃ 19                 ⊘ │ │ 24               ≡ ◉ │ │ 30                 ‖ │
- ┃ −3d                  │ ┃ Client's answer      │ │ Handed to Marie      │ │ Refactor migrate     │
- ┃──────────────────────┘ ┃                      │ │                      │ │                      │
-                          ┃ ↳ 12                 │ │ ↳ she confirms first │ │ ↳ your call          │
-                          ┃──────────────────────┘ └──────────────────────┘ └──────────────────────┘
+ BACKLOG                3│TODO                   2│CURRENT                1│DONE                   1
+ ────────────────────────│────────────────────────│────────────────────────│────────────────────────
+ ┏━━━━━━━━━━━━━━━━━━━━━━┓│┏━━━━━━━━━━━━━━━━━━━━━━┓│╔══════════════════════╗│┏━━━━━━━━━━━━━━━━━━━━━━┓
+ ┃ 1                    ┃│┃ 4                  ≡ ┃│║ 6                  ≡ ║│┃ 7                    ┃
+ ┃ Buy a lamp           ┃│┃ Write the spec       ┃│║ Spec review          ║│┃ Migrate the store    ┃
+ ┃                      ┃│┃                      ┃│║                      ║│┃                      ┃
+ ┃                      ┃│┃ 2d  ▪1/2  ⚑ spec     ┃│║ 1d  ▪2/4  ⚑ spec     ║│┃                      ┃
+ ┗━━━━━━━━━━━━━━━━━━━━━━┛│┗━━━━━━━━━━━━━━━━━━━━━━┛│╚══════════════════════╝│┗━━━━━━━━━━━━━━━━━━━━━━┛
+ ┏━━━━━━━━━━━━━━━━━━━━━━┓│┏━━━━━━━━━━━━━━━━━━━━━━┓│                        │
+ ┃ 2                    ┃│┃ 5                    ┃│                        │
+ ┃ Read the ADR         ┃│┃ Fix the hook         ┃│                        │
+ ┃                      ┃│┃                      ┃│                        │
+ ┃                      ┃│┃                      ┃│                        │
+ ┗━━━━━━━━━━━━━━━━━━━━━━┛│┗━━━━━━━━━━━━━━━━━━━━━━┛│                        │
+ ┏━━━━━━━━━━━━━━━━━━━━━━┓│                        │                        │
+ ┃ 3                    ┃│                        │                        │
+ ┃ Ask legal about the  ┃│                        │                        │
+ ┃ retention clause     ┃│                        │                        │
+ ┃ −3d                  ┃│                        │                        │
+ ┗━━━━━━━━━━━━━━━━━━━━━━┛│                        │                        │
+                         │                        │                        │
+                         │STALLED                4│                        │
+                         │blocked                2│watching               1│paused                 1
+                         │────────────────────────│────────────────────────│────────────────────────
+                         │┏━━━━━━━━━━━━━━━━━━━━━━┓│┏━━━━━━━━━━━━━━━━━━━━━━┓│┏━━━━━━━━━━━━━━━━━━━━━━┓
+                         │┃ 8                ≡ ⊘ ┃│┃ 9                ≡ ◉ ┃│┃ 10                 ‖ ┃
+                         │┃ Client's answer      ┃│┃ Handed to Marie      ┃│┃ Refactor migrate     ┃
+                         │┃                      ┃│┃                      ┃│┃                      ┃
+                         │┃ ↳ 4                  ┃│┃ ↳ she confirms first ┃│┃ ↳ your call          ┃
+                         │┗━━━━━━━━━━━━━━━━━━━━━━┛│┗━━━━━━━━━━━━━━━━━━━━━━┛│┗━━━━━━━━━━━━━━━━━━━━━━┛
+                         │┏━━━━━━━━━━━━━━━━━━━━━━┓│                        │
+                         │┃ 13                 ⊘ ┃│                        │
+                         │┃ Waiting on the       ┃│                        │
+                         │┃ lawyer               ┃│                        │
+                         │┃ ↳ the fourth, so th… ┃│                        │
+                         │┗━━━━━━━━━━━━━━━━━━━━━━┛│                        │
 
- hjkl ←↓↑→ columns   i insert   a new   / search   ⇥ tab   ? help   : command
+ hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus   D delete   x archive   ? help   a new
 ```
 
 **The header opens with the workspace the board shows**, `● work`, before the
@@ -147,9 +161,12 @@ Four columns side by side, left to right: **backlog, todo, current, done**. The
 backlog runs the full height, because it is the heap everything lands in and it
 holds more than the rest put together.
 
-A horizontal band underneath the other three holds the three states that mean
-"not moving" — `blocked`, `watching`, `paused`. It takes three cards across,
-exactly the width of the columns above it, and scrolls past that.
+A band underneath the other three holds the three states that mean "not
+moving", in three lanes as the window draws them: `blocked` under todo,
+`watching` under current, `paused` under done (`@tui-the-band-has-three-lanes`,
+`@tui-a-stopped-task-sits-in-its-lane`). Each lane is a column of its own,
+scrolled apart. It was a grid of three cards across; the two boards then
+walked one band two ways.
 
 The band is called **STALLED** and not "waiting", because a state inside it is
 called `watching` and two seven-letter words that contain one another get read
@@ -161,8 +178,8 @@ quarter of the width to say that nothing is being worked on, and that is worth a
 quarter of the width.
 
 **A dim rule stands between each two columns**, in the cell the gap already
-was, so no column lost a cell to it, and it stops where the band starts rather
-than cutting it (`@tui-columns-stand-apart`). A box round each column would take
+was, so no column lost a cell to it, and it runs between the lanes too
+(`@tui-columns-stand-apart`). A box round each column would take
 two cells a column, a wider gap a cell more, and a terminal has no subtle tint
 to set one column off from the next; a single line in the faint colour is the
 cheapest edge there is. The objective's own board is drawn by the same code and
@@ -229,7 +246,7 @@ Always six: a border, four lines of content, a border.
 
 The height is a budget, not a maximum. A title longer than two lines is cut.
 
-A terminal has no reliable pointer to hover with, so a cut title is read another way: in insert mode, when the card under the cursor cuts its title, the board writes the whole title on the line just above the bar, in the row that is otherwise blank, so the board does not grow. A title the card holds whole adds nothing. A title wider than the window is cut at its width with `…`; the line never wraps. Tags: `@tui-a-cut-title-is-read-whole-in-insert`, `@tui-a-title-that-fits-is-not-said-twice`.
+A terminal has no reliable pointer to hover with, so a cut title is read another way: when the card under the cursor cuts its title, the board writes the whole title on the line just above the bar, in the row that is otherwise blank, so the board does not grow. A title the card holds whole adds nothing. A title wider than the window is cut at its width with `…`; the line never wraps. Tags: `@tui-a-cut-title-is-read-whole`, `@tui-a-title-that-fits-is-not-said-twice`.
 
 A fixed height was chosen over a snug one, and it bought something that was not
 free before: **navigation becomes arithmetic.** A card is six rows, so `j` and
@@ -269,10 +286,7 @@ which changes the border's *style* rather than its colour.
 
 | | |
 |---|---|
-| `low` | cyan |
-| `normal` | the terminal's own foreground |
-| `high` | yellow |
-| `critical` | red |
+| `low`, `normal`, `high`, `critical` | the scheme's colour for it, the window's |
 
 Colouring the whole border was turned down: three `high` cards in a row turn a
 column into a yellow wall and nothing stands out any more.
@@ -291,78 +305,41 @@ and a `−3d` in red on it would call for an act nobody has left to do. The open
 task still says the day it was due, without the count. The window reads the
 same rule, `engine.CardDeadline`.
 
-## The terminal's own colours
+## The scheme's colours
 
-**The board draws in the terminal's sixteen colours and nothing else**, so it
-wears whatever theme the terminal wears
-(`@tui-colours-follow-the-terminal`). The 256-colour indexes it once used
-(39, 203, 214, 245…) are fixed in most terminals: a person who themed theirs
-Gruvbox got cairn's blues and pinks on a Gruvbox ground. The sixteen are the
-ones every terminal scheme sets — base16's shell templates write `base08`
-into red, `base0D` into blue — so the board follows the theme for nothing.
+**The board wears the scheme the window wears** (`window.theme`,
+`@tui-colours-follow-the-scheme`, `@tui-colours-the-theme-the-settings-name`).
+It once drew in the terminal's sixteen colours alone, so it followed the
+terminal's theme; the two boards then showed one store in two palettes, and
+the user chose that both show the same. `tui.PaletteOf` turns the colours
+`engine.Wearing` reads into the palette, once; the terminal's ground is left
+as it is, and lipgloss brings each colour down to what the terminal can draw.
 
-| what | drawn in |
+| what | drawn in the scheme's |
 |---|---|
-| the accent — the tab open, the crumb, a key, a title, the chosen card | blue (4) |
-| `low`, `watching` | cyan (6) |
-| `high`, the STALLED band | yellow (3) |
-| `critical`, `blocked`, a deadline passed, what is refused | red (1) |
-| a `reached` objective | green (2) |
-| `normal`, `paused`, `on-hold`, `dropped`, what is said quietly, the rules | faint, on the terminal's own foreground |
-| a title, a heading, `done` | the terminal's own foreground |
-| the tab open, the mode, the choice picked, the button in focus | reversed: the colour becomes the ground, the terminal's ground the ink |
-| the task in focus | a double border — a shape, not a colour |
-
-**Faint is an attribute, never "bright black"**
-(`@tui-colours-faint-is-the-terminals-own-foreground`). In Solarized, bright
-black is `base03`, the background itself; text drawn in it disappears. Faint
-dims the terminal's own foreground, whatever it is, so it reads on a light
-ground as on a dark one. Black, white and their bright twins are not used at
-all: themes spend them on grounds as often as on inks.
-
-**A border carries no faint.** A terminal cannot dim a border lipgloss draws,
-so a card's frame and a panel's are in the terminal's own foreground, and a
-`normal` card's left edge with them — the colours of `low`, `high` and
-`critical` stand out against it, which is what the edge is for
-(`@tui-colours-a-priority-is-one-of-the-terminals`). The rules between the
-columns are text, and are faint.
-
-**A label's colour is the nearest the terminal has.** The fourteen label
-colours are Catppuccin's, made for a window that paints its own ground; the
-terminal has six accents and their bright twins. The workspace's dot wears
-the nearest (`@tui-colours-a-workspace-wears-the-nearest-of-the-terminals`),
-and two colours close in Catppuccin may meet in one:
-
-| label colour | the terminal's |
-|---|---|
-| `red` | red (1) |
-| `flamingo`, `maroon` | bright red (9) |
-| `green` | green (2) |
-| `yellow` | yellow (3) |
-| `peach` | bright yellow (11) |
-| `blue` | blue (4) |
-| `sapphire`, `lavender` | bright blue (12) |
-| `pink` | magenta (5) |
-| `rosewater`, `mauve` | bright magenta (13) |
-| `teal` | cyan (6) |
-| `sky` | bright cyan (14) |
-
-In a base16 terminal the bright twins are often the plain six again, and a
-pair of the table then wears one colour: the label's name is still beside
-it.
-
-**The window's theme does not reach the terminal.** The scheme a window
-wears ([gui.md](gui.md), [config.md](config.md#the-colours-the-window-wears))
-is the window's; a terminal app that repainted its ground in another scheme
-would fight the terminal's own.
+| the accent — the tab open, the crumb, a key, a title, the chosen card | accent |
+| a priority, on the card's left edge | the window's colour for it (`@tui-colours-a-priority-is-the-schemes`) |
+| `blocked` | the `critical` colour |
+| `watching` | the `normal` colour |
+| the STALLED band | the `high` colour |
+| a deadline passed, what is refused | late |
+| a `reached` objective | done |
+| `paused`, `on-hold`, `dropped`, what is said quietly | faint ink |
+| the rules and the frames | edge line (`@tui-colours-the-rule-is-the-schemes-line`) |
+| a title, a heading, `done` | text ink |
+| a workspace's dot, a label | the scheme's label colour (`@tui-colours-a-workspace-wears-the-schemes`) |
+| a reference | faint ink, every one of them |
 
 **Nothing else can come back.** A test reads every file of `internal/tui`
-and refuses a colour written in hex, `lipgloss.Color`, `ANSIColor`, a colour
-made by hand, and black, white and their bright twins; another reads every
-pinned frame and the fixtures' every screen and refuses a colour of 256 or of
-true colour, and bright black. What the form borrows from huh keeps huh's
-white prompt and line numbers on the fields not in focus: white is one of
-the sixteen, and huh does not hand them over.
+and refuses a colour written in hex, `lipgloss.Color`, `ANSIColor`, a named
+colour of the terminal, and a colour made by hand; another reads every pinned
+frame and the fixtures' every screen and refuses a colour the scheme does not
+have. What the form borrows from huh keeps huh's white and black on the
+fields not in focus: huh does not hand their styles over.
+
+The site draws the board in the default scheme and reads each colour back as
+its role in the palette (`Palette.Inks`), so the board there takes the scheme
+the reader picks.
 
 ## Glyphs
 
@@ -406,68 +383,72 @@ edge out of line.
 same idea in two tabs, so it kept one symbol rather than inventing a second for
 one meaning.
 
-## The modes
+## The cursor
 
-| mode | the cursor is on | where |
-|---|---|---|
-| **normal** | a column | tasks, an objective's board |
-| **insert** | a task | tasks, an objective's board |
-| **edit** | a field | the form |
-| **normal** | an objective | the objectives list, which has this mode only |
+**There are no modes** (`@tui-the-board-opens-on-the-first-card`). The cursor
+stands on a column, or a lane, and holds the card there when there is one; the
+board opens on the backlog's first card, or on the empty backlog
+(`@tui-an-empty-board-opens-on-the-backlog`). Normal and insert were dropped
+because the window has neither and a person used to one board would be lost
+in the other. Edit is still the form.
 
-The objectives list has no insert mode: normal already moves between objectives,
-so it plays the part insert plays on the board. Two modes on one tab, one on the
-other, and that is a consequence of the tabs holding different shapes rather than
-an inconsistency to file down.
-
-**The bar at the bottom only shows what works in the view it is in.** If `⇧hjkl`
+**The bar at the bottom only shows what works where it is.** If `⇧hjkl`
 is on the bar, it does something here. If it is not, it does nothing here. The
 bar is cut to the width of the screen, dropping whole entries from the end
 rather than wrapping — a wrapped bar pushes the board up out of the window.
 
-**In normal, the column under the cursor says so**: a bar in front of its name
-and a heavier rule beneath it. Nothing in the column is picked out, because
-nothing in it is held.
+**On a column with no card, the column says so**: a bar in front of its name
+and a heavier rule beneath it.
 
 ## Every key
 
-**`hjkl` and the arrows only ever navigate.** Everywhere, in every mode, without
+**`hjkl` and the arrows only ever navigate.** Everywhere, without
 exception. That rule is why no field has a letter of its own — see the form.
 On an open task they navigate inside it, and never out of it: `jk` `↓↑` walk
 its steps, `hl` `←→` do nothing, and `esc` is the way back to the board.
 
-Every key below says which mode it works in. A key absent from a mode is absent
-from that mode's bar, and pressing it there does nothing.
+**`hjkl` walk the cards as the window's arrows do** — `board.Walk`, once for
+both: sideways over an empty column to the next card at the same level, down
+from a column's last card into the lane under it, up from a lane's first card
+into the column above (`@tui-l-walks-to-the-next-card`,
+`@tui-j-goes-down-into-the-lane-under`, `@tui-a-lane-is-walked-as-a-column`).
+**`^H` `^L` go to the column left or right at once**, an empty one too, which
+is how a task is added to an empty column; **`^J` `^K` go into the band and
+out of it** (`@tui-ctrl-l-goes-to-the-next-column`, `@tui-ctrl-k-leaves-the-band`).
+A terminal that sends these as another key keeps them for it.
 
-| | normal | insert | objectives list | |
-|---|:---:|:---:|:---:|---|
-| `hjkl` `←↓↑→` | ✓ | ✓ | ✓ | navigate — columns, tasks, objectives |
-| `i` | ✓ | | ✓ | enter insert · on objectives, open the objective |
-| `⇧hjkl` `⇧←↓↑→` | | ✓ | | move the task anywhere; its state follows where it lands |
-| `a` | ✓ | | ✓ | add — the column under the cursor gives the state |
-| `o` | | ✓ | | a new task linked to this one, in `todo` — last in the bar, the first left out when the bar is narrow; see [links.md](links.md) |
-| `x` | | ✓ | | archive or unarchive the task |
-| `⇧A` | ✓ | ✓ | | show what was archived, or hide it again |
-| `⇧X` | ✓ | | | archive every task in the column — it asks first |
-| `e` | | ✓ | ✓ | the form |
-| `D` | | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out. It was `d`, one slip from losing a task; the window deletes with `⌘⌫`, which a terminal is not sent, so here it is the shifted letter. An objective holding sub-objectives or tasks asks what goes with it — [below](#deleting-an-objective) |
-| `t` | | | ✓ | its tasks, on the tasks board |
-| `N` | | | ✓ | a new sub-objective, under the objective the cursor is on, or beside the sub-objective it is on |
-| `z` | | | ✓ | fold a parent's sub-objectives away, or show them again |
-| `v` | ✓ | | | the views — a figure opens one, `0` the whole board, `esc` closes them |
-| `[` `]` | ✓ | ✓ | | on an objective's board, or on the tasks an objective shows, narrow to one sub-objective, the objective itself, or all of it |
-| `m` then a letter | | ✓ | | move the task to the column that letter begins — `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused — as the window's `m` does |
-| `p` then a letter | | ✓ | | its priority — `l` low, `n` normal, `h` high, `c` critical |
-| `r` then a letter | | ✓ | | on an occurrence of a series, and in its detail: `s` skip it, `x` stop the series, `r` resume it, `e` open the series in its tab — [below](#series) |
-| `f` | | ✓ | | focus or unfocus — an objective has none |
-| `⏎` | | ✓ | ✓ | the detail · on objectives, open the objective |
-| `/` | ✓ | | ✓ | search |
-| `?` | ✓ | ✓ | ✓ | help — the one key that works in every mode |
-| `:` | ✓ | | ✓ | command |
-| `⇥` | ✓ | | ✓ | next tab |
-| `gg` `G` | | ✓ | ✓ | the first / the last of what you are in |
-| `^O` | ✓ | ✓ | ✓ | another workspace, in place of this one — see [below](#another-workspace-in-place-of-this-one) |
-| `esc` | ✓ | ✓ | | back one level |
+A key that needs a task does nothing on a column with none, and is not on the
+bar there.
+
+| | the tasks | objectives list | |
+|---|:---:|:---:|---|
+| `hjkl` `←↓↑→` | ✓ | ✓ | navigate — cards, lanes, objectives |
+| `^H` `^L` `^J` `^K` | ✓ | | another column at once, into the band, out of it |
+| `⇧hjkl` `⇧←↓↑→` | ✓ | | move the task anywhere; its state follows where it lands |
+| `a` | ✓ | ✓ | add — the column under the cursor gives the state |
+| `o` | ✓ | | a new task linked to this one, in `todo` — last in the bar, the first left out when the bar is narrow; see [links.md](links.md) |
+| `x` | ✓ | | archive or unarchive the task |
+| `⇧A` | ✓ | | show what was archived, or hide it again |
+| `⇧X` | ✓ | | archive every task in the column — it asks first |
+| `e` | ✓ | ✓ | the form |
+| `D` | ✓ | ✓ | delete — it asks first, `⏎` agrees and anything else backs out. It was `d`, one slip from losing a task; the window deletes with `⌘⌫`, which a terminal is not sent, so here it is the shifted letter. An objective holding sub-objectives or tasks asks what goes with it — [below](#deleting-an-objective) |
+| `t` | | ✓ | its tasks, on the tasks board |
+| `N` | | ✓ | a new sub-objective, under the objective the cursor is on, or beside the sub-objective it is on |
+| `z` | | ✓ | fold a parent's sub-objectives away, or show them again |
+| `v` | ✓ | | the views — a figure opens one, `0` the whole board, `esc` closes them |
+| `[` `]` | ✓ | | on an objective's board, or on the tasks an objective shows, narrow to one sub-objective, the objective itself, or all of it |
+| `m` then a letter | ✓ | | move the task to the column that letter begins — `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused — as the window's `m` does |
+| `p` then a letter | ✓ | | its priority — `l` low, `n` normal, `h` high, `c` critical |
+| `r` then a letter | ✓ | | on an occurrence of a series, and in its detail: `s` skip it, `x` stop the series, `r` resume it, `e` open the series in its tab — [below](#series) |
+| `f` | ✓ | | focus or unfocus — an objective has none |
+| `⏎` | ✓ | ✓ | the detail · on objectives, open the objective |
+| `/` | ✓ | ✓ | search |
+| `?` | ✓ | ✓ | help — the one key that works everywhere |
+| `:` | ✓ | ✓ | command |
+| `⇥` | ✓ | ✓ | next tab |
+| `gg` `G` | ✓ | ✓ | the first / the last of what you are in |
+| `^O` | ✓ | ✓ | another workspace, in place of this one — see [below](#another-workspace-in-place-of-this-one) |
+| `esc` | ✓ | | back one level |
 
 On the board itself `esc` widens a search that is still in force, and does
 nothing once there is none: there is nothing above it to back up to, and leaving
@@ -475,14 +456,14 @@ is `:q`. A search accepted with `⏎` outlives the prompt that typed it, and
 nothing else on the board says so — so `esc` is the way back to the whole board. Inside an objective's own board there is — it goes back to
 the list of objectives, with the cursor still on the one you were in.
 
-**Archiving a whole column** is `⇧X`, in normal mode, on the column
+**Archiving a whole column** is `⇧X`, on the column
 the cursor is on. It asks first and names the column, because a key that moves
 twelve cards is not a key to press and find out about. The engine has swept by a
 narrowing since the beginning; only the command line ever asked it to.
 
-`?` is the one key with no mode. Help that cannot be reached from the mode you
-are stuck in is help you have to already understand to find, so it answers
-everywhere — in insert, in the form, in the detail, and while searching. Asking
+`?` answers everywhere. Help that cannot be reached from where you are stuck
+is help you have to already understand to find, so it answers on the board,
+in the form, in the detail, and while searching. Asking
 it again closes it and puts back whatever it was asked over, form included: help
 must not be a way of losing work by asking a question.
 
@@ -492,7 +473,7 @@ objectives list.
 
 ### Moving a task
 
-`⇧hjkl` moves the task itself, in insert mode, where a task is under the cursor.
+`⇧hjkl` moves the task itself, where a task is under the cursor.
 One gesture, four directions, across columns and in and out of the band.
 
 `⇧h` and `⇧l` change the column, and the state follows. **`⇧j` and `⇧k` change
@@ -504,14 +485,10 @@ The one exception is the last task in a column: there is nowhere lower in the
 column, and what is below the column is the band. That is the only time `⇧j`
 asks which kind of stopped the task has become.
 
-Plain `j` off the bottom of a column carries the *cursor* on into the band, and
-plain `k` off the top of the band brings it back to the column it came down
-from. A column that stopped at its last card would leave what is stalled
+Plain `j` off the bottom of a column carries the *cursor* on into the lane
+under it, and plain `k` off the top of a lane brings it back to the column
+above. A column that stopped at its last card would leave what is stalled
 unreachable whenever a column happened to be short.
-
-**The band is walked the way it is drawn.** Three cards to a row, so `h` and `l`
-go along a row and `j` and `k` go a row at a time. A key that pointed down and
-moved the cursor sideways would be a key nobody could trust.
 
 **Walking sideways keeps the level.** The third task in one column and the third
 in the next are the same journey, not two: a cursor that jumped back to the top
@@ -519,7 +496,7 @@ of every column it entered would make reading across a board impossible. A
 column with fewer in it stops at its last.
 
 **`gg` and `G`** reach the first and the last of whatever the cursor is standing
-in — a column, the band, the objectives. They are vim's, and anybody who has
+in — a column, a lane, the objectives. They are vim's, and anybody who has
 used vim will try them before reading this. A `g` that leads nowhere is
 forgotten on the next key rather than lying in wait, and in a form or at a
 prompt a `g` is a letter.
@@ -529,9 +506,8 @@ prompt a `g` is a letter.
   look at what is stalled without answering a question.
 - **Inside the band, `⇧J` and `⇧K` change a task's place among the tasks of its
   own kind**, and never its kind (`@tui-moving-a-task-down-among-its-kind-in-the-band`,
-  `@tui-moving-a-task-up-among-its-kind-in-the-band`). The band reads its three
-  kinds one after another, and a place is counted within a state, so a step
-  past a task of another kind would land nowhere the engine keeps. The last of
+  `@tui-moving-a-task-up-among-its-kind-in-the-band`): a lane holds one kind,
+  and a place is counted within a state. The last of
   its kind goes no lower (`@tui-the-last-of-its-kind-in-the-band-stays`): below
   it is another kind, and changing the kind is the popup's answer, not a push.
 - `⇧K` from the first of its kind takes it out of the band, to **the column the cursor came from**:
@@ -806,44 +782,55 @@ because with two hundred tasks what is highlighted is usually off screen.
 ## Help, and the command line
 
 ```
- ‹ TASKS ›  help                                                            ── HELP ──
+  TASKS 11   objectives 2   time 0                                                            HELP
 
- ┌─ KEYS ──────────────────────────────┬─ LEGEND ──────────────────────────────────┐
- │                                     │                                           │
- │ NORMAL — cursor on a column         │ PRIORITY — the left border                │
- │   hjkl ←↓↑→  change column          │   ▏ cyan   low       ▏ yellow  high       │
- │   i          insert mode            │   ▏ own    normal    ▏ red     critical   │
- │   a          a new task             │                                           │
- │   /          search                 │ STALLED — top right of the card           │
- │   ⇥          next tab               │   ⊘  blocked    waiting on somebody else  │
- │   :          command                │   ◉  watching   handed over, needs a look │
- │                                     │   ‖  paused     waiting on your decision  │
- │ INSERT — cursor on a task           │                                           │
- │   hjkl ←↓↑→  change task            │ OBJECTIVES                                │
- │   ⇧hjkl      move the task          │   ▶  active     ✓  reached                │
- │   ⏎          the detail             │   ‖  on-hold    ✕  dropped                │
- │   e          the form               │                                           │
- │   f          focus or unfocus       │ ON THE CARD                               │
- │   d          delete                 │   ≡    a description exists               │
- │   esc        back to normal         │   ▪    steps done / total                 │
- │                                     │   ⚑    a label                            │
- │ EDIT — inside the form              │   ↳    what is in the way                 │
- │   hjkl ←↓↑→  navigate               │   2d   deadline close                     │
- │   ⏎          change                 │   −3d  deadline passed, in red            │
- │   esc        cancel                 │   ╔═╗  the task in focus                  │
- │                                     │                                           │
- └─────────────────────────────────────┴───────────────────────────────────────────┘
+ ╭─────────────────────────────────────────────╮ ╭─────────────────────────────────────────────╮
+ │ KEYS                                        │ │ LEGEND                                      │
+ │                                             │ │                                             │
+ │ THE BOARD — the cursor on a column          │ │ PRIORITY — the left edge of a card          │
+ │   hjkl ←↓↑→   the cards, and the band's     │ │   ▌ low                                     │
+ │ lanes                                       │ │   ▌ normal                                  │
+ │   ^H ^L       the column left or right, at  │ │   ▌ high                                    │
+ │ once                                        │ │   ▌ critical                                │
+ │   ^J ^K       into the band, out of it      │ │                                             │
+ │   a           a new task                    │ │ STALLED — the top right of a card           │
+ │   ⇧A          show what was archived        │ │   ⊘  blocked   waiting on somebody else     │
+ │   ⇧X          archive every task in this    │ │   ◉  watching  handed over, needs a look    │
+ │ column — it asks first                      │ │   ‖  paused    waiting on your decision     │
+ │   /           search                        │ │                                             │
+ │   ⇧F          filter — ←→ which, ↑↓ its     │ │ OBJECTIVES — a tree, sub-objectives under   │
+ │ value, ⌫ clears all                         │ │ ├─ └─                                       │
+ │   v           the views — a figure opens    │ │   ▶  active    being worked towards         │
+ │ one, 0 the whole board                      │ │   ‖  on-hold   not for now                  │
+ │   [ ]         filtered on an objective:     │ │   ✓  reached   done with                    │
+ │ walk its sub-objectives                     │ │   ✕  dropped   given up                     │
+ │   ⇥           next tab — tasks, objectives, │ │                                             │
+ │ the time spent                              │ │ ON A CARD                                   │
+ │   :           command — what it answers is  │ │   ≡            a description exists         │
+ │ said until esc                              │ │   ▪            steps done / total           │
+ │   b           a new backup of the store     │ │   ⚑            a label                      │
+ │   ⇧B          the backups                   │ │   ↳            what is in the way           │
+ │   ←→ t on timewalk the weeks, back to       │ │   ◇            the objective it serves      │
+ │ today's                                     │ │   ┆ ┆         in the way, from outside: not │
+ │                                             │ │ counted                                     │
+ │ A TASK — the cursor on one                  │ │   2d          a deadline close by           │
+ │   gg / G      first / last in the column    │ │   −3d         one that has passed           │
+ │   ⇧hjkl       move it: sideways changes     │ │   ╔═╗         the task in focus             │
+ │ column, up and down change place            │ ╰─────────────────────────────────────────────╯
+ │   ⏎           the detail                    │
+ │   e           the form                      │
+ │   o           a task linked to it           │
 
- esc close
+ ↓↑ read on   esc close
 ```
 
-`?` takes the whole screen: the keys on the left, grouped by mode, and the legend
+`?` takes the whole screen: the keys on the left, grouped by where they work, and the legend
 on the right. It is eight lines of legend that get read three times and never
 again, so it lives behind a key rather than on the board.
 
 **The help is contextual too**, like the bar it explains. The screen above is the
-tasks tab's; on the objectives tab the left panel carries that tab's one mode and
-its keys, and nothing about insert. A help screen listing keys that do nothing
+tasks tab's; on the objectives tab the left panel carries that tab's keys, and
+nothing about a task. A help screen listing keys that do nothing
 here is a help screen that has to be second-guessed.
 
 ```
@@ -988,7 +975,7 @@ into a band on top. `esc` comes back out.
  BACKLOG                2 TODO                   3 CURRENT                1 DONE                   7
  ...
 
- hjkl ←↓↑→ columns   i insert   [ ] sub-objective   a new here   / search   esc objectives
+ hjkl ←↓↑→ tasks   ^hl columns   [ ] sub-objective   a new here   / search   ? help   esc objectives
 ```
 
 **The band carries the sub-objectives as chips**, each counted over what the
@@ -1136,7 +1123,7 @@ how many (`@tui-series-deleting-every-task-asks-once-more`). Stopping a series,
 or turning recurrence off, never takes a task away.
 
 **On the tasks board, `r` is a prefix**, as `m` and `p` are: on an occurrence,
-in insert or in its detail, `r s` skips it, `r x` stops its series, `r r`
+on the board or in its detail, `r s` skips it, `r x` stops its series, `r r`
 resumes it, and `r e` opens the series in its tab (`@tui-series-r-s-skips`,
 `@tui-series-r-x-stops-and-r-r-resumes`, `@tui-series-r-e-opens-its-series`).
 The bar offers them only while the card under the cursor is an occurrence
@@ -1288,7 +1275,7 @@ in the data, and a gesture names a number rather than a row.
 |---|---|
 | the task under it is deleted elsewhere | the next task in the same column |
 | there is no next one | the previous one |
-| the column empties | back to normal mode, on that column |
+| the column empties | on that column, holding nothing |
 
 **The configuration is read again on the same beat.** The board keeps the
 configuration it read (`engine.ConfigShow`) and a stamp of the files it came
