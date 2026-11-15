@@ -193,17 +193,6 @@ func (l Layout) LaneCardAt(lane, at, scrolled int) Box {
 	return Box{X: body.X, Y: body.Y + at*CardHeight - scrolled, W: body.W, H: CardHeight}
 }
 
-// Under says which column a point falls in and which card of it, given how far that column is scrolled.
-func (l Layout) Under(p Point, scrolled int) (column, at int, found bool) {
-	for i := range board.Columns {
-		if !l.Column[i].In(p) {
-			continue
-		}
-		return i, (p.Y - l.Column[i].Y + scrolled) / CardHeight, true
-	}
-	return 0, 0, false
-}
-
 // LaneUnder says which of the band's lanes a point falls in.
 func (l Layout) LaneUnder(p Point) (lane int, found bool) {
 	for i := range l.Lane {

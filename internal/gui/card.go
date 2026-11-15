@@ -95,14 +95,36 @@ const (
 	pillHigh    = 16
 )
 
+// PillRow is a line of label pills: each label shown and its pill, then the pill counting the labels left out.
+type PillRow struct {
+	Shown []string
+	Pills []geom.Box
+	Count string
+	More  geom.Box
+}
+
+// PillRowOf lays labels along line from x, as many as Pills leaves room for.
+func PillRowOf(labels []string, x int, line geom.Box, room int, wide func(string) int) PillRow {
+	var out PillRow
+	shown, more := Pills(labels, room, wide)
+	top := line.Y + (line.H-pillHigh)/2
+	for _, label := range shown {
+		pill := geom.Box{X: x, Y: top, W: wide(label) + 2*pillPad, H: pillHigh}
+		out.Shown, out.Pills = append(out.Shown, label), append(out.Pills, pill)
+		x += pill.W + pillGap
+	}
+	if more > 0 {
+		out.Count = "+" + strconv.Itoa(more)
+		out.More = geom.Box{X: x, Y: top, W: wide(out.Count) + 2*pillPad, H: pillHigh}
+	}
+	return out
+}
+
 // CardRow is how a card's row is laid out: the number it starts with, each label's pill, the pill counting the labels left out, and its facts at the right end.
 type CardRow struct {
 	Number   string
 	NumberAt geom.Box
-	Shown    []string
-	Pills    []geom.Box
-	More     geom.Box
-	Count    string
+	PillRow
 	Facts    string
 	FactsAt  geom.Box
 	ServesAt geom.Box
@@ -173,18 +195,7 @@ func cardRow(c board.Card, row geom.Box, m Measure, pieces []fact) CardRow {
 		}
 		end = out.FactsAt.X - 2*pillGap
 	}
-	wide := func(said string) int { return ends(m, said, small) }
-	shown, more := Pills(c.Labels, end-x, wide)
-	top := row.Y + (row.H-pillHigh)/2
-	for _, label := range shown {
-		pill := geom.Box{X: x, Y: top, W: wide(label) + 2*pillPad, H: pillHigh}
-		out.Shown, out.Pills = append(out.Shown, label), append(out.Pills, pill)
-		x += pill.W + pillGap
-	}
-	if more > 0 {
-		out.Count = "+" + strconv.Itoa(more)
-		out.More = geom.Box{X: x, Y: top, W: wide(out.Count) + 2*pillPad, H: pillHigh}
-	}
+	out.PillRow = PillRowOf(c.Labels, x, row, end-x, func(said string) int { return ends(m, said, small) })
 	return out
 }
 

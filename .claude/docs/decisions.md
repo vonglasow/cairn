@@ -83,6 +83,7 @@ develops cairn meets: one line per decision, and where its reason lives.
 | the terminal's band is three lanes under the last three columns, the lanes' heads taken from the band's rows | the window draws it so; the columns above keep their height, so the smallest terminal still reads a card's title | [tui.md](tui.md#the-boards-shape) |
 | the terminal splits into `geom` and `design` only, as the window did; its screens and components stay in `tui` | they draw with the board's own fields, and moving them would move the board | `.golangci.yml` |
 | the terminal uses the board's `Tab` and `Screen`, two screens added for it (`OnDetail`, `OnSaid`) | one list of screens for both boards | `internal/board/screens.go` |
+| the pointer is answered from the boxes the drawing lays out (`Placed`, `CardRowOf`, `PillRowOf`, `FormPlace`), not from the `Drawn` record | `Drawn` names a part, not the card or the act it stands for, and a click read from it would wait on a frame; tests and keys move the window without drawing it | `internal/gui/pointer.go` |
 
 ## Known and not yet answered
 

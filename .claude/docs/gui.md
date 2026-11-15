@@ -378,6 +378,11 @@ What is drawn on something is recorded inside it (`Kit.inside`): a stripe
 in a card is `card/stripe`, a card on a column's ground `ground/card`, a
 button on a panel `panel/button`, a panel on the veil `veil/panel`.
 
+The record checks what was drawn; it does not say what is under the
+pointer. The pointer asks the same functions the drawing lays its parts out
+with — `Placed` for the cards, `CardRowOf` for a card's row — so a box is
+computed in one place and read by both.
+
 **Two guards keep it a system.** `TestNoDrawingNamesAColourOrARadiusOfItsOwn`
 fails on a colour, a radius or a stroke's width written anywhere but
 `skin.go`. `TestNoDrawingOutsideAComponentSpellsAShapeOut` reads every

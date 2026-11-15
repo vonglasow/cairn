@@ -1590,16 +1590,11 @@ func drawPills(k Kit, w Window) {
 func drawFieldPills(k Kit, w Window, m Measure, frame geom.Box, labels []string) {
 	room := Inside(frame)
 	room.W -= markWide + padding
-	x, top := room.X, frame.Y+(frame.H-pillHigh)/2
-	wide := func(said string) int { return ends(m, said, small) }
-	shown, more := Pills(labels, room.W, wide)
-	for _, label := range shown {
-		pill := geom.Box{X: x, Y: top, W: wide(label) + 2*pillPad, H: pillHigh}
-		LabelChip{Label: label, Colour: w.LabelColour(label)}.Draw(k, pill)
-		x += pill.W + pillGap
+	row := PillRowOf(labels, room.X, frame, room.W, func(said string) int { return ends(m, said, small) })
+	for i, label := range row.Shown {
+		LabelChip{Label: label, Colour: w.LabelColour(label)}.Draw(k, row.Pills[i])
 	}
-	if more > 0 {
-		count := "+" + strconv.Itoa(more)
-		Pill{Said: count}.Draw(k, geom.Box{X: x, Y: top, W: wide(count) + 2*pillPad, H: pillHigh})
+	if row.Count != "" {
+		Pill{Said: row.Count}.Draw(k, row.More)
 	}
 }

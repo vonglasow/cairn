@@ -82,37 +82,6 @@ func TestTheBandIsThreeLanesSharingItsWidth(t *testing.T) {
 	}
 }
 
-func TestWhichCardIsUnderAPoint(t *testing.T) {
-	l := LayoutFor(1200, 800)
-	body := l.Column[1]
-	for _, at := range []int{0, 1, 2} {
-		card := l.CardAt(1, at, 0)
-		if card.H != CardHeight {
-			t.Errorf("card %d is %d tall, want %d", at, card.H, CardHeight)
-		}
-		middle := Point{X: card.X + card.W/2, Y: card.Y + card.H/2}
-		column, index, found := l.Under(middle, 0)
-		if !found || column != 1 || index != at {
-			t.Errorf("the middle of card %d answered (%d, %d, %v)", at, column, index, found)
-		}
-	}
-	above := Point{X: body.X + 1, Y: body.Y - 1}
-	if _, _, found := l.Under(above, 0); found {
-		t.Error("a point above the column answered a card")
-	}
-}
-
-func TestScrollingChangesWhatIsUnderAPoint(t *testing.T) {
-	l := LayoutFor(1200, 800)
-	card := l.CardAt(1, 0, 0)
-	middle := Point{X: card.X + card.W/2, Y: card.Y + card.H/2}
-	_, first, _ := l.Under(middle, 0)
-	_, scrolled, _ := l.Under(middle, CardHeight)
-	if scrolled != first+1 {
-		t.Errorf("scrolled by one card, the same point answered %d after %d", scrolled, first)
-	}
-}
-
 func TestHowManyCardsAColumnShows(t *testing.T) {
 	l := LayoutFor(1200, 800)
 	if got := l.Showing(1); got != l.Column[1].H/CardHeight {

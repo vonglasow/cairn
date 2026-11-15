@@ -821,34 +821,20 @@ func (w Window) at(p geom.Point) int {
 	if w.Tab == board.Time {
 		return w.timeCardAt(p)
 	}
-	l := w.Layout()
-	if column, _, found := l.Under(p, 0); found {
-		return cardOn(w.InColumn(column), p.Y-l.Column[column].Y+w.scroll[column])
-	}
-	if lane, found := l.LaneUnder(p); found {
-		return cardOn(w.InLane(lane), p.Y-l.Lane[lane].Y+w.lanes[lane])
+	for _, placed := range w.Placed() {
+		if placed.Within.In(p) && PartsOf(placed.Slot).Panel.In(p) {
+			return placed.Card.Number
+		}
 	}
 	return 0
 }
 
-func cardOn(here []board.Card, down int) int {
-	index := down / geom.CardHeight
-	if index >= len(here) || down%geom.CardHeight >= geom.CardHeight-geom.Gap {
-		return 0
-	}
-	return here[index].Number
-}
-
 func (w Window) above(p geom.Point) int {
 	l := w.Layout()
-	column, _, found := l.Under(p, 0)
-	if !found {
-		return 0
-	}
-	here := w.InColumn(column)
-	down := p.Y - l.Column[column].Y + w.scroll[column]
-	if index := down / geom.CardHeight; index < len(here) && down%geom.CardHeight >= geom.CardHeight-geom.Gap {
-		return here[index].Number
+	for _, placed := range w.Placed() {
+		if placed.Within.In(p) && slices.Contains(l.Column[:], placed.Within) && placed.Slot.In(p) && !PartsOf(placed.Slot).Panel.In(p) {
+			return placed.Card.Number
+		}
 	}
 	return 0
 }
