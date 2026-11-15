@@ -210,8 +210,10 @@ func (b Board) ChoosingRefused() string { return b.RefusedChoice }
 // OneOnly says whether the open list takes one answer rather than several.
 func (b Board) OneOnly() bool { return len(b.ClosedSet()) > 0 || b.ChoosingFor == "parent" }
 
-// ChoosingSearched says whether the open list has a line to type into: only the labels', a label being written as often as picked.
-func (b Board) ChoosingSearched() bool { return b.ChoosingFor == "label" }
+// ChoosingSearched says whether the open list has a line to type into: the labels', a label being written as often as picked, and the tasks', too many to walk.
+func (b Board) ChoosingSearched() bool {
+	return slices.Contains([]string{"label", "blocker", "link"}, b.ChoosingFor)
+}
 
 // ChoosingThen is what a refusal at the foot of the open list says under it: what to untick to put the task where it was ticked, and that nothing was changed.
 func (b Board) ChoosingThen() string {

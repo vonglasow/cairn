@@ -453,7 +453,7 @@ func chosenOnACalendar(field board.Field) bool {
 func chosenFromRules(field board.Field) bool { return field.Arg == board.RepeatsField().Arg }
 
 func chosenFromAList(field board.Field) bool {
-	return field.Arg == "objective" || field.Arg == "label" || field.Arg == "parent" || len(field.Choices) > 0
+	return slices.Contains([]string{"objective", "label", "parent", "blocker", "link"}, field.Arg) || len(field.Choices) > 0
 }
 
 func (w Window) offerAt(p geom.Point) (string, bool) {

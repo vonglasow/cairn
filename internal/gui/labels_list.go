@@ -215,5 +215,8 @@ func (w Window) EmptyListSays() string {
 	if w.ChoosingFor == "label" {
 		return LabelsNoneSays
 	}
+	if w.ChoosingSearched() {
+		return board.TasksNoneSays
+	}
 	return ChoosingSays
 }

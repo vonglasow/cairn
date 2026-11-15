@@ -83,6 +83,8 @@ itself** every couple of seconds; `⌘⏎` or `⌘S` saves at once.
   `trace show` prints it.
 - The `labels` and `objectives` fields open lists to tick: typing narrows the
   list, and a label that does not exist yet is offered to create.
+- The `blockers` and `links` fields open the other tasks to tick, the newest
+  first; typing keeps the ones a search would find.
 - Steps are tiles of the form: tick one with a click, drag one to reorder,
   choose one and press delete to remove it after asking.
 - A deadline opens a calendar.

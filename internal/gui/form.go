@@ -830,6 +830,12 @@ func (w Window) choices() []Choice {
 		}
 		return out
 	}
+	if w.ChoosingFor == "blocker" || w.ChoosingFor == "link" {
+		for _, c := range board.FoundCards(w.Snap.Cards, looking, w.Form.Number) {
+			out = append(out, Choice{Number: c.Number, Title: c.Title})
+		}
+		return out
+	}
 	if w.ChoosingFor == "parent" {
 		out = append(out, Choice{Title: "none"})
 		for _, g := range w.Snap.Parents(w.Form.Number) {
@@ -968,8 +974,16 @@ func (w Window) keeping() Window {
 		return w
 	}
 	var numbers []int
+	if w.ChoosingSearched() {
+		for n, on := range w.TickedSet {
+			if on {
+				numbers = append(numbers, n)
+			}
+		}
+		slices.Sort(numbers)
+	}
 	for _, g := range w.Choosing() {
-		if w.TickedSet[g.Number] && g.Number != 0 {
+		if w.TickedSet[g.Number] && g.Number != 0 && !w.ChoosingSearched() {
 			numbers = append(numbers, g.Number)
 		}
 	}

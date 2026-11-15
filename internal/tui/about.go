@@ -21,6 +21,8 @@ func (b Board) about(forObjective bool, number int) describer {
 			return func() string { return said }
 		case !forObjective && field.Arg == "objective":
 			return func() string { return b.servesTree(*value) }
+		case !forObjective && (field.Arg == "blocker" || field.Arg == "link"):
+			return func() string { return b.tasksOffered(*value, number) }
 		}
 		return nil
 	}
@@ -76,6 +78,37 @@ func (b Board) servesTree(typed string) string {
 			continue
 		}
 		lines = append(lines, b.skin.Says.Render(line))
+	}
+	return strings.Join(lines, "\n")
+}
+
+const tasksShown = 5
+
+func (b Board) tasksOffered(typed string, number int) string {
+	ticked := board.NumbersIn(typed)
+	var looked []string
+	for _, word := range strings.Fields(typed) {
+		if _, err := strconv.Atoi(word); err != nil {
+			looked = append(looked, word)
+		}
+	}
+	found := board.FoundCards(b.snap.Cards, strings.Join(looked, " "), number)
+	if len(looked) == 0 {
+		found = slices.DeleteFunc(found, func(c board.Card) bool { return !slices.Contains(ticked, c.Number) })
+	}
+	if len(found) == 0 && len(looked) > 0 {
+		return b.skin.Faint.Render(board.TasksNoneSays)
+	}
+	var lines []string
+	for _, c := range found[:min(len(found), tasksShown)] {
+		box, style := "[ ] ", b.skin.Says
+		if slices.Contains(ticked, c.Number) {
+			box, style = "[x] ", b.skin.Bright
+		}
+		lines = append(lines, style.Render(box+strconv.Itoa(c.Number)+" "+c.Title))
+	}
+	if more := len(found) - tasksShown; more > 0 {
+		lines = append(lines, b.skin.Faint.Render("… "+strconv.Itoa(more)+" more"))
 	}
 	return strings.Join(lines, "\n")
 }

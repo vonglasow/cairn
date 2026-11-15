@@ -119,7 +119,10 @@ Pushing a task into done while one of its steps is open asks first.
 One form, for adding and for editing. Nothing is written until **save**, or
 `^S` from anywhere. Navigate to a field and press `⏎`: a closed set opens a
 list, the description opens in `$EDITOR`. The steps are written in the
-form, one line each — `[x] Draft the columns`.
+form, one line each — `[x] Draft the columns`. Under `blockers` and `links`,
+the tasks already given are named; type a word beside the numbers and the
+tasks it reaches are named, the newest first, five at most — then type the
+number of the one you want.
 
 Leaving a form you typed into asks first; `esc` again gives it back whole.
 
