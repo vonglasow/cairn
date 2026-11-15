@@ -1,8 +1,8 @@
 # Installing cairn
 
-A version of cairn is handed over as a binary for each system, on its GitHub
-release; "From a release" below. Building it is for whoever clones it, on
-macOS, on Linux or on Windows.
+Building cairn from a clone, on macOS, on Linux or on Windows. To install a
+version, with Homebrew or from a release, read
+[docs/install.md](docs/install.md).
 
 ## What it needs
 
@@ -53,118 +53,10 @@ go build -o cairn.exe ./cmd/cairn
 A build made this way does not know its version: it says `dev`, because the
 version is stamped by `make`. Put `cairn.exe` in a folder on your `PATH`.
 
-### From a release
-
-Every version on GitHub comes with a binary for each system:
-`cairn-vX.Y.Z-darwin-arm64.tar.gz`, `-darwin-amd64`, `-linux-amd64`,
-`-linux-arm64`, and `-windows-amd64.zip`, with `SHA256SUMS` beside them. Nothing
-to build: unpack it and put `cairn` on your `PATH`, below. With Homebrew, from
-the tap the release fills:
-
-```sh
-brew install vonglasow/tap/cairn          # the latest
-brew install vonglasow/tap/cairn@0.4      # or a minor kept at its own name
-```
-
-The formula installs the binary made for your system and builds nothing.
-`brew upgrade cairn` takes a newer version.
-
-Installed from an archive, `cairn upgrade` takes the newest version: it
-downloads the archive made for your system from the latest release, checks it
-against `SHA256SUMS`, and puts the new binary in the place of the one you ran.
-That place has to be one you can write, and it is tried before anything is
-downloaded; a cairn in `/usr/local/bin` is upgraded with `sudo cairn upgrade`. It leaves a cairn installed by Homebrew to
-`brew upgrade cairn`, and a cairn built from source to being built again. It
-then prints the commands that give Claude Code the plugin of the new version,
-below.
-
-## Installing it
-
-Put the binary somewhere on your `PATH`:
-
-```sh
-install -m 755 bin/cairn ~/.local/bin/cairn     # or /usr/local/bin, with sudo
-cairn --help
-```
-
-The window shows its logo on its own: on Linux, `cairn gui` writes the desktop
-entry and the icons a desktop looks for, under your own data folder
-(`~/.local/share`), the first time it opens. macOS shows the logo in the Dock
-on its own, and on Windows `cairn.exe` carries it.
-
-To open the window from the desktop rather than a terminal, run `cairn app
-install` once: on Linux it writes the same entry and icons without opening the
-window, and refreshes the applications menu with `xdg-desktop-menu` when
-xdg-utils is installed; on a Mac it writes `cairn.app` in `~/Applications`.
-
-cairn keeps its work in `~/.cairn` unless told otherwise; `cairn config
-show` says where. Installing a newer version leaves it where it is; a version
-that changes how it is kept says so, and `cairn migration apply` moves it on,
-setting a backup aside first.
-
-## Using it
-
-- `cairn task new "Write the spec"`, `cairn task list`: the command line.
-- `cairn tui`: the board, in the terminal.
-- `cairn gui`: the same board, in a window.
+Put `bin/cairn` on your `PATH`, as [docs/install.md](docs/install.md) says. A
+cairn built from source is no version: `cairn upgrade` leaves it to being
+built again, and `cairn plugin write` gives Claude Code the plugin it carries
+([docs/claude-code.md](docs/claude-code.md)).
 
 `THIRD_PARTY_NOTICES`, beside this file, holds the licences of what cairn is
 built from; it goes wherever the binary goes.
-
-## With Claude Code
-
-The `cairn` plugin ties a Claude Code session to the cairn task it serves: it
-loads the task's notes when you say `on travaille sur cairn#12`, lists what to
-work on when you ask, holds the task in focus while you work and lets it go
-when you stop. [docs/claude-code.md](docs/claude-code.md) says how.
-
-It needs `cairn` and `jq` on your `PATH`, and its hook is a shell script: on
-Windows, Claude Code runs it through Git Bash, and `jq` comes with
-`winget install jqlang.jq`.
-
-The plugin of a version is on GitHub, at the version's tag. `cairn plugin
-show` prints the commands for the cairn you run; for v0.12.0, in Claude Code:
-
-```text
-/plugin marketplace add vonglasow/cairn@v0.12.0
-/plugin install cairn@cairn
-```
-
-Where the plugin of another version is installed, `/plugin marketplace remove
-cairn` comes first. After an upgrade, `cairn upgrade` prints the commands for
-the new version, and at the start of a session the plugin says when it is not
-of the version of the cairn it runs.
-
-Without GitHub, or with a cairn built from source, which is no version: the
-binary carries the plugin it was built with, so the sources are not needed for
-it, however cairn was installed: Homebrew, an archive on Linux or Windows, or a
-build. Write it out once, beside the store, or in the folder the
-configuration's `plugin` key names (README, Configuration):
-
-```sh
-cairn plugin write
-```
-
-It says where it wrote it. Then, in Claude Code:
-
-```text
-/plugin marketplace add <the folder cairn plugin write named>
-/plugin install cairn@cairn
-```
-
-Restart Claude Code afterwards. From then on cairn keeps that plugin at its
-own version: Claude Code starts `cairn mcp serve` with each session, and a
-server finding the plugin written by another version writes it again, so the
-session after an upgrade has the plugin of the new cairn. Nothing to run
-again. The cairn tools of a session already open follow the upgrade at its
-next call, with no `/mcp` to reconnect. From a copy of this repository, the repository
-itself is a marketplace too: `/plugin marketplace add /path/to/cairn`.
-
-The plugin declares cairn's MCP server itself. If you already declared one,
-declare it with the same command, or Claude Code loads both and every cairn
-tool appears twice:
-
-```sh
-claude mcp remove cairn
-claude mcp add --scope user cairn -- cairn mcp serve --access full
-```

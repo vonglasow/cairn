@@ -155,9 +155,3 @@ the global file would give.
 `cairn config init` writes the whole file, every key explained and set to
 what cairn uses when nothing is said. The site lists every key, what it takes
 and which file keeps it, under *Configuration keys*.
-
-## From v0.11.0
-
-A configuration of v0.11.0 named `store` and `notes` at its top. The first
-command of a newer cairn turns them into the workspace `main` on its own, moves
-nothing on disk, and keeps the old file beside it as `config.toml.v0.11.0`.

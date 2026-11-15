@@ -27,13 +27,12 @@ var assets embed.FS
 
 var layout = template.Must(template.ParseFS(assets, "assets/layout.html"))
 
-// Said is what the site is built from: the version it documents, its changelog, the repository its pages are read from, and the two boards as cairn draws them.
+// Said is what the site is built from: the version it documents, the repository its pages are read from, and the two boards as cairn draws them.
 type Said struct {
-	Version   string
-	Changelog []byte
-	Repo      fs.FS
-	Terminal  string
-	Window    func(slug string) (image.Image, error)
+	Version  string
+	Repo     fs.FS
+	Terminal string
+	Window   func(slug, page string) (image.Image, error)
 }
 
 type page struct {
@@ -88,39 +87,28 @@ func docPages(said Said) ([]page, error) {
 			return nil, fmt.Errorf("%s: %w", s.from, err)
 		}
 		p := page{Name: nameOf(s.from), Title: got.title, Group: s.group, Top: s.top, Source: s.from, Body: got.body, Toc: got.toc}
+		if at := slices.IndexFunc(byTask, func(g guide) bool { return g.from == s.from }); at >= 0 && said.Window != nil {
+			p.Body = fmt.Sprintf(`<img class="shot" src="%s" alt="%s">`, guidePicture(s.from), e(byTask[at].shows)) + p.Body
+		}
 		pages = append(pages, p)
 	}
 	return pages, nil
 }
 
-func changelogOf(said Said) (page, error) {
-	p := page{Name: changelogPage, Title: "Changelog", Group: "Project", Top: "changelog", Body: "<p>This build was given no changelog.</p>"}
-	if len(said.Changelog) == 0 {
-		return p, nil
-	}
-	got, err := write("CHANGELOG.md", said.Changelog, said.Version)
-	if err != nil {
-		return page{}, err
-	}
-	p.Body, p.Toc = got.body, got.toc
-	return p, nil
-}
-
 func ordered(docs []page, generated ...page) []page {
 	by := map[string]page{}
-	for _, p := range append(docs, generated...) {
+	for _, p := range generated {
 		by[p.Name] = p
 	}
-	var pages []page
-	for _, name := range []string{"index.html", "install.html", "usage.html"} {
-		pages = append(pages, by[name])
-	}
-	for _, p := range docs {
-		if p.Group == "Guide" {
-			pages = append(pages, p)
+	pages := []page{by["index.html"]}
+	for _, group := range groups {
+		for _, p := range docs {
+			if p.Group == group {
+				pages = append(pages, p)
+			}
 		}
 	}
-	for _, name := range []string{commandsPage, toolsPage, keysPage, themesPage, "decisions.html", changelogPage} {
+	for _, name := range []string{commandsPage, toolsPage, keysPage, themesPage} {
 		pages = append(pages, by[name])
 	}
 	for _, p := range generated {
@@ -139,19 +127,32 @@ func pictures(to string, said Said, schemes []theme.Scheme) error {
 		return err
 	}
 	for _, s := range schemes {
-		drawn, err := said.Window(s.Slug)
+		drawn, err := said.Window(s.Slug, "tasks")
 		if err != nil {
 			return fmt.Errorf("the window in %s: %w", s.Slug, err)
 		}
-		var out bytes.Buffer
-		if err := png.Encode(&out, drawn); err != nil {
+		if err := saved(filepath.Join(to, windowPicture(s.Slug)), drawn); err != nil {
 			return err
 		}
-		if err := os.WriteFile(filepath.Join(to, windowPicture(s.Slug)), out.Bytes(), 0o644); err != nil {
+	}
+	for _, g := range byTask {
+		drawn, err := said.Window(darkFirst, g.page)
+		if err != nil {
+			return fmt.Errorf("the window for %s: %w", g.from, err)
+		}
+		if err := saved(filepath.Join(to, guidePicture(g.from)), drawn); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func saved(file string, drawn image.Image) error {
+	var out bytes.Buffer
+	if err := png.Encode(&out, drawn); err != nil {
+		return err
+	}
+	return os.WriteFile(file, out.Bytes(), 0o644)
 }
 
 func styled(schemes []theme.Scheme) ([]byte, error) {
@@ -220,11 +221,7 @@ func Build(to string, said Said) error {
 	if err != nil {
 		return err
 	}
-	changelog, err := changelogOf(said)
-	if err != nil {
-		return err
-	}
-	generated := append(commandPages(), toolsPageOf(), keysPageOf(), themesPageOf(schemes, said.Window != nil), changelog, home(said, schemes))
+	generated := append(commandPages(), toolsPageOf(), keysPageOf(), themesPageOf(schemes, said.Window != nil), home(said, schemes))
 	pages := ordered(docs, generated...)
 	common = common.nav(pages)
 	if err := os.MkdirAll(to, 0o755); err != nil {
@@ -274,7 +271,6 @@ func Main(args []string, stdout, stderr io.Writer) int {
 	flags.SetOutput(stderr)
 	out := flags.String("out", "", "the folder the site is written to")
 	version := flags.String("version", "dev", "the version the site documents")
-	changelog := flags.String("changelog", "", "a file holding the changelog, as scripts/changelog.sh writes it")
 	repo := flags.String("repo", ".", "the repository the pages are read from")
 	if err := flags.Parse(args); err != nil {
 		return 2
@@ -283,7 +279,7 @@ func Main(args []string, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintln(stderr, ErrNoFolder)
 		return 2
 	}
-	if err := built(*out, *version, *changelog, *repo); err != nil {
+	if err := built(*out, *version, *repo); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
@@ -291,15 +287,8 @@ func Main(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func built(out, version, changelog, repo string) error {
+func built(out, version, repo string) error {
 	said := Said{Version: version, Repo: os.DirFS(repo)}
-	if changelog != "" {
-		data, err := os.ReadFile(changelog)
-		if err != nil {
-			return err
-		}
-		said.Changelog = data
-	}
 	folder, err := os.MkdirTemp("", "cairn-site-fixtures-")
 	if err != nil {
 		return err
@@ -329,14 +318,15 @@ func home(said Said, schemes []theme.Scheme) page {
 		fmt.Fprintf(&body, `<img class="shot" data-shot src="%s" alt="The board in a window">`, windowPicture(darkFirst))
 	}
 	body.WriteString(`</section>
-<section class="band"><h2 id="four-surfaces">Four surfaces, one engine</h2><div class="grid3">
-<a class="tile" href="` + commandsPage + `"><span class="k">cairn task new</span><b>Command line</b><span>Every change, scriptable, with <code>--json</code> for machines.</span></a>
-<a class="tile" href="tui.html"><span class="k">cairn tui</span><b>Terminal board</b><span>The board in any terminal, a key for everything.</span></a>
-<a class="tile" href="gui.html"><span class="k">cairn gui</span><b>Window</b><span>The same board on macOS, Linux and Windows.</span></a>
-<a class="tile" href="claude-code.html"><span class="k">cairn mcp serve</span><b>Agent</b><span>An MCP server and a Claude Code plugin.</span></a>
+<section class="band"><h2 id="what-you-do">What you do with it</h2><div class="grid3">
+<a class="tile" href="plan-a-week.html"><span class="k">cairn task move 4 --state todo</span><b>Plan a week</b><span>Choose the week's tasks, in the order you work them, and see how long they took.</span></a>
+<a class="tile" href="follow-an-objective.html"><span class="k">cairn objective show 1</span><b>Follow an objective</b><span>Say what the work is for, and see how far along it is.</span></a>
+<a class="tile" href="plug-in-an-agent.html"><span class="k">cairn mcp serve</span><b>Plug in an agent</b><span>Let Claude Code, or any MCP client, work on your board.</span></a>
 <a class="tile" href="ordering.html"><span class="k">⊳3</span><b>Choose what to do</b><span>Facts on every task. Your agent proposes, you decide.</span></a>
-<a class="tile" href="trace.html"><span class="k">cairn trace list</span><b>What happened</b><span>What was done to every task, and the time it took.</span></a>
-</div></section>
+<a class="tile" href="trace.html"><span class="k">cairn trace list</span><b>See what happened</b><span>What was done to every task, and the time it took.</span></a>
+<a class="tile" href="context.html"><span class="k">cairn task show 1</span><b>Keep notes beside a task</b><span>A folder per task, for what was done and decided.</span></a>
+</div>
+<p class="faint">The same board four ways: the <a href="` + commandsPage + `">command line</a>, <a href="tui.html">the terminal</a>, <a href="gui.html">a window</a> on macOS, Linux and Windows, and <a href="mcp.html">an agent</a>.</p></section>
 <section class="band"><h2 id="in-the-terminal">In the terminal</h2><pre class="term">`)
 	body.WriteString(terminalHTML(said.Terminal))
 	body.WriteString(`</pre></section>
@@ -351,7 +341,7 @@ func home(said Said, schemes []theme.Scheme) page {
 	body.WriteString(`</div></section>
 <section class="band"><div class="grid2">
 <div class="tile"><b>Local first</b><span>One SQLite file. No account, no server, nothing sent anywhere.</span></div>
-<div class="tile"><b>Says why</b><span>Every refusal names what was in the way, and every decision cairn does not take is written down in <a href="decisions.html">Decisions</a>.</span></div>
+<div class="tile"><b>Says why</b><span>Every refusal names what was in the way.</span></div>
 </div></section>`)
 	return page{Name: "index.html", Title: "cairn", Wide: true, Body: body.String()}
 }

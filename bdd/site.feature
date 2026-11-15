@@ -7,28 +7,28 @@ Feature: the documentation site
   site is written twice.
 
   Background:
-    Given a changelog that says:
-      """
-      # Changelog
-
-      ## v0.12.0 — 2026-11-13
-
-      ### Features
-
-      - **task:** give on each task the facts that help choose it (e1d9b63)
-      """
     When the site is built for version "v0.12.0"
 
   Rule: docs/ is written for the person using cairn, and the site publishes it whole
 
     @site-pages
     Scenario: the pages for a person using cairn are published
-      Then the site has a page for "INSTALL.md"
+      Then the site has a page for "docs/install.md"
       And the site has a page for "docs/usage.md"
       And the site has a page for "docs/tui.md"
       And the site has a page for "docs/gui.md"
       And the site has a page for "docs/config.md"
-      And the site has a page for "docs/decisions.md"
+      And the site has no page "decisions.html"
+      And the site has no page "changelog.html"
+      And no page says "make build"
+
+    @site-nav
+    Scenario: the top bar walks from starting to the reference
+      Then the top bar reads "Start, Guides, Boards, Agents, Reference"
+
+    @site-home
+    Scenario: the home page sends to every guide by task
+      Then the home page links to "plan-a-week.html", "follow-an-objective.html" and "plug-in-an-agent.html"
 
   Rule: The reference is read off cairn itself
 
@@ -36,6 +36,7 @@ Feature: the documentation site
     Scenario: every command is in the reference, with what its help says
       Then the reference lists every command cairn has, with the first line of its help
       And the page of `cairn task edit` lists each of its flags with what its help says
+      And the reference lists "app", "debug", "fixtures", "migration" and "plugin" under "Upkeep", after the others
 
     @site-keys
     Scenario: every key of the configuration is in the reference, with what it takes
@@ -53,6 +54,7 @@ Feature: the documentation site
     Scenario: the window is drawn over the fixtures in every scheme cairn carries
       Then the site carries a picture of the window in every scheme cairn carries
       And each picture is drawn on the back of its own scheme
+      And every guide by task opens on a picture of the window of its own
 
   Rule: The README starts somebody, and sends them to the site for the rest
 

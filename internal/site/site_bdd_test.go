@@ -32,10 +32,9 @@ func TestAcceptance_Site(t *testing.T) {
 }
 
 type siteWorld struct {
-	changelog string
-	out       string
-	version   string
-	cleanup   []func()
+	out     string
+	version string
+	cleanup []func()
 }
 
 func initSite(sc *godog.ScenarioContext) {
@@ -46,9 +45,14 @@ func initSite(sc *godog.ScenarioContext) {
 		}
 		return ctx, err
 	})
-	sc.Step(`^a changelog that says:$`, w.aChangelogThatSays)
 	sc.Step(`^the site is built for version "([^"]*)"$`, w.theSiteIsBuiltForVersion)
 	sc.Step(`^the site has a page for "([^"]*)"$`, w.theSiteHasAPageFor)
+	sc.Step(`^the site has no page "([^"]*)"$`, w.theSiteHasNoPage)
+	sc.Step(`^no page says "([^"]*)"$`, w.noPageSays)
+	sc.Step(`^the top bar reads "([^"]*)"$`, w.theTopBarReads)
+	sc.Step(`^the home page links to "([^"]*)", "([^"]*)" and "([^"]*)"$`, w.theHomePageLinksTo)
+	sc.Step(`^the reference lists "([^"]*)", "([^"]*)", "([^"]*)", "([^"]*)" and "([^"]*)" under "([^"]*)", after the others$`, w.theReferenceListsUnder)
+	sc.Step(`^every guide by task opens on a picture of the window of its own$`, w.everyGuideOpensOnAPicture)
 	sc.Step("^the reference lists every command cairn has, with the first line of its help$", w.theReferenceListsEveryCommand)
 	sc.Step("^the page of `cairn ([^`]*)` lists each of its flags with what its help says$", w.thePageOfACommandListsItsFlags)
 	sc.Step(`^the reference lists every key of the configuration, with what it takes and what it says$`, w.theReferenceListsEveryKey)
@@ -57,11 +61,6 @@ func initSite(sc *godog.ScenarioContext) {
 	sc.Step(`^each picture is drawn on the back of its own scheme$`, w.eachPictureOnItsOwnBack)
 	sc.Step(`^the README links to the site's page for "([^"]*)"$`, w.theReadmeLinksToThePageFor)
 	sc.Step(`^every link from the README to the site lands on a page of the site$`, w.everyReadmeLinkLandsOnAPage)
-}
-
-func (w *siteWorld) aChangelogThatSays(said *godog.DocString) error {
-	w.changelog = said.Content
-	return nil
 }
 
 func (w *siteWorld) theSiteIsBuiltForVersion(version string) error {
@@ -79,7 +78,7 @@ func (w *siteWorld) theSiteIsBuiltForVersion(version string) error {
 	if err != nil {
 		return err
 	}
-	said := Said{Version: version, Changelog: []byte(w.changelog), Repo: os.DirFS(filepath.Join("..", "..")), Terminal: terminal}
+	said := Said{Version: version, Repo: os.DirFS(filepath.Join("..", "..")), Terminal: terminal}
 	if os.Getenv(windowless) == "" {
 		said.Window = boards.Window
 	}
@@ -288,6 +287,116 @@ func (w *siteWorld) everyReadmeLinkLandsOnAPage() error {
 		}
 		if _, err := os.Stat(filepath.Join(w.out, page)); err != nil {
 			return fmt.Errorf("the README links to %s%s, which is not on the site", address, link[1])
+		}
+	}
+	return nil
+}
+
+func (w *siteWorld) theSiteHasNoPage(name string) error {
+	if _, err := os.Stat(filepath.Join(w.out, name)); err == nil {
+		return fmt.Errorf("the site has a page %s", name)
+	}
+	pages, err := w.pages()
+	if err != nil {
+		return err
+	}
+	for from, page := range pages {
+		if strings.Contains(page, `href="`+name) {
+			return fmt.Errorf("%s links to %s", from, name)
+		}
+	}
+	return nil
+}
+
+func (w *siteWorld) noPageSays(said string) error {
+	pages, err := w.pages()
+	if err != nil {
+		return err
+	}
+	for name, page := range pages {
+		if strings.Contains(page, said) {
+			return fmt.Errorf("%s says %q", name, said)
+		}
+	}
+	return nil
+}
+
+var topLink = regexp.MustCompile(`<a href="[^"]*"[^>]*>([^<]*)</a>`)
+
+func (w *siteWorld) theTopBarReads(want string) error {
+	page, err := w.read("usage.html")
+	if err != nil {
+		return err
+	}
+	_, bar, _ := strings.Cut(page, `<nav class="topnav">`)
+	bar, _, _ = strings.Cut(bar, "</nav>")
+	var read []string
+	for _, m := range topLink.FindAllStringSubmatch(bar, -1) {
+		read = append(read, m[1])
+	}
+	if got := strings.Join(read, ", "); got != want {
+		return fmt.Errorf("the top bar reads %q, want %q", got, want)
+	}
+	return nil
+}
+
+func (w *siteWorld) theHomePageLinksTo(one, two, three string) error {
+	guides := []string{one, two, three}
+	page, err := w.read("index.html")
+	if err != nil {
+		return err
+	}
+	for _, g := range guides {
+		if !strings.Contains(page, `href="`+g+`"`) {
+			return fmt.Errorf("the home page has no link to %s", g)
+		}
+	}
+	return nil
+}
+
+func (w *siteWorld) theReferenceListsUnder(a, b, c, d, f, group string) error {
+	said := []string{a, b, c, d, f, group}
+	page, err := w.read(commandsPage)
+	if err != nil {
+		return err
+	}
+	_, under, found := strings.Cut(page, `<h2 id="`+strings.ToLower(group)+`">`+group+`</h2>`)
+	if !found {
+		return fmt.Errorf("the commands page has no %s", group)
+	}
+	for _, name := range said[:len(said)-1] {
+		if !strings.Contains(under, `id="`+name+`"`) {
+			return fmt.Errorf("%s is not under %s", name, group)
+		}
+	}
+	if strings.Contains(under, `id="task"`) {
+		return fmt.Errorf("task is under %s", group)
+	}
+	return nil
+}
+
+func (w *siteWorld) everyGuideOpensOnAPicture() error {
+	if os.Getenv(windowless) != "" {
+		return godog.ErrSkip
+	}
+	seen := map[string]string{}
+	for _, g := range byTask {
+		guide := g.from
+		page, err := w.read(nameOf(guide))
+		if err != nil {
+			return err
+		}
+		_, article, _ := strings.Cut(page, "<article>")
+		picture := regexp.MustCompile(`<img[^>]*src="(shots/[^"]+)"`).FindStringSubmatch(article)
+		if picture == nil {
+			return fmt.Errorf("%s opens on no picture of the window", guide)
+		}
+		if other, taken := seen[picture[1]]; taken {
+			return fmt.Errorf("%s and %s open on the same picture", guide, other)
+		}
+		seen[picture[1]] = guide
+		if _, err := os.Stat(filepath.Join(w.out, picture[1])); err != nil {
+			return err
 		}
 	}
 	return nil

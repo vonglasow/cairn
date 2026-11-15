@@ -42,9 +42,9 @@ func TestLinked_takesALinkToWhereItLandsOnTheSite(t *testing.T) {
 		{"docs/tui.md", "gui.md#the-design-system", "gui.html#the-design-system"},
 		{"docs/tui.md", "#keys", "#keys"},
 		{"docs/tui.md", "architecture.md#layers", "https://github.com/vonglasow/cairn/blob/v0.12.0/docs/architecture.md#layers"},
-		{"docs/tui.md", "../INSTALL.md", "install.html"},
+		{"docs/tui.md", "install.md", "install.html"},
 		{"docs/trace.md", "../bdd/trace.feature", "https://github.com/vonglasow/cairn/blob/v0.12.0/bdd/trace.feature"},
-		{"INSTALL.md", "docs/claude-code.md", "claude-code.html"},
+		{"docs/install.md", "claude-code.md", "claude-code.html"},
 		{"docs/tui.md", "https://example.org/x.md", "https://example.org/x.md"},
 		{"docs/tui.md", "mailto:a@b", "mailto:a@b"},
 	} {
@@ -61,13 +61,15 @@ func TestLinked_aBuildThatIsNoVersionLinksToMain(t *testing.T) {
 }
 
 func TestPageFor_namesThePageOfEverySourcePublished(t *testing.T) {
-	for source, want := range map[string]string{"INSTALL.md": "install.html", "docs/usage.md": "usage.html", "docs/config.md": "config.html"} {
+	for source, want := range map[string]string{"docs/install.md": "install.html", "docs/usage.md": "usage.html", "docs/config.md": "config.html"} {
 		if got, ok := pageFor(source); !ok || got != want {
 			t.Errorf("pageFor(%q) = %q, %v; want %q", source, got, ok, want)
 		}
 	}
-	if got, ok := pageFor("DECISIONS.md"); ok {
-		t.Errorf("a page for whoever develops cairn is published as %s", got)
+	for _, kept := range []string{"DECISIONS.md", "INSTALL.md", "docs/decisions.md"} {
+		if got, ok := pageFor(kept); ok {
+			t.Errorf("%s, kept off the site, is published as %s", kept, got)
+		}
 	}
 }
 
@@ -85,7 +87,7 @@ func TestMain_refusesWhatItIsNotGiven(t *testing.T) {
 func TestBuild_drawsAPictureOfTheWindowInEveryScheme(t *testing.T) {
 	out := t.TempDir()
 	drawn := map[string]bool{}
-	said := Said{Version: "v0.12.0", Repo: os.DirFS(filepath.Join("..", "..")), Window: func(slug string) (image.Image, error) {
+	said := Said{Version: "v0.12.0", Repo: os.DirFS(filepath.Join("..", "..")), Window: func(slug, _ string) (image.Image, error) {
 		drawn[slug] = true
 		return image.NewRGBA(image.Rect(0, 0, 2, 2)), nil
 	}}
@@ -111,17 +113,9 @@ func TestBuild_drawsAPictureOfTheWindowInEveryScheme(t *testing.T) {
 
 func TestBuild_saysWhichSchemeTheWindowCouldNotBeDrawnIn(t *testing.T) {
 	broken := errors.New("no GPU")
-	said := Said{Version: "v0.12.0", Repo: os.DirFS(filepath.Join("..", "..")), Window: func(string) (image.Image, error) { return nil, broken }}
+	said := Said{Version: "v0.12.0", Repo: os.DirFS(filepath.Join("..", "..")), Window: func(string, string) (image.Image, error) { return nil, broken }}
 	if err := Build(t.TempDir(), said); !errors.Is(err, broken) || !strings.Contains(err.Error(), "the window in") {
 		t.Errorf("Build = %v, want the scheme the window could not be drawn in", err)
-	}
-}
-
-func TestMain_refusesAChangelogItCannotRead(t *testing.T) {
-	var said strings.Builder
-	missing := filepath.Join(t.TempDir(), "CHANGELOG.md")
-	if code := Main([]string{"--out", t.TempDir(), "--changelog", missing}, &said, &said); code != 1 || !strings.Contains(said.String(), missing) {
-		t.Errorf("Main = %d, %q; want 1, naming the changelog", code, said.String())
 	}
 }
 

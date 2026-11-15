@@ -21,11 +21,11 @@
   <button class="tool menu-btn" id="menuBtn" aria-label="Sections">☰</button>
   <a class="brand" href="index.html"><img src="logo.svg" width="28" height="28" alt="">cairn</a>
   <nav class="topnav">
-    <a href="install.html"{{if eq .Page.Top "install"}} class="on"{{end}}>Install</a>
-    <a href="usage.html"{{if eq .Page.Top "guide"}} class="on"{{end}}>Guide</a>
+    <a href="install.html"{{if eq .Page.Top "start"}} class="on"{{end}}>Start</a>
+    <a href="plan-a-week.html"{{if eq .Page.Top "guides"}} class="on"{{end}}>Guides</a>
+    <a href="tui.html"{{if eq .Page.Top "boards"}} class="on"{{end}}>Boards</a>
+    <a href="claude-code.html"{{if eq .Page.Top "agents"}} class="on"{{end}}>Agents</a>
     <a href="commands.html"{{if eq .Page.Top "reference"}} class="on"{{end}}>Reference</a>
-    <a href="decisions.html"{{if eq .Page.Top "decisions"}} class="on"{{end}}>Decisions</a>
-    <a href="changelog.html"{{if eq .Page.Top "changelog"}} class="on"{{end}}>Changelog</a>
   </nav>
   <div class="bar-tools">
     <button class="tool" id="searchBtn" aria-label="Search"><span>⌕</span><span class="search-label">Search</span><kbd>/</kbd></button>
@@ -58,7 +58,7 @@
 </div>{{end}}
 <footer class="foot"><div class="foot-in">
   <span>cairn {{.Version}}</span>
-  <span><a href="changelog.html">Changelog</a> · <a href="{{.Source}}">Source</a> · <a href="{{.Source}}/issues">Issues</a></span>
+  <span><a href="{{.Source}}/releases">Releases</a> · <a href="{{.Source}}">Source</a> · <a href="{{.Source}}/issues">Issues</a></span>
 </div></footer>
 <script src="search.js"></script>
 <script src="site.js"></script>

@@ -44,6 +44,8 @@ func tooled() map[string]bool {
 	return served
 }
 
+var upkeep = []string{"app", "debug", "fixtures", "migration", "plugin"}
+
 func commandPages() []page {
 	root := cli.Reference()
 	served := tooled()
@@ -51,25 +53,40 @@ func commandPages() []page {
 		id, title, says string
 		rows            []*cobra.Command
 	}
-	var parts []*part
+	var daily, kept []*part
 	var pages []page
 	for _, c := range leaves(root) {
 		id, title, says := "more", "Everything else", ""
 		if parent := c.Parent(); parent != root {
 			id, title, says = parent.Name(), parent.Name(), parent.Short
+		} else if slices.Contains(upkeep, c.Name()) {
+			id, title, says = c.Name(), c.Name(), c.Short
 		}
-		if len(parts) == 0 || parts[len(parts)-1].id != id {
-			parts = append(parts, &part{id: id, title: title, says: says})
+		into := &daily
+		if slices.Contains(upkeep, id) {
+			into = &kept
 		}
-		parts[len(parts)-1].rows = append(parts[len(parts)-1].rows, c)
+		at := slices.IndexFunc(*into, func(p *part) bool { return p.id == id })
+		if at < 0 {
+			at, *into = len(*into), append(*into, &part{id: id, title: title, says: says})
+		}
+		(*into)[at].rows = append((*into)[at].rows, c)
 		pages = append(pages, commandOf(c, served))
 	}
 	var index strings.Builder
 	var toc []heading
 	index.WriteString(`<p class="lead">Every command, from its own help.</p>`)
-	for _, p := range parts {
+	for _, p := range append(daily, kept...) {
+		level := 2
+		if p == kept[0] {
+			toc = append(toc, heading{ID: "upkeep", Title: "Upkeep"})
+			index.WriteString(`<h2 id="upkeep">Upkeep</h2><p>What keeps cairn itself going: its application, its store's shape, its plugin, a bug report.</p>`)
+		}
+		if slices.Contains(kept, p) {
+			level = 3
+		}
 		toc = append(toc, heading{ID: p.id, Title: p.title})
-		fmt.Fprintf(&index, `<h2 id="%s">%s</h2>`, e(p.id), e(p.title))
+		fmt.Fprintf(&index, `<h%d id="%s">%s</h%d>`, level, e(p.id), e(p.title), level)
 		if p.says != "" {
 			fmt.Fprintf(&index, `<p>%s</p>`, e(p.says))
 		}

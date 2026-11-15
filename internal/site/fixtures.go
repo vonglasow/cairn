@@ -59,8 +59,8 @@ func (f Fixtures) Terminal() (string, error) {
 	return looked.(tui.Board).Draw(), nil
 }
 
-// Window is the window as cairn draws it over the fixtures, in the scheme named.
-func (f Fixtures) Window(slug string) (image.Image, error) {
+// Window is the window as cairn draws it over the fixtures, in the scheme named, on the page named.
+func (f Fixtures) Window(slug, page string) (image.Image, error) {
 	scheme, err := theme.Find("", slug)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (f Fixtures) Window(slug string) (image.Image, error) {
 	skin, th := design.Skinned(scheme.Colours()), gui.Theme()
 	w := gui.New(f.held, windowWide, windowHigh).Paged(f.pages).
 		Measuring(gui.Measured(th)).MeasuringHeadings(gui.MeasuredHeadings(th)).
-		At(time.Now()).Look().Wearing(skin).LessMotion(true)
+		At(time.Now()).Look().Wearing(skin).LessMotion(true).Choose(page)
 	shot, err := gui.Shot(w, th, skin)
 	if err != nil {
 		return nil, err

@@ -26,10 +26,18 @@ way, it is kept current: the next MCP server started by an upgraded cairn
 writes it again. `cairn upgrade` prints the commands for the version it put in
 place.
 
-The plugin needs `cairn` and `jq` on the `PATH`. It declares the cairn MCP
-server itself, at the `full` access level; if you declared one by hand, remove
-it or declare it with the same command, or Claude Code loads both and lists
-every tool twice.
+The plugin needs `cairn` and `jq` on the `PATH`. Its hook is a shell script:
+on Windows, Claude Code runs it through Git Bash, and `jq` comes with
+`winget install jqlang.jq`. Restart Claude Code once it is installed.
+
+The plugin declares the cairn MCP server itself, at the `full` access level;
+if you declared one by hand, remove it or declare it with the same command, or
+Claude Code loads both and lists every tool twice:
+
+```sh
+claude mcp remove cairn
+claude mcp add --scope user cairn -- cairn mcp serve --access full
+```
 
 ## Words
 

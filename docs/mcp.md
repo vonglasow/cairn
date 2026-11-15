@@ -35,18 +35,16 @@ only looks is marked read-only; what can lose work or replace what was written
 is marked destructive; what a second call would not change again is marked
 idempotent; and every tool says it reaches nothing outside cairn.
 
-## One tool per command
+## The tools
 
-Every command is a tool, under the name the command has: `task_new`,
-`objective_show`, `migration_rollback`. Somebody who knows the command line
-knows the tools, and a command added to cairn is a tool the same day. The
-reference on this site lists every tool with its arguments.
+Each command is a tool of the same name: `cairn task new` is `task_new`,
+`cairn objective show` is `objective_show`. What you do at the command line,
+an agent can ask for. The reference on this site lists every tool with its
+arguments.
 
-A tool answers twice over: the text a person would have read at the terminal,
-and the very shape `--json` prints. A refusal is an answer too — an empty
-title, a state that is not one — with its reason, so an agent can correct
-itself; its kind and a reason that does not change when the sentence does are
-under `_meta`.
+An agent is answered with what you would read at the terminal, and with what
+`--json` prints. A refusal is an answer too — an empty title, a column that
+does not exist — with its reason, so the agent can correct itself.
 
 ## Keeping answers short
 
@@ -89,10 +87,9 @@ workspace it answers from, and why. Another workspace is another server.
 What an agent does is written in each task's trace under the client's name —
 `claude-code` — unless `CAIRN_AUTHOR` is set for the server.
 
-## The shape of an answer
+## Answers an agent can rely on
 
-An agent relies on the shape of an answer as a script relies on a column:
-adding a field breaks nothing, while renaming or removing one is a breaking
-change, said as such in the changelog. A field that has
-nothing to say is there, empty. A list of task or objective numbers takes them
-written as numbers or as strings.
+A field added to an answer breaks no agent and no script; a field renamed or
+removed is said in the notes of the release that does it. A field with nothing
+to say is there, empty. Task and objective numbers are taken written as
+numbers or as strings.

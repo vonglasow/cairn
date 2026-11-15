@@ -114,4 +114,6 @@ longer holds is taken out.
 
 - `docs/` is for the person using cairn: guides by task, a glossary, and a reference generated from cairn — a key described twice drifted.
 - The developer reads `ARCHITECTURE.md` and this register; `.claude/docs` is gone — twelve thousand lines told the history of each choice, and drifted from the code.
+- The site is for the person using cairn: installing a release, the guides, the boards, agents, the reference; building from source, the decisions and the changelog stay off it (#325) — they spoke to whoever develops cairn. The release notes on GitHub say what changed.
+- Each guide by task opens on the window at its own page, drawn over the fixtures when the site is built — a picture made by hand drifts from the window.
 - One word for each notion on every surface: series, rule, occurrence, trace, column, deadline, notes, theme, settings, tab, report (#292) — one notion was named three ways.

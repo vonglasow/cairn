@@ -61,12 +61,10 @@ dev:
 
 ## site: build the documentation site into dist/site, as a release publishes it
 ## Its pages are read off docs/ and off cairn itself, its pictures drawn over
-## the fixtures — see DECISIONS.md. NEXT is the version the changelog ends
-## with: the next one by default, the tag itself when a release builds it.
+## the fixtures — see DECISIONS.md.
 site:
 	@mkdir -p dist
-	scripts/changelog.sh "$${NEXT:-$$($(TOOL) svu next --v0)}" >dist/CHANGELOG.md
-	go run ./cmd/site --out dist/site --version $(VERSION) --changelog dist/CHANGELOG.md
+	go run ./cmd/site --out dist/site --version $(VERSION)
 
 # Every test credits every package it runs (-coverpkg=./...), scenarios
 # included; cover-check counts each block once, however many test binaries

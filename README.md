@@ -41,9 +41,10 @@ brew install vonglasow/tap/cairn
 
 On Windows, or without Homebrew, take the archive for your system from the
 [latest release](https://github.com/vonglasow/cairn/releases/latest) and put
-`cairn` on your `PATH`. [INSTALL.md](INSTALL.md) covers each system and
-building from source; `cairn app install` adds cairn to the Mac's
-Applications or a Linux desktop's menu.
+`cairn` on your `PATH`.
+[Installing](https://vonglasow.github.io/cairn/install.html) covers each
+system, and [INSTALL.md](INSTALL.md) building from source; `cairn app install`
+adds cairn to the Mac's Applications or a Linux desktop's menu.
 
 ## Quick start
 
@@ -81,8 +82,7 @@ examples.
 - Upgrading: `brew upgrade cairn`, or `cairn upgrade` for a release archive;
   a store a new version reshapes waits for `cairn migration apply`, which
   saves a backup first
-- [Decisions](https://vonglasow.github.io/cairn/decisions.html): what cairn
-  leaves out on purpose, and why
+- [Decisions](docs/decisions.md): what cairn leaves out on purpose, and why
 
 ## Reporting a bug
 
