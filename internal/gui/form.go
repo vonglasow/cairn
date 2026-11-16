@@ -118,6 +118,9 @@ func (w Window) writing(change func(board.Written) board.Written) Window {
 		w.Looking = change(w.Looking)
 		return w
 	}
+	if w.MakingSpace() {
+		return w.writingNewSpace(change)
+	}
 	if w.Screen == board.OnWorkspaces {
 		w.switcher.typed = change(w.switcher.typed)
 		if w.switcher.asking == narrowing {

@@ -209,6 +209,7 @@ var WorkspaceAdd = Operation{
 	Takes: []Argument{
 		{Name: "name", Kind: Text, Positional: true, Required: true, Means: "the workspace's name: lowercase letters, digits and dashes"},
 		{Name: "folder", Kind: Text, Positional: true, Required: true, Means: "the folder holding its store and its notes: absolute, or under ~"},
+		{Name: "colour", Kind: Text, Means: "the colour it wears, one of the label colours; without it, one read off its name"},
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		name, folder := in.Given["name"], in.Given["folder"]
@@ -218,6 +219,13 @@ var WorkspaceAdd = Operation{
 		at, err := files.Absolute(folder, on.Home.Dir)
 		if err != nil {
 			return Answer{}, err
+		}
+		colour, _ := files.KeyNamed("workspace.colour")
+		literal, wears := "", in.Given["colour"] != ""
+		if wears {
+			if literal, err = on.Home.literal(colour, in.Given["colour"], false); err != nil {
+				return Answer{}, err
+			}
 		}
 		err = withConfiguration(on.Home, func(was []byte, read files.Places) ([]byte, error) {
 			if _, err := workspace.Named(read, name); err == nil {
@@ -231,6 +239,12 @@ var WorkspaceAdd = Operation{
 		})
 		if err != nil {
 			return Answer{}, err
+		}
+		if wears {
+			said := func(was []byte) ([]byte, error) { return files.WithKey(was, colour.Name, literal) }
+			if err := workspace.Rewritten(filepath.Join(at, files.SettingsFile), on.Home.Dir, true, said); err != nil {
+				return Answer{}, err
+			}
 		}
 		store, notes := workspace.InWorkspace(files.Workspace{Name: name, Folder: at}, "")
 		path, _ := on.Home.file()

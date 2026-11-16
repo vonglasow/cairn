@@ -98,6 +98,9 @@ func (w Window) Filed(got Filed) Window {
 }
 
 func (w Window) folderChosen(got Filed) Window {
+	if w.MakingSpace() {
+		return w.folderForNewSpace(got)
+	}
 	switch {
 	case errors.Is(got.Err, ErrNoPicker):
 		w.switcher.asking, w.switcher.typed = aFolder, board.Written{}

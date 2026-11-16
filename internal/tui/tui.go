@@ -112,17 +112,18 @@ type Board struct {
 	saidAt int
 	timeAt int
 
-	place    Placed
-	switcher Switcher
-	spaces   []workspace.Workspace
-	recent   []workspace.RecentFolder
-	sought   string
-	spaceAt  int
-	opened   string
-	spaceAsk spaceTyping
-	spaceIn  string
-	newSpace string
-	keeping  workspace.RecentFolder
+	place     Placed
+	switcher  Switcher
+	spaces    []workspace.Workspace
+	recent    []workspace.RecentFolder
+	sought    string
+	spaceAt   int
+	opened    string
+	spaceAsk  spaceTyping
+	spaceIn   string
+	newSpace  string
+	newFolder string
+	keeping   workspace.RecentFolder
 
 	seriesOn      int
 	inOccurrences bool

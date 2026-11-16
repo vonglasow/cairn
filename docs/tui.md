@@ -83,7 +83,7 @@ board opens on the backlog's first card. There are no modes.
 | `v` | the views |
 | `gg` `G` | the first, the last |
 | `b` `⇧B` | back the store up, list the backups |
-| `^O` | open another workspace in place of this one |
+| `^O` | open another workspace in place of this one; there, `^N` makes one, asking its name, its folder and its colour |
 | `?` | help |
 | `:` | a command |
 | `⇥` | next tab |

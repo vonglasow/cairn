@@ -15,8 +15,6 @@ type spaceAsking int
 const (
 	narrowing spaceAsking = iota
 	aFolder
-	aName
-	itsFolder
 	keepingAs
 )
 
@@ -28,7 +26,7 @@ type switcherState struct {
 	typed     board.Written
 	on        int
 	asking    spaceAsking
-	newSpace  string
+	making    making
 	keeping   string
 	apart     *engine.Elsewhere
 	named     string
@@ -342,10 +340,6 @@ func (w Window) SwitcherAsks() string {
 	switch w.switcher.asking {
 	case aFolder:
 		return "Folder"
-	case aName:
-		return "Name"
-	case itsFolder:
-		return w.switcher.newSpace + "'s folder"
 	case keepingAs:
 		return "Keep " + w.switcher.keeping + " as"
 	}
@@ -356,6 +350,9 @@ func (w Window) SwitcherAsks() string {
 func (w Window) SwitcherTyped() board.Written { return w.switcher.typed }
 
 func (w Window) onWorkspaces(name string) Window {
+	if w.switcher.making.open {
+		return w.onNewSpace(name)
+	}
 	if w.switcher.asking != narrowing {
 		return w.askingInSwitcher(name)
 	}
@@ -427,10 +424,6 @@ func (w Window) askingInSwitcher(name string) Window {
 		switch w.switcher.asking {
 		case aFolder:
 			return w.askingApart(engine.Elsewhere{Folder: typed}, typed)
-		case aName:
-			w.switcher.newSpace, w.switcher.asking, w.switcher.typed = typed, itsFolder, board.Written{}
-		case itsFolder:
-			return w.makingWorkspace(w.switcher.newSpace, typed)
 		case keepingAs:
 			return w.keepingFolder(typed, w.switcher.keeping)
 		}
@@ -441,13 +434,6 @@ func (w Window) askingInSwitcher(name string) Window {
 func (w Window) addingWorkspace(name, folder string) error {
 	_, err := w.work.Ask(engine.WorkspaceAdd, engine.Input{Given: map[string]string{"name": name, "folder": folder}})
 	return err
-}
-
-func (w Window) makingWorkspace(name, folder string) Window {
-	if err := w.addingWorkspace(name, folder); err != nil {
-		return w.failing(err)
-	}
-	return w.askingApart(engine.Elsewhere{Workspace: name}, name)
 }
 
 func (w Window) keepingFolder(name, folder string) Window {
@@ -463,7 +449,7 @@ func (w Window) actingInSwitcher(said string) Window {
 		w.switcher.asking, w.switcher.typed = aFolder, board.Written{}
 		w.fileAsk = &FileAsk{Folder: true}
 	case NewWorkspaceSays:
-		w.switcher.asking, w.switcher.typed = aName, board.Written{}
+		return w.openingNewSpace()
 	case KeepAsWorkspaceSays:
 		line, _ := w.chosenLine()
 		w.switcher.asking, w.switcher.typed, w.switcher.keeping = keepingAs, board.Written{}, line.keeps
@@ -474,6 +460,9 @@ func (w Window) actingInSwitcher(said string) Window {
 }
 
 func (w Window) clickingWorkspaces(p geom.Point) Window {
+	if w.switcher.making.open {
+		return w.clickingNewSpace(p)
+	}
 	if !w.SwitcherBox().In(p) {
 		w.Screen = board.OnTheBoard
 		return w

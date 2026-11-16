@@ -110,6 +110,27 @@ func TestWorkspaceAdd_writesItAndMakesItsFolder(t *testing.T) {
 	}
 }
 
+func TestWorkspaceAdd_writesTheColourItIsGiven(t *testing.T) {
+	h := homeHolding(t, "", nil)
+	in := adding("play", "~/p")
+	in.Given["colour"] = "teal"
+	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, in); err != nil {
+		t.Fatal(err)
+	}
+	read, _ := os.ReadFile(filepath.Join(h.Dir, "p", files.SettingsFile))
+	if !strings.Contains(string(read), "[workspace]\ncolour = \"teal\"") {
+		t.Errorf("the settings read %q", read)
+	}
+	in = adding("game", "~/g")
+	in.Given["colour"] = "plaid"
+	if _, err := WorkspaceAdd.Run(workedOn{Home: h}, in); err == nil || !strings.Contains(err.Error(), "plaid") {
+		t.Errorf("a colour cairn has not is taken: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(h.Dir, "g")); err == nil {
+		t.Error("a refused colour made the folder")
+	}
+}
+
 func TestWorkspaceAdd_refusesWhatItCannotName(t *testing.T) {
 	for _, c := range []struct {
 		name, folder string

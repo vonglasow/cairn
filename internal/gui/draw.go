@@ -172,7 +172,9 @@ func Draw(k Kit, w Window) {
 	if w.Screen == board.OnPalette {
 		drawPalette(popover, w)
 	}
-	if w.Screen == board.OnWorkspaces {
+	if w.MakingSpace() {
+		drawNewSpace(panel, w)
+	} else if w.Screen == board.OnWorkspaces {
 		drawSwitcher(popover, w)
 	}
 	if w.Screen == board.OnConfiguration {

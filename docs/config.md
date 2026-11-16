@@ -72,6 +72,7 @@ one board for work, another for home.
 
 ```sh
 cairn workspace add work ~/cairn/work   # names it in the file, makes the folder
+cairn workspace add home ~/cairn/home --colour teal   # and the colour it wears
 cairn workspace use work                # the one used when nothing else says
 cairn workspace list                    # each one, the default marked
 cairn workspace show                    # which one answers, and why

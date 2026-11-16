@@ -45,6 +45,7 @@ const (
 	aFolder
 	aName
 	itsFolder
+	itsColour
 	keepingAs
 )
 
@@ -106,9 +107,13 @@ func namedAt(name, folder string) engine.Input {
 	return engine.Input{Given: map[string]string{"name": name, "folder": folder}}
 }
 
-func (b Board) making(name, folder string) tea.Cmd {
+func (b Board) making(name, folder, colour string) tea.Cmd {
 	return func() tea.Msg {
-		if _, err := b.work.Ask(engine.WorkspaceAdd, namedAt(name, folder)); err != nil {
+		in := namedAt(name, folder)
+		if colour != "" {
+			in.Given["colour"] = colour
+		}
+		if _, err := b.work.Ask(engine.WorkspaceAdd, in); err != nil {
 			return Switched{Err: err}
 		}
 		return b.opening(engine.Elsewhere{Workspace: name})
@@ -244,7 +249,10 @@ func (b Board) typingIn(key string) (tea.Model, tea.Cmd) {
 			b.newSpace, b.spaceAsk, b.spaceIn = b.spaceIn, itsFolder, ""
 			return b, nil
 		case itsFolder:
-			return b, b.making(b.newSpace, b.spaceIn)
+			b.newFolder, b.spaceAsk, b.spaceIn = b.spaceIn, itsColour, ""
+			return b, nil
+		case itsColour:
+			return b, b.making(b.newSpace, b.newFolder, strings.TrimSpace(b.spaceIn))
 		default:
 			return b, b.keepingIt(b.spaceIn, b.keeping.Folder)
 		}
@@ -384,6 +392,8 @@ func (b Board) typingLabel() string {
 		return "new workspace "
 	case itsFolder:
 		return b.newSpace + "'s folder "
+	case itsColour:
+		return b.newSpace + "'s colour "
 	case keepingAs:
 		return "keep as "
 	}
@@ -442,6 +452,9 @@ func (b Board) recentLine(one workspace.RecentFolder, chosen bool, inner int) st
 func (b Board) switcherActions() string {
 	if b.spaceAsk == aFolder || b.spaceAsk == itsFolder {
 		return b.skin.Faint.Render("absolute, or under ~") + "   " + b.offer("esc", "back to the list")
+	}
+	if b.spaceAsk == itsColour {
+		return b.skin.Faint.Render("a label colour, or empty for one read off its name") + "   " + b.offer("⏎", "make it") + "   " + b.offer("esc", "back to the list")
 	}
 	if b.spaceAsk == keepingAs {
 		return b.offer("⏎", "keep "+clipStart(b.keeping.Folder, max(2, b.width/3))) + "   " + b.offer("esc", "back to the list")

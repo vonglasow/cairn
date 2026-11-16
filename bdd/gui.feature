@@ -1854,17 +1854,49 @@ Feature: The desktop board
       Then a cairn is started with "gui --store" and the store of the folder "scratch"
 
     @gui-workspace-a-new-one-is-made-and-opened
-    Scenario: a new workspace is made, then opened in a window of its own
+    Scenario: New workspace… opens a dialog asking its name, its folder and its colour, and the workspace made opens in a window of its own
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+o"
+      And I click "New workspace…" in the switcher
+      Then the dialog "New workspace" asks "Name", "Folder", "Colour" and "Switch to it now"
+      When I type "garden"
+      Then the folder of the new workspace reads "~/.cairn/garden"
+      When I click the field "Folder" of the dialog
+      And I type the folder "cairn/garden"
+      And I click the colour "teal" in the dialog
+      And I click "Create" in the dialog
+      Then the configuration names the workspace "garden"
+      And the settings of the workspace "garden" say `colour = "teal"`
+      And a cairn is started with "gui --workspace garden"
+
+    @gui-workspace-a-new-one-is-chosen-a-folder-and-kept-apart
+    Scenario: the folder is chosen with the system's dialog, and a workspace made without switching stays closed
       Given the workspace "work", the default
       When I open the window on the workspace "work"
       And I press "cmd+shift+o"
       And I click "New workspace…" in the switcher
       And I type "garden"
-      And I press "enter"
-      And I type the folder "cairn/garden"
-      And I press "enter"
+      And I click "Choose…" in the dialog
+      And I pick the folder "cairn/garden" in the system's dialog
+      And I click "Switch to it now" in the dialog
+      And I click "Create" in the dialog
       Then the configuration names the workspace "garden"
-      And a cairn is started with "gui --workspace garden"
+      And no cairn is started
+      And the window says "garden is made"
+
+    @gui-workspace-a-new-one-refused-stays-asked
+    Scenario: a name cairn does not take is said in the dialog, and Cancel makes nothing
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+o"
+      And I click "New workspace…" in the switcher
+      And I type "My Garden"
+      And I click "Create" in the dialog
+      Then the dialog "New workspace" says "is named in lowercase letters"
+      When I click "Cancel" in the dialog
+      Then the configuration does not name the workspace "My Garden"
+      And no cairn is started
 
     @gui-workspace-the-switcher-opens-the-settings
     Scenario: the switcher's last line opens the settings of this workspace

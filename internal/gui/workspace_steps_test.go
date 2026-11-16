@@ -174,6 +174,65 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		}
 		return fmt.Errorf("the switcher offers no %q: %+v", said, SwitcherActs(w.w))
 	})
+	sc.Then(`^the dialog "([^"]*)" asks (".*")$`, func(head, list string) error {
+		want := quoted(strings.Replace(list, `" and "`, `", "`, 1))
+		if !w.w.MakingSpace() || head != NewSpaceHead || !slices.Equal(NewSpaceAsks(), want) {
+			return fmt.Errorf("the window shows no dialog %q asking %q: %v", head, want, w.w.Screen)
+		}
+		return nil
+	})
+	sc.Then(`^the folder of the new workspace reads "([^"]*)"$`, func(want string) error {
+		if got := w.w.NewSpaceFolderShown(); got != want {
+			return fmt.Errorf("the folder reads %q, not %q", got, want)
+		}
+		return nil
+	})
+	sc.When(`^I click the field "([^"]*)" of the dialog$`, func(field string) error {
+		laid := w.w.NewSpaceLaid()
+		w.clickAt(map[string]geom.Box{NewSpaceName: laid.Name, NewSpaceFolder: laid.Folder}[field])
+		return nil
+	})
+	sc.When(`^I click the colour "([^"]*)" in the dialog$`, func(colour string) error {
+		for _, swatch := range w.w.NewSpaceLaid().Swatches {
+			if swatch.Colour == colour {
+				w.clickAt(swatch.At)
+				return nil
+			}
+		}
+		return fmt.Errorf("the dialog offers no colour %q", colour)
+	})
+	sc.When(`^I click "([^"]*)" in the dialog$`, func(said string) error {
+		laid := w.w.NewSpaceLaid()
+		at, ok := map[string]geom.Box{NewSpaceChoose: laid.Choose, NewSpaceSwitch: laid.Switch, NewSpaceCancel: laid.Cancel, NewSpaceCreate: laid.Create}[said]
+		if !ok || !w.w.MakingSpace() {
+			return fmt.Errorf("the dialog offers no %q", said)
+		}
+		w.clickAt(at)
+		return nil
+	})
+	sc.When(`^I pick the folder "([^"]*)" in the system's dialog$`, func(folder string) error {
+		return w.answerDialog(dialog{open: filepath.Join(w.spaces.Dir, folder)})
+	})
+	sc.Then(`^the dialog "([^"]*)" says "([^"]*)"$`, func(_, want string) error {
+		if got := w.w.NewSpaceRefused(); !w.w.MakingSpace() || !strings.Contains(got, want) {
+			return fmt.Errorf("the dialog says %q", got)
+		}
+		return nil
+	})
+	sc.Then(`^the configuration does not name the workspace "([^"]*)"$`, func(name string) error {
+		h := w.spaces.Home("")
+		h.Store = ""
+		answer, err := engine.DoFrom(engine.WorkspaceList, h, engine.Input{}, engine.Through("test", h))
+		if err != nil {
+			return err
+		}
+		for _, one := range answer.Workspaces.Workspaces {
+			if one.Name == name {
+				return fmt.Errorf("the configuration names %q", name)
+			}
+		}
+		return nil
+	})
 	sc.When(`^I type the folder "([^"]*)"$`, func(folder string) error {
 		w.w = w.w.Types(filepath.Join(w.spaces.Dir, folder))
 		return nil
