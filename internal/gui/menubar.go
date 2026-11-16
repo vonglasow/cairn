@@ -23,19 +23,28 @@ var menuBar = []MenuGroup{
 	{Name: "Help", Items: []string{"Help"}},
 }
 
+var pcBar = []MenuGroup{
+	{Name: "cairn", Items: []string{"Settings…", "Upgrade", "Quit"}},
+	{Name: "Help", Items: []string{"Help", "About cairn"}},
+}
+
 var buttonMenu = [][]string{{"Settings…", "Upgrade"}, {"Help", "About cairn"}, {"Quit"}}
 
 func offered(pages engine.Pages, line string) bool {
 	return line != "Upgrade" || pages.Offers(engine.Upgrade)
 }
 
-// MenuBar is every menu of the bar, in the order a window lays them out, with only the lines the pages shown offer; with every page off there is only Settings…, the window holding nothing to act on.
-func MenuBar(pages engine.Pages) []MenuGroup {
+// MenuBar is every menu of the bar of the system named, in the order a window lays them out — About first on a Mac, last under Help elsewhere — with only the lines the pages shown offer; with every page off there is only Settings…, the window holding nothing to act on.
+func MenuBar(goos string, pages engine.Pages) []MenuGroup {
 	if pages.None() {
 		return []MenuGroup{{Name: "cairn", Items: []string{"Settings…"}}}
 	}
+	groups := pcBar
+	if goos == "darwin" {
+		groups = menuBar
+	}
 	var bar []MenuGroup
-	for _, group := range menuBar {
+	for _, group := range groups {
 		var lines []string
 		for _, line := range group.Items {
 			if offered(pages, line) {

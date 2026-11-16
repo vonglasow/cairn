@@ -180,3 +180,15 @@ func TestTheNativeBarsReadWhatCanBeDoneNow(t *testing.T) {
 		t.Error("a line no bar holds reads as doable")
 	}
 }
+
+func TestAboutStandsWhereEachSystemPutsIt(t *testing.T) {
+	for goos, want := range map[string][]MenuGroup{
+		"darwin":  {{"cairn", []string{"About cairn", "Settings…", "Upgrade", "Quit"}}, {"Help", []string{"Help"}}},
+		"windows": {{"cairn", []string{"Settings…", "Upgrade", "Quit"}}, {"Help", []string{"Help", "About cairn"}}},
+	} {
+		got := MenuBar(goos, engine.Pages{})
+		if !slices.EqualFunc(got, want, func(a, b MenuGroup) bool { return a.Name == b.Name && slices.Equal(a.Items, b.Items) }) {
+			t.Errorf("the %s bar is %v, want %v", goos, got, want)
+		}
+	}
+}

@@ -780,7 +780,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 	})
 	menuLines := func() []string {
 		var lines []string
-		for _, group := range MenuBar(w.w.Pages) {
+		for _, group := range MenuBar("windows", w.w.Pages) {
 			lines = append(lines, group.Items...)
 		}
 		return lines

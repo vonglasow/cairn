@@ -48,7 +48,7 @@ func installMenu(e event.Event, pages engine.Pages, picks chan<- string, wake fu
 	if !made(bar) {
 		return false
 	}
-	for _, group := range MenuBar(pages) {
+	for _, group := range MenuBar("windows", pages) {
 		popup, _, _ := createPopupMenu.Call()
 		if !made(popup) {
 			return false

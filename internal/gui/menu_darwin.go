@@ -32,7 +32,7 @@ func installMenu(e event.Event, pages engine.Pages, picks chan<- string, wake fu
 		return false
 	}
 	menuPicks, menuWake, installed = picks, wake, true
-	for _, group := range MenuBar(pages) {
+	for _, group := range MenuBar("darwin", pages) {
 		said(group.Name, func(title *C.char) { C.cairn_menu_group(title) })
 		for _, item := range group.Items {
 			tag, key := len(menuLines), macKey(item)
