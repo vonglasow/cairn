@@ -129,7 +129,8 @@ five days. See [the timesheet](trace.md#how-long-the-work-took).
 - `⌘,` opens the settings of the workspace and the global configuration, every
   key with where its value comes from. A change is written to the file at once,
   keeping its comments. A field typed in is saved by `⏎` or a click elsewhere,
-  and `esc` puts it back; a day is picked on the calendar.
+  and `esc` puts it back; a day is picked on the calendar, and the workspace's
+  colour on its swatches, by a click or by the arrows and `⏎`.
 
 ## Workspaces
 

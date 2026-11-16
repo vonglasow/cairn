@@ -177,3 +177,31 @@ func TestTheSettingsTakeWhatIsTypedOrPickedWithTheMouse(t *testing.T) {
 		}
 	}
 }
+
+func TestTheWorkspaceColourIsPickedByAClick(t *testing.T) {
+	f := configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml"})
+	w := holding(f).openingConfiguration()
+	var colour SettingRow
+	for _, row := range w.SettingRows() {
+		if row.Key.Name == "workspace.colour" {
+			colour = row
+		}
+	}
+	opened := w.Click(geom.Point{X: colour.Control.X + colour.Control.W/2, Y: colour.Control.Y + colour.Control.H/2})
+	swatches := opened.ColourSwatches()
+	if len(swatches) != len(label.LabelColours) {
+		t.Fatalf("a click on the colour opens %d swatches", len(swatches))
+	}
+	third := swatches[3].At
+	picked := opened.Click(geom.Point{X: third.X + third.W/2, Y: third.Y + third.H/2})
+	if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != "workspace.colour" || in.Given["value"] != label.LabelColours[3] {
+		t.Errorf("a click on a swatch set %+v (%v)", in.Given, ok)
+	}
+	if len(picked.ColourSwatches()) != 0 {
+		t.Error("the swatches stay open once one is picked")
+	}
+	box := opened.SettingsBox()
+	if left := opened.Click(geom.Point{X: box.X + 40, Y: box.Y + box.H - 60}); len(left.ColourSwatches()) != 0 || left.Screen != board.OnConfiguration {
+		t.Errorf("a click beside the swatches leaves %d open, on %v", len(left.ColourSwatches()), left.Screen)
+	}
+}

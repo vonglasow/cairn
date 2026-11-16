@@ -713,6 +713,15 @@ func (w Window) clickingSettings(p geom.Point) Window {
 	if w.ChooserOpen {
 		return w.clickingChooser(p)
 	}
+	if w.colourKey != "" {
+		for i, swatch := range w.ColourSwatches() {
+			if swatch.At.In(p) {
+				return w.colouredSetting(i)
+			}
+		}
+		w.colourKey = ""
+		return w
+	}
 	if w.KeyWriting != "" && !w.writingAt(p) {
 		w = w.settingEdited()
 	}
