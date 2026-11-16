@@ -129,6 +129,11 @@ func drawSettingRow(k Kit, w Window, row SettingRow, keyed, ruled bool) {
 	}
 	drawControl(r, w, row)
 	drawOrigin(r, w, row)
+	if left := row.Left; left != nil {
+		Banner{Said: left.Said, Then: left.Then, Warn: true, Room: left.At.X + left.At.W - left.Leave.X}.Draw(r, left.At)
+		Button{Said: NotesLeave, Small: true}.Draw(r.inside("banner"), left.Leave)
+		Button{Said: NotesMoveThem, Small: true}.Draw(r.inside("banner"), left.Move)
+	}
 	if ruled {
 		Rule{}.Draw(r, geom.Box{X: row.Name.X, Y: row.At.Y + row.At.H - 1, W: row.From.X + row.From.W - row.Name.X})
 	}
@@ -184,6 +189,9 @@ func drawControl(k Kit, w Window, row SettingRow) {
 		Button{Said: "+", Small: true}.Draw(k, row.Parts[2])
 		unit := geom.Box{X: row.Parts[2].X + row.Parts[2].W + between, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: ends(w.measured(), row.Key.Unit, small), H: lineHigh}
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, unit, row.Key.Unit, small, font.Font{}, text.Start)
+	case row.Key.Kind == files.KindPath && !row.Fixed:
+		drawField(k, w, row, row.Parts[0])
+		Button{Said: NewSpaceChoose, Small: true}.Draw(k, row.Parts[1])
 	case row.Fixed:
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, geom.Box{X: row.Control.X + copyRoom, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: row.Control.W - copyRoom, H: lineHigh}, row.Value, small, k.skin.Type.Mono, text.Start)
 	default:

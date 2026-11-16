@@ -37,6 +37,7 @@ type Config struct {
 	WrittenHere []string          `json:"written_here,omitempty" jsonschema:"every key the settings beside the store write, dotted under its table: those win over the file"`
 	Global      map[string]string `json:"global,omitempty" jsonschema:"for each key the settings beside the store write, the value the global configuration, or its default, would give"`
 	Ignored     []string          `json:"ignored,omitempty" jsonschema:"every key the file holds that this cairn does not know and passed over, one sentence each"`
+	NotesLeft   *NotesMove        `json:"notes_left,omitempty" jsonschema:"the notes of the workspace still where they were before its configuration named another folder, and that folder"`
 }
 
 // Colouring is the colour the workspace wears: the one its settings say, or one read off its name.

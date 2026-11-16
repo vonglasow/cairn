@@ -171,6 +171,8 @@ var reasons = []reason{
 	{files.ErrNotEdited, KindRefused, "config-not-edited"},
 	{workspace.ErrStoreKey, KindRefused, "config-store-key"},
 	{workspace.ErrAnsweredKey, KindRefused, "config-answered-key"},
+	{workspace.ErrNotesHoldTheBoard, KindRefused, "notes-hold-the-board"},
+	{workspace.ErrNoNotesLeft, KindRefused, "no-notes-left"},
 	{workspace.ErrEmptyGlobal, KindRefused, "config-empty-global"},
 	{files.ErrNotSet, KindRefused, "config-not-set"},
 	{workspace.ErrNoSuchWorkspace, KindRefused, "no-such-workspace"},

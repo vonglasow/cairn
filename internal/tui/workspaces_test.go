@@ -69,7 +69,7 @@ func (r *roaming) Ask(op engine.Operation, in engine.Input) (engine.Answer, erro
 				return engine.Answer{}, workspace.ErrWorkspaceKnown
 			}
 		}
-		r.added = append(r.added, strings.TrimSpace(name+" "+folder+" "+in.Given["colour"]))
+		r.added = append(r.added, strings.Join(strings.Fields(name+" "+folder+" "+in.Given["notes"]+" "+in.Given["colour"]), " "))
 		r.spaces = append(r.spaces, workspace.Workspace{Name: name, Folder: folder})
 		r.recent = slices.DeleteFunc(r.recent, func(one workspace.RecentFolder) bool { return one.Folder == folder })
 		r.shown[name] = workspace.Shown{Workspace: name, Folder: folder, Store: folder + "/cairn.db"}

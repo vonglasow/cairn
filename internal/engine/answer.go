@@ -234,6 +234,8 @@ func Of(op Operation, a Answer) any {
 		return *a.Workspaces
 	case workspace.Added:
 		return *a.WorkspaceAdded
+	case workspace.NotesMove:
+		return *a.NotesMoved
 	case workspace.Used:
 		return *a.WorkspaceUsed
 	case workspace.Removed:

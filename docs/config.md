@@ -73,6 +73,7 @@ one board for work, another for home.
 ```sh
 cairn workspace add work ~/cairn/work   # names it in the file, makes the folder
 cairn workspace add home ~/cairn/home --colour teal   # and the colour it wears
+cairn workspace add home ~/cairn/home --notes ~/vaults/home   # its notes in a vault
 cairn workspace use work                # the one used when nothing else says
 cairn workspace list                    # each one, the default marked
 cairn workspace show                    # which one answers, and why
@@ -118,14 +119,21 @@ folder = "~/code/cairn/.cairn"
 notes = "~/vaults/cairn"
 ```
 
+`workspace add --notes` writes it, and so does `cairn config set notes <folder>`
+run inside the workspace; `config unset notes` puts them back in its folder.
+With `--global`, `notes` is refused: each workspace names its own. A folder
+the store is under is refused.
+
 See [Obsidian](notes-obsidian.md).
 
 ### Notes moved by hand
 
 Changing a workspace's `notes` leaves the notes where they were. The next run
-of cairn in a terminal offers to move them, `[y/N]`; nothing moves without that
-yes, and nothing is moved into a folder that already holds something. With
-nobody to answer — the MCP server, a pipe — nothing moves.
+of cairn in a terminal offers to move them, `[y/N]`; the window's settings
+offer **Move them** under the row; `cairn notes move` moves them at once.
+Nothing moves without one of these, and nothing is moved into a folder that
+already holds something. With nobody to answer — the MCP server, a pipe —
+nothing moves.
 
 ### Its colour and its name
 

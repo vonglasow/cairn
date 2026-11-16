@@ -1707,6 +1707,33 @@ Feature: The desktop board
       And the configuration reads "notes" read when cairn opens
       And the row "store" offers nothing to change
 
+    @gui-settings-a-workspace-keeps-its-notes-in-a-vault
+    Scenario: the notes folder of a workspace is changed in its settings, and the notes left behind are moved on a click
+      Given the workspace "home", the default
+      And the workspace "home" holds the notes of a task
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the configuration reads "notes" in its folder
+      And the configuration reads "store" in its folder
+      When I write the folder "vault/home" in the row "notes"
+      Then the configuration names the notes of "home" in the folder "vault/home"
+      And the configuration reads "notes" only here
+      And the row "notes" warns "The notes of 1 task are still in"
+      When I click "Move them" on the row "notes"
+      Then the notes of the task are in the folder "vault/home"
+      And the row "notes" warns nothing
+
+    @gui-settings-the-notes-left-behind-stay-where-they-are
+    Scenario: the notes left behind are left where they are on a click
+      Given the workspace "home", the default
+      And the workspace "home" holds the notes of a task
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      And I write the folder "vault/home" in the row "notes"
+      And I click "Leave them" on the row "notes"
+      Then the row "notes" warns nothing
+      And the notes of the task are in the folder "cairn/home/notes"
+
     @gui-settings-the-theme-is-previewed-then-worn
     Scenario: the theme chooser re-skins the window as the keyboard walks it, wears the scheme on enter, and esc goes back
       Given the workspace "home", the default
@@ -1866,12 +1893,12 @@ Feature: The desktop board
       Then a cairn is started with "gui --store" and the store of the folder "scratch"
 
     @gui-workspace-a-new-one-is-made-and-opened
-    Scenario: New workspace… opens a dialog asking its name, its folder and its colour, and the workspace made opens in a window of its own
+    Scenario: New workspace… opens a dialog asking its name, its folder, its notes and its colour, and the workspace made opens in a window of its own
       Given the workspace "work", the default
       When I open the window on the workspace "work"
       And I press "cmd+shift+o"
       And I click "New workspace…" in the switcher
-      Then the dialog "New workspace" asks "Name", "Folder", "Colour" and "Switch to it now"
+      Then the dialog "New workspace" asks "Name", "Folder", "Notes", "Colour" and "Switch to it now"
       When I type "garden"
       Then the folder of the new workspace reads "~/.cairn/garden"
       When I click the field "Folder" of the dialog
@@ -1896,6 +1923,20 @@ Feature: The desktop board
       Then the configuration names the workspace "garden"
       And no cairn is started
       And the window says "garden is made"
+
+    @gui-workspace-a-new-one-keeps-its-notes-in-a-vault
+    Scenario: the notes of a new workspace are named in the dialog, in a folder of a vault
+      Given the workspace "work", the default
+      When I open the window on the workspace "work"
+      And I press "cmd+shift+o"
+      And I click "New workspace…" in the switcher
+      And I type "garden"
+      Then the notes of the new workspace read "~/.cairn/garden/notes"
+      When I click the field "Notes" of the dialog
+      And I type the folder "vault/garden"
+      And I click "Switch to it now" in the dialog
+      And I click "Create" in the dialog
+      Then the configuration names the notes of "garden" in the folder "vault/garden"
 
     @gui-workspace-a-new-one-refused-stays-asked
     Scenario: a name cairn does not take is said in the dialog, and Cancel makes nothing

@@ -45,6 +45,7 @@ type Window struct {
 	menuState
 	filesState
 	hoverKey string
+	notes    notesState
 	tiles    []schemeOffered
 	skin     *design.Skin
 

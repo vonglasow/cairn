@@ -94,24 +94,28 @@ func drawNewSpace(k Kit, w Window) {
 	for _, said := range []struct {
 		at  geom.Box
 		say string
-	}{{p.NameSaid, NewSpaceName}, {p.FolderSaid, NewSpaceFolder}, {p.ColourSaid, NewSpaceColour}} {
+	}{{p.NameSaid, NewSpaceName}, {p.FolderSaid, NewSpaceFolder}, {p.NotesSaid, NewSpaceNotes}, {p.ColourSaid, NewSpaceColour}} {
 		sayStyled(in.gtx, in.th, ink.Text, said.at, said.say, small, font.Medium, 1, text.Start)
 	}
 	m := w.measured()
-	for i, at := range []geom.Box{p.Name, p.Folder} {
+	for i, at := range []geom.Box{p.Name, p.Folder, p.Notes} {
 		field := Field{Lit: w.NewSpaceOn() == i}.Draw(in, at)
 		line := geom.Box{X: field.X + pickerPad, Y: field.Y + (field.H-lineHigh)/2, W: field.W - 2*pickerPad, H: lineHigh}
 		switch {
-		case w.NewSpaceOn() == i && (i == 0 || w.NewSpaceTyped(1).Reads() != ""):
+		case w.NewSpaceOn() == i && (i == 0 || w.NewSpaceTyped(i).Reads() != ""):
 			writing(in.inside("field"), m, line, w.NewSpaceTyped(i), true, small, 1, Follow)
 		case i == 1:
 			sayIn(in.gtx, in.th, ink.Low, line, w.NewSpaceFolderShown(), small, in.skin.Type.Mono, text.Start)
+		case i == 2:
+			sayIn(in.gtx, in.th, ink.Low, line, w.NewSpaceNotesShown(), small, in.skin.Type.Mono, text.Start)
 		default:
 			sayIn(in.gtx, in.th, ink.Text, line, w.NewSpaceTyped(0).Reads(), small, in.skin.Type.Mono, text.Start)
 		}
 	}
 	Button{Said: NewSpaceChoose, Small: true}.Draw(in, p.Choose)
+	Button{Said: NewSpaceChoose, Small: true}.Draw(in, p.ChooseNotes)
 	sayIn(in.gtx, in.th, ink.Faint, p.Hint, NewSpaceHint, small, font.Font{}, text.Start)
+	sayIn(in.gtx, in.th, ink.Faint, p.NotesHint, NewSpaceNotesHint, small, font.Font{}, text.Start)
 	picked := w.NewSpaceColour()
 	for _, swatch := range p.Swatches {
 		Swatch{Colour: swatch.Colour, Picked: swatch.Colour == picked}.Draw(in, swatch.At)

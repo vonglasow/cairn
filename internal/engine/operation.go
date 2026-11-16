@@ -252,7 +252,7 @@ func All() []Operation {
 
 // ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes; a view is how the person looks at their work, so an agent reads the views and keeps, changes or deletes none.
 func ForAPersonOnly() []Operation {
-	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill, Upgrade}
+	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, NotesMove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill, Upgrade}
 }
 
 // check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
@@ -364,6 +364,7 @@ type Answer struct {
 	Contexts          map[int]string
 	Config            *workspace.Config
 	ConfigChanged     *workspace.ConfigChanged
+	NotesMoved        *workspace.NotesMove
 	Sheet             *act.Sheet
 	Period            *objective.Period
 	Named             map[int]string

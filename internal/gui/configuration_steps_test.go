@@ -18,7 +18,7 @@ import (
 
 var origins = map[string]string{
 	"only here": SetHere, "from all workspaces": FromGlobal, "from its default": ByDefault,
-	"from the file": InFile, "read when cairn opens": WhenOpened,
+	"from the file": InFile, "read when cairn opens": WhenOpened, "in its folder": InItsFolder,
 }
 
 func (w *world) settingRow(key string) (SettingRow, error) {
@@ -58,7 +58,7 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		return os.WriteFile(path, []byte("[pages]\ntasks = true\n"), 0o600)
 	})
-	sc.Then(`^the configuration reads "([^"]*)" (only here|from all workspaces|from its default|from the file|read when cairn opens)$`, func(key, from string) error {
+	sc.Then(`^the configuration reads "([^"]*)" (only here|from all workspaces|from its default|from the file|read when cairn opens|in its folder)$`, func(key, from string) error {
 		row, err := w.settingRow(key)
 		if err != nil {
 			return err
@@ -106,6 +106,10 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		if at := slices.Index(row.Offers, said); at >= 0 {
 			w.clickIn(row.OfferAt[at])
+			return nil
+		}
+		if left := row.Left; left != nil && slices.Contains([]string{NotesLeave, NotesMoveThem}, said) {
+			w.clickIn(map[string]geom.Box{NotesLeave: left.Leave, NotesMoveThem: left.Move}[said])
 			return nil
 		}
 		return fmt.Errorf("the row %q offers %v and %v", key, row.Words, row.Offers)
@@ -176,6 +180,28 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		w.clickIn(row.Control)
 		w.w = w.w.Types(said).Key("enter")
+		return nil
+	})
+	sc.When(`^I write the folder "([^"]*)" in the row "([^"]*)"$`, func(folder, key string) error {
+		row, err := w.settingInSight(key)
+		if err != nil {
+			return err
+		}
+		w.clickIn(row.Control)
+		w.w = w.w.Types(filepath.Join(w.spaces.Dir, folder)).Key("enter")
+		return nil
+	})
+	sc.Then(`^the row "([^"]*)" warns (nothing|"[^"]*")$`, func(key, said string) error {
+		row, err := w.settingRow(key)
+		if err != nil {
+			return err
+		}
+		switch {
+		case said == "nothing" && row.Left != nil:
+			return fmt.Errorf("the row %q warns %q", key, row.Left.Said)
+		case said != "nothing" && (row.Left == nil || !strings.Contains(row.Left.Said, strings.Trim(said, `"`))):
+			return fmt.Errorf("the row %q warns %+v", key, row.Left)
+		}
 		return nil
 	})
 	sc.Then("^the row \"([^\"]*)\" says `([^`]*)`$", func(key, said string) error {

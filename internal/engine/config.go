@@ -47,6 +47,9 @@ func (g *readingGate) Resolved(p files.Places) {
 	}
 	g.config.Store = places.Store
 	g.config.Notes = places.Notes
+	if move, left, _ := notesLeft(places); left && places.Folder != "" {
+		g.config.NotesLeft = &move
+	}
 	g.config.Workspaces = workspace.WorkspacesIn(p)
 	g.config.Plugin = workspace.Emplacement{At: app.PluginBeside(places.Store.At), By: "nothing"}
 	if told := p.Plugin(); told != "" {
@@ -130,7 +133,7 @@ var ConfigInit = Operation{
 			return Answer{}, err
 		}
 		if one, err := workspace.Named(read, read.DefaultWorkspace()); err == nil {
-			if err := workspace.MakeFolder(one.Folder); err != nil {
+			if err := workspace.MakeFolder(one); err != nil {
 				return Answer{}, err
 			}
 		}

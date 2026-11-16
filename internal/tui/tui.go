@@ -123,6 +123,7 @@ type Board struct {
 	spaceIn   string
 	newSpace  string
 	newFolder string
+	newNotes  string
 	keeping   workspace.RecentFolder
 
 	seriesOn      int

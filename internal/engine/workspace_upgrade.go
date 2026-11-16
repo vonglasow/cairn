@@ -57,15 +57,33 @@ func NotesToMove(h Home) (workspace.NotesMove, bool, error) {
 	if a.Folder == "" || a.Notes.By == workspace.ByTheEnvironment || a.Why.Rung == workspace.RungEnvironment || a.Why.Rung == workspace.RungStoreFlag {
 		return workspace.NotesMove{}, false, nil
 	}
-	record := workspace.NotesRecord(a.Store.At)
-	var was workspace.NotesFound
-	if data, err := os.ReadFile(record); err == nil && json.Unmarshal(data, &was) == nil && was.Notes != a.Notes.At && workspace.HoldsSomething(was.Notes) {
-		return workspace.NotesMove{Workspace: a.Workspace, From: was.Notes, To: a.Notes.At, Blocked: workspace.HoldsSomething(a.Notes.At)}, true, nil
+	move, left, was := notesLeft(a)
+	if left {
+		return move, true, nil
 	}
-	if was.Notes != a.Notes.At {
-		workspace.KeepNotesFound(record, a.Notes.At)
+	if was != a.Notes.At {
+		workspace.KeepNotesFound(workspace.NotesRecord(a.Store.At), a.Notes.At)
 	}
 	return workspace.NotesMove{}, false, nil
+}
+
+func notesLeft(a workspace.Answering) (workspace.NotesMove, bool, string) {
+	var was workspace.NotesFound
+	if data, err := os.ReadFile(workspace.NotesRecord(a.Store.At)); err == nil {
+		_ = json.Unmarshal(data, &was)
+	}
+	if was.Notes == a.Notes.At || !workspace.HoldsSomething(was.Notes) {
+		return workspace.NotesMove{}, false, was.Notes
+	}
+	tasks := 0
+	if entries, err := os.ReadDir(was.Notes); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				tasks++
+			}
+		}
+	}
+	return workspace.NotesMove{Workspace: a.Workspace, From: was.Notes, To: a.Notes.At, Blocked: workspace.HoldsSomething(a.Notes.At), Tasks: tasks}, true, was.Notes
 }
 
 // MoveNotes moves a workspace's notes where the configuration now names them, and remembers them there; a folder already holding something is refused.
@@ -88,4 +106,31 @@ func MoveNotes(h Home, move workspace.NotesMove) error {
 	}
 	workspace.KeepNotesFound(workspace.NotesRecord(at.Store), move.To)
 	return nil
+}
+
+// NotesMove moves the notes of the workspace in use to the folder its configuration now names, when they were left where they were.
+var NotesMove = Operation{
+	Thing:   "notes",
+	Verb:    "move",
+	Short:   "Move a workspace's notes to the folder it now names",
+	Does:    "Move the notes of the workspace in use from where they were to the folder its configuration now names, the one a vault may hold; a folder already holding something is refused, and nothing is moved.",
+	Example: "cairn notes move",
+	Level:   write,
+	Needs:   aConfiguration,
+	Again:   ChangesNothingMore,
+	Answers: workspace.NotesMove{},
+	Run: func(on workedOn, _ Input) (Answer, error) {
+		_, a, err := on.Home.settled()
+		if err != nil {
+			return Answer{}, err
+		}
+		move, left, _ := notesLeft(a)
+		if !left || a.Folder == "" {
+			return Answer{}, fmt.Errorf("the notes of %s %w", a.Notes.At, workspace.ErrNoNotesLeft)
+		}
+		if err := MoveNotes(on.Home, move); err != nil {
+			return Answer{}, err
+		}
+		return Answer{NotesMoved: &move}, nil
+	},
 }

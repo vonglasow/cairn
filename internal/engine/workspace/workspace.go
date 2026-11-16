@@ -350,11 +350,15 @@ func (a Answering) Shown() Shown {
 }
 
 // MakeFolder makes the folder of a new workspace.
-func MakeFolder(at string) error {
-	if err := os.MkdirAll(filepath.Join(at, notesFolder), 0o700); err != nil {
+func MakeFolder(one files.Workspace) error {
+	_, notes := InWorkspace(one, "")
+	if err := os.MkdirAll(notes.At, 0o700); err != nil {
 		return err
 	}
-	return settingsSayingNothing(at)
+	if err := os.MkdirAll(one.Folder, 0o700); err != nil {
+		return err
+	}
+	return settingsSayingNothing(one.Folder)
 }
 
 func settingsSayingNothing(folder string) error {

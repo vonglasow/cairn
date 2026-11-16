@@ -6,6 +6,8 @@ import (
 	"cairn/internal/engine/workspace"
 	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,12 +34,32 @@ const WritingFoot = "`⏎` or a click elsewhere saves the field · `esc` puts it
 
 // The words a row says of where its value comes from.
 const (
-	SetHere    = "Only here"
-	FromGlobal = "Shared"
-	ByDefault  = "Default"
-	InFile     = "Changed"
-	WhenOpened = "Read when cairn opens"
+	SetHere     = "Only here"
+	FromGlobal  = "Shared"
+	ByDefault   = "Default"
+	InFile      = "Changed"
+	WhenOpened  = "Read when cairn opens"
+	InItsFolder = "The workspace's folder"
 )
+
+// The words of the banner under the notes row while the notes are left where they were.
+const (
+	NotesLeave    = "Leave them"
+	NotesMoveThem = "Move them"
+	NotesLeftThen = "Moved, they are read from the new folder; left, the tasks show none until you move them."
+	NotesOwnAside = "all workspaces: their folder"
+)
+
+// NotesLeft is the banner under the notes row: the notes still where they were, and the two buttons that answer it.
+type NotesLeft struct {
+	Said, Then      string
+	At, Leave, Move geom.Box
+}
+
+type notesState struct {
+	left     string
+	choosing bool
+}
 
 // The offers a row makes beside where its value comes from.
 const (
@@ -138,6 +160,7 @@ type SettingRow struct {
 	OfferAt                     []geom.Box
 	Parts                       []geom.Box
 	Words                       []string
+	Left                        *NotesLeft
 }
 
 // SettingSection is a section of the settings: its name, how many rows it holds in the scope shown, and the row it starts at.
@@ -152,6 +175,8 @@ func (w Window) rowOfKey(key files.Key) SettingRow {
 	row := SettingRow{Key: key, Value: w.valueShown(key.Name), Words: key.Words}
 	here, global := slices.Contains(c.WrittenHere, key.Name), slices.Contains(c.Written, key.Name)
 	switch {
+	case !w.Global && key.Machine:
+		row = w.placeRow(row)
 	case key.Name == "store" || key.Name == "notes":
 		row.Comes, row.Fixed = WhenOpened, true
 	case w.Global && global:
@@ -171,7 +196,7 @@ func (w Window) rowOfKey(key files.Key) SettingRow {
 	if w.Global && here && w.HereOffered() {
 		row.Theirs = w.hereName() + " sets its own: " + workspace.ValueIn(c, key.Name)
 	}
-	if !row.Fixed && row.Comes != SetHere && row.Comes != InFile && w.hoverKey == key.Name && !w.Global {
+	if !row.Fixed && !key.Machine && row.Comes != SetHere && row.Comes != InFile && w.hoverKey == key.Name && !w.Global {
 		row.Offers = []string{SetHereOffer}
 	}
 	if w.narrow() && len(row.Offers) > 0 && row.Offers[0] == ResetToGlobal {
@@ -184,6 +209,40 @@ func (w Window) rowOfKey(key files.Key) SettingRow {
 		row.Said = w.RefusedSay
 	}
 	return row
+}
+
+func (w Window) placeRow(row SettingRow) SettingRow {
+	switch row.Key.Name {
+	case "store":
+		row.Comes, row.Fixed = InItsFolder, true
+	case "notes":
+		row.Comes = InItsFolder
+		if w.namesItsNotes() {
+			row.Comes, row.Aside, row.Offers = SetHere, NotesOwnAside, []string{ResetToGlobal}
+		}
+		if left := w.Configured.NotesLeft; left != nil && left.From != w.notes.left {
+			row.Left = &NotesLeft{Said: fmt.Sprintf("The notes of %d task%s are still in %s", left.Tasks, plural(left.Tasks), tilde(left.From)), Then: NotesLeftThen}
+		}
+	default:
+		row.Comes, row.Fixed = ByDefault, true
+		if slices.Contains(w.Configured.Written, row.Key.Name) {
+			row.Comes = FromGlobal
+		}
+	}
+	return row
+}
+
+func (w Window) ownsItsNotes() bool {
+	return w.switcher.place.Configured() != "" && w.switcher.place.Folder != ""
+}
+
+func (w Window) namesItsNotes() bool {
+	for _, one := range w.Configured.Workspaces {
+		if one.Name == w.switcher.place.Configured() {
+			return one.Notes != ""
+		}
+	}
+	return false
 }
 
 func (w Window) valueShown(key string) string {
@@ -222,7 +281,7 @@ func (w Window) SettingSections() []SettingSection {
 			sections = append(sections, SettingSection{Name: name, Count: itoa(count), First: first})
 		}
 	}
-	if !w.Global {
+	if !w.Global && !w.ownsItsNotes() {
 		sections = append(sections, SettingSection{Name: files.SectionPlaces, Count: itoa(len(machineKeys())), First: -1})
 	}
 	nav := SettingsNav(w.SettingsBox())
@@ -359,6 +418,9 @@ func (w Window) SettingRows() []SettingRow {
 		if row.Said != "" {
 			high += lineHigh
 		}
+		if row.Left != nil {
+			high += w.notesLeftHigh(*row.Left) + between
+		}
 		row = w.laidRow(row, geom.Box{X: rows.X - padding + 2, Y: y, W: rows.W + 2*(padding-2), H: high})
 		out = append(out, row)
 		y += high
@@ -413,12 +475,41 @@ func (w Window) laidRow(row SettingRow, at geom.Box) SettingRow {
 	row.Name = geom.Box{X: inner.X, Y: line.Y, W: max(0, column.X-padding-inner.X), H: line.H}
 	row.Parts = w.controlParts(row)
 	row.OfferAt = w.offersOfRow(row)
+	if row.Left != nil {
+		row.Left = w.laidNotesLeft(*row.Left, geom.Box{X: inner.X, Y: at.Y + at.H - between - w.notesLeftHigh(*row.Left), W: inner.W})
+	}
 	return row
+}
+
+func (w Window) notesLeftButtons() (int, int) {
+	m := w.measured()
+	return buttonWordWide(m, NotesLeave) + 2*padding, buttonWordWide(m, NotesMoveThem) + 2*padding
+}
+
+func (w Window) notesLeftHigh(left NotesLeft) int {
+	return BannerHigh(w.measured(), left.Said, left.Then, w.notesLeftInner())
+}
+
+func (w Window) notesLeftInner() int {
+	leave, move := w.notesLeftButtons()
+	rows := SettingsRows(w.SettingsBox())
+	return rows.W - leave - move - between - bannerPad
+}
+
+func (w Window) laidNotesLeft(left NotesLeft, at geom.Box) *NotesLeft {
+	leave, move := w.notesLeftButtons()
+	at.H = w.notesLeftHigh(left)
+	left.At = at
+	left.Move = geom.Box{X: at.X + at.W - bannerPad - move, Y: at.Y + (at.H-smallButton)/2, W: move, H: smallButton}
+	left.Leave = geom.Box{X: left.Move.X - between - leave, Y: left.Move.Y, W: leave, H: smallButton}
+	return &left
 }
 
 func (w Window) controlWide(row SettingRow) int {
 	m := w.measured()
 	switch {
+	case row.Key.Kind == files.KindPath && !row.Fixed:
+		return controlColumn
 	case row.Key.Kind == files.KindBool || row.Key.Switch:
 		return toggleWide
 	case row.Key.Kind == files.KindWords:
@@ -446,6 +537,9 @@ func (w Window) controlWide(row SettingRow) int {
 func (w Window) controlParts(row SettingRow) []geom.Box {
 	c := row.Control
 	switch {
+	case row.Key.Kind == files.KindPath && !row.Fixed:
+		choose := buttonWordWide(w.measured(), NewSpaceChoose) + 2*padding
+		return []geom.Box{{X: c.X, Y: c.Y, W: c.W - choose - inset, H: c.H}, {X: c.X + c.W - choose, Y: c.Y, W: choose, H: c.H}}
 	case row.Key.Kind == files.KindBool || row.Key.Switch:
 		return []geom.Box{ToggleAt(c)}
 	case row.Key.Kind == files.KindWords:
@@ -705,6 +799,26 @@ func (w Window) unsetting(key string) Window {
 	return w.applyingOwn()
 }
 
+func (w Window) movingNotes() Window {
+	if _, err := w.work.Ask(engine.NotesMove, engine.Input{}); err != nil {
+		w.RefusedKey, w.RefusedSay = "notes", err.Error()
+		return w
+	}
+	w.RefusedKey = ""
+	return w.applyingOwn()
+}
+
+func (w Window) notesChosen(got Filed) Window {
+	w.notes.choosing = false
+	switch {
+	case errors.Is(got.Err, ErrNoPicker), got.Declined:
+		return w
+	case got.Err != nil:
+		return w.failing(got.Err)
+	}
+	return w.setting("notes", tilde(got.Chosen))
+}
+
 func (w Window) applyingOwn() Window {
 	got, ok := w.readingConfig()
 	if !ok || got.Problem != "" {
@@ -745,6 +859,13 @@ func (w Window) clickingSettings(p geom.Point) Window {
 			continue
 		}
 		w.RowOn = i
+		if left := row.Left; left != nil && left.Leave.In(p) {
+			w.notes.left = w.Configured.NotesLeft.From
+			return w
+		}
+		if left := row.Left; left != nil && left.Move.In(p) {
+			return w.movingNotes()
+		}
 		for j, offer := range row.OfferAt {
 			if offer.In(p) {
 				return w.offeredOnRow(row, row.Offers[j])
@@ -774,6 +895,11 @@ func (w Window) actingOnPart(row SettingRow, part int) Window {
 		n, _ := strconv.Atoi(row.Value)
 		return w.setting(row.Key.Name, strconv.Itoa(max(1, n+part-1)))
 	case row.Key.Kind == files.KindNumber:
+		return w.acting(row, -1)
+	case row.Key.Kind == files.KindPath && part == 1:
+		w.notes.choosing, w.fileAsk = true, &FileAsk{Folder: true}
+		return w
+	case row.Key.Kind == files.KindPath:
 		return w.acting(row, -1)
 	}
 	return w.acting(row, part)
@@ -1030,7 +1156,7 @@ func machineKeys() []files.Key {
 func (w Window) keysShown() []files.Key {
 	var shown []files.Key
 	for _, key := range files.Keys() {
-		if w.Global && key.Store || !w.Global && key.Machine {
+		if w.Global && key.Store || !w.Global && key.Machine && !w.ownsItsNotes() {
 			continue
 		}
 		shown = append(shown, key)

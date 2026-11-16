@@ -210,15 +210,22 @@ var WorkspaceAdd = Operation{
 		{Name: "name", Kind: Text, Positional: true, Required: true, Means: "the workspace's name: lowercase letters, digits and dashes"},
 		{Name: "folder", Kind: Text, Positional: true, Required: true, Means: "the folder holding its store and its notes: absolute, or under ~"},
 		{Name: "colour", Kind: Text, Means: "the colour it wears, one of the label colours; without it, one read off its name"},
+		{Name: "notes", Kind: Text, Means: "the folder its notes are written in, a vault's for one: absolute, or under ~; without it, notes in its folder"},
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
-		name, folder := in.Given["name"], in.Given["folder"]
+		name, folder, notes := in.Given["name"], in.Given["folder"], in.Given["notes"]
 		if !workspace.PlainName.MatchString(name) || name == files.DefaultWorkspaceKey {
 			return Answer{}, fmt.Errorf("%q: %w", name, workspace.ErrNotAWorkspaceName)
 		}
 		at, err := files.Absolute(folder, on.Home.Dir)
 		if err != nil {
 			return Answer{}, err
+		}
+		one := files.Workspace{Name: name, Folder: at}
+		if notes != "" {
+			if one.Notes, err = notesOf(at, notes, on.Home.Dir); err != nil {
+				return Answer{}, err
+			}
 		}
 		colour, _ := files.KeyNamed("workspace.colour")
 		literal, wears := "", in.Given["colour"] != ""
@@ -232,10 +239,13 @@ var WorkspaceAdd = Operation{
 				return nil, fmt.Errorf("%q: %w", name, workspace.ErrWorkspaceKnown)
 			}
 			said, err := files.WithWorkspace(was, name, folder)
+			if err == nil && notes != "" {
+				said, err = files.WithWorkspaceNotes(said, name, notes)
+			}
 			if err != nil {
 				return nil, err
 			}
-			return said, workspace.MakeFolder(at)
+			return said, workspace.MakeFolder(one)
 		})
 		if err != nil {
 			return Answer{}, err
@@ -246,9 +256,9 @@ var WorkspaceAdd = Operation{
 				return Answer{}, err
 			}
 		}
-		store, notes := workspace.InWorkspace(files.Workspace{Name: name, Folder: at}, "")
+		store, written := workspace.InWorkspace(one, "")
 		path, _ := on.Home.file()
-		return Answer{WorkspaceAdded: &workspace.Added{Name: name, Folder: at, Store: store.At, Notes: notes.At, Written: path}}, nil
+		return Answer{WorkspaceAdded: &workspace.Added{Name: name, Folder: at, Store: store.At, Notes: written.At, Written: path}}, nil
 	},
 }
 
@@ -344,4 +354,15 @@ var WorkspaceShow = Operation{
 		}
 		return Answer{WorkspaceShown: &shown}, nil
 	},
+}
+
+func notesOf(folder, said, home string) (string, error) {
+	at, err := files.Absolute(said, home)
+	if err != nil {
+		return "", err
+	}
+	if workspace.Within(folder, at) {
+		return "", fmt.Errorf("%s %w", said, workspace.ErrNotesHoldTheBoard)
+	}
+	return at, nil
 }

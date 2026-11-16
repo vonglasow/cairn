@@ -98,6 +98,9 @@ func fillingConfig(h Home, global bool) (Answer, error) {
 }
 
 func changingConfig(h Home, in Input, set bool) (Answer, error) {
+	if answer, own, err := changingNotes(h, in, set); own {
+		return answer, err
+	}
 	key, ok := files.KeyNamed(in.Given["key"])
 	if !ok {
 		return Answer{}, fmt.Errorf("%q %w: %s", in.Given["key"], files.ErrNotAKey, workspace.KeysSaid())
@@ -211,4 +214,37 @@ func (h Home) inForce(key files.Key) (string, string) {
 		value = ""
 	}
 	return value, from
+}
+
+func changingNotes(h Home, in Input, set bool) (Answer, bool, error) {
+	if in.Given["key"] != "notes" || in.yes("global") {
+		return Answer{}, false, nil
+	}
+	_, a, err := h.settled()
+	if err != nil || a.Workspace == "" || a.Implicit() || a.Folder == "" {
+		return Answer{}, false, nil
+	}
+	if _, _, err := NotesToMove(h); err != nil {
+		return Answer{}, true, err
+	}
+	notes := ""
+	if set {
+		if _, err := notesOf(a.Folder, in.Given["value"], h.Dir); err != nil {
+			return Answer{}, true, err
+		}
+		notes = in.Given["value"]
+	}
+	err = withConfiguration(h, func(was []byte, _ files.Places) ([]byte, error) {
+		return files.WithWorkspaceNotes(was, a.Workspace, notes)
+	})
+	if err != nil {
+		return Answer{}, true, err
+	}
+	path, _ := h.file()
+	_, now, err := h.settled()
+	if err != nil {
+		return Answer{}, true, err
+	}
+	changed := workspace.ConfigChanged{Key: "notes", File: path, Set: set, Value: now.Notes.At, From: "named for the workspace " + a.Workspace}
+	return Answer{ConfigChanged: &changed}, true, nil
 }

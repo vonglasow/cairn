@@ -45,6 +45,7 @@ const (
 	aFolder
 	aName
 	itsFolder
+	itsNotes
 	itsColour
 	keepingAs
 )
@@ -107,11 +108,14 @@ func namedAt(name, folder string) engine.Input {
 	return engine.Input{Given: map[string]string{"name": name, "folder": folder}}
 }
 
-func (b Board) making(name, folder, colour string) tea.Cmd {
+func (b Board) making(name, folder, notes, colour string) tea.Cmd {
 	return func() tea.Msg {
 		in := namedAt(name, folder)
 		if colour != "" {
 			in.Given["colour"] = colour
+		}
+		if notes != "" {
+			in.Given["notes"] = notes
 		}
 		if _, err := b.work.Ask(engine.WorkspaceAdd, in); err != nil {
 			return Switched{Err: err}
@@ -249,10 +253,13 @@ func (b Board) typingIn(key string) (tea.Model, tea.Cmd) {
 			b.newSpace, b.spaceAsk, b.spaceIn = b.spaceIn, itsFolder, ""
 			return b, nil
 		case itsFolder:
-			b.newFolder, b.spaceAsk, b.spaceIn = b.spaceIn, itsColour, ""
+			b.newFolder, b.spaceAsk, b.spaceIn = b.spaceIn, itsNotes, ""
+			return b, nil
+		case itsNotes:
+			b.newNotes, b.spaceAsk, b.spaceIn = strings.TrimSpace(b.spaceIn), itsColour, ""
 			return b, nil
 		case itsColour:
-			return b, b.making(b.newSpace, b.newFolder, strings.TrimSpace(b.spaceIn))
+			return b, b.making(b.newSpace, b.newFolder, b.newNotes, strings.TrimSpace(b.spaceIn))
 		default:
 			return b, b.keepingIt(b.spaceIn, b.keeping.Folder)
 		}
@@ -392,6 +399,8 @@ func (b Board) typingLabel() string {
 		return "new workspace "
 	case itsFolder:
 		return b.newSpace + "'s folder "
+	case itsNotes:
+		return b.newSpace + "'s notes "
 	case itsColour:
 		return b.newSpace + "'s colour "
 	case keepingAs:
@@ -452,6 +461,9 @@ func (b Board) recentLine(one workspace.RecentFolder, chosen bool, inner int) st
 func (b Board) switcherActions() string {
 	if b.spaceAsk == aFolder || b.spaceAsk == itsFolder {
 		return b.skin.Faint.Render("absolute, or under ~") + "   " + b.offer("esc", "back to the list")
+	}
+	if b.spaceAsk == itsNotes {
+		return b.skin.Faint.Render("empty keeps them in the folder") + "   " + b.offer("⏎", "next") + "   " + b.offer("esc", "back to the list")
 	}
 	if b.spaceAsk == itsColour {
 		return b.skin.Faint.Render("a label colour, or empty for one read off its name") + "   " + b.offer("⏎", "make it") + "   " + b.offer("esc", "back to the list")

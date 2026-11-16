@@ -135,7 +135,9 @@ five days. See [the timesheet](trace.md#how-long-the-work-took).
   and <kbd>esc</kbd> puts it back; a day is picked on the calendar, and the workspace's
   colour on its swatches, by a click or by the arrows and <kbd>⏎</kbd>; a number of days
   steps with **−** and **+**; the dragged card's opacity slides, by a drag
-  or by <kbd>←</kbd> and <kbd>→</kbd> five at a time.
+  or by <kbd>←</kbd> and <kbd>→</kbd> five at a time. For a workspace, **Files** shows where its
+  board is, and its **Notes folder**, typed or picked with **Choose…**; the notes left in
+  the folder before are offered **Move them** or **Leave them**.
 
 ## Workspaces
 
@@ -150,9 +152,11 @@ forward when it is already open. <kbd>⌘⇧</kbd> and a figure choose one direc
 2. Its **folder** follows the name, `~/.cairn/<name>`. Click the field to type
    another, or **Choose…** to pick it in the system's dialog. A folder that
    holds a board already is opened as it is.
-3. Click a **colour**. Without one, it wears a colour read off its name.
-4. Untick **Switch to it now** to make it without opening it.
-5. **Create**, or <kbd>⏎</kbd>. <kbd>⇥</kbd> goes from the name to the folder; <kbd>esc</kbd> or
+3. Its **notes** stay in its folder unless another is typed or chosen — a
+   vault's, for one: see [Notes in Obsidian](notes-obsidian.md).
+4. Click a **colour**. Without one, it wears a colour read off its name.
+5. Untick **Switch to it now** to make it without opening it.
+6. **Create**, or <kbd>⏎</kbd>. <kbd>⇥</kbd> goes from field to field; <kbd>esc</kbd> or
    **Cancel** makes nothing. A name cairn does not take is said in the dialog.
 
 ## While it is open

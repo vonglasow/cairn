@@ -189,8 +189,28 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 	})
 	sc.When(`^I click the field "([^"]*)" of the dialog$`, func(field string) error {
 		laid := w.w.NewSpaceLaid()
-		w.clickAt(map[string]geom.Box{NewSpaceName: laid.Name, NewSpaceFolder: laid.Folder}[field])
+		w.clickAt(map[string]geom.Box{NewSpaceName: laid.Name, NewSpaceFolder: laid.Folder, NewSpaceNotes: laid.Notes}[field])
 		return nil
+	})
+	sc.Then(`^the notes of the new workspace read "([^"]*)"$`, func(want string) error {
+		if got := w.w.NewSpaceNotesShown(); got != want {
+			return fmt.Errorf("the notes read %q, not %q", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^the configuration names the notes of "([^"]*)" in the folder "([^"]*)"$`, func(name, folder string) error {
+		h := w.spaces.Home("")
+		h.Store = ""
+		answer, err := engine.DoFrom(engine.WorkspaceList, h, engine.Input{}, engine.Through("test", h))
+		if err != nil {
+			return err
+		}
+		for _, one := range answer.Workspaces.Workspaces {
+			if one.Name == name && one.Notes == filepath.Join(w.spaces.Dir, folder) {
+				return nil
+			}
+		}
+		return fmt.Errorf("the configuration names no notes of %q in %q: %+v", name, folder, answer.Workspaces.Workspaces)
 	})
 	sc.When(`^I click the colour "([^"]*)" in the dialog$`, func(colour string) error {
 		for _, swatch := range w.w.NewSpaceLaid().Swatches {
@@ -232,6 +252,17 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 			}
 		}
 		return nil
+	})
+	sc.Given(`^the workspace "([^"]*)" holds the notes of a task$`, func(name string) error {
+		summary := filepath.Join(w.spaces.FolderOf(name), "notes", "1", "summary.md")
+		if err := os.MkdirAll(filepath.Dir(summary), 0o700); err != nil {
+			return err
+		}
+		return os.WriteFile(summary, []byte("where it stands"), 0o600)
+	})
+	sc.Then(`^the notes of the task are in the folder "([^"]*)"$`, func(folder string) error {
+		_, err := os.Stat(filepath.Join(w.spaces.Dir, folder, "1", "summary.md"))
+		return err
 	})
 	sc.When(`^I type the folder "([^"]*)"$`, func(folder string) error {
 		w.w = w.w.Types(filepath.Join(w.spaces.Dir, folder))

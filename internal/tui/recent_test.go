@@ -75,11 +75,15 @@ func TestSwitcher_ctrlNMakesAWorkspaceAndOpensIt(t *testing.T) {
 		t.Fatalf("enter asks for no folder:\n%s", screen)
 	}
 	b = pressing(b, "/", "g", "enter")
+	if screen := flat(strip(b.Draw())); !strings.Contains(screen, "garden's notes ›") || !strings.Contains(screen, "empty keeps them in the folder") {
+		t.Fatalf("enter asks for no notes:\n%s", screen)
+	}
+	b = pressing(b, "/", "v", "enter")
 	if screen := strip(b.Draw()); !strings.Contains(screen, "garden's colour ›") {
 		t.Fatalf("enter asks for no colour:\n%s", screen)
 	}
 	b = pressing(b, "t", "e", "a", "l", "enter")
-	if !slices.Equal(r.added, []string{"garden /g teal"}) || !slices.Equal(r.switched, []string{"garden"}) {
+	if !slices.Equal(r.added, []string{"garden /g /v teal"}) || !slices.Equal(r.switched, []string{"garden"}) {
 		t.Errorf("added %v, switched %v; want garden made at /g in teal, then opened", r.added, r.switched)
 	}
 	if !strings.HasPrefix(headerOf(b), "● garden") {
@@ -89,7 +93,7 @@ func TestSwitcher_ctrlNMakesAWorkspaceAndOpensIt(t *testing.T) {
 
 func TestSwitcher_aNewWorkspaceRefusedOpensNothing(t *testing.T) {
 	r := withRecent(t)
-	b := pressing(roamingBoard(t, r), "ctrl+o", "ctrl+n", "w", "o", "r", "k", "enter", "/", "w", "enter", "enter")
+	b := pressing(roamingBoard(t, r), "ctrl+o", "ctrl+n", "w", "o", "r", "k", "enter", "/", "w", "enter", "enter", "enter")
 	if len(r.switched) != 0 || !strings.Contains(strip(b.Draw()), workspace.ErrWorkspaceKnown.Error()) {
 		t.Errorf("switched = %v; want work refused, saying why:\n%s", r.switched, strip(b.Draw()))
 	}

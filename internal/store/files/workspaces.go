@@ -176,3 +176,58 @@ func WithoutWorkspace(data []byte, name string) ([]byte, error) {
 	}
 	return said, nil
 }
+
+// WithWorkspaceNotes is the file with the notes of the workspace named written as given, or taken out when none is given, its line or its table changed and nothing else; every other byte is the file's.
+func WithWorkspaceNotes(data []byte, name, notes string) ([]byte, error) {
+	var before struct {
+		Workspaces map[string]any `toml:"workspaces"`
+	}
+	if toml.Unmarshal(data, &before) != nil {
+		return nil, ErrNotWritten
+	}
+	folder, inLine := before.Workspaces[name].(string)
+	if table, ok := before.Workspaces[name].(map[string]any); ok {
+		folder, _ = table["folder"].(string)
+	}
+	lines := linesOf(data)
+	start, end, found := regionOf(lines, workspacesTable)
+	entry := regexp.MustCompile(`^\s*` + regexp.QuoteMeta(name) + `\s*=`)
+	at := -1
+	if found {
+		at = slices.IndexFunc(lines[start:end], entry.MatchString)
+	}
+	var said []byte
+	switch {
+	case at >= 0:
+		line := fmt.Sprintf("%s = %q\n", name, folder)
+		if notes != "" {
+			line = fmt.Sprintf("%s = { folder = %q, notes = %q }\n", name, folder, notes)
+		}
+		changed := slices.Clone(lines)
+		changed[start+at] = line
+		said = []byte(strings.Join(changed, ""))
+	case inLine || folder == "":
+		return nil, ErrNotWritten
+	case notes == "":
+		var err error
+		if said, err = WithoutKey(data, workspacesTable+"."+name+".notes"); err != nil {
+			return nil, err
+		}
+	default:
+		var err error
+		if said, err = WithKey(data, workspacesTable+"."+name+".notes", fmt.Sprintf("%q", notes)); err != nil {
+			return nil, err
+		}
+	}
+	var after struct {
+		Workspaces map[string]any `toml:"workspaces"`
+	}
+	if toml.Unmarshal(said, &after) != nil {
+		return nil, ErrNotWritten
+	}
+	got, _ := after.Workspaces[name].(map[string]any)
+	if (notes == "" && got["notes"] != nil) || (notes != "" && got["notes"] != notes) {
+		return nil, ErrNotWritten
+	}
+	return said, nil
+}
