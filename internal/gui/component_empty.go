@@ -5,6 +5,7 @@ import (
 
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/text"
 )
 
 // Empty is the slot where a column or a lane holding nothing says so: a dashed line at a card's corners, and the words.
@@ -14,7 +15,7 @@ type Empty struct{ Said string }
 func (e Empty) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("empty", at)
 	Dashed{Radius: k.skin.Radius.Card}.Draw(k.inside("empty"), at)
-	sayCentred(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}, e.Said, small)
+	Sentence{Said: e.Said, Ink: k.skin.Colour.Ink.Low, Along: text.Middle}.Draw(k.inside("empty"), geom.Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh})
 	return at
 }
 

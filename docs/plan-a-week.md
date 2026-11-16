@@ -13,7 +13,7 @@ cairn task list --state backlog          # what waits
 cairn task move 4 --state todo           # chosen for the week
 ```
 
-On the board: drag the card into `todo` in the window, or press `m` then `t`
+On the board: drag the card into `todo` in the window, or press <kbd>m</kbd> then <kbd>t</kbd>
 in the terminal.
 
 ## Put them in order

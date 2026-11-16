@@ -34,7 +34,7 @@ func (w Window) listingBackups() Window {
 		return w.failing(err)
 	}
 	if len(kept.Backups) == 0 {
-		return w.telling("no backup yet: ⌘B makes one")
+		return w.telling("no backup yet: `⌘B` makes one")
 	}
 	w.Backups, w.BackupOn, w.BackupsFrom, w.Screen = kept.Backups, 0, 0, board.OnBackups
 	return w

@@ -130,7 +130,7 @@ any other objective it serves.
 
 Both boards have an Objectives tab: a tree of objectives beside the chosen
 one's detail — its numbers, its sub-objectives, its tasks. A card on the task
-board names the objective it serves, `◇ Firmware`. From an objective, `t` shows
+board names the objective it serves, `◇ Firmware`. From an objective, <kbd>t</kbd> shows
 its tasks on the board. See [the board](tui.md#objectives) and
 [the window](gui.md#objectives).
 

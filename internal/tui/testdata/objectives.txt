@@ -36,4 +36,4 @@
 
 
 
- jk ↓↑ objectives   JK order   ⏎ open   t its tasks   a new   e edit   D delete   ? help
+  jk   ↓↑  objectives   JK  order   ⏎  open   t  its tasks   a  new   e  edit   D  delete   ?  help

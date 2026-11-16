@@ -27,6 +27,7 @@ type Skin struct {
 	RuleOn lipgloss.Style
 	Band   lipgloss.Style
 	Key    lipgloss.Style
+	Cap    lipgloss.Style
 	Says   lipgloss.Style
 	Panel  lipgloss.Style
 	Title  lipgloss.Style
@@ -57,6 +58,7 @@ func SkinOf(p Palette) Skin {
 		RuleOn:  p.Accent.Style(),
 		Band:    p.Stalled.Style().Bold(true),
 		Key:     p.Accent.Style().Bold(true),
+		Cap:     lipgloss.NewStyle().Background(p.Line.Border()).Foreground(p.Bright.Border()).Bold(true),
 		Says:    p.Faint.Style(),
 		Panel: lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).

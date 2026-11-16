@@ -52,8 +52,8 @@ carried by nothing, until it is deleted — so a sprint's label can be made
 before its tasks. Renaming or deleting a label is a change to each task and
 objective carrying it, and shows in their trace.
 
-In the window, `⇧L` (or the File menu) opens the list of labels: `n` makes one,
-`r` renames the one chosen, `c` chooses its colour, `⌘⌫` takes it off
+In the window, <kbd>⇧L</kbd> (or the File menu) opens the list of labels: <kbd>n</kbd> makes one,
+<kbd>r</kbd> renames the one chosen, <kbd>c</kbd> chooses its colour, <kbd>⌘⌫</kbd> takes it off
 everything after asking.
 
 ## Colours
@@ -83,8 +83,8 @@ objectives; see [objectives](objectives.md#two-levels).
 
 The `labels` field opens a list of every label, those the task carries ticked.
 Typing narrows it; typing a label that does not exist yet offers to create it,
-under the name it will have. `⏎` ticks or unticks, `⌘⏎` keeps what is ticked,
-`esc` keeps nothing. Nothing is written until the form is saved.
+under the name it will have. <kbd>⏎</kbd> ticks or unticks, <kbd>⌘⏎</kbd> keeps what is ticked,
+<kbd>esc</kbd> keeps nothing. Nothing is written until the form is saved.
 
 A view that narrows by a label follows it when it is renamed; see
 [views](listing.md#views).

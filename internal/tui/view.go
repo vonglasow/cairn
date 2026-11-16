@@ -373,11 +373,11 @@ func (b Board) foot() string {
 }
 
 func (b Board) bar(offers ...string) string {
-	return " " + Join("   ", b.width-geom.Margin, offers...)
+	return " " + Join("  ", b.width-geom.Margin, offers...)
 }
 
 func (b Board) offer(key, does string) string {
-	return b.skin.Key.Render(key) + " " + b.skin.Says.Render(does)
+	return b.cap(key) + " " + b.skin.Says.Render(does)
 }
 
 func (b Board) offers() []string {

@@ -5,7 +5,6 @@ import (
 	"cairn/internal/gui/geom"
 	"strconv"
 
-	"gioui.org/font"
 	"gioui.org/text"
 
 	"cairn/internal/engine"
@@ -36,7 +35,7 @@ func drawSeries(k Kit, l geom.Layout, w Window) {
 }
 
 // NoSeriesSays is what the list of series says while there is none.
-const NoSeriesSays = "No series yet. n makes one."
+const NoSeriesSays = "No series yet. `n` makes one."
 
 func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 	if len(d.Offers) == 0 {
@@ -77,9 +76,8 @@ func drawSeriesDetail(k Kit, w Window, d SeriesDetail) {
 		})
 	}
 	Head{Said: d.OccurrencesSaid}.Draw(k, d.OccurrencesHead)
-	aside := min(d.OccurrencesHead.W/2, ends(w.measured(), d.OccurrencesAside, small)+2)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: d.OccurrencesHead.X + d.OccurrencesHead.W - aside, Y: d.OccurrencesHead.Y, W: aside, H: lineHigh},
-		fits(k.gtx, k.th, d.OccurrencesAside, aside, small), small, font.Font{}, text.End)
+	aside := min(d.OccurrencesHead.W/2, SentenceWide(w.measured(), d.OccurrencesAside, small)+2)
+	Sentence{Said: d.OccurrencesAside, Ink: k.skin.Colour.Ink.Low, Along: text.End}.Draw(k.inside("head"), geom.Box{X: d.OccurrencesHead.X + d.OccurrencesHead.W - aside, Y: d.OccurrencesHead.Y, W: aside, H: lineHigh})
 	for _, line := range d.Occurrences {
 		drawOccurrence(k, w, line)
 	}

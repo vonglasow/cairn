@@ -37,4 +37,4 @@
                │┃ ↳ the fou… ┃│              │
                │┗━━━━━━━━━━━━┛│              │
 
- hjkl ←↓↑→ tasks   ⇧hjkl move   ⏎ open   e edit   f focus
+  hjkl   ←↓↑→  tasks   ⇧hjkl  move   ⏎  open   e  edit

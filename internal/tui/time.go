@@ -102,5 +102,5 @@ func (b Board) drawSaid() string {
 	from := min(b.saidAt, max(0, len(lines)-room))
 	shown := lines[from:min(len(lines), from+room)]
 	out := append([]string{b.skin.Title.Render(" what it answered"), ""}, shown...)
-	return strings.Join(append(out, b.skin.Faint.Render(" esc  back")), "\n")
+	return strings.Join(append(out, " "+b.offer("esc", "back")), "\n")
 }

@@ -6,8 +6,8 @@ cairn tui --icons unicode        # without a Nerd Font installed
 ```
 
 The same board as in the window, on a screen that stays open, in the
-colours of the scheme the window wears. It reads like vim: `hjkl` walks the
-cards, `:` takes any command, and `?` answers everywhere. `:q` leaves.
+colours of the scheme the window wears. It reads like vim: <kbd>hjkl</kbd> walks the
+cards, <kbd>:</kbd> takes any command, and <kbd>?</kbd> answers everywhere. `:q` leaves.
 
 It needs a terminal of 60 columns by 26 rows; below that it says so rather than
 draw something nobody can read.
@@ -47,7 +47,7 @@ draw something nobody can read.
 - **The bar at the bottom** shows only the keys that work where you are. A key
   that is not on the bar does nothing there.
 
-Tabs, walked with `⇥`: **tasks**, **objectives**, **time** — a week, day by
+Tabs, walked with <kbd>⇥</kbd>: **tasks**, **objectives**, **time** — a week, day by
 day, task by task — and **series** while recurrence is on. Each counts what it
 holds. A page turned off in the [configuration](config.md#every-key) has no tab.
 
@@ -58,58 +58,58 @@ board opens on the backlog's first card. There are no modes.
 
 ## Keys
 
-`hjkl` and the arrows only ever navigate.
+<kbd>hjkl</kbd> and the arrows only ever navigate.
 
 | key | what it does |
 |---|---|
-| `hjkl` `←↓↑→` | walk the cards: sideways over an empty column to the next card, down from a column's last card into the lane under it, up out of a lane |
-| `^H` `^L` | the column left or right, at once, even an empty one |
-| `^J` `^K` | into the band, out of it |
-| `⇧hjkl` | move the task; sideways changes its column, up and down its place |
-| `a` | a new task, in the column under the cursor |
-| `o` | a new task linked to the one held, in `todo` |
-| `e` | the form |
-| `⏎` | the detail · on objectives, open one |
-| `D` | delete — it asks first |
-| `x` | archive or unarchive the task |
-| `⇧A` | show what was archived, or hide it |
-| `⇧X` | archive the whole column — it asks first |
-| `m` then a letter | move to a column: `b` backlog, `t` todo, `c` current, `d` done, `w` watching, `p` paused |
-| `p` then a letter | priority: `l` low, `n` normal, `h` high, `c` critical |
-| `f` | focus or unfocus |
-| `r` then a letter | on an occurrence: `s` skip it, `x` stop the series, `r` resume it, `e` open the series |
-| `/` | search |
-| `⇧F` | filters |
-| `v` | the views |
-| `gg` `G` | the first, the last |
-| `b` `⇧B` | back the store up, list the backups |
-| `^O` | open another workspace in place of this one; there, `^N` makes one, asking its name, its folder and its colour |
-| `?` | help |
-| `:` | a command |
-| `⇥` | next tab |
-| `esc` | back one level |
+| <kbd>hjkl</kbd> <kbd>←↓↑→</kbd> | walk the cards: sideways over an empty column to the next card, down from a column's last card into the lane under it, up out of a lane |
+| <kbd>^H</kbd> <kbd>^L</kbd> | the column left or right, at once, even an empty one |
+| <kbd>^J</kbd> <kbd>^K</kbd> | into the band, out of it |
+| <kbd>⇧hjkl</kbd> | move the task; sideways changes its column, up and down its place |
+| <kbd>a</kbd> | a new task, in the column under the cursor |
+| <kbd>o</kbd> | a new task linked to the one held, in `todo` |
+| <kbd>e</kbd> | the form |
+| <kbd>⏎</kbd> | the detail · on objectives, open one |
+| <kbd>D</kbd> | delete — it asks first |
+| <kbd>x</kbd> | archive or unarchive the task |
+| <kbd>⇧A</kbd> | show what was archived, or hide it |
+| <kbd>⇧X</kbd> | archive the whole column — it asks first |
+| <kbd>m</kbd> then a letter | move to a column: <kbd>b</kbd> backlog, <kbd>t</kbd> todo, <kbd>c</kbd> current, <kbd>d</kbd> done, <kbd>w</kbd> watching, <kbd>p</kbd> paused |
+| <kbd>p</kbd> then a letter | priority: <kbd>l</kbd> low, <kbd>n</kbd> normal, <kbd>h</kbd> high, <kbd>c</kbd> critical |
+| <kbd>f</kbd> | focus or unfocus |
+| <kbd>r</kbd> then a letter | on an occurrence: <kbd>s</kbd> skip it, <kbd>x</kbd> stop the series, <kbd>r</kbd> resume it, <kbd>e</kbd> open the series |
+| <kbd>/</kbd> | search |
+| <kbd>⇧F</kbd> | filters |
+| <kbd>v</kbd> | the views |
+| <kbd>gg</kbd> <kbd>G</kbd> | the first, the last |
+| <kbd>b</kbd> <kbd>⇧B</kbd> | back the store up, list the backups |
+| <kbd>^O</kbd> | open another workspace in place of this one; there, <kbd>^N</kbd> makes one, asking its name, its folder and its colour |
+| <kbd>?</kbd> | help |
+| <kbd>:</kbd> | a command |
+| <kbd>⇥</kbd> | next tab |
+| <kbd>esc</kbd> | back one level |
 
-A terminal that sends `^H` or `^J` as another key keeps them for it; `hjkl`
+A terminal that sends <kbd>^H</kbd> or <kbd>^J</kbd> as another key keeps them for it; <kbd>hjkl</kbd>
 reach the same places, but for an empty column.
 
 ## Objectives
 
 The objectives tab is a tree, two lines an objective, each sub-objective under
-its parent. `⏎` opens an objective's own board, holding only the tasks
-that serve it; `esc` goes back to the list. `t` shows an objective's tasks on
-the tasks board, `N` makes a sub-objective, `z` folds a parent away, and `[`
-`]` narrow an objective's board to one sub-objective, the objective itself, or
+its parent. <kbd>⏎</kbd> opens an objective's own board, holding only the tasks
+that serve it; <kbd>esc</kbd> goes back to the list. <kbd>t</kbd> shows an objective's tasks on
+the tasks board, <kbd>N</kbd> makes a sub-objective, <kbd>z</kbd> folds a parent away, and <kbd>[</kbd>
+<kbd>]</kbd> narrow an objective's board to one sub-objective, the objective itself, or
 all of it. See [objectives](objectives.md).
 
 ## Moving tasks
 
-`⇧h` and `⇧l` change a task's column, and its state follows. `⇧j` and `⇧k`
+<kbd>⇧h</kbd> and <kbd>⇧l</kbd> change a task's column, and its state follows. <kbd>⇧j</kbd> and <kbd>⇧k</kbd>
 change its place among the tasks of its column, never its column. From the
-last task of a column, `⇧j` pushes it into the band and asks which of the three
-it becomes; inside the band, `⇧j` and `⇧k` reorder among its kind, and `⇧k`
+last task of a column, <kbd>⇧j</kbd> pushes it into the band and asks which of the three
+it becomes; inside the band, <kbd>⇧j</kbd> and <kbd>⇧k</kbd> reorder among its kind, and <kbd>⇧k</kbd>
 from the first takes it back to the column it came from.
 
-Plain `j` past the bottom of a column carries the cursor into the band. Walking
+Plain <kbd>j</kbd> past the bottom of a column carries the cursor into the band. Walking
 sideways keeps the level.
 
 Pushing a task into done while one of its steps is open asks first.
@@ -117,32 +117,32 @@ Pushing a task into done while one of its steps is open asks first.
 ## The form
 
 One form, for adding and for editing. Nothing is written until **save**, or
-`^S` from anywhere. Navigate to a field and press `⏎`: a closed set opens a
+<kbd>^S</kbd> from anywhere. Navigate to a field and press <kbd>⏎</kbd>: a closed set opens a
 list, the description opens in `$EDITOR`. The steps are written in the
 form, one line each — `[x] Draft the columns`. Under `blockers` and `links`,
 the tasks already given are named; type a word beside the numbers and the
 tasks it reaches are named, the newest first, five at most — then type the
 number of the one you want.
 
-Leaving a form you typed into asks first; `esc` again gives it back whole.
+Leaving a form you typed into asks first; <kbd>esc</kbd> again gives it back whole.
 
 ## The detail
 
-`⏎` on a task opens it full screen: its description in a box that scrolls
-(`^D` `^U`), its steps — those left first — its objectives, its trace, and a
-`CONTEXT` panel saying where its [notes](context.md) are. `jk` walks the steps,
-and `⌫` deletes the one chosen after asking. An occurrence of a series says its
+<kbd>⏎</kbd> on a task opens it full screen: its description in a box that scrolls
+(<kbd>^D</kbd> <kbd>^U</kbd>), its steps — those left first — its objectives, its trace, and a
+`CONTEXT` panel saying where its [notes](context.md) are. <kbd>jk</kbd> walks the steps,
+and <kbd>⌫</kbd> deletes the one chosen after asking. An occurrence of a series says its
 rule and what the series did so far.
 
 ## Searching, filtering, views
 
-- `/` narrows the board in place as you type; the columns stay, and the
-  headers count what matched. `esc` gives the whole board back. A search
+- <kbd>/</kbd> narrows the board in place as you type; the columns stay, and the
+  headers count what matched. <kbd>esc</kbd> gives the whole board back. A search
   reaches what `task search` reaches.
-- `⇧F` turns the foot into filters — column, priority, label, objective, a day
-  due by, unblocked, series, focus — `←→` choosing one and `↑↓` walking its values, each
-  with how many tasks it keeps. `⌫` clears them all.
-- `v` lists the [views](listing.md#views): a figure opens one, `0` the whole
+- <kbd>⇧F</kbd> turns the foot into filters — column, priority, label, objective, a day
+  due by, unblocked, series, focus — <kbd>←→</kbd> choosing one and <kbd>↑↓</kbd> walking its values, each
+  with how many tasks it keeps. <kbd>⌫</kbd> clears them all.
+- <kbd>v</kbd> lists the [views](listing.md#views): a figure opens one, <kbd>0</kbd> the whole
   board. `:view new Urgent` keeps what is filtered under a name.
 
 A task outside a view that blocks, waits on or is linked to one inside it is
@@ -150,7 +150,7 @@ drawn faintly at the foot of its column, saying why.
 
 ## The command line inside it
 
-`:` takes every command the command line takes — `:task new "…"`,
+<kbd>:</kbd> takes every command the command line takes — `:task new "…"`,
 `:timesheet show` — and shows what it answers on a screen of its own. `:set`
 and `:unset` change the configuration. `:q` leaves.
 

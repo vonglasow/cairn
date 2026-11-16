@@ -30,9 +30,9 @@ The boards, the command line and an agent all open a new task already linked to 
 whatever that one's column:
 
 - the command line: `cairn task new "…" --link 105`;
-- the terminal board: `o` on a card opens the form with the
+- the terminal board: <kbd>o</kbd> on a card opens the form with the
   card already in `links`;
-- the window: `o` on a chosen card, or **New linked task** in its right-click
+- the window: <kbd>o</kbd> on a chosen card, or **New linked task** in its right-click
   menu;
 - an agent: `task_new` with `link`.
 

@@ -217,7 +217,7 @@ func drawLabels(k Kit, w Window) {
 	if creating, ok := w.LabelCreating(); ok {
 		say(k.gtx, k.th, k.skin.Colour.Accent.Base, Inside(ListRowAt(box, 1)), CreatingSays(creating), reads)
 	} else if len(rows) == 0 {
-		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, Inside(ListRowAt(box, 1)), NoLabelSays, reads)
+		Sentence{Said: NoLabelSays, Size: reads}.Draw(k, Inside(ListRowAt(box, 1)))
 	}
 	for _, row := range rows {
 		drawLabelRow(k.inside("panel"), w, m, row)
@@ -228,7 +228,7 @@ func drawLabels(k Kit, w Window) {
 
 func drawLabelSearch(k Kit, w Window, m Measure, row geom.Box) {
 	field := Field{Lit: w.Seeking}.Draw(k, geom.Box{X: row.X, Y: row.Y + 1, W: row.W, H: row.H - 2})
-	chip := KeyChip{Key: "/", Quiet: true}.Draw(k.inside("field"), geom.Box{X: field.X + inset, Y: field.Y, H: field.H})
+	chip := KeyChip{Key: "/"}.Draw(k.inside("field"), geom.Box{X: field.X + inset, Y: field.Y, H: field.H})
 	line := Inside(geom.Box{X: chip.X + chip.W, Y: field.Y, W: field.X + field.W - chip.X - chip.W, H: field.H})
 	if w.Sought.Empty() && !w.Seeking {
 		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, LabelSearchSays, reads)
@@ -328,7 +328,7 @@ func drawViewRow(k Kit, w Window, row ViewRow, holds bool) {
 	key := w.keyboard.Spelled(Pretty(row.Key))
 	chip := geom.Box{X: line.X + line.W - KeyChipWide(key), Y: line.Y, W: KeyChipWide(key), H: line.H}
 	if key != "" {
-		r.Chip(k, KeyChip{Key: key, Quiet: true}, chip)
+		r.Chip(k, KeyChip{Key: key}, chip)
 	}
 	count := strconv.Itoa(row.Keeps)
 	counted := geom.Box{X: chip.X - padding - monoWide(count, small), Y: line.Y, W: monoWide(count, small), H: line.H}
@@ -727,7 +727,7 @@ func drawHelp(k Kit, w Window) {
 			continue
 		}
 		KeyChip{Key: line.Key}.Draw(k, line.KeyAt)
-		say(k.gtx, k.th, k.skin.Colour.Ink.Low, line.MeansAt, line.Means, reads)
+		Sentence{Said: line.Means, Ink: k.skin.Colour.Ink.Low, Size: reads}.Draw(k, line.MeansAt)
 	}
 	drawPanelOffers(k, box, w)
 }
@@ -996,7 +996,11 @@ func drawBar(k Kit, l geom.Layout, w Window) {
 		sayOver(k.gtx, k.th, k.skin.Colour.State.Wrong, WrongBox(l), w.Wrong().Error(), reads, 2)
 	} else if w.Note() != "" {
 		Backdrop{}.Draw(k, WrongBox(l))
-		sayOver(k.gtx, k.th, k.skin.Colour.Ink.Text, WrongBox(l), w.Note(), reads, 2)
+		if strings.Contains(w.Note(), "`") {
+			Sentence{Said: w.Note(), Ink: k.skin.Colour.Ink.Text, Size: reads}.Draw(k, geom.Box{X: WrongBox(l).X, Y: WrongBox(l).Y, W: WrongBox(l).W, H: lineHigh})
+		} else {
+			sayOver(k.gtx, k.th, k.skin.Colour.Ink.Text, WrongBox(l), w.Note(), reads, 2)
+		}
 	}
 	bar := Bar{}.Draw(k, l.Bar)
 	k = k.inside("bar")
@@ -1577,7 +1581,7 @@ func drawPalette(k Kit, w Window) {
 		}
 		if key := rows[line.Row].Key; key != "" {
 			spelled := w.keyboard.Spelled(Pretty(key))
-			chip := row.Chip(in, KeyChip{Key: spelled, Quiet: true}, PaletteKeyAt(geom.Box{X: line.Box.X, Y: line.Box.Y, W: end - line.Box.X + padding/2, H: line.Box.H}, spelled))
+			chip := row.Chip(in, KeyChip{Key: spelled}, PaletteKeyAt(geom.Box{X: line.Box.X, Y: line.Box.Y, W: end - line.Box.X + padding/2, H: line.Box.H}, spelled))
 			end = chip.X - hintSpace
 		}
 		if ago := rows[line.Row].Ago(w.Now); ago != "" {

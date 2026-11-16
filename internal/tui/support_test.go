@@ -3,6 +3,7 @@ package tui
 import (
 	"cairn/internal/theme"
 	"cairn/internal/tui/design"
+	"strings"
 )
 
 func (f Form) typedInto(name, value string) Form {
@@ -16,3 +17,5 @@ func (f Form) typedInto(name, value string) Form {
 
 // PlainSkin is a skin with no colour in it.
 func PlainSkin() design.Skin { return design.Skin{Palette: design.PaletteOf(theme.Default())} }
+
+func flat(s string) string { return strings.Join(strings.Fields(s), " ") }

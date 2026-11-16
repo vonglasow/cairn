@@ -42,14 +42,15 @@ func (b Board) group(name string, lines ...string) []string {
 }
 
 func (b Board) says(key, does string) string {
-	return "  " + b.skin.Key.Render(pad(key, 12)) + b.skin.Says.Render(does)
+	keys := b.cap(key)
+	return "  " + keys + strings.Repeat(" ", max(1, keyColumn-lipgloss.Width(keys))) + b.sentence(does, b.skin.Says)
 }
 
 func (b Board) helpKeys() []string {
 	if b.tab == board.Series {
 		return b.group("SERIES — the cursor on a series", append([]string{
 			b.says("jk ↓↑", "change series, or occurrence once inside"),
-			b.says("⏎", "its occurrences, archived ones included — ⏎ again opens one"),
+			b.says("⏎", "its occurrences, archived ones included — `⏎` again opens one"),
 			b.says("e", "its form: what the next is made from, its rule"),
 			b.says("s", "skip the occurrence open; the next is made"),
 			b.says("x", "stop it: nothing more is made, no task goes"),
@@ -65,9 +66,9 @@ func (b Board) helpKeys() []string {
 	if b.tab == board.Objectives {
 		return b.group("NORMAL — the cursor on an objective", append([]string{
 			b.says("hjkl ←↓↑→", "change objective"),
-			b.says("gg / G", "first / last"),
-			b.says("⏎", "open it — [ ] walk its sub-objectives there"),
-			b.says("t", "its tasks, on the tasks board — [ ] walk its sub-objectives"),
+			b.says("gg G", "first / last"),
+			b.says("⏎", "open it — `[ ]` walk its sub-objectives there"),
+			b.says("t", "its tasks, on the tasks board — `[ ]` walk its sub-objectives"),
 			b.says("a", "a new objective"),
 			b.says("N", "a new sub-objective, under this one or beside it"),
 			b.says("z", "fold its sub-objectives away, or show them again"),
@@ -87,24 +88,24 @@ func (b Board) helpKeys() []string {
 		b.says("⇧A", "show what was archived"),
 		b.says("⇧X", "archive every task in this column — it asks first"),
 		b.says("/", "search"),
-		b.says("⇧F", "filter — ←→ which, ↑↓ its value, ⌫ clears all"),
-		b.says("v", "the views — a figure opens one, 0 the whole board"),
+		b.says("⇧F", "filter — `←→` which, `↑↓` its value, `⌫` clears all"),
+		b.says("v", "the views — a figure opens one, `0` the whole board"),
 		b.says("[ ]", "filtered on an objective: walk its sub-objectives"),
 		b.says("⇥", "next tab — tasks, objectives, the time spent"),
-		b.says(":", "command — what it answers is said until esc"),
+		b.says(":", "command — what it answers is said until `esc`"),
 		b.says("b", "a new backup of the store"),
 		b.says("⇧B", "the backups"),
-		b.says("←→ t on time", "walk the weeks, back to today's"),
+		b.says("←→ t", "on the time, walk the weeks, back to today's"),
 	}, b.roamingSays()...)...)
 	out = append(out, b.group("A TASK — the cursor on one", append([]string{
-		b.says("gg / G", "first / last in the column"),
+		b.says("gg G", "first / last in the column"),
 		b.says("⇧hjkl", "move it: sideways changes column, up and down change place"),
 		b.says("⏎", "the detail"),
 		b.says("e", "the form"),
 		b.says("o", "a task linked to it"),
 		b.says("f", "focus or unfocus"),
-		b.says("m then a letter", "move it to the column it begins"),
-		b.says("p then a letter", "its priority"),
+		b.says("m", "then a letter: move it to the column it begins"),
+		b.says("p", "then a letter: its priority"),
 		b.says("D", "delete"),
 		b.says("x", "archive or unarchive"),
 	}, append(b.seriesSays(), b.roamingSays()...)...)...)...)
@@ -113,9 +114,9 @@ func (b Board) helpKeys() []string {
 	)...)
 	out = append(out, b.group("FORM — the same keys as the window",
 		b.says("⏎", "a new line in the description, the next field anywhere else"),
-		b.says("↑↓", "the description's lines — tab leaves it"),
-		b.says("tab ⇧tab", "next / previous field"),
-		b.says("^S", "save, from anywhere in it — ⏎ never does"),
+		b.says("↑↓", "the description's lines — `⇥` leaves it"),
+		b.says("⇥ ⇧⇥", "next / previous field"),
+		b.says("^S", "save, from anywhere in it — `⏎` never does"),
 	)...)
 	return append(out, b.group("EVERYWHERE", b.says("?", "help"))...)
 }
@@ -124,7 +125,7 @@ func (b Board) seriesSays() []string {
 	if !b.pages.Recurs() {
 		return nil
 	}
-	return []string{b.says("r then a letter", "its series: s skip, x stop, r resume, e open it")}
+	return []string{b.says("r", "then a letter, its series: `s` skip, `x` stop, `r` resume, `e` open it")}
 }
 
 func (b Board) roamingSays() []string {

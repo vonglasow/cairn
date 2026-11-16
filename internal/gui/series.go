@@ -236,7 +236,7 @@ func OccurrencesAside(s engine.Series) string {
 	if len(s.Occurrences) > 0 && archived == len(s.Occurrences) {
 		return "all archived, all kept"
 	}
-	return "archived ones included · ⏎ opens the task"
+	return "archived ones included · `⏎` opens the task"
 }
 
 func templateFacts(t series.Template) Facts {

@@ -25,4 +25,4 @@
                                            │ 2026-09-03 08:30  chang… │
                                            ╰──────────────────────────╯
 
- jk ↓↑ steps   e edit   f focus   ^D ^U description   ? help   esc back
+  jk   ↓↑  steps   e  edit   f  focus   ^D   ^U  description   ?  help

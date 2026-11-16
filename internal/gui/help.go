@@ -31,7 +31,7 @@ func (w Window) helpGroups() []helpGroup {
 			{Key: "⌘⏎", Means: "save · done"},
 			{Key: "esc esc", Means: "throw away"},
 			{Key: "⌘Z", Means: "bring it back"},
-			{Key: "tab", Means: "next field"},
+			{Key: "⇥", Means: "next field"},
 			{Key: "space", Means: "tick a step"},
 		}},
 		{"Find", []Said{
@@ -53,14 +53,14 @@ func (w Window) helpGroups() []helpGroup {
 		{"Pointer", []Said{
 			{Key: "double-click", Means: "open"},
 			{Key: "drag", Means: "move the card"},
-			{Key: "right click", Means: "its menu"},
-			{Key: "drag a gutter", Means: "resize"},
+			{Key: "right-click", Means: "its menu"},
+			{Key: "drag", Means: "a gutter: resize"},
 			{Key: "→ ← z ⌥", Means: "fold objectives"},
 		}},
 	}
 	if w.Pages.Recurs() {
 		board := &groups[0]
-		board.lines = append(board.lines[:len(board.lines)-1], Said{Key: "r s · r e", Means: "skip · its series; r x stops"}, board.lines[len(board.lines)-1])
+		board.lines = append(board.lines[:len(board.lines)-1], Said{Key: "r s", Means: "skip · `r e` its series, `r x` stops"}, board.lines[len(board.lines)-1])
 	}
 	return groups
 }

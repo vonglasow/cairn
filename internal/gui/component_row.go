@@ -34,9 +34,8 @@ func (r Row) Draw(k Kit, at geom.Box) geom.Box {
 	return at
 }
 
-// Chip draws a key on the row, on the chip a picked row's ground calls for.
+// Chip draws a key on the row.
 func (r Row) Chip(k Kit, c KeyChip, at geom.Box) geom.Box {
-	c.OnControl = r.Picked
 	return c.Draw(k.inside("row"), at)
 }
 

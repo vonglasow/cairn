@@ -144,7 +144,7 @@ func drawDetail(k Kit, w Window, d Detail) {
 	}
 	drawTaskLines(k, w, d.InSubs)
 	if d.More != "" {
-		say(k.gtx, k.th, k.skin.Colour.Accent.Base, d.MoreAt, d.More, small)
+		Sentence{Said: d.More, Ink: k.skin.Colour.Accent.Base}.Draw(k, d.MoreAt)
 	}
 }
 

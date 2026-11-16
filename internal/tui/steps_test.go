@@ -76,7 +76,7 @@ func (w *world) saysTheWindowIs(width int) error {
 }
 
 func (w *world) mustSay(text string) error {
-	if !strings.Contains(w.screen(), text) {
+	if !strings.Contains(flat(w.screen()), flat(text)) {
 		return fmt.Errorf("the board never says %q:\n%s", text, w.screen())
 	}
 	return nil

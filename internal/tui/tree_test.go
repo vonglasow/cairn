@@ -78,7 +78,7 @@ func TestZFoldsAParentAndTheCursorClimbsToIt(t *testing.T) {
 
 func TestBracketsWalkTheTasksAnObjectiveShows(t *testing.T) {
 	b := hit(standing(treeFake()).with(plainSkin), "tab", "t")
-	drawn := strip(b.Draw())
+	drawn := flat(strip(b.Draw()))
 	if !strings.Contains(drawn, "‹ all 3 ›") || !strings.Contains(drawn, "[ ]") {
 		t.Errorf("the tasks shown carry no sub-objective to walk:\n%s", drawn)
 	}

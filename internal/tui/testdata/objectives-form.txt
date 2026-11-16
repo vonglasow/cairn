@@ -23,4 +23,4 @@
  │                                                                                                │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 
- ⇥ field   ←→ change   ⏎ next · a line   ^S save   ? help   esc cancel
+  ⇥  field   ←→  change   ⏎  next · a line   ^S  save   ?  help   esc  cancel

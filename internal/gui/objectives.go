@@ -178,7 +178,7 @@ func (w Window) Detail() Detail {
 		place(&d.InSubsHead, under, &d.InSubs, true)
 	}
 	if more := len(own) + len(under) - shown; more > 0 {
-		d.More = strconv.Itoa(more) + " more · t shows them all on the board"
+		d.More = strconv.Itoa(more) + " more · `t` shows them all on the board"
 		d.MoreAt = geom.Box{X: inside.X, Y: min(y, foot), W: inside.W, H: lineHigh}
 	}
 	return d

@@ -28,7 +28,7 @@ func TestBackingUpSaysWhatWentWrong(t *testing.T) {
 
 func TestNoBackupYetIsSaid(t *testing.T) {
 	got := New(newFake(), 1200, 800).listingBackups()
-	if got.Screen != board.OnTheBoard || got.Note() != "no backup yet: ⌘B makes one" {
+	if got.Screen != board.OnTheBoard || got.Note() != "no backup yet: `⌘B` makes one" {
 		t.Errorf("no backup left the window on %v, telling %q", got.Screen, got.Note())
 	}
 }

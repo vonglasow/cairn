@@ -28,7 +28,7 @@ const WriteWhole = "Write the whole file"
 const SettingsFoot = "Saved as you change it"
 
 // WritingFoot is what the foot says while a field is written: how it is saved, and how it is put back.
-const WritingFoot = "Enter or a click elsewhere saves the field · Esc puts it back"
+const WritingFoot = "`⏎` or a click elsewhere saves the field · `esc` puts it back"
 
 // The words a row says of where its value comes from.
 const (

@@ -27,8 +27,8 @@ spent against its estimate, its steps, its labels and the objective it serves. R
 The tasks in focus come first in `current`.
 
 Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
-**series** while recurrence is on. `tab` and `shift+tab` walk them; `g` then
-`t`, `o` or `i` goes to one.
+**series** while recurrence is on. <kbd>⇥</kbd> and <kbd>⇧⇥</kbd> walk them; <kbd>g</kbd> then
+<kbd>t</kbd>, <kbd>o</kbd> or <kbd>i</kbd> goes to one.
 
 ## The mouse
 
@@ -39,7 +39,7 @@ Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
 - **Double-click on an empty spot** of a column adds a task there.
 - **Right-click** a card for its menu — edit, a new linked task, its labels,
   and the rest of what can be done to it — or a column to add a task to it.
-- **`⌘`-click** gathers several cards, **`⇧`-click** takes every card between —
+- **<kbd>⌘</kbd>-click** gathers several cards, **<kbd>⇧</kbd>-click** takes every card between —
   `Ctrl` on Linux — and an action then applies to all of them.
 - **Drag a gutter** between two columns or lanes to widen one, or the edge
   above the band to make it taller. A double-click on a gutter takes the size
@@ -51,26 +51,26 @@ Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
 
 | key | what it does |
 |---|---|
-| `⌘N` | a new task |
-| `⏎` | open the chosen task |
-| `⌘F` | search |
-| `⇧F` | the filters |
-| `⌘K` | the command palette: any command, a number, a title |
-| `m` | move the chosen task to a column |
-| `o` | a new task linked to the chosen one |
-| `x` | archive or unarchive the chosen task |
-| `⇧A` | show what was archived |
-| `⇧X` | archive the whole column — it asks first |
-| `⌘⌫` | delete — it asks first |
-| `⇧L` | the labels |
-| `⌘B` `⇧B` | back the store up, list the backups |
-| `⌘E` `⌘O` | export every task to a file, import one |
-| `⌘1`…`⌘9` | open a view; `⌘0` the whole board |
-| `⌘⇧O` | open another workspace |
-| `⌘,` | the settings |
-| `⌘Z` | in a form, bring back what was typed |
-| `?` | help |
-| `esc` | let go of the chosen card, close a panel |
+| <kbd>⌘N</kbd> | a new task |
+| <kbd>⏎</kbd> | open the chosen task |
+| <kbd>⌘F</kbd> | search |
+| <kbd>⇧F</kbd> | the filters |
+| <kbd>⌘K</kbd> | the command palette: any command, a number, a title |
+| <kbd>m</kbd> | move the chosen task to a column |
+| <kbd>o</kbd> | a new task linked to the chosen one |
+| <kbd>x</kbd> | archive or unarchive the chosen task |
+| <kbd>⇧A</kbd> | show what was archived |
+| <kbd>⇧X</kbd> | archive the whole column — it asks first |
+| <kbd>⌘⌫</kbd> | delete — it asks first |
+| <kbd>⇧L</kbd> | the labels |
+| <kbd>⌘B</kbd> <kbd>⇧B</kbd> | back the store up, list the backups |
+| <kbd>⌘E</kbd> <kbd>⌘O</kbd> | export every task to a file, import one |
+| <kbd>⌘1</kbd>…<kbd>⌘9</kbd> | open a view; <kbd>⌘0</kbd> the whole board |
+| <kbd>⌘⇧O</kbd> | open another workspace |
+| <kbd>⌘,</kbd> | the settings |
+| <kbd>⌘Z</kbd> | in a form, bring back what was typed |
+| <kbd>?</kbd> | help |
+| <kbd>esc</kbd> | let go of the chosen card, close a panel |
 
 The arrows walk the board. The menu bar offers the same actions; on Windows,
 About cairn closes its Help menu. On Linux,
@@ -80,9 +80,9 @@ it: Settings…, Upgrade, then Help and About cairn, then Quit.
 ## A task, open
 
 The form opens over the board, and can be dragged by its ground. It **saves
-itself** every couple of seconds; `⌘⏎` or `⌘S` saves at once.
+itself** every couple of seconds; <kbd>⌘⏎</kbd> or <kbd>⌘S</kbd> saves at once.
 
-- **Details** shows the fields; **Trace** (`⌘T`) what was done to it, as
+- **Details** shows the fields; **Trace** (<kbd>⌘T</kbd>) what was done to it, as
   `trace show` prints it.
 - The `labels` and `objectives` fields open lists to tick: typing narrows the
   list, and a label that does not exist yet is offered to create.
@@ -97,12 +97,12 @@ itself** every couple of seconds; `⌘⏎` or `⌘S` saves at once.
 
 ## Searching, filtering, views
 
-`⌘F` narrows the board in place as you type, every page alike. `⇧F`, or
+<kbd>⌘F</kbd> narrows the board in place as you type, every page alike. <kbd>⇧F</kbd>, or
 **+ Filter**, adds a filter — column, priority, label, objective, a day due by,
 unblocked, series, focus — and what filters the board stands above it as pills. Each
 value says how many tasks it would keep.
 
-The filter menu lists the [views](listing.md#views) at its head; `⌘1`…`⌘9`
+The filter menu lists the [views](listing.md#views) at its head; <kbd>⌘1</kbd>…<kbd>⌘9</kbd>
 open them. **Save as a view…** keeps what filters the board under a name.
 
 ## Objectives
@@ -110,39 +110,39 @@ open them. **Save as a view…** keeps what filters the board under a name.
 The Objectives page is a tree on the left — each objective with its
 sub-objectives under it, a parent folded until opened — and the chosen one on
 the right: how far along it is, its time, its sub-objectives as tiles, and its
-tasks. `t` shows its tasks on the board, with a bar narrowing to each part.
+tasks. <kbd>t</kbd> shows its tasks on the board, with a bar narrowing to each part.
 Deleting one asks, row by row, what becomes of what it holds. See
 [objectives](objectives.md).
 
 ## Time
 
-The Time page shows a day, a week or a month — `1`, `2`, `3` — each day with
+The Time page shows a day, a week or a month — <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd> — each day with
 its total and a line per task. With `[time] weekends = "hidden"`, a week is
 five days. See [the timesheet](trace.md#how-long-the-work-took).
 
 ## Labels, backups, settings
 
-- `⇧L` lists every label with what carries it: `n` makes one, `r` renames, `c`
-  chooses its colour, `⌘⌫` takes it off everything after asking.
-- `⇧B` lists the backups; `⏎` restores one after asking, a backup of what the
+- <kbd>⇧L</kbd> lists every label with what carries it: <kbd>n</kbd> makes one, <kbd>r</kbd> renames, <kbd>c</kbd>
+  chooses its colour, <kbd>⌘⌫</kbd> takes it off everything after asking.
+- <kbd>⇧B</kbd> lists the backups; <kbd>⏎</kbd> restores one after asking, a backup of what the
   store holds made first.
-- `⌘,` opens the settings, for **This workspace** or for **All workspaces**.
+- <kbd>⌘,</kbd> opens the settings, for **This workspace** or for **All workspaces**.
   Each row says what it does; resting the pointer on it shows its key. Beside
   it, where its value comes from: **Default**, **Shared** by all workspaces,
   **Only here**, or **Changed**; **Use the shared value** and **Back to
   default** take a change back. A change is written to the file at once,
-  keeping its comments; **Open the file** opens it. A field typed in is saved by `⏎` or a click elsewhere,
-  and `esc` puts it back; a day is picked on the calendar, and the workspace's
-  colour on its swatches, by a click or by the arrows and `⏎`; a number of days
+  keeping its comments; **Open the file** opens it. A field typed in is saved by <kbd>⏎</kbd> or a click elsewhere,
+  and <kbd>esc</kbd> puts it back; a day is picked on the calendar, and the workspace's
+  colour on its swatches, by a click or by the arrows and <kbd>⏎</kbd>; a number of days
   steps with **−** and **+**; the dragged card's opacity slides, by a drag
-  or by `←` and `→` five at a time.
+  or by <kbd>←</kbd> and <kbd>→</kbd> five at a time.
 
 ## Workspaces
 
 The window's title, and a pill at its top, name the workspace it shows, in the
-workspace's colour. `⌘⇧O`, or a click on the pill, opens the switcher:
+workspace's colour. <kbd>⌘⇧O</kbd>, or a click on the pill, opens the switcher:
 choosing another workspace opens it in a window of its own, or brings it
-forward when it is already open. `⌘⇧` and a figure choose one directly.
+forward when it is already open. <kbd>⌘⇧</kbd> and a figure choose one directly.
 
 **New workspace…**, at the foot of the switcher, opens a dialog:
 
@@ -152,7 +152,7 @@ forward when it is already open. `⌘⇧` and a figure choose one directly.
    holds a board already is opened as it is.
 3. Click a **colour**. Without one, it wears a colour read off its name.
 4. Untick **Switch to it now** to make it without opening it.
-5. **Create**, or `⏎`. `⇥` goes from the name to the folder; `esc` or
+5. **Create**, or <kbd>⏎</kbd>. <kbd>⇥</kbd> goes from the name to the folder; <kbd>esc</kbd> or
    **Cancel** makes nothing. A name cairn does not take is said in the dialog.
 
 ## While it is open

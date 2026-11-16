@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 	"slices"
+	"strings"
 	"testing"
 
 	"gioui.org/layout"
@@ -149,54 +150,86 @@ func TestAPillTakesTheGroundAndInkOfItsTone(t *testing.T) {
 	}
 }
 
-func TestAKeyChipIsAlwaysGroundedLoudOrQuiet(t *testing.T) {
+func TestAKeyCapHasOneLookWhereverItIsDrawn(t *testing.T) {
 	s := design.Dark()
-	row := geom.Box{X: 10, Y: 10, H: 28}
-	want := geom.Box{X: 10, Y: 15, W: KeyChipWide("esc"), H: chipHigh}
+	cap := func(at geom.Box) geom.Box { return geom.Box{X: at.X, Y: at.Y, W: KeyChipWide("esc"), H: chipHigh} }
 	for _, c := range []struct {
-		chip        KeyChip
-		ground, ink color.NRGBA
+		name string
+		draw func(k Kit) geom.Box
 	}{
-		{KeyChip{Key: "esc"}, s.Colour.Surface.Control, s.Colour.Ink.Text},
-		{KeyChip{Key: "esc", Quiet: true}, s.Colour.Surface.Control, s.Colour.Ink.Faint},
-		{KeyChip{Key: "esc", OnControl: true}, s.Colour.Surface.ChipOnControl, s.Colour.Ink.Text},
-		{KeyChip{Key: "esc", Quiet: true, OnControl: true}, s.Colour.Surface.ChipOnControl, s.Colour.Ink.Faint},
+		{"alone", func(k Kit) geom.Box { return KeyChip{Key: "esc"}.Draw(k, geom.Box{X: 10, Y: 10, H: 28}) }},
+		{"on a danger button", func(k Kit) geom.Box {
+			b := geom.Box{X: 4, Y: 4, W: 150, H: 36}
+			Button{Said: "Delete", Key: "esc", Look: buttonDanger, Keyed: true}.Draw(k, b)
+			_, key := ButtonParts(b, k.measured(), "Delete", "esc")
+			return key
+		}},
 	} {
-		var got geom.Box
-		shot, drawn := drawnAlone(t, 80, 50, func(k Kit) { got = c.chip.Draw(k, row) })
-		if got != want {
-			t.Errorf("%+v is drawn at %+v, not %+v", c.chip, got, want)
+		var at geom.Box
+		shot, _ := drawnAlone(t, 160, 50, func(k Kit) { at = cap(c.draw(k)) })
+		if got := pixel(shot, at.X+2, at.Y+at.H/2); got != s.Colour.Surface.Control {
+			t.Errorf("%s: the cap stands on %v, not %v", c.name, got, s.Colour.Surface.Control)
 		}
-		if pixel(shot, want.X+want.W/2, want.Y+1) != c.ground {
-			t.Errorf("%+v stands on %v, not %v", c.chip, pixel(shot, want.X+want.W/2, want.Y+1), c.ground)
+		if got := pixel(shot, at.X+at.W/2, at.Y+at.H-1); got != s.Colour.Line.Raised {
+			t.Errorf("%s: the cap's lower edge is %v, not %v", c.name, got, s.Colour.Line.Raised)
 		}
-		if lettered(shot, want, c.ink) == 0 {
-			t.Errorf("%+v is not written in %v", c.chip, c.ink)
-		}
-		if w := []Drawing{{Part: "key", At: want, Layer: LayerBoard}}; !slices.Equal(drawn, w) {
-			t.Errorf("%+v recorded %+v", c.chip, drawn)
+		if lettered(shot, at, s.Colour.Ink.Text) == 0 {
+			t.Errorf("%s: the cap is not written in %v", c.name, s.Colour.Ink.Text)
 		}
 	}
 	var none geom.Box
-	_, drawn := drawnAlone(t, 80, 50, func(k Kit) { none = KeyChip{}.Draw(k, row) })
+	_, drawn := drawnAlone(t, 80, 50, func(k Kit) { none = KeyChip{}.Draw(k, geom.Box{X: 10, Y: 10, H: 28}) })
 	if none != (geom.Box{X: 10, Y: 15, H: chipHigh}) || len(drawn) != 0 {
 		t.Errorf("no key gives %+v and records %+v", none, drawn)
 	}
 }
 
+func TestASequenceOfKeysIsOneCapPerKey(t *testing.T) {
+	one := KeyChipWide("esc")
+	if got := KeyChipWide("esc esc"); got != 2*one+capGap {
+		t.Errorf("esc esc is %d wide, not %d", got, 2*one+capGap)
+	}
+	var got geom.Box
+	_, drawn := drawnAlone(t, 120, 50, func(k Kit) { got = KeyChip{Key: "esc esc"}.Draw(k, geom.Box{X: 10, Y: 10, H: 28}) })
+	want := []Drawing{
+		{Part: "key", At: geom.Box{X: 10, Y: 15, W: one, H: chipHigh}, Layer: LayerBoard},
+		{Part: "key", At: geom.Box{X: 10 + one + capGap, Y: 15, W: one, H: chipHigh}, Layer: LayerBoard},
+	}
+	if !slices.Equal(drawn, want) || got != (geom.Box{X: 10, Y: 15, W: 2*one + capGap, H: chipHigh}) {
+		t.Errorf("esc esc drew %+v in %+v", drawn, got)
+	}
+}
+
+func TestASentenceDrawsTheKeysItNamesAsCaps(t *testing.T) {
+	said := "Played on the board · `r` again · `⏎` keeps it"
+	_, drawn := drawnAlone(t, 400, 40, func(k Kit) { Sentence{Said: said}.Draw(k, geom.Box{X: 4, Y: 4, W: 390, H: lineHigh}) })
+	var keys []geom.Box
+	for _, d := range drawn {
+		if d.Part == "key" {
+			keys = append(keys, d.At)
+		}
+	}
+	if len(keys) != 2 || keys[0].W != KeyChipWide("r") || keys[1].W != KeyChipWide("⏎") || keys[1].X <= keys[0].X+keys[0].W {
+		t.Errorf("%q drew its keys at %+v", said, keys)
+	}
+	if plain := (Sentence{Said: said}).Plain(); strings.Contains(plain, "`") || plain != "Played on the board · r again · ⏎ keeps it" {
+		t.Errorf("%q reads %q", said, plain)
+	}
+}
+
 func TestAButtonsLooksAreTokens(t *testing.T) {
 	c := design.Dark().Colour
-	for look, want := range map[buttonLook][3]color.NRGBA{
-		buttonPlain:     {c.Surface.Control, c.Ink.Text, c.Surface.ChipOnControl},
-		buttonLit:       {c.Surface.ControlLit, c.Ink.Text, c.Surface.ChipOnControlLit},
-		buttonOn:        {c.Accent.Base, c.Ink.OnAccent, c.Accent.Chip},
-		buttonOnLit:     {c.Accent.Lit, c.Ink.OnAccent, c.Accent.LitChip},
-		buttonFaint:     {c.Surface.Control, c.Ink.Faint, c.Surface.ChipOnControl},
-		buttonDanger:    {c.State.Danger, c.State.Wrong, c.State.DangerChip},
-		buttonDangerLit: {c.State.DangerLit, c.State.Wrong, c.State.DangerLitChip},
+	for look, want := range map[buttonLook][2]color.NRGBA{
+		buttonPlain:     {c.Surface.Control, c.Ink.Text},
+		buttonLit:       {c.Surface.ControlLit, c.Ink.Text},
+		buttonOn:        {c.Accent.Base, c.Ink.OnAccent},
+		buttonOnLit:     {c.Accent.Lit, c.Ink.OnAccent},
+		buttonFaint:     {c.Surface.Control, c.Ink.Faint},
+		buttonDanger:    {c.State.Danger, c.State.Wrong},
+		buttonDangerLit: {c.State.DangerLit, c.State.Wrong},
 	} {
-		if back, ink, chip := buttonColours(design.Dark(), look); [3]color.NRGBA{back, ink, chip} != want {
-			t.Errorf("look %d takes %v %v %v", look, back, ink, chip)
+		if back, ink := buttonColours(design.Dark(), look); [2]color.NRGBA{back, ink} != want {
+			t.Errorf("look %d takes %v %v", look, back, ink)
 		}
 	}
 }

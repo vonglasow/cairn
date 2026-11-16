@@ -23,7 +23,7 @@ cairn config fill                          # every key the file can hold, commen
 ```
 
 A key set keeps every comment of the file, and is refused unless the file reads
-back as meant. The window's settings (`⌘,`) and the terminal's `:set` and
+back as meant. The window's settings (<kbd>⌘,</kbd>) and the terminal's `:set` and
 `:unset` write the same way. You may also edit the files by hand: they are
 TOML.
 
@@ -101,7 +101,7 @@ server and the Claude Code plugin agree on a board without a variable.
 `--workspace` does for one command.
 
 On the boards, the terminal names the workspace at the head of its header and
-`^O` opens another in its place; the window names it in its title and opens
+<kbd>^O</kbd> opens another in its place; the window names it in its title and opens
 another in a window of its own. A store opened by path from a board is
 remembered among the recent folders, ten at most, which `workspace list` names.
 

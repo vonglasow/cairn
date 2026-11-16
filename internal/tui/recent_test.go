@@ -98,11 +98,11 @@ func TestSwitcher_aNewWorkspaceRefusedOpensNothing(t *testing.T) {
 func TestSwitcher_ctrlKKeepsARecentFolderAsAWorkspace(t *testing.T) {
 	r := withRecent(t)
 	b := pressing(roamingBoard(t, r), "ctrl+o", "down", "down")
-	if screen := strip(b.Draw()); !strings.Contains(screen, "^K keep as a workspace") {
+	if screen := flat(strip(b.Draw())); !strings.Contains(screen, "^K keep as a workspace") {
 		t.Fatalf("a recent folder chosen offers no ^K:\n%s", screen)
 	}
 	b = pressing(b, "ctrl+k")
-	if screen := strip(b.Draw()); !strings.Contains(screen, "keep as ›") || !strings.Contains(screen, "⏎ keep /s/scratch") {
+	if screen := flat(strip(b.Draw())); !strings.Contains(screen, "keep as ›") || !strings.Contains(screen, "⏎ keep /s/scratch") {
 		t.Fatalf("ctrl+k asks for no name:\n%s", screen)
 	}
 	b = pressing(b, "s", "c", "enter")

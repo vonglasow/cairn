@@ -343,7 +343,7 @@ func (b Banner) Draw(k Kit, at geom.Box) geom.Box {
 	}
 	y := inside.Y + len(said)*lineHigh
 	for i, line := range m.Wrapped(b.Then, inside.W, small).Said {
-		say(k.gtx, k.th, ink, geom.Box{X: inside.X, Y: y + i*lineHigh, W: inside.W, H: lineHigh}, line, small)
+		Sentence{Said: line, Ink: ink}.Draw(k.inside("banner"), geom.Box{X: inside.X, Y: y + i*lineHigh, W: inside.W, H: lineHigh})
 	}
 	return at
 }

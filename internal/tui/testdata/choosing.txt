@@ -37,4 +37,4 @@
                          │                        │                        │
                          │                        │                        │
 
- hjkl ←↓↑→ tasks   ^hl columns   a new   / search   ⇥ tab   ? help   : command
+  hjkl   ←↓↑→  tasks   ^hl  columns   a  new   /  search   ⇥  tab   ?  help   :  command

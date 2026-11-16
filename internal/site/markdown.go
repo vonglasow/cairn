@@ -13,6 +13,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	markup "github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -25,7 +26,7 @@ var (
 	aTag      = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
 	tags      = regexp.MustCompile(`<[^>]*>`)
 	spaces    = regexp.MustCompile(`\s+`)
-	markdown  = goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithParserOptions(parser.WithAutoHeadingID()))
+	markdown  = goldmark.New(goldmark.WithExtensions(extension.GFM), goldmark.WithParserOptions(parser.WithAutoHeadingID()), goldmark.WithRendererOptions(markup.WithUnsafe()))
 	githubURL = func(to, version string) string {
 		ref := "main"
 		if aTag.MatchString(version) {

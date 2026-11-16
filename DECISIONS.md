@@ -35,6 +35,7 @@ A decision added, changed or undone is a line here, in the commit that does it.
 - A workspace is made in a dialog of its own, its name, folder and colour asked at once (#418): asked one at a time on the switcher's line, the steps read as a search, and the colour was not asked at all. The terminal asks the same three, one after the other.
 - The settings panel is drawn as its validated mockup (#420): the scopes beside the heading, each row in three columns (what it is, its control, where its value comes from with the offer as a link), the colour as swatches in the row; the file's name left the panel, which Open the file reaches.
 - The dragged card's opacity is a slider snapped to fives (#421), as the mockup drew it: a number typed in said nothing of its bounds, and a drag lands on a round value.
+- A key to press is drawn one way on every surface (#423): one cap in the window, sequences one cap per key, keys inside a sentence marked by backticks and drawn on their caps; in the terminal the key on a ground cell, apart from the cursor; in the guides `<kbd>`, which the site draws as the cap. One spelling per key: ⏎, esc, ⇥. Seven looks had grown, and a key in plain text read as a word.
 - The band is three lanes under the last three columns, on both boards — one walk for both.
 - The terminal has no Normal and Insert modes: hjkl walks with `board.Walk`, `^H` `^L` reach another column, `^J` `^K` the band — the window has no modes.
 - The terminal wears the window's scheme, not the terminal's sixteen colours — both boards show the same.

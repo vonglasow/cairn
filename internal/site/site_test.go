@@ -128,3 +128,10 @@ func TestIDs_putCountsAnIDAlreadyGiven(t *testing.T) {
 }
 
 func truecolour(c color.NRGBA) string { return fmt.Sprintf("38;2;%d;%d;%d", c.R, c.G, c.B) }
+
+func TestWrite_drawsAKeyOnItsCap(t *testing.T) {
+	got, err := write("docs/gui.md", []byte("# Keys\n\nA field is saved by <kbd>⏎</kbd>, and `cairn gui` opens it.\n"), "v0.12.0")
+	if err != nil || !strings.Contains(got.body, "<kbd>⏎</kbd>") || !strings.Contains(got.body, "<code>cairn gui</code>") {
+		t.Errorf("a key named in a guide gives %q, %v", got.body, err)
+	}
+}

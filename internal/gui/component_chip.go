@@ -4,6 +4,7 @@ import (
 	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
 	"image/color"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/op/clip"
@@ -94,38 +95,31 @@ func pillLine(th *material.Theme, pill geom.Box) geom.Box {
 	return geom.Box{X: pill.X, Y: pill.Y + (pill.H-top-bottom)/2, W: pill.W, H: lineHigh}
 }
 
-// KeyChip is a key on a chip of its own, loud where it is offered and quiet where it only reminds, always grounded.
+// KeyChip is a key, or a sequence of keys apart by spaces, each on a cap of its own: one look wherever a key is named.
 type KeyChip struct {
-	Key              string
-	Quiet, OnControl bool
+	Key string
 }
 
-// Draw draws the chip at the left of row, in its middle, and gives back where it stands.
+// Draw draws the caps at the left of row, in its middle, and gives back where they stand.
 func (c KeyChip) Draw(k Kit, row geom.Box) geom.Box {
-	chip := geom.Box{X: row.X, Y: row.Y + (row.H-chipHigh)/2, W: KeyChipWide(c.Key), H: chipHigh}
+	y := row.Y + (row.H-chipHigh)/2
 	if c.Key == "" {
-		return geom.Box{X: row.X, Y: chip.Y, H: chipHigh}
+		return geom.Box{X: row.X, Y: y, H: chipHigh}
 	}
-	ground, ink := c.inks(k.skin)
-	return c.grounded(k, chip, ground, ink)
+	x := row.X
+	for _, key := range strings.Fields(c.Key) {
+		capped(k, geom.Box{X: x, Y: y, W: capWide(key), H: chipHigh}, key)
+		x += capWide(key) + capGap
+	}
+	return geom.Box{X: row.X, Y: y, W: x - capGap - row.X, H: chipHigh}
 }
 
-func (c KeyChip) inks(s design.Skin) (ground, ink color.NRGBA) {
-	ground, ink = s.Colour.Surface.Control, s.Colour.Ink.Text
-	if c.OnControl {
-		ground = s.Colour.Surface.ChipOnControl
-	}
-	if c.Quiet {
-		ink = s.Colour.Ink.Faint
-	}
-	return ground, ink
-}
-
-func (c KeyChip) grounded(k Kit, chip geom.Box, ground, ink color.NRGBA) geom.Box {
-	k.put("key", chip)
-	rounded(k.gtx, chip, k.skin.Radius.Chip, ground)
-	sayOnChip(k, ink, chip, c.Key)
-	return chip
+func capped(k Kit, at geom.Box, key string) {
+	k.put("key", at)
+	r := k.skin.Size.Rule
+	rounded(k.gtx, at, k.skin.Radius.Chip, k.skin.Colour.Line.Raised)
+	rounded(k.gtx, geom.Box{X: at.X + r, Y: at.Y + r, W: at.W - 2*r, H: at.H - 3*r}, k.skin.Radius.Chip-r, k.skin.Colour.Surface.Control)
+	sayOnChip(k, k.skin.Colour.Ink.Text, at, key)
 }
 
 const chipHigh = 18

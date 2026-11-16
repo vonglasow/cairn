@@ -4,24 +4,24 @@
  │ KEYS                                        │ │ LEGEND                                      │
  │                                             │ │                                             │
  │ NORMAL — the cursor on an objective         │ │ PRIORITY — the left edge of a card          │
- │   hjkl ←↓↑→   change objective              │ │   ▌ low                                     │
- │   gg / G      first / last                  │ │   ▌ normal                                  │
- │   ⏎           open it — [ ] walk its sub-   │ │   ▌ high                                    │
- │ objectives there                            │ │   ▌ critical                                │
- │   t           its tasks, on the tasks board │ │                                             │
- │ — [ ] walk its sub-objectives               │ │ STALLED — the top right of a card           │
- │   a           a new objective               │ │   ⊘  blocked   waiting on somebody else     │
- │   N           a new sub-objective, under    │ │   ◉  watching  handed over, needs a look    │
+ │    hjkl   ←↓↑→  change objective            │ │   ▌ low                                     │
+ │    gg   G       first / last                │ │   ▌ normal                                  │
+ │    ⏎            open it —  [   ]  walk its  │ │   ▌ high                                    │
+ │ sub-objectives there                        │ │   ▌ critical                                │
+ │    t            its tasks, on the tasks     │ │                                             │
+ │ board —  [   ]  walk its sub-objectives     │ │ STALLED — the top right of a card           │
+ │    a            a new objective             │ │   ⊘  blocked   waiting on somebody else     │
+ │    N            a new sub-objective, under  │ │   ◉  watching  handed over, needs a look    │
  │ this one or beside it                       │ │   ‖  paused    waiting on your decision     │
- │   z           fold its sub-objectives away, │ │                                             │
- │ or show them again                          │ │ OBJECTIVES — a tree, sub-objectives under   │
- │   e           the form                      │ │ ├─ └─                                       │
- │   D           delete — it asks what goes    │ │   ▶  active    being worked towards         │
+ │    z            fold its sub-objectives     │ │                                             │
+ │ away, or show them again                    │ │ OBJECTIVES — a tree, sub-objectives under   │
+ │    e            the form                    │ │ ├─ └─                                       │
+ │    D            delete — it asks what goes  │ │   ▶  active    being worked towards         │
  │ with it                                     │ │   ‖  on-hold   not for now                  │
- │   /           search                        │ │   ✓  reached   done with                    │
- │   ⇥           next tab                      │ │   ✕  dropped   given up                     │
- │   :           command                       │ │                                             │
- │   ?           help                          │ │ ON A CARD                                   │
+ │    /            search                      │ │   ✓  reached   done with                    │
+ │    ⇥            next tab                    │ │   ✕  dropped   given up                     │
+ │    :            command                     │ │                                             │
+ │    ?            help                        │ │ ON A CARD                                   │
  ╰─────────────────────────────────────────────╯ │   ≡            a description exists         │
                                                  │   ▪            steps done / total           │
                                                  │   ⚑            a label                      │
@@ -37,4 +37,4 @@
 
 
 
- ↓↑ read on   esc close
+  ↓↑  read on   esc  close

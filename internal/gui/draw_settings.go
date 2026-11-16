@@ -53,7 +53,7 @@ func drawConfiguration(k Kit, w Window) {
 		if len(row) > 0 {
 			y = row[0].Y
 		}
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: box.X + padding, Y: y + (geom.BarHigh-lineHigh)/2, W: max(0, end-box.X-padding), H: lineHigh}, says, small, font.Font{}, text.Start)
+		Sentence{Said: says}.Draw(in, geom.Box{X: box.X + padding, Y: y + (geom.BarHigh-lineHigh)/2, W: max(0, end-box.X-padding), H: lineHigh})
 	}
 }
 
@@ -271,8 +271,8 @@ func drawOrigin(k Kit, w Window, row SettingRow) {
 
 func drawChooser(k Kit, w Window, box geom.Box) {
 	scope := ScopeAt(box)
-	said := "Previewing " + w.Previewing + " · ⏎ wears it · esc goes back to " + w.InForce()
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, said, small, font.Font{}, text.Start)
+	said := "Previewing " + w.Previewing + " · `⏎` wears it · `esc` goes back to " + w.InForce()
+	Sentence{Said: said}.Draw(k, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh})
 	body := chooserBody(box)
 	Rule{}.Draw(k, geom.Box{X: box.X, Y: body.Y - 1, W: box.W})
 	region := w.chooserRegion()
@@ -295,7 +295,7 @@ func drawChooser(k Kit, w Window, box geom.Box) {
 
 func drawIntros(k Kit, w Window, box geom.Box) {
 	scope := ScopeAt(box)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, IntrosSays, small, font.Font{}, text.Start)
+	Sentence{Said: IntrosSays}.Draw(k, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh})
 	body := chooserBody(box)
 	Rule{}.Draw(k, geom.Box{X: box.X, Y: body.Y - 1, W: box.W})
 	region := w.introsRegion()
@@ -322,7 +322,7 @@ func drawIntros(k Kit, w Window, box geom.Box) {
 }
 
 // IntrosSays is what the intro chooser says over its list.
-const IntrosSays = "Played on the board · r again · ⏎ keeps it"
+const IntrosSays = "Played on the board · `r` again · `⏎` keeps it"
 
 // BoardBanner is what the board says over itself of its configuration: a file read again and what changed, or a file that cannot be read; what it offers, and where it is drawn.
 type BoardBanner struct {

@@ -20,7 +20,7 @@ const (
 	KeepAsNewSays    = "Keep as a new view…"
 	WholeBoardSays   = "Whole board"
 	ViewsNoneSays    = "No view yet: filter the board, then keep it from the filters"
-	viewsThenSays    = "e opens it to change it, ⌘⌫ deletes it"
+	viewsThenSays    = "`e` opens it to change it, `⌘⌫` deletes it"
 	viewsAtMostByKey = 9
 )
 

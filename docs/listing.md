@@ -44,8 +44,8 @@ cairn task unarchive 1
 ```
 
 Every listing leaves the archived out until asked. `task show` answers an
-archived task either way. On both boards, `x` archives or unarchives the card
-under the cursor, and `⇧A` shows what was archived, written faintly.
+archived task either way. On both boards, <kbd>x</kbd> archives or unarchives the card
+under the cursor, and <kbd>⇧A</kbd> shows what was archived, written faintly.
 
 ## Searching
 
@@ -121,8 +121,8 @@ cairn view delete Groceries                       # the view alone; nothing else
 
 - A view holds at least one filter or a search, and its name is one no other
   view has.
-- Its place is the key that opens it on a board: `⌘1`…`⌘9` in the window,
-  `v` and a figure in the terminal.
+- Its place is the key that opens it on a board: <kbd>⌘1</kbd>…<kbd>⌘9</kbd> in the window,
+  <kbd>v</kbd> and a figure in the terminal.
 - It is kept in the store, so a backup and an export carry it.
 - A label it names follows a rename. Deleting an objective a view names asks
   what becomes of the view.

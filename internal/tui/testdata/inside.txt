@@ -37,4 +37,4 @@
                          │                        │                        │
                          │                        │                        │
 
- hjkl ←↓↑→ tasks   ^hl columns   a new here   / search   ? help   esc objectives
+  hjkl   ←↓↑→  tasks   ^hl  columns   a  new here   /  search   ?  help   esc  objectives

@@ -1,40 +1,40 @@
   TASKS 11   objectives 2   time 0                                                            HELP
 
- ╭─────────────────────────────────────────────╮ ╭─────────────────────────────────────────────╮
- │ KEYS                                        │ │ LEGEND                                      │
- │                                             │ │                                             │
- │ THE BOARD — the cursor on a column          │ │ PRIORITY — the left edge of a card          │
- │   hjkl ←↓↑→   the cards, and the band's     │ │   ▌ low                                     │
- │ lanes                                       │ │   ▌ normal                                  │
- │   ^H ^L       the column left or right, at  │ │   ▌ high                                    │
- │ once                                        │ │   ▌ critical                                │
- │   ^J ^K       into the band, out of it      │ │                                             │
- │   a           a new task                    │ │ STALLED — the top right of a card           │
- │   ⇧A          show what was archived        │ │   ⊘  blocked   waiting on somebody else     │
- │   ⇧X          archive every task in this    │ │   ◉  watching  handed over, needs a look    │
- │ column — it asks first                      │ │   ‖  paused    waiting on your decision     │
- │   /           search                        │ │                                             │
- │   ⇧F          filter — ←→ which, ↑↓ its     │ │ OBJECTIVES — a tree, sub-objectives under   │
- │ value, ⌫ clears all                         │ │ ├─ └─                                       │
- │   v           the views — a figure opens    │ │   ▶  active    being worked towards         │
- │ one, 0 the whole board                      │ │   ‖  on-hold   not for now                  │
- │   [ ]         filtered on an objective:     │ │   ✓  reached   done with                    │
- │ walk its sub-objectives                     │ │   ✕  dropped   given up                     │
- │   ⇥           next tab — tasks, objectives, │ │                                             │
- │ the time spent                              │ │ ON A CARD                                   │
- │   :           command — what it answers is  │ │   ≡            a description exists         │
- │ said until esc                              │ │   ▪            steps done / total           │
- │   b           a new backup of the store     │ │   ⚑            a label                      │
- │   ⇧B          the backups                   │ │   ↳            what is in the way           │
- │   ←→ t on timewalk the weeks, back to       │ │   ◇            the objective it serves      │
- │ today's                                     │ │   ┆ ┆         in the way, from outside: not │
- │                                             │ │ counted                                     │
- │ A TASK — the cursor on one                  │ │   2d          a deadline close by           │
- │   gg / G      first / last in the column    │ │   −3d         one that has passed           │
- │   ⇧hjkl       move it: sideways changes     │ │   ╔═╗         the task in focus             │
- │ column, up and down change place            │ ╰─────────────────────────────────────────────╯
- │   ⏎           the detail                    │
- │   e           the form                      │
- │   o           a task linked to it           │
+ ╭──────────────────────────────────────────────╮ ╭─────────────────────────────────────────────
+ │ KEYS                                         │ │ LEGEND
+ │                                              │ │
+ │ THE BOARD — the cursor on a column           │ │ PRIORITY — the left edge of a card
+ │    hjkl   ←↓↑→  the cards, and the band's    │ │   ▌ low
+ │ lanes                                        │ │   ▌ normal
+ │    ^H   ^L      the column left or right,    │ │   ▌ high
+ │ at once                                      │ │   ▌ critical
+ │    ^J   ^K      into the band, out of it     │ │
+ │    a            a new task                   │ │ STALLED — the top right of a card
+ │    ⇧A           show what was archived       │ │   ⊘  blocked   waiting on somebody else
+ │    ⇧X           archive every task in this   │ │   ◉  watching  handed over, needs a look
+ │ column — it asks first                       │ │   ‖  paused    waiting on your decision
+ │    /            search                       │ │
+ │    ⇧F           filter —  ←→  which,  ↑↓     │ │ OBJECTIVES — a tree, sub-objectives under
+ │ its value,  ⌫  clears all                    │ │ ├─ └─
+ │    v            the views — a figure opens   │ │   ▶  active    being worked towards
+ │ one,  0  the whole board                     │ │   ‖  on-hold   not for now
+ │    [   ]        filtered on an objective:    │ │   ✓  reached   done with
+ │ walk its sub-objectives                      │ │   ✕  dropped   given up
+ │    ⇥            next tab — tasks,            │ │
+ │ objectives, the time spent                   │ │ ON A CARD
+ │    :            command — what it answers    │ │   ≡            a description exists
+ │ is said until  esc                           │ │   ▪            steps done / total
+ │    b            a new backup of the store    │ │   ⚑            a label
+ │    ⇧B           the backups                  │ │   ↳            what is in the way
+ │    ←→   t       on the time, walk the        │ │   ◇            the objective it serves
+ │ weeks, back to today's                       │ │   ┆ ┆         in the way, from outside: not
+ │                                              │ │ counted
+ │ A TASK — the cursor on one                   │ │   2d          a deadline close by
+ │    gg   G       first / last in the column   │ │   −3d         one that has passed
+ │    ⇧hjkl        move it: sideways changes    │ │   ╔═╗         the task in focus
+ │ column, up and down change place             │ ╰─────────────────────────────────────────────
+ │    ⏎            the detail                   │
+ │    e            the form                     │
+ │    o            a task linked to it          │
 
- ↓↑ read on   esc close
+  ↓↑  read on   esc  close

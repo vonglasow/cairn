@@ -247,7 +247,7 @@ func carriedSays(one label.Carried) string {
 }
 
 // NoLabelSays is what the list of labels says when there is none.
-const NoLabelSays = "No label yet: n makes one"
+const NoLabelSays = "No label yet: `n` makes one"
 
 // LabelSearchSays is what the search of the list of labels says while nothing is typed in it.
 const LabelSearchSays = "Find or name a new label"

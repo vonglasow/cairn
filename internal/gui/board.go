@@ -60,7 +60,7 @@ func (w Window) EmptySays(column int) string {
 		return ""
 	}
 	if len(w.Showing().Cards) == 0 && column == board.IndexOf("todo") {
-		return "No task yet. " + w.keyboard.Spelled(Pretty(Shortcut("new"))) + " makes one."
+		return "No task yet. `" + w.keyboard.Spelled(Pretty(Shortcut("new"))) + "` makes one."
 	}
 	return nothingHere
 }

@@ -20,7 +20,7 @@ type Button struct {
 // Draw draws the button in at.
 func (b Button) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("button", at)
-	back, ink, chip := buttonColours(k.skin, b.Look)
+	back, ink := buttonColours(k.skin, b.Look)
 	if b.Look == buttonGhost {
 		ringed(k, at, k.skin.Radius.Control, k.skin.Colour.Line.Edge)
 	} else {
@@ -37,7 +37,7 @@ func (b Button) Draw(k Kit, at geom.Box) geom.Box {
 	said, key := ButtonParts(at, k.measured(), b.Said, b.Key)
 	sayStyled(k.gtx, k.th, ink, said, b.Said, reads, font.Medium, 1, text.Start)
 	if b.Key != "" {
-		KeyChip{Key: b.Key}.grounded(k.inside("button"), key, chip, ink)
+		KeyChip{Key: b.Key}.Draw(k.inside("button"), key)
 	}
 	return at
 }
@@ -72,21 +72,21 @@ const (
 	buttonGhost
 )
 
-func buttonColours(s design.Skin, look buttonLook) (back, ink, chip color.NRGBA) {
+func buttonColours(s design.Skin, look buttonLook) (back, ink color.NRGBA) {
 	c := s.Colour
 	switch look {
 	case buttonOn:
-		return c.Accent.Base, c.Ink.OnAccent, c.Accent.Chip
+		return c.Accent.Base, c.Ink.OnAccent
 	case buttonOnLit:
-		return c.Accent.Lit, c.Ink.OnAccent, c.Accent.LitChip
+		return c.Accent.Lit, c.Ink.OnAccent
 	case buttonLit:
-		return c.Surface.ControlLit, c.Ink.Text, c.Surface.ChipOnControlLit
+		return c.Surface.ControlLit, c.Ink.Text
 	case buttonFaint:
-		return c.Surface.Control, c.Ink.Faint, c.Surface.ChipOnControl
+		return c.Surface.Control, c.Ink.Faint
 	case buttonDanger:
-		return c.State.Danger, c.State.Wrong, c.State.DangerChip
+		return c.State.Danger, c.State.Wrong
 	case buttonDangerLit:
-		return c.State.DangerLit, c.State.Wrong, c.State.DangerLitChip
+		return c.State.DangerLit, c.State.Wrong
 	}
-	return c.Surface.Control, c.Ink.Text, c.Surface.ChipOnControl
+	return c.Surface.Control, c.Ink.Text
 }

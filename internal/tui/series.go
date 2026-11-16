@@ -204,7 +204,7 @@ func (b Board) seen(width, rows int) func([]string, int) string {
 func (b Board) seriesList(width int) ([]string, int) {
 	all := b.allSeries()
 	if len(all) == 0 {
-		return []string{b.skin.Faint.Render("no series yet — n makes one")}, 0
+		return []string{b.sentence("no series yet — `n` makes one", b.skin.Faint)}, 0
 	}
 	var out []string
 	chosen := 0
@@ -264,7 +264,7 @@ func (b Board) seriesChosen(width int) ([]string, int) {
 			b.skin.Faint.Render(spentSaid(s.TimeSpent)),
 		b.skin.Head.Render("ON THE BOARD NOW") + "  " + b.skin.Bright.Render(item.OrNothing(numbersSaid(s.Open))),
 		"",
-		b.skin.Head.Render("OCCURRENCES · "+strconv.Itoa(len(s.Occurrences))) + b.skin.Faint.Render("  archived ones included · ⏎ opens one"),
+		b.skin.Head.Render("OCCURRENCES · "+strconv.Itoa(len(s.Occurrences))) + b.sentence("  archived ones included · `⏎` opens one", b.skin.Faint),
 	}
 	chosen := 0
 	for i, o := range s.Occurrences {
