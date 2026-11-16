@@ -4,12 +4,14 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/engine/label"
 	"cairn/internal/engine/workspace"
+	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 
 	"cairn/internal/engine"
@@ -167,7 +169,7 @@ func (w Window) rowOfKey(key files.Key) SettingRow {
 		row.Comes = ByDefault
 	}
 	if w.Global && here && w.HereOffered() {
-		row.Theirs = "· " + w.hereName() + " sets its own: " + workspace.ValueIn(c, key.Name)
+		row.Theirs = w.hereName() + " sets its own: " + workspace.ValueIn(c, key.Name)
 	}
 	if !row.Fixed && row.Comes != SetHere && row.Comes != InFile && w.hoverKey == key.Name && !w.Global {
 		row.Offers = []string{SetHereOffer}
@@ -231,20 +233,25 @@ func (w Window) SettingSections() []SettingSection {
 }
 
 const (
-	settingsWide   = 860
+	settingsWide   = 960
+	narrowBelow    = 860
 	settingsHigh   = 700
 	settingsMargin = 16
 	navWide        = 176
 	navRow         = 30
-	fromWide       = 350
-	rowHigh        = 46
-	stackedHigh    = 72
+	fromWide       = 190
+	controlColumn  = 260
+	rowHigh        = 52
+	stackedHigh    = 92
 	sectionHigh    = 38
 	controlHigh    = 28
 	scopeHigh      = 28
 	fieldLeast     = 90
 	rowsPad        = 18
 	sbarWide       = 4
+	swatchRow      = 14
+	stepWide       = 28
+	stepField      = 56
 )
 
 // SettingsBox is the panel of the settings in a window of that size: as wide and as tall as it is drawn, or the room the window has less a margin.
@@ -269,16 +276,23 @@ func ChooserBox(width, height int) geom.Box {
 	return geom.Box{X: (width - wide) / 2, Y: (height - high) / 2, W: wide, H: high}
 }
 
-func (w Window) narrow() bool { return SettingsBox(w.width, w.height).W < settingsWide }
+func (w Window) narrow() bool { return SettingsBox(w.width, w.height).W < narrowBelow }
 
-// ScopeAt is the line under the heading: the scope chosen, and the file it writes.
+// ScopeAt is the line under the heading of a chooser: what it previews, and how to keep it.
 func ScopeAt(box geom.Box) geom.Box {
 	head := HeadingAt(box)
 	return geom.Box{X: box.X + padding, Y: head.Y + head.H + padding, W: box.W - 2*padding, H: scopeHigh}
 }
 
-// SettingsBody is what lies between the scope and the foot: the sections and the rows.
+// SettingsBody is what lies between the heading and the foot: the sections and the rows.
 func SettingsBody(box geom.Box) geom.Box {
+	head := HeadingAt(box)
+	top := head.Y + head.H + padding
+	foot := PanelOfferAt(box, 0).Y - between
+	return geom.Box{X: box.X, Y: top, W: box.W, H: foot - top}
+}
+
+func chooserBody(box geom.Box) geom.Box {
 	scope := ScopeAt(box)
 	top := scope.Y + scope.H + padding
 	foot := PanelOfferAt(box, 0).Y - between
@@ -287,7 +301,7 @@ func SettingsBody(box geom.Box) geom.Box {
 
 // SettingsNav is the column the sections are listed down at the left of the body, none at the narrowest.
 func SettingsNav(box geom.Box) geom.Box {
-	if box.W < settingsWide {
+	if box.W < narrowBelow {
 		return geom.Box{}
 	}
 	body := SettingsBody(box)
@@ -301,18 +315,19 @@ func SettingsRows(box geom.Box) geom.Box {
 	return geom.Box{X: x, Y: body.Y + inset, W: body.X + body.W - rowsPad - x, H: body.H - inset}
 }
 
-// ScopeSegments is where the two scopes are laid on the scope's line: the workspace's, then Global; one only when the store has no settings of its own.
+// ScopeSegments is where the two scopes are laid, on the heading's line after it: this workspace, then all of them; one only when the store has no settings of its own.
 func (w Window) ScopeSegments() []geom.Box {
-	scope := ScopeAt(w.SettingsBox())
+	head := HeadingAt(w.SettingsBox())
 	m := w.measured()
 	var boxes []geom.Box
-	x := scope.X + 2
+	x := head.X + ends(w.headMeasured(), Heads(w), design.HeadingSize) + padding + 2
+	y := head.Y + (head.H-scopeHigh)/2
 	for i, said := range w.scopeWords() {
 		wide := ends(m, said, small) + 2*pickerPad
 		if i == 0 && w.HereOffered() {
 			wide += dotSide + between
 		}
-		boxes = append(boxes, geom.Box{X: x, Y: scope.Y + 2, W: wide, H: scope.H - 4})
+		boxes = append(boxes, geom.Box{X: x, Y: y + 2, W: wide, H: scopeHigh - 4})
 		x += wide + 2
 	}
 	return boxes
@@ -323,14 +338,6 @@ func (w Window) scopeWords() []string {
 		return []string{AllWorkspaces}
 	}
 	return []string{ThisWorkspace + w.hereName(), AllWorkspaces}
-}
-
-// ScopePathAt is where the path the scope writes is said, after its segments.
-func (w Window) ScopePathAt() geom.Box {
-	scope, segments := ScopeAt(w.SettingsBox()), w.ScopeSegments()
-	last := segments[len(segments)-1]
-	x := last.X + last.W + 2 + padding + copyRoom
-	return geom.Box{X: x, Y: scope.Y + (scope.H-lineHigh)/2, W: max(0, scope.X+scope.W-x), H: lineHigh}
 }
 
 // SettingRows is every row of the settings in the scope shown, laid out down the rows' column, scrolled.
@@ -401,9 +408,9 @@ func (w Window) laidRow(row SettingRow, at geom.Box) SettingRow {
 	if !w.narrow() {
 		right = row.From.X - padding
 	}
-	wide := w.controlWide(row)
-	row.Control = geom.Box{X: right - wide, Y: line.Y + (line.H-controlHigh)/2, W: wide, H: controlHigh}
-	row.Name = geom.Box{X: inner.X, Y: line.Y, W: max(0, row.Control.X-padding-inner.X), H: line.H}
+	column := geom.Box{X: right - controlColumn, Y: line.Y + (line.H-controlHigh)/2, W: controlColumn, H: controlHigh}
+	row.Control = geom.Box{X: column.X, Y: column.Y, W: w.controlWide(row), H: controlHigh}
+	row.Name = geom.Box{X: inner.X, Y: line.Y, W: max(0, column.X-padding-inner.X), H: line.H}
 	row.Parts = w.controlParts(row)
 	row.OfferAt = w.offersOfRow(row)
 	return row
@@ -414,67 +421,69 @@ func (w Window) controlWide(row SettingRow) int {
 	switch {
 	case row.Key.Kind == files.KindBool || row.Key.Switch:
 		return toggleWide
-	}
-	switch row.Key.Kind {
-	case files.KindWords:
+	case row.Key.Kind == files.KindWords:
 		wide := 4
 		for _, word := range row.Shown() {
 			wide += ends(m, word, small) + 2*pickerPad
 		}
 		return wide
-	case files.KindTheme:
-		return PickerWide(m, row.Value, false, true)
-	case files.KindIntro:
-		return PickerWide(m, row.Value, false, false)
-	case files.KindColour:
-		return PickerWide(m, row.Value, true, false)
+	case row.Key.Kind == files.KindTheme:
+		return min(controlColumn, PickerWide(m, row.Value, false, true))
+	case row.Key.Kind == files.KindIntro:
+		return min(controlColumn, PickerWide(m, row.Value, false, false))
+	case row.Key.Kind == files.KindColour:
+		return len(label.LabelColours)*(swatchRow+inset) - inset
+	case row.Key.Kind == files.KindNumber:
+		return 2*stepWide + stepField + 2*inset + between + ends(m, row.Key.Unit, small)
+	case row.Fixed:
+		return min(monoWide(row.Value, small)+copyRoom, controlColumn)
 	}
-	if row.Fixed {
-		return min(monoWide(row.Value, small)+copyRoom, 260)
-	}
-	least := fieldLeast
-	switch {
-	case row.Key.Kind == files.KindPath:
-		least = 200
-	case row.Key.Kind == files.KindText:
-		least = 130
-	case row.Key.Unit != "":
-		least = 80 + ends(m, row.Key.Unit, small)
-	}
-	said := row.Value
-	if w.KeyWriting == row.Key.Name {
-		said = w.KeyWritten.Reads()
-	}
-	return min(260, max(least, monoWide(said, small)+2*pickerPad+ends(m, row.Key.Unit, small)))
+	return controlColumn
 }
 
 func (w Window) controlParts(row SettingRow) []geom.Box {
+	c := row.Control
 	switch {
 	case row.Key.Kind == files.KindBool || row.Key.Switch:
-		return []geom.Box{ToggleAt(row.Control)}
+		return []geom.Box{ToggleAt(c)}
 	case row.Key.Kind == files.KindWords:
 		m := w.measured()
 		var parts []geom.Box
-		x := row.Control.X + 2
+		x := c.X + 2
 		for _, word := range row.Shown() {
 			wide := ends(m, word, small) + 2*pickerPad
-			parts = append(parts, geom.Box{X: x, Y: row.Control.Y + 2, W: wide, H: row.Control.H - 4})
+			parts = append(parts, geom.Box{X: x, Y: c.Y + 2, W: wide, H: c.H - 4})
 			x += wide
 		}
 		return parts
+	case row.Key.Kind == files.KindColour:
+		var parts []geom.Box
+		for i := range label.LabelColours {
+			parts = append(parts, geom.Box{X: c.X + i*(swatchRow+inset), Y: c.Y + (c.H-swatchRow)/2, W: swatchRow, H: swatchRow})
+		}
+		return parts
+	case row.Key.Kind == files.KindNumber:
+		minus := geom.Box{X: c.X, Y: c.Y, W: stepWide, H: c.H}
+		field := geom.Box{X: minus.X + minus.W + inset, Y: c.Y, W: stepField, H: c.H}
+		plus := geom.Box{X: field.X + field.W + inset, Y: c.Y, W: stepWide, H: c.H}
+		return []geom.Box{minus, field, plus}
 	}
 	return nil
 }
 
 func (w Window) offersOfRow(row SettingRow) []geom.Box {
 	m := w.measured()
-	x := row.From.X + row.From.W
+	x := row.From.X
+	y := row.From.Y + row.From.H/2
+	if w.narrow() {
+		x += ends(m, strings.Join(row.OriginSays(), " · "), small) + padding
+		y = row.From.Y + (row.From.H-lineHigh)/2
+	}
 	var boxes []geom.Box
-	for i := len(row.Offers) - 1; i >= 0; i-- {
-		wide := ends(m, row.Offers[i], small) + 2*between + 4
-		x -= wide
-		boxes = append([]geom.Box{{X: x, Y: row.From.Y + (row.From.H-smallButton)/2, W: wide, H: smallButton}}, boxes...)
-		x -= geom.Gap
+	for _, offer := range row.Offers {
+		wide := ends(m, offer, small)
+		boxes = append(boxes, geom.Box{X: x, Y: y, W: wide, H: lineHigh})
+		x += wide + padding
 	}
 	return boxes
 }
@@ -495,8 +504,6 @@ func (w Window) SettingsFootSays() string {
 			return "All workspaces stay editable"
 		}
 		return "Fix the file and it is read again"
-	case w.narrow():
-		return "Saved as it is changed"
 	}
 	return SettingsFoot
 }
@@ -708,15 +715,7 @@ func (w Window) clickingSettings(p geom.Point) Window {
 	if w.ChooserOpen {
 		return w.clickingChooser(p)
 	}
-	if w.colourKey != "" {
-		for i, swatch := range w.ColourSwatches() {
-			if swatch.At.In(p) {
-				return w.colouredSetting(i)
-			}
-		}
-		w.colourKey = ""
-		return w
-	}
+	w.colourKey = ""
 	if w.KeyWriting != "" && !w.writingAt(p) {
 		w = w.settingEdited()
 	}
@@ -746,10 +745,7 @@ func (w Window) clickingSettings(p geom.Point) Window {
 		}
 		for j, part := range row.Parts {
 			if part.In(p) {
-				if row.Key.Kind == files.KindBool || row.Key.Switch {
-					return w.acting(row, -1)
-				}
-				return w.acting(row, j)
+				return w.actingOnPart(row, j)
 			}
 		}
 		if row.Control.In(p) {
@@ -758,6 +754,22 @@ func (w Window) clickingSettings(p geom.Point) Window {
 		return w
 	}
 	return w
+}
+
+func (w Window) actingOnPart(row SettingRow, part int) Window {
+	switch {
+	case row.Key.Kind == files.KindBool || row.Key.Switch:
+		return w.acting(row, -1)
+	case row.Key.Kind == files.KindColour:
+		w.colourKey = row.Key.Name
+		return w.colouredSetting(part)
+	case row.Key.Kind == files.KindNumber && part != 1:
+		n, _ := strconv.Atoi(row.Value)
+		return w.setting(row.Key.Name, strconv.Itoa(max(1, n+part-1)))
+	case row.Key.Kind == files.KindNumber:
+		return w.acting(row, -1)
+	}
+	return w.acting(row, part)
 }
 
 func (w Window) writingAt(p geom.Point) bool {
@@ -850,12 +862,10 @@ func (w Window) settingsOffers() []string {
 	if w.ChooserOpen {
 		return []string{"Wear " + w.Previewing, "Cancel", OpenThemes}
 	}
-	offers := []string{"Close"}
-	switch {
-	case w.Global && !w.ConfigHere:
-		return append(offers, WriteWhole)
+	if w.Global && !w.ConfigHere {
+		return []string{"Close", WriteWhole}
 	}
-	return append(offers, OpenTheFile)
+	return []string{"Close", OpenTheFile}
 }
 
 func (w Window) settingsShortcut(offer string) string {

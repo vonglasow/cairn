@@ -91,7 +91,7 @@ func (w Window) leavingIntros() Window {
 
 func (w Window) introsRegion() geom.Box {
 	box := w.SettingsBox()
-	body := SettingsBody(box)
+	body := chooserBody(box)
 	return geom.Box{X: body.X + padding, Y: body.Y + inset, W: body.W - 2*padding, H: body.H - inset}
 }
 

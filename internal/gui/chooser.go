@@ -238,6 +238,6 @@ func (w Window) wornFrom(got workspace.Config) Window {
 
 func (w Window) chooserRegion() geom.Box {
 	box := w.SettingsBox()
-	body := SettingsBody(box)
+	body := chooserBody(box)
 	return geom.Box{X: body.X + rowsPad, Y: body.Y + inset, W: body.W - 2*rowsPad, H: body.H - inset}
 }

@@ -2,9 +2,12 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/engine/label"
+	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
 	"image/color"
 	"slices"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/text"
@@ -19,8 +22,17 @@ func drawConfiguration(k Kit, w Window) {
 		k = k.inside("veil")
 	}
 	box := w.SettingsBox()
-	Panel{Head: Heads(w), Moves: true}.Draw(k, box)
+	plain := !w.IntrosOpen && !w.ChooserOpen
+	head := Heads(w)
+	if plain {
+		head = ""
+	}
+	Panel{Head: head, Moves: true}.Draw(k, box)
 	in := k.inside("panel")
+	if plain {
+		at := FormHeading(box)
+		Heading{Said: Heads(w)}.Draw(in, geom.Box{X: at.X, Y: at.Y, W: ends(w.headMeasured(), Heads(w), design.HeadingSize), H: at.H})
+	}
 	if w.IntrosOpen {
 		drawIntros(in, w, box)
 	} else if w.ChooserOpen {
@@ -57,7 +69,6 @@ func drawScope(k Kit, w Window) {
 	first, last := segments[0], segments[len(segments)-1]
 	track := geom.Box{X: first.X - 2, Y: first.Y - 2, W: last.X + last.W + 2 - first.X + 2, H: first.H + 4}
 	Segmented{Said: w.scopeWords(), At: segments, On: on, Small: true, Dot: dot}.Draw(k, track)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, w.ScopePathAt(), w.SettingsPath(), small, k.skin.Type.Mono, text.Start)
 }
 
 func drawSettings(k Kit, w Window, box geom.Box) {
@@ -77,10 +88,11 @@ func drawSettings(k Kit, w Window, box geom.Box) {
 	region := SettingsRows(box)
 	rows, cut := k.within(region)
 	for _, head := range w.SectionHeads() {
-		Head{Said: head.Name, Count: head.Count}.Draw(rows, head.At)
+		Head{Said: strings.ToUpper(head.Name)}.Draw(rows, head.At)
 	}
-	for i, row := range w.SettingRows() {
-		drawSettingRow(rows, w, row, i == w.RowOn)
+	all := w.SettingRows()
+	for i, row := range all {
+		drawSettingRow(rows, w, row, i == w.RowOn, i+1 < len(all) && all[i+1].Key.Section == row.Key.Section)
 	}
 	cut.Pop()
 	Scrollbar{Lines: w.settingsLength(), Rows: region.H, At: w.SettingsAt}.Draw(k, geom.Box{X: region.X + region.W + rowsPad - 2*sbarWide, Y: region.Y, W: sbarWide, H: region.H})
@@ -96,7 +108,7 @@ func (w Window) sectionShown() string {
 	return ""
 }
 
-func drawSettingRow(k Kit, w Window, row SettingRow, keyed bool) {
+func drawSettingRow(k Kit, w Window, row SettingRow, keyed, ruled bool) {
 	Row{Hover: w.hoverKey == row.Key.Name && !row.Off}.Draw(k, row.At)
 	r := k.inside("row")
 	if row.Off {
@@ -112,10 +124,13 @@ func drawSettingRow(k Kit, w Window, row SettingRow, keyed bool) {
 	}
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, under, small, look, text.Start)
 	if row.Said != "" {
-		sayIn(k.gtx, k.th, k.skin.Colour.State.Wrong, geom.Box{X: name.X, Y: row.From.Y + row.From.H - 2, W: row.At.W - 2*padding, H: lineHigh}, row.Said, small, font.Font{}, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.State.Wrong, row.SaidAt(), row.Said, small, font.Font{}, text.Start)
 	}
 	drawControl(r, w, row)
 	drawOrigin(r, w, row)
+	if ruled {
+		Rule{}.Draw(r, geom.Box{X: row.Name.X, Y: row.At.Y + row.At.H - 1, W: row.From.X + row.From.W - row.Name.X})
+	}
 	if keyed {
 		Ring{Radius: k.skin.Radius.Row}.Draw(r, row.At)
 	}
@@ -150,27 +165,58 @@ func drawControl(k Kit, w Window, row SettingRow) {
 	case row.Key.Kind == files.KindIntro:
 		Picker{Said: row.Value}.Draw(k, row.Control)
 	case row.Key.Kind == files.KindColour:
-		Picker{Said: row.Value, Dot: row.Value}.Draw(k, row.Control)
+		picked := row.Value
+		if w.colourKey == row.Key.Name {
+			picked = label.LabelColours[w.ColourPick]
+		}
+		for i, colour := range label.LabelColours {
+			Swatch{Colour: colour, Picked: colour == picked}.Draw(k, row.Parts[i])
+		}
+	case row.Key.Kind == files.KindNumber:
+		Button{Said: "−", Small: true}.Draw(k, row.Parts[0])
+		drawField(k, w, row, row.Parts[1])
+		Button{Said: "+", Small: true}.Draw(k, row.Parts[2])
+		unit := geom.Box{X: row.Parts[2].X + row.Parts[2].W + between, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: ends(w.measured(), row.Key.Unit, small), H: lineHigh}
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, unit, row.Key.Unit, small, font.Font{}, text.Start)
 	case row.Fixed:
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, geom.Box{X: row.Control.X + copyRoom, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: row.Control.W - copyRoom, H: lineHigh}, row.Value, small, k.skin.Type.Mono, text.Start)
 	default:
-		editing := w.KeyWriting == row.Key.Name
-		field := Field{Lit: editing}.Draw(k, row.Control)
-		line := geom.Box{X: field.X + pickerPad, Y: field.Y + (field.H-lineHigh)/2, W: field.W - 2*pickerPad, H: lineHigh}
-		if row.Key.Unit != "" {
-			unit := ends(w.measured(), row.Key.Unit, small)
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: line.X + line.W - unit, Y: line.Y, W: unit, H: line.H}, row.Key.Unit, small, font.Font{}, text.End)
-			line.W -= unit + between
-		}
-		switch {
-		case editing:
-			writing(k.inside("field"), w.measured(), line, w.KeyWritten, true, small, 1, Follow)
-		case row.Value == "" && row.Key.Kind == files.KindText:
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, line, "no label here", small, font.Font{}, text.Start)
-		default:
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, line, row.Value, small, k.skin.Type.Mono, text.Start)
-		}
+		drawField(k, w, row, row.Control)
 	}
+}
+
+func drawField(k Kit, w Window, row SettingRow, at geom.Box) {
+	editing := w.KeyWriting == row.Key.Name
+	field := Field{Lit: editing || row.Said != ""}.Draw(k, at)
+	line := geom.Box{X: field.X + pickerPad, Y: field.Y + (field.H-lineHigh)/2, W: field.W - 2*pickerPad, H: lineHigh}
+	mark := ""
+	switch {
+	case row.Key.Kind == files.KindDay:
+		mark = DayMark
+	case row.Key.Kind != files.KindNumber:
+		mark = row.Key.Unit
+	}
+	if mark != "" {
+		wide := ends(w.measured(), mark, small) + between
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: line.X + line.W - wide, Y: line.Y, W: wide, H: line.H}, mark, small, font.Font{}, text.End)
+		line.W -= wide + between
+	}
+	switch {
+	case editing:
+		writing(k.inside("field"), w.measured(), line, w.KeyWritten, true, small, 1, Follow)
+	case row.Value == "" && row.Key.Name == "approach.label":
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, line, "no label here", small, font.Font{}, text.Start)
+	default:
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, line, row.Value, small, k.skin.Type.Mono, text.Start)
+	}
+}
+
+// DayMark is what a field holding a day shows at its right: the calendar it opens.
+const DayMark = "▦"
+
+// SaidAt is where a row says why its value was refused: under its control.
+func (row SettingRow) SaidAt() geom.Box {
+	return geom.Box{X: row.Control.X, Y: row.Control.Y + row.Control.H + 2, W: row.From.X + row.From.W - row.Control.X, H: lineHigh}
 }
 
 func (w Window) stripOf(slug string) []color.NRGBA {
@@ -199,42 +245,21 @@ func (row SettingRow) OriginSays() []string {
 }
 
 func drawOrigin(k Kit, w Window, row SettingRow) {
-	m := w.measured()
-	said := row.OriginSays()
-	wides := make([]int, len(said))
-	total := 0
-	for i, one := range said {
-		wides[i] = ends(m, one, small)
-		if one == SetHere {
-			wides[i] += 2 * pillPad
-		}
-		total += wides[i] + geom.Gap
+	said := strings.Join(row.OriginSays(), " · ")
+	at := geom.Box{X: row.From.X, Y: row.From.Y + row.From.H/2 - lineHigh, W: row.From.W, H: lineHigh}
+	if len(row.Offers) == 0 {
+		at.Y = row.From.Y + (row.From.H-lineHigh)/2
 	}
-	x := row.From.X
-	if !w.narrow() {
-		x = row.From.X + row.From.W - total
-		if len(row.OfferAt) > 0 {
-			x = row.OfferAt[0].X - total
-		}
+	if w.narrow() {
+		at = geom.Box{X: row.From.X, Y: row.From.Y + (row.From.H-lineHigh)/2, W: ends(w.measured(), said, small), H: lineHigh}
 	}
-	for i, one := range said {
-		at := geom.Box{X: x, Y: row.From.Y + (row.From.H-lineHigh)/2, W: wides[i], H: lineHigh}
-		switch one {
-		case SetHere:
-			Pill{Said: one, Tone: ToneHere}.Draw(k, geom.Box{X: x, Y: row.From.Y + (row.From.H-pillHigh)/2, W: wides[i], H: pillHigh})
-		case ByDefault, WhenOpened:
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, at, one, small, font.Font{}, text.Start)
-		default:
-			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, at, one, small, font.Font{}, text.Start)
-		}
-		x += wides[i] + geom.Gap
+	ink := k.skin.Colour.Ink.Faint
+	if row.Comes == SetHere || row.Comes == InFile {
+		ink = k.skin.Colour.Standing["active"].Ink
 	}
+	sayIn(k.gtx, k.th, ink, at, said, small, font.Font{}, text.Start)
 	for i, offer := range row.Offers {
-		look := buttonPlain
-		if offer == SetHereOffer {
-			look = buttonGhost
-		}
-		Button{Said: offer, Look: look, Small: true}.Draw(k, row.OfferAt[i])
+		sayIn(k.gtx, k.th, k.skin.Colour.Accent.Base, row.OfferAt[i], offer, small, font.Font{}, text.Start)
 	}
 }
 
@@ -242,7 +267,7 @@ func drawChooser(k Kit, w Window, box geom.Box) {
 	scope := ScopeAt(box)
 	said := "Previewing " + w.Previewing + " · ⏎ wears it · esc goes back to " + w.InForce()
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, said, small, font.Font{}, text.Start)
-	body := SettingsBody(box)
+	body := chooserBody(box)
 	Rule{}.Draw(k, geom.Box{X: box.X, Y: body.Y - 1, W: box.W})
 	region := w.chooserRegion()
 	tiles, cut := k.within(region)
@@ -265,7 +290,7 @@ func drawChooser(k Kit, w Window, box geom.Box) {
 func drawIntros(k Kit, w Window, box geom.Box) {
 	scope := ScopeAt(box)
 	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: scope.X, Y: scope.Y + (scope.H-lineHigh)/2, W: scope.W, H: lineHigh}, IntrosSays, small, font.Font{}, text.Start)
-	body := SettingsBody(box)
+	body := chooserBody(box)
 	Rule{}.Draw(k, geom.Box{X: box.X, Y: body.Y - 1, W: box.W})
 	region := w.introsRegion()
 	rows, cut := k.within(region)

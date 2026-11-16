@@ -133,7 +133,8 @@ five days. See [the timesheet](trace.md#how-long-the-work-took).
   default** take a change back. A change is written to the file at once,
   keeping its comments; **Open the file** opens it. A field typed in is saved by `⏎` or a click elsewhere,
   and `esc` puts it back; a day is picked on the calendar, and the workspace's
-  colour on its swatches, by a click or by the arrows and `⏎`.
+  colour on its swatches, by a click or by the arrows and `⏎`; a number of days
+  steps with **−** and **+**.
 
 ## Workspaces
 

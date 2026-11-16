@@ -46,7 +46,7 @@ func configuredWith(c workspace.Config) *fake {
 func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
 	w := holding(configuredWith(workspace.Config{})).openingConfiguration().toSection(SettingSection{Name: files.SectionPlaces, First: 13})
 	marks := w.CopyMarks()
-	if len(marks) != 3 {
+	if len(marks) != 2 {
 		t.Fatalf("the configuration offers %d paths to copy: %+v", len(marks), marks)
 	}
 	store := marks[0]
@@ -75,11 +75,10 @@ func TestTheSettingsTakeADayOnTheCalendarAndAColourOnTheSwatches(t *testing.T) {
 	if in, ok := f.gave("config", "set"); dated.Screen != board.OnConfiguration || !ok || in.Given["key"] != "archive.start" || in.Given["value"] != "2026-11-02" {
 		t.Errorf("the day taken set %+v (%v), back on %v", in, ok, dated.Screen)
 	}
-	colouring := w.acting(row(w, "workspace.colour"), -1)
-	if got := len(colouring.ColourSwatches()); got != len(label.LabelColours) {
-		t.Fatalf("the colour opens %d swatches, want %d", got, len(label.LabelColours))
+	if got := len(row(w, "workspace.colour").Parts); got != len(label.LabelColours) {
+		t.Fatalf("the colour shows %d swatches, want %d", got, len(label.LabelColours))
 	}
-	colouring.Key("right").Key("enter")
+	w.acting(row(w, "workspace.colour"), -1).Key("right").Key("enter")
 	if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != "workspace.colour" || !slices.Contains(label.LabelColours, in.Given["value"]) {
 		t.Errorf("the swatch taken set %+v (%v)", in, ok)
 	}
@@ -187,21 +186,15 @@ func TestTheWorkspaceColourIsPickedByAClick(t *testing.T) {
 			colour = row
 		}
 	}
-	opened := w.Click(geom.Point{X: colour.Control.X + colour.Control.W/2, Y: colour.Control.Y + colour.Control.H/2})
-	swatches := opened.ColourSwatches()
-	if len(swatches) != len(label.LabelColours) {
-		t.Fatalf("a click on the colour opens %d swatches", len(swatches))
+	if len(colour.Parts) != len(label.LabelColours) {
+		t.Fatalf("the colour shows %d swatches", len(colour.Parts))
 	}
-	third := swatches[3].At
-	picked := opened.Click(geom.Point{X: third.X + third.W/2, Y: third.Y + third.H/2})
+	third := colour.Parts[3]
+	picked := w.Click(geom.Point{X: third.X + third.W/2, Y: third.Y + third.H/2})
 	if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != "workspace.colour" || in.Given["value"] != label.LabelColours[3] {
 		t.Errorf("a click on a swatch set %+v (%v)", in.Given, ok)
 	}
-	if len(picked.ColourSwatches()) != 0 {
-		t.Error("the swatches stay open once one is picked")
-	}
-	box := opened.SettingsBox()
-	if left := opened.Click(geom.Point{X: box.X + 40, Y: box.Y + box.H - 60}); len(left.ColourSwatches()) != 0 || left.Screen != board.OnConfiguration {
-		t.Errorf("a click beside the swatches leaves %d open, on %v", len(left.ColourSwatches()), left.Screen)
+	if picked.Screen != board.OnConfiguration {
+		t.Errorf("a click on a swatch leaves the window on %v", picked.Screen)
 	}
 }

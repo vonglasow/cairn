@@ -363,12 +363,6 @@ func (w Window) ColourSwatches() []ColourSwatch {
 				row = one.At
 			}
 		}
-	case w.colourKey != "" && w.Screen == board.OnConfiguration:
-		for _, one := range w.SettingRows() {
-			if one.Key.Name == w.colourKey {
-				row = one.Control
-			}
-		}
 	default:
 		return nil
 	}

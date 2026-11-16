@@ -32,8 +32,7 @@ func (w Window) CopyMarks() []CopyMark {
 				marks = append(marks, markBefore(row.Control, w.PlaceOf(row.Key.Name)))
 			}
 		}
-		path := w.ScopePathAt()
-		return append(marks, markBefore(geom.Box{X: path.X - copyRoom, Y: path.Y, H: path.H}, w.SettingsWritten()))
+		return marks
 	case w.Screen == board.OnAsking && w.Question == board.AboutCairn:
 		return []CopyMark{markBefore(w.SaidAt(len(AboutSays(build.Read()))-1), build.Home)}
 	case w.Context() != "":
