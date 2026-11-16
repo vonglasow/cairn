@@ -1617,7 +1617,7 @@ Feature: The desktop board
       When I open the window
       And I press "cmd+,"
       Then the panel is headed "Settings"
-      And the settings are written in "Global"
+      And the settings are written in "All workspaces"
       And the configuration reads "store" read when cairn opens
       And the configuration reads "plugin" from its default
       And the configuration reads "time.weekends" from its default
@@ -1627,7 +1627,7 @@ Feature: The desktop board
       Given a configuration file that names no workspace
       When I open the window
       And I press "cmd+,"
-      And I choose "Open config.toml"
+      And I choose "Open the file"
       Then the window asks the system to open the configuration file
 
     @gui-a-missing-configuration-is-written-from-the-window
@@ -1636,7 +1636,7 @@ Feature: The desktop board
       And I press "cmd+,"
       And I choose "Write the whole file"
       Then a configuration file exists
-      When I choose the scope "Global"
+      When I choose the scope "All workspaces"
       Then the configuration reads "plugin" from the file
 
     @gui-settings-a-toggle-is-written-at-once
@@ -1644,11 +1644,11 @@ Feature: The desktop board
       Given the workspace "home", the default
       When I open the window on the workspace "home"
       And I press "cmd+,"
-      Then the settings are written in "home"
+      Then the settings are written in "This workspace · home"
       And the configuration reads "series.on" from its default
       When I click the switch of "series.on"
       Then the settings of the workspace "home" say `on = true`
-      And the configuration reads "series.on" set here
+      And the configuration reads "series.on" only here
       And the banner says nothing of a change
       When I press "esc"
       Then the tabs read "TASKS", "OBJECTIVES", "TIME", "SERIES"
@@ -1658,19 +1658,19 @@ Feature: The desktop board
       Given the workspace "home", the default
       When I open the window on the workspace "home"
       And I press "cmd+,"
-      And I choose the scope "Global"
-      And I click "hidden" on the row "pages.time"
+      And I choose the scope "All workspaces"
+      And I click "Counted only" on the row "pages.time"
       Then the global configuration says `time = "hidden"`
       And the settings of the workspace "home" do not say `time = "hidden"`
       And the configuration reads "pages.time" from the file
 
     @gui-settings-reset-takes-the-line-out
-    Scenario: Reset to global takes the key out of the settings of the workspace, and the global value answers again
+    Scenario: Use the shared value takes the key out of the settings of the workspace, and the value of all workspaces answers again
       Given the workspace "home", the default
       And the settings of the workspace "home" turn the time off
       When I open the window on the workspace "home"
       And I press "cmd+,"
-      And I click "Reset to global" on the row "pages.time"
+      And I click "Use the shared value" on the row "pages.time"
       Then the settings of the workspace "home" do not say `time = "off"`
       And the configuration reads "pages.time" from its default
       And the tabs read "TASKS", "OBJECTIVES", "TIME"
@@ -1681,9 +1681,9 @@ Feature: The desktop board
       And the global configuration says the archive lasts 30 days
       When I open the window on the workspace "home"
       And I press "cmd+,"
-      And I click "Set here" on the row "archive.days"
+      And I click "Set only here" on the row "archive.days"
       Then the settings of the workspace "home" say `days = 30`
-      And the configuration reads "archive.days" set here
+      And the configuration reads "archive.days" only here
 
     @gui-settings-a-field-is-written-on-enter
     Scenario: a field is written when enter is pressed, and a value it does not take is said under it and not written
@@ -1695,14 +1695,14 @@ Feature: The desktop board
       And the settings of the workspace "home" do not say `session = "1 hour"`
       When I write "45m" in the row "focus.session"
       Then the settings of the workspace "home" say `session = "45m"`
-      And the configuration reads "focus.session" set here
+      And the configuration reads "focus.session" only here
 
     @gui-settings-places-are-read-when-cairn-opens
     Scenario: the store and the notes are shown and never written from the window
       Given the workspace "home", the default
       When I open the window on the workspace "home"
       And I press "cmd+,"
-      And I choose the scope "Global"
+      And I choose the scope "All workspaces"
       Then the configuration reads "store" read when cairn opens
       And the configuration reads "notes" read when cairn opens
       And the row "store" offers nothing to change
@@ -1718,13 +1718,13 @@ Feature: The desktop board
       Then the window wears "nord"
       When I press "esc"
       Then the window wears "default"
-      And the panel is headed "Settings of home"
+      And the panel is headed "Settings"
       When I click the control of "window.theme"
       And I walk the chooser to "gruvbox-dark"
       And I press "enter"
       Then the window wears "gruvbox-dark"
       And the settings of the workspace "home" say `theme = "gruvbox-dark"`
-      And the configuration reads "window.theme" set here
+      And the configuration reads "window.theme" only here
 
     @gui-settings-the-intro-is-played-then-kept
     Scenario: the intro chooser plays each intro on the board behind as the keyboard walks it, replays it, keeps one on enter, and esc goes back
@@ -1741,14 +1741,14 @@ Feature: The desktop board
       When I press "r"
       Then the board is arriving by "deck"
       When I press "esc"
-      Then the panel is headed "Settings of home"
+      Then the panel is headed "Settings"
       And no cairn is being built
       And the settings of the workspace "home" do not say `intro = "deck"`
       When I click the control of "window.intro"
       And I walk the intro chooser to "flap"
       And I press "enter"
       Then the settings of the workspace "home" say `intro = "flap"`
-      And the configuration reads "window.intro" set here
+      And the configuration reads "window.intro" only here
 
     @gui-settings-a-file-that-cannot-be-read-keeps-the-last-good
     Scenario: settings that cannot be read leave the last good ones in force, said until they read
@@ -1775,6 +1775,26 @@ Feature: The desktop board
       Then the banner says "pages.time off → on"
       And the banner says nothing of a file that cannot be read
       And the tabs read "TASKS", "OBJECTIVES", "TIME"
+
+    @gui-settings-rows-say-what-they-do
+    Scenario: each row is named in plain words, says what it does, and shows its key only under the pointer
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the sections read "Look", "Tabs", "Time", "Archive", "Agent", "Files"
+      And the row "window.keep_sizes" is named "Remember column widths" over "The widths you drag stay the next time"
+      When I rest the pointer on the row "window.keep_sizes"
+      Then the row "window.keep_sizes" is named "Remember column widths" over "window.keep_sizes"
+
+    @gui-settings-the-time-of-deleted-tasks-is-a-switch
+    Scenario: whether a deleted task's time is still counted is one switch, written in the words of the file
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the row "time.deleted" is named "Count the time of deleted tasks" over "On: the time spent on a task you delete stays in the Time tab. Off: it goes with the task."
+      When I click the switch of "time.deleted"
+      Then the settings of the workspace "home" say `deleted = "taken"`
+      And the configuration reads "time.deleted" only here
 
   Rule: The window names its workspace, and opens another in a window of its own
 
@@ -1852,7 +1872,8 @@ Feature: The desktop board
       When I open the window on the workspace "work"
       And I click the pill of the workspace
       And I click "Settings of work…" in the switcher
-      Then the panel is headed "Settings of work"
+      Then the panel is headed "Settings"
+      And the settings are written in "This workspace · work"
 
   Rule: The objectives tab is a tree beside the objective chosen
 

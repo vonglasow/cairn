@@ -16,36 +16,39 @@ import (
 	"cairn/internal/store/files"
 )
 
-// OpenSettings is the offer handing the settings of the workspace shown to the system, to open in its editor.
-const OpenSettings = "Open settings.toml"
-
-// OpenGlobal is the offer handing the global configuration to the system, to open in its editor.
-const OpenGlobal = "Open config.toml"
+// OpenTheFile is the offer handing the file the scope shown writes to the system, to open in its editor.
+const OpenTheFile = "Open the file"
 
 // WriteWhole is the offer writing the whole global configuration, every key explained, where none is written yet.
 const WriteWhole = "Write the whole file"
 
-// SettingsFoot is what the foot of the settings says: nothing waits for a button, and the file is read again when it changes.
-const SettingsFoot = "Saved as it is changed · the file is read again when it changes"
+// SettingsFoot is what the foot of the settings says: nothing waits for a button.
+const SettingsFoot = "Saved as you change it"
 
 // WritingFoot is what the foot says while a field is written: how it is saved, and how it is put back.
 const WritingFoot = "Enter or a click elsewhere saves the field · Esc puts it back"
 
 // The words a row says of where its value comes from.
 const (
-	SetHere    = "set here"
-	FromGlobal = "from global"
-	ByDefault  = "default"
-	InFile     = "in config.toml"
-	WhenOpened = "read when cairn opens"
+	SetHere    = "Only here"
+	FromGlobal = "Shared"
+	ByDefault  = "Default"
+	InFile     = "Changed"
+	WhenOpened = "Read when cairn opens"
 )
 
 // The offers a row makes beside where its value comes from.
 const (
-	ResetToGlobal  = "Reset to global"
+	ResetToGlobal  = "Use the shared value"
 	ResetShort     = "Reset"
-	ResetToDefault = "Reset to default"
-	SetHereOffer   = "Set here"
+	ResetToDefault = "Back to default"
+	SetHereOffer   = "Set only here"
+)
+
+// The scopes the settings write, as the panel names them.
+const (
+	ThisWorkspace = "This workspace · "
+	AllWorkspaces = "All workspaces"
 )
 
 func (w Window) readingConfig() (workspace.Config, bool) {
@@ -91,12 +94,12 @@ func (w Window) HereOffered() bool {
 	return w.switcher.place.Configured() != "" || w.Configured.Settings != ""
 }
 
-// SettingsScope is the scope the settings write: the workspace's name, the folder of the store, or Global.
+// SettingsScope is the scope the settings write, as the panel names it: this workspace, or all of them.
 func (w Window) SettingsScope() string {
 	if w.Global {
-		return "Global"
+		return AllWorkspaces
 	}
-	return w.hereName()
+	return ThisWorkspace + w.hereName()
 }
 
 func (w Window) hereName() string {
@@ -106,19 +109,9 @@ func (w Window) hereName() string {
 	return "here"
 }
 
-// SettingsPath is what the panel says beside the scope: the name of the file written, and of the one it lies over or under; the whole path is copied from the mark before it.
+// SettingsPath is what the panel says beside the scope: the name of the file written; the whole path is copied from the mark before it.
 func (w Window) SettingsPath() string {
-	global := filepath.Base(w.Configured.File)
-	if w.Global {
-		if w.HereOffered() {
-			return global + " · under every workspace's own settings"
-		}
-		return global
-	}
-	if w.narrow() {
-		return filepath.Base(workspace.SettingsOf(w.Configured))
-	}
-	return filepath.Base(workspace.SettingsOf(w.Configured)) + " over " + global
+	return filepath.Base(w.SettingsWritten())
 }
 
 func tilde(path string) string {
@@ -166,7 +159,7 @@ func (w Window) rowOfKey(key files.Key) SettingRow {
 	case here:
 		row.Comes, row.Offers = SetHere, []string{ResetToGlobal}
 		if value, ok := c.Global[key.Name]; ok && key.Name != "workspace.colour" {
-			row.Aside = "← global: " + value
+			row.Aside = "shared: " + value
 		}
 	case global:
 		row.Comes = FromGlobal
@@ -228,7 +221,7 @@ func (w Window) SettingSections() []SettingSection {
 		}
 	}
 	if !w.Global {
-		sections = append(sections, SettingSection{Name: files.SectionPlaces, Count: "global", First: -1})
+		sections = append(sections, SettingSection{Name: files.SectionPlaces, Count: itoa(len(machineKeys())), First: -1})
 	}
 	nav := SettingsNav(w.SettingsBox())
 	for i := range sections {
@@ -243,7 +236,7 @@ const (
 	settingsMargin = 16
 	navWide        = 176
 	navRow         = 30
-	fromWide       = 318
+	fromWide       = 350
 	rowHigh        = 46
 	stackedHigh    = 72
 	sectionHigh    = 38
@@ -327,9 +320,9 @@ func (w Window) ScopeSegments() []geom.Box {
 
 func (w Window) scopeWords() []string {
 	if !w.HereOffered() {
-		return []string{"Global"}
+		return []string{AllWorkspaces}
 	}
-	return []string{w.hereName(), "Global"}
+	return []string{ThisWorkspace + w.hereName(), AllWorkspaces}
 }
 
 // ScopePathAt is where the path the scope writes is said, after its segments.
@@ -418,12 +411,14 @@ func (w Window) laidRow(row SettingRow, at geom.Box) SettingRow {
 
 func (w Window) controlWide(row SettingRow) int {
 	m := w.measured()
-	switch row.Key.Kind {
-	case files.KindBool:
+	switch {
+	case row.Key.Kind == files.KindBool || row.Key.Switch:
 		return toggleWide
+	}
+	switch row.Key.Kind {
 	case files.KindWords:
 		wide := 4
-		for _, word := range row.Words {
+		for _, word := range row.Shown() {
 			wide += ends(m, word, small) + 2*pickerPad
 		}
 		return wide
@@ -454,14 +449,14 @@ func (w Window) controlWide(row SettingRow) int {
 }
 
 func (w Window) controlParts(row SettingRow) []geom.Box {
-	switch row.Key.Kind {
-	case files.KindBool:
+	switch {
+	case row.Key.Kind == files.KindBool || row.Key.Switch:
 		return []geom.Box{ToggleAt(row.Control)}
-	case files.KindWords:
+	case row.Key.Kind == files.KindWords:
 		m := w.measured()
 		var parts []geom.Box
 		x := row.Control.X + 2
-		for _, word := range row.Words {
+		for _, word := range row.Shown() {
 			wide := ends(m, word, small) + 2*pickerPad
 			parts = append(parts, geom.Box{X: x, Y: row.Control.Y + 2, W: wide, H: row.Control.H - 4})
 			x += wide
@@ -497,7 +492,7 @@ func (w Window) SettingsFootSays() string {
 		return WritingFoot
 	case w.Troubled != nil && w.Troubled.File == w.SettingsWritten():
 		if w.HereOffered() && !w.Global {
-			return "Global stays editable"
+			return "All workspaces stay editable"
 		}
 		return "Fix the file and it is read again"
 	case w.narrow():
@@ -727,7 +722,7 @@ func (w Window) clickingSettings(p geom.Point) Window {
 	}
 	for i, segment := range w.ScopeSegments() {
 		if segment.In(p) {
-			return w.scoped(w.scopeWords()[i] == "Global")
+			return w.scoped(w.scopeWords()[i] == AllWorkspaces)
 		}
 	}
 	for _, section := range w.SettingSections() {
@@ -751,7 +746,7 @@ func (w Window) clickingSettings(p geom.Point) Window {
 		}
 		for j, part := range row.Parts {
 			if part.In(p) {
-				if row.Key.Kind == files.KindBool {
+				if row.Key.Kind == files.KindBool || row.Key.Switch {
 					return w.acting(row, -1)
 				}
 				return w.acting(row, j)
@@ -831,12 +826,9 @@ func (w Window) choosingOnSettings(name string) (Window, bool) {
 		return w.choosingOnIntros(name)
 	}
 	switch {
-	case name == OpenSettings:
-		w.Opens = workspace.SettingsOf(w.Configured)
-		return w.filling(false), true
-	case name == OpenGlobal:
-		w.Opens = w.Configured.File
-		return w.filling(true), true
+	case name == OpenTheFile:
+		w.Opens = w.SettingsWritten()
+		return w.filling(w.Global), true
 	case name == WriteWhole:
 		return w.writingConfiguration(), true
 	case name == OpenThemes:
@@ -862,10 +854,8 @@ func (w Window) settingsOffers() []string {
 	switch {
 	case w.Global && !w.ConfigHere:
 		return append(offers, WriteWhole)
-	case w.Global:
-		return append(offers, OpenGlobal)
 	}
-	return append(offers, OpenSettings)
+	return append(offers, OpenTheFile)
 }
 
 func (w Window) settingsShortcut(offer string) string {
@@ -1008,6 +998,16 @@ func HandOver(path string) error {
 // SettingsBox is the panel of the settings in this window.
 func (w Window) SettingsBox() geom.Box {
 	return w.placedPanel(board.OnConfiguration, w.settingsOpens())
+}
+
+func machineKeys() []files.Key {
+	var machine []files.Key
+	for _, key := range files.Keys() {
+		if key.Machine {
+			machine = append(machine, key)
+		}
+	}
+	return machine
 }
 
 func (w Window) keysShown() []files.Key {

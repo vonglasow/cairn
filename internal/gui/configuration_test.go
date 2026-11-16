@@ -44,7 +44,7 @@ func configuredWith(c workspace.Config) *fake {
 }
 
 func TestAPathIsCopiedByTheMarkBeforeIt(t *testing.T) {
-	w := holding(configuredWith(workspace.Config{})).openingConfiguration().toSection(SettingSection{Name: "Places", First: 13})
+	w := holding(configuredWith(workspace.Config{})).openingConfiguration().toSection(SettingSection{Name: files.SectionPlaces, First: 13})
 	marks := w.CopyMarks()
 	if len(marks) != 3 {
 		t.Fatalf("the configuration offers %d paths to copy: %+v", len(marks), marks)
@@ -113,7 +113,7 @@ func TestAClickOutsideTheSettingsClosesThemAskingFirstOnlyWhenSomethingTypedIsNo
 
 func TestOpeningAFileOfTheConfigurationFillsItFirst(t *testing.T) {
 	f := configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml", File: "/c/config.toml"})
-	w := holding(f).openingConfiguration().Choose(OpenSettings)
+	w := holding(f).openingConfiguration().Choose(OpenTheFile)
 	if in, ok := f.gave("config", "fill"); !ok || in.Given["global"] == "true" {
 		t.Errorf("opening the settings filled %+v (%v)", in, ok)
 	}

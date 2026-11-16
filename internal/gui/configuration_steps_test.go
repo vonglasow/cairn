@@ -17,7 +17,7 @@ import (
 )
 
 var origins = map[string]string{
-	"set here": SetHere, "from the global configuration": FromGlobal, "from its default": ByDefault,
+	"only here": SetHere, "from all workspaces": FromGlobal, "from its default": ByDefault,
 	"from the file": InFile, "read when cairn opens": WhenOpened,
 }
 
@@ -58,7 +58,7 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		return os.WriteFile(path, []byte("[pages]\ntasks = true\n"), 0o600)
 	})
-	sc.Then(`^the configuration reads "([^"]*)" (set here|from the global configuration|from its default|from the file|read when cairn opens)$`, func(key, from string) error {
+	sc.Then(`^the configuration reads "([^"]*)" (only here|from all workspaces|from its default|from the file|read when cairn opens)$`, func(key, from string) error {
 		row, err := w.settingRow(key)
 		if err != nil {
 			return err
@@ -96,7 +96,7 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
-		if at := slices.Index(row.Words, said); at >= 0 {
+		if at := slices.Index(row.Shown(), said); at >= 0 {
 			w.clickIn(row.Parts[at])
 			return nil
 		}
@@ -109,6 +109,34 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 			return nil
 		}
 		return fmt.Errorf("the row %q offers %v and %v", key, row.Words, row.Offers)
+	})
+	sc.Then(`^the sections read (.*)$`, func(list string) error {
+		var got []string
+		for _, section := range w.w.SettingSections() {
+			got = append(got, section.Name)
+		}
+		if want := quoted(list); !slices.Equal(got, want) {
+			return fmt.Errorf("the sections read %q, not %q", got, want)
+		}
+		return nil
+	})
+	sc.Then(`^the row "([^"]*)" is named "([^"]*)" over "([^"]*)"$`, func(key, name, under string) error {
+		row, err := w.settingInSight(key)
+		if err != nil {
+			return err
+		}
+		if said, then := w.w.RowLines(row); said != name || then != under {
+			return fmt.Errorf("the row %q is named %q over %q", key, said, then)
+		}
+		return nil
+	})
+	sc.When(`^I rest the pointer on the row "([^"]*)"$`, func(key string) error {
+		row, err := w.settingInSight(key)
+		if err != nil {
+			return err
+		}
+		w.w = w.w.Hovering(geom.Point{X: row.Name.X + 2, Y: row.Name.Y + 2})
+		return nil
 	})
 	sc.When(`^I write "([^"]*)" in the row "([^"]*)"$`, func(said, key string) error {
 		row, err := w.settingInSight(key)

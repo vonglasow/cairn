@@ -104,8 +104,13 @@ func drawSettingRow(k Kit, w Window, row SettingRow, keyed bool) {
 		defer faded.Pop()
 	}
 	name := geom.Box{X: row.Name.X, Y: row.Name.Y + (row.Name.H-2*lineHigh)/2, W: row.Name.W, H: lineHigh}
-	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, name, w.rowSays(row), reads, font.Medium, 1, text.Start)
-	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, row.Key.Name, small, k.skin.Type.Mono, text.Start)
+	said, under := w.RowLines(row)
+	sayStyled(k.gtx, k.th, k.skin.Colour.Ink.Text, name, said, reads, font.Medium, 1, text.Start)
+	look := font.Font{}
+	if under == row.Key.Name {
+		look = k.skin.Type.Mono
+	}
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: name.X, Y: name.Y + lineHigh, W: name.W, H: lineHigh}, under, small, look, text.Start)
 	if row.Said != "" {
 		sayIn(k.gtx, k.th, k.skin.Colour.State.Wrong, geom.Box{X: name.X, Y: row.From.Y + row.From.H - 2, W: row.At.W - 2*padding, H: lineHigh}, row.Said, small, font.Font{}, text.Start)
 	}
@@ -116,19 +121,30 @@ func drawSettingRow(k Kit, w Window, row SettingRow, keyed bool) {
 	}
 }
 
-func (w Window) rowSays(row SettingRow) string {
-	if row.Key.Name == "workspace.colour" {
-		return row.Key.Says + " of " + w.hereName()
+// RowLines is what a row writes at its left: its name, and under it what it does, or its key while the pointer rests on it.
+func (w Window) RowLines(row SettingRow) (string, string) {
+	if w.hoverKey == row.Key.Name {
+		return row.Key.Says, row.Key.Name
 	}
-	return row.Key.Says
+	return row.Key.Says, row.Key.Help
+}
+
+// Shown is the words a row of words shows, in the order it takes them.
+func (row SettingRow) Shown() []string {
+	if len(row.Key.Shown) > 0 {
+		return row.Key.Shown
+	}
+	return row.Words
 }
 
 func drawControl(k Kit, w Window, row SettingRow) {
 	switch {
 	case row.Key.Kind == files.KindBool:
 		Toggle{On: row.Value == "true"}.Draw(k, row.Parts[0])
+	case row.Key.Switch:
+		Toggle{On: row.Value == row.Words[0]}.Draw(k, row.Parts[0])
 	case row.Key.Kind == files.KindWords:
-		Segmented{Said: row.Words, At: row.Parts, On: slices.Index(row.Words, row.Value), Small: true}.Draw(k, row.Control)
+		Segmented{Said: row.Shown(), At: row.Parts, On: slices.Index(row.Words, row.Value), Small: true}.Draw(k, row.Control)
 	case row.Key.Kind == files.KindTheme:
 		Picker{Said: row.Value, Strip: w.stripOf(row.Value)}.Draw(k, row.Control)
 	case row.Key.Kind == files.KindIntro:

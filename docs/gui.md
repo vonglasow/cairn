@@ -126,9 +126,12 @@ five days. See [the timesheet](trace.md#how-long-the-work-took).
   chooses its colour, `⌘⌫` takes it off everything after asking.
 - `⇧B` lists the backups; `⏎` restores one after asking, a backup of what the
   store holds made first.
-- `⌘,` opens the settings of the workspace and the global configuration, every
-  key with where its value comes from. A change is written to the file at once,
-  keeping its comments. A field typed in is saved by `⏎` or a click elsewhere,
+- `⌘,` opens the settings, for **This workspace** or for **All workspaces**.
+  Each row says what it does; resting the pointer on it shows its key. Beside
+  it, where its value comes from: **Default**, **Shared** by all workspaces,
+  **Only here**, or **Changed**; **Use the shared value** and **Back to
+  default** take a change back. A change is written to the file at once,
+  keeping its comments; **Open the file** opens it. A field typed in is saved by `⏎` or a click elsewhere,
   and `esc` puts it back; a day is picked on the calendar, and the workspace's
   colour on its swatches, by a click or by the arrows and `⏎`.
 

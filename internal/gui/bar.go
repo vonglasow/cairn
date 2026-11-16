@@ -39,9 +39,6 @@ func HeadsOn(w Window, screen board.Screen) string {
 		if w.IntrosOpen {
 			return "Intro of " + w.hereName()
 		}
-		if name := w.switcher.place.Configured(); name != "" {
-			return "Settings of " + name
-		}
 		return "Settings"
 	case board.OnHelp:
 		return "Help"

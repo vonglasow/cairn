@@ -28,7 +28,7 @@ const (
 	KindPercent  Kind = "percent"
 )
 
-// Key is one key of the configuration as a person sets it: its dotted name, the kind of value it takes and the words it takes when it takes words, whether it belongs to the machine or to a store alone, whether it is a place the workspace answering gives, shown and never written, and the section and words a surface names it by.
+// Key is one key of the configuration as a person sets it: its dotted name, the kind of value it takes and the words it takes when it takes words, whether it belongs to the machine or to a store alone, whether it is a place the workspace answering gives, shown and never written, and how a surface names it: its section, its name, a line saying what it does, its unit, the words it shows for the words it takes, and whether it is shown as a switch, on for the first word.
 type Key struct {
 	Name     string
 	Kind     Kind
@@ -38,17 +38,20 @@ type Key struct {
 	Answered bool
 	Section  string
 	Says     string
+	Help     string
 	Unit     string
+	Shown    []string
+	Switch   bool
 }
 
 // The sections the keys are shown under, in the order they are shown.
 const (
-	SectionAppearance = "Appearance"
+	SectionAppearance = "Look"
 	SectionPages      = "Tabs"
 	SectionTime       = "Time"
 	SectionArchive    = "Archive"
-	SectionAgents     = "Agents"
-	SectionPlaces     = "Places"
+	SectionAgents     = "Agent"
+	SectionPlaces     = "Files"
 )
 
 // Sections is every section the keys are shown under, in order.
@@ -57,25 +60,25 @@ func Sections() []string {
 }
 
 var keys = []Key{
-	{Name: "window.theme", Kind: KindTheme, Section: SectionAppearance, Says: "Theme"},
-	{Name: "window.intro", Kind: KindIntro, Words: Intros(), Section: SectionAppearance, Says: "Intro"},
-	{Name: "workspace.colour", Kind: KindColour, Store: true, Section: SectionAppearance, Says: "Colour"},
-	{Name: "workspace.name", Kind: KindText, Store: true, Section: SectionAppearance, Says: "Name"},
-	{Name: "window.keep_sizes", Kind: KindBool, Section: SectionAppearance, Says: "Keep column sizes"},
-	{Name: "window.ghost", Kind: KindPercent, Section: SectionAppearance, Says: "What is dragged shows at", Unit: "%"},
-	{Name: "pages.tasks", Kind: KindBool, Section: SectionPages, Says: "Tasks"},
-	{Name: "pages.objectives", Kind: KindBool, Section: SectionPages, Says: "Objectives"},
-	{Name: "pages.time", Kind: KindWords, Words: []string{TimeOn, TimeHidden, TimeOff}, Section: SectionPages, Says: "Time"},
-	{Name: "series.on", Kind: KindBool, Section: SectionPages, Says: "Series"},
-	{Name: "time.weekends", Kind: KindWords, Words: []string{WeekendsShown, WeekendsHidden}, Section: SectionTime, Says: "Weekends"},
-	{Name: "time.deleted", Kind: KindWords, Words: []string{TimeKept, TimeTaken}, Section: SectionTime, Says: "A deleted task's time"},
-	{Name: "focus.session", Kind: KindDuration, Section: SectionTime, Says: "Focus session asks after"},
-	{Name: "archive.start", Kind: KindDay, Section: SectionArchive, Says: "Archive on its own, counting from"},
-	{Name: "archive.days", Kind: KindNumber, Section: SectionArchive, Says: "In periods of", Unit: "days"},
-	{Name: "approach.label", Kind: KindText, Section: SectionAgents, Says: "Label asking for the approach first"},
-	{Name: "store", Kind: KindPath, Machine: true, Answered: true, Section: SectionPlaces, Says: "Store"},
-	{Name: "notes", Kind: KindPath, Machine: true, Answered: true, Section: SectionPlaces, Says: "Notes"},
-	{Name: "plugin", Kind: KindPath, Machine: true, Section: SectionPlaces, Says: "Claude Code plugin"},
+	{Name: "window.theme", Kind: KindTheme, Section: SectionAppearance, Says: "Theme", Help: "The colours of the window and the terminal"},
+	{Name: "window.intro", Kind: KindIntro, Words: Intros(), Section: SectionAppearance, Says: "Intro", Help: "What plays when the window opens"},
+	{Name: "workspace.colour", Kind: KindColour, Store: true, Section: SectionAppearance, Says: "Workspace colour", Help: "The dot beside its name, in the menu and the tabs"},
+	{Name: "workspace.name", Kind: KindText, Store: true, Section: SectionAppearance, Says: "Workspace name", Help: "Shown in the menu and the title bar"},
+	{Name: "window.keep_sizes", Kind: KindBool, Section: SectionAppearance, Says: "Remember column widths", Help: "The widths you drag stay the next time"},
+	{Name: "window.ghost", Kind: KindPercent, Section: SectionAppearance, Says: "Dragged card opacity", Help: "How much of a card shows while you drag it", Unit: "%"},
+	{Name: "pages.tasks", Kind: KindBool, Section: SectionPages, Says: "Tasks", Help: "The board and its columns"},
+	{Name: "pages.objectives", Kind: KindBool, Section: SectionPages, Says: "Objectives", Help: "The objectives and their tree"},
+	{Name: "pages.time", Kind: KindWords, Words: []string{TimeOn, TimeHidden, TimeOff}, Shown: []string{"Shown", "Counted only", "Off"}, Section: SectionPages, Says: "Time", Help: "The timesheet, or only the time counted"},
+	{Name: "series.on", Kind: KindBool, Section: SectionPages, Says: "Series", Help: "Tasks that come back, and their tab"},
+	{Name: "time.weekends", Kind: KindWords, Words: []string{WeekendsShown, WeekendsHidden}, Shown: []string{"Shown", "Hidden"}, Section: SectionTime, Says: "Weekends", Help: "In the week and month of the Time tab"},
+	{Name: "time.deleted", Kind: KindWords, Words: []string{TimeKept, TimeTaken}, Switch: true, Section: SectionTime, Says: "Count the time of deleted tasks", Help: "On: the time spent on a task you delete stays in the Time tab. Off: it goes with the task."},
+	{Name: "focus.session", Kind: KindDuration, Section: SectionTime, Says: "Ask if still working after", Help: "A focus held this long asks to be renewed"},
+	{Name: "archive.start", Kind: KindDay, Section: SectionArchive, Says: "Archive done tasks, starting", Help: "Empty: done tasks stay on the board"},
+	{Name: "archive.days", Kind: KindNumber, Section: SectionArchive, Says: "Every", Help: "How often the done tasks are archived", Unit: "days"},
+	{Name: "approach.label", Kind: KindText, Section: SectionAgents, Says: "Label that asks the agent for an approach first", Help: "A task carrying it is not coded before you agree on how"},
+	{Name: "store", Kind: KindPath, Machine: true, Answered: true, Section: SectionPlaces, Says: "Board file", Help: "Where the tasks are kept"},
+	{Name: "notes", Kind: KindPath, Machine: true, Answered: true, Section: SectionPlaces, Says: "Notes folder", Help: "Where each task's notes are written"},
+	{Name: "plugin", Kind: KindPath, Machine: true, Section: SectionPlaces, Says: "Claude Code plugin folder", Help: "Where cairn writes its plugin for Claude Code"},
 }
 
 // Keys is every key a person sets, in the order the sections show them; the workspaces are not among them, which cairn workspace add, use and remove write.

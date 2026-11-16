@@ -31,6 +31,7 @@ A decision added, changed or undone is a line here, in the commit that does it.
 - The window answers the pointer from the boxes it lays out (`Placed`, `CardRowOf`, `PillRowOf`, `FormPlace`), not from `Drawn` — `Drawn` names a part, not what it stands for, and waits on a frame.
 - The window's menu bar holds cairn and Help — it repeated every key, the right click and the palette, and drifted.
 - On Linux the menu button orders its lines as GNOME and KDE apps do, About after Help and Quit last (#414): a window there has no menu bar, so the macOS order read out of place. On Windows About closes the Help menu, as Windows apps place it (#415).
+- The settings speak to whoever uses them, not to whoever wrote the files (#419): a row is named by what it does, with a line saying so, and its key shows under the pointer; the scopes are This workspace and All workspaces, not a file name; a key of two words that means yes or no, such as `time.deleted`, is drawn as a switch while the file keeps its words.
 - The band is three lanes under the last three columns, on both boards — one walk for both.
 - The terminal has no Normal and Insert modes: hjkl walks with `board.Walk`, `^H` `^L` reach another column, `^J` `^K` the band — the window has no modes.
 - The terminal wears the window's scheme, not the terminal's sixteen colours — both boards show the same.
