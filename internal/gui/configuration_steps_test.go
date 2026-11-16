@@ -130,6 +130,37 @@ func (w *world) configurationSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
+	sc.Then(`^the row "([^"]*)" shows (\d+) %$`, func(key string, want int) error {
+		row, err := w.settingInSight(key)
+		if err != nil {
+			return err
+		}
+		if got := w.w.PercentShown(row); got != want || len(row.Parts) != 1 {
+			return fmt.Errorf("the row %q shows %d %% on %d parts", key, got, len(row.Parts))
+		}
+		return nil
+	})
+	sc.When(`^I drag the slider of "([^"]*)" to (\d+) %$`, func(key string, to int) error {
+		row, err := w.settingInSight(key)
+		if err != nil || len(row.Parts) != 1 {
+			return fmt.Errorf("the row %q has no slider: %w", key, err)
+		}
+		track := row.Parts[0]
+		at := func(percent int) geom.Point {
+			return geom.Point{X: track.X + (percent-files.LeastGhost)*track.W/(files.MostGhost-files.LeastGhost), Y: track.Y + track.H/2}
+		}
+		w.w = w.w.PressAt(at(65)).MoveTo(at(55)).MoveTo(at(to)).LetGo(at(to))
+		return nil
+	})
+	sc.When(`^I walk the settings to "([^"]*)"$`, func(key string) error {
+		for range len(files.Keys()) {
+			if row, err := w.settingRow(key); err == nil && w.w.RowOn >= 0 && w.w.SettingRows()[w.w.RowOn].Key.Name == row.Key.Name {
+				return nil
+			}
+			w.w = w.w.Key("down")
+		}
+		return fmt.Errorf("the keyboard does not reach %q", key)
+	})
 	sc.When(`^I rest the pointer on the row "([^"]*)"$`, func(key string) error {
 		row, err := w.settingInSight(key)
 		if err != nil {

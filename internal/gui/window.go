@@ -82,6 +82,8 @@ type Window struct {
 	resizingForm          bool
 	movingPanel           bool
 	colourKey             string
+	sliding               string
+	slidTo                int
 	calendarKey           string
 	resizingPanel         bool
 	panels                map[board.Screen]panelPlace

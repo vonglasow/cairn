@@ -175,3 +175,21 @@ func (s SchemeTile) mini(k Kit, at geom.Box) {
 		}
 	}
 }
+
+// Slider is a value taken along a track: the track, the part of it up to the value on the accent, and a knob there.
+type Slider struct{ Of float32 }
+
+const sliderTrackHigh = 4
+
+// Draw draws the slider across at.
+func (s Slider) Draw(k Kit, at geom.Box) geom.Box {
+	k.put("slider", at)
+	side := toggleHigh - 2*knobInset
+	track := geom.Box{X: at.X + side/2, Y: at.Y + (at.H-sliderTrackHigh)/2, W: at.W - side, H: sliderTrackHigh}
+	rounded(k.gtx, track, k.skin.Radius.Full(track), k.skin.Colour.Surface.ControlLit)
+	reach := int(float32(track.W) * min(1, max(0, s.Of)))
+	rounded(k.gtx, geom.Box{X: track.X, Y: track.Y, W: reach, H: track.H}, k.skin.Radius.Full(track), k.skin.Colour.Accent.Base)
+	knob := geom.Box{X: track.X + reach - side/2, Y: at.Y + (at.H-side)/2, W: side, H: side}
+	rounded(k.gtx, knob, k.skin.Radius.Full(knob), k.skin.Colour.Ink.Text)
+	return at
+}

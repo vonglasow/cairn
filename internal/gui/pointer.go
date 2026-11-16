@@ -566,6 +566,9 @@ func (w Window) PressAt(p geom.Point) Window {
 	if taken, ok := w.takingPanel(p); ok {
 		return taken
 	}
+	if slid, ok := w.pressingSlider(p); ok {
+		return slid
+	}
 	if w.Screen == board.OnForm {
 		if _, bar, _, _, long := w.sayingOn(); long && bar.In(p) {
 			w.draggingSaying = true
@@ -635,6 +638,9 @@ func (w Window) MoveTo(p geom.Point) Window {
 	if w.movingPanel || w.resizingPanel {
 		return w.carryingPanel(p)
 	}
+	if w.sliding != "" {
+		return w.slidingTo(p)
+	}
 	if w.draggingForm {
 		return w.movingForm(p)
 	}
@@ -694,6 +700,9 @@ func (w Window) LetGo(p geom.Point) Window {
 	}
 	if w.movingPanel || w.resizingPanel {
 		return w.lettingGoOfPanel(p)
+	}
+	if w.sliding != "" {
+		return w.slidingTo(p).lettingGoOfSlider()
 	}
 	if w.draggingForm {
 		w.draggingForm, w.held, w.pressed = false, Held{}, false

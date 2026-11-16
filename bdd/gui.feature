@@ -1786,6 +1786,18 @@ Feature: The desktop board
       When I rest the pointer on the row "window.keep_sizes"
       Then the row "window.keep_sizes" is named "Remember column widths" over "window.keep_sizes"
 
+    @gui-settings-the-opacity-is-a-slider
+    Scenario: dragged card opacity is a slider, written where it is let go, the arrows moving it by five
+      Given the workspace "home", the default
+      When I open the window on the workspace "home"
+      And I press "cmd+,"
+      Then the row "window.ghost" shows 65 %
+      When I drag the slider of "window.ghost" to 40 %
+      Then the settings of the workspace "home" say `ghost = 40`
+      When I walk the settings to "window.ghost"
+      And I press "right"
+      Then the settings of the workspace "home" say `ghost = 45`
+
     @gui-settings-the-time-of-deleted-tasks-is-a-switch
     Scenario: whether a deleted task's time is still counted is one switch, written in the words of the file
       Given the workspace "home", the default

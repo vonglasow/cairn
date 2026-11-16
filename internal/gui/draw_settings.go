@@ -7,6 +7,7 @@ import (
 	"cairn/internal/gui/geom"
 	"image/color"
 	"slices"
+	"strconv"
 	"strings"
 
 	"gioui.org/font"
@@ -172,6 +173,11 @@ func drawControl(k Kit, w Window, row SettingRow) {
 		for i, colour := range label.LabelColours {
 			Swatch{Colour: colour, Picked: colour == picked}.Draw(k, row.Parts[i])
 		}
+	case row.Key.Kind == files.KindPercent:
+		percent := w.PercentShown(row)
+		Slider{Of: float32(percent-files.LeastGhost) / float32(files.MostGhost-files.LeastGhost)}.Draw(k, row.Parts[0])
+		label := geom.Box{X: row.Parts[0].X + row.Parts[0].W + between, Y: row.Control.Y + (row.Control.H-lineHigh)/2, W: sliderLabel, H: lineHigh}
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, label, strconv.Itoa(percent)+" %", small, k.skin.Type.Mono, text.Start)
 	case row.Key.Kind == files.KindNumber:
 		Button{Said: "−", Small: true}.Draw(k, row.Parts[0])
 		drawField(k, w, row, row.Parts[1])

@@ -435,6 +435,8 @@ func (w Window) controlWide(row SettingRow) int {
 		return len(label.LabelColours)*(swatchRow+inset) - inset
 	case row.Key.Kind == files.KindNumber:
 		return 2*stepWide + stepField + 2*inset + between + ends(m, row.Key.Unit, small)
+	case row.Key.Kind == files.KindPercent:
+		return controlColumn
 	case row.Fixed:
 		return min(monoWide(row.Value, small)+copyRoom, controlColumn)
 	}
@@ -462,6 +464,8 @@ func (w Window) controlParts(row SettingRow) []geom.Box {
 			parts = append(parts, geom.Box{X: c.X + i*(swatchRow+inset), Y: c.Y + (c.H-swatchRow)/2, W: swatchRow, H: swatchRow})
 		}
 		return parts
+	case row.Key.Kind == files.KindPercent:
+		return []geom.Box{sliderTrack(c)}
 	case row.Key.Kind == files.KindNumber:
 		minus := geom.Box{X: c.X, Y: c.Y, W: stepWide, H: c.H}
 		field := geom.Box{X: minus.X + minus.W + inset, Y: c.Y, W: stepField, H: c.H}
@@ -573,6 +577,9 @@ func (w Window) onConfiguration(name string) Window {
 			return w.unsetting(rows[w.RowOn].Key.Name)
 		}
 	case "left", "right":
+		if w.RowOn >= 0 && w.RowOn < len(rows) && rows[w.RowOn].Key.Kind == files.KindPercent {
+			return w.steppingPercent(rows[w.RowOn], map[string]int{"left": -sliderStep, "right": sliderStep}[name])
+		}
 		if w.RowOn >= 0 && w.RowOn < len(rows) && rows[w.RowOn].Key.Kind == files.KindWords {
 			row := rows[w.RowOn]
 			at := slices.Index(row.Words, row.Value)
