@@ -128,7 +128,8 @@ five days. See [the timesheet](trace.md#how-long-the-work-took).
   store holds made first.
 - `⌘,` opens the settings of the workspace and the global configuration, every
   key with where its value comes from. A change is written to the file at once,
-  keeping its comments.
+  keeping its comments. A field typed in is saved by `⏎` or a click elsewhere,
+  and `esc` puts it back; a day is picked on the calendar.
 
 ## Workspaces
 

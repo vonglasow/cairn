@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/engine/calendar"
 	"cairn/internal/engine/label"
 	"cairn/internal/engine/workspace"
 	"cairn/internal/gui/geom"
@@ -118,5 +119,61 @@ func TestOpeningAFileOfTheConfigurationFillsItFirst(t *testing.T) {
 	}
 	if path, asked := w.OpenAsked(); !asked || path != "/h/.cairn/settings.toml" {
 		t.Errorf("the window opens %q (%v)", path, asked)
+	}
+}
+
+func TestTheSettingsTakeWhatIsTypedOrPickedWithTheMouse(t *testing.T) {
+	f := configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml"})
+	w := holding(f).openingConfiguration()
+	middle := func(b geom.Box) geom.Point { return geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
+	shown := func(w Window, name string) (Window, SettingRow) {
+		for range 40 {
+			for _, one := range w.SettingRows() {
+				if one.Key.Name == name && SettingsRows(w.SettingsBox()).In(middle(one.Control)) {
+					return w, one
+				}
+			}
+			w = w.scrollingSettings(rowHigh)
+		}
+		t.Fatalf("no setting %s in sight", name)
+		return w, SettingRow{}
+	}
+	for _, c := range []struct{ key, typed, want string }{
+		{"workspace.name", "garden", "garden"},
+		{"archive.days", "7", "7"},
+		{"focus.session", "90m", "90m"},
+		{"window.ghost", "50", "50"},
+	} {
+		at, row := shown(w, c.key)
+		writing := at.Click(middle(row.Control))
+		if writing.KeyWriting != c.key {
+			t.Errorf("a click on %s writes %q", c.key, writing.KeyWriting)
+			continue
+		}
+		if got := writing.SettingsFootSays(); got != WritingFoot {
+			t.Errorf("writing %s, the foot says %q", c.key, got)
+		}
+		for range 12 {
+			writing = writing.Key("backspace")
+		}
+		_, other := shown(writing, "pages.tasks")
+		saved := writing.Types(c.typed).Click(middle(other.Name))
+		if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != c.key || in.Given["value"] != c.want || saved.KeyWriting != "" {
+			t.Errorf("%s typed then a click elsewhere set %+v (%v), still writing %q", c.key, in.Given, ok, saved.KeyWriting)
+		}
+	}
+	at, row := shown(w, "archive.start")
+	dating := at.Click(middle(row.Control))
+	if dating.Screen != board.OnCalendar {
+		t.Fatalf("a click on archive.start opens %v", dating.Screen)
+	}
+	box := dating.CalendarBox()
+	for i, day := range board.MonthGrid(dating.Day) {
+		if day.Day() == 12 && day.Month() == dating.Day.Month() {
+			dated := dating.Click(middle(DayAt(box, i)))
+			if in, ok := f.gave("config", "set"); !ok || in.Given["key"] != "archive.start" || in.Given["value"] != calendar.FormatDay(day) || dated.Screen != board.OnConfiguration {
+				t.Errorf("a day clicked set %+v (%v), back on %v", in.Given, ok, dated.Screen)
+			}
+		}
 	}
 }
