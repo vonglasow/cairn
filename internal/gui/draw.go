@@ -570,6 +570,10 @@ func drawMenu(k Kit, w Window) {
 			row.Chip(k, KeyChip{Key: spelled}, geom.Box{X: at.X + at.W - KeyChipWide(spelled) - inset*2, Y: at.Y, H: at.H})
 		}
 	}
+	for _, i := range w.MenuRules() {
+		at := MenuRowAt(box, i)
+		fill(k.gtx, geom.Box{X: at.X + inset, Y: at.Y, W: at.W - inset*2, H: k.skin.Size.Rule}, k.skin.Colour.Line.Rule)
+	}
 }
 
 func drawCalendar(k Kit, w Window) {

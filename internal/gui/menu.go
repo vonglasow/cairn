@@ -14,6 +14,7 @@ type menuState struct {
 	menuAt   geom.Point
 	menuOn   int
 	menuSets string
+	rules    []int
 }
 
 const (
@@ -30,7 +31,7 @@ func (w Window) ContextAt(p geom.Point) Window {
 		return w
 	}
 	w = w.aiming(p).choosingAt(w.at(p))
-	w.menu, w.menuAt, w.menuOn, w.menuSets = w.menuFor(), p, 0, ""
+	w.menu, w.menuAt, w.menuOn, w.menuSets, w.rules = w.menuFor(), p, 0, "", nil
 	w.Screen = board.OnMenu
 	return w
 }
@@ -102,7 +103,7 @@ func (w Window) settingUnderTheCard(field string, values []string, held string) 
 }
 
 func (w Window) settingFrom(field string, values []string, held string) Window {
-	w.menu, w.menuOn, w.menuSets = nil, 0, field
+	w.menu, w.menuOn, w.menuSets, w.rules = nil, 0, field, nil
 	for _, value := range values {
 		if value != held {
 			w.menu = append(w.menu, value)
@@ -136,6 +137,9 @@ func MenuKey(line string) string {
 
 // Menu is what the open menu offers, line by line.
 func (w Window) Menu() []string { return w.menu }
+
+// MenuRules are the lines of the menu a rule is drawn above, each starting a group of its own.
+func (w Window) MenuRules() []int { return w.rules }
 
 // MenuOn is the line of the menu the keyboard is on.
 func (w Window) MenuOn() int { return w.menuOn }

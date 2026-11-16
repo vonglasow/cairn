@@ -72,7 +72,9 @@ Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
 | `?` | help |
 | `esc` | let go of the chosen card, close a panel |
 
-The arrows walk the board. The menu bar offers the same actions.
+The arrows walk the board. The menu bar offers the same actions. On Linux,
+where a window has no menu bar of its own, the button at the top right holds
+it: Settings…, Upgrade, then Help and About cairn, then Quit.
 
 ## A task, open
 

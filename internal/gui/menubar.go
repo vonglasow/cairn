@@ -23,6 +23,8 @@ var menuBar = []MenuGroup{
 	{Name: "Help", Items: []string{"Help"}},
 }
 
+var buttonMenu = [][]string{{"Settings…", "Upgrade"}, {"Help", "About cairn"}, {"Quit"}}
+
 func offered(pages engine.Pages, line string) bool {
 	return line != "Upgrade" || pages.Offers(engine.Upgrade)
 }
@@ -119,12 +121,16 @@ func MenuStrokes(button geom.Box) [3]geom.Box {
 
 func (w Window) openingMenuBar() Window {
 	button := MenuButton(w.Layout())
-	w.menu = nil
-	for _, group := range MenuBar(w.Pages) {
-		for _, line := range group.Items {
+	w.menu, w.rules = nil, nil
+	for _, group := range buttonMenu {
+		starts := len(w.menu)
+		for _, line := range group {
 			if w.Doable(line) {
 				w.menu = append(w.menu, line)
 			}
+		}
+		if starts > 0 && len(w.menu) > starts {
+			w.rules = append(w.rules, starts)
 		}
 	}
 	w.menuAt, w.menuOn, w.Screen = geom.Point{X: button.X + button.W - menuWide, Y: button.Y + button.H}, 0, board.OnMenu

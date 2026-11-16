@@ -38,19 +38,19 @@ func TestTheMenuButtonStandsInForAMenuBar(t *testing.T) {
 		t.Errorf("the button %+v is not at the end of the tabs %+v", button, tabs)
 	}
 	opened := w.clicked(geom.Point{X: button.X + button.W/2, Y: button.Y + button.H/2})
-	var all []string
-	for _, group := range MenuBar(engine.Pages{}) {
-		for _, line := range group.Items {
-			if w.Doable(line) {
-				all = append(all, line)
-			}
-		}
-	}
-	if !slices.Contains(all, "Upgrade") || !slices.Contains(all, "Help") {
-		t.Fatalf("with nothing chosen the button's menu would offer %v", all)
-	}
+	all := []string{"Settings…", "Upgrade", "Help", "About cairn", "Quit"}
 	if opened.Screen != board.OnMenu || !slices.Equal(opened.Menu(), all) {
-		t.Fatalf("the button opened %v offering %v", opened.Screen, opened.Menu())
+		t.Fatalf("the button opened %v offering %v, want %v", opened.Screen, opened.Menu(), all)
+	}
+	if got := opened.MenuRules(); !slices.Equal(got, []int{2, 4}) {
+		t.Errorf("the button's menu is ruled above lines %v, want Help and Quit", got)
+	}
+	rule := MenuRowAt(opened.MenuBox(), 2)
+	if painted(drawn(t, opened), geom.Box{X: rule.X + 8, Y: rule.Y, W: rule.W - 16, H: 1}, design.Dark().Colour.Line.Rule) == 0 {
+		t.Error("no rule is drawn above Help")
+	}
+	if got := opened.Choose("esc").clicked(geom.Point{X: 1, Y: 300}).ContextAt(geom.Point{X: 300, Y: 300}).MenuRules(); len(got) > 0 {
+		t.Errorf("a right click's menu is ruled above lines %v", got)
 	}
 	if got := opened.fromMenu(slices.Index(all, "Help")); got.Screen != board.OnHelp {
 		t.Errorf("Help from the button's menu left the window on %v", got.Screen)

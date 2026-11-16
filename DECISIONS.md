@@ -30,6 +30,7 @@ A decision added, changed or undone is a line here, in the commit that does it.
 - gui splits into `geom`, `design`, `motion` only; tui into `geom`, `design` — components and screens draw with the board's fields, and moving them moved the board.
 - The window answers the pointer from the boxes it lays out (`Placed`, `CardRowOf`, `PillRowOf`, `FormPlace`), not from `Drawn` — `Drawn` names a part, not what it stands for, and waits on a frame.
 - The window's menu bar holds cairn and Help — it repeated every key, the right click and the palette, and drifted.
+- On Linux the menu button orders its lines as GNOME and KDE apps do, About after Help and Quit last (#414): a window there has no menu bar, so the macOS order read out of place.
 - The band is three lanes under the last three columns, on both boards — one walk for both.
 - The terminal has no Normal and Insert modes: hjkl walks with `board.Walk`, `^H` `^L` reach another column, `^J` `^K` the band — the window has no modes.
 - The terminal wears the window's scheme, not the terminal's sixteen colours — both boards show the same.
