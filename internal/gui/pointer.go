@@ -507,6 +507,9 @@ func (w Window) DoubleClick(p geom.Point) Window {
 		w.Form = w.Form.Naming()
 		return w
 	}
+	if held, ok := w.holdingSetting(p, Words); ok {
+		return held
+	}
 	if w.Screen == board.OnForm {
 		if at, on := w.fieldAt(p); on {
 			return w.holdingBy(at, p, Words)
@@ -568,6 +571,9 @@ func (w Window) PressAt(p geom.Point) Window {
 	}
 	if slid, ok := w.pressingSlider(p); ok {
 		return slid
+	}
+	if held, ok := w.holdingSetting(p, Characters); ok {
+		return held
 	}
 	if w.Screen == board.OnForm {
 		if _, bar, _, _, long := w.sayingOn(); long && bar.In(p) {
@@ -649,6 +655,9 @@ func (w Window) MoveTo(p geom.Point) Window {
 		w.history = w.settledHistory(Reached(track, w.Told(), w.Rows(), p))
 		return w
 	}
+	if w.holdingText && w.Screen == board.OnConfiguration {
+		return w.stretchingSetting(p)
+	}
 	if w.holdingText && w.Screen == board.OnForm {
 		held := w.Form.Writing()
 		fixed, moving := Stretched(held.Reads(), w.growing, w.anchor, w.reaching(w.Form.On(), p))
@@ -722,7 +731,7 @@ func (w Window) LetGo(p geom.Point) Window {
 	}
 	if w.holdingText {
 		w.holdingText = false
-		if w.Form.Writing().Holding() {
+		if w.Form.Writing().Holding() || w.Screen == board.OnConfiguration && w.KeyWritten.Holding() {
 			return w
 		}
 	}

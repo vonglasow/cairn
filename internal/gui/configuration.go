@@ -649,6 +649,21 @@ func (w Window) onConfiguration(name string) Window {
 			w.KeyWritten = w.KeyWritten.Left()
 		case "right":
 			w.KeyWritten = w.KeyWritten.Right()
+		case "shift+left":
+			w.KeyWritten = w.KeyWritten.Selects(w.KeyWritten.At - 1)
+		case "shift+right":
+			w.KeyWritten = w.KeyWritten.Selects(w.KeyWritten.At + 1)
+		case "cmd+a":
+			w.KeyWritten = w.KeyWritten.All()
+		case "cmd+c":
+			w.copying = w.KeyWritten.Holds()
+		case "cmd+x":
+			w.copying, w.KeyWritten = w.KeyWritten.Holds(), w.KeyWritten.Back()
+		case "cmd+v":
+			w.pasting = true
+		}
+		if edit, ok := textKey(name); ok {
+			w.KeyWritten = edit(w.KeyWritten)
 		}
 		return w
 	}
@@ -713,7 +728,7 @@ func (w Window) scoped(global bool) Window {
 }
 
 func (w Window) acting(row SettingRow, word int) Window {
-	if row.Off || row.Fixed {
+	if row.Off || row.Fixed || w.KeyWriting == row.Key.Name {
 		return w
 	}
 	switch row.Key.Kind {
@@ -903,6 +918,40 @@ func (w Window) actingOnPart(row SettingRow, part int) Window {
 		return w.acting(row, -1)
 	}
 	return w.acting(row, part)
+}
+
+func (w Window) writtenRow() (SettingRow, bool) {
+	for _, row := range w.SettingRows() {
+		if row.Key.Name == w.KeyWriting {
+			return row, true
+		}
+	}
+	return SettingRow{}, false
+}
+
+func (w Window) settingReaching(row SettingRow, p geom.Point) int {
+	line := w.fieldLine(row, row.SettingField())
+	lines := w.wrapping(w.KeyWritten.Reads(), line, small)
+	caret, _ := lines.At(w.KeyWritten.At)
+	return lines.Reaches(line, p, StartsAt(lines, 1, caret, Follow), w.measured(), small)
+}
+
+func (w Window) holdingSetting(p geom.Point, by Unit) (Window, bool) {
+	row, ok := w.writtenRow()
+	if w.Screen != board.OnConfiguration || !ok || !row.SettingField().In(p) {
+		return w, false
+	}
+	from, to := runOf(w.KeyWritten.Reads(), by, w.settingReaching(row, p))
+	w.KeyWritten.At, w.KeyWritten.Held = to, from-to
+	w.holdingText, w.growing, w.anchor = true, by, Picked{From: from, To: to}
+	return w, true
+}
+
+func (w Window) stretchingSetting(p geom.Point) Window {
+	row, _ := w.writtenRow()
+	fixed, moving := Stretched(w.KeyWritten.Reads(), w.growing, w.anchor, w.settingReaching(row, p))
+	w.KeyWritten.At, w.KeyWritten.Held = moving, fixed-moving
+	return w
 }
 
 func (w Window) writingAt(p geom.Point) bool {

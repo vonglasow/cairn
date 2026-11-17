@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/io/key"
+
 	"cairn/internal/store/files"
 )
 
@@ -196,5 +198,52 @@ func TestTheWorkspaceColourIsPickedByAClick(t *testing.T) {
 	}
 	if picked.Screen != board.OnConfiguration {
 		t.Errorf("a click on a swatch leaves the window on %v", picked.Screen)
+	}
+}
+
+func TestASettingsFieldIsTypedInAndItsTextHeldLikeAnyOther(t *testing.T) {
+	f := configuredWith(workspace.Config{Settings: "/h/.cairn/settings.toml"})
+	w := holding(f).openingConfiguration()
+	mid := func(b geom.Box) geom.Point { return geom.Point{X: b.X + b.W/2, Y: b.Y + b.H/2} }
+	var row SettingRow
+	for range 40 {
+		for _, one := range w.SettingRows() {
+			if one.Key.Name == "focus.session" && SettingsRows(w.SettingsBox()).In(mid(one.Control)) {
+				row = one
+			}
+		}
+		if row.Key.Name != "" {
+			break
+		}
+		w = w.scrollingSettings(rowHigh)
+	}
+	w = w.Click(mid(row.Control))
+	w, _, _ = frames(t, w, key.EditEvent{Range: key.Range{Start: 0, End: len([]rune(w.KeyWritten.Reads()))}, Text: "90m"})
+	if got := w.KeyWritten.Reads(); got != "90m" {
+		t.Fatalf("typed through the loop, the field reads %q", got)
+	}
+	start := geom.Point{X: row.Control.X + pickerPad, Y: mid(row.Control).Y}
+	end := geom.Point{X: row.Control.X + row.Control.W - pickerPad - 2, Y: start.Y}
+	if held := w.PressAt(start).MoveTo(end).LetGo(end); held.KeyWritten.Holds() != "90m" || held.KeyWriting != "focus.session" {
+		t.Errorf("dragged across, the field holds %q, writing %q", held.KeyWritten.Holds(), held.KeyWriting)
+	}
+	w = w.Click(end)
+	if w.KeyWritten.Holding() || w.KeyWritten.At != 3 || w.KeyWriting != "focus.session" {
+		t.Errorf("a click at its end leaves %+v, writing %q", w.KeyWritten, w.KeyWriting)
+	}
+	if got := w.Key("shift+left").Key("shift+left").KeyWritten.Holds(); got != "0m" {
+		t.Errorf("shift+left twice holds %q", got)
+	}
+	if got := w.Key("cmd+a").KeyWritten.Holds(); got != "90m" {
+		t.Errorf("cmd+a holds %q", got)
+	}
+	if got, _ := w.Key("cmd+a").Key("cmd+c").Copying(); got != "90m" {
+		t.Errorf("cmd+c copies %q", got)
+	}
+	if pasted := w.Key("cmd+a").Key("cmd+v"); !pasted.Pasting() || pasted.Pasted("45m").KeyWritten.Reads() != "45m" {
+		t.Errorf("cmd+v pastes into %q", pasted.Pasted("45m").KeyWritten.Reads())
+	}
+	if got := w.DoubleClick(end).KeyWritten.Holds(); got != "90m" {
+		t.Errorf("a double click holds %q", got)
 	}
 }

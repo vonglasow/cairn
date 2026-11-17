@@ -344,6 +344,9 @@ func (w Window) Pasted(text string) Window {
 		w.Filtering, w.ChoosingOn, w.ChoosingFrom = w.Filtering.Types(text), 0, 0
 		return w
 	}
+	if w.Screen == board.OnConfiguration {
+		return w.Types(text)
+	}
 	if w.Screen != board.OnForm {
 		return w
 	}

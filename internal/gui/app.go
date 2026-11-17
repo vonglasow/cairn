@@ -477,7 +477,7 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt geom.Point
 		case transfer.DataEvent:
 			w = pasting(w, e.Open())
 		case key.EditEvent:
-			if takesTyping(was) {
+			if takesTyping(was) || was == board.OnConfiguration && w.KeyWriting != "" {
 				w = w.Edits(e.Range.Start, e.Range.End, e.Text)
 			} else if symbol, ok := symbolTyped(e.Text, named); ok {
 				w = w.Key(symbol)

@@ -202,18 +202,10 @@ func drawControl(k Kit, w Window, row SettingRow) {
 func drawField(k Kit, w Window, row SettingRow, at geom.Box) {
 	editing := w.KeyWriting == row.Key.Name
 	field := Field{Lit: editing || row.Said != ""}.Draw(k, at)
-	line := geom.Box{X: field.X + pickerPad, Y: field.Y + (field.H-lineHigh)/2, W: field.W - 2*pickerPad, H: lineHigh}
-	mark := ""
-	switch {
-	case row.Key.Kind == files.KindDay:
-		mark = DayMark
-	case row.Key.Kind != files.KindNumber:
-		mark = row.Key.Unit
-	}
-	if mark != "" {
+	line := w.fieldLine(row, field)
+	if mark := fieldMark(row); mark != "" {
 		wide := ends(w.measured(), mark, small) + between
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: line.X + line.W - wide, Y: line.Y, W: wide, H: line.H}, mark, small, font.Font{}, text.End)
-		line.W -= wide + between
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: line.X + line.W + between, Y: line.Y, W: wide, H: line.H}, mark, small, font.Font{}, text.End)
 	}
 	switch {
 	case editing:
@@ -223,6 +215,35 @@ func drawField(k Kit, w Window, row SettingRow, at geom.Box) {
 	default:
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Text, line, row.Value, small, k.skin.Type.Mono, text.Start)
 	}
+}
+
+func fieldMark(row SettingRow) string {
+	switch {
+	case row.Key.Kind == files.KindDay:
+		return DayMark
+	case row.Key.Kind != files.KindNumber:
+		return row.Key.Unit
+	}
+	return ""
+}
+
+func (w Window) fieldLine(row SettingRow, field geom.Box) geom.Box {
+	line := geom.Box{X: field.X + pickerPad, Y: field.Y + (field.H-lineHigh)/2, W: field.W - 2*pickerPad, H: lineHigh}
+	if mark := fieldMark(row); mark != "" {
+		line.W -= ends(w.measured(), mark, small) + 2*between
+	}
+	return line
+}
+
+// SettingField is where the field of a row is typed in.
+func (row SettingRow) SettingField() geom.Box {
+	switch {
+	case row.Key.Kind == files.KindNumber:
+		return row.Parts[1]
+	case row.Key.Kind == files.KindPath && !row.Fixed:
+		return row.Parts[0]
+	}
+	return row.Control
 }
 
 // DayMark is what a field holding a day shows at its right: the calendar it opens.
