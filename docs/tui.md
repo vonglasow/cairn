@@ -122,7 +122,8 @@ list, the description opens in `$EDITOR`. The steps are written in the
 form, one line each — `[x] Draft the columns`. Under `blockers` and `links`,
 the tasks already given are named; type a word beside the numbers and the
 tasks it reaches are named, the newest first, five at most — then type the
-number of the one you want.
+number of the one you want. A task in focus says `● in focus` beside its
+title, at the head of the form.
 
 Leaving a form you typed into asks first; <kbd>esc</kbd> again gives it back whole.
 

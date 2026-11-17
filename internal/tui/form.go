@@ -302,6 +302,9 @@ func (b Board) formHead() string {
 	} else {
 		title = b.skin.Title.Render(title)
 	}
+	if c, ok := b.snap.Card(b.form.Number); ok && c.InFocus && !b.form.ForObjective && !b.form.ForSeries {
+		title += "   " + b.skin.Key.Render("●") + " " + b.skin.Says.Render("in focus")
+	}
 	standing, priority := b.form.valueOf("column"), b.form.valueOf("priority")
 	dressed := b.skin.Palette.Stopped(standing).Style()
 	if b.form.ForObjective {

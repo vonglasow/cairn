@@ -534,3 +534,18 @@ func TestTheHelpNamesTheKeyThatShowsTheTrace(t *testing.T) {
 	}
 	t.Error("the help names no key for the trace")
 }
+
+func TestAnOpenTaskInFocusSaysSoBesideItsHeading(t *testing.T) {
+	f := newFake()
+	w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "current", InFocus: true},
+		board.Card{Number: 2, Title: "Read the spec", State: "todo"})
+	focused := w.clicked(middleOf(w, 2, 0)).Choose("Edit")
+	pill, ok := focused.FocusPill()
+	head := FormHeading(focused.formPanel())
+	if !ok || pill.X <= head.X || pill.X+pill.W > head.X+head.W {
+		t.Errorf("the task in focus says it at %+v (%v), its heading at %+v", pill, ok, head)
+	}
+	if _, ok := w.clicked(middleOf(w, 1, 0)).Choose("Edit").FocusPill(); ok {
+		t.Error("a task not in focus says it is")
+	}
+}

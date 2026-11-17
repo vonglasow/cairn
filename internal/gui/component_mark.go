@@ -94,6 +94,20 @@ func (g Grip) Draw(k Kit, at geom.Box) geom.Box {
 	return at
 }
 
+// FocusPill says an open task is in focus: its glowing dot and the words, on the ground a card in focus wears.
+type FocusPill struct{}
+
+// Draw draws the pill in at.
+func (FocusPill) Draw(k Kit, at geom.Box) geom.Box {
+	k.put("focus-pill", at)
+	rounded(k.gtx, at, k.skin.Radius.Full(at), k.skin.Colour.Surface.Tint)
+	dot := geom.Box{X: at.X + pickerPad, Y: at.Y + (at.H-markSide)/2, W: markSide, H: markSide}
+	FocusDot{}.Draw(k.inside("focus-pill"), dot)
+	words := geom.Box{X: dot.X + markSide + markSpace, W: at.X + at.W - pickerPad - dot.X - markSide - markSpace, H: at.H}
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.OnTint, pillLine(k.th, geom.Box{X: words.X, Y: at.Y, W: words.W, H: at.H}), FocusSays, small, font.Font{}, text.Start)
+	return at
+}
+
 // FocusDot is the glowing dot of the card in focus: a dot of the accent in its glow.
 type FocusDot struct{}
 

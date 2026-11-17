@@ -1256,12 +1256,37 @@ func drawFieldAt(k Kit, m Measure, name, value geom.Box, rows, size int, long, l
 	}
 }
 
+// FocusSays is what the head of an open task in focus says beside its glowing dot.
+const FocusSays = "In focus"
+
+// FocusPill is where an open task in focus says so, after its heading; nothing for a task not in focus, a new one, or an occurrence, whose heading says its series.
+func (w Window) FocusPill() (geom.Box, bool) {
+	if _, occurs := w.OccurrenceHeading(); !w.formUnder() || w.Form.Adding || w.Form.ForObjective || occurs {
+		return geom.Box{}, false
+	}
+	if card, ok := w.Snap.Card(w.Form.Number); !ok || !card.InFocus {
+		return geom.Box{}, false
+	}
+	head := FormHeading(w.formPanel())
+	wide := markSide + markSpace + ends(w.measured(), FocusSays, small) + 2*pickerPad + between
+	x := min(head.X+ends(w.headMeasured(), HeadsOn(w, board.OnForm), design.HeadingSize)+padding, head.X+head.W-wide)
+	return geom.Box{X: x, Y: head.Y + (head.H-smallButton)/2, W: wide, H: smallButton}, true
+}
+
 func drawForm(k Kit, w Window) {
 	panel, box := w.formPanel(), w.formBox()
 	head, occurs := w.OccurrenceHeading()
-	if occurs {
+	pill, focused := w.FocusPill()
+	switch {
+	case occurs:
 		Panel{}.Draw(k, panel)
-	} else {
+	case focused:
+		Panel{}.Draw(k, panel)
+		head := FormHeading(panel)
+		head.W = pill.X - padding - head.X
+		Heading{Said: HeadsOn(w, board.OnForm)}.Draw(k.inside("panel"), head)
+		FocusPill{}.Draw(k.inside("panel"), pill)
+	default:
 		Panel{Head: HeadsOn(w, board.OnForm)}.Draw(k, panel)
 	}
 	k = k.inside("panel")

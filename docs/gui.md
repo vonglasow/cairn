@@ -82,6 +82,8 @@ it: Settings…, Upgrade, then Help and About cairn, then Quit.
 The form opens over the board, and can be dragged by its ground. It **saves
 itself** every couple of seconds; <kbd>⌘⏎</kbd> or <kbd>⌘S</kbd> saves at once.
 
+- A task in focus says **In focus** beside its title, with the glowing dot its
+  card wears.
 - **Details** shows the fields; **Trace** (<kbd>⌘T</kbd>) what was done to it, as
   `trace show` prints it.
 - <kbd>⇥</kbd> walks the fields in the order they are drawn, and from the last back to
