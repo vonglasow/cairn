@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/gui/geom"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -219,6 +220,13 @@ func (w Window) onSearch(name string) Window {
 	return w
 }
 
+func (w Window) tabbing(by int) Window {
+	order := FormOrder(w.formBox(), w.Form.Fields)
+	at := (slices.Index(order, w.Form.On()) + by + len(order)) % len(order)
+	w.Form = w.Form.Onto(order[at])
+	return w
+}
+
 func (w Window) inForm(name string) Window {
 	if w.Form.OnWork {
 		walked, _ := w.onWork(name)
@@ -247,9 +255,9 @@ func (w Window) inForm(name string) Window {
 	}
 	switch name {
 	case "tab":
-		w.Form = w.Form.Onto(w.Form.On() + 1)
+		return w.tabbing(1)
 	case "shift+tab":
-		w.Form = w.Form.Onto(w.Form.On() - 1)
+		return w.tabbing(-1)
 	case "down", "up":
 		by := 1
 		if name == "up" {

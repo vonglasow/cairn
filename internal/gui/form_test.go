@@ -239,8 +239,9 @@ func TestTheArrowsWalkTheLinesOfTheDescription(t *testing.T) {
 	if got := w.Key("down").Key("up").Form.Writing().At; got != 4 {
 		t.Fatalf("up from the last line put the caret at %d, want 4", got)
 	}
-	if got := w.Key("tab").Form.On(); got != at+1 {
-		t.Fatalf("tab out of the description went to field %d", got)
+	order := FormOrder(w.formBox(), w.Form.Fields)
+	if got, want := w.Key("tab").Form.On(), order[slices.Index(order, at)+1]; got != want {
+		t.Fatalf("tab out of the description went to field %d, want %d", got, want)
 	}
 	if got := w.Key("down").Key("down").Key("down").Form.Writing().At; got != 8 {
 		t.Fatalf("down past the last line put the caret at %d, want it kept at 8", got)
@@ -479,4 +480,57 @@ func TestTheFormIsResizedByItsCornerAndKeepsTheSize(t *testing.T) {
 	if tiny.W < FormLeast.X || tiny.H < FormLeast.Y {
 		t.Errorf("dragged far the form shrank to %+v", tiny)
 	}
+}
+
+func TestTabWalksTheFieldsInTheOrderTheyAreDrawnAndRollsOver(t *testing.T) {
+	for _, wide := range []int{900, 1600} {
+		f := newFake()
+		w := holding(f, board.Card{Number: 1, Title: "Write the spec", State: "todo"})
+		w.width = wide
+		w = w.clicked(middleOf(w, 1, 0)).Choose("Edit").On("title")
+		fields := w.Form.Fields
+		box := w.formBox()
+		drawn := make([]int, len(fields))
+		for i := range drawn {
+			drawn[i] = i
+		}
+		slices.SortStableFunc(drawn, func(a, b int) int {
+			_, va, _ := FormPlace(box, fields, a)
+			_, vb, _ := FormPlace(box, fields, b)
+			ca, cb := va.X >= box.X+box.W, vb.X >= box.X+box.W
+			switch {
+			case ca != cb && ca:
+				return 1
+			case ca != cb:
+				return -1
+			case va.Y != vb.Y:
+				return va.Y - vb.Y
+			}
+			return va.X - vb.X
+		})
+		var walked []int
+		for range fields {
+			walked = append(walked, w.Form.On())
+			w = w.Key("tab")
+		}
+		if !slices.Equal(walked, drawn) {
+			t.Errorf("%d wide, tab walks %v, the fields are drawn %v", wide, walked, drawn)
+		}
+		if got := fields[w.Form.On()].Name; got != "title" {
+			t.Errorf("%d wide, tab after the last field lands on %q", wide, got)
+		}
+		if got := w.Key("shift+tab").Form.On(); got != drawn[len(drawn)-1] {
+			t.Errorf("%d wide, shift+tab from the title lands on %d, want %d", wide, got, drawn[len(drawn)-1])
+		}
+	}
+}
+
+func TestTheHelpNamesTheKeyThatShowsTheTrace(t *testing.T) {
+	w := holding(newFake()).Key("?")
+	for _, line := range w.HelpLines() {
+		if line.Key == "⇥ ⌘T" && line.Means == "next field, trace" {
+			return
+		}
+	}
+	t.Error("the help names no key for the trace")
 }

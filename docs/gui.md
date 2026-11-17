@@ -84,6 +84,8 @@ itself** every couple of seconds; <kbd>⌘⏎</kbd> or <kbd>⌘S</kbd> saves at 
 
 - **Details** shows the fields; **Trace** (<kbd>⌘T</kbd>) what was done to it, as
   `trace show` prints it.
+- <kbd>⇥</kbd> walks the fields in the order they are drawn, and from the last back to
+  the title; <kbd>⇧⇥</kbd> walks back.
 - The `labels` and `objectives` fields open lists to tick: typing narrows the
   list, and a label that does not exist yet is offered to create.
 - The `blockers` and `links` fields open the other tasks to tick, the newest

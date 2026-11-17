@@ -37,6 +37,38 @@ func RepeatsReadAt(over geom.Box, fields []board.Field) (geom.Box, bool) {
 	return read, read.H > 0
 }
 
+// FormOrder is the fields of a form in the order they are drawn: the lone fields, the long ones and the sections, read down each column, the column beside last.
+func FormOrder(over geom.Box, fields []board.Field) []int {
+	alone, long, sections := formGroups(fields)
+	order := append(alone, long[:min(1, len(long))]...)
+	if over.Beside > 0 {
+		order = append(order, long[min(1, len(long)):]...)
+	}
+	for _, row := range sections {
+		order = append(order, row...)
+	}
+	if over.Beside == 0 {
+		order = append(order, long[min(1, len(long)):]...)
+	}
+	return order
+}
+
+func formGroups(fields []board.Field) (alone, long []int, rows [][]int) {
+	rows = make([][]int, len(board.FormSections))
+	for i, field := range fields {
+		section, in := board.SectionOf(field)
+		switch {
+		case field.Long:
+			long = append(long, i)
+		case in:
+			rows[section] = append(rows[section], i)
+		default:
+			alone = append(alone, i)
+		}
+	}
+	return alone, long, rows
+}
+
 const readBackHigh = 2 * lineHigh
 
 func readsBack(row []int, fields []board.Field) bool {
@@ -96,19 +128,7 @@ func formLayout(over geom.Box, fields []board.Field) ([]placed, []Readable, int,
 	left, full := over.X+padding, over.W-padding-padding
 	top := FirstRow(over)
 
-	var alone, long []int
-	rows := make([][]int, len(board.FormSections))
-	for i, field := range fields {
-		section, in := board.SectionOf(field)
-		switch {
-		case field.Long:
-			long = append(long, i)
-		case in:
-			rows[section] = append(rows[section], i)
-		default:
-			alone = append(alone, i)
-		}
-	}
+	alone, long, rows := formGroups(fields)
 	sectionLeft, sectionFull, sectionTop := left, full, -1
 	if over.Beside > 0 {
 		sectionLeft, sectionFull, sectionTop = over.X+over.W+padding, over.Beside-padding-padding, top+apart
