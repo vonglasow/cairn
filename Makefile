@@ -41,7 +41,7 @@ help:
 
 ## build: build the binary into ./bin, stamped with version, commit and time
 build:
-	go build -ldflags "$(LDFLAGS)" -o $(BIN) ./cmd/cairn
+	go build -trimpath -ldflags "-s -w $(LDFLAGS)" -o $(BIN) ./cmd/cairn
 
 ## changelog: say what changed, version by version, and what the next version would bring
 changelog:
