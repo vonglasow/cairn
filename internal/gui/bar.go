@@ -283,12 +283,12 @@ func (w Window) Offers() []string {
 		return nil
 	case board.OnChoosing:
 		if w.PickingLabels {
-			return []string{"Choose", "Close"}
+			return []string{"Done"}
 		}
 		if w.OneOnly() {
 			return []string{"Choose", "Cancel"}
 		}
-		return []string{"Done", "Choose", "Cancel"}
+		return []string{"Done", "Cancel"}
 	case board.OnCalendar:
 		return []string{"Take", "No day", "Cancel"}
 	case board.OnRule:
@@ -430,7 +430,7 @@ func (w Window) clickingList(p geom.Point) Window {
 	}
 	if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.ChoosingFrom, p); on {
 		w.ChoosingOn = at
-		return w
+		return w.taking()
 	}
 	for _, taken := range w.LabelsTaken() {
 		if taken.Cross.In(p) {
@@ -556,6 +556,9 @@ func (w Window) shortcut(offer string) string {
 		return "enter"
 	}
 	if w.Screen == board.OnViews && w.RenamingView && offer == "Save" {
+		return "enter"
+	}
+	if w.Screen == board.OnChoosing && offer == "Done" && w.ticksBySpace() {
 		return "enter"
 	}
 	if w.Screen == board.OnFates && strings.HasPrefix(offer, "Delete") {

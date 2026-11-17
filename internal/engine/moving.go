@@ -263,19 +263,26 @@ cairn task focus`,
 	Answers: Focus{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to focus, or nothing to name every task in focus"},
+		alsoOf("a task"),
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
 		n, named := in.whole("number")
 		if !named {
 			return whatIsInFocus(on)
 		}
-		states, err := on.Engine.statesOf([]int{n})
+		numbers, err := together(in)
 		if err != nil {
 			return Answer{}, err
 		}
-		t, err := on.Engine.putInFocus(n)
+		states, err := on.Engine.statesOf(numbers)
 		if err != nil {
 			return Answer{}, err
+		}
+		var t task.Task
+		for _, m := range slices.Backward(numbers) {
+			if t, err = on.Engine.putInFocus(m); err != nil {
+				return Answer{}, err
+			}
 		}
 		warnings, err := on.Engine.unmetEach(states)
 		if err != nil {
@@ -311,12 +318,18 @@ cairn task unfocus`,
 	Answers: Focus{},
 	Takes: []Argument{
 		{Name: "number", Kind: Number, Positional: true, Of: "a task", Means: "the task to unfocus, or nothing to unfocus them all"},
+		alsoOf("a task"),
 	},
 	Run: func(on workedOn, in Input) (Answer, error) {
-		n, named := in.whole("number")
-		if named {
-			if err := on.Engine.letGoOf(n); err != nil {
+		if _, named := in.whole("number"); named {
+			numbers, err := together(in)
+			if err != nil {
 				return Answer{}, err
+			}
+			for _, m := range numbers {
+				if err := on.Engine.letGoOf(m); err != nil {
+					return Answer{}, err
+				}
 			}
 		} else if err := on.Engine.letGo(); err != nil {
 			return Answer{}, err

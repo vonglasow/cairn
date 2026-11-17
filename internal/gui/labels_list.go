@@ -7,7 +7,6 @@ import (
 	"errors"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 
 	"cairn/internal/engine"
@@ -101,6 +100,20 @@ func refusal(err error) string {
 	return err.Error()
 }
 
+func (w Window) labelsOfSeveral(taken []int) Window {
+	w.TickedSet, w.PartlySet = map[int]bool{}, map[int]bool{}
+	for i, name := range w.LabelsOffered {
+		carried := 0
+		for _, n := range taken {
+			if c, ok := w.Snap.Card(n); ok && slices.Contains(c.Labels, name) {
+				carried++
+			}
+		}
+		w.TickedSet[i+1], w.PartlySet[i+1] = carried == len(taken), carried > 0 && carried < len(taken)
+	}
+	return w
+}
+
 func (w Window) takingLabel() Window {
 	offered := w.Choosing()
 	if w.ChoosingOn >= len(offered) {
@@ -115,6 +128,7 @@ func (w Window) takingLabel() Window {
 	}
 	if row.Number > 0 {
 		w.TickedSet[row.Number] = !w.TickedSet[row.Number]
+		delete(w.PartlySet, row.Number)
 		if w.TickedSet[row.Number] {
 			return w.writingPicked("+" + row.Title)
 		}
@@ -173,7 +187,11 @@ func (w Window) writingPicked(change string) Window {
 	if !w.PickingLabels {
 		return w
 	}
-	in := engine.Input{Given: map[string]string{"number": strconv.Itoa(w.Chosen)}, Listed: map[string][]string{"label": {change}}}
+	in := w.actedOn()
+	if in.Listed == nil {
+		in.Listed = map[string][]string{}
+	}
+	in.Listed["label"] = []string{change}
 	if _, err := w.work.Ask(engine.TaskEdit, in); err != nil {
 		return w.failing(err)
 	}

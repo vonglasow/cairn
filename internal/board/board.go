@@ -50,6 +50,7 @@ type Board struct {
 	Question       Question
 	Draft          Form
 	TickedSet      map[int]bool
+	PartlySet      map[int]bool
 	ChoosingOn     int
 	Fates          Deleting
 	RefusedChoice  string

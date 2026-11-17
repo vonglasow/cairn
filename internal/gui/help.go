@@ -32,7 +32,7 @@ func (w Window) helpGroups() []helpGroup {
 			{Key: "esc esc", Means: "throw away"},
 			{Key: "⌘Z", Means: "bring it back"},
 			{Key: "⇥ ⌘T", Means: "next field, trace"},
-			{Key: "space", Means: "tick a step"},
+			{Key: "space", Means: "tick a step, a line"},
 		}},
 		{"Find", []Said{
 			{Key: "⌘K", Means: "command bar"},

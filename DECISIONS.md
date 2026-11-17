@@ -125,3 +125,7 @@ longer holds is taken out.
 - Each guide by task opens on the window at its own page, drawn over the fixtures when the site is built — a picture made by hand drifts from the window.
 - The site leads with what cairn does, what it gives an agent and where to download it, like the sites of comparable tools; the docs are one section of it, under a home of their own (#326). Its pictures are the window, drawn when the site is built; the columns are the board's picture cropped, so they follow the scheme picked.
 - One word for each notion on every surface: series, rule, occurrence, trace, column, deadline, notes, theme, settings, tab, report (#292) — one notion was named three ways.
+- In the window's lists, a click ticks a line and the list stays open, and a click outside keeps what is ticked — ticking several labels took a double-click each, and the list closed after every one.
+- `task edit`, `task focus` and `task unfocus` take `--also` like move, archive and delete (#426) — the window acts on cards gathered together through the engine, never by asking once per card.
+- A right-click on gathered cards keeps them gathered, and its menu acts on all of them in one act of the engine (#426); a label some carry shows a dash and a click puts it on all — the menu used to drop the gathering and act on one card.
+- In a list that ticks several, a click or space ticks and ⏎ is Done (#426); Choose is gone from it — it ticked the line under the keyboard, and read as a way to validate.

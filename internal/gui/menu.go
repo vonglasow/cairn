@@ -3,6 +3,7 @@ package gui
 import (
 	"cairn/internal/board"
 	"cairn/internal/gui/geom"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -30,8 +31,16 @@ func (w Window) ContextAt(p geom.Point) Window {
 	if w.Screen != board.OnTheBoard {
 		return w
 	}
-	w = w.aiming(p).choosingAt(w.at(p))
+	w = w.aiming(p)
+	if n := w.at(p); w.IsTaken(n) && w.Tab == board.Tasks {
+		w.Chosen = n
+	} else {
+		w = w.choosingAt(n)
+	}
 	w.menu, w.menuAt, w.menuOn, w.menuSets, w.rules = w.menuFor(), p, 0, "", nil
+	if len(w.Taken()) > 0 && !w.ChosenGoal {
+		w.rules = []int{slices.Index(w.menu, "Archive")}
+	}
 	w.Screen = board.OnMenu
 	return w
 }
@@ -39,6 +48,15 @@ func (w Window) ContextAt(p geom.Point) Window {
 func (w Window) menuFor() []string {
 	if w.Chosen == 0 {
 		return []string{"New", "Search", "Archived", "Help", "New backup", "Backups", "Labels", "Export", "Import"}
+	}
+	if taken := w.Taken(); len(taken) > 0 && !w.ChosenGoal {
+		focus := "Unfocus"
+		for _, n := range taken {
+			if !slices.Contains(w.Snap.Focus, n) {
+				focus = "Focus"
+			}
+		}
+		return []string{"Move to…", "Priority…", "Labels…", focus, "Archive", "Delete"}
 	}
 	thing := "task"
 	if w.ChosenGoal {
@@ -70,9 +88,19 @@ func (w Window) linesOf(op engine.Operation) []string {
 	return nil
 }
 
+func (w Window) actedOn() engine.Input {
+	if taken := w.Taken(); len(taken) > 0 {
+		return board.Several(taken)
+	}
+	return board.Numbered(w.Chosen)
+}
+
 func (w Window) labellingChosen() Window {
 	w = w.formOnto("label").choosingList()
 	w.PickingLabels = w.Screen == board.OnChoosing
+	if taken := w.Taken(); len(taken) > 0 && w.PickingLabels {
+		return w.labelsOfSeveral(taken)
+	}
 	return w
 }
 
@@ -144,9 +172,36 @@ func (w Window) MenuRules() []int { return w.rules }
 // MenuOn is the line of the menu the keyboard is on.
 func (w Window) MenuOn() int { return w.menuOn }
 
+// MenuHead is what the menu of gathered cards says above its lines: how many, and which.
+func (w Window) MenuHead() string {
+	taken := w.Taken()
+	if w.Screen != board.OnMenu || len(taken) == 0 || w.ChosenGoal {
+		return ""
+	}
+	said := strconv.Itoa(len(taken)) + " tasks ·"
+	for _, n := range taken {
+		said += " #" + strconv.Itoa(n)
+	}
+	return said
+}
+
+func (w Window) menuHeadHigh() int {
+	if w.MenuHead() == "" {
+		return 0
+	}
+	return menuRow
+}
+
+// MenuRows is the part of the menu its lines are in, under its head.
+func (w Window) MenuRows() geom.Box {
+	box := w.MenuBox()
+	box.Y, box.H = box.Y+w.menuHeadHigh(), box.H-w.menuHeadHigh()
+	return box
+}
+
 // MenuBox is where the menu is drawn: from the point clicked, down and to the right, kept inside the window when the point is near an edge.
 func (w Window) MenuBox() geom.Box {
-	high := between + len(w.menu)*menuRow + between
+	high := w.menuHeadHigh() + between + len(w.menu)*menuRow + between
 	return geom.Box{
 		X: max(0, min(w.menuAt.X, w.width-menuWide)),
 		Y: max(0, min(w.menuAt.Y, w.height-high)),
@@ -182,7 +237,7 @@ func (w Window) onMenu(name string) Window {
 }
 
 func (w Window) clickingMenu(p geom.Point) Window {
-	box := w.MenuBox()
+	box := w.MenuRows()
 	for i := range w.menu {
 		if MenuRowAt(box, i).In(p) {
 			return w.fromMenu(i)
@@ -196,8 +251,9 @@ func (w Window) fromMenu(i int) Window {
 	said := w.menu[i]
 	if w.menuSets != "" {
 		w.Screen = board.OnTheBoard
-		return w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(w.Chosen), w.menuSets: said}})
+		in := w.actedOn()
+		in.Given[w.menuSets] = said
+		return w.asking(engine.TaskEdit, in)
 	}
 	return w.doingLine(said)
 }
@@ -219,6 +275,13 @@ func (w Window) doingLine(said string) Window {
 		return w.asking(engine.TaskSkip, board.Numbered(w.Chosen))
 	}
 	w.Screen = board.OnTheBoard
+	if len(w.Taken()) > 0 && (said == "Focus" || said == "Unfocus") {
+		op := engine.TaskFocus
+		if said == "Unfocus" {
+			op = engine.TaskUnfocus
+		}
+		return w.asking(op, board.Several(w.Taken()))
+	}
 	if said == "Focus" || said == "Unfocus" {
 		return w.working()
 	}

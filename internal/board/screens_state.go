@@ -204,6 +204,9 @@ func (b Board) ChoosingAt() int { return b.ChoosingOn }
 // Ticked says whether an objective is in, as the open list has it.
 func (b Board) Ticked(number int) bool { return b.TickedSet[number] }
 
+// Partly says whether a label is carried by some of the cards gathered, and not by all of them.
+func (b Board) Partly(number int) bool { return b.PartlySet[number] }
+
 // ChoosingRefused is what the open list refused last, said at its foot: nothing when the last tick was taken.
 func (b Board) ChoosingRefused() string { return b.RefusedChoice }
 

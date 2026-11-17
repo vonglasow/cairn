@@ -102,8 +102,8 @@ func (f Field) Draw(k Kit, at geom.Box) geom.Box {
 	return at
 }
 
-// Check is the box before a step or a value: empty, done and receding, or taken and in force.
-type Check struct{ Done, Taken bool }
+// Check is the box before a step or a value: empty, done and receding, taken and in force, or taken by some of the cards gathered.
+type Check struct{ Done, Taken, Partly bool }
 
 // Draw draws the box in at.
 func (c Check) Draw(k Kit, at geom.Box) geom.Box {
@@ -113,6 +113,9 @@ func (c Check) Draw(k Kit, at geom.Box) geom.Box {
 	case c.Taken:
 		rounded(k.gtx, at, radius, k.skin.Colour.Accent.Base)
 		say(k.gtx, k.th, k.skin.Colour.Ink.OnAccent, TickAt(at), TickedMark, small)
+	case c.Partly:
+		ringed(k, at, radius, k.skin.Colour.Accent.Base)
+		say(k.gtx, k.th, k.skin.Colour.Accent.Base, TickAt(at), PartlyMark, small)
 	case c.Done:
 		rounded(k.gtx, at, radius, k.skin.Colour.Ink.Faint)
 		say(k.gtx, k.th, k.skin.Colour.Surface.Raised, TickAt(at), TickedMark, small)
@@ -124,6 +127,9 @@ func (c Check) Draw(k Kit, at geom.Box) geom.Box {
 
 // TickedMark says an objective is in, or a step is done.
 const TickedMark = "✓"
+
+// PartlyMark says a label is carried by some of the cards gathered.
+const PartlyMark = "–"
 
 // CheckAt is where a line's box stands: at its left, in its middle.
 func CheckAt(line geom.Box) geom.Box {

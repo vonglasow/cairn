@@ -85,3 +85,58 @@ func TestArchivingSeveralLeavesOutWhatIsAlreadyOff(t *testing.T) {
 		t.Errorf("archived %+v", in)
 	}
 }
+
+func TestTheMenuOfGatheredCardsActsOnAllOfThem(t *testing.T) {
+	f := newFake()
+	cards := []board.Card{card(1, "First", "todo"), card(2, "Second", "todo"), card(3, "Third", "todo")}
+	w := holding(f, cards...)
+	w = w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShortcut).clicked(middleOf(w, 1, 1)).KeysDown(0)
+	opened := w.ContextAt(middleOf(w, 1, 1))
+	want := []string{"Move to…", "Priority…", "Labels…", "Focus", "Archive", "Delete"}
+	if !slices.Equal(opened.Taken(), []int{1, 2}) || !slices.Equal(opened.Menu(), want) || opened.MenuHead() != "2 tasks · #1 #2" {
+		t.Fatalf("the menu of two gathered: taken %v, %v, %q", opened.Taken(), opened.Menu(), opened.MenuHead())
+	}
+	line := func(w Window, said string) Window { return w.fromMenu(slices.Index(w.Menu(), said)) }
+	line(line(opened, "Priority…"), "high")
+	if in, ok := f.gave("task", "edit"); !ok || in.Given["number"] != "1" || !slices.Equal(in.Listed["also"], []string{"2"}) || in.Given["priority"] != "high" {
+		t.Errorf("Priority… high on two asked %+v", in)
+	}
+	line(opened, "Focus")
+	if in, ok := f.gave("task", "focus"); !ok || !slices.Equal(in.Listed["also"], []string{"2"}) {
+		t.Errorf("Focus on two asked %+v", in)
+	}
+	if asking := line(opened, "Archive"); asking.Question != board.AboutArchivingSeveral {
+		t.Errorf("Archive on two asks %v", asking.Question)
+	}
+	if apart := w.ContextAt(middleOf(w, 1, 2)); len(apart.Taken()) != 0 {
+		t.Errorf("a right-click outside the gathering kept %v", apart.Taken())
+	}
+}
+
+func TestTheLabelsOfGatheredCardsSayWhatAllAndSomeCarry(t *testing.T) {
+	f := newFake()
+	cards := []board.Card{{Number: 1, Title: "First", State: "todo", Labels: []string{"bug", "ui"}}, {Number: 2, Title: "Second", State: "todo", Labels: []string{"bug"}}}
+	w := holding(f, cards...)
+	w = w.clicked(middleOf(w, 1, 0)).KeysDown(key.ModShortcut).clicked(middleOf(w, 1, 1)).KeysDown(0)
+	w = w.ContextAt(middleOf(w, 1, 1))
+	w = w.fromMenu(slices.Index(w.Menu(), "Labels…"))
+	at := map[string]int{}
+	for i, one := range w.Choosing() {
+		at[one.Title] = i
+	}
+	bug, ui := w.Choosing()[at["bug"]].Number, w.Choosing()[at["ui"]].Number
+	if !w.Ticked(bug) || w.Partly(bug) || w.Ticked(ui) || !w.Partly(ui) {
+		t.Fatalf("bug ticked %v partly %v, ui ticked %v partly %v", w.Ticked(bug), w.Partly(bug), w.Ticked(ui), w.Partly(ui))
+	}
+	if !slices.Equal(w.Offers(), []string{"Done"}) {
+		t.Errorf("the labels written at each click offer %v", w.Offers())
+	}
+	w.ChoosingOn = at["ui"]
+	w = w.Key("space")
+	if in, ok := f.gave("task", "edit"); !ok || in.Given["number"] != "1" || !slices.Equal(in.Listed["also"], []string{"2"}) || !slices.Equal(in.Listed["label"], []string{"+ui"}) {
+		t.Errorf("a click on a label some carry asked %+v", in)
+	}
+	if !w.Ticked(ui) || w.Partly(ui) {
+		t.Errorf("ui after the click: ticked %v partly %v", w.Ticked(ui), w.Partly(ui))
+	}
+}

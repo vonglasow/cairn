@@ -40,7 +40,11 @@ Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
 - **Right-click** a card for its menu — edit, a new linked task, its labels,
   and the rest of what can be done to it — or a column to add a task to it.
 - **<kbd>⌘</kbd>-click** gathers several cards, **<kbd>⇧</kbd>-click** takes every card between —
-  `Ctrl` on Linux — and an action then applies to all of them.
+  `Ctrl` on Linux — and an action then applies to all of them. A right-click on
+  a gathered card keeps them gathered: its menu moves, prioritises, labels,
+  focuses, archives or deletes all of them. Under **Labels…**, `✓` is a label
+  all of them carry and `–` one some of them carry; a click puts it on all of
+  them, or takes it off all of them.
 - **Drag a gutter** between two columns or lanes to widen one, or the edge
   above the band to make it taller. A double-click on a gutter takes the size
   back; **Reset sizes** in the View menu takes them all back. To keep the sizes
@@ -89,7 +93,11 @@ itself** every couple of seconds; <kbd>⌘⏎</kbd> or <kbd>⌘S</kbd> saves at 
 - <kbd>⇥</kbd> walks the fields in the order they are drawn, and from the last back to
   the title; <kbd>⇧⇥</kbd> walks back.
 - The `labels` and `objectives` fields open lists to tick: typing narrows the
-  list, and a label that does not exist yet is offered to create.
+  list, and a label that does not exist yet is offered to create. A click,
+  or <kbd>space</kbd>, ticks or unticks a line and the list stays open; with
+  a word typed, <kbd>⏎</kbd> takes the line found. **Done** — <kbd>⏎</kbd>
+  with nothing typed, or a click outside — keeps what is ticked; <kbd>esc</kbd>
+  puts it back.
 - The `blockers` and `links` fields open the other tasks to tick, the newest
   first; typing keeps the ones a search would find.
 - Steps are tiles of the form: tick one with a click, drag one to reorder,

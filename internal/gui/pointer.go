@@ -492,8 +492,9 @@ func (w Window) DoubleClick(p geom.Point) Window {
 	if w.Screen == board.OnChoosing {
 		box := w.ChoosingBox()
 		if at, on := ChoosingAtPoint(box, len(w.Choosing()), w.ChoosingFrom, p); on {
-			w.ChoosingOn = at
-			w = w.taking()
+			if w.ChoosingOn = at; !w.Ticked(w.Choosing()[at].Number) {
+				w = w.taking()
+			}
 			if w.Screen == board.OnChoosing {
 				return w.keeping()
 			}
@@ -976,7 +977,7 @@ func (w Window) clickedOff(p geom.Point) Window {
 	if w.Screen == board.OnCalendar || w.Screen == board.OnRule {
 		w.Screen = board.OnForm
 	} else if w.Screen == board.OnChoosing {
-		w = w.Choose("Cancel")
+		w = w.keeping()
 	} else if w.Screen != board.OnForm {
 		w = w.Choose("Close")
 	}

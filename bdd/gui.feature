@@ -2177,7 +2177,7 @@ Feature: The desktop board
       And I put the keyboard on "objectives"
       And I press "enter"
       And I press "up"
-      And I press "enter"
+      And I press "space"
       Then the list says "#1 is already counted in #1 Home automation through #2 Enclosure and #3 Firmware"
       And the list says under it "Untick Enclosure and Firmware to put it on Home automation itself. Nothing was changed."
       And objective 1 is not ticked

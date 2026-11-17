@@ -563,8 +563,12 @@ func drawMenu(k Kit, w Window) {
 	box := w.MenuBox()
 	Popover{}.Draw(k, box)
 	k = k.inside("popover")
+	if head := w.MenuHead(); head != "" {
+		say(k.gtx, k.th, k.skin.Colour.Ink.Faint, geom.Box{X: box.X + between + inset, Y: box.Y + between, W: box.W - 2*(between+inset), H: menuRow}, head, small)
+	}
+	rows := w.MenuRows()
 	for i, said := range w.Menu() {
-		at := MenuRowAt(box, i)
+		at := MenuRowAt(rows, i)
 		row := Row{Said: said, Danger: said == "Delete", Picked: i == w.MenuOn()}
 		row.Draw(k, at)
 		if key := MenuKey(said); key != "" {
@@ -573,7 +577,7 @@ func drawMenu(k Kit, w Window) {
 		}
 	}
 	for _, i := range w.MenuRules() {
-		at := MenuRowAt(box, i)
+		at := MenuRowAt(rows, i)
 		fill(k.gtx, geom.Box{X: at.X + inset, Y: at.Y, W: at.W - inset*2, H: k.skin.Size.Rule}, k.skin.Colour.Line.Rule)
 	}
 }
@@ -656,7 +660,7 @@ func drawChoosing(k Kit, w Window) {
 			row.Connector(in, Connector{Last: one.Last, Elbow: line.Y + line.H/2 - top + gutter}, geom.Box{X: line.X + checkSide/2, Y: top - gutter, W: indent - checkSide/2 - inset, H: apart})
 			line.X, line.W = line.X+indent, line.W-indent
 		}
-		row.Check(in, Check{Taken: w.Ticked(one.Number)}, CheckAt(line))
+		row.Check(in, Check{Taken: w.Ticked(one.Number), Partly: w.Partly(one.Number)}, CheckAt(line))
 		if w.ChoosingFor == "label" {
 			LabelChip{Label: one.Title, Colour: w.LabelColour(one.Title)}.Draw(in.inside("row"), LabelPillAt(line, ends(w.measured(), one.Title, small)))
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Faint, line, strconv.Itoa(one.Carried), small, k.skin.Type.Mono, text.End)

@@ -4,6 +4,7 @@ import (
 	"cairn/internal/engine/item"
 	"errors"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"cairn/internal/engine/task"
@@ -271,5 +272,35 @@ func TestArchive_refusesAlsoWithoutANumber(t *testing.T) {
 	}
 	if _, err := Do(TaskDelete, path, Input{Confirmed: true, Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"two"}}}); err == nil {
 		t.Error("a deletion beside something that is not a number went through")
+	}
+}
+
+func TestEditAndFocus_takeSeveralTogetherOrNone(t *testing.T) {
+	path := storeAt(t, "First", "Second", "Third")
+	both := func(number string, more ...string) Input {
+		return Input{Confirmed: true, Given: map[string]string{"number": number, "priority": "high"}, Listed: map[string][]string{"also": more, "label": {"+urgent"}}}
+	}
+	if _, err := Do(TaskEdit, path, both("1", "99")); err == nil {
+		t.Fatal("an edit naming a task that does not exist went through")
+	}
+	if shown, _ := Do(TaskShow, path, given("number", "1")); shown.Task.Carried().Priority == "high" {
+		t.Fatal("a refused edit of several changed the first")
+	}
+	if _, err := Do(TaskEdit, path, both("1", "3")); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []string{"1", "3"} {
+		shown, _ := Do(TaskShow, path, given("number", n))
+		if c := shown.Task.Carried(); c.Priority != "high" || !slices.Contains(c.Labels, "urgent") {
+			t.Errorf("task %s after an edit of several: %+v", n, shown.Task.Carried())
+		}
+	}
+	focused, err := Do(TaskFocus, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}})
+	if err != nil || len(*focused.InFocus) != 2 {
+		t.Fatalf("focusing two holds %v, %v", focused.InFocus, err)
+	}
+	unfocused, err := Do(TaskUnfocus, path, Input{Given: map[string]string{"number": "1"}, Listed: map[string][]string{"also": {"2"}}})
+	if err != nil || len(*unfocused.InFocus) != 0 {
+		t.Errorf("unfocusing two leaves %v, %v", unfocused.InFocus, err)
 	}
 }

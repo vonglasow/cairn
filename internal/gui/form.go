@@ -148,7 +148,7 @@ func (w Window) writing(change func(board.Written) board.Written) Window {
 		return w.seekingLabels(change)
 	}
 	if w.Screen == board.OnChoosing {
-		if !w.ChoosingSearched() {
+		if !w.ChoosingSearched() || w.ticksBySpace() && change(board.Written{}).Reads() == " " {
 			return w
 		}
 		w.Filtering, w.ChoosingOn, w.ChoosingFrom = change(w.Filtering), 0, 0
@@ -762,7 +762,7 @@ func (w Window) choosingList() Window {
 	if !chosenFromAList(on) {
 		return w
 	}
-	w.TickedSet, w.ChoosingOn, w.ChoosingFrom, w.RefusedChoice = map[int]bool{}, 0, 0, ""
+	w.TickedSet, w.PartlySet, w.ChoosingOn, w.ChoosingFrom, w.RefusedChoice = map[int]bool{}, nil, 0, 0, ""
 	w.ChoosingFor, w.Filtering, w.PickingLabels = on.Arg, board.Written{}, false
 	if on.Arg == "label" {
 		w = w.openingLabels(on.Value)
@@ -887,6 +887,8 @@ func (w Window) RowStripe(one Choice, line geom.Box) (geom.Box, bool) {
 
 const stripeHigh = 12
 
+func (w Window) ticksBySpace() bool { return !w.OneOnly() && w.Filtering.Empty() }
+
 func (w Window) inChoosing(name string) Window {
 	offered := w.Choosing()
 	switch name {
@@ -903,7 +905,14 @@ func (w Window) inChoosing(name string) Window {
 		w.Filtering, w.ChoosingOn, w.ChoosingFrom = w.Filtering.Back(), 0, 0
 	case "esc":
 		return w.leaving()
+	case "space":
+		if w.ticksBySpace() {
+			return w.taking()
+		}
 	case "enter":
+		if w.ticksBySpace() {
+			return w.keeping()
+		}
 		return w.taking()
 	case "cmd+enter":
 		return w.keeping()

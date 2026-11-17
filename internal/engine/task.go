@@ -304,9 +304,13 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 	Takes: append(append(append([]Argument{
 		{Name: "number", Kind: Number, Positional: true, Required: true, Of: "a task", Means: "the number of the task"},
 		{Name: "title", Kind: Text, Means: "what the task is called"},
-	}, taskAttributes...), append([]Argument{stepsArgument}, replaceArguments...)...), append(slices.Clone(everyArguments), seriesTooArgument)...),
+	}, taskAttributes...), append([]Argument{stepsArgument}, replaceArguments...)...), append(slices.Clone(everyArguments), seriesTooArgument, alsoOf("a task"))...),
 	Run: func(on workedOn, in Input) (Answer, error) {
-		n, _ := in.whole("number")
+		numbers, err := together(in)
+		if err != nil {
+			return Answer{}, err
+		}
+		n := numbers[0]
 		changes, err := taskChanges(in)
 		if err != nil {
 			return Answer{}, err
@@ -320,8 +324,10 @@ cairn task edit 5 --state blocked --blocker 3 --because "the client's answer"`,
 		}
 		was, _ := on.Engine.show(n)
 		if changes.named() || !every {
-			if _, err := on.Engine.edit(n, changes); err != nil {
-				return Answer{}, editReason(err)
+			for _, m := range numbers {
+				if _, err := on.Engine.edit(m, changes); err != nil {
+					return Answer{}, editReason(err)
+				}
 			}
 		}
 		if every {
