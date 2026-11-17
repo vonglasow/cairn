@@ -177,16 +177,6 @@ func TestTheListsBarCanBePulled(t *testing.T) {
 	}
 }
 
-func askedFor(f *fake, thing, verb string) *engine.Input {
-	for _, one := range f.asked {
-		if one.op.Thing == thing && one.op.Verb == verb {
-			in := one.in
-			return &in
-		}
-	}
-	return nil
-}
-
 func TestTheHelpNamesEveryKeyTheBarTeaches(t *testing.T) {
 	for _, system := range []string{"darwin", "linux", "windows"} {
 		var said strings.Builder

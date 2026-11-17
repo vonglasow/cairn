@@ -61,6 +61,7 @@ Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
 | <kbd>⇧F</kbd> | the filters |
 | <kbd>⌘K</kbd> | the command palette: any command, a number, a title |
 | <kbd>m</kbd> | move the chosen task to a column |
+| <kbd>⇧</kbd> held, the arrows | carry the chosen task, and the cards gathered with it, as a drag does; letting <kbd>⇧</kbd> go drops it, <kbd>esc</kbd> puts it back |
 | <kbd>o</kbd> | a new task linked to the chosen one |
 | <kbd>x</kbd> | archive or unarchive the chosen task |
 | <kbd>⇧A</kbd> | show what was archived |

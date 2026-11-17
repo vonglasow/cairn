@@ -570,7 +570,7 @@ func (w Window) shortcut(offer string) string {
 // KeyChipWide is how wide the chip a key is written on is: its figures in Go Mono, a key mark Go Mono has no glyph for a third wider than an em, the face standing in for it being wider than Go Mono and wider still on some systems, and a little room either side.
 func KeyChipWide(key string) int {
 	wide := 0
-	for i, one := range strings.Fields(key) {
+	for i, one := range capsOf(key) {
 		wide += capWide(one) + min(i, 1)*capGap
 	}
 	return wide

@@ -72,6 +72,7 @@ type Window struct {
 	draggingBar                     bool
 
 	held                  Held
+	carry                 carried
 	grabbedGoal           int
 	hoverGoal             int
 	hoverSince            time.Time

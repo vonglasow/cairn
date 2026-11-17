@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"strings"
 
+	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -107,7 +108,7 @@ func (c KeyChip) Draw(k Kit, row geom.Box) geom.Box {
 		return geom.Box{X: row.X, Y: y, H: chipHigh}
 	}
 	x := row.X
-	for _, key := range strings.Fields(c.Key) {
+	for _, key := range capsOf(c.Key) {
 		capped(k, geom.Box{X: x, Y: y, W: capWide(key), H: chipHigh}, key)
 		x += capWide(key) + capGap
 	}
@@ -119,7 +120,50 @@ func capped(k Kit, at geom.Box, key string) {
 	r := k.skin.Size.Rule
 	rounded(k.gtx, at, k.skin.Radius.Chip, k.skin.Colour.Line.Raised)
 	rounded(k.gtx, geom.Box{X: at.X + r, Y: at.Y + r, W: at.W - 2*r, H: at.H - 3*r}, k.skin.Radius.Chip-r, k.skin.Colour.Surface.Control)
+	if key == ShiftMark {
+		shiftDrawn(k, at)
+		return
+	}
 	sayOnChip(k, k.skin.Colour.Ink.Text, at, key)
+}
+
+// ShiftMark is how the shift key is written; it is drawn on a cap of its own, as an outlined arrow, since the faces cairn writes with draw it as a thin arrow lost among the arrows.
+const ShiftMark = "⇧"
+
+func capsOf(key string) []string {
+	var caps []string
+	for _, field := range strings.Fields(key) {
+		for field != "" {
+			before, after, found := strings.Cut(field, ShiftMark)
+			if before != "" {
+				caps = append(caps, before)
+			}
+			if found {
+				caps = append(caps, ShiftMark)
+			}
+			field = after
+		}
+	}
+	return caps
+}
+
+func shiftDrawn(k Kit, at geom.Box) {
+	face := float32(at.H - 3*k.skin.Size.Rule)
+	size := face * 0.6
+	x := float32(at.X) + (float32(at.W)-size)/2
+	y := float32(at.Y) + (face-size)/2 + float32(k.skin.Size.Rule)
+	var shape clip.Path
+	shape.Begin(k.gtx.Ops)
+	for i, p := range [][2]float32{{0.5, 0}, {0.95, 0.48}, {0.7, 0.48}, {0.7, 1}, {0.3, 1}, {0.3, 0.48}, {0.05, 0.48}} {
+		pt := f32.Pt(x+p[0]*size, y+p[1]*size)
+		if i == 0 {
+			shape.MoveTo(pt)
+			continue
+		}
+		shape.LineTo(pt)
+	}
+	shape.Close()
+	paint.FillShape(k.gtx.Ops, k.skin.Colour.Ink.Text, clip.Stroke{Path: shape.End(), Width: float32(k.skin.Size.Stroke)}.Op())
 }
 
 const chipHigh = 18

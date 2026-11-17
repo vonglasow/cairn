@@ -411,6 +411,7 @@ func listening() []event.Filter {
 		key.Filter{Focus: tag, Name: key.NameDeleteBackward},
 		key.Filter{Focus: tag, Name: key.NameReturn},
 		key.Filter{Focus: tag, Name: key.NameEscape},
+		key.Filter{Focus: tag, Name: key.NameShift},
 		key.Filter{Focus: tag, Name: key.NameLeftArrow},
 		key.Filter{Focus: tag, Name: key.NameRightArrow},
 		key.Filter{Focus: tag, Name: key.NameUpArrow},
@@ -470,6 +471,9 @@ func heard(gtx layout.Context, w Window, pressed time.Time, pressedAt geom.Point
 				noted.Say("window", PointerTrace(e, gtx.Metric.PxPerDp, w))
 			}
 		case key.Event:
+			if e.State == key.Release && e.Name == key.NameShift {
+				w = w.ShiftLetGo()
+			}
 			if e.State == key.Press {
 				named = string(e.Name)
 				w = Typed(w, named, e.Modifiers)

@@ -4,7 +4,6 @@ import (
 	"cairn/internal/board"
 	"cairn/internal/gui/geom"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +31,9 @@ func (w Window) Key(name string) Window {
 			return w.openingConfiguration()
 		}
 		return w
+	}
+	if w.carry.on {
+		return w.whileCarrying(name)
 	}
 	if w.Screen == board.OnPalette {
 		return w.onPalette(name)
@@ -188,13 +190,13 @@ func (w Window) onBoard(name string) Window {
 	case "enter":
 		return w.opening()
 	case "shift+left":
-		return w.shifting(-1, 0)
+		return w.carrying(-1, 0)
 	case "shift+right":
-		return w.shifting(1, 0)
+		return w.carrying(1, 0)
 	case "shift+up":
-		return w.shifting(0, -1)
+		return w.carrying(0, -1)
 	case "shift+down":
-		return w.shifting(0, 1)
+		return w.carrying(0, 1)
 	}
 	return w
 }
@@ -378,34 +380,6 @@ func (w Window) walking(across, down int) Window {
 		return w.followingLane(spot.Column, spot.At)
 	}
 	return w.following(spot.Column, spot.At)
-}
-
-func (w Window) shifting(across, down int) Window {
-	if w.Tab == board.Objectives || w.Chosen == 0 {
-		return w
-	}
-	showing := w.Showing().Cards
-	column, inBand, _, found := board.Where(showing, w.Archived, w.Chosen)
-	if !found {
-		return w
-	}
-	if across != 0 {
-		state, ok := board.Beside(column, inBand, across)
-		if !ok {
-			return w
-		}
-		return w.asking(engine.TaskEdit, engine.Input{Given: map[string]string{
-			"number": strconv.Itoa(w.Chosen), "state": state}})
-	}
-	if inBand {
-		return w
-	}
-	given, ok := board.Step(w.InColumn(column), w.Chosen, down)
-	if !ok {
-		return w
-	}
-	given["number"] = strconv.Itoa(w.Chosen)
-	return w.asking(engine.TaskMove, engine.Input{Given: given})
 }
 
 func (w Window) followingLane(lane, at int) Window {

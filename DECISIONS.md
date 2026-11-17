@@ -129,3 +129,4 @@ longer holds is taken out.
 - `task edit`, `task focus` and `task unfocus` take `--also` like move, archive and delete (#426) — the window acts on cards gathered together through the engine, never by asking once per card.
 - A right-click on gathered cards keeps them gathered, and its menu acts on all of them in one act of the engine (#426); a label some carry shows a dash and a click puts it on all — the menu used to drop the gathering and act on one card.
 - In a list that ticks several, a click or space ticks and ⏎ is Done (#426); Choose is gone from it — it ticked the line under the keyboard, and read as a way to validate.
+- ⇧ and the arrows carry a card as a drag does and drop it when ⇧ is let go (#429); each arrow wrote a move at once, and the card left the part of the board in sight. ⇧ is drawn on a cap of its own, as an outlined arrow: the faces draw it as a thin arrow among the arrows.
