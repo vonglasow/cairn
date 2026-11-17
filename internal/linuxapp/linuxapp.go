@@ -61,16 +61,22 @@ func refreshed() error {
 	return nil
 }
 
-// SettleIn writes under data the logo at every size a desktop asks for, and the desktop entry that names it, starting the window with starts; an entry somebody else wrote is left as it is.
+// SettleIn writes under data the logo at every size a desktop asks for, and the desktop entry that names it, starting the window with starts; an entry somebody else wrote is left as it is. A logo rewritten leaves the theme newer than its icon cache, which a desktop then reads past.
 func SettleIn(data, starts string) error {
+	theme := filepath.Join(data, "icons", "hicolor")
 	for _, size := range sizes {
 		held, err := logo.At(size)
 		if err != nil {
 			return err
 		}
 		side := strconv.Itoa(size)
-		if err := writtenIfChanged(filepath.Join(data, "icons", "hicolor", side+"x"+side, "apps", Name+".png"), held); err != nil {
+		written := filepath.Join(theme, side+"x"+side, "apps", Name+".png")
+		was, _ := os.ReadFile(written)
+		if err := writtenIfChanged(written, held); err != nil {
 			return err
+		}
+		if now, err := os.Stat(written); err == nil && !bytes.Equal(was, held) {
+			_ = os.Chtimes(theme, now.ModTime(), now.ModTime())
 		}
 	}
 	if _, other := theirs(entryIn(data)); other {

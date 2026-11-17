@@ -4,8 +4,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestTheEntryStartsCairnByAFullPath(t *testing.T) {
@@ -136,5 +138,44 @@ func TestInstall_saysWhatItCouldNotWrite(t *testing.T) {
 	}
 	if _, _, err := Install(data, "/usr/bin/cairn"); err == nil {
 		t.Error("it wrote under a file")
+	}
+}
+
+func TestALogoRewrittenMakesTheIconCacheStale(t *testing.T) {
+	data := t.TempDir()
+	theme := filepath.Join(data, "icons", "hicolor")
+	for _, size := range sizes {
+		side := strconv.Itoa(size)
+		if err := os.MkdirAll(filepath.Join(theme, side+"x"+side, "apps"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(theme, "48x48", "apps", Name+".png"), []byte("an old logo"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cache := filepath.Join(theme, "icon-theme.cache")
+	long := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+	if err := os.WriteFile(cache, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{cache, theme} {
+		if err := os.Chtimes(path, long, long); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := SettleIn(data, "/usr/bin/cairn"); err != nil {
+		t.Fatal(err)
+	}
+	if dir, _ := os.Stat(theme); !dir.ModTime().After(long) {
+		t.Errorf("the theme was left at %v, as old as its cache: the old logo stays shown", dir.ModTime())
+	}
+	if err := os.Chtimes(theme, long, long); err != nil {
+		t.Fatal(err)
+	}
+	if err := SettleIn(data, "/usr/bin/cairn"); err != nil {
+		t.Fatal(err)
+	}
+	if dir, _ := os.Stat(theme); dir.ModTime().After(long) {
+		t.Error("the theme was touched though no logo changed")
 	}
 }

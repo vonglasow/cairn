@@ -38,8 +38,10 @@ first.
 installed. Windows shows the logo on its own.
 
 The window shows its logo without it: on Linux, `cairn gui` writes the same
-entry and icons the first time it opens; macOS shows the logo in the Dock, and
-`cairn.exe` carries it.
+entry and icons the first time it opens, and again when a newer cairn brings a
+new logo, so the desktop reads it past its icon cache; a desktop that holds its
+icons in memory, as GNOME does, shows it from the next session. macOS shows the
+logo in the Dock, and `cairn.exe` carries it.
 
 ## Where your work is kept
 
