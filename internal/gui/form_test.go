@@ -526,7 +526,9 @@ func TestTabWalksTheFieldsInTheOrderTheyAreDrawnAndRollsOver(t *testing.T) {
 }
 
 func TestTheHelpNamesTheKeyThatShowsTheTrace(t *testing.T) {
-	w := holding(newFake()).Key("?")
+	w := holding(newFake())
+	w.keyboard = KeyboardOf("darwin")
+	w = w.Key("?")
 	for _, line := range w.HelpLines() {
 		if line.Key == "⇥ ⌘T" && line.Means == "next field, trace" {
 			return
