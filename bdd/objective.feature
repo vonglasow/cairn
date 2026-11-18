@@ -172,6 +172,16 @@ Feature: Objectives
       Then it succeeds
       And the objective sits under "#1 Home automation"
 
+    @objective-sub-named-under-its-parent
+    Scenario: a task names the objective it serves under its parent
+      Given I added an objective titled "Home automation"
+      And I added an objective titled "Enclosure" under objective 1
+      And I added a task titled "Pin map" with the objective "2"
+      When I run `cairn task show 1`
+      Then the answer says "#2 Home automation › Enclosure"
+      When I run `cairn task list`
+      Then the answer says "◇ Home automation › Enclosure"
+
   Rule: A task is counted once in a tree
 
     @objective-sub-attached-to-a-parent-and-its-sub-objectives-refused

@@ -1,6 +1,7 @@
 package board
 
 import (
+	"cairn/internal/engine/objective"
 	"strconv"
 	"strings"
 )
@@ -43,6 +44,12 @@ func (s Snapshot) Served(c Card) []Goal {
 	return out
 }
 
+// PathOf is an objective written under its parent, or alone when it has none.
+func (s Snapshot) PathOf(g Goal) string {
+	parent, _ := s.Goal(g.Parent)
+	return objective.Path(parent.Title, g.Title)
+}
+
 // Named is what a field reads as, which is not always what it carries.
 func (s Snapshot) Named(f Field) string {
 	var said []string
@@ -53,7 +60,7 @@ func (s Snapshot) Named(f Field) string {
 		}
 		for _, n := range NumbersIn(f.Value) {
 			g, _ := s.Goal(n)
-			said = append(said, "#"+strconv.Itoa(n)+" "+g.Title)
+			said = append(said, "#"+strconv.Itoa(n)+" "+s.PathOf(g))
 		}
 	default:
 		return f.Value

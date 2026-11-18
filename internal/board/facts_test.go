@@ -26,13 +26,14 @@ func TestACardSaysWhatItCost(t *testing.T) {
 func TestASnapshotSaysWhatAFieldsNumbersAreCalled(t *testing.T) {
 	s := Snapshot{
 		Cards: []Card{{Number: 4, Title: "Ship it"}},
-		Goals: []Goal{{Number: 1, Title: "Ship cairn"}},
+		Goals: []Goal{{Number: 1, Title: "Ship cairn"}, {Number: 2, Title: "Docs", Parent: 1}},
 	}
 	for _, tc := range []struct {
 		f    Field
 		want string
 	}{
 		{Field{Arg: "objective", Value: "1 7"}, "#1 Ship cairn, #7 "},
+		{Field{Arg: "objective", Value: "2"}, "#2 Ship cairn › Docs"},
 		{Field{Arg: "title", Value: "x"}, "x"},
 	} {
 		if got := s.Named(tc.f); got != tc.want {

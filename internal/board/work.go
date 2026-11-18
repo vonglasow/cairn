@@ -166,7 +166,7 @@ func Look(w Work) (Snapshot, error) {
 	}
 	for i, c := range found.Cards {
 		for _, g := range found.Served(c) {
-			found.Cards[i].Serves = append(found.Cards[i].Serves, g.Title)
+			found.Cards[i].Serves = append(found.Cards[i].Serves, found.PathOf(g))
 		}
 	}
 	return found, nil

@@ -160,7 +160,7 @@ func rendered(op engine.Operation, a engine.Answer) string {
 }
 
 func cardText(a engine.Answer) string {
-	said := task.Text(*a.Task, a.Progress, !a.Untimed, a.Choosing[(*a.Task).Carried().Number].Blocks...) + task.StepsText((*a.Task).Carried().Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
+	said := task.Text(*a.Task, a.Progress, !a.Untimed, a.Choosing[(*a.Task).Carried().Number]) + task.StepsText((*a.Task).Carried().Steps) + stoodText(*a.Task, a.StoodSince) + contextText(a.Context)
 	if o, is := a.Occurring[(*a.Task).Carried().Number]; is {
 		said += series.OccursText(o)
 	}
@@ -224,7 +224,7 @@ func foundText(tasks []task.Task, a engine.Answer) string {
 }
 
 func marksOf(a engine.Answer) task.Marks {
-	return task.Marks{Blocks: task.BlocksOf(a.Choosing), InFocus: engine.HeldOr(a.InFocus), NothingBlocks: a.NothingBlocks, Repeats: series.RepeatsOf(a.Occurring)}
+	return task.Marks{Blocks: task.BlocksOf(a.Choosing), InFocus: engine.HeldOr(a.InFocus), NothingBlocks: a.NothingBlocks, Repeats: series.RepeatsOf(a.Occurring), Serves: task.ServesOf(a.Choosing)}
 }
 
 func linesOf(tasks []task.Task) []string {

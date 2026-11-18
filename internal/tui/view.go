@@ -232,14 +232,13 @@ func (b Board) reference(c board.Card, l geom.Layout) string {
 }
 
 func (b Board) servingNamed(c board.Card) board.Card {
-	opened, found := b.snap.Goal(b.inside)
-	if b.inside == 0 || !found {
+	if b.inside == 0 {
 		return c
 	}
 	var kept []string
-	for _, name := range c.Serves {
-		if name != opened.Title {
-			kept = append(kept, name)
+	for i, g := range b.snap.Served(c) {
+		if g.Number != b.inside && i < len(c.Serves) {
+			kept = append(kept, c.Serves[i])
 		}
 	}
 	c.Serves = kept

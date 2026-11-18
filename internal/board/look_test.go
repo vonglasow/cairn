@@ -59,3 +59,23 @@ func TestMarksOf_isWhatACardWearsBesideItsNumber(t *testing.T) {
 		t.Errorf("a plain card wears %v", got)
 	}
 }
+
+func TestCutFromStart_keepsTheEndRead(t *testing.T) {
+	within := func(room int) func(string) bool {
+		return func(s string) bool { return len([]rune(s)) <= room }
+	}
+	for _, c := range []struct {
+		said string
+		room int
+		want string
+	}{
+		{"Home › Enclosure", 20, "Home › Enclosure"},
+		{"Home › Enclosure", 12, "…› Enclosure"},
+		{"Home › Enclosure", 2, "…e"},
+		{"Home › Enclosure", 1, ""},
+	} {
+		if got := CutFromStart(c.said, within(c.room)); got != c.want {
+			t.Errorf("CutFromStart(%q, %d) = %q, want %q", c.said, c.room, got, c.want)
+		}
+	}
+}

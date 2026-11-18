@@ -25,6 +25,7 @@ type Task struct {
 	Context    string              `json:"context,omitempty"`
 	StoodSince *time.Time          `json:"in_column_since,omitempty"`
 	Blocking   []int               `json:"blocking,omitempty" jsonschema:"the numbers of the open tasks naming it as a blocker; left out when none does"`
+	Serves     []string            `json:"serves,omitempty" jsonschema:"each objective it serves, in the order of objectives, written under its parent: Parent › Objective; left out when it serves none"`
 	Added      *sets               `json:"added,omitempty" jsonschema:"what the change put on it; left out when it put nothing"`
 	TakenOff   *sets               `json:"taken_off,omitempty" jsonschema:"what the change took off it; left out when it took nothing"`
 	Warnings   []string            `json:"warnings,omitempty" jsonschema:"what the act did and should be known: each objective it counts in waiting on one not reached, as work starts on it; left out when there is nothing to say"`
@@ -263,6 +264,7 @@ func Of(op Operation, a Answer) any {
 			said.StoodSince = &a.StoodSince
 		}
 		said.Blocking = a.Choosing[said.Number].Blocks
+		said.Serves = a.Choosing[said.Number].Serves
 		said.Added, said.TakenOff = a.Moved.added(), a.Moved.takenOff()
 		said.Warnings = a.Warnings
 		if o, is := a.Occurring[said.Number]; is {

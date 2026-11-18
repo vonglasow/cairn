@@ -163,8 +163,12 @@ func (w *world) servesExactly(line string, numbers ...int) error {
 	for _, one := range numbers {
 		want = append(want, served(fmt.Sprint(one)))
 	}
-	if got := w.field("objectives"); got != strings.Join(want, ", ") {
-		return fmt.Errorf("it serves %q, want %q", got, strings.Join(want, ", "))
+	var got []string
+	for _, one := range strings.Split(w.field("objectives"), ", ") {
+		got = append(got, strings.Fields(one + " ")[0])
+	}
+	if strings.Join(got, ", ") != strings.Join(want, ", ") {
+		return fmt.Errorf("it serves %q, want %q", w.field("objectives"), strings.Join(want, ", "))
 	}
 	return nil
 }

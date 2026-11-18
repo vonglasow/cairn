@@ -120,13 +120,14 @@ func PillRowOf(labels []string, x int, line geom.Box, room int, wide func(string
 	return out
 }
 
-// CardRow is how a card's row is laid out: the number it starts with, each label's pill, the pill counting the labels left out, and its facts at the right end.
+// CardRow is how a card's row is laid out: the number it starts with, each label's pill, the pill counting the labels left out, and its facts at the right end, what it serves last, cut from its start when short of room.
 type CardRow struct {
 	Number   string
 	NumberAt geom.Box
 	PillRow
 	Facts    string
 	FactsAt  geom.Box
+	Serves   string
 	ServesAt geom.Box
 	MarkAt   geom.Box
 	Late     bool
@@ -182,6 +183,21 @@ func cardRow(c board.Card, row geom.Box, m Measure, pieces []fact) CardRow {
 		}
 		return mixedWide(m, said, small)
 	}
+	if n := len(pieces); n > 0 && pieces[n-1].serves && wideOf(pieces) > end-x {
+		more, room := strings.TrimPrefix(serves, c.Serves[0]), end-x
+		for _, l := range c.Labels {
+			room -= ends(m, l, small) + 2*pillPad + pillGap
+		}
+		if len(c.Labels) > 0 {
+			room -= 2 * pillGap
+		}
+		if cut := board.CutFromStart(c.Serves[0], func(said string) bool {
+			return wideOf(append(append([]fact{}, pieces[:n-1]...), fact{said: said + more, serves: true})) <= room
+		}); cut != "" {
+			serves = cut + more
+			pieces = append(append([]fact{}, pieces[:n-1]...), fact{said: serves, serves: true})
+		}
+	}
 	for len(pieces) > 0 && wideOf(pieces) > end-x {
 		pieces = pieces[:len(pieces)-1]
 	}
@@ -189,6 +205,7 @@ func cardRow(c board.Card, row geom.Box, m Measure, pieces []fact) CardRow {
 	if out.Facts != "" {
 		out.FactsAt = FactsAt(row, wideOf(pieces))
 		if pieces[len(pieces)-1].serves {
+			out.Serves = serves
 			wide := mixedWide(m, serves, small) + servesSide + servesGap
 			out.ServesAt = geom.Box{X: out.FactsAt.X + out.FactsAt.W - wide, Y: row.Y, W: wide, H: row.H}
 			out.MarkAt = geom.Box{X: out.ServesAt.X, Y: row.Y + (row.H-servesSide)/2, W: servesSide, H: servesSide}

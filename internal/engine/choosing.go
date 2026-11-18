@@ -45,9 +45,11 @@ func (e *Engine) choosing(shown []task.Task) (map[int]task.Choosing, error) {
 	}
 	today := e.today()
 	late := map[int]bool{}
+	titles, parents := map[int]string{}, map[int]int{}
 	for _, o := range goals {
 		c := o.Carried()
 		late[c.Number] = !c.Deadline.IsZero() && c.Deadline.Before(today) && (c.State == objective.Active || c.State == objective.OnHold)
+		titles[c.Number], parents[c.Number] = c.Title, c.Parent
 	}
 	out := map[int]task.Choosing{}
 	for _, t := range shown {
@@ -63,6 +65,9 @@ func (e *Engine) choosing(shown []task.Task) (map[int]task.Choosing, error) {
 			}
 		}
 		said.ObjectiveLate = slices.ContainsFunc(f.Objectives, func(n int) bool { return late[n] })
+		for _, n := range f.Objectives {
+			said.Serves = append(said.Serves, objective.Path(titles[parents[n]], titles[n]))
+		}
 		out[f.Number] = said
 	}
 	return out, nil

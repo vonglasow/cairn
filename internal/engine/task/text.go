@@ -11,11 +11,15 @@ import (
 // BlocksMark is what stands before how many open tasks a task is in the way of.
 const BlocksMark = "⊳"
 
+// ServesMark is what stands before the objectives a task serves, in a listing.
+const ServesMark = "◇"
+
 // BlocksSaid is how many open tasks a task is in the way of, as every surface writes it.
 func BlocksSaid(n int) string { return fmt.Sprintf("%s%d", BlocksMark, n) }
 
-// Text renders a task in full, empty attributes included, the way a person reads it; the time spent only while the time is shown, and the open tasks it is in the way of only when there are some.
-func Text(t Task, p item.Progress, timed bool, blocks ...int) string {
+// Text renders a task in full, empty attributes included, the way a person reads it; the time spent only while the time is shown, and the open tasks it is in the way of only when there are some, and each objective by its parent when chosen names it.
+func Text(t Task, p item.Progress, timed bool, chosen Choosing) string {
+	blocks := chosen.Blocks
 	c := t.Carried()
 	rows := []item.Fact{{Key: "state", Value: string(c.State)}}
 	if c.Archived {
@@ -31,7 +35,11 @@ func Text(t Task, p item.Progress, timed bool, blocks ...int) string {
 	for _, n := range c.Linked {
 		linked = append(linked, item.Ref(n))
 	}
-	for _, n := range c.Objectives {
+	for i, n := range c.Objectives {
+		if i < len(chosen.Serves) {
+			serves = append(serves, item.Ref(n)+" "+chosen.Serves[i])
+			continue
+		}
 		serves = append(serves, item.Ref(n))
 	}
 	rows = append(rows,
@@ -88,12 +96,13 @@ const InFocusMark = "  (in focus)"
 // NothingBlocksMark is what sets apart a blocked task whose every named blocker is done — the one thing a listing says about blocking, because it is the one thing that needs acting on.
 const NothingBlocksMark = "  (nothing blocks it)"
 
-// Marks are what a listing says about a task that the task does not carry itself: how many open tasks each is in the way of, which one is being worked on, which ones are waiting on nothing any more, and how often an occurrence of a series comes back.
+// Marks are what a listing says about a task that the task does not carry itself: how many open tasks each is in the way of, what each serves, which one is being worked on, which ones are waiting on nothing any more, and how often an occurrence of a series comes back.
 type Marks struct {
 	Blocks        map[int]int
 	InFocus       []int
 	NothingBlocks []int
 	Repeats       map[int]string
+	Serves        map[int][]string
 }
 
 // Lines renders a listing flat, one task per line, marking what a listing marks.
@@ -111,6 +120,9 @@ func marked(t Task, marks Marks) string {
 	number := t.number
 	if n := marks.Blocks[number]; n > 0 {
 		line += "  · " + BlocksSaid(n)
+	}
+	if paths := marks.Serves[number]; len(paths) > 0 {
+		line += "  · " + ServesMark + " " + strings.Join(paths, ", ")
 	}
 	if repeats, ok := marks.Repeats[number]; ok {
 		line += "  · " + repeats

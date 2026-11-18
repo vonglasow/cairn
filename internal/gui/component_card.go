@@ -115,7 +115,7 @@ func (c Card) Draw(k Kit, at geom.Box) geom.Box {
 		}
 		front := laid.FactsAt
 		if laid.ServesAt.W > 0 {
-			name := Serves(c.Face)
+			name := laid.Serves
 			ServesMark{Ink: k.skin.Colour.Ink.Faint}.Draw(in.inside("facts"), laid.MarkAt)
 			at := laid.MarkAt.X + servesSide + servesGap
 			sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: at, Y: laid.FactsAt.Y, W: laid.ServesAt.X + laid.ServesAt.W - at, H: laid.FactsAt.H}, name, small, mono, text.End)

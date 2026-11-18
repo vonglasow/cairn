@@ -48,7 +48,7 @@ func TestText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		in   engine.Answer
 		want string
 	}{
-		{"a task", engine.TaskShow, engine.Answer{Task: &built, Progress: progress}, task.Text(built, progress, true)},
+		{"a task", engine.TaskShow, engine.Answer{Task: &built, Progress: progress}, task.Text(built, progress, true, task.Choosing{})},
 		{"an empty list of tasks says so", engine.TaskList, engine.Answer{Tasks: []task.Task{}}, "there is no task\n"},
 		{"a list of tasks", engine.TaskList, engine.Answer{Tasks: []task.Task{built}}, task.Lines([]task.Task{built}, task.Marks{})},
 		{"a search that found nothing says so", engine.TaskSearch, engine.Answer{Matched: []task.Task{}}, "there is no task\n"},
@@ -67,7 +67,7 @@ func TestText_rendersEveryFieldAnswerCarries(t *testing.T) {
 		{"nothing waiting says so", engine.MigrationApply, engine.Answer{Applied: []string{}}, "there is nothing waiting to be applied\n"},
 		{"names of what was applied", engine.MigrationApply, engine.Answer{Applied: []string{"add labels"}}, "applied \"add labels\"\n"},
 		{"a sweep says how many", engine.TaskArchive, engine.Answer{Archived: of(7)}, "7 task(s) archived\n"},
-		{"one archived by number shows the card", engine.TaskArchive, engine.Answer{Archived: of(1), Task: &built}, task.Text(built, item.Progress{}, true)},
+		{"one archived by number shows the card", engine.TaskArchive, engine.Answer{Archived: of(1), Task: &built}, task.Text(built, item.Progress{}, true, task.Choosing{})},
 		{"how many were labelled", engine.TaskLabel, engine.Answer{Labelled: of(7)}, "7 task(s) labelled\n"},
 		{"nothing in focus says so", engine.TaskUnfocus, engine.Answer{InFocus: of([]int{})}, "nothing is in focus\n"},
 		{"nothing declared, nothing said", engine.Operation{}, engine.Answer{Tasks: []task.Task{built}}, ""},

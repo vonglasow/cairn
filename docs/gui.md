@@ -21,8 +21,9 @@ column names itself and counts its cards; done is drawn at half strength.
 
 A card says its number, its title, its priority as a stripe down its left
 side, what it is waiting on while it is stopped, when it is due, its time
-spent against its estimate, its steps, its labels and the objective it serves. Resting the pointer on a cut title, on `+n` labels, or on
-`◇1` shows them whole. `⊳2` says two tasks wait on it.
+spent against its estimate, its steps, its labels and the objective it serves, under its parent and cut from its
+start when short of room. Resting the pointer on a cut title, on `+n` labels,
+or on what it serves shows them whole, just above. `⊳2` says two tasks wait on it.
 
 The tasks in focus come first in `current`.
 

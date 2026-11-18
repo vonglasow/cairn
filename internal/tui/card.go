@@ -39,7 +39,7 @@ func marks(c board.Card, g Glyphs) string {
 
 func facts(c board.Card, g Glyphs, s design.Skin, now time.Time, pages engine.Pages, width int) string {
 	var told, dressed []string
-	said := board.FactsOf(c, now, pages)
+	said := cutServes(board.FactsOf(c, now, pages), g, width)
 	for _, f := range said {
 		told = append(told, g.said(f))
 		dressed = append(dressed, s.Of(f.Tone).Render(g.said(f)))
@@ -48,6 +48,31 @@ func facts(c board.Card, g Glyphs, s design.Skin, now time.Time, pages engine.Pa
 		return row
 	}
 	return s.Of(said[0].Tone).Render(Clip(told[0], width))
+}
+
+func cutServes(said []board.Fact, g Glyphs, width int) []board.Fact {
+	var told []string
+	for _, f := range said {
+		told = append(told, g.said(f))
+	}
+	shown := fit(told, width)
+	if shown == len(told) || said[shown].Mark != board.Serves {
+		return said
+	}
+	room := width - lipgloss.Width(g.said(board.Fact{Mark: board.Serves}))
+	if shown > 0 {
+		room -= lipgloss.Width(strings.Join(told[:shown], "  ")) + 2
+	}
+	if left := len(told) - shown - 1; left > 0 {
+		room -= lipgloss.Width(fmt.Sprintf("+%d", left)) + 2
+	}
+	cut := board.CutFromStart(said[shown].Said, func(s string) bool { return lipgloss.Width(s) <= room })
+	if cut == "" {
+		return said
+	}
+	said = append([]board.Fact{}, said...)
+	said[shown].Said = cut
+	return said
 }
 
 func dress(kept string, told, dressed []string) string {

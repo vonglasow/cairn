@@ -1,6 +1,7 @@
 package board
 
 import (
+	"strings"
 	"time"
 
 	"cairn/internal/engine"
@@ -78,6 +79,20 @@ func FactsOf(c Card, now time.Time, p engine.Pages) []Fact {
 		facts = append(facts, Fact{Said: name, Mark: Serves, Tone: Says})
 	}
 	return facts
+}
+
+// CutFromStart is said cut from its start to what fits, the cut marked by an ellipsis, so what it ends with stays read; nothing when not even its last letter fits.
+func CutFromStart(said string, fits func(string) bool) string {
+	if fits(said) {
+		return said
+	}
+	runes := []rune(said)
+	for i := 1; i < len(runes); i++ {
+		if cut := "…" + strings.TrimLeft(string(runes[i:]), " "); fits(cut) {
+			return cut
+		}
+	}
+	return ""
 }
 
 func toneOf(late, passed bool) Tone {

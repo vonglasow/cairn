@@ -149,3 +149,33 @@ func TestTheObjectiveMarkOpensABubbleOfWhatItServes(t *testing.T) {
 		t.Fatalf("the bubble over the objective mark holds %q", got)
 	}
 }
+
+func TestWhatACardServesIsCutFromItsStartAndShownWholeAboveIt(t *testing.T) {
+	path := "Connected home automation › Firmware update"
+	c := board.Card{Number: 22, Title: "Flash the board", State: "todo", Objectives: []int{2}, Serves: []string{path}}
+	w := holding(newFake(), c)
+	w.Snap.Goals = []board.Goal{{Number: 1, Title: "Connected home automation"}, {Number: 2, Title: "Firmware update", Parent: 1}}
+	slot := PartsOf(w.Layout().CardAt(1, 0, 0)).Number
+	slot.W = 200
+	row := CardRowOf(c, slot, w.measured(), w.Now, engine.Pages{})
+	if !strings.HasPrefix(row.Serves, "…") || !strings.HasSuffix(row.Serves, "Firmware update") || row.ServesAt.X+row.ServesAt.W > slot.X+slot.W {
+		t.Fatalf("what the card serves reads %q at %+v in %+v", row.Serves, row.ServesAt, slot)
+	}
+	labelled := c
+	labelled.Labels = []string{"bug"}
+	if row := CardRowOf(labelled, slot, w.measured(), w.Now, engine.Pages{}); len(row.Pills) != 1 || !strings.HasPrefix(row.Serves, "…") || !strings.HasSuffix(row.Serves, "update") || row.Pills[0].X+row.Pills[0].W > row.ServesAt.X {
+		t.Fatalf("beside a label, what the card serves reads %q at %+v, the pills %+v", row.Serves, row.ServesAt, row.Pills)
+	}
+	full := CardRowOf(c, PartsOf(w.Layout().CardAt(1, 0, 0)).Number, w.measured(), w.Now, engine.Pages{})
+	over := w.Hovering(geom.Point{X: full.ServesAt.X + full.ServesAt.W/2, Y: full.ServesAt.Y + full.ServesAt.H/2})
+	if got := over.Bubble(); got != "#2  "+path {
+		t.Fatalf("the bubble over what the card serves holds %q", got)
+	}
+	box, lines, _ := over.BubbleBox()
+	if box.Y+box.H > full.ServesAt.Y {
+		t.Fatalf("the bubble %+v covers what the card serves at %+v", box, full.ServesAt)
+	}
+	if room := ExplainedLine(box, 0).W; room <= ends(w.measured(), lines[0], plain) {
+		t.Fatalf("the bubble gives %d to a line as wide as it, which a rounding cuts", room)
+	}
+}

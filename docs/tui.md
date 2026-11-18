@@ -41,7 +41,8 @@ draw something nobody can read.
 - **The header** names the workspace shown, with its colour, then the tabs.
 - **A card** says what a card says in the window: what it is waiting on, how
   far its deadline is, its time spent against its estimate, its steps, its
-  labels and the objectives it serves. The left border carries its priority.
+  labels and the objectives it serves, under their parent and cut from the
+  start when short of room. The left border carries its priority.
   `⊳2` says two tasks wait on it.
 - **The tasks in focus** come first in `current`.
 - **The bar at the bottom** shows only the keys that work where you are. A key

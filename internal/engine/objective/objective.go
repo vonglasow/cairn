@@ -132,3 +132,14 @@ func ParseObjectiveState(name string) (State, error) {
 	}
 	return "", fmt.Errorf("%q: %w", name, ErrNotAnObjectiveState)
 }
+
+// PathMark stands between an objective's parent and the objective, wherever a task names what it serves.
+const PathMark = " › "
+
+// Path is an objective written under its parent, or alone when it has none.
+func Path(parent, title string) string {
+	if parent == "" {
+		return title
+	}
+	return parent + PathMark + title
+}

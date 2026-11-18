@@ -206,3 +206,15 @@ func TestDeleting_countsTheTasksOfASubDeletedAfterOneKept(t *testing.T) {
 		t.Errorf("the first sub's fate is %q", d.FateOf(2))
 	}
 }
+
+func TestLook_namesWhatACardServesUnderItsParent(t *testing.T) {
+	s := lookAt(t, homeTree(t))
+	var got [][]string
+	for _, c := range s.Cards {
+		got = append(got, c.Serves)
+	}
+	want := [][]string{{"Home automation › Enclosure", "Home automation › Firmware"}, {"Home automation"}}
+	if !slices.EqualFunc(got, want, slices.Equal) {
+		t.Errorf("serves = %q, want %q", got, want)
+	}
+}

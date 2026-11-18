@@ -11,6 +11,7 @@ type Choosing struct {
 	DueIn         *int
 	Age           int
 	ObjectiveLate bool
+	Serves        []string
 }
 
 // InTheWayOf is the tasks a blocker is in the way of.
@@ -23,6 +24,15 @@ func BlocksOf(chosen map[int]Choosing) map[int]int {
 	out := map[int]int{}
 	for n, c := range chosen {
 		out[n] = len(c.Blocks)
+	}
+	return out
+}
+
+// ServesOf is the objectives each task chosen serves, each under its parent.
+func ServesOf(chosen map[int]Choosing) map[int][]string {
+	out := map[int][]string{}
+	for n, c := range chosen {
+		out[n] = c.Serves
 	}
 	return out
 }

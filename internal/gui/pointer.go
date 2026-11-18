@@ -224,7 +224,7 @@ func (w Window) BubbleBox() (geom.Box, []string, bool) {
 	}
 	widest := 0
 	for _, line := range lines {
-		widest = max(widest, ends(m, line, plain))
+		widest = max(widest, ends(m, line, plain)+1)
 	}
 	wide := widest + 2*padding
 	high := len(lines)*lineHigh + 2*inset
@@ -263,12 +263,11 @@ func (w Window) servedAt(p geom.Point) ([]string, geom.Box, int) {
 			continue
 		}
 		var said []string
-		for _, n := range placed.Card.Objectives {
-			line := "#" + strconv.Itoa(n)
-			if g, ok := w.Snap.Goal(n); ok {
-				line += "  " + g.Title
+		for i, g := range w.Snap.Served(placed.Card) {
+			if i >= len(placed.Card.Serves) {
+				break
 			}
-			said = append(said, line)
+			said = append(said, "#"+strconv.Itoa(g.Number)+"  "+placed.Card.Serves[i])
 		}
 		return said, mark, placed.Slot.W
 	}

@@ -32,6 +32,16 @@ cairn task edit 1 --objective ""     # the task is set loose
 A task serving two objectives counts whole in both. Naming one that does not
 exist refuses the whole change: the task keeps what it served.
 
+`task show` and `task list` name a sub-objective under its parent, whole:
+
+```
+objectives   #3 Home automation › Firmware
+#12  Flash the board  · todo  · normal  · ◇ Home automation › Firmware
+```
+
+With `--json`, a task carries `serves`, the same names, in the order of its
+`objectives`.
+
 ## How far along
 
 `objective show` works it out from what serves it:
@@ -130,7 +140,10 @@ any other objective it serves.
 
 Both boards have an Objectives tab: a tree of objectives beside the chosen
 one's detail — its numbers, its sub-objectives, its tasks. A card on the task
-board names the objective it serves, `◇ Firmware`. From an objective, <kbd>t</kbd> shows
+board names the objective it serves under its parent,
+`◇ Home automation › Firmware`; short of room, the start is cut,
+`◇ …ation › Firmware`, and resting the pointer on it in the window shows it
+whole. From an objective, <kbd>t</kbd> shows
 its tasks on the board. See [the board](tui.md#objectives) and
 [the window](gui.md#objectives).
 
