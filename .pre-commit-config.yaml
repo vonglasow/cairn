@@ -74,7 +74,7 @@ repos:
   # rule that is new today found something already true yesterday, which is the
   # right way round (DECISIONS.md). The tool running them is pinned below.
   - repo: https://github.com/semgrep/pre-commit
-    rev: 14ad2383dd6f19216cc78ba8ea1d4f607fc29df1 # frozen: v1.185.0
+    rev: a68c2d451e989be0cfbe8234b6b1a9ea17424a0d # frozen: v1.186.0
     hooks:
       - id: semgrep
         args: [--config, p/golang, --config, p/secrets, --metrics=off, --error, --skip-unknown-extensions]
