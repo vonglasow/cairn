@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"cairn/internal/engine/agent"
 )
@@ -15,8 +14,7 @@ import (
 type processes struct{}
 
 func (processes) Alive(pid int, _ string) bool {
-	p, err := os.FindProcess(pid)
-	return err == nil && p.Signal(syscall.Signal(0)) == nil
+	return alive(pid)
 }
 
 func (processes) Terminal(pid int) agent.Terminal {
