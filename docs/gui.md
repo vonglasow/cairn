@@ -170,7 +170,9 @@ the top group the cards.
   What it does is said in a few words: "Runs go", "Edits card.go".
 - **Click** a card to open its task and bring its terminal to the front:
   iTerm2, Terminal and Ghostty on macOS, kitty on Linux. In any other terminal, or in
-  an editor, the command that resumes the session is copied instead.
+  an editor, the command that resumes the session is copied instead. On
+  Windows the card names what the session runs in — Windows Terminal, VS
+  Code, WezTerm or Claude Desktop — and a click copies the command.
 - **Right-click** a card to open its task, go to the session, copy the
   command that resumes it, make a task for it — named as Claude named the
   session, put in current — or tie it to a task of the board.
