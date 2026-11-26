@@ -100,6 +100,29 @@ claude --resume <session-id>
 - What the hook does is written in the task's trace as
   `claude session <id>`, and what the agent does as `claude-code`.
 
+## The sessions running
+
+`cairn agent list` lists the Claude sessions running in the workspace, and the
+window's Agents tab shows them. From there:
+
+- `cairn agent go <session>` brings its terminal to the front: iTerm2,
+  Terminal and Ghostty (1.4 and later) on macOS, kitty on Linux. Any other terminal, or an editor, says
+  the command that resumes it instead.
+- `cairn agent start --folder <dir> --terminal <terminal> [--task <n>]`
+  starts claude in a new tab, asked to work on the task when one is named;
+  `cairn agent terminals` names the terminals it starts in.
+- `cairn agent tie <session> --task <n>` ties a session to a task, and
+  `--title "<text>"` to a task made for it, put in current; the task goes in
+  focus.
+- With `agents.permissions = true`, a session asking leave to use a tool asks
+  the window while one is open: allow, deny, or allow for good in the
+  project's or your settings — `cairn agent answer <session> <answer>`. With
+  no window open, the terminal asks as it always does.
+- The questions Claude asks you are answered the same way:
+  `cairn agent answer <session> --choice Postgres --choice "Tests, Docs"`, one
+  `--choice` for each question in its order, the labels joined by commas where
+  it takes several.
+
 ## Which board a session uses
 
 A session uses the workspace of the project it runs in — a project holding a

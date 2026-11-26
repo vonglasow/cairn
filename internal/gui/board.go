@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var pageOfTab = map[board.Tab]string{board.Tasks: engine.PageTasks, board.Objectives: engine.PageObjectives, board.Time: engine.PageTime, board.Series: engine.PageTasks}
+var pageOfTab = map[board.Tab]string{board.Tasks: engine.PageTasks, board.Objectives: engine.PageObjectives, board.Time: engine.PageTime, board.Series: engine.PageTasks, board.Agents: engine.PageAgents}
 
 // Paged answers the window showing only the pages the configuration leaves on, on the first of them when the one it was on is off.
 func (w Window) Paged(p engine.Pages) Window {

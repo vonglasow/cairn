@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/agent"
 	"cairn/internal/engine/app"
 	"cairn/internal/engine/backup"
 	"cairn/internal/engine/label"
@@ -87,6 +88,7 @@ func TestAnswers_agreeWithWhatOfBuilds(t *testing.T) {
 		"config_show":        {{Config: &workspace.Config{}}},
 		"config_init":        {{Written: func() *string { s := "/config.toml"; return &s }()}},
 		"workspace_list":     {{Workspaces: &workspace.Workspaces{}}},
+		"agent_list":         {{Agents: &agent.Agents{}}},
 		"workspace_add":      {{WorkspaceAdded: &workspace.Added{}}},
 		"workspace_use":      {{WorkspaceUsed: &workspace.Used{}}},
 		"workspace_show":     {{WorkspaceShown: &workspace.Shown{}}},

@@ -12,12 +12,18 @@ func TestPagesFrom_readsTheConfiguration(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte("[pages]\nobjectives = false\n"), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte("[pages]\nobjectives = false\nagents = false\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	pages := PagesFrom(Home{Dir: home})
 	if pages.Shows(PageObjectives) || !pages.Shows(PageTasks) {
 		t.Errorf("read from the file, objectives shown %v and tasks %v", pages.Shows(PageObjectives), pages.Shows(PageTasks))
+	}
+	if pages.Shows(PageAgents) || pages.Offers(AgentList) {
+		t.Error("read from the file, the agents page is shown or its list offered")
+	}
+	if !PagesOff(PageTasks, PageObjectives, PageTime).Offers(AgentList) || PagesOff(PageTasks, PageObjectives, PageTime).None() {
+		t.Error("with only the agents on, its list is not offered or no page is on")
 	}
 	if got := PagesFrom(Home{}); got.None() || !got.Shows(PageTime) {
 		t.Error("with no home, a page is off")

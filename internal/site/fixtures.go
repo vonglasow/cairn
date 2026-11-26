@@ -35,6 +35,10 @@ func OpenFixtures(folder string) (Fixtures, error) {
 			return made.Store, true
 		case "CAIRN_NOTES":
 			return made.Notes, true
+		case engine.ClaudeVariable:
+			return engine.ClaudeFixtures(folder), true
+		case engine.AsksVariable:
+			return engine.AsksFixtures(folder), true
 		}
 		return "", false
 	}}

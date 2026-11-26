@@ -10,7 +10,7 @@ import (
 	"cairn/internal/engine"
 )
 
-var goingTo = map[string]board.Tab{"t": board.Tasks, "o": board.Objectives, "i": board.Time}
+var goingTo = map[string]board.Tab{"t": board.Tasks, "o": board.Objectives, "i": board.Time, "a": board.Agents}
 
 var spellings = map[string]string{
 	"ctrl+n":       "cmd+n",
@@ -79,6 +79,11 @@ var screens = map[board.Screen]func(Window, string) Window{
 }
 
 func (w Window) onBoard(name string) Window {
+	if w.Tab == board.Agents {
+		if done, took := w.agentsKey(name); took {
+			return done
+		}
+	}
 	if w.Tab == board.Time {
 		mine, shared := weekKeys(name)
 		if mine {

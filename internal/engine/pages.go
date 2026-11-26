@@ -6,11 +6,12 @@ import (
 	"cairn/internal/store/files"
 )
 
-// The three pages a board draws, by the names the configuration turns them off by.
+// The four pages a board draws, by the names the configuration turns them off by.
 const (
 	PageTasks      = "tasks"
 	PageObjectives = "objectives"
 	PageTime       = "time"
+	PageAgents     = "agents"
 )
 
 var pagesOf = map[string][]string{
@@ -20,13 +21,17 @@ var pagesOf = map[string][]string{
 	"objective": {PageObjectives},
 	"label":     {PageTasks, PageObjectives},
 	"timesheet": {PageTime},
+	"agent":     {PageAgents},
 }
 
-// Pages is which of the three pages are shown, every one unless the configuration turned it off, and how many days a week of the time page shows.
+// Pages is which of the four pages are shown, every one unless the configuration turned it off, and how many days a week of the time page shows.
 type Pages struct {
 	off          []string
 	noWeekend    bool
 	noRecurrence bool
+	noNotify     bool
+	noCount      bool
+	permissions  bool
 }
 
 // PagesOff is the pages shown when the ones named are turned off.
@@ -41,8 +46,21 @@ func PagesFrom(h Home) Pages {
 	if err != nil {
 		return Pages{}
 	}
-	return Pages{off: read.PagesOff(), noWeekend: read.TimeWeekends() == files.WeekendsHidden, noRecurrence: !read.Recurrence()}
+	agents := read.Agents()
+	return Pages{
+		off: read.PagesOff(), noWeekend: read.TimeWeekends() == files.WeekendsHidden, noRecurrence: !read.Recurrence(),
+		noNotify: !agents.Notify, noCount: !agents.Count, permissions: agents.Permissions,
+	}
 }
+
+// Notifies says whether a notification is sent when a Claude session starts waiting for the person.
+func (p Pages) Notifies() bool { return !p.noNotify }
+
+// Counts says whether the Agents tab counts the sessions waiting.
+func (p Pages) Counts() bool { return !p.noCount }
+
+// AnswersPermissions says whether a session asking leave to use a tool asks the window.
+func (p Pages) AnswersPermissions() bool { return p.permissions }
 
 // WeekDays is how many days a week of the time page shows, counted from Monday: seven, or five once the configuration hides the weekends.
 func (p Pages) WeekDays() int {
@@ -69,7 +87,7 @@ func (p Pages) Shows(page string) bool { return !slices.Contains(p.off, page) }
 
 // None says every page is turned off.
 func (p Pages) None() bool {
-	return !p.Shows(PageTasks) && !p.Shows(PageObjectives) && !p.Shows(PageTime)
+	return !p.Shows(PageTasks) && !p.Shows(PageObjectives) && !p.Shows(PageTime) && !p.Shows(PageAgents)
 }
 
 // Offers says whether an act is offered: one that belongs to pages is offered only while one of them is shown — a step with the tasks, a label while there is a task or an objective to label — and the rest always. Every surface asks it: the command line, the MCP server, the boards' tabs, menus and command lines.

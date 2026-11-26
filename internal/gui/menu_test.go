@@ -26,7 +26,7 @@ func TestACardsMenuChangesItsColumnAndPriority(t *testing.T) {
 	f := newFake()
 	w := holding(f, board.Card{Number: 1, Title: "A", State: "todo", Priority: "normal"})
 	opened := w.ContextAt(middleOf(w, 1, 0))
-	if got := opened.Menu(); !slices.Equal(got, []string{"Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", "Delete"}) {
+	if got := opened.Menu(); !slices.Equal(got, []string{"Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", StartSessionSays, "Delete"}) {
 		t.Fatalf("a task's menu offers %v", got)
 	}
 	moving := opened.fromMenu(slices.Index(opened.Menu(), "Move to…"))

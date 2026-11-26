@@ -438,6 +438,9 @@ func (w Window) throwingAway() Window {
 
 // Choose is a button pressed by name, which is how a scenario says it and how a pointer says it.
 func (w Window) Choose(name string) Window {
+	if w.Screen == board.OnTheBoard && w.Tab == board.Agents && agentKeys[name] != "" {
+		return w.onSession(name)
+	}
 	if w.Screen == board.OnKeeping || w.Screen == board.OnViews {
 		if done, took := w.choosingOnViews(name); took {
 			return done
@@ -454,6 +457,9 @@ func (w Window) Choose(name string) Window {
 		return answered
 	}
 	if answered, took := w.choosingOnSeries(name); took {
+		return answered
+	}
+	if answered, took := w.choosingOnAgents(name); took {
 		return answered
 	}
 	switch strings.ToLower(name) {

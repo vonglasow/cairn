@@ -456,8 +456,7 @@ func (w Window) Pills() []FilterPill {
 	if w.Screen != board.OnTheBoard && w.Screen != board.OnFiltering && w.Screen != board.OnSearch && w.Screen != board.OnKeeping {
 		return nil
 	}
-	l := w.Layout()
-	tab := TabAt(l, 0)
+	tab := w.TabsAt()[0]
 	y, high := tab.Y+(tab.H-searchPillHigh)/2, searchPillHigh
 	start, end := w.pillsRun()
 	if bar := w.Narrowing(); bar.Box.W > 0 {

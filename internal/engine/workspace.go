@@ -343,10 +343,10 @@ var WorkspaceShow = Operation{
 		}
 		shown := answers.Shown()
 		shown.Time, shown.TimeFrom = read.TimeMode(), workspace.WhereSaid(read, "pages.time")
-		shown.Pages, shown.PagesFrom = []string{}, workspace.WhereSaid(read, "pages.tasks", "pages.objectives", "pages.time")
+		shown.Pages, shown.PagesFrom = []string{}, workspace.WhereSaid(read, "pages.tasks", "pages.objectives", "pages.time", "pages.agents")
 		for i, on := range read.Pages() {
 			if on {
-				shown.Pages = append(shown.Pages, []string{PageTasks, PageObjectives, PageTime}[i])
+				shown.Pages = append(shown.Pages, []string{PageTasks, PageObjectives, PageTime, PageAgents}[i])
 			}
 		}
 		if on.Home.Kept != nil {

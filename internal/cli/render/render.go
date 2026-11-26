@@ -3,6 +3,7 @@ package render
 
 import (
 	"cairn/internal/engine"
+	"cairn/internal/engine/agent"
 	"cairn/internal/engine/app"
 	"cairn/internal/engine/backup"
 	"cairn/internal/engine/calendar"
@@ -46,6 +47,16 @@ func rendered(op engine.Operation, a engine.Answer) string {
 		return workspace.ConfigChangedText(*a.ConfigChanged)
 	case workspace.Config:
 		return workspace.ConfigText(*a.Config)
+	case agent.Agents:
+		return agent.AgentsText(*a.Agents)
+	case agent.Agent:
+		return agent.AgentsText(agent.Agents{Agents: []agent.Agent{*a.Agent}})
+	case agent.Started:
+		return agent.StartedText(*a.Started)
+	case agent.Terminals:
+		return agent.TerminalsText(*a.Terminals)
+	case agent.Decision:
+		return agent.DecisionText(*a.Decision)
 	case workspace.Workspaces:
 		return workspace.WorkspacesText(a.Workspaces.Workspaces) + workspace.RecentText(a.Workspaces.Recent)
 	case workspace.Removed:

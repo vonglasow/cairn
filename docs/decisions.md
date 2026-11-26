@@ -83,6 +83,9 @@ Decided on 2026-11-09, built in #226: until then cairn does none of it.
 | the MCP server looks only, unless told otherwise | an agent can be talked into a write by what it reads |
 | a tool above the access level is absent, not refused | a refusal invites another try; an absence ends it |
 | a refusal's kind travels under `_meta`, not `structuredContent` | the client measures structured content against the answer's shape even on a refusal |
+| answering a session's permission from the window is off until `agents.permissions` turns it on | an answer from the window approves what an agent runs; with the window closed, the terminal asks as it always did |
+| going to a session, starting one, tying one and answering its permission are a person's, never an MCP tool | an agent answering its own permissions or starting sessions is what the person keeps |
+| the agents page reads what Claude Code keeps, and never shows nor keeps a prompt | the session's state, branch, model and context are already written; what you typed to Claude stays Claude's |
 
 ## Sharing
 

@@ -615,7 +615,7 @@ Feature: The desktop board
 
     @gui-every-page-off-leaves-what-belongs-to-none
     Scenario: every page turned off leaves the menu bar nothing but the settings
-      Given the pages turned off are "tasks, objectives, time"
+      Given the pages turned off are "tasks, objectives, time, agents"
       When I open the window
       Then the menu bar offers "Settings…"
       And the menu bar offers no "Help", "Upgrade", "About cairn"
@@ -632,7 +632,7 @@ Feature: The desktop board
 
     @gui-every-page-off-is-an-empty-window
     Scenario: every page turned off opens a window that says so and leads to the settings
-      Given the pages turned off are "tasks, objectives, time"
+      Given the pages turned off are "tasks, objectives, time, agents"
       When I open the window
       Then the window says every page is turned off
       When I press "cmd+n"
@@ -808,7 +808,7 @@ Feature: The desktop board
       Then task 1 is in focus
       And the window is on the board
       When I right-click the card "Write the spec"
-      Then the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Unfocus", "Delete"
+      Then the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Unfocus", "Start a Claude session…", "Delete"
 
     @gui-a-recurring-cards-menu-skips-it
     Scenario: the menu of a card that comes back skips it, and its series makes the next
@@ -816,7 +816,7 @@ Feature: The desktop board
       And I added a task titled "Stand-up" coming back "every day"
       When I open the window
       And I right-click the card "Stand-up"
-      Then the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", "Skip this one", "Delete"
+      Then the menu offers "Open", "Edit", "New linked task", "Move to…", "Priority…", "Labels…", "Archive", "Focus", "Skip this one", "Start a Claude session…", "Delete"
       When I click "Skip this one" in the menu
       Then task 1 is archived
       And task 2 is in the column "todo"
@@ -1070,7 +1070,7 @@ Feature: The desktop board
       When I press "shift+tab"
       Then the tab is "TASKS"
       When I press "shift+tab"
-      Then the tab is "TIME"
+      Then the tab is "AGENTS"
 
   Rule: An objective opens on the work that serves it
 
@@ -1651,7 +1651,7 @@ Feature: The desktop board
       And the configuration reads "series.on" only here
       And the banner says nothing of a change
       When I press "esc"
-      Then the tabs read "TASKS", "OBJECTIVES", "TIME", "SERIES"
+      Then the tabs read "TASKS", "OBJECTIVES", "TIME", "SERIES", "AGENTS"
 
     @gui-settings-a-choice-is-written-in-the-global-configuration
     Scenario: with the global configuration chosen, a choice of three is written there
@@ -1673,7 +1673,7 @@ Feature: The desktop board
       And I click "Use the shared value" on the row "pages.time"
       Then the settings of the workspace "home" do not say `time = "off"`
       And the configuration reads "pages.time" from its default
-      And the tabs read "TASKS", "OBJECTIVES", "TIME"
+      And the tabs read "TASKS", "OBJECTIVES", "TIME", "AGENTS"
 
     @gui-settings-set-here-pins-the-global-value
     Scenario: a key from the global configuration is set here with the value it has, under the pointer
@@ -1790,7 +1790,7 @@ Feature: The desktop board
       And the window looks again
       Then the banner says "settings.toml cannot be read"
       And the banner says "line 2"
-      And the tabs read "TASKS", "OBJECTIVES"
+      And the tabs read "TASKS", "OBJECTIVES", "AGENTS"
       When I press "cmd+,"
       Then the row "pages.time" is not offered
       When the settings of the workspace "home" are written by hand:
@@ -1801,7 +1801,7 @@ Feature: The desktop board
       And the window looks again
       Then the banner says "pages.time off → on"
       And the banner says nothing of a file that cannot be read
-      And the tabs read "TASKS", "OBJECTIVES", "TIME"
+      And the tabs read "TASKS", "OBJECTIVES", "TIME", "AGENTS"
 
     @gui-settings-rows-say-what-they-do
     Scenario: each row is named in plain words, says what it does, and shows its key only under the pointer

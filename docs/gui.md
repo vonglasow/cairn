@@ -27,9 +27,12 @@ or on what it serves shows them whole, just above. `⊳2` says two tasks wait on
 
 The tasks in focus come first in `current`.
 
-Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
-**series** while recurrence is on. <kbd>⇥</kbd> and <kbd>⇧⇥</kbd> walk them; <kbd>g</kbd> then
-<kbd>t</kbd>, <kbd>o</kbd> or <kbd>i</kbd> goes to one.
+Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**,
+**series** while recurrence is on, and **agents**. <kbd>⇥</kbd> and <kbd>⇧⇥</kbd> walk them; <kbd>g</kbd> then
+<kbd>t</kbd>, <kbd>o</kbd>, <kbd>i</kbd> or <kbd>a</kbd> goes to one.
+
+A card a Claude session holds is ringed: amber while the session waits for
+you, blue while it works.
 
 ## The mouse
 
@@ -77,6 +80,17 @@ Pages, as tabs drawn like folders: **tasks**, **objectives**, **time**, and
 | <kbd>⌘Z</kbd> | in a form, bring back what was typed |
 | <kbd>?</kbd> | help |
 | <kbd>esc</kbd> | let go of the chosen card, close a panel |
+
+On the Agents page, the arrows or <kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd>
+<kbd>l</kbd> choose a session:
+
+| key | what it does |
+|---|---|
+| <kbd>⏎</kbd> | go to the session, or copy the command that resumes it |
+| <kbd>o</kbd> | open its task |
+| <kbd>a</kbd> <kbd>d</kbd> | allow, deny what it asks; <kbd>a</kbd> opens its questions |
+| <kbd>c</kbd> | copy `claude --resume` |
+| <kbd>esc</kbd> | let the session go |
 
 The arrows walk the board. The menu bar offers the same actions; on Windows,
 About cairn closes its Help menu. On Linux,
@@ -133,6 +147,47 @@ Deleting one asks, row by row, what becomes of what it holds. See
 The Time page shows a day, a week or a month — <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd> — each day with
 its total and a line per task. With `[time] weekends = "hidden"`, a week is
 five days. See [the timesheet](trace.md#how-long-the-work-took).
+
+## Agents
+
+The Agents page shows a card for each Claude session running in the workspace:
+whether it works, waits for you or is idle, and since when; what it does or
+what it waits for; the task it holds and its open steps; its branch, model and
+context; its folder and terminal. A session holding no task shows too, under
+the name Claude gave it, and **Maybe #n …? Tie** when a task in focus or in current is held
+by no session — the one its branch names when several are. Two sessions
+holding one task each say so. Resting the pointer on a card's title, what it
+does, its branch, its model or where it runs shows them whole. **State**, **Task** and **Project** at
+the top group the cards.
+
+- **Go to session** brings its terminal to the front when cairn reaches it,
+  **Open task** opens its task; a session holding none offers **New task** and
+  **Tie…**. The mark after its id copies the command that resumes it. A
+  session in a worktree Claude made is said under its repository's name.
+- A session working that has written nothing for `agents.silent` (10m unless
+  set) says **silent for 12m**, in amber. Its context turns amber at 70%, and
+  red with **compact soon** at 85%.
+  What it does is said in a few words: "Runs go", "Edits card.go".
+- **Click** a card to open its task and bring its terminal to the front:
+  iTerm2, Terminal and Ghostty on macOS, kitty on Linux. In any other terminal, or in
+  an editor, the command that resumes the session is copied instead.
+- **Right-click** a card to open its task, go to the session, copy the
+  command that resumes it, make a task for it — named as Claude named the
+  session, put in current — or tie it to a task of the board.
+- **Right-click** a task card, then **Start a Claude session…**: choose the
+  terminal and the folder; claude starts there, asked to work on the task.
+- The red count beside the tab says how many sessions wait for you, and a
+  desktop notification says when one starts waiting. `agents.count` and
+  `agents.notify` turn each off.
+- With `agents.permissions = true`, a session asking leave to use a tool asks
+  on its card while the window is open: **Allow**, **Allow always…**,
+  in the project's settings or in yours, or **Deny**. A session asking
+  questions says how many; **Answer…** opens them, one option or several
+  each, and **Send** answers once every question has one. With the window closed, or the key
+  off, the terminal asks as it always does.
+
+`pages.agents = "hidden"` takes the page away. See
+[Claude Code](claude-code.md#the-sessions-running).
 
 ## Labels, backups, settings
 

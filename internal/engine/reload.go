@@ -12,7 +12,7 @@ func PagesOf(c workspace.Config) Pages {
 		for _, page := range []struct {
 			name string
 			on   bool
-		}{{PageTasks, c.Pages.Tasks}, {PageObjectives, c.Pages.Objectives}, {PageTime, c.Pages.Time == files.TimeOn}} {
+		}{{PageTasks, c.Pages.Tasks}, {PageObjectives, c.Pages.Objectives}, {PageTime, c.Pages.Time == files.TimeOn}, {PageAgents, c.Pages.Agents}} {
 			if !page.on {
 				p.off = append(p.off, page.name)
 			}
@@ -20,5 +20,8 @@ func PagesOf(c workspace.Config) Pages {
 	}
 	p.noWeekend = c.Time != nil && c.Time.Weekends == files.WeekendsHidden
 	p.noRecurrence = c.Recurrence == nil || !c.Recurrence.On
+	if c.Agents != nil {
+		p.noNotify, p.noCount, p.permissions = !c.Agents.Notify, !c.Agents.Count, c.Agents.Permissions
+	}
 	return p
 }

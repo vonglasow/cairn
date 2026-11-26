@@ -121,3 +121,26 @@ func PastStamp(box geom.Box, stamp string) geom.Box {
 	over := StampedOver(stamp)
 	return geom.Box{X: box.X + over, Y: box.Y, W: box.W - over, H: box.H}
 }
+
+// TabsAt is where each tab shown stands, as wide as its name, its count and its alert need, at most tabWide, then where the room after them starts, as one more box.
+func (w Window) TabsAt() []geom.Box {
+	l, m := w.Layout(), w.measured()
+	at := TabAt(l, 0)
+	var boxes []geom.Box
+	for _, page := range w.Shown() {
+		wide := 2*padding + ends(m, Titled(Pages[page]), reads) + countGap + ends(m, w.TabCount(page), small) + tabSlack
+		if w.TabAlert(page) > 0 {
+			wide += alertSide + tabSlack
+		}
+		at.W = min(tabWide, wide)
+		boxes = append(boxes, at)
+		at.X += at.W
+	}
+	at.W = 0
+	return append(boxes, at)
+}
+
+const (
+	tabSlack  = 8
+	alertSide = 16
+)

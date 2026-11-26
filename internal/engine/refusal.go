@@ -156,6 +156,7 @@ var reasons = []reason{
 	{files.ErrNotAbsolute, KindRefused, "config-not-absolute"},
 	{files.ErrArchive, KindRefused, "config-archive"},
 	{files.ErrFocus, KindRefused, "config-focus"},
+	{files.ErrSilent, KindRefused, "config-silent"},
 	{files.ErrTime, KindRefused, "config-time"},
 	{files.ErrWeekends, KindRefused, "config-weekends"},
 	{files.ErrTimeMode, KindRefused, "config-time-mode"},

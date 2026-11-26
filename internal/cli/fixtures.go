@@ -71,6 +71,10 @@ func withPlaces(h engine.Home, made engine.Fixtures) engine.Home {
 			return made.Store, true
 		case files.NotesVariable:
 			return made.Notes, true
+		case files.ClaudeVariable:
+			return engine.ClaudeFixtures(filepath.Dir(made.Store)), true
+		case engine.AsksVariable:
+			return engine.AsksFixtures(filepath.Dir(made.Store)), true
 		}
 		return lookup(key)
 	}

@@ -343,7 +343,7 @@ func (w *world) clickTab(name string) error {
 	if tab < 0 {
 		return fmt.Errorf("no tab called %q", name)
 	}
-	box := TabAt(w.w.Layout(), int(tab))
+	box := w.w.TabsAt()[slices.Index(w.w.Shown(), board.Tab(tab))]
 	w.w = w.w.clicked(geom.Point{X: box.X + box.W/2, Y: box.Y + box.H/2})
 	return nil
 }

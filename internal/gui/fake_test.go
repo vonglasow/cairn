@@ -12,6 +12,7 @@ import (
 
 	"cairn/internal/engine"
 	"cairn/internal/engine/act"
+	"cairn/internal/engine/agent"
 	"cairn/internal/engine/task"
 	"cairn/test"
 )
@@ -35,6 +36,10 @@ type fake struct {
 	shown  *workspace.Shown
 	listed *workspace.Workspaces
 	config *workspace.Config
+
+	agents    *agent.Agents
+	terminals []string
+	refuseGo  error
 }
 
 type asked struct {
@@ -63,6 +68,9 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 	if op.Thing == "task" && op.Verb == "delete" && f.refuseDelete != nil {
 		return engine.Answer{}, f.refuseDelete
 	}
+	if op.Thing == "agent" && op.Verb == "go" && f.refuseGo != nil {
+		return engine.Answer{}, f.refuseGo
+	}
 	if op.Level != engine.Read && len(f.warn) > 0 {
 		return engine.Answer{Warnings: f.warn}, nil
 	}
@@ -80,6 +88,10 @@ func (f *fake) Ask(op engine.Operation, in engine.Input) (engine.Answer, error) 
 		return engine.Answer{WorkspaceShown: f.shown}, nil
 	case "workspace list":
 		return engine.Answer{Workspaces: f.listed}, nil
+	case "agent list":
+		return engine.Answer{Agents: f.agents}, nil
+	case "agent terminals":
+		return engine.Answer{Terminals: &agent.Terminals{Terminals: f.terminals}}, nil
 	case "config show":
 		if f.config != nil {
 			return engine.Answer{Config: f.config}, nil

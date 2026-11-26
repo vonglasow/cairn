@@ -122,7 +122,7 @@ type Shown struct {
 	Colour    string   `json:"colour,omitempty" jsonschema:"one of the label colours: the one the store's settings say, or one read off the workspace's name; none for a store no workspace names and whose settings say none"`
 	Time      string   `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
 	TimeFrom  string   `json:"time_from" jsonschema:"where the time is said: set in the store's settings, from the global configuration, or by default"`
-	Pages     []string `json:"pages" jsonschema:"the pages that are on: tasks, objectives, time"`
+	Pages     []string `json:"pages" jsonschema:"the pages that are on: tasks, objectives, time, agents"`
 	PagesFrom string   `json:"pages_from" jsonschema:"where the pages are said: set in the store's settings, from the global configuration, or by default"`
 	Add       string   `json:"add,omitempty"`
 	Switch    string   `json:"switch,omitempty" jsonschema:"said by a server, which keeps the store it started on: switching is not done through it"`

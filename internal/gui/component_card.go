@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/board"
+	"cairn/internal/engine/agent"
 	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
 	"cairn/internal/gui/motion"
@@ -27,6 +28,7 @@ type Card struct {
 	Pages                                       engine.Pages
 	Colour                                      func(label string) string
 	Goal                                        *GoalTile
+	Agent                                       agent.State
 }
 
 // GoalTile is what a card in tile layout carries: an objective's mark, number, title and type, its progress and counts, notes on its tasks, and a warning.
@@ -66,6 +68,9 @@ func (c Card) Draw(k Kit, at geom.Box) geom.Box {
 		Drafted{By: 1 - c.Draft.Fill}.Draw(in, parts.Panel)
 	default:
 		rounded(k.gtx, parts.Panel, k.skin.Radius.Card, ground)
+	}
+	if ink, held := agentInk(k.skin, c.Agent); held && !c.Chosen {
+		ringed(k, parts.Panel, k.skin.Radius.Card, ink)
 	}
 	edge := parts.Edge
 	if c.Draft != nil {
@@ -231,4 +236,16 @@ func (s Stripe) Draw(k Kit, at geom.Box) geom.Box {
 	attached := clip.RRect{Rect: rect(at), NE: k.skin.Radius.Stripe, SE: k.skin.Radius.Stripe}
 	paint.FillShape(k.gtx.Ops, ink, attached.Op(k.gtx.Ops))
 	return at
+}
+
+func agentInk(s design.Skin, state agent.State) (color.NRGBA, bool) {
+	switch state {
+	case agent.Waiting:
+		return s.Colour.State.Late, true
+	case agent.Working:
+		return s.Colour.Accent.Base, true
+	case agent.Idle:
+		return s.Colour.Line.Edge, true
+	}
+	return color.NRGBA{}, false
 }

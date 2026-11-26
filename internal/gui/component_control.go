@@ -2,6 +2,7 @@ package gui
 
 import (
 	"cairn/internal/gui/geom"
+	"strconv"
 
 	"gioui.org/font"
 	"gioui.org/text"
@@ -10,6 +11,7 @@ import (
 // Tabs are the window's tabs, each a name and what it holds, the open one on a control's ground.
 type Tabs struct {
 	Said, Counts []string
+	Alerts       []int
 	At           []geom.Box
 	On           int
 }
@@ -29,7 +31,10 @@ func (t Tabs) Draw(k Kit, at geom.Box) geom.Box {
 		room := TabName(tab)
 		sayStyled(k.gtx, k.th, ink, room, t.Said[i], reads, font.Medium, 1, text.Start)
 		counted := ends(m, t.Said[i], reads) + countGap
-		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: room.X + counted, Y: room.Y, W: max(0, room.W-counted), H: room.H}, t.Counts[i], small, k.skin.Type.Mono, text.Start)
+		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: room.X + counted, Y: room.Y + reads - small, W: max(0, room.W-counted), H: room.H}, t.Counts[i], small, k.skin.Type.Mono, text.Start)
+		if i < len(t.Alerts) && t.Alerts[i] > 0 {
+			Alert{Count: t.Alerts[i]}.Draw(in, AlertAt(tab))
+		}
 	}
 	return at
 }
@@ -102,13 +107,16 @@ func (f Field) Draw(k Kit, at geom.Box) geom.Box {
 	return at
 }
 
-// Check is the box before a step or a value: empty, done and receding, taken and in force, or taken by some of the cards gathered.
-type Check struct{ Done, Taken, Partly bool }
+// Check is the box before a step or a value: empty, done and receding, taken and in force, or taken by some of the cards gathered; round where one only is taken.
+type Check struct{ Done, Taken, Partly, Round bool }
 
 // Draw draws the box in at.
 func (c Check) Draw(k Kit, at geom.Box) geom.Box {
 	k.put("check", at)
 	radius := k.skin.Radius.Check
+	if c.Round {
+		radius = k.skin.Radius.Full(at)
+	}
 	switch {
 	case c.Taken:
 		rounded(k.gtx, at, radius, k.skin.Colour.Accent.Base)
@@ -167,4 +175,20 @@ type Spent struct{}
 func (Spent) Draw(k Kit, at geom.Box) geom.Box {
 	fill(k.gtx, k.put("spent", at), k.skin.Colour.Accent.Base)
 	return at
+}
+
+// Alert is a count on a red dot, what waits for the person: the sessions waiting, beside the agents tab.
+type Alert struct{ Count int }
+
+// Draw draws the dot in at, its count in its middle.
+func (a Alert) Draw(k Kit, at geom.Box) geom.Box {
+	k.put("alert", at)
+	rounded(k.gtx, at, at.H/2, k.skin.Colour.Priority["critical"])
+	sayIn(k.gtx, k.th, k.skin.Colour.Ink.OnAccent, pillLine(k.th, at), strconv.Itoa(a.Count), small, font.Font{Weight: font.Bold}, text.Middle)
+	return at
+}
+
+// AlertAt is where a tab's alert stands: a dot at its top right corner.
+func AlertAt(tab geom.Box) geom.Box {
+	return geom.Box{X: tab.X + tab.W - tabSlack - alertSide, Y: tab.Y + (tab.H-alertSide)/2, W: alertSide, H: alertSide}
 }

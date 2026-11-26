@@ -106,6 +106,8 @@ func Draw(k Kit, w Window) {
 		drawWeek(k, l, w)
 	case board.Series:
 		drawSeries(k, l, w)
+	case board.Agents:
+		drawAgents(k, w)
 	default:
 		drawColumns(k, l, w, scene)
 		drawBand(k, l, w, scene)
@@ -128,6 +130,7 @@ func Draw(k Kit, w Window) {
 	if w.Screen == board.OnAsking {
 		Veil{}.Draw(panel, geom.Box{W: w.width, H: w.height})
 		drawSaid(panel.inside("veil"), w, w.Asks(), w.QuestionBox())
+		drawQuestions(panel.inside("veil"), w)
 		drawLogo(panel.inside("veil"), w.AboutLogo())
 	}
 	if w.Screen == board.OnChoosing {
@@ -741,7 +744,8 @@ func drawTabs(k Kit, l geom.Layout, w Window) {
 	for i, page := range w.Shown() {
 		tabs.Said = append(tabs.Said, Titled(Pages[page]))
 		tabs.Counts = append(tabs.Counts, w.TabCount(page))
-		tabs.At = append(tabs.At, TabAt(l, i))
+		tabs.Alerts = append(tabs.Alerts, w.TabAlert(page))
+		tabs.At = append(tabs.At, w.TabsAt()[i])
 		if w.Tab == page {
 			tabs.On = i
 		}
@@ -922,7 +926,7 @@ func disc(gtx layout.Context, x, y, r float32, ink color.NRGBA) {
 }
 
 func (w Window) cardOf(c board.Card, chosen, hovered bool) Card {
-	return Card{Face: c, Chosen: chosen, Hovered: hovered, Pages: w.Pages, Colour: w.LabelColour}
+	return Card{Face: c, Chosen: chosen, Hovered: hovered, Pages: w.Pages, Colour: w.LabelColour, Agent: w.AgentOn(c.Number)}
 }
 
 func goalFace(g board.Goal) board.Card {

@@ -36,6 +36,9 @@ func (w Window) Click(p geom.Point) Window {
 	if w.Screen == board.OnMenu {
 		return w.clickingMenu(p)
 	}
+	if picked, ok := w.pickingOption(p); ok {
+		return picked
+	}
 	if w.Screen == board.OnWorkspaces {
 		return w.clickingWorkspaces(p)
 	}
@@ -157,6 +160,9 @@ func (w Window) Click(p geom.Point) Window {
 	if w.Tab == board.Time {
 		return w.clickingTime(p)
 	}
+	if w.Tab == board.Agents {
+		return w.clickingAgents(p)
+	}
 	if n, on := w.seriesChipAt(p); on {
 		return w.onSeries(n)
 	}
@@ -199,6 +205,9 @@ func (w Window) Hovering(p geom.Point) Window {
 	}
 	if w.resting == nil {
 		w.resting, w.restingAt, w.restingWide = w.hiddenAt(p)
+	}
+	if w.resting == nil {
+		w.resting, w.restingAt, w.restingWide = w.agentBubbleAt(p)
 	}
 	w.pointed = w.slotAt(p)
 	w.bubbled, w.bubbledFrom = w.countAt(p)
@@ -471,9 +480,8 @@ func (w Window) goalAt(p geom.Point) int {
 }
 
 func (w Window) tabAt(p geom.Point) (board.Tab, bool) {
-	l := w.Layout()
 	for i, tab := range w.Shown() {
-		if TabAt(l, i).In(p) {
+		if w.TabsAt()[i].In(p) {
 			return tab, true
 		}
 	}
@@ -812,6 +820,12 @@ func (w Window) Scroll(p geom.Point, by int) Window {
 	l := w.Layout()
 	if w.Tab == board.Time {
 		return w.scrollingDay(p, by)
+	}
+	if w.Tab == board.Agents {
+		if w.AgentsLaid().Shown.In(p) {
+			w.sessions.scroll = w.settledAgents(w.sessions.scroll + by)
+		}
+		return w
 	}
 	if w.Tab == board.Objectives {
 		if GoalsRun(l).In(p) {

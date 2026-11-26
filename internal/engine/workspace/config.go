@@ -28,6 +28,7 @@ type Config struct {
 	Time        *TimeConfig       `json:"time,omitempty"`
 	Window      *WindowConfig     `json:"window,omitempty"`
 	Recurrence  *RecurrenceConfig `json:"series,omitempty"`
+	Agents      *AgentsConfig     `json:"agents,omitempty"`
 	Workspace   *Colouring        `json:"workspace,omitempty" jsonschema:"what the store's settings say of its workspace; nothing for a store no workspace names and whose settings say no colour"`
 	Workspaces  []Workspace       `json:"workspaces,omitempty"`
 	Themes      []ThemeSeen       `json:"themes,omitempty" jsonschema:"every theme cairn sees, the ones it carries and one's own, sorted by name"`
@@ -49,7 +50,7 @@ type Colouring struct {
 // NotSaid is how a key with no value, and none by default, is told.
 const NotSaid = "not said"
 
-var quotedKeys = []string{"pages.time", "focus.session", "approach.label", "time.deleted", "time.weekends", "window.theme", "window.intro"}
+var quotedKeys = []string{"pages.time", "focus.session", "agents.silent", "approach.label", "time.deleted", "time.weekends", "window.theme", "window.intro"}
 
 // ValuesOf is each key config show lists, and the value said for it.
 func ValuesOf(p files.Places) map[string]string {
@@ -62,11 +63,12 @@ func ValuesOf(p files.Places) map[string]string {
 		return said
 	}
 	return map[string]string{
-		"pages.tasks": strconv.FormatBool(pages[0]), "pages.objectives": strconv.FormatBool(pages[1]), "pages.time": p.TimeMode(),
+		"pages.tasks": strconv.FormatBool(pages[0]), "pages.objectives": strconv.FormatBool(pages[1]), "pages.time": p.TimeMode(), "pages.agents": strconv.FormatBool(pages[3]),
 		"archive.start": unless(start), "archive.days": strconv.Itoa(days),
 		"focus.session": unless(p.FocusSession()), "approach.label": unless(p.ApproachLabel()),
 		"time.deleted": p.TimeDeleted(), "time.weekends": p.TimeWeekends(), "window.keep_sizes": strconv.FormatBool(p.KeepSizes()),
 		"window.theme": p.Theme(), "window.intro": p.Intro(), "window.ghost": strconv.Itoa(p.Ghost()), "series.on": strconv.FormatBool(p.Recurrence()),
+		"agents.notify": strconv.FormatBool(p.Agents().Notify), "agents.count": strconv.FormatBool(p.Agents().Count), "agents.permissions": strconv.FormatBool(p.Agents().Permissions), "agents.silent": p.Agents().Silent,
 	}
 }
 
@@ -75,6 +77,7 @@ type PagesConfig struct {
 	Tasks      bool   `json:"tasks"`
 	Objectives bool   `json:"objectives"`
 	Time       string `json:"time" jsonschema:"on, recorded and shown; hidden, recorded and not shown; off, neither"`
+	Agents     bool   `json:"agents"`
 }
 
 // TimeConfig is what a deleted task does with its time, kept or taken, and whether a week is drawn with its weekend, shown or hidden.
@@ -95,6 +98,14 @@ type WindowConfig struct {
 // RecurrenceConfig is whether a task may come back as a series.
 type RecurrenceConfig struct {
 	On bool `json:"on"`
+}
+
+// AgentsConfig is what the agents page does besides listing: a notification when a session starts waiting, the count of those waiting on its tab, permissions answered from the window, and how long a session works without writing before it is said silent.
+type AgentsConfig struct {
+	Silent      string `json:"silent"`
+	Notify      bool   `json:"notify"`
+	Count       bool   `json:"count"`
+	Permissions bool   `json:"permissions"`
 }
 
 // FocusConfig is how long a focus session lasts before it asks to be renewed, as the file wrote it; nothing when it is not said.
@@ -175,8 +186,8 @@ func ConfigText(c Config) string {
 		fmt.Fprintf(&said, "# ignored: %s\n", ignored)
 	}
 	if c.Pages != nil {
-		fmt.Fprintf(&said, "\n[pages]\ntasks = %t%s\nobjectives = %t%s\ntime = %q%s\n",
-			c.Pages.Tasks, c.from("pages.tasks"), c.Pages.Objectives, c.from("pages.objectives"), c.Pages.Time, c.from("pages.time"))
+		fmt.Fprintf(&said, "\n[pages]\ntasks = %t%s\nobjectives = %t%s\ntime = %q%s\nagents = %t%s\n",
+			c.Pages.Tasks, c.from("pages.tasks"), c.Pages.Objectives, c.from("pages.objectives"), c.Pages.Time, c.from("pages.time"), c.Pages.Agents, c.from("pages.agents"))
 	}
 	if c.Archive != nil {
 		said.WriteString("\n[archive]\n")
@@ -216,6 +227,10 @@ func ConfigText(c Config) string {
 	}
 	if c.Recurrence != nil {
 		fmt.Fprintf(&said, "\n[series]\non = %t%s\n", c.Recurrence.On, c.from("series.on"))
+	}
+	if c.Agents != nil {
+		fmt.Fprintf(&said, "\n[agents]\nnotify = %t%s\ncount = %t%s\npermissions = %t%s\nsilent = %q%s\n",
+			c.Agents.Notify, c.from("agents.notify"), c.Agents.Count, c.from("agents.count"), c.Agents.Permissions, c.from("agents.permissions"), c.Agents.Silent, c.from("agents.silent"))
 	}
 	if c.Workspace != nil {
 		from := "read off the workspace's name"

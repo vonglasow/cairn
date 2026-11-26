@@ -56,13 +56,15 @@ func (g *readingGate) Resolved(p files.Places) {
 		g.config.Plugin = workspace.Emplacement{At: told, By: "the file"}
 	}
 	pages := p.Pages()
-	g.config.Pages = &workspace.PagesConfig{Tasks: pages[0], Objectives: pages[1], Time: p.TimeMode()}
+	g.config.Pages = &workspace.PagesConfig{Tasks: pages[0], Objectives: pages[1], Time: p.TimeMode(), Agents: pages[3]}
 	start, days, _ := p.Archive()
 	g.config.Archive = &workspace.Archive{Start: start, Days: days}
 	g.config.Time = &workspace.TimeConfig{Deleted: p.TimeDeleted(), Weekends: p.TimeWeekends()}
 	g.config.Focus = &workspace.FocusConfig{Session: p.FocusSession()}
 	g.config.Approach = &workspace.ApproachConfig{Label: p.ApproachLabel()}
 	g.config.Recurrence = &workspace.RecurrenceConfig{On: p.Recurrence()}
+	said := p.Agents()
+	g.config.Agents = &workspace.AgentsConfig{Notify: said.Notify, Count: said.Count, Permissions: said.Permissions, Silent: said.Silent}
 	g.themes(p)
 	g.config.Written = p.Written()
 	g.config.Settings = p.Settings()

@@ -58,6 +58,17 @@ func (w Window) helpGroups() []helpGroup {
 			{Key: "→ ← z ⌥", Means: "fold objectives"},
 		}},
 	}
+	if w.Tab == board.Agents {
+		groups[0] = helpGroup{"Agents", []Said{
+			{Key: "hjkl", Means: "choose a session, as ↑↓←→"},
+			{Key: "⏎", Means: "go to the session"},
+			{Key: "o", Means: "open its task"},
+			{Key: "a d", Means: "allow, deny · a answers its questions"},
+			{Key: "c", Means: "copy claude --resume"},
+			{Key: "esc", Means: "let the session go"},
+		}}
+		return groups
+	}
 	if w.Pages.Recurs() {
 		board := &groups[0]
 		board.lines = append(board.lines[:len(board.lines)-1], Said{Key: "r s", Means: "skip · `r e` its series, `r x` stops"}, board.lines[len(board.lines)-1])

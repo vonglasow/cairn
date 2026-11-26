@@ -1179,7 +1179,10 @@ func (w Window) Opened(err error) Window {
 // HandOver starts the command that has the system open a file, and does not wait for it.
 func HandOver(path string) error {
 	name, args := OpenCommand(runtime.GOOS, path)
-	command := exec.Command(name, args...)
+	return started(exec.Command(name, args...))
+}
+
+func started(command *exec.Cmd) error {
 	if err := command.Start(); err != nil {
 		return err
 	}

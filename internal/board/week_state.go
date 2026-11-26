@@ -18,6 +18,9 @@ func (b Board) Holds(tab Tab) int {
 	if tab == Time {
 		return b.Sheet.Worked()
 	}
+	if tab == Agents {
+		return len(b.Agents.Agents)
+	}
 	return len(Laid(b.Showing().Cards, b.Archived))
 }
 
@@ -49,7 +52,7 @@ func (b Board) TabCount(page Tab) string {
 	if page == Series && (b.SeriesIn != 0 || !b.Looking.Empty()) {
 		return shown + "/" + strconv.Itoa(len(b.Snap.Series))
 	}
-	if page == Series ||
+	if page == Series || page == Agents ||
 		page == Time || (b.Looking.Empty() && !b.Filters.Narrows() && b.Viewing == "") {
 		return shown
 	}

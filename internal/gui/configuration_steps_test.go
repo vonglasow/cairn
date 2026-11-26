@@ -36,7 +36,7 @@ func (w *world) clickIn(b geom.Box) {
 }
 
 func (w *world) settingInSight(key string) (SettingRow, error) {
-	for range 40 {
+	for was := -1; was != w.w.SettingsAt; {
 		row, err := w.settingRow(key)
 		if err != nil {
 			return row, err
@@ -45,6 +45,7 @@ func (w *world) settingInSight(key string) (SettingRow, error) {
 		if row.At.Y >= region.Y && row.At.Y+row.At.H <= region.Y+region.H {
 			return row, nil
 		}
+		was = w.w.SettingsAt
 		w.w = w.w.scrollingSettings(lineHigh)
 	}
 	return w.settingRow(key)

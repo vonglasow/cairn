@@ -4,9 +4,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
+	"cairn/internal/engine/agent"
 	"cairn/internal/store/files"
 )
 
@@ -77,5 +79,20 @@ func TestFixturesFile_isAnExportImportCanRead(t *testing.T) {
 	}
 	if _, err := readExport(from); err != nil {
 		t.Errorf("the fixtures file cannot be read as an export: %v", err)
+	}
+}
+
+func TestMakeFixtures_leavesTheWaitingSessionAskingThePermission(t *testing.T) {
+	folder := filepath.Join(t.TempDir(), "fixtures")
+	if _, err := MakeFixtures(folder, "", false); err != nil {
+		t.Fatal(err)
+	}
+	pending, ok := pendingOf(AsksFixtures(folder), "a3f9c1d2-waiting")
+	if ask := agent.AskOf(pending); !ok || !reflect.DeepEqual(*ask, agent.Ask{Tool: "Bash", On: "make test", Always: true}) {
+		t.Errorf("the waiting session asks %+v (%v)", ask, ok)
+	}
+	pending, ok = pendingOf(AsksFixtures(folder), "e1b2c3d4-questions")
+	if ask := agent.AskOf(pending); !ok || len(ask.Questions) != 2 || !ask.Questions[1].Multi {
+		t.Errorf("the session asking questions asks %+v (%v)", ask, ok)
 	}
 }

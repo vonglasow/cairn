@@ -30,8 +30,9 @@ names.
 | `engine/act` | the trace: one act done to a task or an objective |
 | `engine/filter`, `view` | what a read keeps; a set of filters under a name |
 | `engine/label`, `series`, `backup`, `workspace`, `migration`, `exchange`, `app` | one notion each |
+| `engine/agent` | a Claude session running, read from Claude Code's own files, and a permission it asks the window |
 | `store/sqlite` | the store; the only package that knows a database exists |
-| `store/files` | the files beside it: configuration, drafts, window sizes, recent workspaces |
+| `store/files` | the files beside it: configuration, drafts, window sizes, recent workspaces, and what Claude Code keeps of its sessions |
 | `board` | what every board reads: cards, goals, forms, menus, the walk, `Board` the state on screen |
 | `cli`, `mcp` | the command tree and the tools, both made from the catalogue |
 | `cli/render` | an answer as a person reads it, for every surface |

@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"runtime"
 	"strings"
 )
@@ -33,7 +34,12 @@ func (w Window) Said(offer string) string {
 func (w Window) OfferKey(offer string) string { return w.spelled(w.shortcut(offer)) }
 
 // BarKey is the key the board's bar says an offer answers to, whatever panel stands over the board.
-func (w Window) BarKey(offer string) string { return w.spelled(Shortcut(offer)) }
+func (w Window) BarKey(offer string) string {
+	if key := agentKeys[offer]; key != "" && w.Tab == board.Agents {
+		return w.spelled(key)
+	}
+	return w.spelled(Shortcut(offer))
+}
 
 func (w Window) spelled(key string) string {
 	if key == "" {

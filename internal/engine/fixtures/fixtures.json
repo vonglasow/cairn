@@ -956,7 +956,8 @@
       "priority": "high",
       "objectives": [
         10
-      ]
+      ],
+      "focused": true
     },
     {
       "number": 61,

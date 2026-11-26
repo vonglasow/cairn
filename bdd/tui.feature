@@ -80,7 +80,7 @@ Feature: The board
 
     @tui-every-page-off-is-an-empty-screen
     Scenario: every page turned off opens a board with nothing in it
-      Given the pages turned off are "tasks, objectives, time"
+      Given the pages turned off are "tasks, objectives, time, agents"
       When I open the board
       Then the screen holds nothing
       When I press "a"

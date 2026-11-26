@@ -1,5 +1,5 @@
 {
-  "description": "Say which workspace cairn answers from, and hold the focus of the cairn task this session is tied to, and let it go.",
+  "description": "Say which workspace cairn answers from, hold the focus of the cairn task this session is tied to and let it go, and ask the cairn window for a permission, or the answers to Claude's questions, while one listens.",
   "hooks": {
     "PostToolUse": [
       { "matcher": "^mcp__.*__task_(un)?focus$",
@@ -13,6 +13,13 @@
     ],
     "SessionStart": [
       { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/cairn-session.sh" }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "AskUserQuestion",
+        "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/cairn-permission.sh", "timeout": 86400 }] }
+    ],
+    "PermissionRequest": [
+      { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/cairn-permission.sh", "timeout": 86400 }] }
     ],
     "SessionEnd": [
       { "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/cairn-session.sh" }] }

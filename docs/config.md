@@ -151,7 +151,7 @@ or by its folder's name.
 ## What a store's settings may say
 
 Every table but where things are: `[pages]`, `[archive]`, `[focus]`,
-`[approach]`, `[time]`, `[window]`, `[series]`, and `[workspace]`. `store`,
+`[approach]`, `[time]`, `[window]`, `[series]`, `[agents]`, and `[workspace]`. `store`,
 `notes`, `plugin` and `[workspaces]` belong to the global file, and are refused
 in a store's settings.
 

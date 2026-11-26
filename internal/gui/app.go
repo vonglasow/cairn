@@ -373,6 +373,10 @@ func loop(window *app.Window, work board.Work, pages engine.Pages, skin design.S
 			if path, asked := board.OpenAsked(); asked {
 				board = board.OpenTaken().Opened(HandOver(path))
 			}
+			for _, notice := range board.Notices() {
+				board = board.Notified(Notify(notice))
+			}
+			board = board.NoticesTaken()
 			board = board.Born(gtx.Now)
 			board.tellingTheBars()
 			Draw(NewKit(gtx, theme, board.Skin(), &Drawn{}), board)

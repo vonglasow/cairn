@@ -30,6 +30,7 @@ type Board struct {
 	CalendarState
 	TimeState
 	SettingsState
+	AgentsState
 	Telling        string
 	ToldFor        int
 	ChoosingFor    string
@@ -124,6 +125,9 @@ const (
 	AboutNewer
 	AboutSeriesSave
 	AboutDeletingSeriesTasks
+	AboutAllowingAlways
+	AboutStarting
+	AboutAnswering
 )
 
 // CalendarView is what a calendar shows: the days of a month, the months of a year, or the years.

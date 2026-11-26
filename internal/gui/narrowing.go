@@ -51,7 +51,7 @@ func (w Window) Narrowing() Narrowing {
 	for _, s := range n.Segments {
 		wide += narrowingWide(m, s)
 	}
-	tab := TabAt(w.Layout(), 0)
+	tab := w.TabsAt()[0]
 	y := tab.Y + (tab.H-searchPillHigh)/2
 	if end-wide-narrowingLeast >= start {
 		n.Box = geom.Box{X: end - wide, Y: y, W: wide, H: searchPillHigh}
@@ -91,7 +91,8 @@ const segmentPad = 7
 
 func (w Window) pillsRun() (start, end int) {
 	l := w.Layout()
-	start = TabAt(l, len(w.Shown())).X + between
+	tabs := w.TabsAt()
+	start = tabs[len(tabs)-1].X + between
 	end = l.Tabs.X + l.Tabs.W
 	if !w.native {
 		end = MenuButton(l).X - between

@@ -79,7 +79,7 @@ func (w *world) filtersSteps(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the pills after the tabs read "([^"]*)"$`, func(want string) error {
 		l := w.w.Layout()
-		last := TabAt(l, len(w.w.Shown())-1)
+		last := w.w.TabsAt()[len(w.w.Shown())-1]
 		var said []string
 		for _, pill := range w.w.Pills() {
 			if pill.Box.X < last.X+last.W || pill.Box.Y < l.Tabs.Y || pill.Box.Y+pill.Box.H > l.Tabs.Y+l.Tabs.H {

@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/agent"
 	"cairn/internal/engine/app"
 	"cairn/internal/engine/backup"
 	"cairn/internal/engine/calendar"
@@ -233,6 +234,16 @@ func Of(op Operation, a Answer) any {
 		return *a.Config
 	case workspace.Workspaces:
 		return *a.Workspaces
+	case agent.Agents:
+		return *a.Agents
+	case agent.Agent:
+		return *a.Agent
+	case agent.Started:
+		return *a.Started
+	case agent.Terminals:
+		return *a.Terminals
+	case agent.Decision:
+		return *a.Decision
 	case workspace.Added:
 		return *a.WorkspaceAdded
 	case workspace.NotesMove:

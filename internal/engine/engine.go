@@ -261,13 +261,7 @@ func (e *Engine) timeGoesWithTasks() bool {
 	return err == nil && read.TimeDeleted() == files.TimeTaken
 }
 
-func (e *Engine) configured() (files.Places, error) {
-	read, err := files.Read(e.home.Dir, e.home.lookup())
-	if err != nil {
-		return files.Places{}, err
-	}
-	return read.WithSettings(files.SettingsBeside(e.path))
-}
+func (e *Engine) configured() (files.Places, error) { return configuredAt(e.home, e.path) }
 
 func (e *Engine) waitingOn(number int) ([]int, error) {
 	every := filter.Narrowing{}

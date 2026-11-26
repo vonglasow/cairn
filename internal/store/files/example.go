@@ -13,6 +13,7 @@ plugin = "~/.cairn/claude-plugin"
 tasks = true
 objectives = true
 time = "on"
+agents = true
 
 # Archiving on its own: days are counted from start, in periods of that many
 # days, and when a board opens or the tasks are listed, a task that went done
@@ -62,6 +63,15 @@ ghost = 65
 # turned off, no series makes anything and every task one made stays.
 [series]
 on = false
+
+# The agents page: a notification when a Claude session starts waiting for
+# you, and the count of those waiting on its tab, both on unless they say
+# false. And permissions: on, a session asking leave to use a tool asks the
+# window while one is open, and its terminal when none is. Off unless true.
+[agents]
+notify = true
+count = true
+permissions = false
 
 # Workspaces: each a name, and the folder holding its own store and notes
 # (<folder>/cairn.db and <folder>/notes), or a table of its own naming its

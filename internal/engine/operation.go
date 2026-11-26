@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"cairn/internal/engine/agent"
 	"cairn/internal/engine/app"
 	"cairn/internal/engine/backup"
 	"cairn/internal/engine/calendar"
@@ -246,13 +247,14 @@ func All() []Operation {
 		TimesheetShow, TimesheetAdd,
 		ConfigShow, ConfigInit, debugReport,
 		WorkspaceList, WorkspaceShow,
+		AgentList,
 		pluginWrite, pluginShow, appInstall,
 	}
 }
 
 // ForAPersonOnly is what only a person at the command line may do, offered to no agent: adding a workspace, switching to another and removing one change where every later command reads and writes; a view is how the person looks at their work, so an agent reads the views and keeps, changes or deletes none.
 func ForAPersonOnly() []Operation {
-	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, NotesMove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill, Upgrade}
+	return []Operation{WorkspaceAdd, WorkspaceUse, workspaceRemove, NotesMove, ViewNew, viewShow, ViewEdit, ViewDelete, ConfigSet, ConfigUnset, ConfigFill, Upgrade, AgentGo, AgentStart, AgentTerminals, AgentTie, AgentAsk, AgentAnswer}
 }
 
 // check refuses what Run could not read anyway, before the store is opened so a refusal never touches the disk:.
@@ -377,6 +379,11 @@ type Answer struct {
 	Runs              *string
 	OpenedFrom        *string
 	Workspaces        *workspace.Workspaces
+	Agents            *agent.Agents
+	Agent             *agent.Agent
+	Started           *agent.Started
+	Terminals         *agent.Terminals
+	Decision          *agent.Decision
 	WorkspaceAdded    *workspace.Added
 	WorkspaceUsed     *workspace.Used
 	WorkspaceRemoved  *workspace.Removed

@@ -21,7 +21,7 @@ func (c ConfigChange) String() string { return c.Key + " " + c.Was + " → " + c
 func valuesIn(c Config) map[string]string {
 	values := map[string]string{}
 	if c.Pages != nil {
-		values["pages.tasks"], values["pages.objectives"], values["pages.time"] = strconv.FormatBool(c.Pages.Tasks), strconv.FormatBool(c.Pages.Objectives), c.Pages.Time
+		values["pages.tasks"], values["pages.objectives"], values["pages.time"], values["pages.agents"] = strconv.FormatBool(c.Pages.Tasks), strconv.FormatBool(c.Pages.Objectives), c.Pages.Time, strconv.FormatBool(c.Pages.Agents)
 	}
 	if c.Archive != nil {
 		values["archive.start"], values["archive.days"] = notSaid(c.Archive.Start), strconv.Itoa(c.Archive.Days)
@@ -41,6 +41,10 @@ func valuesIn(c Config) map[string]string {
 	}
 	if c.Recurrence != nil {
 		values["series.on"] = strconv.FormatBool(c.Recurrence.On)
+	}
+	if c.Agents != nil {
+		values["agents.notify"], values["agents.count"], values["agents.permissions"] = strconv.FormatBool(c.Agents.Notify), strconv.FormatBool(c.Agents.Count), strconv.FormatBool(c.Agents.Permissions)
+		values["agents.silent"] = c.Agents.Silent
 	}
 	if c.Workspace != nil {
 		values["workspace.colour"] = c.Workspace.Colour

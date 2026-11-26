@@ -107,6 +107,9 @@ linters:
           files: ["**/internal/store/files/**"]
           allow:
             - bytes
+            # Claude Code keeps its sessions and transcripts in JSON; the
+            # agents page reads them here, the one package that reads files.
+            - encoding/json
             - errors
             - fmt
             - io/fs
@@ -282,7 +285,7 @@ linters:
         # and the files it keeps, never the catalogue that asks it, nor a
         # surface. A deny-list, like task.
         notion:
-          files: ["**/internal/engine/label/**", "**/internal/engine/series/**", "**/internal/engine/view/**", "**/internal/engine/workspace/**", "**/internal/engine/exchange/**", "**/internal/engine/app/**"]
+          files: ["**/internal/engine/label/**", "**/internal/engine/series/**", "**/internal/engine/view/**", "**/internal/engine/workspace/**", "**/internal/engine/exchange/**", "**/internal/engine/app/**", "**/internal/engine/agent/**"]
           deny:
             - pkg: cairn/internal/engine$
               desc: a notion knows nothing of the operations run on it

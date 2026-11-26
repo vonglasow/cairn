@@ -13,7 +13,7 @@ import (
 )
 
 // Pages is what the tabs are called, in the order they are drawn.
-var Pages = []string{"TASKS", "OBJECTIVES", "TIME", "SERIES"}
+var Pages = []string{"TASKS", "OBJECTIVES", "TIME", "SERIES", "AGENTS"}
 
 // Heads is what the panel that is open says it is, written across its top.
 func Heads(w Window) string { return HeadsOn(w, w.Screen) }
@@ -46,6 +46,9 @@ func HeadsOn(w Window, screen board.Screen) string {
 		s, _ := w.Snap.SeriesOf(w.FateOf)
 		return "Delete the series " + s.Title + "?"
 	case board.OnAsking:
+		if head, _, _, ok := w.agentQuestion(); ok {
+			return head
+		}
 		if w.Question == board.AboutLeaving || w.Question == board.AboutLeavingSettings {
 			return "Throw away what you typed?"
 		}
@@ -262,6 +265,8 @@ func (w Window) OfferLook(i int, offer string) buttonLook {
 	switch {
 	case w.Screen == board.OnFates && strings.HasPrefix(offer, "Delete") && !w.Fates.Ready():
 		return buttonFaint
+	case w.Screen == board.OnAsking && offer == SendSays && !w.answeredAll():
+		return buttonFaint
 	case w.Screen == board.OnFates && strings.HasPrefix(offer, "Delete"):
 		return buttonDanger
 	case w.Screen == board.OnConfiguration && !strings.HasPrefix(offer, "Wear ") && !strings.HasPrefix(offer, KeepIntro):
@@ -341,6 +346,9 @@ func (w Window) Offers() []string {
 		}
 		return append(offers, w.occurrenceOffers()...)
 	case board.OnAsking:
+		if _, _, offers, ok := w.agentQuestion(); ok {
+			return offers
+		}
 		if w.Question == board.AboutLeaving || w.Question == board.AboutLeavingSettings {
 			return []string{"Throw away", "Keep editing"}
 		}
@@ -377,6 +385,9 @@ func (w Window) Offers() []string {
 
 // BoardOffers is what the bar under the board says, whatever is open over it.
 func (w Window) BoardOffers() []string {
+	if w.Tab == board.Agents {
+		return append(w.agentOffers(), "Help")
+	}
 	offers := []string{"New", "Search", "Filter", "Archived", "Help"}
 	if !w.Looking.Empty() || len(w.Taken()) > 0 {
 		offers = append(offers, "Clear")
@@ -546,6 +557,9 @@ func (w Window) hintWide(offer string) int {
 }
 
 func (w Window) shortcut(offer string) string {
+	if key := agentKeys[offer]; key != "" && w.Screen == board.OnTheBoard && w.Tab == board.Agents {
+		return key
+	}
 	if w.Screen == board.OnConfiguration {
 		return w.settingsShortcut(offer)
 	}
@@ -615,6 +629,9 @@ func (w Window) widthsOf(offers []string) []int {
 
 // Asks is what the question says, a sentence to a line.
 func (w Window) Asks() []Said {
+	if _, said, _, ok := w.agentQuestion(); ok {
+		return said
+	}
 	if w.AsksAboutSeveral() {
 		return w.severalSays()
 	}

@@ -55,10 +55,10 @@ func TestWorkspaceShow_saysThePagesOnAndWhereThatIsSaid(t *testing.T) {
 		pages                []string
 		from, says           string
 	}{
-		{"by default", twoWorkspaces, "", []string{"tasks", "objectives", "time"}, "by default", "tasks, objectives and time, by default"},
-		{"the global file", "[pages]\nobjectives = false\ntime = \"off\"\n" + twoWorkspaces, "", []string{"tasks"}, "from the global configuration", "tasks, from the global configuration"},
-		{"the store's settings", "[pages]\nobjectives = false\n" + twoWorkspaces, "[pages]\ntasks = false\ntime = \"off\"\n", nil, "set in the store's settings", "none, set in the store's settings"},
-		{"the time alone said here", "[pages]\nobjectives = false\n" + twoWorkspaces, "[pages]\ntime = \"hidden\"\n", []string{"tasks"}, "set in the store's settings", "tasks, set in the store's settings"},
+		{"by default", twoWorkspaces, "", []string{"tasks", "objectives", "time", "agents"}, "by default", "tasks, objectives, time and agents, by default"},
+		{"the global file", "[pages]\nobjectives = false\ntime = \"off\"\n" + twoWorkspaces, "", []string{"tasks", "agents"}, "from the global configuration", "tasks and agents, from the global configuration"},
+		{"the store's settings", "[pages]\nobjectives = false\n" + twoWorkspaces, "[pages]\ntasks = false\ntime = \"off\"\n", []string{"agents"}, "set in the store's settings", "agents, set in the store's settings"},
+		{"the time alone said here", "[pages]\nobjectives = false\n" + twoWorkspaces, "[pages]\ntime = \"hidden\"\n", []string{"tasks", "agents"}, "set in the store's settings", "tasks and agents, set in the store's settings"},
 	} {
 		h := homeHolding(t, c.said, nil, "w", "h")
 		if c.settings != "" {

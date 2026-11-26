@@ -221,7 +221,7 @@ func TestTheObjectivesAreCutToTheirRun(t *testing.T) {
 	w := holding(f)
 	w.Snap.Goals = goals
 	l := w.Layout()
-	second := TabAt(l, 1)
+	second := w.TabsAt()[1]
 	w = w.clicked(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	w = w.Scroll(geom.Point{X: l.Column[0].X + 10, Y: l.Column[0].Y + 10}, 3*geom.CardHeight)
 

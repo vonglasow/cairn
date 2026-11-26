@@ -62,4 +62,6 @@ const (
 	Time
 	// Series is the tasks that come back, each series beside the one chosen: see series.go.
 	Series
+	// Agents is the Claude sessions running in the workspace: see agents.go.
+	Agents
 )

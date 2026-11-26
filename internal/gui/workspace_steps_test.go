@@ -279,8 +279,8 @@ func (w *world) workspaceSteps(sc *godog.ScenarioContext) {
 		if w.w.PlaceSays() != name || w.w.Loose() != (kind == "folder") {
 			return fmt.Errorf("the top bar opens with %q, loose %v", w.w.PlaceSays(), w.w.Loose())
 		}
-		if l.Place.W == 0 || l.Place.X+l.Place.W > TabAt(l, 0).X {
-			return fmt.Errorf("the pill at %+v does not stand before the tabs at %+v", l.Place, TabAt(l, 0))
+		if l.Place.W == 0 || l.Place.X+l.Place.W > w.w.TabsAt()[0].X {
+			return fmt.Errorf("the pill at %+v does not stand before the tabs at %+v", l.Place, w.w.TabsAt()[0])
 		}
 		return nil
 	})

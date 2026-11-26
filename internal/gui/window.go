@@ -119,6 +119,7 @@ type Window struct {
 	wasScreen             board.Screen
 
 	wrongFor int
+	sessions sessionsState
 }
 
 // Lingers is how many beats what went wrong stays: long enough to read two lines, and gone before it is mistaken for something still true.
@@ -191,7 +192,7 @@ func (w Window) Wonder() Window {
 	if err != nil {
 		return w.failing(err)
 	}
-	w = w.rereading()
+	w = w.rereading().readingAgents()
 	if version == w.Version && !w.focusAged() {
 		return w
 	}
@@ -254,6 +255,7 @@ func (w Window) Look() Window {
 	if w = w.freshened(); w.Screen == board.OnForm && w.Err == nil {
 		w = w.readingActs()
 	}
+	w = w.readingAgents()
 	if w.Pages.Shows(engine.PageTime) {
 		return w.readingWeek()
 	}

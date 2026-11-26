@@ -110,6 +110,9 @@ var ErrKeepSizes = errors.New("the window keeps its sizes or not: true or false"
 // ErrRecurrence is returned when the file says whether tasks come back with something that is neither true nor false.
 var ErrRecurrence = errors.New("series are on or off: true or false")
 
+// ErrSilent is returned when the file says a session is silent after something that is not a duration.
+var ErrSilent = errors.New("agents.silent is a duration, written 10m")
+
 // ErrFocus is returned when the file says a focus session lasts something that is not a duration.
 var ErrFocus = errors.New("a focus session lasts a duration, written 1h")
 
@@ -144,6 +147,7 @@ type Places struct {
 	timeDeleted      string
 	timeWeekends     string
 	keepSizes        bool
+	agents           Agents
 	recurrence       bool
 	theme            string
 	intro            string
@@ -171,6 +175,7 @@ type file struct {
 	Window     *window        `toml:"window"`
 	Recurrence *recurrence    `toml:"recurrence"`
 	Series     *recurrence    `toml:"series"`
+	Agents     *agents        `toml:"agents"`
 	Workspace  *workspace     `toml:"workspace"`
 	Workspaces map[string]any `toml:"workspaces"`
 }
@@ -241,6 +246,40 @@ func (w *window) keepSizes() (bool, error) {
 		return false, fmt.Errorf("window.keep_sizes %v: %w", w.KeepSizes, ErrKeepSizes)
 	}
 	return keep, nil
+}
+
+type agents struct {
+	Notify      *bool   `toml:"notify"`
+	Count       *bool   `toml:"count"`
+	Permissions *bool   `toml:"permissions"`
+	Silent      *string `toml:"silent"`
+}
+
+// Agents is what the agents page does besides listing the sessions: a notification when one starts waiting, the count of those waiting on its tab, permissions answered from the window, and how long a session works without writing before it is said silent, as the file wrote it.
+type Agents struct {
+	Notify      bool
+	Count       bool
+	Permissions bool
+	Silent      string
+}
+
+func (a *agents) read() Agents {
+	said := Agents{Notify: true, Count: true, Silent: "10m"}
+	if a == nil {
+		return said
+	}
+	if a.Silent != nil {
+		said.Silent = *a.Silent
+	}
+	for _, key := range []struct {
+		on   *bool
+		into *bool
+	}{{a.Notify, &said.Notify}, {a.Count, &said.Count}, {a.Permissions, &said.Permissions}} {
+		if key.on != nil {
+			*key.into = *key.on
+		}
+	}
+	return said
 }
 
 type recurrence struct {
@@ -314,6 +353,7 @@ type pages struct {
 	Tasks      *bool `toml:"tasks"`
 	Objectives *bool `toml:"objectives"`
 	Time       any   `toml:"time"`
+	Agents     *bool `toml:"agents"`
 }
 
 func (p *pages) time() (string, error) {
@@ -342,7 +382,7 @@ func (p *pages) off(timeOn bool) []string {
 	for _, page := range []struct {
 		name string
 		on   *bool
-	}{{"tasks", p.Tasks}, {"objectives", p.Objectives}, {"time", &timeOn}} {
+	}{{"tasks", p.Tasks}, {"objectives", p.Objectives}, {"time", &timeOn}, {"agents", p.Agents}} {
 		if page.on != nil && !*page.on {
 			off = append(off, page.name)
 		}
@@ -358,10 +398,10 @@ func (p Places) Archive() (string, int, bool) {
 	return p.archiveStart, p.archiveDays, p.archiveStart != ""
 }
 
-// Pages says whether each page is on, in the order the boards draw them: tasks, objectives, time.
-func (p Places) Pages() [3]bool {
-	on := [3]bool{true, true, true}
-	for i, page := range []string{"tasks", "objectives", "time"} {
+// Pages says whether each page is on, in the order the boards draw them: tasks, objectives, time, agents.
+func (p Places) Pages() [4]bool {
+	on := [4]bool{true, true, true, true}
+	for i, page := range []string{"tasks", "objectives", "time", "agents"} {
 		on[i] = !slices.Contains(p.pagesOff, page)
 	}
 	return on
@@ -390,6 +430,9 @@ func (p Places) Name() string { return p.name }
 
 // KeepSizes says whether the window opens with the sizes it was left with: false unless the file says true.
 func (p Places) KeepSizes() bool { return p.keepSizes }
+
+// Agents says what the agents page does besides listing: notify and count unless the file says false, answer permissions only when it says true.
+func (p Places) Agents() Agents { return p.agents }
 
 // Recurrence says whether a task may come back as a series: false unless the file says true.
 func (p Places) Recurrence() bool { return p.recurrence }
@@ -637,7 +680,7 @@ func (p *Places) settle(f file) error {
 	if err != nil {
 		return err
 	}
-	p.timeMode, p.recurrence = mode, recurring
+	p.timeMode, p.recurrence, p.agents = mode, recurring, f.Agents.read()
 	p.archiveStart, p.archiveDays, p.timeDeleted, p.timeWeekends, p.keepSizes = start, days, deleted, weekends, keep
 	p.focusSession, p.approach, p.pagesOff = f.Focus.session(), f.Approach.label(), f.Pages.off(mode == TimeOn)
 	p.colour, p.name, p.theme = f.Workspace.colour(), f.Workspace.name(), f.Window.theme()

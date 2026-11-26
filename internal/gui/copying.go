@@ -21,7 +21,7 @@ func markBefore(line geom.Box, said string) CopyMark {
 	return CopyMark{At: geom.Box{X: line.X, Y: line.Y + (line.H-copySide)/2, W: copySide, H: copySide}, Said: said}
 }
 
-// CopyMarks is every path the open panel shows with a mark before it to copy it: the places and the file of the configuration, where an open task's context lives, and where cairn is kept.
+// CopyMarks is every path the open panel shows with a mark before it to copy it: the places and the file of the configuration, where an open task's context lives, and where cairn is kept; on the agents page, the command that resumes each session in sight, after its id.
 func (w Window) CopyMarks() []CopyMark {
 	switch {
 	case w.Screen == board.OnConfiguration && !w.ChooserOpen && !w.IntrosOpen:
@@ -35,6 +35,8 @@ func (w Window) CopyMarks() []CopyMark {
 		return marks
 	case w.Screen == board.OnAsking && w.Question == board.AboutCairn:
 		return []CopyMark{markBefore(w.SaidAt(len(AboutSays(build.Read()))-1), build.Home)}
+	case w.Screen == board.OnTheBoard && w.Tab == board.Agents:
+		return w.resumeMarks()
 	case w.Context() != "":
 		path := w.contextPath()
 		return []CopyMark{markBefore(geom.Box{X: path.X - copyRoom, Y: path.Y, H: path.H}, w.Context())}
@@ -47,9 +49,13 @@ func copiedKey(key string) bool { return key == "store" || key == "notes" }
 func (w Window) copyingAt(p geom.Point) (Window, bool) {
 	for _, mark := range w.CopyMarks() {
 		if mark.At.In(p) {
-			w.copying = mark.Said
-			return w.telling("copied " + mark.Said), true
+			return w.copied(mark.Said), true
 		}
 	}
 	return w, false
+}
+
+func (w Window) copied(said string) Window {
+	w.copying = said
+	return w.telling("copied " + said)
 }

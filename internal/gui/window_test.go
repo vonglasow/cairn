@@ -72,7 +72,7 @@ func TestWhatEachPanelSaysItIs(t *testing.T) {
 	if got := Heads(w.Key("cmd+n")); got != "New task" {
 		t.Errorf("adding a task is headed %q", got)
 	}
-	second := TabAt(w.Layout(), 1)
+	second := w.TabsAt()[1]
 	goals := w.clicked(geom.Point{X: second.X + second.W/2, Y: second.Y + second.H/2})
 	if got := Heads(goals.Key("cmd+n")); got != "New objective" {
 		t.Errorf("adding an objective is headed %q", got)

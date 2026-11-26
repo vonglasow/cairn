@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -40,9 +41,11 @@ func TestWrite_makesAMarketplaceOfThePlugin(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "cairn", ".claude-plugin", "plugin.json")); err != nil {
 		t.Errorf("the plugin is not where the marketplace says: %v", err)
 	}
-	info, err := os.Stat(filepath.Join(dir, "cairn", "hooks", "cairn-session.sh"))
-	if err != nil || info.Mode().Perm() != 0o755 {
-		t.Errorf("the hook is written %v, %v", info, err)
+	for _, hook := range []string{"cairn-session.sh", "cairn-permission.sh"} {
+		info, err := os.Stat(filepath.Join(dir, "cairn", "hooks", hook))
+		if err != nil || info.Mode().Perm() != 0o755 {
+			t.Errorf("the hook %s is written %v, %v", hook, info, err)
+		}
 	}
 	if info, err := os.Stat(filepath.Join(dir, "cairn", "hooks", "hooks.json")); err != nil || info.Mode().Perm() != 0o644 {
 		t.Errorf("a file that is not run is written %v, %v", info, err)
@@ -182,5 +185,33 @@ func read(t *testing.T, path string, into any) {
 	}
 	if err := json.Unmarshal(held, into); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWrite_asksTheWindowForPermissionsAndQuestionsAlike(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "plugins")
+	if err := Write(dir, "1.2.3"); err != nil {
+		t.Fatal(err)
+	}
+	type hook struct {
+		Matcher string `json:"matcher"`
+		Hooks   []struct {
+			Command string `json:"command"`
+			Timeout int    `json:"timeout"`
+		} `json:"hooks"`
+	}
+	var read struct {
+		Hooks map[string][]hook `json:"hooks"`
+	}
+	said, err := os.ReadFile(filepath.Join(dir, "cairn", "hooks", "hooks.json"))
+	if err != nil || json.Unmarshal(said, &read) != nil {
+		t.Fatalf("hooks.json reads %s, %v", said, err)
+	}
+	for event, matcher := range map[string]string{"PermissionRequest": "", "PreToolUse": "AskUserQuestion"} {
+		hooks := read.Hooks[event]
+		if len(hooks) != 1 || hooks[0].Matcher != matcher || len(hooks[0].Hooks) != 1 ||
+			!strings.HasSuffix(hooks[0].Hooks[0].Command, "/hooks/cairn-permission.sh") || hooks[0].Hooks[0].Timeout != 86400 {
+			t.Errorf("%s runs %+v", event, hooks)
+		}
 	}
 }

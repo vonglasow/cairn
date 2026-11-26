@@ -53,14 +53,14 @@ func shownWith(t *testing.T, content string) workspace.Config {
 
 func TestConfigShow_answersWhatTheFileSays(t *testing.T) {
 	c := shownWith(t, "[pages]\ntime = false\n[archive]\nstart = 2026-10-21\ndays = 7\n[focus]\nsession = \"1h\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
-	if *c.Pages != (workspace.PagesConfig{Tasks: true, Objectives: true, Time: "hidden"}) || *c.Archive != (workspace.Archive{Start: "2026-10-21", Days: 7}) ||
+	if *c.Pages != (workspace.PagesConfig{Tasks: true, Objectives: true, Time: "hidden", Agents: true}) || *c.Archive != (workspace.Archive{Start: "2026-10-21", Days: 7}) ||
 		c.Focus.Session != "1h" || c.Time.Deleted != "taken" || !c.Window.KeepSizes {
 		t.Errorf("config show answers %+v %+v %+v %+v %+v", c.Pages, c.Archive, c.Focus, c.Time, c.Window)
 	}
 }
 
 func TestConfigText_readsBackAsTheSameConfiguration(t *testing.T) {
-	first := shownWith(t, fmt.Sprintf("[workspaces]\ndefault = \"main\"\n\n[workspaces.main]\nfolder = %q\nnotes = \"/x/notes\"\n\n[pages]\nobjectives = false\n", t.TempDir())+"[archive]\nstart = 2026-10-21\ndays = 10\n[focus]\nsession = \"45m\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n")
+	first := shownWith(t, fmt.Sprintf("[workspaces]\ndefault = \"main\"\n\n[workspaces.main]\nfolder = %q\nnotes = \"/x/notes\"\n\n[pages]\nobjectives = false\n", t.TempDir())+"[archive]\nstart = 2026-10-21\ndays = 10\n[focus]\nsession = \"45m\"\n[time]\ndeleted = \"taken\"\n[window]\nkeep_sizes = true\n[agents]\nsilent = \"20m\"\n")
 	if first.Notes.At != "/x/notes" {
 		t.Fatalf("the notes are at %q, want those of main", first.Notes.At)
 	}
@@ -70,7 +70,30 @@ func TestConfigText_readsBackAsTheSameConfiguration(t *testing.T) {
 	}
 	if again.Store.At != first.Store.At || again.Notes.At != first.Notes.At || again.Plugin.At != first.Plugin.At ||
 		*again.Pages != *first.Pages || *again.Archive != *first.Archive || *again.Focus != *first.Focus ||
-		*again.Time != *first.Time || *again.Window != *first.Window {
+		*again.Time != *first.Time || *again.Window != *first.Window || *again.Agents != *first.Agents {
 		t.Errorf("read back, it says:\n%s\nwhere it said:\n%s", workspace.ConfigText(again), workspace.ConfigText(first))
+	}
+}
+
+func TestConfigShow_saysWhatTheAgentsPageDoes(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    workspace.AgentsConfig
+	}{
+		{"by default it notifies and counts, answers no permission, and calls a session silent after 10m", "", workspace.AgentsConfig{Notify: true, Count: true, Silent: "10m"}},
+		{"each key turns its part off or on", "[agents]\nnotify = false\ncount = false\npermissions = true\nsilent = \"25m\"\n", workspace.AgentsConfig{Permissions: true, Silent: "25m"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := shownWith(t, tt.content)
+			if c.Agents == nil || *c.Agents != tt.want {
+				t.Fatalf("agents %+v", c.Agents)
+			}
+			pages := PagesOf(c)
+			if pages.Notifies() != tt.want.Notify || pages.Counts() != tt.want.Count || pages.AnswersPermissions() != tt.want.Permissions {
+				t.Errorf("the pages read %v %v %v", pages.Notifies(), pages.Counts(), pages.AnswersPermissions())
+			}
+		})
 	}
 }

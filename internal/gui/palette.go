@@ -195,6 +195,15 @@ func (w Window) actionRows() []PaletteRow {
 			action("Open the series of "+n, "", func(w Window) Window { return w.onSeries(series) })
 		}
 	}
+	if w.Pages.Shows(engine.PageAgents) {
+		action("Agents", "", func(w Window) Window { return w.onPage(board.Agents) })
+	}
+	if a, ok := w.sessionChosen(); ok && w.Tab == board.Agents {
+		lines, _ := w.sessionMenu(a)
+		for _, line := range lines {
+			action(sessionCalled(a)+": "+line, "", paletteDoing(line))
+		}
+	}
 	if w.Pages.Recurs() {
 		action("Series", "", func(w Window) Window { return w.onPage(board.Series) })
 		action(NewSeriesSays, "", func(w Window) Window { return w.startingSeries() })
@@ -232,6 +241,9 @@ func waitingFor(field string) func(Window) Window {
 
 func (w Window) valueRows(typed string) []PaletteRow {
 	field, number := w.palette.waiting, strconv.Itoa(w.Chosen)
+	if field == tieWaits {
+		return w.tieRows(typed)
+	}
 	values := w.ValuesOf(field)
 	var rows []PaletteRow
 	for _, value := range values {

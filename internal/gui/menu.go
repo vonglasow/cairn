@@ -31,6 +31,9 @@ func (w Window) ContextAt(p geom.Point) Window {
 	if w.Screen != board.OnTheBoard {
 		return w
 	}
+	if w.Tab == board.Agents {
+		return w.sessionMenuAt(p)
+	}
 	w = w.aiming(p)
 	if n := w.at(p); w.IsTaken(n) && w.Tab == board.Tasks {
 		w.Chosen = n
@@ -65,6 +68,13 @@ func (w Window) menuFor() []string {
 	var lines []string
 	for _, op := range board.MenuOf(thing, w.Pages) {
 		lines = append(lines, w.linesOf(op)...)
+	}
+	if !w.ChosenGoal && w.Pages.Offers(engine.AgentStart) {
+		at := len(lines)
+		if deleting := slices.Index(lines, "Delete"); deleting >= 0 {
+			at = deleting
+		}
+		lines = slices.Insert(lines, at, StartSessionSays)
 	}
 	return lines
 }
@@ -273,6 +283,12 @@ func (w Window) doingLine(said string) Window {
 	case SkipThisOneSays:
 		w.Screen = board.OnTheBoard
 		return w.asking(engine.TaskSkip, board.Numbered(w.Chosen))
+	case OpenTaskSays, GoToSessionSays, CopyResumeSays, NewTaskForSays, TieSays, AllowSays, DenySays, AllowAlwaysSays:
+		w.Screen = board.OnTheBoard
+		return w.onSession(said)
+	case StartSessionSays:
+		w.Screen = board.OnTheBoard
+		return w.startingSession()
 	}
 	w.Screen = board.OnTheBoard
 	if len(w.Taken()) > 0 && (said == "Focus" || said == "Unfocus") {

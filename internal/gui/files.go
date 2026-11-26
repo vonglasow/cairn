@@ -101,6 +101,9 @@ func (w Window) folderChosen(got Filed) Window {
 	if w.MakingSpace() {
 		return w.folderForNewSpace(got)
 	}
+	if w.Screen == board.OnAsking && w.Question == board.AboutStarting {
+		return w.startFolderChosen(got)
+	}
 	if w.notes.choosing {
 		return w.notesChosen(got)
 	}

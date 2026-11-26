@@ -42,3 +42,5 @@ an agent and on these pages.
 | **migration** | a change to the store's shape that a newer cairn applies |
 | **MCP server** | what lets an agent work on the board: `cairn mcp serve` |
 | **plugin** | the Claude Code plugin that ties a session to a task |
+| **session** | a Claude Code session running on the machine; the Agents page shows one card for each |
+| **ask** | what a session waits on you for, a permission or questions, answered from the window while `agents.permissions` is on |

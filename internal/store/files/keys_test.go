@@ -11,6 +11,7 @@ func TestAValueIsWrittenAsTheKeyTakesIt(t *testing.T) {
 		{"pages.tasks", "false", "false"},
 		{"series.on", "true", "true"},
 		{"focus.session", "45m", `"45m"`},
+		{"agents.silent", "25m", `"25m"`},
 		{"archive.start", "2026-10-21", "2026-10-21"},
 		{"archive.days", "14", "14"},
 		{"approach.label", "discuss", `"discuss"`},
