@@ -107,7 +107,10 @@ window's Agents tab shows them. From there:
 
 - `cairn agent go <session>` brings its terminal to the front: iTerm2,
   Terminal and Ghostty (1.4 and later) on macOS, kitty on Linux. Any other terminal, or an editor, says
-  the command that resumes it instead.
+  the command that resumes it instead. On Windows the session says what it
+  runs in — Windows Terminal, VS Code, WezTerm or Claude Desktop — and
+  `cairn agent go` says the command that resumes it, since none of them is
+  brought to the front.
 - `cairn agent start --folder <dir> --terminal <terminal> [--task <n>]`
   starts claude in a new tab, asked to work on the task when one is named;
   `cairn agent terminals` names the terminals it starts in.
