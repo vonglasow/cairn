@@ -144,3 +144,4 @@ longer holds is taken out.
 - The questions Claude asks (AskUserQuestion) wait on the window by the permission's own path — the PreToolUse hook, the same asks folder, listening rule and fallback (#294): one mechanism; Cancel answers nothing, and the terminal asks once the window stops listening.
 - What a session does is said in a few words, read off its last tool — the description Claude gave a command, the name of a file, never a path or a whole command (#294); a context past 200k tokens is counted against the 1M window.
 - A session working whose transcript is not written to for `agents.silent` (10m by default) is said silent (#294): read off the transcript file's time, the one thing Claude Code writes as it works.
+- A session is alive when its process still runs: signal 0 on Unix, OpenProcess and GetExitCodeProcess on Windows — Go's Process.Signal supports only Kill on Windows, so every session there was said dead.
