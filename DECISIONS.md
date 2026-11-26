@@ -88,7 +88,7 @@ A decision added, changed or undone is a line here, in the commit that does it.
 
 ## Release
 
-- The version is read off the commits by svu, tagged by `make release` once every check passed — a number typed by hand misreads the history.
+- The version is read off the commits by svu, tagged by `make release` once every check passed — a number typed by hand misreads the history. svu reads only the tags `v*` (`.svu.yml`): a `wip/` tag was taken for the version.
 - A release runs every check but the mutation sweep — a release waiting an hour on it was a release nobody made.
 - Each binary is built on the system it runs on; no source archive — the window needs cgo and the system's headers.
 - The release stays on its scripts, not GoReleaser — gathering several runners' builds is GoReleaser Pro.
