@@ -18,30 +18,25 @@ func (processes) Alive(pid int, _ string) bool {
 }
 
 func (processes) Terminal(pid int) agent.Terminal {
-	said, err := exec.Command("ps", "-o", "tty=", "-p", strconv.Itoa(pid)).Output()
-	t := agent.Terminal{}
-	if err == nil {
-		t.TTY = strings.TrimSpace(string(said))
-	}
-	for at := pid; at > 1; {
-		out, err := exec.Command("ps", "-o", "ppid=,comm=", "-p", strconv.Itoa(at)).Output()
-		if err != nil {
-			break
-		}
-		ppid, comm, _ := strings.Cut(strings.TrimSpace(string(out)), " ")
-		if name, ok := terminalNamed(strings.TrimSpace(comm)); ok {
-			t.Program, t.Reachable = name, name == "iTerm2" || name == "Terminal" || name == "kitty" || name == "Ghostty" && runtime.GOOS == "darwin"
-			break
-		}
-		at, _ = strconv.Atoi(ppid)
-	}
+	t := terminalAmong(ancestry(pid))
+	t.TTY = ttyOf(pid)
 	return t
+}
+
+func terminalAmong(ancestors []string) agent.Terminal {
+	for _, command := range ancestors {
+		if name, ok := terminalNamed(command); ok {
+			return agent.Terminal{Program: name, Reachable: name == "iTerm2" || name == "Terminal" || name == "kitty" || name == "Ghostty" && runtime.GOOS == "darwin"}
+		}
+	}
+	return agent.Terminal{}
 }
 
 func terminalNamed(command string) (string, bool) {
 	for _, known := range []struct{ in, name string }{
 		{"iTerm", "iTerm2"}, {"Terminal.app", "Terminal"}, {"ghostty", "Ghostty"}, {"WezTerm", "WezTerm"},
 		{"kitty", "kitty"}, {"Alacritty", "Alacritty"}, {"Code Helper", "VS Code"}, {"gnome-terminal", "GNOME Terminal"}, {"konsole", "Konsole"},
+		{"WindowsTerminal.exe", "Windows Terminal"}, {"Code.exe", "VS Code"}, {"wezterm-gui.exe", "WezTerm"}, {`\WindowsApps\Claude_`, "Claude Desktop"}, {`\AnthropicClaude\`, "Claude Desktop"},
 	} {
 		if strings.Contains(command, known.in) {
 			return known.name, true
