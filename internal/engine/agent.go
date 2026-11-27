@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strconv"
 	"time"
@@ -93,7 +94,7 @@ func sessionAgent(s files.ClaudeSession) agent.Agent {
 	return agent.Agent{
 		ID: s.SessionID, Short: agent.ShortOf(s.SessionID), Name: s.Name,
 		State: agent.StateOf(s.Status, s.WaitingFor), Waiting: s.WaitingFor,
-		Since: time.UnixMilli(s.StatusUpdatedAt), Folder: s.Cwd, Project: agent.ProjectOf(s.Cwd), Terminal: terminalOf(s), Resume: agent.ResumeOf(s.Cwd, s.SessionID),
+		Since: time.UnixMilli(s.StatusUpdatedAt), Folder: s.Cwd, Project: agent.ProjectOf(s.Cwd), Terminal: terminalOf(s), Resume: agent.ResumeOf(runtime.GOOS, s.Cwd, s.SessionID),
 	}
 }
 

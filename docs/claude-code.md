@@ -110,7 +110,8 @@ window's Agents tab shows them. From there:
   the command that resumes it instead. On Windows the session says what it
   runs in — Windows Terminal, VS Code, WezTerm or Claude Desktop — and
   `cairn agent go` says the command that resumes it, since none of them is
-  brought to the front.
+  brought to the front. That command is for PowerShell, Windows PowerShell
+  5.1 included.
 - `cairn agent start --folder <dir> --terminal <terminal> [--task <n>]`
   starts claude in a new tab, asked to work on the task when one is named;
   `cairn agent terminals` names the terminals it starts in.

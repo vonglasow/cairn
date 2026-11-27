@@ -189,16 +189,21 @@ func AgentsText(a Agents) string {
 // Quoted is a text as a shell reads it, one word whatever it holds.
 func Quoted(said string) string { return "'" + strings.ReplaceAll(said, "'", `'\''`) + "'" }
 
-func word(said string) string {
+func powerShellQuoted(said string) string { return "'" + strings.ReplaceAll(said, "'", "''") + "'" }
+
+func word(said string, quoted func(string) string) string {
 	if said != "" && strings.Trim(said, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_") == "" {
 		return said
 	}
-	return Quoted(said)
+	return quoted(said)
 }
 
-// ResumeOf is the command that resumes a session in its folder, for a person to run in a terminal of their own.
-func ResumeOf(folder, id string) string {
-	return "cd " + Quoted(folder) + " && claude --resume " + word(id)
+// ResumeOf is the command that resumes a session in its folder, for a person to run in a terminal of their own: a PowerShell one on Windows.
+func ResumeOf(system, folder, id string) string {
+	if system == "windows" {
+		return "cd " + powerShellQuoted(folder) + "; claude --resume " + word(id, powerShellQuoted)
+	}
+	return "cd " + Quoted(folder) + " && claude --resume " + word(id, Quoted)
 }
 
 // CommandFor is the command that starts a session: claude, asked to work on the task when one is named.

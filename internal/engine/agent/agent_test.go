@@ -11,8 +11,10 @@ func TestCommands(t *testing.T) {
 		got  string
 		want string
 	}{
-		{"a folder is one word whatever it holds", ResumeOf("/w/it's; rm -rf ~", "a3f9c1d2-1"), `cd '/w/it'\''s; rm -rf ~' && claude --resume a3f9c1d2-1`},
-		{"an id that is not a plain word is quoted", ResumeOf("/w", "a b"), `cd '/w' && claude --resume 'a b'`},
+		{"a folder is one word whatever it holds", ResumeOf("darwin", "/w/it's; rm -rf ~", "a3f9c1d2-1"), `cd '/w/it'\''s; rm -rf ~' && claude --resume a3f9c1d2-1`},
+		{"an id that is not a plain word is quoted", ResumeOf("linux", "/w", "a b"), `cd '/w' && claude --resume 'a b'`},
+		{"on Windows a folder is one word to PowerShell", ResumeOf("windows", `C:\w\it's; rm ~`, "a3f9c1d2-1"), `cd 'C:\w\it''s; rm ~'; claude --resume a3f9c1d2-1`},
+		{"on Windows an id that is not a plain word is quoted for PowerShell", ResumeOf("windows", `C:\w`, "it's"), `cd 'C:\w'; claude --resume 'it''s'`},
 		{"a session started on a task is asked to work on it", CommandFor(12), `claude 'let'\''s work on cairn#12'`},
 		{"a session started on no task is claude alone", CommandFor(0), "claude"},
 	} {
