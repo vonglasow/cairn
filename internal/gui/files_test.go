@@ -7,9 +7,26 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
+
+func TestTheSystemChoosesAFolderWithItsOwnPicker(t *testing.T) {
+	name, args := FolderCommand("linux")
+	if name != "zenity" || !slices.Equal(args, []string{"--file-selection", "--directory"}) {
+		t.Errorf("on linux the folder is chosen by %q %q, want zenity", name, args)
+	}
+	name, args = FolderCommand("windows")
+	if name != "powershell" || len(args) != 3 || !slices.Equal(args[:2], []string{"-NoProfile", "-Command"}) {
+		t.Fatalf("on windows the folder is chosen by %q %q, want powershell -NoProfile -Command", name, args)
+	}
+	for _, said := range []string{"FolderBrowserDialog", "exit 1", "UTF8"} {
+		if !strings.Contains(args[2], said) {
+			t.Errorf("the windows picker never says %q: %s", said, args[2])
+		}
+	}
+}
 
 type dialog struct {
 	save, open string

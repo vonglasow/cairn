@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"gioui.org/app"
@@ -31,11 +32,12 @@ func (s explorerFiles) CreateFile(name string) (io.WriteCloser, error) {
 }
 
 func (s explorerFiles) ChooseFolder() (string, error) {
-	picker, err := exec.LookPath("zenity")
+	name, args := FolderCommand(runtime.GOOS)
+	picker, err := exec.LookPath(name)
 	if err != nil {
 		return "", ErrNoPicker
 	}
-	out, err := exec.Command(picker, "--file-selection", "--directory").Output()
+	out, err := exec.Command(picker, args...).Output()
 	var exited *exec.ExitError
 	if errors.As(err, &exited) && exited.ExitCode() == 1 {
 		return "", ErrDeclined

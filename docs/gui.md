@@ -225,8 +225,9 @@ forward when it is already open. <kbd>⌘⇧</kbd> and a figure choose one direc
 
 1. Type its **name**: lowercase letters, digits and dashes.
 2. Its **folder** follows the name, `~/.cairn/<name>`. Click the field to type
-   another, or **Choose…** to pick it in the system's dialog. A folder that
-   holds a board already is opened as it is.
+   another, or **Choose…** to pick it in the system's dialog — on Linux,
+   zenity's; without zenity the folder is typed. A folder that holds a board
+   already is opened as it is.
 3. Its **notes** stay in its folder unless another is typed or chosen — a
    vault's, for one: see [Notes in Obsidian](notes-obsidian.md).
 4. Click a **colour**. Without one, it wears a colour read off its name.

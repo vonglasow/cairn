@@ -203,3 +203,18 @@ func calledOf(file any, otherwise string) string {
 	}
 	return otherwise
 }
+
+// FolderCommand is the command that asks the person for a folder on that system, saying it on its output, and exiting 1 when they decline.
+func FolderCommand(goos string) (string, []string) {
+	if goos == "windows" {
+		return "powershell", []string{"-NoProfile", "-Command", windowsFolderPicker}
+	}
+	return "zenity", []string{"--file-selection", "--directory"}
+}
+
+const windowsFolderPicker = `[Console]::OutputEncoding = [Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Windows.Forms
+$picker = New-Object System.Windows.Forms.FolderBrowserDialog
+$front = New-Object System.Windows.Forms.Form -Property @{TopMost = $true}
+if ($picker.ShowDialog($front) -ne 'OK') { exit 1 }
+$picker.SelectedPath`
