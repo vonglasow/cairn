@@ -17,8 +17,9 @@ const (
 	KeepAsViewSays   = "Save as a view…"
 	KeepTheViewSays  = "Keep the view"
 	SaveToViewSays   = "Save to the view"
-	KeepAsNewSays    = "Keep as a new view…"
 	WholeBoardSays   = "Whole board"
+	ViewingSays      = "Open a view…"
+	FilterFirstSays  = "filter the board first"
 	ViewsNoneSays    = "No view yet: filter the board, then keep it from the filters"
 	viewsThenSays    = "`e` opens it to change it, `⌘⌫` deletes it"
 	viewsAtMostByKey = 9
@@ -71,13 +72,7 @@ func (w Window) startingKeep() Window {
 	if v, in := w.InView(); in {
 		proposed = strings.Join(slices.DeleteFunc([]string{v.Name, proposed}, func(s string) bool { return s == "" }), " · ")
 	}
-	w.Screen, w.OfView, w.KeepName = board.OnKeeping, false, board.Ending(proposed).All()
-	return w
-}
-
-func (w Window) openingViewPopover() Window {
-	w = w.filteringBoard()
-	w.Screen, w.OfView = board.OnKeeping, true
+	w.Screen, w.KeepName = board.OnKeeping, board.Ending(proposed).All()
 	return w
 }
 
@@ -91,7 +86,7 @@ func (w Window) keepingView(name string) Window {
 	w = w.Look()
 	w.Viewing = kept.Viewed.Name
 	w.Filters, w.Looking = w.Filters.Cleared(), board.Written{}
-	w.Screen, w.OfView = board.OnTheBoard, false
+	w.Screen = board.OnTheBoard
 	return w
 }
 
@@ -105,14 +100,11 @@ func (w Window) savingToView() Window {
 	}
 	w = w.Look()
 	w.Filters, w.Looking = w.Filters.Cleared(), board.Written{}
-	w.Screen, w.OfView = board.OnTheBoard, false
+	w.Screen = board.OnTheBoard
 	return w
 }
 
 func (w Window) onKeeping(name string) Window {
-	if w.OfView {
-		return w
-	}
 	if edit, ok := textKey(name); ok {
 		w.KeepName = edit(w.KeepName)
 		return w
@@ -129,10 +121,7 @@ func (w Window) onKeeping(name string) Window {
 // KeepingBox is the popover dropped under the pill it opened from: a view about to be kept, its name typed and what it would keep said, or the view in force, what it holds and what it shows against the store.
 func (w Window) KeepingBox() geom.Box {
 	box := w.droppedUnder(w.filterAnchor(), max(keepingWide, w.footWide()), 0)
-	box.H = dropHead + w.keepingFacts().High() + dropFoot + 2*padding
-	if !w.OfView {
-		box.H += menuRow + padding
-	}
+	box.H = dropHead + w.keepingFacts().High() + dropFoot + 2*padding + menuRow + padding
 	return box
 }
 
@@ -145,38 +134,12 @@ func (w Window) KeepingField() geom.Box {
 // KeepingFactsAt is where the popover says what the view holds and keeps.
 func (w Window) KeepingFactsAt() geom.Box {
 	box := w.KeepingBox()
-	y := box.Y + dropHead + padding/2
-	if !w.OfView {
-		y = w.KeepingField().Y + menuRow + padding
-	}
+	y := w.KeepingField().Y + menuRow + padding
 	return geom.Box{X: box.X + padding, Y: y, W: box.W - 2*padding, H: w.keepingFacts().High()}
-}
-
-// KeepingHead is what heads the popover: keeping a view, or the name of the view in force.
-func (w Window) KeepingHead() string {
-	if v, in := w.InView(); in && w.OfView {
-		return "view " + v.Name
-	}
-	return KeepAsViewSays
 }
 
 func (w Window) keepingFacts() Facts {
 	of := len(board.Laid(w.Snap.Cards, w.Archived))
-	if v, in := w.InView(); in && w.OfView {
-		lines := []Fact{
-			{Name: "holds", Value: engine.HoldsSays(v.View)},
-			{Name: "shows", Value: strconv.Itoa(v.Keeps) + " of " + countOf(v.Of, "task") + " · " + strconv.Itoa(v.Done) + " done"},
-		}
-		for _, n := range v.Holds.Objective {
-			if g, found := w.Snap.Goal(n); found {
-				lines = append(lines, Fact{Name: "#" + strconv.Itoa(n), Value: strconv.Itoa(g.Done) + "/" + countOf(g.Total, "task") + " done, the store's", Aside: g.Title})
-			}
-		}
-		if gone := board.GoneSays(v.View); gone != "" {
-			lines = append(lines, Fact{Name: "gone", Value: gone})
-		}
-		return Facts{Lines: lines}
-	}
 	lines := []Fact{{Name: "keeps", Value: strconv.Itoa(w.Holds(board.Tasks)) + " of " + countOf(of, "task")}}
 	if said := w.Filters.Proposed(w.Snap, w.Looking.Reads()); said != "" {
 		lines = append(lines, Fact{Name: "holds", Value: said})
@@ -198,42 +161,6 @@ type ViewRow struct {
 
 func rowOf(v board.Viewing) ViewRow {
 	return ViewRow{Name: v.Name, Keeps: len(v.Kept), Key: viewKey(v.Place), Holds: engine.HoldsSays(v.View), Late: len(v.Gone) > 0}
-}
-
-// ViewRows is the views listed at the head of the open filter menu, the one in force taken.
-func (w Window) ViewRows() []ViewRow {
-	if w.Screen != board.OnFiltering || w.ViewsAbove() == 0 {
-		return nil
-	}
-	box := w.filtersColumn()
-	if box.W == 0 {
-		return nil
-	}
-	var rows []ViewRow
-	for i, v := range w.Snap.Views {
-		row := rowOf(v)
-		row.At, row.Taken, row.On = DropRowAt(box, i), v.Name == w.Viewing, i+1 == w.ViewWalked
-		rows = append(rows, row)
-	}
-	return rows
-}
-
-// EditViewsAt is the line under the views of the filter menu that opens their panel.
-func (w Window) EditViewsAt() geom.Box { return DropRowAt(w.filtersColumn(), len(w.Snap.Views)) }
-
-// FilterHeadAt is the line naming the filters under the views of the filter menu.
-func (w Window) FilterHeadAt() geom.Box { return DropRowAt(w.filtersColumn(), len(w.Snap.Views)+1) }
-
-func (w Window) clickingViews(p geom.Point) (Window, bool) {
-	for _, row := range w.ViewRows() {
-		if v, found := w.Snap.View(row.Name); found && row.At.In(p) {
-			return w.openingView(v.Place), true
-		}
-	}
-	if w.ViewsAbove() > 0 && w.EditViewsAt().In(p) {
-		return w.listingViews(), true
-	}
-	return w, false
 }
 
 func (w Window) listingViews() Window {
@@ -366,11 +293,6 @@ func (w Window) choosingOnViews(offer string) (Window, bool) {
 	switch strings.ToLower(offer) {
 	case strings.ToLower(KeepTheViewSays):
 		return w.keepingView(strings.TrimSpace(w.KeepName.Reads())), true
-	case strings.ToLower(SaveToViewSays):
-		return w.savingToView(), true
-	case strings.ToLower(KeepAsNewSays):
-		w.Screen = board.OnTheBoard
-		return w.startingKeep(), true
 	case "open":
 		v, ok := w.ChosenView()
 		if !ok {
@@ -391,7 +313,7 @@ func (w Window) choosingOnViews(offer string) (Window, bool) {
 			w.RenamingView = false
 			return w, true
 		}
-		w.Screen, w.OfView = board.OnTheBoard, false
+		w.Screen = board.OnTheBoard
 		return w, true
 	}
 	return w, false
@@ -399,7 +321,7 @@ func (w Window) choosingOnViews(offer string) (Window, bool) {
 
 func (w Window) clickingKeeping(p geom.Point) Window {
 	if !w.KeepingBox().In(p) {
-		w.Screen, w.OfView = board.OnTheBoard, false
+		w.Screen = board.OnTheBoard
 	}
 	return w
 }

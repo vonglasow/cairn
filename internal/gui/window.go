@@ -51,6 +51,7 @@ type Window struct {
 
 	palette  paletteState
 	switcher switcherState
+	viewing  viewingState
 	going    bool
 	goneAt   time.Time
 

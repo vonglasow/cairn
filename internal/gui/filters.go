@@ -10,25 +10,12 @@ import (
 
 func (w Window) filteringBoard() Window {
 	w.Filters = board.FiltersOf(w.Snap, w.Today()).Keeping(w.Filters)
-	w.Screen, w.FilterOpen, w.FilterFromPill, w.ViewWalked = board.OnFiltering, false, false, 0
+	w.Screen, w.FilterOpen, w.FilterFromPill = board.OnFiltering, false, false
 	return w
 }
 
 func (w Window) walkingTheMenu(by int) Window {
-	views := len(w.Snap.Views)
-	if w.ViewsAbove() == 0 {
-		views = 0
-	}
-	switch {
-	case w.ViewWalked > 0 && by > 0 && w.ViewWalked == views:
-		w.ViewWalked, w.FilterOn = 0, 0
-	case w.ViewWalked > 0:
-		w.ViewWalked = max(1, w.ViewWalked+by)
-	case by < 0 && w.FilterOn == 0 && views > 0:
-		w.ViewWalked = views
-	default:
-		w.FilterOn = min(len(w.Filters)-1, max(0, w.FilterOn+by))
-	}
+	w.FilterOn = min(len(w.Filters)-1, max(0, w.FilterOn+by))
 	return w
 }
 
@@ -59,9 +46,6 @@ func (w Window) onFilters(name string) Window {
 	case "up", "k":
 		return w.walkingTheMenu(-1)
 	case "enter", "space", "right":
-		if w.ViewWalked > 0 {
-			return w.openingView(w.Snap.Views[w.ViewWalked-1].Place)
-		}
 		return w.openingFilter(w.FilterOn)
 	}
 	for i, f := range w.Filters {
@@ -76,7 +60,7 @@ func (w Window) onFilters(name string) Window {
 func FilterKey(f board.Filter) string { return f.Name[:1] }
 
 func (w Window) openingFilter(at int) Window {
-	w.FilterOn, w.FilterOpen, w.FilterPick, w.ViewWalked, w.FilterTrail = at, true, max(1, w.Filters[at].At), 0, nil
+	w.FilterOn, w.FilterOpen, w.FilterPick, w.FilterTrail = at, true, max(1, w.Filters[at].At), nil
 	if first := w.ValueColumns()[0]; len(first) > 0 && !slices.Contains(first, w.FilterPick) {
 		w.FilterPick = first[0]
 	}
@@ -237,7 +221,7 @@ func (w Window) FilterColumns() ([]FilterColumn, geom.Box) {
 	if w.FilterOpen {
 		values = w.ValueColumns()
 	}
-	rows := w.ViewsAbove() + len(w.Filters)
+	rows := len(w.Filters)
 	for _, column := range values {
 		rows = max(rows, len(column))
 	}
@@ -319,11 +303,6 @@ func dropRoom(box geom.Box) int { return max(1, (box.H-dropHead-dropFoot-inset)/
 
 func (w Window) filterAnchor() geom.Box {
 	for _, pill := range w.Pills() {
-		if w.Screen == board.OnKeeping && w.OfView && pill.Kind == PillView {
-			return pill.Box
-		}
-	}
-	for _, pill := range w.Pills() {
 		if w.FilterFromPill && pill.Kind == PillFilter && pill.At == w.FilterOn {
 			return pill.Box
 		}
@@ -343,7 +322,7 @@ func (w Window) FilterRowAt(i int) geom.Box {
 	if column.W == 0 {
 		return geom.Box{}
 	}
-	return DropRowAt(column, w.ViewsAbove()+i)
+	return DropRowAt(column, i)
 }
 
 // FilterList is the values of the filter whose list is open, where each is drawn in the furthest column listing it, and whether one is open.
@@ -378,9 +357,6 @@ func (w Window) clickingFilters(p geom.Point) Window {
 		}
 		if column.At > 0 {
 			return w.clickingValue(column, p)
-		}
-		if viewed, on := w.clickingViews(p); on {
-			return viewed
 		}
 		for i := range w.Filters {
 			if w.FilterRowAt(i).In(p) {
@@ -424,28 +400,25 @@ const (
 	PillClear
 	// PillFolded stands for every filter and the search when they no longer fit.
 	PillFolded
-	// PillView is the view in force, standing for every filter it holds, its cross leaving it.
-	PillView
 	// PillState is the state the series' tab is narrowed to, walked by a click, its cross listing them all again.
 	PillState
 )
 
-// FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, whether it is faint for meaning nothing on the page in sight, for a view whether a filter or a search stands on top of it, and what it says faint after its value.
+// FilterPill is one pill of the row at the right of the tabs: where it is, what it says and the name it says it under, what it stands for, for a filter's which one, whether it is faint for meaning nothing on the page in sight, and what it says faint after its value.
 type FilterPill struct {
-	Box     geom.Box
-	Said    string
-	Name    string
-	Kind    PillKind
-	At      int
-	Faint   bool
-	Serves  bool
-	Changed bool
-	Tail    string
+	Box    geom.Box
+	Said   string
+	Name   string
+	Kind   PillKind
+	At     int
+	Faint  bool
+	Serves bool
+	Tail   string
 }
 
 // Cross is where a pill that clears what it stands for draws the cross that does it.
 func (p FilterPill) Cross() (geom.Box, bool) {
-	if p.Kind != PillSearch && p.Kind != PillFilter && p.Kind != PillView && p.Kind != PillState {
+	if p.Kind != PillSearch && p.Kind != PillFilter && p.Kind != PillState {
 		return geom.Box{}, false
 	}
 	return geom.Box{X: p.Box.X + p.Box.W - pillCross, Y: p.Box.Y, W: pillCross, H: p.Box.H}, true
@@ -471,19 +444,11 @@ func (w Window) Pills() []FilterPill {
 	plain := func(said string, kind PillKind) {
 		row = append(row, FilterPill{Box: geom.Box{W: ends(m, said, small) + 2*pillPad}, Said: said, Kind: kind})
 	}
-	taken, viewed := 0, 0
+	taken := 0
 	if w.Tab == board.Series {
 		plain(AddFilterSays, PillAdd)
 		crossed(StateSays, w.SeriesState(), PillState, -1)
 		return placedPills(row, start, end, y, high)
-	}
-	if v, in := w.InView(); in {
-		crossed("view", v.Name, PillView, -1)
-		row[0].Changed = w.ViewChanged()
-		if row[0].Changed {
-			row[0].Box.W += dotSide + between
-		}
-		viewed = 1
 	}
 	if !w.Looking.Empty() && w.Screen != board.OnSearch {
 		crossed("/", w.Looking.Reads(), PillSearch, -1)
@@ -515,12 +480,12 @@ func (w Window) Pills() []FilterPill {
 	if !narrowed {
 		plain(AddFilterSays, PillAdd)
 	}
-	if widthOf(row) > end-start && taken+viewed > 0 {
+	if widthOf(row) > end-start && taken > 0 {
 		row = nil
 		if !narrowed {
 			plain(ClearSays, PillClear)
 		}
-		plain(FoldedSays(taken+viewed), PillFolded)
+		plain(FoldedSays(taken), PillFolded)
 	}
 	return placedPills(row, start, end, y, high)
 }
@@ -594,8 +559,6 @@ func (w Window) clickingPill(pill FilterPill, p geom.Point) Window {
 		case PillSearch:
 			w.Looking = board.Written{}
 			return w
-		case PillView:
-			return w.leavingView()
 		case PillState:
 			w.SeriesIn = 0
 			return w
@@ -607,8 +570,6 @@ func (w Window) clickingPill(pill FilterPill, p geom.Point) Window {
 		return w.walkingSeriesState()
 	}
 	switch pill.Kind {
-	case PillView:
-		return w.openingViewPopover()
 	case PillFilter:
 		return w.openingFilterFromPill(pill.At)
 	case PillAdd, PillFolded:

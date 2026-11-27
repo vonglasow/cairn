@@ -1,8 +1,10 @@
 package gui
 
 import (
+	"cairn/internal/board"
 	"cairn/internal/engine/calendar"
 	"cairn/internal/gui/geom"
+	"slices"
 	"strings"
 )
 
@@ -128,13 +130,24 @@ func (w Window) TabsAt() []geom.Box {
 	at := TabAt(l, 0)
 	var boxes []geom.Box
 	for _, page := range w.Shown() {
-		wide := 2*padding + ends(m, Titled(Pages[page]), reads) + countGap + ends(m, w.TabCount(page), small) + tabSlack
+		wide := 2*padding + ends(m, w.TabSaid(page), reads) + countGap + ends(m, w.TabCount(page), small) + tabSlack + tabArrowRoom(page)
 		if w.TabAlert(page) > 0 {
 			wide += alertSide + tabSlack
 		}
-		at.W = min(tabWide, wide)
+		at.W = min(tabWide+tabArrowRoom(page)+ends(m, w.TabSaid(page), reads)-ends(m, Titled(Pages[page]), reads), wide)
 		boxes = append(boxes, at)
 		at.X += at.W
+	}
+	if tasks := slices.Index(w.Shown(), board.Tasks); tasks >= 0 {
+		named := ends(m, w.TabSaid(board.Tasks), reads) - ends(m, Titled(Pages[board.Tasks]), reads)
+		over := min(named, at.X-(MenuButton(l).X-between))
+		if over > 0 {
+			boxes[tasks].W -= over
+			for i := tasks + 1; i < len(boxes); i++ {
+				boxes[i].X -= over
+			}
+			at.X -= over
+		}
 	}
 	at.W = 0
 	return append(boxes, at)

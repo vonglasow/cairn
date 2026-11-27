@@ -187,7 +187,7 @@ func (p FilterPill) Draw(k Kit, at geom.Box) geom.Box {
 	in := k.inside("filter")
 	line := geom.Box{X: at.X, Y: at.Y + (at.H-lineHigh)/2, W: at.W, H: lineHigh}
 	switch p.Kind {
-	case PillSearch, PillFilter, PillView, PillState:
+	case PillSearch, PillFilter, PillState:
 		p.inForce(k, in, at)
 	case PillAdd:
 		Dashed{Radius: k.skin.Radius.Full(at)}.Draw(in, at)
@@ -214,10 +214,6 @@ func (p FilterPill) inForce(k, in Kit, at geom.Box) {
 	}
 	sayIn(k.gtx, k.th, name, line, p.Name, small, font.Font{}, text.Start)
 	said := ends(k.measured(), p.Name, small) + nameGap
-	if p.Changed {
-		line.W -= dotSide + between
-		Dot{Late: true}.Draw(in, geom.Box{X: line.X + line.W + between, Y: at.Y + (at.H-dotSide)/2, W: dotSide, H: dotSide})
-	}
 	valued := strings.TrimSuffix(strings.TrimPrefix(p.Said, p.Name+" "), " "+p.Tail)
 	sayIn(k.gtx, k.th, value, geom.Box{X: line.X + said, Y: line.Y, W: line.W - said, H: line.H}, valued, small, font.Font{Weight: font.Medium}, text.Start)
 	if p.Tail != "" {

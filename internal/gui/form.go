@@ -121,6 +121,10 @@ func (w Window) writing(change func(board.Written) board.Written) Window {
 	if w.MakingSpace() {
 		return w.writingNewSpace(change)
 	}
+	if w.Screen == board.OnViewing {
+		w.viewing.typed, w.viewing.on = change(w.viewing.typed), 0
+		return w
+	}
 	if w.Screen == board.OnWorkspaces {
 		w.switcher.typed = change(w.switcher.typed)
 		if w.switcher.asking == narrowing {
@@ -136,7 +140,7 @@ func (w Window) writing(change func(board.Written) board.Written) Window {
 		w.KeyWritten = change(w.KeyWritten)
 		return w
 	}
-	if w.Screen == board.OnKeeping && !w.OfView {
+	if w.Screen == board.OnKeeping {
 		w.KeepName = change(w.KeepName)
 		return w
 	}

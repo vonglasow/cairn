@@ -56,7 +56,6 @@ type Board struct {
 	Fates          Deleting
 	RefusedChoice  string
 	RefusedThen    string
-	ViewWalked     int
 	FateRow        int
 	Unfolded       []int
 	Err            error
@@ -66,7 +65,6 @@ type Board struct {
 type ViewsState struct {
 	Viewing      string
 	KeepName     Written
-	OfView       bool
 	ViewOn       int
 	RenamingView bool
 	ViewRenamed  Written

@@ -418,14 +418,6 @@ func (b Board) Keepable() bool {
 	return b.Filters.Narrows() || !b.Looking.Empty()
 }
 
-// ViewsAbove is how many lines the views take at the head of the filter menu: none without a view.
-func (b Board) ViewsAbove() int {
-	if len(b.Snap.Views) == 0 {
-		return 0
-	}
-	return len(b.Snap.Views) + 2
-}
-
 // DayCard is a task of the time page as the board holds it, so it is drawn the way the board draws it; a task the board no longer holds is drawn from what the sheet says of it.
 func (b Board) DayCard(one engine.TimesheetTask) Card {
 	if c, found := b.Snap.Card(one.Number); found {

@@ -180,6 +180,9 @@ func Draw(k Kit, w Window) {
 	} else if w.Screen == board.OnWorkspaces {
 		drawSwitcher(popover, w)
 	}
+	if w.Screen == board.OnViewing {
+		drawViewing(popover, w)
+	}
 	if w.Screen == board.OnConfiguration {
 		drawSwatches(popover, w)
 	}
@@ -297,12 +300,10 @@ func drawKeeping(k Kit, w Window) {
 	Panel{}.Draw(k, box)
 	k = k.inside("panel")
 	head := geom.Box{X: box.X + padding, Y: box.Y + (dropHead-lineHigh)/2, W: box.W - 2*padding, H: lineHigh}
-	Head{Said: w.KeepingHead()}.Draw(k, head)
+	Head{Said: KeepAsViewSays}.Draw(k, head)
 	Rule{}.Draw(k, geom.Box{X: box.X, Y: box.Y + dropHead - 1, W: box.W})
-	if !w.OfView {
-		field := Field{Lit: true}.Draw(k, w.KeepingField())
-		writing(k.inside("field"), w.measured(), Inside(field), w.Naming(), true, reads, 1, Follow)
-	}
+	field := Field{Lit: true}.Draw(k, w.KeepingField())
+	writing(k.inside("field"), w.measured(), Inside(field), w.Naming(), true, reads, 1, Follow)
 	w.keepingFacts().Draw(k, w.KeepingFactsAt())
 	drawDropFoot(k, w, box, w.KeepingFoot())
 }
@@ -415,19 +416,11 @@ func drawFilterValues(k Kit, w Window, column FilterColumn, head geom.Box, last 
 
 func drawFilterNames(k Kit, w Window, head geom.Box) {
 	v, viewed := w.InView()
-	if rows := w.ViewRows(); len(rows) > 0 {
-		Head{Said: ViewsSays}.Draw(k, head)
-		for _, row := range rows {
-			drawViewRow(k, w, row, false)
-		}
-		Row{Said: EditViewsSays}.Draw(k, w.EditViewsAt())
-		head = Inside(w.FilterHeadAt())
-	}
 	Head{Said: FilterMenuSays}.Draw(k, head)
 	open := w.Screen == board.OnFiltering && w.FilterOpen
 	for i, f := range w.Filters {
 		row := w.FilterRowAt(i)
-		Row{Said: Titled(f.Name), Picked: !open && i == w.FilterOn && w.ViewWalked == 0, Hover: open && i == w.FilterOn}.Draw(k, row)
+		Row{Said: Titled(f.Name), Picked: !open && i == w.FilterOn, Hover: open && i == w.FilterOn}.Draw(k, row)
 		line := Inside(row)
 		if len(f.Taken()) == 0 && viewed && board.Narrows(v.Holds, f.Arg) {
 			at := ends(w.measured(), Titled(f.Name), reads) + between
@@ -740,9 +733,9 @@ func drawHelp(k Kit, w Window) {
 }
 
 func drawTabs(k Kit, l geom.Layout, w Window) {
-	tabs := Tabs{On: -1}
+	tabs := Tabs{On: -1, Arrow: slices.Index(w.Shown(), board.Tasks), Changed: w.TabChanged(board.Tasks)}
 	for i, page := range w.Shown() {
-		tabs.Said = append(tabs.Said, Titled(Pages[page]))
+		tabs.Said = append(tabs.Said, w.TabSaid(page))
 		tabs.Counts = append(tabs.Counts, w.TabCount(page))
 		tabs.Alerts = append(tabs.Alerts, w.TabAlert(page))
 		tabs.At = append(tabs.At, w.TabsAt()[i])
@@ -751,6 +744,9 @@ func drawTabs(k Kit, l geom.Layout, w Window) {
 		}
 	}
 	tabs.Draw(k, l.Tabs)
+	if arrow := w.TabArrow(); arrow.W > 0 {
+		Chevron{Ink: k.skin.Colour.Ink.Faint}.Draw(k.inside("tabs").inside("tab"), arrow)
+	}
 }
 
 func drawColumns(k Kit, l geom.Layout, w Window, scene motion.Scene) {

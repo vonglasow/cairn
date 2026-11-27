@@ -13,7 +13,8 @@ type Tabs struct {
 	Said, Counts []string
 	Alerts       []int
 	At           []geom.Box
-	On           int
+	On, Arrow    int
+	Changed      bool
 }
 
 // Draw draws the tabs, each in its own box, the band they stand in being at.
@@ -29,6 +30,13 @@ func (t Tabs) Draw(k Kit, at geom.Box) geom.Box {
 			ink = k.skin.Colour.Ink.Text
 		}
 		room := TabName(tab)
+		if i == t.Arrow {
+			room.W -= markWide + padding
+		}
+		if i == t.Arrow && t.Changed {
+			room.W -= dotSide + between
+			Dot{Late: true}.Draw(in.inside("tab"), geom.Box{X: room.X + room.W + between, Y: tab.Y + (tab.H-dotSide)/2, W: dotSide, H: dotSide})
+		}
 		sayStyled(k.gtx, k.th, ink, room, t.Said[i], reads, font.Medium, 1, text.Start)
 		counted := ends(m, t.Said[i], reads) + countGap
 		sayIn(k.gtx, k.th, k.skin.Colour.Ink.Low, geom.Box{X: room.X + counted, Y: room.Y + reads - small, W: max(0, room.W-counted), H: room.H}, t.Counts[i], small, k.skin.Type.Mono, text.Start)

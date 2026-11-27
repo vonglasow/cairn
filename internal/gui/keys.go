@@ -76,6 +76,7 @@ var screens = map[board.Screen]func(Window, string) Window{
 	board.OnRule:          Window.onRule,
 	board.OnKeeping:       Window.onKeeping,
 	board.OnViews:         Window.onViews,
+	board.OnViewing:       Window.onViewing,
 }
 
 func (w Window) onBoard(name string) Window {
@@ -165,6 +166,8 @@ func (w Window) onBoard(name string) Window {
 		return w.openingConfiguration()
 	case "cmd+shift+o":
 		return w.openingSwitcher()
+	case "cmd+shift+v":
+		return w.openingViews()
 	case "shift+f":
 		return w.filteringBoard()
 	case "backspace":

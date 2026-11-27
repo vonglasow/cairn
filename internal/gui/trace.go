@@ -44,7 +44,7 @@ var screenNames = map[board.Screen]string{
 	board.OnTheBoard: "board", board.OnForm: "form", board.OnSearch: "search", board.OnAsking: "asking", board.OnHelp: "help",
 	board.OnChoosing: "choosing", board.OnCalendar: "calendar", board.OnMenu: "menu", board.OnBackups: "backups",
 	board.OnLabels: "labels", board.OnFiltering: "filtering", board.OnConfiguration: "configuration", board.OnPalette: "palette", board.OnWorkspaces: "workspaces",
-	board.OnKeeping: "keeping", board.OnViews: "views", board.OnSeriesFates: "series fates", board.OnRule: "rule",
+	board.OnKeeping: "keeping", board.OnViews: "views", board.OnViewing: "viewing", board.OnSeriesFates: "series fates", board.OnRule: "rule",
 }
 
 // Seen is what the window shows, the way debug mode writes it down each time it changes: the screen, the page, and the card or objective chosen.

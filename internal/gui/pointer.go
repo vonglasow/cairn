@@ -42,6 +42,9 @@ func (w Window) Click(p geom.Point) Window {
 	if w.Screen == board.OnWorkspaces {
 		return w.clickingWorkspaces(p)
 	}
+	if w.Screen == board.OnViewing {
+		return w.clickingViewing(p)
+	}
 	if w.Screen == board.OnTheBoard && w.Layout().Place.In(p) {
 		return w.openingSwitcher()
 	}
@@ -153,6 +156,9 @@ func (w Window) Click(p geom.Point) Window {
 		}
 	} else if w.Screen != board.OnTheBoard {
 		return w
+	}
+	if w.TabArrow().In(p) {
+		return w.openingViews()
 	}
 	if tab, on := w.tabAt(p); on {
 		return w.onPage(tab)

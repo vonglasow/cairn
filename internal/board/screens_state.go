@@ -432,13 +432,7 @@ func (b Board) KeepInput() engine.Input {
 
 // KeepingFoot is the keys the foot of the popover says, each with what it does.
 func (b Board) KeepingFoot() [][2]string {
-	if !b.OfView {
-		return [][2]string{{"⏎", "keep"}, {"esc", "close"}}
-	}
-	if b.ViewChanged() {
-		return [][2]string{{"⏎", "save"}, {"v", "keep as new"}, {"esc", "close"}}
-	}
-	return [][2]string{{"esc", "close"}}
+	return [][2]string{{"⏎", "keep"}, {"esc", "close"}}
 }
 
 // ChosenView is the view the panel of the views is on, and whether there is one.

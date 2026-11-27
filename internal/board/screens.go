@@ -46,6 +46,8 @@ const (
 	OnDetail
 	// OnSaid is what a command typed at the foot answered, until esc.
 	OnSaid
+	// OnViewing is the views dropped under the Tasks tab: one opened, the filters in force saved, the views edited.
+	OnViewing
 	// TooSmallToDraw is a window too small to say anything useful in.
 	TooSmallToDraw
 )

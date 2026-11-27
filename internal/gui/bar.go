@@ -145,10 +145,8 @@ func Shortcut(offer string) string {
 		return "r"
 	case "open":
 		return "e"
-	case strings.ToLower(KeepTheViewSays), strings.ToLower(SaveToViewSays):
+	case strings.ToLower(KeepTheViewSays):
 		return "enter"
-	case strings.ToLower(KeepAsNewSays):
-		return "v"
 	case "new label":
 		return "n"
 	case "colour":
@@ -324,13 +322,7 @@ func (w Window) Offers() []string {
 	case board.OnMenu, board.OnWorkspaces:
 		return nil
 	case board.OnKeeping:
-		if !w.OfView {
-			return []string{KeepTheViewSays, "Cancel"}
-		}
-		if w.ViewChanged() {
-			return []string{SaveToViewSays, KeepAsNewSays, "Close"}
-		}
-		return []string{"Close"}
+		return []string{KeepTheViewSays, "Cancel"}
 	case board.OnViews:
 		if w.RenamingView {
 			return []string{"Save", "Cancel"}

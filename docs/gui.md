@@ -78,6 +78,7 @@ you, blue while it works.
 | <kbd>⌘B</kbd> <kbd>⇧B</kbd> | back the store up, list the backups |
 | <kbd>⌘E</kbd> <kbd>⌘O</kbd> | export every task to a file, import one |
 | <kbd>⌘1</kbd>…<kbd>⌘9</kbd> | open a view; <kbd>⌘0</kbd> the whole board |
+| <kbd>⌘⇧V</kbd> | the views |
 | <kbd>⌘⇧O</kbd> | open another workspace |
 | <kbd>⌘,</kbd> | the settings |
 | <kbd>⌘Z</kbd> | in a form, bring back what was typed |
@@ -133,8 +134,16 @@ itself** every couple of seconds; <kbd>⌘⏎</kbd> or <kbd>⌘S</kbd> saves at 
 unblocked, series, focus — and what filters the board stands above it as pills. Each
 value says how many tasks it would keep.
 
-The filter menu lists the [views](listing.md#views) at its head; <kbd>⌘1</kbd>…<kbd>⌘9</kbd>
-open them. **Save as a view…** keeps what filters the board under a name.
+The Tasks tab names the [view](listing.md#views) in force, `Tasks · <view>`,
+and a dot marks it when a filter or a search stands on top of it. The arrow
+in the tab, or <kbd>⌘⇧V</kbd>, drops the views under it:
+
+- type to narrow them; click one, or <kbd>⏎</kbd>, to open it; **Whole board**
+  leaves the view. <kbd>⌘1</kbd>…<kbd>⌘9</kbd> open them from anywhere, <kbd>⌘0</kbd> the whole board;
+- **Save to the view** keeps what stands on top of the view in it;
+- **Save as a view…** keeps what filters the board under a name — greyed until
+  a filter or a search is on, with <kbd>⇧F</kbd> beside it;
+- **Edit the views…** renames, moves and deletes them.
 
 ## Objectives
 

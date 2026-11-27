@@ -2252,7 +2252,7 @@ Feature: The desktop board
       And I added a task titled "Ship it" in "current" at the priority "high" carrying the label "sprint"
 
     @gui-view-kept-from-the-filters
-    Scenario: the filters in force are kept as a view from the foot of the filter menu, and fold into its pill
+    Scenario: the filters in force are kept as a view from the foot of the filter menu, and the Tasks tab names it
       When I open the window
       And I set the filter "label" to "backend"
       And I press "v"
@@ -2261,7 +2261,8 @@ Feature: The desktop board
       And I type "Backend work"
       And I press "enter"
       Then the view "Backend work" holds the label "backend"
-      And the pills after the tabs read "view Backend work, + Filter"
+      And the tab "Tasks" reads "Tasks · Backend work"
+      And the pills after the tabs read "+ Filter"
       And the tab "Tasks" counts "2/3"
 
     @gui-view-kept-from-the-command-bar
@@ -2273,7 +2274,8 @@ Feature: The desktop board
       And I type "view new Urgent"
       And I press "enter"
       Then the view "Urgent" holds the priority "high"
-      And the pills after the tabs read "view Urgent, + Filter"
+      And the tab "Tasks" reads "Tasks · Urgent"
+      And the pills after the tabs read "+ Filter"
 
     @gui-view-opened-by-its-key
     Scenario: ⌘ and a view's place opens it, and ⌘0 goes back to the whole board
@@ -2287,30 +2289,30 @@ Feature: The desktop board
       Then "todo" carries "Write the spec"
       And the pills after the tabs read "+ Filter"
 
-    @gui-view-listed-at-the-head-of-the-filters
-    Scenario: the filter menu lists the views at its head, each with how many tasks it keeps and its key
+    @gui-view-listed-under-the-tasks-tab
+    Scenario: the arrow of the Tasks tab lists the whole board and the views, each with how many tasks it keeps and its key
       Given I kept the view "Sprint" holding the label "sprint"
       And I kept the view "High" holding the priority "high"
       When I open the window
-      And I press "shift+f"
-      Then the filter menu lists the views "Sprint 1 ⌘1", "High 2 ⌘2"
+      And I press "cmd+shift+v"
+      Then the views under the Tasks tab list "Whole board 3 ⌘0", "Sprint 1 ⌘1", "High 2 ⌘2"
       When I click the view "High"
       Then "todo" carries "Write the spec"
       And "todo" does not carry "Review the plan"
 
     @gui-view-a-filter-on-top-marks-it-changed
-    Scenario: a filter added on top of a view marks its pill changed, and is saved into it when asked
+    Scenario: a filter added on top of a view marks the Tasks tab changed, and is saved into the view when asked
       Given I kept the view "High" holding the priority "high"
       When I open the window
       And I press "cmd+1"
       And I set the filter "label" to "backend"
       And I press "esc"
-      Then the pill of the view is marked changed
+      Then the tab "Tasks" marks the view changed
       And "current" does not carry "Ship it"
-      When I click the pill "view High"
-      And I choose "Save to the view"
+      When I press "cmd+shift+v"
+      And I click "Save to the view" under the views
       Then the view "High" holds the label "backend"
-      And the pill of the view is not marked changed
+      And the tab "Tasks" does not mark the view changed
 
     @gui-view-the-panel-renames-moves-and-deletes
     Scenario: the views panel renames a view, moves it to another place, and deletes it
@@ -2358,7 +2360,7 @@ Feature: The desktop board
       And "todo" does not carry "Review the plan"
       When I click the segment "all"
       Then "todo" carries "Review the plan"
-      And the pill of the view is not marked changed
+      And the tab "Tasks" does not mark the view changed
 
   Rule: A task that comes back is told from another at a glance, and its series has a tab of its own
 

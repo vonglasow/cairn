@@ -19,35 +19,45 @@ func (w *world) viewsSteps(sc *godog.ScenarioContext) {
 		}
 		return nil
 	})
-	sc.Then(`^the filter menu lists the views (".*")$`, func(list string) error {
+	sc.Then(`^the views under the Tasks tab list (".*")$`, func(list string) error {
 		var said []string
-		for _, row := range w.w.ViewRows() {
-			said = append(said, strconv.Quote(row.Name+" "+strconv.Itoa(row.Keeps)+" "+w.w.keyboard.Spelled(Pretty(row.Key))))
+		for _, line := range w.w.ViewingLines() {
+			said = append(said, strconv.Quote(line.Name+" "+line.Count+" "+w.w.keyboard.Spelled(Pretty(line.Key))))
 		}
 		if got := strings.Join(said, ", "); got != list {
-			return fmt.Errorf("the filter menu lists the views %s", got)
+			return fmt.Errorf("the views under the Tasks tab list %s", got)
 		}
 		return nil
 	})
 	sc.When(`^I click the view "([^"]*)"$`, func(name string) error {
-		for _, row := range w.w.ViewRows() {
-			if row.Name == name {
-				w.clickAt(row.At)
+		for _, line := range w.w.ViewingLines() {
+			if line.Name == name {
+				w.clickAt(line.At)
 				return nil
 			}
 		}
-		return fmt.Errorf("the filter menu lists no view %q", name)
+		return fmt.Errorf("the views under the Tasks tab list no %q", name)
 	})
-	sc.Then(`^the pill of the view is (not )?marked changed$`, func(not string) error {
-		for _, pill := range w.w.Pills() {
-			if pill.Kind == PillView {
-				if pill.Changed == (not != "") {
-					return fmt.Errorf("the pill of the view is marked changed: %v", pill.Changed)
-				}
+	sc.When(`^I click "([^"]*)" under the views$`, func(said string) error {
+		for _, act := range w.w.ViewingActs() {
+			if act.Said == said {
+				w.clickAt(act.At)
 				return nil
 			}
 		}
-		return fmt.Errorf("no pill stands for a view: %+v", w.w.Pills())
+		return fmt.Errorf("the foot of the views offers no %q", said)
+	})
+	sc.Then(`^the tab "Tasks" reads "([^"]*)"$`, func(want string) error {
+		if got := w.w.TabSaid(board.Tasks); got != want {
+			return fmt.Errorf("the tab Tasks reads %q", got)
+		}
+		return nil
+	})
+	sc.Then(`^the tab "Tasks" (does not mark|marks) the view changed$`, func(marks string) error {
+		if got := w.w.TabChanged(board.Tasks); got != (marks == "marks") {
+			return fmt.Errorf("the tab Tasks marks the view changed: %v", got)
+		}
+		return nil
 	})
 	sc.Then(`^the views panel lists (".*")$`, func(list string) error {
 		if w.w.Screen != board.OnViews {
