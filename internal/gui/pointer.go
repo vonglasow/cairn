@@ -574,6 +574,9 @@ func (w Window) PressAt(p geom.Point) Window {
 		w.draggingChoosing = ChoosingBar(w.ChoosingBox()).In(p)
 		return w
 	}
+	if pulled, ok := w.pressingBar(p); ok {
+		return pulled
+	}
 	if taken, ok := w.takingPanel(p); ok {
 		return taken
 	}
@@ -681,6 +684,9 @@ func (w Window) MoveTo(p geom.Point) Window {
 	if w.pickingText {
 		return w.draggingText(p)
 	}
+	if w.pulling > 0 {
+		return w.pullingTo(p)
+	}
 	if w.draggingChoosing {
 		box := w.ChoosingBox()
 		w.ChoosingFrom = w.settledChoosing(
@@ -732,9 +738,9 @@ func (w Window) LetGo(p geom.Point) Window {
 		w.pickingText = false
 		return w
 	}
-	if w.draggingBar || w.draggingSaying || w.draggingServing || w.draggingChoosing {
+	if w.draggingBar || w.draggingSaying || w.draggingServing || w.draggingChoosing || w.pulling > 0 {
 		w.draggingBar, w.draggingSaying = false, false
-		w.draggingServing, w.draggingChoosing = false, false
+		w.draggingServing, w.draggingChoosing, w.pulling = false, false, 0
 		return w
 	}
 	if w.holdingText {

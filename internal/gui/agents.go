@@ -84,13 +84,14 @@ func LaidAgents(l geom.Layout, groups []board.AgentGroup, scroll int, high func(
 		x := end - (len(board.AgentsBySaid)-i)*(rangeWide+between)
 		laid.By = append(laid.By, geom.Box{X: x, Y: run.Y, W: rangeWide, H: geom.BarHigh})
 	}
-	across := max(1, (run.W+geom.Gap)/(AgentCardWide+geom.Gap))
-	wide := (run.W - (across-1)*geom.Gap) / across
+	room := run.W - l.Listed
+	across := max(1, (room+geom.Gap)/(AgentCardWide+geom.Gap))
+	wide := (room - (across-1)*geom.Gap) / across
 	top := run.Y + geom.BarHigh + geom.Gap
-	laid.Shown = geom.Box{X: run.X, Y: top, W: run.W, H: run.Y + run.H - top}
+	laid.Shown = geom.Box{X: run.X, Y: top, W: room, H: run.Y + run.H - top}
 	y := top - scroll
 	for _, g := range groups {
-		laid.Heads = append(laid.Heads, geom.Box{X: run.X, Y: y, W: run.W, H: lineHigh + inset})
+		laid.Heads = append(laid.Heads, geom.Box{X: run.X, Y: y, W: room, H: lineHigh + inset})
 		y += lineHigh + inset + geom.Gap
 		var cards []geom.Box
 		for row := range slices.Chunk(g.Agents, across) {

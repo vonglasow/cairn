@@ -33,6 +33,7 @@ func drawGoals(k Kit, l geom.Layout, w Window) {
 		item.Draw(in, GoalAt(l, at, w.goals))
 	}
 	clipped.Pop()
+	drawListBar(on, w, beside(GoalsRun(l)))
 	Ground{}.Draw(k, detail)
 	drawDetail(k.inside("ground"), w, w.Detail())
 }

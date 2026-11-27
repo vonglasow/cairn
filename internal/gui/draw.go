@@ -766,6 +766,7 @@ func drawColumns(k Kit, l geom.Layout, w Window, scene motion.Scene) {
 			Empty{Said: said}.Draw(on, EmptyAt(l.CardAt(i, 0, 0)))
 		}
 		drawPlaced(on, w, l.Column[i], scene)
+		drawListBar(on, w, beside(l.Column[i]))
 		drawReferences(on, w, l.Column[i])
 		if pose.Shade > 0 {
 			Wash{Dark: true, Ground: true, By: pose.Shade}.Draw(on, ground)
@@ -814,6 +815,7 @@ func drawBand(k Kit, l geom.Layout, w Window, scene motion.Scene) {
 			Empty{Said: nothingHere}.Draw(on, EmptyAt(l.LaneCardAt(lane, 0, 0)))
 		}
 		drawPlaced(on, w, l.Lane[lane], scene)
+		drawListBar(on, w, beside(l.Lane[lane]))
 		if pose.Shade > 0 {
 			Wash{Dark: true, Ground: true, By: pose.Shade}.Draw(on, ground)
 		}

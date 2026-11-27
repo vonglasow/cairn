@@ -269,6 +269,16 @@ Feature: The desktop board
       Then the lane "watching" is scrolled
       And the lane "blocked" is not scrolled
 
+    @gui-a-bar-scrolls-what-runs-past-its-room
+    Scenario: a lane that runs past its room has a bar, and pulling the bar scrolls it
+      Given I added 6 tasks to "watching"
+      And I added a task titled "Alone" with the state "blocked"
+      When I open the window
+      Then the lane "watching" has a bar
+      And the lane "blocked" has no bar
+      When I pull the bar of the lane "watching" to its foot
+      Then the lane "watching" is scrolled
+
   Rule: The arrows do what the pointer does
 
     @gui-the-arrows-walk-the-cards

@@ -69,6 +69,7 @@ type Window struct {
 	serving                         int
 	draggingSaying, draggingServing bool
 	draggingChoosing                bool
+	pulling                         int
 	draggingBar                     bool
 
 	held                  Held
@@ -159,7 +160,7 @@ func (w Window) Layout() geom.Layout {
 		l.Place = w.placeAt(l)
 		l.Tabs.X, l.Tabs.W = l.Tabs.X+l.Place.W+geom.Gap, l.Tabs.W-l.Place.W-geom.Gap
 	}
-	return l
+	return w.barred(l)
 }
 
 // Dragging says whether a card is in hand and has travelled far enough to be a drag rather than a click that wobbled.

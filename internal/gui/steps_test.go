@@ -193,6 +193,27 @@ func (w *world) laneIsNotScrolled(kind string) error {
 	return nil
 }
 
+func (w *world) laneBar(kind string) (geom.Box, bool, error) {
+	lane, err := laneNamed(kind)
+	if err != nil {
+		return geom.Box{}, false, err
+	}
+	for _, bar := range w.w.ListBars() {
+		if bar.Track == beside(w.w.Layout().Lane[lane]) {
+			return bar.Track, true, nil
+		}
+	}
+	return geom.Box{}, false, nil
+}
+
+func (w *world) laneBarred(kind string, want bool) error {
+	_, found, err := w.laneBar(kind)
+	if err == nil && found != want {
+		err = fmt.Errorf("the lane %q has a bar: %v, want %v", kind, found, want)
+	}
+	return err
+}
+
 func (w *world) wasAsked(what string, number int) error {
 	thing, verb, _ := strings.Cut(what, " ")
 	for _, a := range w.work.wrote {
@@ -380,6 +401,8 @@ func (w *world) expects(sc *godog.ScenarioContext) {
 	})
 	sc.Then(`^the lane "([^"]*)" is scrolled$`, w.laneIsScrolled)
 	sc.Then(`^the lane "([^"]*)" is not scrolled$`, w.laneIsNotScrolled)
+	sc.Then(`^the lane "([^"]*)" has a bar$`, func(kind string) error { return w.laneBarred(kind, true) })
+	sc.Then(`^the lane "([^"]*)" has no bar$`, func(kind string) error { return w.laneBarred(kind, false) })
 	sc.Then(`^the engine was asked "([^"]*)" for task (\d+)$`, w.wasAsked)
 	sc.Step(`^I triple-click the first word of "([^"]*)" on the open task$`, func(key string) error {
 		at, err := w.firstWordOf(key)

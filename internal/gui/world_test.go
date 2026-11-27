@@ -6,6 +6,7 @@ import (
 	"cairn/internal/engine/calendar"
 	"cairn/internal/gui/design"
 	"cairn/internal/gui/geom"
+	"cmp"
 	"context"
 	"fmt"
 	"image"
@@ -539,6 +540,18 @@ func (w *world) scrollOverLane(kind string) error {
 	return nil
 }
 
+func (w *world) pullLaneBar(kind string) error {
+	track, found, err := w.laneBar(kind)
+	if err != nil || !found {
+		return cmp.Or(err, fmt.Errorf("the lane %q has no bar to pull", kind))
+	}
+	w.laneScrolled = w.w.lanes
+	top := geom.Point{X: track.X + track.W/2, Y: track.Y + 2}
+	foot := geom.Point{X: top.X, Y: track.Y + track.H}
+	w.w = w.w.PressAt(top).MoveTo(foot).LetGo(foot)
+	return nil
+}
+
 func (w *world) choose(name string) error {
 	w.w = w.w.Choose(name)
 	return w.w.Wrong()
@@ -1045,6 +1058,7 @@ func (w *world) register(sc *godog.ScenarioContext) {
 		return nil
 	})
 	sc.Step(`^I scroll down over the lane "([^"]*)"$`, w.scrollOverLane)
+	sc.Step(`^I pull the bar of the lane "([^"]*)" to its foot$`, w.pullLaneBar)
 	sc.Step(`^it was worked on (\d+) times$`, w.workedOn)
 	sc.Step(`^I drag the form from a place that holds no text (\d+) to the right and (\d+) down$`, func(right, down int) error {
 		box := w.w.formPanel()

@@ -61,7 +61,7 @@ func GoalsHead(l geom.Layout) geom.Box {
 // GoalAt is where the n-th objective of the tree has its slot, one under the other, right of the gutter its chevron stands in.
 func GoalAt(l geom.Layout, at, scrolled int) geom.Box {
 	run := GoalsRun(l)
-	return geom.Box{X: run.X + foldGutter, Y: run.Y + at*ItemHigh - scrolled, W: run.W - foldGutter, H: ItemHigh}
+	return geom.Box{X: run.X + foldGutter, Y: run.Y + at*ItemHigh - scrolled, W: run.W - foldGutter - l.Listed, H: ItemHigh}
 }
 
 // FoldAt is where a parent's chevron stands: in the gutter left of its slot, level with its first line.

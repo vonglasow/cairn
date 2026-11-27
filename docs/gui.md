@@ -54,6 +54,9 @@ you, blue while it works.
   back; **Reset sizes** in the View menu takes them all back. To keep the sizes
   from one window to the next, see [configuration](config.md#every-key).
 - The wheel scrolls what it began on.
+- A column, a lane, the objectives or the Agents page that holds more than
+  it shows has a bar at its right. Press the bar to go there, and drag it to
+  scroll.
 
 ## Keys
 

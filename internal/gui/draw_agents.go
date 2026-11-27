@@ -40,6 +40,7 @@ func drawAgents(k Kit, w Window) {
 		}
 	}
 	clipped.Pop()
+	drawListBar(k, w, beside(geom.Box{X: laid.Run.X, Y: laid.Shown.Y, W: laid.Run.W, H: laid.Shown.H}))
 }
 
 // AgentCard is a Claude session's card, laid out as its parts say: its state and for how long, its title or the task suggested, what it does and the answers to what it asks, the steps left, its branch, its context, where it runs, and its buttons.

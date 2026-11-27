@@ -46,14 +46,17 @@ func (b Box) In(p Point) bool {
 
 // Layout is every size the window draws from.
 type Layout struct {
-	Place  Box
-	Tabs   Box
-	Head   [board.Columns]Box
-	Column [board.Columns]Box
-	Band   Box
-	Lane   [3]Box
-	Bar    Box
-	Days   int
+	Place      Box
+	Tabs       Box
+	Head       [board.Columns]Box
+	Column     [board.Columns]Box
+	Band       Box
+	Lane       [3]Box
+	Bar        Box
+	Days       int
+	Barred     [board.Columns]int
+	LaneBarred [3]int
+	Listed     int
 }
 
 // TooSmall says whether the board can be drawn in this window at all.
@@ -184,13 +187,13 @@ const bandHigh = 214
 // CardAt is where the n-th card of a column sits, given how far that column has been scrolled.
 func (l Layout) CardAt(column, at, scrolled int) Box {
 	body := l.Column[column]
-	return Box{X: body.X, Y: body.Y + at*CardHeight - scrolled, W: body.W, H: CardHeight}
+	return Box{X: body.X, Y: body.Y + at*CardHeight - scrolled, W: body.W - l.Barred[column], H: CardHeight}
 }
 
 // LaneCardAt is the same for a card in one of the band's three lanes.
 func (l Layout) LaneCardAt(lane, at, scrolled int) Box {
 	body := l.Lane[lane]
-	return Box{X: body.X, Y: body.Y + at*CardHeight - scrolled, W: body.W, H: CardHeight}
+	return Box{X: body.X, Y: body.Y + at*CardHeight - scrolled, W: body.W - l.LaneBarred[lane], H: CardHeight}
 }
 
 // LaneUnder says which of the band's lanes a point falls in.
