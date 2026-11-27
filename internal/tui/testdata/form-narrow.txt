@@ -20,8 +20,8 @@
  │   labels                           >                               │
  │   > spec                                                           │
  │                                    steps · 2 lines                 │
- │   blockers                           1 #2 [ ] Get the client's     │
- │                                        nod                         │
+ │   blockers                           1 #2 [ ] Get the client's nod │
+ │                                                                    │
  │   >                                  2 #1 [x] Draft the columns    │
  ╰────────────────────────────────────────────────────────────────────╯
 
